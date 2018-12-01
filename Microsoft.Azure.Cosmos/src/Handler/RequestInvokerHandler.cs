@@ -1,0 +1,78 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Handlers
+{
+    using Microsoft.Azure.Cosmos.Internal;
+    using System;
+    using System.Globalization;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    /// <summary>
+    /// HttpMessageHandler can only be invoked by derived classed or internal classes inside http assembly
+    /// </summary>
+    internal class RequestInvokerHandler : CosmosRequestHandler
+    {
+        private readonly CosmosClient client;
+
+        public RequestInvokerHandler(CosmosClient client)
+        {
+            this.client = client;
+        }
+
+        public override Task<CosmosResponseMessage> SendAsync(
+            CosmosRequestMessage request, 
+            CancellationToken cancellationToken)
+        {
+            CosmosRequestOptions promotedRequestOptions = request.RequestOptions;
+            if (promotedRequestOptions != null)
+            {
+                // Fill request options
+                promotedRequestOptions.FillRequestOptions(request);
+
+                // Validate the request consistency compatibility with account consistency
+                // Type based access context for requested consistency preferred for performance
+                ConsistencyLevel? consistencyLevel = null;
+                if (promotedRequestOptions is CosmosItemRequestOptions)
+                {
+                    consistencyLevel = (promotedRequestOptions as CosmosItemRequestOptions).ConsistencyLevel;
+                }
+                else if (promotedRequestOptions is CosmosQueryRequestOptions)
+                {
+                    consistencyLevel = (promotedRequestOptions as CosmosQueryRequestOptions).ConsistencyLevel;
+                }
+                else if (promotedRequestOptions is CosmosStoredProcedureRequestOptions)
+                {
+                    consistencyLevel = (promotedRequestOptions as CosmosStoredProcedureRequestOptions).ConsistencyLevel;
+                }
+
+                if (consistencyLevel.HasValue)
+                {
+                    if (!ValidationHelpers.ValidateConsistencyLevel(this.client.AccountConsistencyLevel, consistencyLevel.Value))
+                    {
+                        throw new ArgumentException(string.Format(
+                                CultureInfo.CurrentUICulture,
+                                RMResources.InvalidConsistencyLevel,
+                                consistencyLevel.Value.ToString(),
+                                this.client.AccountConsistencyLevel));
+                    }
+                }
+            }
+
+            return this.client.DocumentClient.EnsureValidClientAsync()
+                .ContinueWith(task => request.AssertPartitioningDetailsAsync(client, cancellationToken))
+                .ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        throw task.Exception;
+                    }
+
+                    return base.SendAsync(request, cancellationToken);
+                })
+                .Unwrap();
+        }
+    }
+}

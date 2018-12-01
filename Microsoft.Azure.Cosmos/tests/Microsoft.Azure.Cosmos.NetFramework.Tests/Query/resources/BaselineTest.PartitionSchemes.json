@@ -1,0 +1,154 @@
+﻿[
+    {
+        "partitionScheme": [
+            {
+                "id": "1",
+                "min": [],
+                "max": [ 270 ]
+            },
+            {
+                "id": "2",
+                "min": [ 270 ],
+                "max": "Infinity"
+            }
+        ]
+    },
+    {
+        "partitionScheme": [
+            {
+                "id": "3",
+                "min": [],
+                "max": [ 90 ]
+            },
+            {
+                "id": "4",
+                "min": [ 90 ],
+                "max": [ 270 ]
+            },
+            {
+                "id": "2",
+                "min": [ 270 ],
+                "max": "Infinity"
+            }
+        ]
+    },
+    {
+        "partitionScheme": [
+            {
+                "id": "5",
+                "min": [],
+                "max": [ 30 ]
+            },
+            {
+                "id": "6",
+                "min": [ 30 ],
+                "max": [ 90 ]
+            },
+            {
+                "id": "4",
+                "min": [ 90 ],
+                "max": [ 270 ]
+            },
+            {
+                "id": "2",
+                "min": [ 270 ],
+                "max": "Infinity"
+            }
+        ]
+    },
+    {
+        "partitionScheme": [
+            {
+                "id": "5",
+                "min": [],
+                "max": [ 30 ]
+            },
+            {
+                "id": "6",
+                "min": [ 30 ],
+                "max": [ 90 ]
+            },
+            {
+                "id": "4",
+                "min": [ 90 ],
+                "max": [ 270 ]
+            },
+            {
+                "id": "7",
+                "min": [ 270 ],
+                "max": [ 810 ]
+            },
+            {
+                "id": "8",
+                "min": [ 810 ],
+                "max": "Infinity"
+            }
+        ]
+    },
+    {
+        "partitionScheme": [
+            {
+                "id": "9",
+                "min": [],
+                "max": [ 90 ]
+            },
+            {
+                "id": "4",
+                "min": [ 90 ],
+                "max": [ 270 ]
+            },
+            {
+                "id": "7",
+                "min": [ 270 ],
+                "max": [ 810 ]
+            },
+            {
+                "id": "8",
+                "min": [ 810 ],
+                "max": "Infinity"
+            }
+        ]
+    },
+    {
+        "partitionScheme": [
+            {
+                "id": "9",
+                "min": [],
+                "max": [ 90 ]
+            },
+            {
+                "id": "4",
+                "min": [ 90 ],
+                "max": [ 270 ]
+            },
+            {
+                "id": "10",
+                "min": [ 270 ],
+                "max": "Infinity"
+            }
+        ]
+    },
+    {
+        "partitionScheme": [
+            {
+                "id": "11",
+                "min": [],
+                "max": [ 270 ]
+            },
+            {
+                "id": "10",
+                "min": [ 270 ],
+                "max": "Infinity"
+            }
+        ]
+    },
+    {
+        "partitionScheme": [
+            {
+                "id": "12",
+                "min": [],
+                "max": "Infinity"
+            }
+        ]
+    }
+]

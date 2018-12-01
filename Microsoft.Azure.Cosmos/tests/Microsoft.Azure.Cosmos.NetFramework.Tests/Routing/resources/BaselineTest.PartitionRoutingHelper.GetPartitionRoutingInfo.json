@@ -1,0 +1,119 @@
+﻿{
+    "testCases": [
+        {
+            "providedRanges": [
+                {
+                    "min": "004294967200",
+                    "max": "004294967200",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "000000000000",
+                    "max": "000000000000",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "002576980300",
+                    "max": "002576980300",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "000000000001",
+                    "max": "000000000001",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                }
+            ],
+            "routingRangeIds": [ "0", "2", "4" ]
+        },
+        {
+            "providedRanges": [
+                 {
+                    "min": "000858993501",
+                    "max": "000858993501",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "000858993500",
+                    "max": "000858993500",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "004294967295",
+                    "max": "004294967295",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "002576980400",
+                    "max": "002576980400",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                }
+
+            ],
+            "routingRangeIds": [ "1", "3", "5" ]
+        },
+        {
+            "providedRanges": [
+                {
+                    "min": "",
+                    "max": "000858993459",
+                    "isMinInclusive": false,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "003435973836",
+                    "max": "004294967294",
+                    "isMinInclusive": true,
+                    "isMaxInclusive": true
+                },
+                {
+                    "min": "001717986918",
+                    "max": "003435973836",
+                    "isMinInclusive": false,
+                    "isMaxInclusive": false
+                }
+
+            ],
+            "routingRangeIds": [ "0", "1", "2", "3", "4" ]
+        }
+    ],
+    "routingMap": [
+        {
+            "Id": "0",
+            "minInclusive": "",
+            "maxExclusive": "000858993459"
+        },
+        {
+            "Id": "2",
+            "minInclusive": "001717986918",
+            "maxExclusive": "002576980377"
+        },
+        {
+            "Id": "1",
+            "minInclusive": "000858993459",
+            "maxExclusive": "001717986918"
+        },
+        {
+            "Id": "4",
+            "minInclusive": "003435973836",
+            "maxExclusive": "004294967295"
+        },
+        {
+            "Id": "3",
+            "minInclusive": "002576980377",
+            "maxExclusive": "003435973836"
+        },
+        {
+            "Id": "5",
+            "minInclusive": "004294967295",
+            "maxExclusive": "FF"
+        }
+    ]
+}

@@ -1,0 +1,176 @@
+﻿{
+    "routingMap": [
+        {
+            "Id": "0",
+            "minInclusive": "",
+            "maxExclusive": "000858993459"
+        },
+        {
+            "Id": "1",
+            "minInclusive": "000858993459",
+            "maxExclusive": "001717986918"
+        },
+        {
+            "Id": "2",
+            "minInclusive": "001717986918",
+            "maxExclusive": "002576980377"
+        },
+        {
+            "Id": "4",
+            "minInclusive": "003435973836",
+            "maxExclusive": "004294967295"
+        },
+        {
+            "Id": "3",
+            "minInclusive": "002576980377",
+            "maxExclusive": "003435973836"
+        },
+        {
+            "Id": "5",
+            "minInclusive": "004294967295",
+            "maxExclusive": "FF"
+        }
+    ],
+    "testSet": {
+        "positive": [
+            {
+                "inputCompositeContinuationToken": "",
+                "outputCompositeContinuationToken": "[{\"token\":\"\",\"range\":{\"min\":\"000858993459\",\"max\":\"001717986918\"}}]",
+                "providedRanges": [
+                    {
+                        "min": "",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ],
+                "resolvedRanges": [
+                    {
+                        "min": "",
+                        "max": "000858993459",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    },
+                    {
+                        "min": "000858993459",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ]
+            },
+            {
+                "inputCompositeContinuationToken": "{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"001717986918\"}}",
+                "outputCompositeContinuationToken": "[{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"000858993459\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"000858993459\",\"max\":\"001717986918\"}}]",
+                "providedRanges": [
+                    {
+                        "min": "",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ],
+                "resolvedRanges": [
+                    {
+                        "min": "",
+                        "max": "000858993459",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    },
+                    {
+                        "min": "000858993459",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ]
+            },
+            {
+                "inputCompositeContinuationToken": "[{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"001717986918\"}}]",
+                "outputCompositeContinuationToken": "[{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"000858993459\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"000858993459\",\"max\":\"001717986918\"}}]",
+                "providedRanges": [
+                    {
+                        "min": "",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ],
+                "resolvedRanges": [
+                    {
+                        "min": "",
+                        "max": "000858993459",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    },
+                    {
+                        "min": "000858993459",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ]
+            },
+            {
+                "inputCompositeContinuationToken": "[{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"001717986918\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:ARIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"001717986918\",\"max\":\"002576980377\"}}]",
+                "outputCompositeContinuationToken": "[{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"000858993459\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"000858993459\",\"max\":\"001717986918\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:ARIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"001717986918\",\"max\":\"002576980377\"}}]",
+                "providedRanges": [
+                    {
+                        "min": "",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ],
+                "resolvedRanges": [
+                    {
+                        "min": "",
+                        "max": "000858993459",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    },
+                    {
+                        "min": "000858993459",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ]
+            },
+            {
+                "inputCompositeContinuationToken": "[{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"002576980377\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:ARIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"002576980377\",\"max\":\"003435973836\"}}]",
+                "outputCompositeContinuationToken": "[{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"\",\"max\":\"000858993459\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"000858993459\",\"max\":\"001717986918\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"001717986918\",\"max\":\"002576980377\"}},{\"token\":\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:ARIAAAAAAAAABQAAAAAAAAA=\",\"range\":{\"min\":\"002576980377\",\"max\":\"003435973836\"}}]",
+                "providedRanges": [
+                    {
+                        "min": "",
+                        "max": "002576980377",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ],
+                "resolvedRanges": [
+                    {
+                        "min": "",
+                        "max": "000858993459",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    },
+                    {
+                        "min": "000858993459",
+                        "max": "001717986918",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    },
+                    {
+                        "min": "001717986918",
+                        "max": "002576980377",
+                        "isMinInclusive": true,
+                        "isMaxInclusive": false
+                    }
+                ]
+            }
+        ],
+        "negative": [
+        ]
+    }
+}
