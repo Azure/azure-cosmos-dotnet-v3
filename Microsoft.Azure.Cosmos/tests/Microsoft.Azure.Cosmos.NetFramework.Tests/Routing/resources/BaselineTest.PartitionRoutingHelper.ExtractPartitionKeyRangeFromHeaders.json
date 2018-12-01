@@ -1,0 +1,126 @@
+﻿{
+    "positive": [
+        {
+            "compositeContinuationToken": null,
+            "continuationToken": null,
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "",
+            "continuationToken": "",
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "{}",
+            "continuationToken": "",
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "{token:\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\"}",
+            "continuationToken": "+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=",
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "[]",
+            "continuationToken": "",
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "{range:{min:\"0124AF\",max:\"0FEDFC\"}}",
+            "continuationToken": "",
+            "partitionKeyRange": {
+                "min": "0124AF",
+                "max": "0FEDFC",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "{token:\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",range:{min:\"023344\",max:\"FF\"}}",
+            "continuationToken": "+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=",
+            "partitionKeyRange": {
+                "min": "023344",
+                "max": "FF",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "[{token:\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",range:{min:\"023344\",max:\"053344\"}},{token:\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",range:{min:\"053345\",max:\"FF\"}}]",
+            "continuationToken": "+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=",
+            "partitionKeyRange": {
+                "min": "023344",
+                "max": "053344",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        }
+    ],
+    "negative": [
+        {
+            "compositeContinuationToken": "{range:{}}",
+            "continuationToken": null,
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "null",
+            "continuationToken": null,
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "{token:\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",range:{min:\"053344\"}}",
+            "continuationToken": null,
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        },
+        {
+            "compositeContinuationToken": "{token:\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",range:{min:\"053344\",max:\"023344\"}},{token:\"+RID:%s#RT:1#SRC:1#TRC:11#FPC:AQIAAAAAAAAABQAAAAAAAAA=\",range:{min:\"053345\",max:\"FF\"}}",
+            "continuationToken": null,
+            "partitionKeyRange": {
+                "min": "",
+                "max": "",
+                "isMinInclusive": true,
+                "isMaxInclusive": false
+            }
+        }
+    ]
+}

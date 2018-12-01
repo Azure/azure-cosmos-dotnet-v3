@@ -1,0 +1,11 @@
+﻿[
+    {
+        "query": "SELECT * FROM Root r WHERE r.key > 30"
+    },
+    {
+        "query": "SELECT * FROM Root r WHERE r.key >= 90 AND r.key < 270"
+    },
+    {
+        "query": "SELECT * FROM Root r WHERE (r.key >= 90 AND r.key < 270) OR (r.key = 20)"
+    }
+]

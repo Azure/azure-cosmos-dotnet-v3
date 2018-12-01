@@ -1,0 +1,110 @@
+﻿[
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT BADFUNC(r.age) FROM Root r"
+        },
+        "error": "Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":7,\"end\":14},\"code\":\"SC2005\",\"message\":\"'BADFUNC' is not a recognized built-in function name.\"}]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT udf.func1(r.a), udf.func2(r.b), udf.func3(r.c), udf.func1(r.d), udf.func2(r.e), udf.func3(r.f) FROM Root r"
+        },
+        "error": "Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":0,\"end\":113},\"code\":\"SC3005\",\"message\":\"The SQL query exceeded the maximum number of user-defined function calls. The allowed limit is 2.\"}]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT * FROM Root r WHERE STARTSWITH(r.key, 'a', 'b')"
+        },
+        "error": "Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":27,\"end\":54},\"code\":\"SC2050\",\"message\":\"The STARTSWITH function requires 2 argument(s).\"}]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT * FROM root WHERE root.key = \"key\" ORDER BY LOWER(root.field) ASC"
+        },
+        "error": "Message: {\"errors\":[{\"severity\":\"Error\",\"message\":\"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path.\"}]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT VALUE MAX(MIN(r)) From r" 
+        },
+        "error": "Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":13,\"end\":24},\"code\":\"SC2101\",\"message\":\"Cannot perform an aggregate function on an expression containing an aggregate or a subquery.\"}]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT COUNT(r) From r" 
+        },
+        "error": "Message: {\"Errors\":[\"Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.\"]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT VALUE {'sum': SUM(r), 'count': COUNT(r)} From r" 
+        },
+        "error": "Message: {\"Errors\":[\"Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.\"]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT VALUE {'aggregates': [SUM(r), AVG(r) + 1] } From r" 
+        },
+        "error": "Message: {\"Errors\":[\"Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.\"]}"
+    },
+    {
+        "partitionKey": {
+            "paths": [
+                "/key"
+            ],
+            "kind": "Hash"
+        },
+        "querySpec": {
+            "query": "SELECT VALUE FLOOR(AVG(r)) From r" 
+        },
+        "error": "Message: {\"Errors\":[\"Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.\"]}"
+    }
+]

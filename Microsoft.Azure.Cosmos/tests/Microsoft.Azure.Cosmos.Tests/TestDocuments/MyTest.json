@@ -1,0 +1,15 @@
+{    
+	"id": "testid",
+	"address": {        
+		"state": "WA",        
+		"county": "King",        
+		"city": "seattle",
+		"zipCode": "98008"   
+	},	
+	"_rid": "Y7V+ANsU+wgBAAAAAAAAAA==",    
+	"_self": "dbs/Y7V+AA==/colls/Y7V+ANsU+wg=/docs/Y7V+ANsU+wgBAAAAAAAAAA==/",
+	"_etag": "\"02006b31-0000-0000-0000-5b07280a0000\"",
+	"_attachments": "attachments/",
+	"_ts": 1527195658
+
+}
