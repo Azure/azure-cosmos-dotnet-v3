@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         internal readonly CosmosContainer container;
 
         /// <summary>
-        /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
+        /// Creates an Item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This likely means the collection in to which you were trying to create the document is full.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a item with an id matching the id field in the streamPayload already existed</description>
+        ///         <term>409</term><description>Conflict - This means an item with an id matching the id field in the streamPayload already existed</description>
         ///     </item>
         ///     <item>
         ///         <term>413</term><description>RequestEntityTooLarge - This means the item exceeds the current max entity size. Consult documentation for limits and quotas.</description>
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Creates a item as an asynchronous operation in the Azure Cosmos service.
+        /// Creates an item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This likely means the collection in to which you were trying to create the document is full.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a item with an id matching the id field of <paramref name="item"/> already existed</description>
+        ///         <term>409</term><description>Conflict - This means an item with an id matching the id field of <paramref name="item"/> already existed</description>
         ///     </item>
         ///     <item>
         ///         <term>413</term><description>RequestEntityTooLarge - This means the item exceeds the current max entity size. Consult documentation for limits and quotas.</description>
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a item from the Azure Cosmos service as an asynchronous operation.
+        /// Reads an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a item from the Azure Cosmos service as an asynchronous operation.
+        /// Reads an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This likely means the collection in to which you were trying to upsert the document is full.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a item with an id matching the id field of <paramref name="item"/> already existed</description>
+        ///         <term>409</term><description>Conflict - This means an item with an id matching the id field of <paramref name="item"/> already existed</description>
         ///     </item>
         ///     <item>
         ///         <term>413</term><description>RequestEntityTooLarge - This means the item exceeds the current max entity size. Consult documentation for limits and quotas.</description>
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
+        /// Replaces an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
+        /// Replaces an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Delete a item from the Azure Cosmos service as an asynchronous operation.
+        /// Delete an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
@@ -583,7 +583,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Delete a item from the Azure Cosmos service as an asynchronous operation.
+        /// Delete an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
@@ -656,9 +656,9 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null)
         {
             return new CosmosDefaultResultSetIterator<T>(
-                maxItemCount, 
-                continuationToken, 
-                null, 
+                maxItemCount,
+                continuationToken,
+                null,
                 ItemFeedRequestExecutor<T>);
         }
 
@@ -752,8 +752,8 @@ namespace Microsoft.Azure.Cosmos
 
             return new CosmosDefaultResultSetStreamIterator(
                 maxItemCount,
-                continuationToken, 
-                requestOptions, 
+                continuationToken,
+                requestOptions,
                 FeedOrQueryRequestExecutor,
                 cxt);
         }
@@ -1288,7 +1288,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A document link in the format of {CachedUriSegmentWithoutId}/{0}/ with {0} being a Uri escaped version of the <paramref name="resourceId"/>
         /// </returns>
-        /// <remarks>Would be used when creating an <see cref="Attachment"/>, or when replacing or deleting a item in Azure Cosmos DB.</remarks>
+        /// <remarks>Would be used when creating an <see cref="Attachment"/>, or when replacing or deleting an item in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         private Uri ContcatCachedUriWithId(string resourceId)
         {

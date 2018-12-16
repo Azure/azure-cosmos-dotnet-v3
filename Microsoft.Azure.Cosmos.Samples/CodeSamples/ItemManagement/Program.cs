@@ -18,16 +18,16 @@ namespace Cosmos.Samples.Shared
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
     // ----------------------------------------------------------------------------------------------------------
-    // Sample - demonstrates the basic CRUD operations on a Item resource for Azure Cosmos
+    // Sample - demonstrates the basic CRUD operations on an Item resource for Azure Cosmos
     //
-    // 1. Basic CRUD operations on a item using regular POCOs
-    // 1.1 - Create a item
-    // 1.2 - Read a item by its Id
+    // 1. Basic CRUD operations on an item using regular POCOs
+    // 1.1 - Create an item
+    // 1.2 - Read an item by its Id
     // 1.3 - Read all items in a Collection
     // 1.4 - Query for items by a property other than Id
-    // 1.5 - Replace a item
-    // 1.6 - Upsert a item
-    // 1.7 - Delete a item
+    // 1.5 - Replace an item
+    // 1.6 - Upsert an item
+    // 1.7 - Delete an item
     //
     // 2. Work with dynamic objects
     //
@@ -118,14 +118,14 @@ namespace Cosmos.Samples.Shared
         }
 
         /// <summary>
-        /// 1. Basic CRUD operations on a item
-        /// 1.1 - Create a item
-        /// 1.2 - Read a item by its Id
+        /// 1. Basic CRUD operations on an item
+        /// 1.1 - Create an item
+        /// 1.2 - Read an item by its Id
         /// 1.3 - Read all items in a Collection
         /// 1.4 - Query for items by a property other than Id
-        /// 1.5 - Replace a item
-        /// 1.6 - Upsert a item
-        /// 1.7 - Delete a item
+        /// 1.5 - Replace an item
+        /// 1.6 - Upsert an item
+        /// 1.7 - Delete an item
         /// </summary>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
         {
@@ -169,7 +169,7 @@ namespace Cosmos.Samples.Shared
 
             // You can measure the throughput consumed by any operation by inspecting the RequestCharge property
             Console.WriteLine("Item read by Id {0}", response.Resource);
-            Console.WriteLine("Request Units Charge for reading a Item by Id {0}", response.RequestCharge);
+            Console.WriteLine("Request Units Charge for reading an Item by Id {0}", response.RequestCharge);
 
             SalesOrder readOrder = (SalesOrder)response;
         }
@@ -189,7 +189,7 @@ namespace Cosmos.Samples.Shared
             //       and check the RequestCharge property of this IQueryable response
             //       Once again, refer to the Queries project for more information and examples of this
             //******************************************************************************************************************
-            Console.WriteLine("\n1.4 - Querying for a item using its AccountNumber property");
+            Console.WriteLine("\n1.4 - Querying for an item using its AccountNumber property");
 
             CosmosSqlQueryDefinition query = new CosmosSqlQueryDefinition(
                 "select * from sales s where s.AccountNumber = @AccountInput ")
@@ -212,11 +212,11 @@ namespace Cosmos.Samples.Shared
         private static async Task ReplaceItemAsync(SalesOrder order)
         {
             //******************************************************************************************************************
-            // 1.5 - Replace a item
+            // 1.5 - Replace an item
             //
             // Just update a property on an existing item and issue a Replace command
             //******************************************************************************************************************
-            Console.WriteLine("\n1.5 - Replacing a item using its Id");
+            Console.WriteLine("\n1.5 - Replacing an item using its Id");
 
             order.ShippedDate = DateTime.UtcNow;
             CosmosItemResponse<SalesOrder> response = await container.Items.ReplaceItemAsync(
@@ -231,11 +231,11 @@ namespace Cosmos.Samples.Shared
 
         private static async Task UpsertItemAsync()
         {
-            Console.WriteLine("\n1.6 - Upserting a item");
+            Console.WriteLine("\n1.6 - Upserting an item");
 
             SalesOrder upsertOrder = GetSalesOrderSample("SalesOrder3");
             CosmosItemResponse<SalesOrder> response = await container.Items.UpsertItemAsync(
-                partitionKey: upsertOrder.AccountNumber, 
+                partitionKey: upsertOrder.AccountNumber,
                 item: upsertOrder);
 
             SalesOrder upserted = response.Resource;
@@ -256,7 +256,7 @@ namespace Cosmos.Samples.Shared
 
         private static async Task DeleteItemAsync()
         {
-            Console.WriteLine("\n1.7 - Deleting a item");
+            Console.WriteLine("\n1.7 - Deleting an item");
             CosmosItemResponse<SalesOrder> response = await container.Items.DeleteItemAsync<SalesOrder>(
                 partitionKey: "Account1",
                 id: "SalesOrder3");
@@ -344,7 +344,7 @@ namespace Cosmos.Samples.Shared
                 OrderDate = DateTime.UtcNow,
                 Total = 5.95,
             };
-            
+
             Console.WriteLine("\nCreating item");
 
             CosmosItemResponse<dynamic> response = await container.Items.CreateItemAsync<dynamic>("NewUser01", salesOrder);
@@ -390,18 +390,18 @@ namespace Cosmos.Samples.Shared
             // 3.1 - Use ETag to control if a replace should succeed, or not, based on whether the ETag on the request matches
             //       the current ETag value of the persisted Item
             //
-            // All items in Cosmos have an _etag field. This gets set on the server every time a item is updated.
+            // All items in Cosmos have an _etag field. This gets set on the server every time an item is updated.
             // 
-            // When doing a replace of a item you can opt-in to having the server only apply the Replace if the ETag 
+            // When doing a replace of an item you can opt-in to having the server only apply the Replace if the ETag 
             // on the request matches the ETag of the item on the server.
             // If someone did an update to the same item since you read it, then the ETag on the server will not match
             // and the Replace operation can be rejected. 
             //******************************************************************************************************************
             Console.WriteLine("\n3.1 - Using optimistic concurrency when doing a ReplaceItemAsync");
 
-            //read a item
+            //read an item
             CosmosItemResponse<SalesOrder> itemResponse = await container.Items.ReadItemAsync<SalesOrder>(
-                partitionKey: "Account1", 
+                partitionKey: "Account1",
                 id: "SalesOrder1");
 
             Console.WriteLine("ETag of read item - {0}", itemResponse.ETag);
@@ -412,8 +412,8 @@ namespace Cosmos.Samples.Shared
 
             //persist the change back to the server
             CosmosItemResponse<SalesOrder> updatedDoc = await container.Items.ReplaceItemAsync<SalesOrder>(
-                partitionKey: item.AccountNumber, 
-                id: item.Id, 
+                partitionKey: item.AccountNumber,
+                id: item.Id,
                 item: item);
 
             Console.WriteLine("ETag of item now that is has been updated - {0}", updatedDoc.ETag);
@@ -447,7 +447,7 @@ namespace Cosmos.Samples.Shared
 
             Console.WriteLine("\n3.2 - Using ETag to do a conditional ReadItemAsync");
 
-            // Get a item
+            // Get an item
             CosmosItemResponse<SalesOrder> response = await container.Items.ReadItemAsync<SalesOrder>(partitionKey: "Account2", id: "SalesOrder2");
 
             item = response;
@@ -461,8 +461,8 @@ namespace Cosmos.Samples.Shared
             };
 
             response = await container.Items.ReadItemAsync<SalesOrder>(
-                partitionKey: "Account2", 
-                id: "SalesOrder2", 
+                partitionKey: "Account2",
+                id: "SalesOrder2",
                 requestOptions: new CosmosItemRequestOptions() { AccessCondition = accessCondition });
 
             Console.WriteLine("Read doc with StatusCode of {0}", response.StatusCode);
@@ -473,8 +473,8 @@ namespace Cosmos.Samples.Shared
             response = await container.Items.ReplaceItemAsync<SalesOrder>(item.AccountNumber, item.Id, item);
 
             response = await container.Items.ReadItemAsync<SalesOrder>(
-                partitionKey: "Account2", 
-                id: "SalesOrder2", 
+                partitionKey: "Account2",
+                id: "SalesOrder2",
                 requestOptions: new CosmosItemRequestOptions() { AccessCondition = accessCondition });
 
 
