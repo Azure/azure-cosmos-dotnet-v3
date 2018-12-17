@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+>We are continuously addressing and improving the SDK, if possible, make sure the problem persist in the [latest SDK version](https://www.nuget.org/packages/Microsoft.Azure.Cosmos).
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
