@@ -1068,6 +1068,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
+            CosmosItems.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = GetResourceUri(requestOptions, operationType, itemId);
             return ExecUtils.ProcessResourceOperationAsync<CosmosItemResponse<T>>(
                 this.container.Database.Client,
@@ -1250,14 +1251,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static void ValidatePartitionKey(object partitionKey, CosmosRequestOptions requestOptions)
         {
-            if (partitionKey != null && (partitionKey is string && !string.IsNullOrEmpty((string)partitionKey)))
+            if (partitionKey != null)
             {
                 return;
             }
 
-            if (requestOptions.Properties.TryGetValue(
-                WFConstants.BackendHeaders.EffectivePartitionKeyString,
-                out object partitionKeyValue) && partitionKeyValue != null)
+            if (requestOptions?.Properties != null 
+                && requestOptions.Properties.TryGetValue(
+                    WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyValue) 
+                && effectivePartitionKeyValue != null)
             {
                 return;
             }
