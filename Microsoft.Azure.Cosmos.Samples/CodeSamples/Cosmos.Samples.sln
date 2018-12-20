@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ContainerManagement", "Cont
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos", "..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj", "{23CF2D25-2705-4929-8341-6A6A11AFCF75}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Direct", "..\..\Microsoft.Azure.Cosmos.Direct\Microsoft.Azure.Cosmos.Direct.csproj", "{57CFF4A3-55A7-409A-9F06-BDF1826DADEF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ItemManagement", "ItemManagement\ItemManagement.csproj", "{FF1C9654-E125-47ED-8EC1-E82156D5EED3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Shared\Shared.csproj", "{5A9CFB9C-7261-4DE9-9CCB-A8A6D0207B83}"
@@ -20,6 +18,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerSideScripts", "ServerSideScripts\ServerSideScripts.csproj", "{7FCC3B73-85FC-42A7-96AB-3D508BB871BD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HandlerSample", "Handlers\HandlerSample.csproj", "{DAE99683-1049-4E8F-9580-5C9B5562D9A7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureFunctions", "AzureFunctions\AzureFunctions.csproj", "{4D375AAB-E67E-4A0C-9418-F512F705C574}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,10 +39,6 @@ Global
 		{23CF2D25-2705-4929-8341-6A6A11AFCF75}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{23CF2D25-2705-4929-8341-6A6A11AFCF75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{23CF2D25-2705-4929-8341-6A6A11AFCF75}.Release|Any CPU.Build.0 = Release|Any CPU
-		{57CFF4A3-55A7-409A-9F06-BDF1826DADEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{57CFF4A3-55A7-409A-9F06-BDF1826DADEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{57CFF4A3-55A7-409A-9F06-BDF1826DADEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{57CFF4A3-55A7-409A-9F06-BDF1826DADEF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FF1C9654-E125-47ED-8EC1-E82156D5EED3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FF1C9654-E125-47ED-8EC1-E82156D5EED3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF1C9654-E125-47ED-8EC1-E82156D5EED3}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -63,6 +59,10 @@ Global
 		{DAE99683-1049-4E8F-9580-5C9B5562D9A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DAE99683-1049-4E8F-9580-5C9B5562D9A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DAE99683-1049-4E8F-9580-5C9B5562D9A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D375AAB-E67E-4A0C-9418-F512F705C574}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D375AAB-E67E-4A0C-9418-F512F705C574}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D375AAB-E67E-4A0C-9418-F512F705C574}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D375AAB-E67E-4A0C-9418-F512F705C574}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
