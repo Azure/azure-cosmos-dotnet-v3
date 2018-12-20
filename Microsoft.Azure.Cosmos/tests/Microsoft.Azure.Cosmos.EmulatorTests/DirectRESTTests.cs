@@ -865,7 +865,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public async Task TestBadPartitionKeyDefinition()
         {
             using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
@@ -907,7 +906,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public async Task TestBadQueryHeaders()
         {
             DocumentClient client = TestCommon.CreateClient(true);

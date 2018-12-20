@@ -115,7 +115,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void TestDateParseHandlingOnReadDocument()
         {
             const string jsonProperty = "jsonString";
@@ -152,7 +151,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void TestDateParseHandlingOnDocumentQuery()
         {
             const string jsonProperty = "jsonString";
@@ -176,7 +174,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void TestDateParseHandling()
         {
             const string jsonProperty = "jsonString";

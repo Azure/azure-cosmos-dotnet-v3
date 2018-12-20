@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
 
     [TestClass]
-    [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
     public class UniqueIndexTests
     {
         private DocumentClient client;  // This is only used for housekeeping this.database.
@@ -83,9 +82,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (DocumentClientException ex)
                 {
-                    // TODO: unique index: there seems to be a backend bug. For unique index violation, upsert should return Conflict rather than RetryWith.
                     // Search for: L"For upsert insert, if it failed with E_RESOURCE_ALREADY_EXISTS, return E_CONCURRENCY_VIOLATION so that client will retry"
-                    Assert.AreEqual(StatusCodes.RetryWith, (StatusCodes)ex.StatusCode);
+                    Assert.AreEqual(StatusCodes.Conflict, (StatusCodes)ex.StatusCode);
                 }
 
                 await client.CreateDocumentAsync(collection, doc2);

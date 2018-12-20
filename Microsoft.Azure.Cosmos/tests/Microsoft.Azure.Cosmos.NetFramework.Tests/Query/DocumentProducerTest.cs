@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Test possible race conditions in "DocumentProducer"
         /// </summary>
         [TestMethod]
-        [TestCategory(TestTypeCategory.Quarantine)]
         [ExpectedException(typeof(OperationCanceledException))]
         public async Task ConcurrentMoveNextTryScheduleTestAsync()
         {

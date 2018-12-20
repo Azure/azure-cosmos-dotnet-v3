@@ -221,7 +221,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void ReadDocumentFromReadRegionWithRetry()
         {
             ReadDocumentFromReadRegionWithRetryAsync().Wait();

@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
 
     [TestClass]
-    [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
     public class CosmosItemTests : BaseCosmosClientHelper
     {
         private CosmosContainer Container = null;

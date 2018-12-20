@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
 
     [TestClass]
-    [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
     public class CosmosJsonSerializerTests : BaseCosmosClientHelper
     {
         private CosmosDefaultJsonSerializer jsonSerializer = null;

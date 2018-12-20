@@ -1152,7 +1152,6 @@ namespace Microsoft.Azure.Cosmos.Collections
         /// 
         /// </summary>
         [TestMethod]
-        [TestCategory(TestTypeCategory.Quarantine)]
         public void TestGetEnumeratorInvalid()
         {
             foreach (NameValueCollectionType type in NameValueCollectionTypes)

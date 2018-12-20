@@ -1716,7 +1716,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public async Task TestQueryMetricsRUPerPartition()
         {
             DocumentClient client = TestCommon.CreateClient(true);
