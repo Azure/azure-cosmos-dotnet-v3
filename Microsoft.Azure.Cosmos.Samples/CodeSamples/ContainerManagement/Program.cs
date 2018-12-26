@@ -1,9 +1,9 @@
 ﻿namespace Cosmos.Samples.Shared
 {
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Configuration;
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Configuration;
 
     class Program
     {
@@ -14,7 +14,8 @@
 
         private static CosmosDatabase database = null;
 
-        public static void Main(string[] args)
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        public static async Task Main(string[] args)
         {
             try
             {
@@ -39,7 +40,7 @@
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    Program.RunContainerDemo(client).GetAwaiter().GetResult();
+                    await Program.RunContainerDemo(client);
                 }
             }
             catch (CosmosException cre)

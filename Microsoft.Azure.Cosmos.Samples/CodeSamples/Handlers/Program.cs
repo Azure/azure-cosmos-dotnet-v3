@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using Cosmos.Samples.Handlers.Models;
-using Microsoft.Azure.Cosmos;
-using Microsoft.Extensions.Configuration;
-
-namespace Cosmos.Samples.Handlers
+﻿namespace Cosmos.Samples.Handlers
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using Cosmos.Samples.Handlers.Models;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Configuration;
+
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
     // 
@@ -25,9 +25,10 @@ namespace Cosmos.Samples.Handlers
     // 3. ThrottlingHandler that will use Polly to handle retries on 429s
 
 
-    class Program
+    public class Program
     {
-        static async Task Main(string[] args)
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        public static async Task Main(string[] args)
         {
             IConfigurationRoot configuration = new ConfigurationBuilder()
                    .AddJsonFile("appSettings.json")
@@ -44,26 +45,26 @@ namespace Cosmos.Samples.Handlers
             {
                 throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
             }
-            
+
             // Connecting to Emulator. Change if you want a live account
-            var cosmosConfiguration = new CosmosConfiguration(endpoint,
+            CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(endpoint,
                 authKey);
 
             cosmosConfiguration.AddCustomHandlers(
-                new LoggingHandler(), 
+                new LoggingHandler(),
                 new ConcurrencyHandler(),
                 new ThrottlingHandler()
                 );
 
-            var client = new CosmosClient(cosmosConfiguration);
+            CosmosClient client = new CosmosClient(cosmosConfiguration);
 
             CosmosDatabaseResponse databaseResponse = await client.Databases.CreateDatabaseIfNotExistsAsync("mydb");
             CosmosDatabase database = databaseResponse.Database;
-            
-            var containerResponse = await database.Containers.CreateContainerIfNotExistsAsync("mycoll", "/id");
-            var container = containerResponse.Container;
 
-            var item = new Item()
+            CosmosContainerResponse containerResponse = await database.Containers.CreateContainerIfNotExistsAsync("mycoll", "/id");
+            CosmosContainer container = containerResponse.Container;
+
+            Item item = new Item()
             {
                 Id = Guid.NewGuid().ToString(),
                 Name = "Test Item",
@@ -80,20 +81,20 @@ namespace Cosmos.Samples.Handlers
             await container.Items.ReplaceItemAsync<Item>(item.Id, item.Id, item);
 
             // Querying
-            var query = container.Items.CreateItemQuery<Item>(new CosmosSqlQueryDefinition("SELECT * FROM c"), maxConcurrency: 1);
+            CosmosResultSetIterator<Item> query = container.Items.CreateItemQuery<Item>(new CosmosSqlQueryDefinition("SELECT * FROM c"), maxConcurrency: 1);
             List<Item> results = new List<Item>();
             while (query.HasMoreResults)
             {
-                var response = await query.FetchNextSetAsync();
+                CosmosQueryResponse<Item> response = await query.FetchNextSetAsync();
 
                 results.AddRange(response.ToList());
             }
 
             // Read Item
 
-            var cosmosItemResponse = await container.Items.ReadItemAsync<Item>(item.Id, item.Id);
+            CosmosItemResponse<Item> cosmosItemResponse = await container.Items.ReadItemAsync<Item>(item.Id, item.Id);
 
-            var accessCondition = new AccessCondition
+            AccessCondition accessCondition = new AccessCondition
             {
                 Condition = cosmosItemResponse.ETag,
                 Type = AccessConditionType.IfMatch
@@ -101,7 +102,7 @@ namespace Cosmos.Samples.Handlers
 
             // Concurrency
 
-            var tasks = new List<Task<CosmosItemResponse<Item>>>();
+            List<Task<CosmosItemResponse<Item>>> tasks = new List<Task<CosmosItemResponse<Item>>>();
 
             tasks.Add(UpdateItemForConcurrency(container, accessCondition, item));
             tasks.Add(UpdateItemForConcurrency(container, accessCondition, item));

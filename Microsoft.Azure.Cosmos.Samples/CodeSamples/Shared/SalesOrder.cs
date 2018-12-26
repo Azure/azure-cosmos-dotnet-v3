@@ -1,7 +1,7 @@
 ﻿namespace Cosmos.Samples.Shared
 {
-    using Newtonsoft.Json;
     using System;
+    using Newtonsoft.Json;
 
     public class SalesOrder
     {
@@ -16,7 +16,7 @@
         [JsonProperty(PropertyName = "id")]
         public string Id { get; set; }
 
-        [JsonProperty(PropertyName="ponumber")]
+        [JsonProperty(PropertyName = "ponumber")]
         public string PurchaseOrderNumber { get; set; }
 
         // used to set expiration policy

@@ -25,7 +25,8 @@
         
         private static CosmosDatabase cosmosDatabase = null;
 
-        public static void Main(string[] args)
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        public static async Task Main(string[] args)
         {
             try
             {
@@ -50,7 +51,7 @@
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    Program.RunDemoAsync(client).GetAwaiter().GetResult();
+                    await Program.RunDemoAsync(client);
                 }
             }
             catch (CosmosException cre)

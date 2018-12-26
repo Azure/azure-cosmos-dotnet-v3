@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManagement", "Datab
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ContainerManagement", "ContainerManagement\ContainerManagement.csproj", "{6ACA3641-A6DB-4D19-AC3F-F43A69DFB52F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos", "..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj", "{23CF2D25-2705-4929-8341-6A6A11AFCF75}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ItemManagement", "ItemManagement\ItemManagement.csproj", "{FF1C9654-E125-47ED-8EC1-E82156D5EED3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Shared\Shared.csproj", "{5A9CFB9C-7261-4DE9-9CCB-A8A6D0207B83}"
@@ -35,10 +33,6 @@ Global
 		{6ACA3641-A6DB-4D19-AC3F-F43A69DFB52F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6ACA3641-A6DB-4D19-AC3F-F43A69DFB52F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6ACA3641-A6DB-4D19-AC3F-F43A69DFB52F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{23CF2D25-2705-4929-8341-6A6A11AFCF75}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{23CF2D25-2705-4929-8341-6A6A11AFCF75}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{23CF2D25-2705-4929-8341-6A6A11AFCF75}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{23CF2D25-2705-4929-8341-6A6A11AFCF75}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FF1C9654-E125-47ED-8EC1-E82156D5EED3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FF1C9654-E125-47ED-8EC1-E82156D5EED3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF1C9654-E125-47ED-8EC1-E82156D5EED3}.Release|Any CPU.ActiveCfg = Release|Any CPU
