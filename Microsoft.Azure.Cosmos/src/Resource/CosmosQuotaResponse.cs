@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Globalization;
 
     /// <summary>
     /// The Cosmos resource response. 
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                     if (keyValue.Length == 2)
                     {
                         string key = keyValue[0];
-                        double value = double.Parse(keyValue[1]);
+                        double value = double.Parse(keyValue[1], CultureInfo.InvariantCulture);
                         switch (key)
                         {
                             case DatabasesKey:

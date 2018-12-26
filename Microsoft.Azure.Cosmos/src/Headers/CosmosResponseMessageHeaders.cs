@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set
             {
-                this.RequestCharge = string.IsNullOrEmpty(value) ? 0 : double.Parse(value);
+                this.RequestCharge = string.IsNullOrEmpty(value) ? 0 : double.Parse(value, CultureInfo.InvariantCulture);
             }
         }
 
