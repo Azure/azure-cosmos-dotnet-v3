@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    SetOriginalContinuationToken(request, response, originalContinuation);
+                    this.SetOriginalContinuationToken(request, response, originalContinuation);
                 }
                 else
                 {
@@ -149,12 +149,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             catch (DocumentClientException ex)
             {
                 CosmosResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
-                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
             catch (AggregateException ex)
             {
-                SetOriginalContinuationToken(request, response, originalContinuation);
+                this.SetOriginalContinuationToken(request, response, originalContinuation);
 
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 

@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             return await this.ShouldRetryAsyncInternal(cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
                 cancellationToken,
-                () => this.nextRetryPolicy?.ShouldRetryAsync(cosmosResponseMessage, cancellationToken));
+                continueIfNotHandled: null);
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
@@ -111,7 +111,14 @@ namespace Microsoft.Azure.Cosmos
                 return ShouldRetryResult.RetryAfter(TimeSpan.FromSeconds(0));
             }
 
-            return await (continueIfNotHandled != null ? continueIfNotHandled() : Task.FromResult(ShouldRetryResult.NoRetry()));
+            if(continueIfNotHandled != null)
+            {
+                return await continueIfNotHandled() ?? ShouldRetryResult.NoRetry();
+            }
+            else
+            {
+                return await Task.FromResult(ShouldRetryResult.NoRetry());
+            }
         }
     }
 }

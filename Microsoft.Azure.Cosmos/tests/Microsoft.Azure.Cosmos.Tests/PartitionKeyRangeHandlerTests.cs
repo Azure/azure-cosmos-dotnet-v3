@@ -510,6 +510,36 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             Assert.IsNull(headers.Get(HttpConstants.HttpHeaders.Continuation));
         }
 
+        [TestMethod]
+        public async Task PartitionKeyRangeGoneRetryPolicyNextRetryPolicyDoesNotReturnNull()
+        {
+            Mock<IDocumentClientRetryPolicy> nextRetryPolicyMock = new Mock<IDocumentClientRetryPolicy>();
+            nextRetryPolicyMock.Setup(m => m.ShouldRetryAsync(It.IsAny<CosmosResponseMessage>(), It.IsAny<CancellationToken>())).Returns<Task<ShouldRetryResult>>(null);
+            Mock<PartitionKeyRangeGoneRetryPolicy> retryPolicyMock = new Mock<PartitionKeyRangeGoneRetryPolicy>(null, null, null, nextRetryPolicyMock.Object);
+
+            ShouldRetryResult exceptionResult = await retryPolicyMock.Object.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+
+            ShouldRetryResult messageResult = await retryPolicyMock.Object.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
+            Assert.IsNotNull(messageResult);
+        }
+
+        [TestMethod]
+        public async Task InvalidPartitionRetryPolicyNextRetryPolicyDoesNotReturnNull()
+        {
+            Mock<CollectionCache> cache = new Mock<CollectionCache>();
+            Mock<IDocumentClientRetryPolicy> nextRetryPolicyMock = new Mock<IDocumentClientRetryPolicy>();
+            nextRetryPolicyMock.Setup(m => m.ShouldRetryAsync(It.IsAny<CosmosResponseMessage>(), It.IsAny<CancellationToken>())).Returns<Task<ShouldRetryResult>>(null);
+            Mock<InvalidPartitionExceptionRetryPolicy> retryPolicyMock = new Mock<InvalidPartitionExceptionRetryPolicy>(cache.Object, nextRetryPolicyMock.Object);
+
+            ShouldRetryResult exceptionResult = await retryPolicyMock.Object.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+
+            retryPolicyMock = new Mock<InvalidPartitionExceptionRetryPolicy>(cache.Object, null);
+            ShouldRetryResult messageResult = await retryPolicyMock.Object.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
+            Assert.IsNotNull(messageResult);
+        }
+
         private Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock()
         {
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = new Mock<PartitionRoutingHelper>();
