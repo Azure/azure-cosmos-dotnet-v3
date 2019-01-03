@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends.Tests")]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends")]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests")]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 #endif
 
@@ -28,3 +29,5 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table" + AssemblyRef.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table.Tests" + AssemblyRef.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table.Tests" + AssemblyRef.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyRef.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyRef.TestPublicKey)]

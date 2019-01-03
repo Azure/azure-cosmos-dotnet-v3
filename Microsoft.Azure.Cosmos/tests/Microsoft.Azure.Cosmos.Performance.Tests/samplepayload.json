@@ -1,0 +1,33 @@
+﻿{
+  "id": "testid",
+  "lastName": "Andersen",
+  "parents": [
+    {
+      "firstName": "Thomas",
+      "relationship": "father"
+    },
+    {
+      "firstName": "Mary Kay",
+      "relationship": "mother"
+    }
+  ],
+  "children": [
+    {
+      "firstName": "Henriette Thaulow",
+      "gender": "female",
+      "grade": 5,
+      "pets": [
+        {
+          "givenName": "Fluffy",
+          "type": "Rabbit"
+        }
+      ]
+    }
+  ],
+  "location": {
+    "state": "WA",
+    "county": "King",
+    "city": "Seattle"
+  },
+  "isRegistered": true
+}

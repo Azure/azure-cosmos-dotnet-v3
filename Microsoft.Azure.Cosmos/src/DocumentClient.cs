@@ -636,6 +636,7 @@ namespace Microsoft.Azure.Cosmos
                       string authKey)
         {
             // do nothing 
+            this.ServiceEndpoint = serviceEndpoint;
         }
 
         internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync()
