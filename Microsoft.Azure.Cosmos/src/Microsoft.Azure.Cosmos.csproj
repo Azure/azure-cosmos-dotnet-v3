@@ -32,10 +32,8 @@
     <ShippingScope>External</ShippingScope>
     <SigningType>Product</SigningType>
     <DebugType>portable</DebugType>
-    <IncludeSymbols Condition=" '$(IsPublic)' == '1' ">false</IncludeSymbols>
-    <IncludeSymbols Condition=" '$(IsPublic)' == '0' Or '$(IsPublic)' == '' ">true</IncludeSymbols>
-    <IncludeSource Condition=" '$(IsPublic)' == '1' ">false</IncludeSource>
-    <IncludeSource Condition=" '$(IsPublic)' == '0' Or '$(IsPublic)' == '' ">true</IncludeSource>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
   </PropertyGroup>
