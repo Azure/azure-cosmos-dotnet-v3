@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosDefaultJsonSerializer : CosmosJsonSerializer
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
+        private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
 
         public override T FromStream<T>(Stream stream)
         {
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: Encoding.Default, bufferSize: 1024, leaveOpen: true))
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosDefaultJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
             {
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
