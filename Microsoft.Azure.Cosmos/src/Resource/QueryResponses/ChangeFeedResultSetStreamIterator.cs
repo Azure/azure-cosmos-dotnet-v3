@@ -34,19 +34,10 @@ namespace Microsoft.Azure.Cosmos
                 .ContinueWith(task =>
                 {
                     CosmosResponseMessage response = task.Result;
-                    this.continuationToken = response.Headers.Continuation;
-                    this.HasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(this.continuationToken, response.Headers.ContentLengthAsLong);
+                    this.continuationToken = response.Headers.ETag;
+                    this.HasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(this.continuationToken, response.StatusCode);
                     return response;
                 }, cancellationToken);
-        }
-
-        internal static bool GetHasMoreResults(string continuationToken, long contentLength)
-        {
-            // this logic might not be sufficient composite continuation token https://msdata.visualstudio.com/CosmosDB/SDK/_workitems/edit/269099
-            // in the case where this is a result set iterator for a change feed, not modified indicates that
-            // the enumeration is done for now.
-            return continuationToken != null &&
-                contentLength > 0;
         }
     }
 }

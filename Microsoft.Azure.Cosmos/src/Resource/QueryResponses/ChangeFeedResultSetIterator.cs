@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosResponseMessage.EnsureSuccessStatusCode();
 
                 string continuationToken = ChangeFeedResultSetStreamIterator.GetContinuationToken(cosmosResponseMessage);
-                bool hasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(continuationToken, cosmosResponseMessage.Headers.ContentLengthAsLong);
+                bool hasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
                 return CosmosQueryResponse<TInput>.CreateResponse<TInput>(
                     stream: cosmosResponseMessage.Content,
