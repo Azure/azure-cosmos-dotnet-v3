@@ -5,11 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB database account.
@@ -20,15 +17,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
-    /// The CosmosClient uses the <see cref="CosmosConfiguration"/> to get all the configuration values.
+    /// The CosmosClient uses the <see cref="CosmosClientConfiguration"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
-    /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
+    /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
     ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey")
-    ///     .UseCurrentRegion(LocationNames.EastUS2, LocationNames.WestUS);
+    ///     .UseCurrentRegion(LocationNames.EastUS2);
     /// 
-    /// using (CosmosClient cosmosClient = new CosmosClient(cosmosConfiguration))
+    /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
     ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
@@ -88,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public CosmosClient(string connectionString) :
-            this(new CosmosConfiguration(connectionString))
+            this(new CosmosClientConfiguration(connectionString))
         {
         }
 
@@ -113,43 +110,43 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(
             string accountEndPoint,
             string accountKey) :
-            this(new CosmosConfiguration(accountEndPoint, accountKey))
+            this(new CosmosClientConfiguration(accountEndPoint, accountKey))
         {
         }
 
         /// <summary>
-        /// Create a new CosmosClient with the cosmosConfiguration
+        /// Create a new CosmosClient with the cosmosClientConfiguration
         /// </summary>
-        /// <param name="cosmosConfiguration">The <see cref="CosmosConfiguration"/> used to initialize the cosmos client.</param>
+        /// <param name="cosmosClientConfiguration">The <see cref="CosmosClientConfiguration"/> used to initialize the cosmos client.</param>
         /// <example>
         /// This example creates a CosmosClient
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosConfiguration configuration = new CosmosConfiguration("accountEndpoint", "accountkey");
-        /// using (CosmosClient cosmosClient = new CosmosClient(configuration)
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey");
+        /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
         /// {
         ///     // Create a database and other CosmosClient operations
         /// }
         ///]]>
         /// </code>
         /// </example>
-        public CosmosClient(CosmosConfiguration cosmosConfiguration)
+        internal CosmosClient(CosmosClientConfiguration cosmosClientConfiguration)
         {
-            if (cosmosConfiguration == null)
+            if (cosmosClientConfiguration == null)
             {
-                throw new ArgumentNullException(nameof(cosmosConfiguration));
+                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
             }
 
             DocumentClient documentClient = new DocumentClient(
-                cosmosConfiguration.AccountEndPoint,
-                cosmosConfiguration.AccountKey,
-                apitype: cosmosConfiguration.ApiType,
-                sendingRequestEventArgs: cosmosConfiguration.SendingRequestEventArgs,
-                transportClientHandlerFactory: cosmosConfiguration.TransportClientHandlerFactory,
-                connectionPolicy: cosmosConfiguration.GetConnectionPolicy());
+                cosmosClientConfiguration.AccountEndPoint,
+                cosmosClientConfiguration.AccountKey,
+                apitype: cosmosClientConfiguration.ApiType,
+                sendingRequestEventArgs: cosmosClientConfiguration.SendingRequestEventArgs,
+                transportClientHandlerFactory: cosmosClientConfiguration.TransportClientHandlerFactory,
+                connectionPolicy: cosmosClientConfiguration.GetConnectionPolicy());
 
-            this.Init(
-                cosmosConfiguration,
+            Init(
+                cosmosClientConfiguration,
                 documentClient);
         }
 
@@ -157,12 +154,12 @@ namespace Microsoft.Azure.Cosmos
         /// Used for unit testing only.
         /// </summary>
         internal CosmosClient(
-            CosmosConfiguration cosmosConfiguration,
+            CosmosClientConfiguration cosmosClientConfiguration,
             DocumentClient documentClient)
         {
-            if (cosmosConfiguration == null)
+            if (cosmosClientConfiguration == null)
             {
-                throw new ArgumentNullException(nameof(cosmosConfiguration));
+                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
             }
 
             if (documentClient == null)
@@ -170,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(documentClient));
             }
 
-            this.Init(cosmosConfiguration, documentClient);
+            Init(cosmosClientConfiguration, documentClient);
         }
 
         /// <summary>
@@ -188,9 +185,9 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosDatabases Databases { get; private set; }
 
         /// <summary>
-        /// The <see cref="Cosmos.CosmosConfiguration"/> used initialize CosmosClient
+        /// The <see cref="Cosmos.CosmosClientConfiguration"/> used initialize CosmosClient
         /// </summary>
-        internal CosmosConfiguration CosmosConfiguration { get; private set; }
+        public virtual CosmosClientConfiguration Configuration { get; private set; }
 
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
@@ -198,8 +195,8 @@ namespace Microsoft.Azure.Cosmos
         internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
 
         internal CosmosResponseFactory ResponseFactory =>
-            new CosmosResponseFactory(this.CosmosConfiguration.CosmosJsonSerializer);
-        internal CosmosJsonSerializer CosmosJsonSerializer => this.CosmosConfiguration.CosmosJsonSerializer;
+            new CosmosResponseFactory(this.CosmosJsonSerializer);
+        internal CosmosJsonSerializer CosmosJsonSerializer { get; private set; }
 
         /// <summary>
         /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -209,21 +206,22 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<CosmosAccountSettings> GetAccountSettingsAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.CosmosConfiguration.AccountEndPoint);
+            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Configuration.AccountEndPoint);
         }
 
         internal void Init(
-            CosmosConfiguration configuration,
+            CosmosClientConfiguration configuration,
             DocumentClient documentClient)
         {
-            this.CosmosConfiguration = configuration;
+            this.Configuration = configuration;
             this.DocumentClient = documentClient;
+            this.CosmosJsonSerializer = new CosmosJsonSerializerWrapper(this.Configuration.CosmosJsonSerializer);
 
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                 this,
                 this.DocumentClient.RetryPolicy,
-                this.CosmosConfiguration.CustomHandlers
+                this.Configuration.CustomHandlers
             );
 
             // DocumentClient is not initialized with any consistency overrides so default is backend consistency
@@ -233,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
             this.Databases = new CosmosDatabases(this);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
-        
+
         /// <summary>
         /// Dispose of cosmos client
         /// </summary>
@@ -252,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public void Dispose()
         {
-            this.Dispose(true);
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
     }

@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetryHandlerHttpClientExceptionRefreshesLocations()
         {
             DocumentClient dc = new MockDocumentClient(RetryHandlerTests.TestUri, "test");
-            CosmosClient client = new CosmosClient(new CosmosConfiguration(RetryHandlerTests.TestUri.OriginalString, Guid.NewGuid().ToString()), dc);
+            CosmosClient client = new CosmosClient(new CosmosClientConfiguration(RetryHandlerTests.TestUri.OriginalString, Guid.NewGuid().ToString()), dc);
 
             Mock<IDocumentClientRetryPolicy> mockClientRetryPolicy = new Mock<IDocumentClientRetryPolicy>();
 

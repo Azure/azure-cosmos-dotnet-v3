@@ -22,17 +22,17 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
 
-        public static CosmosClient CreateMockCosmosClient(CosmosRequestHandler preProcessingHandler = null, CosmosConfiguration configuration = null)
+        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
-            CosmosConfiguration cosmosConfiguration =
-                configuration?.AddCustomHandlers(preProcessingHandler)
-                ?? new CosmosConfiguration("http://localhost", Guid.NewGuid().ToString())
-                    .AddCustomHandlers(preProcessingHandler);
+            
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            if (customizeClientBuilder != null)
+            {
+                customizeClientBuilder(cosmosClientBuilder);
+            }
 
-            return new CosmosClient(
-                cosmosConfiguration,
-                documentClient);
+            return cosmosClientBuilder.Build(documentClient);
         }
 
         public MockDocumentClient()

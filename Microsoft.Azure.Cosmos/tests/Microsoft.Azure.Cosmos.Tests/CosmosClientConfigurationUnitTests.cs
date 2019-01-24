@@ -5,13 +5,17 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Linq;
     using System.Net.Http;
+    using System.Reflection;
+    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
-    public class CosmosConfigurationUnitTests
+    public class CosmosClientConfigurationUnitTests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
         public const string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
@@ -31,9 +35,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
 
-            CosmosConfiguration configuration = new CosmosConfiguration(
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndPoint: endpoint,
                 accountKey: key);
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientConfiguration configuration = cosmosClient.Configuration;
 
             Assert.AreEqual(endpoint, configuration.AccountEndPoint.OriginalString, "AccountEndPoint did not save correctly");
             Assert.AreEqual(key, configuration.AccountKey, "AccountKey did not save correctly");
@@ -54,13 +61,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(configuration.MaxConnectionLimit, policy.MaxConnectionLimit);
             Assert.AreEqual(configuration.RequestTimeout, policy.RequestTimeout);
 
-            configuration.UseCurrentRegion(region)
+            cosmosClientBuilder.UseCurrentRegion(region)
                 .UseConnectionModeGateway(maxConnections)
                 .UseRequestTimeout(requestTimeout)
                 .UseUserAgentSuffix(userAgentSuffix)
                 .AddCustomHandlers(preProcessHandler)
                 .UseApiType(apiType)
                 .UseThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests);
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            configuration = cosmosClient.Configuration;
 
             //Verify all the values are updated
             Assert.AreEqual(region, configuration.CurrentRegion);
@@ -87,6 +97,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyCosmosClientConfigurationHasNoPublicSetMethods()
+        {
+            // All of the public properties and methods should be virtual to allow users to 
+            // create unit tests by mocking the different types.
+            var type = typeof(CosmosClientConfiguration);
+
+
+            var publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(x => x.GetSetMethod() != null && x.GetSetMethod().IsPublic).ToList();
+
+            Assert.IsFalse(publicProperties.Any(), $"CosmosClientConfiguration should be read only. These are public {string.Join(";", publicProperties.Select(x => x.Name))}");
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnBadDelegatingHandler()
         {
@@ -95,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Inner handler is required to be null to allow the client to connect it to other handlers
             handler.InnerHandler = innerHandler;
-            new CosmosConfiguration(CosmosConfigurationUnitTests.AccountEndpoint, "testKey")
+            new CosmosClientBuilder(CosmosClientConfigurationUnitTests.AccountEndpoint, "testKey")
                 .AddCustomHandlers(handler);
         }
 
@@ -103,14 +127,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullEndpoint()
         {
-            new CosmosConfiguration(null, "testKey");
+            new CosmosClientBuilder(null, "testKey");
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullConnectionString()
         {
-            new CosmosConfiguration(null);
+            new CosmosClientBuilder(null);
         }
 
         [TestMethod]
@@ -118,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnMissingAccountKeyInConnectionString()
         {
             string invalidConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;";
-            new CosmosConfiguration(invalidConnectionString);
+            new CosmosClientBuilder(invalidConnectionString);
         }
 
         [TestMethod]
@@ -126,15 +150,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnMissingAccountEndpointInConnectionString()
         {
             string invalidConnectionString = "AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            new CosmosConfiguration(invalidConnectionString);
+            new CosmosClientBuilder(invalidConnectionString);
         }
 
         [TestMethod]
         public void AssertJsonSerializer()
         {
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            var configuration = new CosmosConfiguration(connectionString);
-            Assert.IsInstanceOfType(configuration.CosmosJsonSerializer, typeof(CosmosJsonSerializerWrapper));
+            var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
+            var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            Assert.IsInstanceOfType(cosmosClient.CosmosJsonSerializer, typeof(CosmosJsonSerializerWrapper));
         }
     }
 }

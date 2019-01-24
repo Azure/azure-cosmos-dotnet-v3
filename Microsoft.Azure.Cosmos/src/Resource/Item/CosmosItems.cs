@@ -1209,7 +1209,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new NotImplementedException(nameof(querySpec));
             }
 
-            OperationType queryOperationType = this.client.CosmosConfiguration.ConnectionMode == ConnectionMode.Direct ? OperationType.Query : OperationType.SqlQuery;
+            OperationType queryOperationType = this.client.Configuration.ConnectionMode == ConnectionMode.Direct ? OperationType.Query : OperationType.SqlQuery;
             Stream streamPayload = this.cosmosJsonSerializer.ToStream(querySpec);
             return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
                 client: this.container.Database.Client,

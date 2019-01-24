@@ -47,9 +47,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string propertyKey = "Test";
             testHandler.UpdateRequestMessage = x => x.Properties[propertyKey] = randomGuid;
 
-            CosmosConfiguration configuration = TestCommon.GetDefaultConfiguration()
-             .AddCustomHandlers(testHandler);
-            CosmosClient customClient = TestCommon.CreateCosmosClient(configuration);
+            CosmosClient customClient = TestCommon.CreateCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             ToDoActivity testItem = CreateRandomToDoActivity();
             using (CosmosResponseMessage response = await customClient.Databases[this.database.Id].Containers[this.Container.Id].Items.CreateItemStreamAsync(

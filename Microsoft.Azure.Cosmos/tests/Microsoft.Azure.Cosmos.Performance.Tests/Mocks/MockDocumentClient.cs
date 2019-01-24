@@ -21,19 +21,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
 
-        public static CosmosClient CreateMockCosmosClient(CosmosRequestHandler preProcessingHandler = null, CosmosConfiguration configuration = null)
+        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
-            CosmosConfiguration cosmosConfiguration =
-                configuration?.AddCustomHandlers(preProcessingHandler)
-                ?? new CosmosConfiguration("http://localhost", Guid.NewGuid().ToString())
-                    .AddCustomHandlers(preProcessingHandler);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            cosmosClientBuilder.UseConnectionModeDirect();
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
-            cosmosConfiguration.UseConnectionModeDirect();
-
-            return new CosmosClient(
-                cosmosConfiguration,
-                documentClient);
+            return cosmosClientBuilder.Build(documentClient);
         }
 
         public MockDocumentClient()

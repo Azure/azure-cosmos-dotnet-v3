@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
-        private CosmosRequestHandler[] customHandlers;
+        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
         private CosmosRequestHandler retryHandler;
         private readonly CosmosRequestHandler invalidPartitionExceptionRetryHandler;
         private readonly CosmosRequestHandler transportHandler;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         public ClientPipelineBuilder(
             CosmosClient client,
             IRetryPolicyFactory retryPolicyFactory,
-            CosmosRequestHandler[] customHandlers)
+            ReadOnlyCollection<CosmosRequestHandler> customHandlers)
         {
             this.client = client;
             this.transportHandler = new TransportHandler(client);
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.AddCustomHandlers(customHandlers);
         }
 
-        internal CosmosRequestHandler[] CustomHandlers
+        internal ReadOnlyCollection<CosmosRequestHandler> CustomHandlers
         {
             get => this.customHandlers;
             private set
@@ -93,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        private ClientPipelineBuilder AddCustomHandlers(CosmosRequestHandler[] customHandlers)
+        private ClientPipelineBuilder AddCustomHandlers(ReadOnlyCollection<CosmosRequestHandler> customHandlers)
         {
             this.CustomHandlers = customHandlers;
             return this;
