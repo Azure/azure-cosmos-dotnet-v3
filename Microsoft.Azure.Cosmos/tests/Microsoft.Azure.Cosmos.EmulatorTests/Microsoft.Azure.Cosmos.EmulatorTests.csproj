@@ -27,6 +27,10 @@
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.8.11" />
     <PackageReference Include="System.Reflection" Version="4.3.0" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <RuntimeFrameworkVersion>2.1.1</RuntimeFrameworkVersion>
+  </PropertyGroup>
   
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[3.0.0.1-preview,)" />
