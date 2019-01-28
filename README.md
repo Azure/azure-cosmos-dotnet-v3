@@ -1,4 +1,19 @@
 
+# Microsoft Azure Cosmos DB .NET SDK Version 3.0
+This project provides a client tools or utilities in .NET that makes it easy to interact with Azure Cosmos DB. Azure cosmos DB is published with nuget name [Microsoft.Azure.Cosmos](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/). 
+
+## SDK Public Preview announcement
+https://azure.microsoft.com/en-us/blog/azure-cosmos-dotnet-sdk-version-3-0-now-in-public-preview/
+   
+## SDK release notes
+https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md
+
+https://docs.microsoft.com/en-us/dotnet/api/microsoft.azure.cosmos?view=azure-dotnet-preview
+
+## Samples
+https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/CodeSamples is a good starting point.
+
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
