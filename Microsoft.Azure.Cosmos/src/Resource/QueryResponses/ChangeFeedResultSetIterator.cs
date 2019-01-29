@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Net;
+
     internal class ChangeFeedResultSetIterator<T> : CosmosDefaultResultSetIterator<T>
     {
         internal ChangeFeedResultSetIterator(
@@ -21,10 +23,14 @@ namespace Microsoft.Azure.Cosmos
         {
             using (cosmosResponseMessage)
             {
-                // Throw the exception if the query failed.
-                cosmosResponseMessage.EnsureSuccessStatusCode();
+                // Throw the exception if the query failed: EnsureSuccessStatusCode only
+                // validates 200-299. 304 is valid for Changefeed so do not throw on that.
+                if (cosmosResponseMessage.StatusCode != HttpStatusCode.NotModified)
+                {
+                    cosmosResponseMessage.EnsureSuccessStatusCode();
+                }
 
-                string continuationToken = ChangeFeedResultSetStreamIterator.GetContinuationToken(cosmosResponseMessage);
+                string continuationToken = cosmosResponseMessage.Headers.ETag;
                 bool hasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
                 return CosmosQueryResponse<TInput>.CreateResponse<TInput>(

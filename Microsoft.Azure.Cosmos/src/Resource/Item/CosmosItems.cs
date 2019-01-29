@@ -1197,11 +1197,11 @@ namespace Microsoft.Azure.Cosmos
 
             Uri resourceUri = this.container.LinkUri;
             Tuple<object, SqlQuerySpec> cxt = (Tuple<object, SqlQuerySpec>)state;
-            object partitonKey = cxt.Item1;
+            object partitionKey = cxt.Item1;
             SqlQuerySpec querySpec = cxt.Item2;
-            if (partitonKey == null)
+            if (partitionKey == null && options?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKey) == false)
             {
-                throw new NotImplementedException(nameof(partitonKey));
+                throw new NotImplementedException(nameof(partitionKey));
             }
 
             if (querySpec == null)
@@ -1223,7 +1223,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => response,
-                partitionKey: partitonKey,
+                partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
         }
