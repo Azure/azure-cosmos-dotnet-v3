@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
+    using System.Linq;
+    using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
+    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     /// <summary>
     /// Maintains a map from parameters to expressions.
@@ -35,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 throw new InvalidOperationException("Substitution with self attempted");
             }
-            
+
             this.substitutionTable.Add(parameter, with);
         }
 
@@ -45,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 return this.substitutionTable[parameter];
             }
-            
+
             return null;
         }
 
@@ -61,31 +64,41 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Binding for a single parameter.
         /// </summary>
-        internal sealed class Binding
+        public sealed class Binding
         {
             /// <summary>
             /// Parameter defined by FROM clause
             /// </summary>
             public ParameterExpression Parameter;
+
             /// <summary>
             /// How parameter is defined (may be null).  
             /// </summary>
             public SqlCollection ParameterDefinition;
+
             /// <summary>
             /// If true this corresponds to the clause `Parameter IN ParameterDefinition'
             /// else this corresponds to the clause `ParameterDefinition Parameter'
             /// </summary>
             public bool IsInCollection;
 
-            public Binding(ParameterExpression parameter, SqlCollection collection, bool isInCollection)
+            /// <summary>
+            /// True if a binding should be an input paramter for the next transformation. 
+            /// E.g. in Select(f -> f.Children).Select(), if the lambda's translation is
+            /// a subquery SELECT VALUE ARRAY() with alias v0 then v0 should be the input of the second Select.
+            /// </summary>
+            public bool IsInputParameter;
+
+            public Binding(ParameterExpression parameter, SqlCollection collection, bool isInCollection, bool isInputParameter = true)
             {
                 this.ParameterDefinition = collection;
                 this.Parameter = parameter;
                 this.IsInCollection = isInCollection;
+                this.IsInputParameter = isInputParameter;
 
                 if (isInCollection && collection == null)
                 {
-                    throw new ArgumentNullException("def");
+                    throw new ArgumentNullException($"{nameof(collection)} cannot be null for in-collection parameter.");
                 }
             }
         }
@@ -119,9 +132,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new InvalidOperationException("First parameter already set");
             }
 
-            var newParam = Utilities.NewParameter(parameterName, parameterType, inScope);
+            var newParam = Expression.Parameter(parameterType, parameterName);
             inScope.Add(newParam);
-            Binding def = new Binding(newParam, null, false);
+            Binding def = new Binding(newParam, collection: null, isInCollection: false);
             this.ParameterDefinitions.Add(def);
             return newParam;
         }
@@ -142,8 +155,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The input parameter.</returns>
         public ParameterExpression GetInputParameter()
         {
+            int i = this.ParameterDefinitions.Count - 1;
+            while (i > 0 && !this.ParameterDefinitions[i].IsInputParameter) i--;
+
             // always the first one to be set.
-            return this.ParameterDefinitions[this.ParameterDefinitions.Count - 1].Parameter;
+            return i >= 0 ? this.ParameterDefinitions[i].Parameter : null;
         }
     }
 
@@ -156,6 +172,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Set of parameters in scope at any point; used to generate fresh parameter names if necessary.
         /// </summary>
         public HashSet<ParameterExpression> InScope;
+        /// <summary>
+        /// Query that is being assembled.
+        /// </summary>
+        public QueryUnderConstruction currentQuery;
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
@@ -174,9 +194,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         private List<Collection> collectionStack;
         /// <summary>
-        /// Query that is being assembled.
+        /// The stack of subquery binding information.
         /// </summary>
-        public QueryUnderConstruction currentQuery;
+
+        private Stack<SubqueryBinding> subqueryBindingStack;
 
         public TranslationContext()
         {
@@ -185,7 +206,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.methodStack = new List<MethodCallExpression>();
             this.lambdaParametersStack = new List<ParameterExpression>();
             this.collectionStack = new List<Collection>();
-            this.currentQuery = new QueryUnderConstruction();
+            this.currentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
+            this.subqueryBindingStack = new Stack<SubqueryBinding>();
         }
 
         public Expression LookupSubstitution(ParameterExpression parameter)
@@ -197,25 +219,30 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             return Utilities.NewParameter(baseParameterName, parameterType, this.InScope);
         }
-        
+
+        public Func<string, ParameterExpression> GetGenFreshParameterFunc()
+        {
+            return (paramName) => this.GenFreshParameter(typeof(object), paramName);
+        }
+
         /// <summary>
         /// Called when visiting a lambda with one parameter.
         /// Binds this parameter with the last collection visited.
         /// </summary>
         /// <param name="parameter">New parameter.</param>
-        public void PushParameter(ParameterExpression parameter)
+        /// <param name="shouldBeOnNewQuery">Indicate if the parameter should be in a new QueryUnderConstruction clause</param>
+        public void PushParameter(ParameterExpression parameter, bool shouldBeOnNewQuery)
         {
             this.lambdaParametersStack.Add(parameter);
-            this.InScope.Add(parameter);
 
             Collection last = this.collectionStack[this.collectionStack.Count - 1];
-            if (last.isOuter) 
+            if (last.isOuter)
             {
                 // substitute
-                var inputParam = this.GetInputParameter();
+                var inputParam = this.currentQuery.GetInputParameterInContext(shouldBeOnNewQuery);
                 this.substitutions.AddSubstitution(parameter, inputParam);
             }
-            else 
+            else
             {
                 this.currentQuery.Bind(parameter, last.inner);
             }
@@ -227,7 +254,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         public void PopParameter()
         {
             ParameterExpression last = this.lambdaParametersStack[this.lambdaParametersStack.Count - 1];
-            this.InScope.Remove(last);
             this.lambdaParametersStack.RemoveAt(this.lambdaParametersStack.Count - 1);
         }
 
@@ -254,6 +280,19 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Return the top method in the method stack
+        /// This is used only to determine the parameter name that the user provides in the lamda expression
+        /// for readability purpose.
+        /// </summary>
+        /// <returns></returns>
+        public MethodCallExpression PeekMethod()
+        {
+            return (this.methodStack.Count > 0) ?
+                this.methodStack[this.methodStack.Count - 1] :
+                null;
+        }
+
+        /// <summary>
         /// Called when visiting a LINQ Method call with the input collection of the method.
         /// </summary>
         /// <param name="collection">Collection that is the input to a LINQ method.</param>
@@ -263,13 +302,18 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 throw new ArgumentNullException("collection");
             }
-            
+
             this.collectionStack.Add(collection);
         }
 
         public void PopCollection()
         {
             this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
+        }
+
+        public Collection PeekCollection()
+        {
+            return this.collectionStack.Count > 0 ? this.collectionStack[this.collectionStack.Count - 1] : null;
         }
 
         /// <summary>
@@ -282,11 +326,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.currentQuery.fromParameters.SetInputParameter(type, name, this.InScope);
         }
 
-        public ParameterExpression GetInputParameter()
-        {
-            return this.currentQuery.fromParameters.GetInputParameter();
-        }
-
         /// <summary>
         /// Sets the parameter used by the this.fromClause if it is not already set.
         /// </summary>
@@ -294,8 +333,95 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="collection">Collection to bind parameter to.</param>
         public void SetFromParameter(ParameterExpression parameter, SqlCollection collection)
         {
-            FromParameterBindings.Binding binding = new FromParameterBindings.Binding(parameter, collection, true);
+            Binding binding = new Binding(parameter, collection, isInCollection: true);
             this.currentQuery.fromParameters.Add(binding);
+        }
+
+        /// <summary>
+        /// Gets whether the context is currently in a Select method at top level or not.
+        /// Used to determine if a paramter should be an input parameter.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsInMainBranchSelect()
+        {
+            if (this.methodStack.Count == 0) return false;
+
+            bool isPositive = true;
+            string bottomMethod = this.methodStack[0].ToString();
+            for (int i = 1; i < this.methodStack.Count; ++i)
+            {
+                string currentMethod = this.methodStack[i].ToString();
+                if (!bottomMethod.StartsWith(currentMethod, StringComparison.Ordinal))
+                {
+                    isPositive = false;
+                    break;
+                }
+
+                bottomMethod = currentMethod;
+            }
+
+            string topMethodName = this.methodStack[this.methodStack.Count - 1].Method.Name;
+            return isPositive && (topMethodName.Equals(LinqMethods.Select) || topMethodName.Equals(LinqMethods.SelectMany));
+        }
+
+        public void PushSubqueryBinding(bool shouldBeOnNewQuery)
+        {
+            this.subqueryBindingStack.Push(new SubqueryBinding(shouldBeOnNewQuery));
+        }
+
+        public SubqueryBinding PopSubqueryBinding()
+        {
+            if (this.subqueryBindingStack.Count == 0)
+            {
+                throw new InvalidOperationException("Unexpected empty subquery binding stack.");
+            }
+
+            return this.subqueryBindingStack.Pop();
+        }
+
+        public SubqueryBinding CurrentSubqueryBinding
+        {
+            get 
+            {
+                if (this.subqueryBindingStack.Count == 0)
+                {
+                    throw new InvalidOperationException("Unexpected empty subquery binding stack.");
+                }
+
+                return this.subqueryBindingStack.Peek();
+            }
+        }
+
+        public class SubqueryBinding
+        {
+            public static SubqueryBinding EmptySubqueryBinding = new SubqueryBinding(false);
+
+            /// <summary>
+            /// Indicates if the current query should be on a new QueryUnderConstruction
+            /// </summary>
+            public bool ShouldBeOnNewQuery { get; set; }
+            /// <summary>
+            /// Indicates the new bindings that are introduced when visiting the subquery
+            /// </summary>
+            public List<Binding> NewBindings { get; private set; }
+
+            public SubqueryBinding(bool shouldBeOnNewQuery)
+            {
+                this.ShouldBeOnNewQuery = shouldBeOnNewQuery;
+                this.NewBindings = new List<Binding>();
+            }
+
+            /// <summary>
+            /// Consume all the bindings
+            /// </summary>
+            /// <returns>All the current bindings</returns>
+            /// <remarks>The binding list is reset after this operation.</remarks>
+            public List<Binding> TakeBindings()
+            {
+                List<Binding> bindings = this.NewBindings;
+                this.NewBindings = new List<Binding>();
+                return bindings;
+            }
         }
     }
 

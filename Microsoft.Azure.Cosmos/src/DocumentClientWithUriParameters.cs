@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentCollectionUri");
             }
 
-            IDocumentClientRetryPolicy retryPolicyInstance = this.retryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceDocumentCollectionPrivateAsync(
                 documentCollection, 
                 options, 
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("storedProcedureUri");
             }
 
-            IDocumentClientRetryPolicy retryPolicyInstance = this.retryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceStoredProcedurePrivateAsync(
                 storedProcedure, 
                 options, 
@@ -445,7 +445,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("triggerUri");
             }
 
-            IDocumentClientRetryPolicy retryPolicyInstance = this.retryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceTriggerPrivateAsync(trigger, options, retryPolicyInstance, triggerUri.OriginalString), retryPolicyInstance);
         }
 
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("userDefinedFunctionUri");
             }
 
-            IDocumentClientRetryPolicy retryPolicyInstance = this.retryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceUserDefinedFunctionPrivateAsync(function, options, retryPolicyInstance, userDefinedFunctionUri.OriginalString), retryPolicyInstance);
        }
 

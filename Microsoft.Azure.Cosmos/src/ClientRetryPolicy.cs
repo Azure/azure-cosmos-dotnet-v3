@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -66,11 +65,11 @@ namespace Microsoft.Azure.Cosmos
             if (httpException != null)
             {
                 DefaultTrace.TraceWarning("Endpoint not reachable. Refresh cache and retry");
-                return this.ShouldRetryOnEndpointFailureAsync(this.isReadRequest);
+                return this.ShouldRetryOnEndpointFailureAsync(this.isReadRequest, false);
             }
 
             DocumentClientException clientException = exception as DocumentClientException;
-            return this.ShouldRetryAsyncInternal(clientException?.StatusCode,
+            return this.ShouldRetryInternalAsync(clientException?.StatusCode,
                 clientException?.GetSubStatus(),
                 () => this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken));
         }
@@ -82,13 +81,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
+            CosmosResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             this.retryContext = null;
 
-            return this.ShouldRetryAsyncInternal(cosmosResponseMessage?.StatusCode,
+            return this.ShouldRetryInternalAsync(cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
                 () => this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken));
         }
@@ -110,7 +109,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 // set location-based routing directive based on request retry context
                 request.RequestContext.RouteToLocation(this.retryContext.RetryCount, this.retryContext.RetryRequestOnPreferredLocations);
-                request.ClearSessionTokenOnSessionReadFailure = this.retryContext.ClearSessionTokenOnSessionNotAvailable;
             }
 
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
@@ -119,9 +117,9 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.RouteToLocation(this.locationEndpoint);
         }
 
-        private Task<ShouldRetryResult> ShouldRetryAsyncInternal(
-            HttpStatusCode? statusCode, 
-            SubStatusCodes? subStatusCode, 
+        private Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
             Func<Task<ShouldRetryResult>> throttlingRetry)
         {
             if (!statusCode.HasValue
@@ -136,16 +134,16 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
                 DefaultTrace.TraceWarning("Endpoint not writable. Refresh cache and retry");
-                return this.ShouldRetryOnEndpointFailureAsync(false);
+                return this.ShouldRetryOnEndpointFailureAsync(false, true);
             }
 
             // Regional endpoint is not available yet for reads (e.g. add/ online of region is in progress)
             if (statusCode == HttpStatusCode.Forbidden 
-                && subStatusCode == SubStatusCodes.DatabaseAccountNotFound 
-                && this.isReadRequest)
+                && subStatusCode == SubStatusCodes.DatabaseAccountNotFound
+                && (this.isReadRequest || this.canUseMultipleWriteLocations))
             {
                 DefaultTrace.TraceWarning("Endpoint not available for reads. Refresh cache and retry");
-                return this.ShouldRetryOnEndpointFailureAsync(true);
+                return this.ShouldRetryOnEndpointFailureAsync(true, false);
             }
 
             if (statusCode == HttpStatusCode.NotFound 
@@ -157,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
             return throttlingRetry();
         }
 
-        private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(bool isReadRequest)
+        private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(bool isReadRequest, bool forceRefresh)
         {
             if (!this.enableEndpointDiscovery || this.failoverRetryCount > MaxRetryCount)
             {
@@ -167,17 +165,20 @@ namespace Microsoft.Azure.Cosmos
 
             this.failoverRetryCount++;
 
-            if (this.isReadRequest)
+            if (this.locationEndpoint != null)
             {
-                this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
-            }
-            else
-            {
-                this.globalEndpointManager.MarkEndpointUnavailableForWrite(this.locationEndpoint);
+                if (isReadRequest)
+                {
+                    this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
+                }
+                else
+                {
+                    this.globalEndpointManager.MarkEndpointUnavailableForWrite(this.locationEndpoint);
+                }
             }
 
             TimeSpan retryDelay = TimeSpan.Zero;
-            if (!this.isReadRequest)
+            if (!isReadRequest)
             {
                 DefaultTrace.TraceInformation("Failover happening. retryCount {0}",  this.failoverRetryCount);
 
@@ -192,13 +193,12 @@ namespace Microsoft.Azure.Cosmos
                 retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
             }
 
-            await this.globalEndpointManager.RefreshLocationAsync(null);
+            await this.globalEndpointManager.RefreshLocationAsync(null, forceRefresh);
 
             this.retryContext = new RetryContext
             {
                 RetryCount = this.failoverRetryCount,
-                RetryRequestOnPreferredLocations = false,
-                ClearSessionTokenOnSessionNotAvailable = false
+                RetryRequestOnPreferredLocations = false
             };
 
             return ShouldRetryResult.RetryAfter(retryDelay);
@@ -230,8 +230,7 @@ namespace Microsoft.Azure.Cosmos
                         this.retryContext = new RetryContext()
                         {
                             RetryCount = this.sessionTokenRetryCount - 1,
-                            RetryRequestOnPreferredLocations = this.sessionTokenRetryCount > 1,
-                            ClearSessionTokenOnSessionNotAvailable = (this.sessionTokenRetryCount == endpoints.Count) // clear on last attempt
+                            RetryRequestOnPreferredLocations = this.sessionTokenRetryCount > 1
                         };
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -250,8 +249,7 @@ namespace Microsoft.Azure.Cosmos
                         this.retryContext = new RetryContext
                         {
                             RetryCount = this.sessionTokenRetryCount - 1,
-                            RetryRequestOnPreferredLocations = false,
-                            ClearSessionTokenOnSessionNotAvailable = true,
+                            RetryRequestOnPreferredLocations = false
                         };
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -264,7 +262,6 @@ namespace Microsoft.Azure.Cosmos
         {
             public int RetryCount { get; set; }
             public bool RetryRequestOnPreferredLocations { get; set; }
-            public bool ClearSessionTokenOnSessionNotAvailable { get; set; }
         }
     }
 }

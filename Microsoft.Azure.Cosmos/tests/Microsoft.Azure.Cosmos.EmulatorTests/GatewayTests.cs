@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
-    using Microsoft.Azure.Documents.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.CSharp.RuntimeBinder;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json.Serialization;
-    using BulkInsertStoredProcedureOptions = Microsoft.Azure.Documents.Interop.Mongo.BulkInsertStoredProcedureOptions;
-    using BulkInsertStoredProcedureResult = Microsoft.Azure.Documents.Interop.Mongo.BulkInsertStoredProcedureResult;
+    using BulkInsertStoredProcedureOptions = Microsoft.Azure.Cosmos.Interop.Mongo.BulkInsertStoredProcedureOptions;
+    using BulkInsertStoredProcedureResult = Microsoft.Azure.Cosmos.Interop.Mongo.BulkInsertStoredProcedureResult;
 
     [TestClass]
     public class GatewayTests

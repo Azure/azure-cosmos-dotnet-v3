@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         public override ConsistencyLevel ConsistencyLevel => ConsistencyLevel.Session;
 
-        internal override RetryPolicy RetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
         {
@@ -82,8 +82,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
-                            It.IsAny<CancellationToken>(),
-                            It.IsAny<bool>()
+                            It.IsAny<DocumentServiceRequest>(),
+                            It.IsAny<bool>(),
+                            It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
 

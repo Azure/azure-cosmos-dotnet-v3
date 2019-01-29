@@ -1,34 +1,27 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlMemberIndexerScalarExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
-using System;
 namespace Microsoft.Azure.Cosmos.Sql
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
     internal sealed class SqlMemberIndexerScalarExpression : SqlScalarExpression
     {
-        public SqlScalarExpression MemberExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression IndexExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlMemberIndexerScalarExpression(
+        private SqlMemberIndexerScalarExpression(
             SqlScalarExpression memberExpression,
             SqlScalarExpression indexExpression)
             : base(SqlObjectKind.MemberIndexerScalarExpression)
         {
-            if(memberExpression == null)
+            if (memberExpression == null)
             {
                 throw new ArgumentNullException("memberExpression");
             }
 
-            if(indexExpression == null)
+            if (indexExpression == null)
             {
                 throw new ArgumentNullException("indexExpression");
             }
@@ -37,12 +30,51 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.IndexExpression = indexExpression;
         }
 
-        public override void AppendToBuilder(System.Text.StringBuilder builder)
+        public SqlScalarExpression MemberExpression
         {
-            this.MemberExpression.AppendToBuilder(builder);
-            builder.Append("[");
-            this.IndexExpression.AppendToBuilder(builder);
-            builder.Append("]");
+            get;
+        }
+
+        public SqlScalarExpression IndexExpression
+        {
+            get;
+        }
+
+        public static SqlMemberIndexerScalarExpression Create(
+            SqlScalarExpression memberExpression,
+            SqlScalarExpression indexExpression)
+        {
+            return new SqlMemberIndexerScalarExpression(memberExpression, indexExpression);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

@@ -1,33 +1,17 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlBinaryScalarExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Text;
     using System.Globalization;
+    using System.Text;
 
     internal sealed class SqlBinaryScalarExpression : SqlScalarExpression
     {
-        public SqlBinaryScalarOperatorKind OperatorKind
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression LeftExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression RightExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlBinaryScalarExpression(
+        private SqlBinaryScalarExpression(
             SqlBinaryScalarOperatorKind operatorKind,
             SqlScalarExpression leftExpression,
             SqlScalarExpression rightExpression)
@@ -37,83 +21,63 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 throw new ArgumentNullException();
             }
+
             this.OperatorKind = operatorKind;
             this.LeftExpression = leftExpression;
             this.RightExpression = rightExpression;
         }
 
-        public static void Append(SqlBinaryScalarOperatorKind kind, StringBuilder builder)
+        public SqlBinaryScalarOperatorKind OperatorKind
         {
-            switch (kind)
-            {
-                case SqlBinaryScalarOperatorKind.Add:
-                    builder.Append("+");
-                    break;
-                case SqlBinaryScalarOperatorKind.And:
-                    builder.Append("AND");
-                    break;
-                case SqlBinaryScalarOperatorKind.BitwiseAnd:
-                    builder.Append("&");
-                    break;
-                case SqlBinaryScalarOperatorKind.BitwiseOr:
-                    builder.Append("|");
-                    break;
-                case SqlBinaryScalarOperatorKind.BitwiseXor:
-                    builder.Append("^");
-                    break;
-                case SqlBinaryScalarOperatorKind.Coalesce:
-                    builder.Append("??");
-                    break;
-                case SqlBinaryScalarOperatorKind.Divide:
-                    builder.Append("/");
-                    break;
-                case SqlBinaryScalarOperatorKind.Equal:
-                    builder.Append("=");
-                    break;
-                case SqlBinaryScalarOperatorKind.GreaterThan:
-                    builder.Append(">");
-                    break;
-                case SqlBinaryScalarOperatorKind.GreaterThanOrEqual:
-                    builder.Append(">=");
-                    break;
-                case SqlBinaryScalarOperatorKind.LessThan:
-                    builder.Append("<");
-                    break;
-                case SqlBinaryScalarOperatorKind.LessThanOrEqual:
-                    builder.Append("<=");
-                    break;
-                case SqlBinaryScalarOperatorKind.Modulo:
-                    builder.Append("%");
-                    break;
-                case SqlBinaryScalarOperatorKind.Multiply:
-                    builder.Append("*");
-                    break;
-                case SqlBinaryScalarOperatorKind.NotEqual:
-                    builder.Append("!=");
-                    break;
-                case SqlBinaryScalarOperatorKind.Or:
-                    builder.Append("OR");
-                    break;
-                case SqlBinaryScalarOperatorKind.StringConcat:
-                    builder.Append("||");
-                    break;
-                case SqlBinaryScalarOperatorKind.Subtract:
-                    builder.Append("-");
-                    break;
-                default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind));
-            }
+            get;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlScalarExpression LeftExpression
         {
-            builder.Append("(");
-            this.LeftExpression.AppendToBuilder(builder);
-            builder.Append(" ");
-            SqlBinaryScalarExpression.Append(this.OperatorKind, builder);
-            builder.Append(" ");
-            this.RightExpression.AppendToBuilder(builder);
-            builder.Append(")");
+            get;
+        }
+
+        public SqlScalarExpression RightExpression
+        {
+            get;
+        }
+
+        public static SqlBinaryScalarExpression Create(
+            SqlBinaryScalarOperatorKind operatorKind,
+            SqlScalarExpression leftExpression,
+            SqlScalarExpression rightExpression)
+        {
+            return new SqlBinaryScalarExpression(operatorKind, leftExpression, rightExpression);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

@@ -78,22 +78,15 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 response = await this.InvokeAsync(request, request.ResourceType, cancellationToken);
-                if (response.StatusCode == HttpStatusCode.NotFound 
-                    || response.StatusCode == HttpStatusCode.PreconditionFailed
-                    || response.StatusCode == HttpStatusCode.Conflict)
-                {
-                    this.HandleUnsuccessfulStoreResponse(request,
-                        response.StatusCode,
-                        response.GetSubStatusCodes(),
-                        response.Headers);
-                }
             }
             catch (DocumentClientException exception)
             {
-                this.HandleUnsuccessfulStoreResponse(request,
-                    exception.StatusCode,
-                    exception.GetSubStatus(),
-                    exception.Headers);
+                if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
+                    (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
+                    || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                {
+                    this.CaptureSessionToken(request, exception.Headers);
+                }
 
                 throw;
             }
@@ -210,33 +203,22 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private void HandleUnsuccessfulStoreResponse(DocumentServiceRequest request, HttpStatusCode? statusCode, SubStatusCodes subStatusCode, INameValueCollection responseHeaders)
-        {
-            if (request.IsNameBased && statusCode == HttpStatusCode.NotFound &&
-                    subStatusCode == SubStatusCodes.ReadSessionNotAvailable &&
-                    request.ClearSessionTokenOnSessionReadFailure)
-            {
-                // Clear the session token, because the collection name might be reused.
-                DefaultTrace.TraceWarning("Clear the the token for named base request {0}", request.ResourceAddress);
-
-                this.sessionContainer.ClearToken(null, request.ResourceAddress, responseHeaders);
-            }
-            else
-            {
-                if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
-                    (statusCode == HttpStatusCode.PreconditionFailed || statusCode == HttpStatusCode.Conflict
-                    || (statusCode == HttpStatusCode.NotFound && subStatusCode != SubStatusCodes.ReadSessionNotAvailable)))
-                {
-                    this.CaptureSessionToken(request, responseHeaders);
-                }
-            }
-        }
-
         private void CaptureSessionToken(DocumentServiceRequest request, INameValueCollection responseHeaders)
         {
             if (request.ResourceType == ResourceType.Collection && request.OperationType == OperationType.Delete)
             {
-                this.sessionContainer.ClearToken(request, responseHeaders);
+                string resourceId;
+
+                if (request.IsNameBased)
+                {
+                    resourceId = responseHeaders[HttpConstants.HttpHeaders.OwnerId];
+                }
+                else
+                {
+                    resourceId = request.ResourceId;
+                }
+
+                this.sessionContainer.ClearTokenByResourceId(resourceId);
             }
             else
             {

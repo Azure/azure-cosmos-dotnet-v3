@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Documents.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
 
     /// <summary>
     /// Provides a document client extension to augment the named based routing API.
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <param name="client">document client.</param>
         /// <param name="owner">the document collection owner.</param>
-        /// <param name="documentCollection">the Microsoft.Azure.Documents.DocumentCollection object.</param>
+        /// <param name="documentCollection">the Microsoft.Azure.Cosmos.DocumentCollection object.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         public static Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionAsync(this DocumentClient client, CosmosDatabaseSettings owner, CosmosContainerSettings documentCollection, RequestOptions options = null)
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <param name="client">document client.</param>
         /// <param name="owner">the storedprocedure owner.</param>
-        /// <param name="storedProcedure">the Microsoft.Azure.Documents.StoredProcedure object.</param>
+        /// <param name="storedProcedure">the Microsoft.Azure.Cosmos.StoredProcedure object.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         public static Task<ResourceResponse<CosmosStoredProcedureSettings>> CreateStoredProcedureAsync(this DocumentClient client, CosmosContainerSettings owner, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <param name="client">document client.</param>
         /// <param name="owner">the collection owner.</param>
-        /// <param name="trigger">the Microsoft.Azure.Documents.Trigger object.</param>
+        /// <param name="trigger">the Microsoft.Azure.Cosmos.Trigger object.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         public static Task<ResourceResponse<CosmosTriggerSettings>> CreateTriggerAsync(this DocumentClient client, CosmosContainerSettings owner, CosmosTriggerSettings trigger, RequestOptions options = null)
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <param name="client">document client.</param>
         /// <param name="owner">the collection owner.</param>
-        /// <param name="function">the Microsoft.Azure.Documents.UserDefinedFunction object.</param>
+        /// <param name="function">the Microsoft.Azure.Cosmos.UserDefinedFunction object.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         public static Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> CreateUserDefinedFunctionAsync(this DocumentClient client, CosmosContainerSettings owner, CosmosUserDefinedFunctionSettings function, RequestOptions options = null)
@@ -499,17 +499,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure DocumentDB database service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.PartitionKeyRange"/> for a database account from the Azure DocumentDB database service as an asynchronous operation.
         /// </summary>
         /// <param name="client">The document client.</param>
         /// <param name="owner">The document collection to read partition key ranger for.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.PartitionKeyRange"/> containing the read resource record.
         /// </returns>
-        /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
-        /// <seealso cref="Microsoft.Azure.Documents.Client.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Documents.Client.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.PartitionKeyRange"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Client.FeedOptions"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Client.FeedResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public static Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
         {

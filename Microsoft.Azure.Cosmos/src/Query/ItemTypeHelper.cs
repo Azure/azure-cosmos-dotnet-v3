@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return (value == null || value is bool || value is string || IsNumeric(value));
         }
 
-        private static bool IsNumeric(object value)
+        public static bool IsNumeric(object value)
         {
             return value is sbyte
                     || value is byte

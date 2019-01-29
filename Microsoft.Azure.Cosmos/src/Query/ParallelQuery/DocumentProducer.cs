@@ -6,13 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections.Generic;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Collections.Generic;
+    using System.Diagnostics;
 
     internal sealed class DocumentProducer<T>
     {
@@ -28,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         private readonly Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc;
         private readonly Guid correlatedActivityId;
         private readonly Func<IDocumentClientRetryPolicy> createRetryPolicyFunc;
-        private readonly ProduceAsyncCompleteDelegate produceAsyncCompleteCallback;
+        private readonly ProduceAsyncCompleteDelegate postCompleteFetchCallback;
+        private readonly ProduceAsyncCompleteDelegate preCompleteFetchCallback;
 
         private readonly SchedulingStopwatch moveNextSchedulingMetrics;
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
@@ -52,54 +54,64 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             Func<DocumentProducer<T>, int> taskPriorityFunc,
             Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
-            ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
+            ProduceAsyncCompleteDelegate postCompletFetchCallback,
+            ProduceAsyncCompleteDelegate preCompleteFetchCallback,
             Guid correlatedActivityId,
             long initialPageSize = 50,
-            string initialContinuationToken = null)
+            string initialContinuationToken = null,
+            int? bufferCapacity = null)
         {
             if (taskScheduler == null)
             {
-                throw new ArgumentNullException("taskScheduler");
+                throw new ArgumentNullException(nameof(taskScheduler));
             }
 
             if (createRequestFunc == null)
             {
-                throw new ArgumentNullException("documentServiceRequest");
+                throw new ArgumentNullException(nameof(createRequestFunc));
             }
 
             if (targetRange == null)
             {
-                throw new ArgumentNullException("targetRange");
+                throw new ArgumentNullException(nameof(targetRange));
             }
 
             if (taskPriorityFunc == null)
             {
-                throw new ArgumentNullException("taskPriorityFunc");
+                throw new ArgumentNullException(nameof(taskPriorityFunc));
             }
 
             if (executeRequestFunc == null)
             {
-                throw new ArgumentNullException("executeRequestFunc");
+                throw new ArgumentNullException(nameof(executeRequestFunc));
             }
 
             if (createRetryPolicyFunc == null)
             {
-                throw new ArgumentNullException("createRetryPolicyFunc");
+                throw new ArgumentNullException(nameof(createRetryPolicyFunc));
             }
 
-            if (produceAsyncCompleteCallback == null)
+            if (postCompletFetchCallback == null)
             {
-                throw new ArgumentNullException("produceAsyncCallback");
+                throw new ArgumentNullException(nameof(postCompletFetchCallback));
+            }
+
+            if (preCompleteFetchCallback == null)
+            {
+                throw new ArgumentNullException(nameof(preCompleteFetchCallback));
             }
 
             this.taskScheduler = taskScheduler;
-            this.itemBuffer = new AsyncCollection<FetchResult>();
+            this.itemBuffer = bufferCapacity.HasValue ? 
+                new AsyncCollection<FetchResult>(bufferCapacity.Value) 
+                : new AsyncCollection<FetchResult>();
             this.createRequestFunc = createRequestFunc;
             this.targetRange = targetRange;
             this.taskPriorityFunc = taskPriorityFunc;
             this.createRetryPolicyFunc = createRetryPolicyFunc;
             this.executeRequestFunc = executeRequestFunc;
-            this.produceAsyncCompleteCallback = produceAsyncCompleteCallback;
+            this.postCompleteFetchCallback = postCompletFetchCallback;
+            this.preCompleteFetchCallback = preCompleteFetchCallback;
             this.PageSize = initialPageSize;
             if ((int)this.PageSize < 0)
             {
@@ -119,10 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 
         public delegate void ProduceAsyncCompleteDelegate(
             DocumentProducer<T> producer,
-            int size,
-            double resourceUnitUsage,
-            QueryMetrics queryMetrics,
-            long responseLengthBytes,
+            FetchMetadata fetchMetadata,
             CancellationToken token);
 
         public int BufferedItemCount
@@ -224,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             get;
             private set;
         }
-
+        
         private bool ShouldFetch
         {
             get
@@ -384,14 +393,16 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         {
             // TODO: This workflow could be simplified.
             FetchResult exceptionFetchResult = null;
+            FetchMetadata fetchMetadata = null;
             try
             {
                 this.fetchSchedulingMetrics.Start();
                 this.fetchExecutionRangeAccumulator.BeginFetchRange();
                 FeedResponse<T> feedResponse = null;
-                double requestCharge = 0;
-                long responseLengthBytes = 0;
-                QueryMetrics queryMetrics = QueryMetrics.Zero;
+                fetchMetadata = new FetchMetadata();
+                fetchMetadata.ResourceUnitUsage = 0;
+                fetchMetadata.TotalResponseLengthBytes = 0;
+                fetchMetadata.QueryMetrics = QueryMetrics.Zero;
                 do
                 {
                     int pageSize = (int)Math.Min(this.PageSize, (long)int.MaxValue);
@@ -399,6 +410,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                     Debug.Assert(pageSize >= 0, string.Format("pageSize was negative ... this.PageSize: {0}", this.PageSize));
                     using (DocumentServiceRequest request = this.createRequestFunc(this.CurrentBackendContinuationToken, pageSize))
                     {
+                        // BUG: retryPolicyInstance shound not be shared betweet different requests
                         retryPolicyInstance = retryPolicyInstance ?? this.createRetryPolicyFunc();
                         retryPolicyInstance.OnBeforeSendRequest(request);
 
@@ -408,7 +420,8 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                         {
                             cancellationToken.ThrowIfCancellationRequested();
                             feedResponse = await this.executeRequestFunc(request, cancellationToken);
-                            this.fetchExecutionRangeAccumulator.EndFetchRange(feedResponse.Count, Interlocked.Read(ref this.retries));
+                            this.fetchExecutionRangeAccumulator.EndFetchRange(feedResponse.ActivityId, feedResponse.Count, Interlocked.Read(ref this.retries));
+                            this.fetchSchedulingMetrics.Stop();
                             this.ActivityId = Guid.Parse(feedResponse.ActivityId);
                         }
                         catch (Exception ex)
@@ -429,16 +442,17 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                             return this;
                         }
 
-                        requestCharge += feedResponse.RequestCharge;
-                        responseLengthBytes += feedResponse.ResponseLengthBytes;
+                        fetchMetadata.ResourceUnitUsage += feedResponse.RequestCharge;
+                        fetchMetadata.TotalResponseLengthBytes += feedResponse.ResponseLengthBytes;
+                        fetchMetadata.TotalItemsFetched += feedResponse.Count;
+
                         if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
                         {
-                            queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
+                            fetchMetadata.QueryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
                                 feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
-                                new ClientSideMetrics(this.retries, requestCharge,
+                                new ClientSideMetrics(this.retries, fetchMetadata.ResourceUnitUsage,
                                 this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                new List<Tuple<string, SchedulingTimeSpan>>()),
-                                this.activityId);
+                                new List<Tuple<string, SchedulingTimeSpan>>()));
                             // Reset the counters.
                             Interlocked.Exchange(ref this.retries, 0);
                         }
@@ -449,10 +463,27 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                         this.numDocumentsFetched += feedResponse.Count;
                     }
                 }
-
                 while (!this.FetchedAll && feedResponse.Count <= 0);
-                await this.CompleteFetchAsync(feedResponse, cancellationToken);
-                this.produceAsyncCompleteCallback(this, feedResponse.Count, requestCharge, queryMetrics, responseLengthBytes, cancellationToken);
+
+                if (this.FetchedAll)
+                {
+                    fetchMetadata.QueryMetrics = QueryMetrics.CreateWithSchedulingMetrics(fetchMetadata.QueryMetrics, new List<Tuple<string, SchedulingTimeSpan>>
+                    {
+                        new Tuple<string, SchedulingTimeSpan>(this.targetRange.Id, this.fetchSchedulingMetrics.Elapsed)
+                    });
+                }
+
+                this.preCompleteFetchCallback(
+                    this,
+                    fetchMetadata,
+                    cancellationToken);
+
+                await this.CompleteFetchAsync(feedResponse, fetchMetadata, cancellationToken);
+
+                this.postCompleteFetchCallback(
+                    this, 
+                    fetchMetadata,
+                    cancellationToken);
             }
             catch (Exception ex)
             {
@@ -465,30 +496,10 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                     this.targetRange.Id,
                     ex.Message));
 
-                exceptionFetchResult = new FetchResult(ExceptionDispatchInfo.Capture(ex));
+                exceptionFetchResult = new FetchResult(ExceptionDispatchInfo.Capture(ex), fetchMetadata);
             }
             finally
             {
-                this.fetchSchedulingMetrics.Stop();
-                if (this.FetchedAll)
-                {   
-                    // One more callback to send the scheduling metrics
-                    this.produceAsyncCompleteCallback(
-                        producer: this,
-                        size: 0,
-                        resourceUnitUsage: 0,
-                        queryMetrics: QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                            QueryMetrics.Zero.ToDelimitedString(),
-                            new ClientSideMetrics(
-                                retries: 0,
-                                requestCharge: 0,
-                                fetchExecutionRanges: new List<FetchExecutionRange>(),
-                                partitionSchedulingTimeSpans: new List<Tuple<string, SchedulingTimeSpan>> { 
-                                    new Tuple<string, SchedulingTimeSpan>(this.targetRange.Id, this.fetchSchedulingMetrics.Elapsed)}),
-                            Guid.Empty),
-                        responseLengthBytes: 0,
-                        token: cancellationToken);
-                }
             }
 
             if (exceptionFetchResult != null)
@@ -500,14 +511,14 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             return this;
         }
 
-        private async Task CompleteFetchAsync(FeedResponse<T> feedResponse, CancellationToken cancellationToken)
+        private async Task CompleteFetchAsync(FeedResponse<T> feedResponse, FetchMetadata metadata, CancellationToken cancellationToken)
         {
             await this.fetchStateSemaphore.WaitAsync(cancellationToken);
             try
             {
                 if (feedResponse.Count > 0)
                 {
-                    await this.itemBuffer.AddAsync(new FetchResult(feedResponse), cancellationToken);
+                    await this.itemBuffer.AddAsync(new FetchResult(feedResponse, metadata), cancellationToken);
                     Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
                 }
 
@@ -566,16 +577,18 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                 Type = FetchResultType.Done,
             };
 
-            public FetchResult(FeedResponse<T> feedResponse)
+            public FetchResult(FeedResponse<T> feedResponse, FetchMetadata metadata)
             {
                 this.FeedResponse = feedResponse;
                 this.Type = FetchResultType.Result;
+                this.FetchMetadata = metadata;
             }
 
-            public FetchResult(ExceptionDispatchInfo exceptionDispatchInfo)
+            public FetchResult(ExceptionDispatchInfo exceptionDispatchInfo, FetchMetadata metadata)
             {
                 this.ExceptionDispatchInfo = exceptionDispatchInfo;
                 this.Type = FetchResultType.Exception;
+                this.FetchMetadata = metadata;
             }
 
             private FetchResult()
@@ -589,6 +602,12 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             }
 
             public FeedResponse<T> FeedResponse
+            {
+                get;
+                private set;
+            }
+
+            public FetchMetadata FetchMetadata
             {
                 get;
                 private set;

@@ -7,20 +7,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Reflection;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
-    using Microsoft.Azure.Documents.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -29,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private DocumentClient client;
         private DocumentClient primaryReadonlyClient;
         private DocumentClient secondaryReadonlyClient;
-        
+
         private enum PrecisionType
         {
             Numeric,
@@ -848,14 +857,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
         }
 
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
         [TestMethod]
         public void TestQueryUnicodeDocumentHttpsDirect()
         {
             TestQueryUnicodeDocument(useGateway: false, protocol: Protocol.Https);
         }
-#endif
+
         private void TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
         {
             try
@@ -933,19 +940,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public void TestLazyIndexAllTerms()
+        {
+            try
+            {
+                // Let the lazy indexer do force checkpointing frequently as possible.
+                TestCommon.SetFederationWideConfigurationProperty("lazyIndexForceCheckpointIntervalInSeconds", 1);
+
+                CosmosDatabaseSettings db = client.CreateDatabaseAsync(new CosmosDatabaseSettings
+                {
+                    Id = System.Reflection.MethodBase.GetCurrentMethod().Name + Guid.NewGuid().ToString("N")
+                }).Result.Resource;
+
+                CosmosContainerSettings coll = new CosmosContainerSettings { Id = db.Id };
+                coll.IndexingPolicy.Automatic = true;
+                coll.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
+
+                coll = TestCommon.CreateCollectionAsync(client, db, coll).Result;
+
+                DateTime startTime = DateTime.Now;
+                LoadDocuments(coll).Wait();
+                Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+
+                startTime = DateTime.Now;
+
+                Util.WaitForLazyIndexingToCompleteAsync(coll).Wait();
+                Trace.TraceInformation("Indexing took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+
+                QueryOracle.QueryOracle qo =
+                    new QueryOracle.QueryOracle(client, coll.SelfLink, true,
+                                                targetNumberOfQueriesToValidate: 20000);
+                Assert.AreEqual(0, qo.IndexAndValidate(100), "Query oracle validation failed");
+                client.DeleteDatabaseAsync(db).Wait();
+            }
+            finally
+            {
+                TestCommon.SetFederationWideConfigurationProperty("lazyIndexForceCheckpointIntervalInSeconds", 300);
+            }
+        }
+
         [Ignore]
         [TestMethod]
         public async Task TestRouteToSpecificPartition()
         {
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestRoutToSpecificPartition(false);
-#endif
             await this.TestRoutToSpecificPartition(true);
         }
 
         private async Task TestRoutToSpecificPartition(bool useGateway)
         {
+            const int partitionCount = 5;
             DocumentClient client = TestCommon.CreateClient(useGateway);
 
             await TestCommon.DeleteAllDatabasesAsync(client);
@@ -975,7 +1020,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(5, ranges.Count());
+            Assert.AreEqual(partitionCount, ranges.Count());
 
             Document document = new Document { Id = "id1" };
             document.SetPropertyValue("key", "hello");
@@ -990,26 +1035,90 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, response.Count);
         }
 
+        [Ignore("Native dll dependency")]
+        [TestMethod]
+        public async Task TestQueryMultiplePartitions()
+        {
+            await TestQueryMultiplePartitions(false);
+            await TestQueryMultiplePartitions(true);
+        }
+
+        private async Task TestQueryMultiplePartitions(bool useGateway)
+        {
+            const int partitionCount = 5;
+            Trace.TraceInformation(
+                "Start TestQueryMultiplePartitions in {0} mode",
+                useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
+
+            uint numberOfDocuments = 1000;
+            uint numberOfQueries = 10;
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+
+            DocumentClient client = TestCommon.CreateClient(useGateway);
+            string guid = Guid.NewGuid().ToString();
+
+            await TestCommon.DeleteAllDatabasesAsync(client);
+            CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = guid + "db" });
+
+            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
+                database,
+                new CosmosContainerSettings
+                {
+                    Id = guid + "coll",
+                    PartitionKey = new PartitionKeyDefinition
+                    {
+                        Paths = new Collection<string> { "/field_0" },
+                        Kind = PartitionKind.Hash
+                    }
+                },
+                new RequestOptions { OfferThroughput = 35000 });
+
+            Range<string> fullRange = new Range<string>(
+                       PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                       PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                       true,
+                       false);
+
+            IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
+            IReadOnlyList<PartitionKeyRange> ranges =
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
+            Assert.AreEqual(partitionCount, ranges.Count());
+
+            DateTime startTime = DateTime.Now;
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+            foreach (string document in documents)
+            {
+                ResourceResponse<Document> response = await client.CreateDocumentAsync(coll.SelfLink, JsonConvert.DeserializeObject(document));
+                Trace.TraceInformation("Document: {0}, SessionToken: {1}", document, response.SessionToken);
+            }
+
+            Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+
+            string[] links = new[] { coll.AltLink, coll.SelfLink };
+            foreach (string link in links)
+            {
+                int result = await util.QueryAndVerifyDocuments(client, link, util.GetQueries(numberOfQueries, false), 100, 0);
+                Assert.AreEqual(0, result, string.Format(CultureInfo.InvariantCulture, "Query oracle validation failed with seed {0}", seed));
+            }
+
+            await client.DeleteDatabaseAsync(database);
+        }
+
         [Ignore]
         [TestMethod]
         public async Task TestQueryForRoutingMapSanity()
         {
             string guid = Guid.NewGuid().ToString();
             await this.CreateDataSet(true, "db" + guid, "coll" + guid, 5000, 35000);
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestQueryForRoutingMapSanity("db" + guid, "coll" + guid, true, 5000, false);
             await this.TestQueryForRoutingMapSanity("db" + guid, "coll" + guid, false, 5000, true);
-#endif
-#if !DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
-            await this.TestQueryForRoutingMapSanity("db" + guid, "coll" + guid, true, 5000, true);
-#endif
         }
 
         private async Task TestQueryForRoutingMapSanity(string inputDatabaseId, string inputCollectionId, bool useGateway, int numDocuments, bool isDeleteDB)
         {
-            System.Diagnostics.Trace.TraceInformation(
+            Trace.TraceInformation(
                 "Start TestQueryForRoutingMapSanity in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
 
@@ -1118,7 +1227,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateDataSet(bool useGateway, string dbName, string collName, int numberOfDocuments, int inputThroughputOffer)
         {
-            System.Diagnostics.Trace.TraceInformation(
+            Trace.TraceInformation(
                 "Start TestQueryParallelExecution in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
 
@@ -1173,7 +1282,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestRUsCalculationForParallelQuery()
         {
@@ -1187,7 +1295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             double errorMargin = 0.10;
-            System.Diagnostics.Trace.TraceInformation(
+            Trace.TraceInformation(
                 "Start TestRUsCalculationForParallelQuery in {0} mode with seed{1}",
                 useGateway ? ConnectionMode.Gateway : ConnectionMode.Direct,
                 seed);
@@ -1272,21 +1380,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string guid = Guid.NewGuid().ToString();
             await this.CreateDataSet(true, "db" + guid, "coll" + guid, 5000, 35000);
             await this.TestQueryParallelExecution("db" + guid, "coll" + guid, true, Protocol.Https, false);
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestQueryParallelExecution("db" + guid, "coll" + guid, false, Protocol.Tcp, false);
-#endif
             await this.TestReadFeedParallelQuery("db" + guid, "coll" + guid, true, Protocol.Https, false);
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestReadFeedParallelQuery("db" + guid, "coll" + guid, false, Protocol.Tcp, true);
-#endif
         }
 
         private async Task TestQueryParallelExecution(string inputDatabaseId, string inputCollectionId, bool useGateway, Protocol protocol, bool isDeleteDB)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            System.Diagnostics.Trace.TraceInformation(
+            Trace.TraceInformation(
                 "Start TestQueryParallelExecution in {0} mode with seed{1}",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString(),
                 seed);
@@ -1445,7 +1547,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task TestReadFeedParallelQuery(string inputDatabaseId, string inputCollectionId, bool useGateway, Protocol protocol, bool isDeleteDB)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            System.Diagnostics.Trace.TraceInformation(
+            Trace.TraceInformation(
                 "Start TestQueryParallelExecution in {0} mode with seed{1}",
                 useGateway ? ConnectionMode.Gateway : ConnectionMode.Direct,
                 seed);
@@ -1536,6 +1638,348 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /*
+        [TestMethod]
+        public async Task TestQueryCrossPartitionWithUpdatingConfig()
+        {
+            const int partitionCount = 5;
+            DocumentClient originalClient = TestCommon.CreateClient(true);
+
+            await TestCommon.DeleteAllDatabasesAsync(originalClient);
+            string guid = Guid.NewGuid().ToString();
+            CosmosDatabaseSettings database = await originalClient.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
+
+            CosmosContainerSettings coll = await originalClient.CreateDocumentCollectionAsync(
+                database,
+                new CosmosContainerSettings
+                {
+                    Id = "coll" + guid,
+                    PartitionKey = new PartitionKeyDefinition
+                    {
+                        Paths = new Collection<string> { "/key" },
+                        Kind = PartitionKind.Hash
+                    }
+                },
+                new RequestOptions { OfferThroughput = 35000 });
+
+            Range<string> fullRange = new Range<string>(
+                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        true,
+                        false);
+
+            IRoutingMapProvider routingMapProvider = await originalClient.GetPartitionKeyRangeCacheAsync();
+            IReadOnlyList<PartitionKeyRange> ranges =
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
+            Assert.AreEqual(partitionCount, ranges.Count);
+
+            DocumentClient[] clients = new[]
+            {
+                TestCommon.CreateClient(true),
+                TestCommon.CreateClient(false),
+            };
+
+            foreach (var client in clients)
+            {
+                await client.CreateDocumentQuery(
+                    coll,
+                    "SELECT * FROM r WHERE r.age IN (1, 2)",
+                    new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
+            }
+
+            IDictionary<string, object> queryEngineConfiguration = await originalClient.GetQueryEngineConfiguration();
+            string propertyName = NamingServiceConfig.QueryEngineConfiguration.ConfigurationProperties.MaxInExpressionItemsCount;
+            int oldValue = Convert.ToInt32(queryEngineConfiguration[propertyName]);
+            int newValue = 1;
+            try
+            {
+                TestCommon.SetIntConfigurationProperty(propertyName, newValue);
+
+                DocumentClient[] clients2 = new[]
+                {
+                    TestCommon.CreateClient(false),
+                    TestCommon.CreateClient(true),
+                };
+
+                foreach (var client2 in clients2)
+                {
+                    queryEngineConfiguration = await client2.GetQueryEngineConfiguration();
+
+                    int actualNewValue = Convert.ToInt32(queryEngineConfiguration[propertyName]);
+
+                    Assert.AreEqual(newValue, actualNewValue);
+                }
+
+                foreach (var client in clients)
+                {
+                    try
+                    {
+                        await client.CreateDocumentQuery(
+                            coll,
+                            "SELECT * FROM r WHERE r.age IN (1, 2)",
+                            new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
+
+                        Assert.Fail("Expect exception");
+                    }
+                    catch (DocumentClientException ex)
+                    {
+                        if (ex.StatusCode != HttpStatusCode.BadRequest)
+                        {
+                            throw;
+                        }
+                    }
+                }
+
+                foreach (var client2 in clients2)
+                {
+                    try
+                    {
+                        await client2.CreateDocumentQuery(
+                            coll,
+                            "SELECT * FROM r WHERE r.age IN (1, 2)",
+                            new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
+
+                        Assert.Fail("Expect exception");
+                    }
+                    catch (DocumentClientException ex)
+                    {
+                        if (ex.StatusCode != HttpStatusCode.BadRequest)
+                        {
+                            throw;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                TestCommon.SetIntConfigurationProperty(propertyName, oldValue);
+            }
+        }
+        */
+
+        // This test makes an assumption about the continuations so ignoring for now.
+        [Ignore]
+        [TestMethod]
+        public async Task TestQueryNonExistentRangeInContinuationToken()
+        {
+            DocumentClient originalClient = TestCommon.CreateClient(true);
+
+            await TestCommon.DeleteAllDatabasesAsync(originalClient);
+            string guid = Guid.NewGuid().ToString();
+            CosmosDatabaseSettings database = await originalClient.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
+
+            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(originalClient,
+                database,
+                new CosmosContainerSettings
+                {
+                    Id = "coll" + guid,
+                    PartitionKey = new PartitionKeyDefinition
+                    {
+                        Paths = new Collection<string> { "/id" },
+                        Kind = PartitionKind.Hash
+                    }
+                },
+                new RequestOptions { OfferThroughput = 1000 });
+
+            DocumentClient client = TestCommon.CreateClient(true);
+
+            await client.CreateDocumentAsync(coll, new Document());
+            await client.CreateDocumentAsync(coll, new Document());
+
+            var seqQuery = client.CreateDocumentQuery(
+                coll,
+                "SELECT * FROM r",
+                new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 }).AsDocumentQuery();
+            FeedResponse<dynamic> resultSeq = null;
+            while (true)
+            {
+                resultSeq = await seqQuery.ExecuteNextAsync();
+                if (resultSeq.Count == 2)
+                {
+                    Assert.IsTrue(resultSeq.ResponseContinuation.Contains("\"FF\""));
+                    //Assert.IsTrue(resultSeq.ResponseContinuation.Contains("\"\""));
+                    break;
+                }
+            }
+
+            var parallelQuery = client.CreateDocumentQuery(
+                coll,
+                "SELECT * FROM r",
+                new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1, MaxDegreeOfParallelism = 1 }).AsDocumentQuery();
+            FeedResponse<dynamic> resultParallel = null;
+            while (true)
+            {
+                resultParallel = await parallelQuery.ExecuteNextAsync();
+                if (resultParallel.Count == 2)
+                {
+                    Assert.IsTrue(resultParallel.ResponseContinuation.Contains("\"FF\""));
+                    //Assert.IsTrue(resultParallel.ResponseContinuation.Contains("\"\""));
+                    break;
+                }
+            }
+
+            Func<string, int, Task> query = async (string continuationToken, int maxDop) =>
+            {
+                try
+                {
+                    var r = await client.CreateDocumentQuery(
+                            coll,
+                            "SELECT * FROM r",
+                            new FeedOptions
+                            {
+                                EnableCrossPartitionQuery = true,
+                                MaxItemCount = 1,
+                                RequestContinuation = continuationToken,
+                                MaxDegreeOfParallelism = maxDop
+                            }).AsDocumentQuery().ExecuteNextAsync();
+                    Assert.Fail("Expected exception");
+                }
+                catch (DocumentClientException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                }
+            };
+
+            await query(resultSeq.ResponseContinuation.Replace("\"FF\"", "\"AA\""), 0);
+            await query(resultSeq.ResponseContinuation.Replace("\"\"", "\"00\""), 0);
+
+            //todo:jmondal
+            //await query(resultParallel.ResponseContinuation.Replace("\"FF\"", "\"AA\""), 1);
+            //await query(resultParallel.ResponseContinuation.Replace("\"\"", "\"00\""), 1);
+
+            Func<string, Task> gwQuery = async (string continuationToken) =>
+            {
+                Uri baseUri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
+                string masterKey = ConfigurationManager.AppSettings["MasterKey"];
+
+                var uri = new Uri(baseUri, new Uri(coll.SelfLink + "docs", UriKind.Relative));
+                SqlQuerySpec querySpec = new SqlQuerySpec(string.Format("SELECT * FROM r"));
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    var headers = new StringKeyValueCollection();
+                    httpClient.AddMasterAuthorizationHeader("post", coll.ResourceId, "docs", headers, masterKey);
+                    httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                    httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
+                    httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+                    httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version, Microsoft.Azure.Cosmos.Internal.HttpConstants.Versions.v2017_01_19);
+                    httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
+
+                    var stringContent = new StringContent(JsonConvert.SerializeObject(querySpec), Encoding.UTF8, "application/query+json");
+                    stringContent.Headers.ContentType.CharSet = null;
+                    using (HttpResponseMessage message = await httpClient.PostAsync(uri, stringContent))
+                    {
+                        string responseContent = await message.Content.ReadAsStringAsync();
+                        Assert.AreEqual(HttpStatusCode.NotFound, message.StatusCode);
+                    }
+                }
+            };
+
+
+            await gwQuery(resultParallel.ResponseContinuation.Replace("\"FF\"", "\"AA\""));
+            await gwQuery(resultParallel.ResponseContinuation.Replace("\"\"", "\"00\""));
+
+        }
+
+        /*
+        [TestMethod]
+        public async Task TestUpdateCollectionIndexingPolicyWhenAddingDocsAndRecyclingReplicas()
+        {
+            try
+            {
+                var clients = ReplicationTests.GetClientsLocked(tokenType: AuthorizationTokenType.SystemAll);
+                var primaryClient = clients[0];
+                await TestCommon.DeleteAllDatabasesAsync(primaryClient);
+
+                string uniqDatabaseName = "ValidateUpdateCollectionIndexingPolicy_DB_" + Guid.NewGuid().ToString("N");
+                CosmosDatabaseSettings database = await primaryClient.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = uniqDatabaseName });
+
+                string uniqCollectionName = "ValidateUpdateCollectionIndexingPolicy_COLL_" + Guid.NewGuid().ToString("N");
+                CosmosContainerSettings collection = await primaryClient.CreateDocumentCollectionAsync(
+                    database.SelfLink,
+                    new CosmosContainerSettings { Id = uniqCollectionName },
+                    new RequestOptions { OfferThroughput = 10000 });
+
+                var loadDocsTask = Task.Run(async () =>
+                {
+                    Logger.LogLine("Adding documents to collection.");
+                    await LoadDocuments(collection);
+                    Logger.LogLine("All the documents are added to collection.");
+                });
+
+                var random = new Random();
+                const int iterations = 5;
+
+                var updateIndexingPolicyTask = Task.Run(async () =>
+                {
+                    for (int i = 0; i < iterations; ++i)
+                    {
+                        Logger.LogLine("Update indexing policy iteration: #{0}.", i + 1);
+                        await this.UpdateCollectionIndexingPolicyRandomlyAsync(primaryClient, collection, random);
+                    }
+                });
+
+                var recycleReplicaTask = this.RecycleReplicaRandomlyAsync(clients, collection, random, iterations, excludePrimary: true);
+
+                await Task.WhenAll(loadDocsTask, updateIndexingPolicyTask, recycleReplicaTask);
+
+                Logger.LogLine("Final iteration: updating collection indexing policy to consistent.");
+                collection = new CosmosContainerSettings { Id = collection.Id, SelfLink = collection.SelfLink };
+                await TestCommon.AsyncRetryRateLimiting(() => primaryClient.ReplaceDocumentCollectionAsync(collection));
+
+                Logger.LogLine("Waiting for reindexing to finish on all the replicas.");
+                await Task.WhenAll(clients.Select(c => Task.Run(async () =>
+                {
+                    await Util.WaitForReIndexingToFinish(300, collection);
+                    Logger.LogLine("Reindexer finished on {0}.", c.GetAddress());
+                })));
+
+                Logger.LogLine("Running query oracle on all the replicas.");
+                await Task.WhenAll(clients.Select(c => Task.Run(() =>
+                {
+                    QueryOracle.QueryOracle qo = new QueryOracle.QueryOracle(c, collection.SelfLink, false, 20000);
+                    Assert.AreEqual(0, qo.IndexAndValidate(100), "Query oracle validation failed");
+                })));
+                Logger.LogLine("Query oracle on all the replicas is completed.");
+
+                await TestCommon.DeleteAllDatabasesAsync(primaryClient);
+            }
+            finally
+            {
+                DocumentClient client = TestCommon.CreateClient(true, Protocol.Tcp);
+                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestQueryWithTimestamp()
+        {
+            try
+            {
+                await TestCommon.DeleteAllDatabasesAsync(this.client);
+
+                using (await TestCommon.OverrideFederationWideConfigurationsAsync(
+                    Tuple.Create<string, object>("lazyIndexForceCheckpointIntervalInSeconds", 1)))
+                {
+                    CosmosDatabaseSettings database = (await this.client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db01" })).Resource;
+
+                    CosmosContainerSettings collection = new CosmosContainerSettings { Id = "coll01" };
+                    collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
+                    collection = (await this.client.CreateDocumentCollectionAsync(database, collection)).Resource;
+                    await TestQueryWithTimestampOnCollectionAsync(collection);
+
+                    collection = new CosmosContainerSettings { Id = "coll02" };
+                    collection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
+                    collection = (await this.client.CreateDocumentCollectionAsync(database, collection)).Resource;
+                    await TestQueryWithTimestampOnCollectionAsync(collection);
+                }
+            }
+            finally
+            {
+                TestCommon.DeleteAllDatabasesAsync(this.client).Wait();
+            }
+        }
+        */
+
         private void AssertQueryMetricsPublicMembers(QueryMetrics queryMetrics)
         {
             Assert.IsNotNull(queryMetrics.TotalQueryExecutionTime.TotalMilliseconds);
@@ -1584,11 +2028,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedString("totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.00;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.00;userFunctionExecuteTimeInMs=0.00;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00");
 
-            string queryMetricsToTextString = queryMetrics.ToTextString();
+            string queryMetricsToTextString = queryMetrics.ToString();
             Assert.IsFalse(string.IsNullOrWhiteSpace(queryMetricsToTextString));
-
-            string queryMetricsToJsonString = queryMetrics.ToJsonString();
-            Assert.IsFalse(string.IsNullOrWhiteSpace(queryMetricsToJsonString));
 
             string queryMetricsToDelimitedString = queryMetrics.ToDelimitedString();
             Assert.IsFalse(string.IsNullOrWhiteSpace(queryMetricsToDelimitedString));
@@ -1647,17 +2088,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             double requestCharge = 42;
             long retries = 5;
-            List<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>
-            {
-                new FetchExecutionRange(new DateTime(), new DateTime(), null, 5, 5)
-            };
 
             Guid guid = Guid.NewGuid();
+            List<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>
+            {
+                new FetchExecutionRange(guid.ToString(), new DateTime(), new DateTime(), null, 5, 5)
+            };
 
             QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics("totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.01;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.05;userFunctionExecuteTimeInMs=0.07;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",
-                new ClientSideMetrics(retries, requestCharge, fetchExecutionRanges, new List<Tuple<string, SchedulingTimeSpan>>()), guid);
+                new ClientSideMetrics(retries, requestCharge, fetchExecutionRanges, new List<Tuple<string, SchedulingTimeSpan>>()));
 
-            QueryMetrics queryMetrics2 = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(queryMetrics.ToDelimitedString(), queryMetrics.ClientSideMetrics, guid);
+            QueryMetrics queryMetrics2 = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(queryMetrics.ToDelimitedString(), queryMetrics.ClientSideMetrics);
             this.AssertQueryMetricsEquality(queryMetrics, queryMetrics2);
 
             QueryMetrics queryMetricsFromIEnumberable = QueryMetrics.CreateFromIEnumerable(new List<QueryMetrics> { queryMetrics, queryMetrics });
@@ -1689,8 +2130,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.Count(), 2 * fetchExecutionRanges.Count());
             Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.RequestCharge, requestCharge * 2);
             Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.Retries, retries * 2);
-            Assert.AreEqual(queryMetricsFromAddition.ActivityIds[0], guid);
-            Assert.AreEqual(queryMetricsFromAddition.ActivityIds[1], guid);
+            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.ToList()[0].ActivityId, guid.ToString());
+            Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.ToList()[1].ActivityId, guid.ToString());
         }
 
         [TestMethod]
@@ -1718,13 +2159,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestQueryMetricsRUPerPartition()
         {
-            DocumentClient client = TestCommon.CreateClient(true);
+            DocumentClient client = TestCommon.CreateClient(false);
 
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 1000;
             string partitionKey = "field_0";
 
-            QueryOracleUtil util = new QueryOracle2(seed);
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
 
             await TestCommon.DeleteAllDatabasesAsync(client);
             string guid = Guid.NewGuid().ToString();
@@ -1758,7 +2199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MaxDegreeOfParallelism = 0,
             };
 
-            IDocumentQuery<dynamic> documentQuery = client.CreateDocumentQuery(coll, "SELECT TOP 5 * FROM c ORDER BY c._ts", feedOptions).AsDocumentQuery();
+            IDocumentQuery<dynamic> documentQuery = client.CreateDocumentQuery(coll, "SELECT * FROM c ORDER BY c._ts", feedOptions).AsDocumentQuery();
 
             List<FeedResponse<dynamic>> feedResponses = new List<FeedResponse<dynamic>>();
             while (documentQuery.HasMoreResults)
@@ -1799,7 +2240,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore /* Failing with Assert.AreEqual failed. Expected:<00:00:00>. Actual:<00:00:00.0000900> */]
+        public async Task TestQueryMetricsNonZero()
+        {
+            DocumentClient client = TestCommon.CreateClient(false);
+
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 1;
+
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+
+            await TestCommon.DeleteAllDatabasesAsync(client);
+            string guid = Guid.NewGuid().ToString();
+            CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
+
+            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
+                database,
+                new CosmosContainerSettings
+                {
+                    Id = "coll" + guid,
+                },
+                new RequestOptions { OfferThroughput = 5000 });
+
+            IEnumerable<string> serializedDocuments = util.GetDocuments(numberOfDocuments);
+            IList<Document> documents = new List<Document>(serializedDocuments.Count());
+            foreach (string document in serializedDocuments)
+            {
+                ResourceResponse<Document> response = await client.CreateDocumentAsync(coll.SelfLink, JsonConvert.DeserializeObject(document));
+                documents.Add(response.Resource);
+            }
+
+            FeedOptions feedOptions = new FeedOptions
+            {
+                PopulateQueryMetrics = true,
+            };
+
+            IDocumentQuery<dynamic> documentQuery = client.CreateDocumentQuery(coll, "SELECT TOP 1 * FROM c", feedOptions).AsDocumentQuery();
+
+            FeedResponse<dynamic> feedResonse = await documentQuery.ExecuteNextAsync();
+
+            QueryMetrics queryMetrics = QueryMetrics.CreateFromIEnumerable(feedResonse.QueryMetrics.Values);
+
+            Assert.IsTrue(queryMetrics.RetrievedDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.RetrievedDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.OutputDocumentCount > 0);
+            Assert.IsTrue(queryMetrics.OutputDocumentSize > 0);
+            Assert.IsTrue(queryMetrics.IndexHitRatio > 0);
+
+            await client.DeleteDatabaseAsync(database);
+        }
+
+        [TestMethod]
         public void TestForceQueryScanHeaders()
         {
             CosmosDatabaseSettings database = TestCommon.RetryRateLimiting<CosmosDatabaseSettings>(() =>
@@ -1897,6 +2387,149 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             queryMetrics = result.QueryMetrics.Values.Aggregate((curr, acc) => curr + acc);
             Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.IndexLookupTime);
+        }
+
+        [TestMethod]
+        public void TestMaxDegreeOfParallelism()
+        {
+            List<Tuple<int?, int>> inputOutputMaxDops = new List<Tuple<int?, int>>()
+            {
+                new Tuple<int?, int>(null, 0),
+                new Tuple<int?, int>(-1, int.MaxValue),
+                new Tuple<int?, int>(-2, int.MaxValue),
+                new Tuple<int?, int>(0, 0),
+                new Tuple<int?, int>(1, 1),
+                new Tuple<int?, int>(int.MinValue, int.MaxValue),
+                new Tuple<int?, int>(int.MaxValue, int.MaxValue),
+            };
+
+            TestFeedOptionInput(
+                nameof(FeedOptions.MaxDegreeOfParallelism),
+                "MaxDegreeOfParallelism",
+                inputOutputMaxDops);
+        }
+
+        [TestMethod]
+        public void TestMaxBufferedItemCount()
+        {
+            List<Tuple<int?, int>> inputOutputMaxBufferedItemCounts = new List<Tuple<int?, int>>()
+            {
+                new Tuple<int?, int>(null, (int)ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize),
+                new Tuple<int?, int>(-1, int.MaxValue),
+                new Tuple<int?, int>(-2, int.MaxValue),
+                new Tuple<int?, int>(0,(int)ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize),
+                new Tuple<int?, int>(1, 1),
+                new Tuple<int?, int>(int.MinValue, int.MaxValue),
+                new Tuple<int?, int>(int.MaxValue, int.MaxValue),
+            };
+
+            TestFeedOptionInput(
+                nameof(FeedOptions.MaxBufferedItemCount),
+                "ActualMaxBufferedItemCount",
+                inputOutputMaxBufferedItemCounts);
+        }
+
+        [TestMethod]
+        public void TestMaxItemCount()
+        {
+            List<Tuple<int?, int>> inputOutputMaxItemCounts = new List<Tuple<int?, int>>()
+            {
+                new Tuple<int?, int>(null, (int)ParallelQueryConfig.GetConfig().ClientInternalPageSize),
+                new Tuple<int?, int>(-1, int.MaxValue),
+                new Tuple<int?, int>(-2, int.MaxValue),
+                // 0 is not a valid MaxItemCount
+                // new Tuple<int?, int>(0,(int)ParallelQueryConfig.GetConfig().ClientInternalPageSize),
+                new Tuple<int?, int>(1, 1),
+                new Tuple<int?, int>(int.MinValue, int.MaxValue),
+                new Tuple<int?, int>(int.MaxValue, int.MaxValue),
+            };
+
+            TestFeedOptionInput(
+                nameof(FeedOptions.MaxItemCount),
+                "ActualMaxPageSize",
+                inputOutputMaxItemCounts);
+        }
+
+        private void TestFeedOptionInput(
+            string feedOptionPropertyName,
+            string componentPropertyName,
+            List<Tuple<int?, int>> inputOutputs)
+        {
+            CosmosDatabaseSettings database = TestCommon.RetryRateLimiting<CosmosDatabaseSettings>(() =>
+            {
+                return this.client.CreateDatabaseAsync(
+                    new CosmosDatabaseSettings()
+                    {
+                        Id = Guid.NewGuid().ToString()
+                    }).Result.Resource;
+            });
+
+            CosmosContainerSettings documentCollection = this.client.CreateDocumentCollectionAsync(
+                database.SelfLink,
+                new CosmosContainerSettings()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PartitionKey = new PartitionKeyDefinition()
+                    {
+                        Kind = PartitionKind.Hash,
+                        Paths = new Collection<string>()
+                        {
+                            "/id",
+                        }
+                    }
+                }).Result.Resource;
+
+            foreach (Tuple<int?, int> inputOutput in inputOutputs)
+            {
+                int? input = inputOutput.Item1;
+                int output = inputOutput.Item2;
+
+                FeedOptions feedOptions = new FeedOptions()
+                {
+                    EnableCrossPartitionQuery = true
+                };
+
+                if (input.HasValue)
+                {
+                    PropertyInfo propertyInfo = feedOptions.GetType().GetProperty(feedOptionPropertyName);
+                    propertyInfo.SetValue(feedOptions, input.Value);
+                }
+
+                IDocumentQuery<Document> documentQuery = this.client
+                    .CreateDocumentQuery<Document>(documentCollection, "SELECT * FROM c ORDER BY c._ts", feedOptions)
+                    .AsDocumentQuery();
+
+                // Execute Once to force the execution context to initialize
+                var garbage = documentQuery.ExecuteNextAsync().Result;
+
+                // Get the value using reflection.
+                Type documentQueryType = documentQuery.GetType();
+                object queryExecutionContext = documentQueryType
+                    .GetField("queryExecutionContext", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(documentQuery);
+                Type queryExecutionContextType = queryExecutionContext.GetType();
+                if (queryExecutionContextType == typeof(ProxyDocumentQueryExecutionContext))
+                {
+                    // UnWrap the inner context
+                    queryExecutionContext = queryExecutionContextType
+                        .GetField("innerExecutionContext", BindingFlags.NonPublic | BindingFlags.Instance)
+                        .GetValue(queryExecutionContext);
+                    queryExecutionContextType = queryExecutionContext.GetType();
+                }
+
+                object component = queryExecutionContextType
+                    .GetField("component", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(queryExecutionContext);
+                Type componentType = component.GetType();
+                int feedOptionsValue = (int)componentType
+                    .GetProperty(componentPropertyName, BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(component);
+
+                Assert.AreEqual(
+                    output,
+                    feedOptionsValue,
+                    $"Expected {feedOptionPropertyName} to be {output} when FeedOptions.{feedOptionPropertyName} = {input}, but instead got {feedOptionsValue}");
+            }
         }
 
         [TestMethod]
@@ -2088,7 +2721,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int documentCount)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            System.Diagnostics.Trace.TraceInformation("seed: " + seed);
+            Trace.TraceInformation("seed: " + seed);
             Random rand = new Random(seed);
 
             int[] numericFieldFilters = new int[] { rand.Next(documentCount), rand.Next(documentCount), rand.Next(documentCount) };
@@ -2130,7 +2763,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             foreach (KeyValuePair<string, QueryMetrics> pair in response.QueryMetrics)
                             {
-                                System.Diagnostics.Trace.TraceInformation(JsonConvert.SerializeObject(pair));
+                                Trace.TraceInformation(JsonConvert.SerializeObject(pair));
                                 ValidateQueryMetrics(pair.Value);
                             }
 
@@ -2255,7 +2888,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.RetryActionAsync(() => client.ReplaceDocumentCollectionAsync(collection), 10, TimeSpan.FromSeconds(5));
 
             Logger.LogLine("Waiting for reindexing to finish.");
-            await Util.WaitForReIndexingToFinish(300, collection, client);
+            await Util.WaitForReIndexingToFinish(300, collection);
         }
 
         private async Task RetryActionAsync(Func<Task> action, int maxRetries, TimeSpan waitInterval)
@@ -2541,7 +3174,7 @@ function sproc(feed) {
             Document document = (await this.client.CreateDocumentAsync(collection, new Document { Id = "doc01" })).Resource;
             if (collection.IndexingPolicy.IndexingMode == IndexingMode.Lazy)
             {
-                await Util.WaitForLazyIndexingToCompleteAsync(this.client, collection);
+                await Util.WaitForLazyIndexingToCompleteAsync(collection);
             }
 
             this.VerifyQueryWithTimestampShouldReturnDocument(collection, document.GetPropertyValue<long>("_ts"), document.Id);
@@ -2549,7 +3182,7 @@ function sproc(feed) {
             document = (await this.client.ReplaceDocumentAsync(document)).Resource;
             if (collection.IndexingPolicy.IndexingMode == IndexingMode.Lazy)
             {
-                await Util.WaitForLazyIndexingToCompleteAsync(this.client, collection);
+                await Util.WaitForLazyIndexingToCompleteAsync(collection);
             }
 
             this.VerifyQueryWithTimestampShouldReturnDocument(collection, document.GetPropertyValue<long>("_ts"), document.Id);
@@ -2557,7 +3190,7 @@ function sproc(feed) {
             await this.client.DeleteDocumentAsync(document);
             if (collection.IndexingPolicy.IndexingMode == IndexingMode.Lazy)
             {
-                await Util.WaitForLazyIndexingToCompleteAsync(this.client, collection);
+                await Util.WaitForLazyIndexingToCompleteAsync(collection);
             }
 
             this.VerifyQueryWithTimestampShouldReturnNothing(collection, document.GetPropertyValue<long>("_ts"));
@@ -2570,7 +3203,7 @@ function sproc(feed) {
             await this.client.ExecuteStoredProcedureAsync<dynamic>(sproc, new[] { documents });
             if (collection.IndexingPolicy.IndexingMode == IndexingMode.Lazy)
             {
-                await Util.WaitForLazyIndexingToCompleteAsync(this.client, collection);
+                await Util.WaitForLazyIndexingToCompleteAsync(collection);
             }
 
             long minTimestamp = (await this.client.ReadDocumentFeedAsync(collection))

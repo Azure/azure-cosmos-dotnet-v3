@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Documents.Interop.Mongo
+namespace Microsoft.Azure.Cosmos.Interop.Mongo
 {
     using Newtonsoft.Json;
 

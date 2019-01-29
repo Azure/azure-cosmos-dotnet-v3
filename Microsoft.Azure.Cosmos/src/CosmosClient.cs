@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                 this,
-                this.DocumentClient.RetryPolicy,
+                this.DocumentClient.ResetSessionTokenRetryPolicy,
                 this.Configuration.CustomHandlers
             );
 

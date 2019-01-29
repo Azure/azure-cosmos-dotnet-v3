@@ -46,11 +46,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             Debug.Assert(ResourceId.TryParse(collectionRid, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionRid, null, CancellationToken.None);
+                await this.TryLookupAsync(collectionRid, null, null, false, CancellationToken.None);
 
             if (forceRefresh && routingMap != null)
             {
-                routingMap = await this.TryLookupAsync(collectionRid, routingMap, CancellationToken.None);
+                routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, false, CancellationToken.None);
             }
 
             if (routingMap == null)
@@ -71,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             Debug.Assert(ResourceId.TryParse(collectionResourceId, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionResourceId, null, CancellationToken.None);
+                await this.TryLookupAsync(collectionResourceId, null, null, false, CancellationToken.None);
 
             if (forceRefresh && routingMap != null)
             {
-                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, CancellationToken.None);
+                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, null, false, CancellationToken.None);
             }
 
             if (routingMap == null)
@@ -90,8 +90,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         public virtual async Task<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
             CollectionRoutingMap previousValue,
-            CancellationToken cancellationToken,
-            bool forceRefreshCollectionRoutingMap = false)
+            DocumentServiceRequest request,
+            bool forceRefreshCollectionRoutingMap,
+            CancellationToken cancellationToken)
         {
             try
             {

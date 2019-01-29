@@ -6,10 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Linq.Expressions;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
@@ -87,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
             PartitionKeyRangeCache partitionKeyRangeCache = await this.Client.GetPartitionKeyRangeCache();
-            IDocumentClientRetryPolicy retryPolicyInstance = this.Client.RetryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = this.Client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             retryPolicyInstance = new InvalidPartitionExceptionRetryPolicy(collectionCache, retryPolicyInstance);
             if (base.ResourceTypeEnum.IsPartitioned())
             {
@@ -107,11 +111,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.fetchExecutionRangeAccumulator.BeginFetchRange();
                     FeedResponse<dynamic> response = await this.ExecuteOnceAsync(retryPolicyInstance, cancellationToken);
                     this.fetchSchedulingMetrics.Stop();
-                    this.fetchExecutionRangeAccumulator.EndFetchRange(response.Count, this.retries);
+                    this.fetchExecutionRangeAccumulator.EndFetchRange(response.ActivityId, response.Count, this.retries);
 
                     if (!string.IsNullOrEmpty(response.Headers[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
-                        this.fetchExecutionRangeAccumulator.EndFetchRange(response.Count, this.retries);
+                        this.fetchExecutionRangeAccumulator.EndFetchRange(response.ActivityId, response.Count, this.retries);
                         response = new FeedResponse<dynamic>(
                             response,
                             response.Count,
@@ -127,8 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                             this.retries,
                                             response.RequestCharge,
                                             this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                            string.IsNullOrEmpty(response.ResponseContinuation) ? new List<Tuple<string, SchedulingTimeSpan>>() { new Tuple<string, SchedulingTimeSpan>(singlePartitionKeyId, this.fetchSchedulingMetrics.Elapsed)} : new List<Tuple<string, SchedulingTimeSpan>>()),
-                                        Guid.Parse(response.ActivityId))
+                                            string.IsNullOrEmpty(response.ResponseContinuation) ? new List<Tuple<string, SchedulingTimeSpan>>() { new Tuple<string, SchedulingTimeSpan>(singlePartitionKeyId, this.fetchSchedulingMetrics.Elapsed)} : new List<Tuple<string, SchedulingTimeSpan>>()))
                                 }
                             },
                             response.RequestStatistics,

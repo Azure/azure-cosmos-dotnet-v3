@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
@@ -18,9 +19,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     {
         private readonly IStoreModel storeModel;
         private readonly IAuthorizationTokenProvider tokenProvider;
-        private readonly RetryPolicy retryPolicy;
+        private readonly IRetryPolicyFactory retryPolicy;
+        private readonly ISessionContainer sessionContainer;
 
-        public ClientCollectionCache(IStoreModel storeModel, IAuthorizationTokenProvider tokenProvider, RetryPolicy retryPolicy)
+        public ClientCollectionCache(ISessionContainer sessionContainer, IStoreModel storeModel, IAuthorizationTokenProvider tokenProvider, IRetryPolicyFactory retryPolicy)
         {
             if (storeModel == null)
             {
@@ -30,12 +32,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.storeModel = storeModel;
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
+            this.sessionContainer = sessionContainer;
         }
 
         protected override Task<CosmosContainerSettings> GetByRidAsync(string collectionRid, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            IDocumentClientRetryPolicy retryPolicyInstance = this.retryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
                   () => this.ReadCollectionAsync(PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false), cancellationToken, retryPolicyInstance),
                   retryPolicyInstance,
@@ -45,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         protected override Task<CosmosContainerSettings> GetByNameAsync(string resourceAddress, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            IDocumentClientRetryPolicy retryPolicyInstance = this.retryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
                 () => this.ReadCollectionAsync(resourceAddress, cancellationToken, retryPolicyInstance),
                 retryPolicyInstance,

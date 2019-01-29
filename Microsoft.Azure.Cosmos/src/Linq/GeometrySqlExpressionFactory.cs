@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <summary>
     /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.
     /// </summary>
-    internal static class GeometrySqlExpressionFactory 
+    internal static class GeometrySqlExpressionFactory
     {
         /// <summary>
         /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.
@@ -65,18 +65,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             switch (jToken.Type)
             {
                 case JTokenType.Array:
-                    return new SqlArrayCreateScalarExpression(jToken.Select(FromJToken).ToArray());
+                    return SqlArrayCreateScalarExpression.Create(jToken.Select(FromJToken).ToArray());
 
                 case JTokenType.Boolean:
-                    SqlBooleanLiteral sqlBooleanLiteral = new SqlBooleanLiteral(jToken.Value<bool>());
-                    return new SqlLiteralScalarExpression(sqlBooleanLiteral);
+                    return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(jToken.Value<bool>()));
 
                 case JTokenType.Null:
-                    return new SqlLiteralScalarExpression(new SqlNullLiteral());
+                    return SqlLiteralScalarExpression.SqlNullLiteralScalarExpression;
 
                 case JTokenType.String:
-                    SqlStringLiteral sqlStringLiteral = new SqlStringLiteral(jToken.Value<string>());
-                    return new SqlLiteralScalarExpression(sqlStringLiteral);
+                    return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(jToken.Value<string>()));
 
                 case JTokenType.Object:
 
@@ -84,17 +82,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                         ((JObject)jToken).Properties()
                             .Select(
                                 p =>
-                                new SqlObjectProperty(
-                                    new SqlPropertyName(p.Name),
+                                SqlObjectProperty.Create(
+                                    SqlPropertyName.Create(p.Name),
                                     FromJToken(p.Value)))
                             .ToArray();
 
-                    return new SqlObjectCreateScalarExpression(properties);
+                    return SqlObjectCreateScalarExpression.Create(properties);
 
                 case JTokenType.Float:
                 case JTokenType.Integer:
-                    SqlNumberLiteral sqlNumberLiteral = new SqlNumberLiteral(jToken.Value<double>());
-                    return new SqlLiteralScalarExpression(sqlNumberLiteral);
+                    SqlNumberLiteral sqlNumberLiteral = SqlNumberLiteral.Create(jToken.Value<double>());
+                    return SqlLiteralScalarExpression.Create(sqlNumberLiteral);
 
                 default:
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.UnexpectedTokenType, jToken.Type));

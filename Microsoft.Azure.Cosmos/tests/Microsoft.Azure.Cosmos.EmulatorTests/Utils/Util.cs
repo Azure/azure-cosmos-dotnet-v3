@@ -5,14 +5,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     internal enum DocumentClientType
@@ -26,16 +26,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         internal static readonly string sampleETag = "FooBar";
 
-        internal static readonly List<string> validSessionTokens = new List<string> 
-        { 
+        internal static readonly List<string> validSessionTokens = new List<string>
+        {
            null,
            string.Empty,
            // ReplicaProgressManager::StartTransaction returns E_RESOURCE_NOTFOUND when nCurrentLSN < nRequestLSN
-           "0:1"
+           VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18) ? "0:-1#1" : "0:1"
         };
 
-        internal static readonly List<string> invalidSessionTokens = new List<string> 
-        { 
+        internal static readonly List<string> invalidSessionTokens = new List<string>
+        {
            "1:rser",
            "FOOBAR",
            "123foobar",
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 client.Dispose();
             }
-            
+
             if (requestChargeHelper != null)
             {
                 requestChargeHelper.CompareRequestCharge(testName);
@@ -169,9 +169,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static void RunTestForClient(
-            Func<DocumentClient, DocumentClientType, Task> testFunc, 
-            string testName, 
-            DocumentClientType clientType, 
+            Func<DocumentClient, DocumentClientType, Task> testFunc,
+            string testName,
+            DocumentClientType clientType,
             DocumentClient client)
         {
             try
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Type = AccessConditionType.IfMatch,
                     Condition = null
                 },
-                new AccessCondition
+                 new AccessCondition
                 {
                     Type = AccessConditionType.IfMatch,
                     Condition = sampleETag
@@ -256,24 +256,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                                 // The test is long running already(60mins+), hence for OfferThroughput we chose a lesser set of combinations that are interesting
                                 //
-                                if ((offerType == null) 
-                                    && sessionToken == null 
-                                    && policy == IndexingDirective.Default 
-                                    && level == ConsistencyLevel.Session 
+                                if ((offerType == null)
+                                    && sessionToken == null
+                                    && policy == IndexingDirective.Default
+                                    && level == ConsistencyLevel.Session
                                     && accessCondition.Equals(accessConditions[0]))
                                 {
                                     foreach (int? offerThroughput in OfferThroughputs)
                                     {
-                                        Logger.LogLine(
-                                            "RequestOptions: [AccessCondition: [Type: {0}, Condition: {1}], ConsistencyLevel: {2}, IndexingDirective: {3}, SessionToken: {4}, OfferType: {5}, OfferThroughput: {6}]",
-                                            accessCondition.Type,
-                                            accessCondition.Condition,
-                                            level,
-                                            policy,
-                                            sessionToken,
-                                            offerType,
-                                            offerThroughput);
-                                        yield return new RequestOptions
+                                        var options = new RequestOptions
                                         {
                                             AccessCondition = accessCondition,
                                             ConsistencyLevel = level,
@@ -282,19 +273,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                             OfferType = offerType,
                                             OfferThroughput = offerThroughput
                                         };
+
+                                        Util.LogRequestOptions(options);
+                                        yield return options;
                                     }
                                 }
-                                else 
-                                { 
-                                    Logger.LogLine(
-                                    "RequestOptions: [AccessCondition: [Type: {0}, Condition: {1}], ConsistencyLevel: {2}, IndexingDirective: {3}, SessionToken: {4}, OfferType: {5}]",
-                                    accessCondition.Type,
-                                    accessCondition.Condition,
-                                    level,
-                                    policy,
-                                    sessionToken,
-                                    offerType);
-                                    yield return new RequestOptions
+                                else
+                                {
+                                    var options = new RequestOptions
                                     {
                                         AccessCondition = accessCondition,
                                         ConsistencyLevel = level,
@@ -302,6 +288,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         SessionToken = sessionToken,
                                         OfferType = offerType
                                     };
+
+                                    Util.LogRequestOptions(options, false);
+                                    yield return options;
                                 }
                             }
                         }
@@ -330,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(expectedStatusCode.ToString(), ex.Error.Code, "Error code mismatch (ActivityId: {0})", ex.ActivityId);
             Assert.IsNotNull(ex.Error.Message, "Error message should not be null (ActivityId: {0})", ex.ActivityId);
         }
-        
+
         internal static void ValidateResource(CosmosResource resource)
         {
             Assert.IsFalse(string.IsNullOrWhiteSpace(resource.AltLink), "AltLink for a resource cannot be null or whitespace");
@@ -356,35 +345,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string.Format(CultureInfo.InvariantCulture, "{0} not set in response header", HttpConstants.HttpHeaders.HttpDate));
         }
 
-        internal static async Task WaitForReIndexingToFinish(int maxWaitDurationInSeconds, CosmosContainerSettings collection, DocumentClient client)
+        internal static async Task WaitForReIndexingToFinish(
+            int maxWaitDurationInSeconds,
+            CosmosContainerSettings collection)
         {
             await Task.Delay(TimeSpan.FromSeconds(5));
+
             int currentWaitSeconds = 0;
-            while (true)
+            var lockedClients = ReplicationTests.GetClientsLocked();
+            for (int index = 0; index < lockedClients.Length; ++index)
             {
-                ResourceResponse<CosmosContainerSettings> documentCollectionResponse = await TestCommon.AsyncRetryRateLimiting(() => client.ReadDocumentCollectionAsync(collection.SelfLink));
-                var header = documentCollectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress];
-                Logger.LogLine("Progress: " + header);
-                int headerInt = int.Parse(header, CultureInfo.InvariantCulture);
-                if(headerInt != 100)
+                Logger.LogLine("Client: " + index);
+
+                while (true)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                    currentWaitSeconds++;
-                    Logger.LogLine("ReIndexing still running after: " + currentWaitSeconds + " seconds");
-                    if(currentWaitSeconds > maxWaitDurationInSeconds)
+                    long reindexerProgress = (await TestCommon.AsyncRetryRateLimiting(
+                        () => lockedClients[index].ReadDocumentCollectionAsync(collection.SelfLink, new RequestOptions { PopulateQuotaInfo = true }))).IndexTransformationProgress;
+                    Logger.LogLine("Progress: " + reindexerProgress);
+                    if (reindexerProgress == -1)
                     {
-                        throw new Exception("ReIndexing did not complete after: " + maxWaitDurationInSeconds + "  seconds");
+                        throw new Exception("Failed to obtain the reindexer progress.");
                     }
-                }
-                else
-                {
-                    Logger.LogLine("ReIndexing Finished after: " + currentWaitSeconds + " seconds");
-                    break;
+                    else if (reindexerProgress == 100)
+                    {
+                        Logger.LogLine("ReIndexing finished after: " + currentWaitSeconds + " seconds");
+                        break;
+                    }
+                    else
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(1));
+                        currentWaitSeconds++;
+                        Logger.LogLine("ReIndexing still running after: " + currentWaitSeconds + " seconds");
+                        if (currentWaitSeconds > maxWaitDurationInSeconds)
+                        {
+                            throw new Exception("ReIndexing did not complete after: " + maxWaitDurationInSeconds + "  seconds");
+                        }
+                    }
                 }
             }
         }
 
-        internal static async Task WaitForLazyIndexingToCompleteAsync(DocumentClient client, CosmosContainerSettings collection)
+        internal static async Task WaitForLazyIndexingToCompleteAsync(CosmosContainerSettings collection)
         {
             TimeSpan maxWaitTime = TimeSpan.FromMinutes(10);
             TimeSpan sleepTimeBetweenReads = TimeSpan.FromSeconds(1);
@@ -392,26 +393,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // First wait for replication to complete
             TestCommon.WaitForServerReplication();
 
-            while (true)
+            var lockedClients = ReplicationTests.GetClientsLocked();
+            for (int index = 0; index < lockedClients.Length; ++index)
             {
-                long lazyIndexingProgress = (await client.ReadDocumentCollectionAsync(collection)).LazyIndexingProgress;
-                if (lazyIndexingProgress == -1)
+                Logger.LogLine("Client: " + index);
+
+                while (true)
                 {
-                    throw new Exception("Failed to obtain the lazy indexing progress.");
-                }
-                else if (lazyIndexingProgress == 100)
-                {
-                    Logger.LogLine("Indexing completed at {0}", DateTime.Now.ToString("HH:mm:ss.f", CultureInfo.InvariantCulture));
-                    return;
-                }
-                else
-                {
-                    Logger.LogLine("Obtained the lazy indexing progress: {0}. Sleep for {1} seconds", lazyIndexingProgress, sleepTimeBetweenReads.TotalSeconds);
-                    await Task.Delay(sleepTimeBetweenReads);
-                    maxWaitTime -= sleepTimeBetweenReads;
-                    if (maxWaitTime.TotalMilliseconds <= 0)
+                    long lazyIndexingProgress = (await lockedClients[index].ReadDocumentCollectionAsync(collection, new RequestOptions { PopulateQuotaInfo = true })).LazyIndexingProgress;
+                    if (lazyIndexingProgress == -1)
                     {
-                        throw new Exception("Indexing didn't complete within the allocated time");
+                        throw new Exception("Failed to obtain the lazy indexing progress.");
+                    }
+                    else if (lazyIndexingProgress == 100)
+                    {
+                        Logger.LogLine("Indexing completed at {0}", DateTime.Now.ToString("HH:mm:ss.f", CultureInfo.InvariantCulture));
+                        break;
+                    }
+                    else
+                    {
+                        Logger.LogLine("Obtained the lazy indexing progress: {0}. Sleep for {1} seconds", lazyIndexingProgress, sleepTimeBetweenReads.TotalSeconds);
+                        await Task.Delay(sleepTimeBetweenReads);
+                        maxWaitTime -= sleepTimeBetweenReads;
+                        if (maxWaitTime.TotalMilliseconds <= 0)
+                        {
+                            throw new Exception("Indexing didn't complete within the allocated time");
+                        }
                     }
                 }
             }
@@ -443,14 +450,75 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(ex.Error.Message, "Error message should not be null (ActivityId: {0})", ex.ActivityId);
         }
 
-        internal static Stream GetStream(object obj)
+        internal static void ThrowsForbiddenExceptionWithMessage(Action action, string expecetedMessage)
         {
-            var stream = new MemoryStream();
-            var writer = new StreamWriter(stream);
-            writer.Write(obj);
-            writer.Flush();
-            stream.Position = 0;
-            return stream;
+            string actualMessage = "";
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                DocumentClientException dbcDbExp = ex as DocumentClientException;
+
+                if (dbcDbExp == null)
+                {
+                    Assert.Fail($"Action did not throw DocumentClientException. Actual exception {ex.GetType()}");
+                }
+
+                if (dbcDbExp.Error.Code.Equals("Forbidden") && ex.Message.Contains(expecetedMessage))
+                {
+                    return;
+                }
+
+                actualMessage = ex.Message;
+            }
+
+            Assert.Fail($"Action did not throw DocumentClientException expected where the message contains {expecetedMessage}, Actual exception message: {actualMessage}");
+        }
+
+        internal static void ThrowsDocumentClientExceptionWithMessage(Action action, string expecetedMessage)
+        {
+            string actualMessage = "";
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                DocumentClientException dbcDbExp = ex as DocumentClientException;
+
+                if (dbcDbExp == null)
+                {
+                    Assert.Fail($"Action did not throw DocumentClientException. Actual exception {ex.GetType()}");
+                }
+
+                if (ex.Message.Contains(expecetedMessage))
+                {
+                    return;
+                }
+
+                actualMessage = ex.Message;
+            }
+
+            Assert.Fail($"Action did not throw DocumentClientException expected where the message contains {expecetedMessage}, Actual exception message: {actualMessage}");
+        }
+
+        internal static void LogRequestOptions(RequestOptions options, bool shouldLogOfferThroughput = true)
+        {
+            string format = shouldLogOfferThroughput ?
+                "RequestOptions: [AccessCondition: [Type: {0}, Condition: {1}], ConsistencyLevel: {2}, IndexingDirective: {3}, SessionToken: {4}, OfferType: {5}, OfferThroughput: {6}]" :
+                "RequestOptions: [AccessCondition: [Type: {0}, Condition: {1}], ConsistencyLevel: {2}, IndexingDirective: {3}, SessionToken: {4}, OfferType: {5}]";
+
+            Logger.LogLine(
+                format,
+                options.AccessCondition.Type,
+                options.AccessCondition.Condition,
+                options.ConsistencyLevel,
+                options.IndexingDirective,
+                options.SessionToken,
+                options.OfferType,
+                options.OfferThroughput);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlObjectProperty.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -8,19 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlObjectProperty : SqlObject
     {
-        public SqlPropertyName Name
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression Expression
-        {
-            get;
-            private set;
-        }
-
-        public SqlObjectProperty(
+        private SqlObjectProperty(
              SqlPropertyName name,
              SqlScalarExpression expression)
             : base(SqlObjectKind.ObjectProperty)
@@ -34,16 +24,41 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 throw new ArgumentNullException("expression");
             }
-            
+
             this.Name = name;
             this.Expression = expression;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlPropertyName Name
         {
-            this.Name.AppendToBuilder(builder);
-            builder.Append(": ");
-            this.Expression.AppendToBuilder(builder);
+            get;
+        }
+
+        public SqlScalarExpression Expression
+        {
+            get;
+        }
+
+        public static SqlObjectProperty Create(
+            SqlPropertyName name,
+            SqlScalarExpression expression)
+        {
+            return new SqlObjectProperty(name, expression);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

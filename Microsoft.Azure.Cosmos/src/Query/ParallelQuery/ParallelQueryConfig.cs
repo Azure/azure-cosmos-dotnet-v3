@@ -36,7 +36,12 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 
         private static ParallelQueryConfig defaultInstance;
 
-        public ParallelQueryConfig(int clientInternalMaxItemCount, int defaultMaximumBufferSize, int clientInternalPageSize, int autoModeTasksIncrementFactor, int numberOfNetworkCallsPerProcessor)
+        public ParallelQueryConfig(
+            int clientInternalMaxItemCount, 
+            int defaultMaximumBufferSize, 
+            int clientInternalPageSize, 
+            int autoModeTasksIncrementFactor, 
+            int numberOfNetworkCallsPerProcessor)
         {
             this.ClientInternalMaxItemCount = clientInternalMaxItemCount;
             this.DefaultMaximumBufferSize = defaultMaximumBufferSize;
@@ -55,7 +60,12 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             return ParallelQueryConfig.defaultInstance;
         }
 
-        public static void CreateOrUpdateConfig(int clientInternalMaxItemCount = int.MaxValue, int defaultMaximumBufferSize = int.MaxValue, int clientInternalPageSize = int.MaxValue, int autoModeTasksIncrementFactor = 2, int numberOfNetworkCallsPerProcessor = 1)
+        public static void CreateOrUpdateConfig(
+            int clientInternalMaxItemCount = 100, 
+            int defaultMaximumBufferSize = 100,
+            int clientInternalPageSize = 100,
+            int autoModeTasksIncrementFactor = 2, 
+            int numberOfNetworkCallsPerProcessor = 1)
         {
             ParallelQueryConfig.defaultInstance = new ParallelQueryConfig(clientInternalMaxItemCount, defaultMaximumBufferSize, clientInternalPageSize, autoModeTasksIncrementFactor, numberOfNetworkCallsPerProcessor);
         }

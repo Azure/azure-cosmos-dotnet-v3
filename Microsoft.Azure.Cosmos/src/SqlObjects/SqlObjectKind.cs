@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         InScalarExpression,
         InputPathCollection,
         JoinCollectionExpression,
+        LimitSpec,
         LiteralArrayCollection,
         LiteralScalarExpression,
         MemberIndexerScalarExpression,
@@ -33,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         ObjectCreateScalarExpression,
         ObjectLiteral,
         ObjectProperty,
+        OffsetLimitClause,
+        OffsetSpec,
         OrderByClause,
         OrderByItem,
         Program,
@@ -53,5 +56,5 @@ namespace Microsoft.Azure.Cosmos.Sql
         UnaryScalarExpression,
         UndefinedLiteral,
         WhereClause,
-    };
+    }
 }

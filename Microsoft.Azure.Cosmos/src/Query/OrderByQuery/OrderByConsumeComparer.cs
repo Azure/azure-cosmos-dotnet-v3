@@ -2,7 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#define SUPPORT_V1_COLLECTIONS
 namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 {
     using System;
@@ -12,14 +11,23 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 
     internal sealed class OrderByConsumeComparer : IComparer<DocumentProducer<OrderByQueryResult>>
     {
-        private readonly SortOrder[] sortOrders;
-#if SUPPORT_V1_COLLECTIONS
-        private ItemType[] orderByItemTypes;
-#endif
+        /// <summary>
+        /// This flag used to determine whether we should support mixed type order by.
+        /// For testing purposes we might turn it on to test mixed type order by on index v2.
+        /// </summary>
+        [ThreadStatic]
+        public static bool AllowMixedTypeOrderByTestFlag;
+
+        private readonly IReadOnlyList<SortOrder> sortOrders;
 
         public OrderByConsumeComparer(SortOrder[] sortOrders)
         {
-            this.sortOrders = sortOrders;
+            if (sortOrders == null)
+            {
+                throw new ArgumentNullException($"{nameof(sortOrders)} must not be null");
+            }
+
+            this.sortOrders = new List<SortOrder>(sortOrders);
         }
 
         public int Compare(DocumentProducer<OrderByQueryResult> producer1, DocumentProducer<OrderByQueryResult> producer2)
@@ -71,14 +79,15 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                 "OrderByResult instances should have at least 1 order-by item.");
 
             Debug.Assert(
-                this.sortOrders.Length == items1.Length,
+                this.sortOrders.Count == items1.Length,
                 "SortOrders must match size of order-by items.");
 
-#if SUPPORT_V1_COLLECTIONS
-            this.CheckTypeMatching(items1, items2);
-#endif
+            if (AllowMixedTypeOrderByTestFlag)
+            {
+                this.CheckTypeMatching(items1, items2);
+            }
 
-            for (int i = 0; i < this.sortOrders.Length; ++i)
+            for (int i = 0; i < this.sortOrders.Count; ++i)
             {
                 int cmp = ItemComparer.Instance.Compare(
                     items1[i].GetItem(),
@@ -93,49 +102,24 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             return 0;
         }
 
-#if SUPPORT_V1_COLLECTIONS
         private void CheckTypeMatching(QueryItem[] items1, QueryItem[] items2)
         {
-            if (this.orderByItemTypes == null)
-            {
-                lock (this)
-                {
-                    if (this.orderByItemTypes == null)
-                    {
-                        this.orderByItemTypes = new ItemType[items1.Length];
-                        for (int i = 0; i < items1.Length; ++i)
-                        {
-                            this.orderByItemTypes[i] = ItemTypeHelper.GetItemType(items1[i].GetItem());
-                        }
-                    }
-                }
-            }
-
             for (int i = 0; i < items1.Length; ++i)
             {
-                if (this.orderByItemTypes[i] != ItemTypeHelper.GetItemType(items1[i].GetItem()))
-                {
-                    throw new NotSupportedException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            RMResources.UnsupportedCrossPartitionOrderByQueryOnMixedTypes,
-                            orderByItemTypes[i],
-                            ItemTypeHelper.GetItemType(items1[i].GetItem()),
-                            items1[i].GetItem()));
-                }
+                ItemType item1Type = ItemTypeHelper.GetItemType(items1[i].GetItem());
+                ItemType item2Type = ItemTypeHelper.GetItemType(items2[i].GetItem());
 
-                if (this.orderByItemTypes[i] != ItemTypeHelper.GetItemType(items2[i].GetItem()))
+                if(item1Type != item2Type)
                 {
                     throw new NotSupportedException(
                         string.Format(
                             CultureInfo.InvariantCulture,
                             RMResources.UnsupportedCrossPartitionOrderByQueryOnMixedTypes,
-                            orderByItemTypes[i],
-                            ItemTypeHelper.GetItemType(items2[i].GetItem()),
-                            items2[i].GetItem()));
+                            item1Type,
+                            item2Type,
+                            items1[i].GetItem()));
                 }
             }
         }
-#endif
     }
 }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections.Generic;
@@ -24,13 +25,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static readonly Func<DocumentProducer<OrderByQueryResult>, int> TaskPriorityFunc =
             producer => producer.BufferedItemCount;
-
-        private static readonly IDictionary<SortOrder, string[]> FilterFormats = new Dictionary<SortOrder, string[]>(2)
-        {
-
-            { SortOrder.Descending, new[] { "{0} < {1}", string.Empty, "{0} <= {1}", } },
-            { SortOrder.Ascending, new[] { "{0} > {1}", string.Empty, "{0} >= {1}", } },
-        };
 
         private readonly PriorityQueue<DocumentProducer<OrderByQueryResult>> documentProducerConsumerQueue;
         private readonly IDictionary<string, string> filters;
@@ -219,7 +213,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.documentProducerConsumerQueue.Count));
 
                 OrderByQueryResult orderByResult = (OrderByQueryResult)this.currentDocumentProducer.Current;
-
                 result.Add(orderByResult.Payload);
 
                 if (this.currentDocumentProducer.RequestStatistics != null)
@@ -400,27 +393,173 @@ namespace Microsoft.Azure.Cosmos.Query
             OrderByContinuationToken[] continuationTokens,
             SortOrder[] sortOrders)
         {
+            // Validate the inputs
             for (int index = 0; index < continuationTokens.Length; index++)
             {
                 Debug.Assert(continuationTokens[index].OrderByItems.Length == sortOrders.Length, "Expect values and orders are the same size.");
                 Debug.Assert(expressions.Length == sortOrders.Length, "Expect expressions and orders are the same size.");
-                Debug.Assert(continuationTokens[index].OrderByItems.Length == 1, "Expect exactly 1 value.");
             }
 
-            string[] formats = (string[])OrderByDocumentQueryExecutionContext.FilterFormats[sortOrders[0]].Clone();
-            Debug.Assert(formats.Length == 3, "formats array should have 3 elements.");
-            formats[1] = continuationTokens[0].Filter ?? True;
-            string[] filters = new string[3];
-            for (int i = 0; i < filters.Length; ++i)
+            Tuple<string, string, string> filters = this.GetFormattedFilters(
+                expressions,
+                continuationTokens[0].OrderByItems.Select(queryItem => queryItem.GetItem()).ToArray(),
+                sortOrders);
+
+            return new FormattedFilterInfo(filters.Item1, filters.Item2, filters.Item3);
+        }
+
+        private void AppendToBuilders(Tuple<StringBuilder, StringBuilder, StringBuilder> builders, object str)
+        {
+            this.AppendToBuilders(builders, str, str, str);
+        }
+
+        private void AppendToBuilders(Tuple<StringBuilder, StringBuilder, StringBuilder> builders, object left, object target, object right)
+        {
+            builders.Item1.Append(left);
+            builders.Item2.Append(target);
+            builders.Item3.Append(right);
+        }
+
+        private Tuple<string, string, string> GetFormattedFilters(
+            string[] expressions,
+            object[] orderByItems,
+            SortOrder[] sortOrders)
+        {
+            // When we run cross partition queries, 
+            // we only serialize the continuation token for the partition that we left off on.
+            // The only problem is that when we resume the order by query, 
+            // we don't have continuation tokens for all other partition.
+            // The saving grace is that the data has a composite sort order(query sort order, partition key range id)
+            // so we can generate range filters which in turn the backend will turn into rid based continuation tokens,
+            // which is enough to get the streams of data flowing from all partitions.
+            // The details of how this is done is described below:
+            int numOrderByItems = expressions.Length;
+            bool isSingleOrderBy = numOrderByItems == 1;
+            StringBuilder left = new StringBuilder();
+            StringBuilder target = new StringBuilder();
+            StringBuilder right = new StringBuilder();
+
+            Tuple<StringBuilder, StringBuilder, StringBuilder> builders = new Tuple<StringBuilder, StringBuilder, StringBuilder>(left, right, target);
+
+            if (isSingleOrderBy)
             {
-                filters[i] = string.Format(
-                        CultureInfo.InvariantCulture,
-                        formats[i],
-                        expressions[0],
-                        JsonConvert.SerializeObject(continuationTokens[0].OrderByItems[0].GetItem(), DefaultJsonSerializationSettings.Value));
+                //For a single order by query we resume the continuations in this manner
+                //    Suppose the query is SELECT* FROM c ORDER BY c.string ASC
+                //        And we left off on partition N with the value "B"
+                //        Then
+                //            All the partitions to the left will have finished reading "B"
+                //            Partition N is still reading "B"
+                //            All the partitions to the right have let to read a "B
+                //        Therefore the filters should be
+                //            > "B" , >= "B", and >= "B" respectively
+                //    Repeat the same logic for DESC and you will get
+                //            < "B", <= "B", and <= "B" respectively
+                //    The general rule becomes
+                //        For ASC
+                //            > for partitions to the left
+                //            >= for the partition we left off on
+                //            >= for the partitions to the right
+                //        For DESC
+                //            < for partitions to the left
+                //            <= for the partition we left off on
+                //            <= for the partitions to the right
+                string expression = expressions.First();
+                SortOrder sortOrder = sortOrders.First();
+                object orderByItem = orderByItems.First();
+                string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
+                left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
+                target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
+                right.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
+            }
+            else
+            {
+                //For a multi order by query
+                //    Suppose the query is SELECT* FROM c ORDER BY c.string ASC, c.number ASC
+                //        And we left off on partition N with the value("A", 1)
+                //        Then
+                //            All the partitions to the left will have finished reading("A", 1)
+                //            Partition N is still reading("A", 1)
+                //            All the partitions to the right have let to read a "(A", 1)
+                //        The filters are harder to derive since their are multiple columns
+                //        But the problem reduces to "How do you know one document comes after another in a multi order by query"
+                //        The answer is to just look at it one column at a time.
+                //        For this particular scenario:
+                //        If a first column is greater ex. ("B", blah), then the document comes later in the sort order
+                //            Therefore we want all documents where the first column is greater than "A" which means > "A"
+                //        Or if the first column is a tie, then you look at the second column ex. ("A", blah).
+                //            Therefore we also want all documents where the first column was a tie but the second column is greater which means = "A" AND > 1
+                //        Therefore the filters should be
+                //            (> "A") OR (= "A" AND > 1), (> "A") OR (= "A" AND >= 1), (> "A") OR (= "A" AND >= 1)
+                //            Notice that if we repeated the same logic we for single order by we would have gotten
+                //            > "A" AND > 1, >= "A" AND >= 1, >= "A" AND >= 1
+                //            which is wrong since we missed some documents
+                //    Repeat the same logic for ASC, DESC
+                //            (> "A") OR (= "A" AND < 1), (> "A") OR (= "A" AND <= 1), (> "A") OR (= "A" AND <= 1)
+                //        Again for DESC, ASC
+                //            (< "A") OR (= "A" AND > 1), (< "A") OR (= "A" AND >= 1), (< "A") OR (= "A" AND >= 1)
+                //        And again for DESC DESC
+                //            (< "A") OR (= "A" AND < 1), (< "A") OR (= "A" AND <= 1), (< "A") OR (= "A" AND <= 1)
+                //    The general we look at all prefixes of the order by columns to look for tie breakers.
+                //        Except for the full prefix whose last column follows the rules for single item order by
+                //        And then you just OR all the possibilities together
+                for (int prefixLength = 1; prefixLength <= numOrderByItems; prefixLength++)
+                {
+                    ArraySegment<string> expressionPrefix = new ArraySegment<string>(expressions, 0, prefixLength);
+                    ArraySegment<SortOrder> sortOrderPrefix = new ArraySegment<SortOrder>(sortOrders, 0, prefixLength);
+                    ArraySegment<object> orderByItemsPrefix = new ArraySegment<object>(orderByItems, 0, prefixLength);
+
+                    bool lastPrefix = prefixLength == numOrderByItems;
+                    bool firstPrefix = prefixLength == 1;
+
+                    this.AppendToBuilders(builders, "(");
+
+                    for (int index = 0; index < prefixLength; index++)
+                    {
+                        string expression = expressionPrefix.ElementAt(index);
+                        SortOrder sortOrder = sortOrderPrefix.ElementAt(index);
+                        object orderByItem = orderByItemsPrefix.ElementAt(index);
+                        bool lastItem = (index == prefixLength - 1);
+
+                        // Append Expression
+                        this.AppendToBuilders(builders, expression);
+                        this.AppendToBuilders(builders, " ");
+
+                        // Append binary operator
+                        if (lastItem)
+                        {
+                            string inequality = sortOrder == SortOrder.Descending ? "<" : ">";
+                            this.AppendToBuilders(builders, inequality);
+                            if (lastPrefix)
+                            {
+                                this.AppendToBuilders(builders, "", "=", "=");
+                            }
+                        }
+                        else
+                        {
+                            this.AppendToBuilders(builders, "=");
+                        }
+
+                        // Append SortOrder
+                        string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
+                        this.AppendToBuilders(builders, " ");
+                        this.AppendToBuilders(builders, orderByItemToString);
+                        this.AppendToBuilders(builders, " ");
+
+                        if (!lastItem)
+                        {
+                            this.AppendToBuilders(builders, "AND ");
+                        }
+                    }
+
+                    this.AppendToBuilders(builders, ")");
+                    if (!lastPrefix)
+                    {
+                        this.AppendToBuilders(builders, " OR ");
+                    }
+                }
             }
 
-            return new FormattedFilterInfo(filters[0], filters[1], filters[2]);
+            return new Tuple<string, string, string>(left.ToString(), target.ToString(), right.ToString());
         }
 
         private async Task FilterAsync(
@@ -429,6 +568,13 @@ namespace Microsoft.Azure.Cosmos.Query
             OrderByContinuationToken continuationToken,
             CancellationToken cancellationToken)
         {
+            // When we resume a query on a partition there is a possibility that we only read a partial page from the backend
+            // meaning that will we repeat some documents if we didn't do anything about it. 
+            // The solution is to filter all the documents that come before in the sort order, since we have already emitted them to the client.
+            // The key is to seek until we get an order by value that matches the order by value we left off on.
+            // Once we do that we need to seek to the correct _rid within the term,
+            // since there might be many documents with the same order by value we left off on.
+
             ResourceId continuationRid;
             if (!ResourceId.TryParse(continuationToken.Rid, out continuationRid))
             {
@@ -450,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.Query
             while (true)
             {
                 OrderByQueryResult orderByResult = (OrderByQueryResult)producer.Current;
-
+                // Throw away documents until it matches the item from the continuation token.
                 int cmp = 0;
                 for (int i = 0; i < sortOrders.Length; ++i)
                 {
@@ -467,6 +613,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (cmp < 0)
                 {
+                    // We might have passed the item due to deletions and filters.
                     break;
                 }
 
@@ -509,18 +656,25 @@ namespace Microsoft.Azure.Cosmos.Query
                         continuationRidVerified = true;
                     }
 
+                    // Once the item matches the order by items from the continuation tokens
+                    // We still need to remove all the documents that have a lower rid in the rid sort order.
+                    // If there is a tie in the sort order the documents should be in _rid order in the same direction as the first order by field.
+                    // So if it's ORDER BY c.age ASC, c.name DESC the _rids are ASC 
+                    // If ti's ORDER BY c.age DESC, c.name DESC the _rids are DESC
+
                     cmp = continuationRid.Document.CompareTo(rid.Document);
-                    if (sortOrders[sortOrders.Length - 1] == SortOrder.Descending)
+                    if (sortOrders[0] == SortOrder.Descending)
                     {
                         cmp = -cmp;
                     }
 
+                    // We might have passed the item due to deletions and filters.
+                    // We also have a skip count for JOINs
                     if (cmp < 0 || (cmp == 0 && itemToSkip-- <= 0))
                     {
                         break;
                     }
                 }
-
 
                 if (!await producer.MoveNextAsync(cancellationToken))
                 {
@@ -651,14 +805,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     if (orderByExpressions == null || orderByExpressions.Length <= 0 || orderByExpressions.Length != sortOrders.Length)
                     {
-                        DefaultTrace.TraceWarning(
-                            string.Format(
-                                CultureInfo.InvariantCulture,
-                                "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid order-by expression in the continuation token {3} for OrderBy~Context.",
-                                DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                this.CorrelatedActivityId,
-                                requestContinuation,
-                                this.ActivityId));
+                        DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}, CorrelatedActivityId: {this.CorrelatedActivityId} | Invalid order-by expression in the continuation token {requestContinuation} for OrderBy~Context.");
                         throw new BadRequestException(RMResources.InvalidContinuationToken);
                     }
 
@@ -669,43 +816,15 @@ namespace Microsoft.Azure.Cosmos.Query
                                 suppliedToken.OrderByItems == null ||
                                 suppliedToken.OrderByItems.Length <= 0)
                         {
-                            DefaultTrace.TraceWarning(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | One of more fields missing in the continuation token {3} for OrderBy~Context.",
-                                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                    this.CorrelatedActivityId,
-                                    this.ActivityId,
-                                    requestContinuation));
-                            throw new BadRequestException(RMResources.InvalidContinuationToken);
+                            DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}, CorrelatedActivityId: {this.CorrelatedActivityId} | One of more fields missing in the continuation token {requestContinuation} for OrderBy~Context.");
+                            throw new BadRequestException($"One of more fields missing in the continuation token {requestContinuation} for OrderBy~Context.");
                         }
                         else
                         {
                             if (suppliedToken.OrderByItems.Length != sortOrders.Length)
                             {
-                                DefaultTrace.TraceWarning(
-                                    string.Format(
-                                        CultureInfo.InvariantCulture,
-                                        "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid order-by items in ontinutaion token {3} for OrderBy~Context.",
-                                        DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                        this.CorrelatedActivityId,
-                                        this.ActivityId,
-                                        requestContinuation));
-                                throw new BadRequestException(RMResources.InvalidContinuationToken);
-                            }
-
-                            // Note: We can support order-by continuation with multiple fields once we support composite index
-                            if (suppliedToken.OrderByItems.Length > 1)
-                            {
-                                DefaultTrace.TraceWarning(
-                                    string.Format(
-                                        CultureInfo.InvariantCulture,
-                                        "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Order-by continuation {3} with multiple fields not supported for OrderBy~Context.",
-                                        DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                        this.CorrelatedActivityId,
-                                        this.ActivityId,
-                                        requestContinuation));
-                                throw new BadRequestException(RMResources.InvalidContinuationToken);
+                                DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}, CorrelatedActivityId: {this.CorrelatedActivityId} | Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
+                                throw new BadRequestException($"Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
                             }
                         }
                     }
@@ -713,13 +832,13 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (suppliedCompositeContinuationTokens.Length == 0)
                     {
                         DefaultTrace.TraceWarning(
-                                    string.Format(
-                                        CultureInfo.InvariantCulture,
-                                        "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid continuation format {3} for OrderBy~Context.",
-                                        DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                        this.CorrelatedActivityId,
-                                        this.ActivityId,
-                                        requestContinuation));
+                            string.Format(
+                                CultureInfo.InvariantCulture,
+                                "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid continuation format {3} for OrderBy~Context.",
+                                DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                                this.CorrelatedActivityId,
+                                this.ActivityId,
+                                requestContinuation));
                         throw new BadRequestException(RMResources.InvalidContinuationToken);
                     }
                 }

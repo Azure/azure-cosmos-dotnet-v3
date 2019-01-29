@@ -423,27 +423,5 @@ namespace Microsoft.Azure.Cosmos
         /// should be excluded from JSON content of a document or not.
         /// </summary>
         internal bool? ExcludeSystemProperties { get; set; }
-
-        /// <summary>
-        /// Gets or sets shared offer throughput on a collection.
-        /// </summary>
-        /// <remarks>
-        /// This option is only valid when creating a document collection that shares offer throughput
-        /// provisioned at database level. Specifies maximum shared throughput available for collection
-        /// in the absence of contention. This value should be less than the throughput specified at
-        /// database level. 
-        /// </remarks>
-        /// <example>
-        /// The followng example shows how to create a collection with offer throughput.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// await client.CreateDocumentCollectionAsync(
-        ///     database.SelfLink,
-        ///     new DocumentCollection { Id = "newcoll" },
-        ///     new RequestOptions { SharedOfferThroughput = 50000 });
-        /// ]]>
-        /// </code>
-        /// </example>
-        public int? SharedOfferThroughput { get; set; }
     }
 }

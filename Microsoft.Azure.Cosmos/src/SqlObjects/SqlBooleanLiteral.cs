@@ -1,25 +1,56 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlBooleanLiteral.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
+    using System.Text;
+
     internal sealed class SqlBooleanLiteral : SqlLiteral
     {
-        public bool Value
-        {
-            get;
-            private set;
-        }
+        public static readonly SqlBooleanLiteral True = new SqlBooleanLiteral(true);
+        public static readonly SqlBooleanLiteral False = new SqlBooleanLiteral(false);
 
-        public SqlBooleanLiteral(bool value)
+        private SqlBooleanLiteral(bool value)
             : base(SqlObjectKind.BooleanLiteral)
         { 
             this.Value = value;
         }
 
-        public override void AppendToBuilder(System.Text.StringBuilder builder)
+        public bool Value
         {
-            builder.Append(this.Value ? "true" : "false");
+            get;
+        }
+
+        public static SqlBooleanLiteral Create(bool value)
+        {
+            return value ? True : False;
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlLiteralVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 }

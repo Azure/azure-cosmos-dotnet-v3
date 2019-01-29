@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (request.OperationType == OperationType.Delete)
             {
-                if (request.ResourceAddress.EndsWith(Constants.ValidOperationId))
+                if (request.ResourceAddress.EndsWith(Tests.Constants.ValidOperationId))
                 {
                     response = new DocumentServiceResponse(
                         File.OpenRead("samplepayload.json"),

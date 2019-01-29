@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class StoreClientFactory : IDisposable
+    internal sealed class StoreClientFactory : IStoreClientFactory, IDisposable
     {
         private bool isDisposed = false;
         private readonly Protocol protocol;
@@ -22,28 +22,40 @@ namespace Microsoft.Azure.Cosmos
             ICommunicationEventSource eventSource = null, // required for HTTPS, not used for RNTBD
             string overrideHostNameInCertificate = null, // optional for RNTBD, not used for HTTPS
             int openTimeoutInSeconds = 0, // optional for RNTBD, not used for HTTPS
-            int idleTimeoutInSeconds = 100,// optional for RNTBD, not used for HTTPS
+            int idleTimeoutInSeconds = 1800,// optional for both HTTPS and RNTBD
             int timerPoolGranularityInSeconds = 0, // optional for RNTBD, not used for HTTPS
             int maxRntbdChannels = ushort.MaxValue,  // RNTBD
+            int rntbdPartitionCount = 1, // RNTBD
             int maxRequestsPerRntbdChannel = 30,  // RNTBD
             int receiveHangDetectionTimeSeconds = 65,  // RNTBD
             int sendHangDetectionTimeSeconds = 10,  // RNTBD
             Func<TransportClient, TransportClient> transportClientHandlerFactory = null // Interceptor factory
             )
         {
+            // <=0 means idle timeout is disabled.
+            // valid value: >= 10 minutes
+            if (idleTimeoutInSeconds > 0 && idleTimeoutInSeconds < 600)
+            {
+                throw new ArgumentOutOfRangeException(nameof(idleTimeoutInSeconds));
+            }
+
             if (protocol == Protocol.Https)
             {
                 if (eventSource == null)
                 {
                     throw new ArgumentOutOfRangeException("eventSource");
                 }
-                this.transportClient = new HttpTransportClient(requestTimeoutInSeconds, eventSource, userAgent);
+                this.transportClient = new HttpTransportClient(requestTimeoutInSeconds, eventSource, userAgent, idleTimeoutInSeconds);
             }
             else if (protocol == Protocol.Tcp)
             {
                 if (maxRntbdChannels <= 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(maxRntbdChannels));
+                }
+                if ((rntbdPartitionCount < 1) || (rntbdPartitionCount > 8))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(rntbdPartitionCount));
                 }
                 if (maxRequestsPerRntbdChannel <= 0)
                 {
@@ -148,13 +160,15 @@ namespace Microsoft.Azure.Cosmos
                     new Rntbd.TransportClient.Options(TimeSpan.FromSeconds(requestTimeoutInSeconds))
                     {
                         MaxChannels = maxRntbdChannels,
+                        PartitionCount = rntbdPartitionCount,
                         MaxRequestsPerChannel = maxRequestsPerRntbdChannel,
                         ReceiveHangDetectionTime = TimeSpan.FromSeconds(receiveHangDetectionTimeSeconds),
                         SendHangDetectionTime = TimeSpan.FromSeconds(sendHangDetectionTimeSeconds),
                         UserAgent = userAgent,
                         CertificateHostNameOverride = overrideHostNameInCertificate,
                         OpenTimeout = TimeSpan.FromSeconds(openTimeoutInSeconds),
-                        TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds)
+                        TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds),
+                        IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
                     });
             }
             else

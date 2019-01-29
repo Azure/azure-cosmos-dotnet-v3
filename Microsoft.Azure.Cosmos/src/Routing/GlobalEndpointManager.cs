@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
@@ -27,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
         private readonly object refreshLock;
+        private readonly AsyncCache<string, CosmosAccountSettings> databaseAccountCache;
         private bool isRefreshing;
         private bool isDisposed;
 
@@ -42,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.owner = owner;
             this.defaultEndpoint = owner.ServiceEndpoint;
             this.connectionPolicy = connectionPolicy;
+            this.databaseAccountCache = new AsyncCache<string, CosmosAccountSettings>();
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
 
@@ -152,8 +156,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isDisposed = true;
         }
 
-        public async Task RefreshLocationAsync(CosmosAccountSettings databaseAccount)
+        public async Task RefreshLocationAsync(CosmosAccountSettings databaseAccount, bool forceRefresh = false)
         {
+            if (forceRefresh)
+            {
+                CosmosAccountSettings refreshedDatabaseAccount = await this.RefreshDatabaseAccountInternalAsync();
+
+                this.locationCache.OnDatabaseAccountRead(refreshedDatabaseAccount);
+                return;
+            }
+
             lock (this.refreshLock)
             {
                 if (this.isRefreshing) return;
@@ -186,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (databaseAccount == null && !canRefreshInBackground)
                 {
-                    databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync);
+                    databaseAccount = await this.RefreshDatabaseAccountInternalAsync();
 
                     this.locationCache.OnDatabaseAccountRead(databaseAccount);
                 }
@@ -197,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.isRefreshing = false;
             }
-        }
+        }    
 
         private async void StartRefreshLocationTimerAsync()
         {
@@ -212,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceInformation("StartRefreshLocationTimerAsync() - Invoking refresh");
 
-                CosmosAccountSettings databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync);
+                CosmosAccountSettings databaseAccount = await this.RefreshDatabaseAccountInternalAsync();
 
                 await this.RefreshLocationPrivateAsync(databaseAccount);
             }
@@ -232,6 +244,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             this.locationCache.OnLocationPreferenceChanged(new ReadOnlyCollection<string>(
                 this.connectionPolicy.PreferredLocations));
+        }
+
+        private Task<CosmosAccountSettings> RefreshDatabaseAccountInternalAsync()
+        {
+            this.databaseAccountCache.Refresh(
+                string.Empty,
+                () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync),
+                CancellationToken.None);
+
+            return this.databaseAccountCache.GetAsync(
+                string.Empty,
+                null,
+                () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync),
+                CancellationToken.None);
         }
     }
 }

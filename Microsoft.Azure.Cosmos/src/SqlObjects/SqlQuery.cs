@@ -1,72 +1,82 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlQuery.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
+    using System;
+
     internal class SqlQuery : SqlObject
     {
-        public SqlQuery(
+        protected SqlQuery(
             SqlSelectClause selectClause,
             SqlFromClause fromClause,
             SqlWhereClause whereClause,
-            SqlOrderbyClause orderbyClause)
+            SqlOrderbyClause orderbyClause,
+            SqlOffsetLimitClause offsetLimitClause)
             : base(SqlObjectKind.Query)
         {
+            if (selectClause == null)
+            {
+                throw new ArgumentNullException($"{nameof(selectClause)} must not be null.");
+            }
+
             this.SelectClause = selectClause;
             this.FromClause = fromClause;
             this.WhereClause = whereClause;
             this.OrderbyClause = orderbyClause;
+            this.OffsetLimitClause = offsetLimitClause;
         }
 
         public SqlSelectClause SelectClause
         {
             get;
-            set;
         }
 
         public SqlFromClause FromClause
         {
             get;
-            set;
         }
 
         public SqlWhereClause WhereClause
         {
             get;
-            set;
         }
 
         public SqlOrderbyClause OrderbyClause
         {
             get;
-            set;
         }
 
-        public override void AppendToBuilder(System.Text.StringBuilder builder)
+        public SqlOffsetLimitClause OffsetLimitClause
         {
-            if (this.SelectClause != null)
-            {
-                this.SelectClause.AppendToBuilder(builder);
-                builder.Append(" ");
-            }
+            get;
+        }
 
-            if (this.FromClause != null)
-            {
-                this.FromClause.AppendToBuilder(builder);
-                builder.Append(" ");
-            }
+        public static SqlQuery Create(
+            SqlSelectClause selectClause,
+            SqlFromClause fromClause,
+            SqlWhereClause whereClause,
+            SqlOrderbyClause orderbyClause,
+            SqlOffsetLimitClause offsetLimitClause)
+        {
+            return new SqlQuery(selectClause, fromClause, whereClause, orderbyClause, offsetLimitClause);
+        }
 
-            if (this.WhereClause != null)
-            {
-                this.WhereClause.AppendToBuilder(builder);
-                builder.Append(" ");
-            }
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
 
-            if (this.OrderbyClause != null)
-            {
-                this.OrderbyClause.AppendToBuilder(builder);
-                builder.Append(" ");
-            }
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

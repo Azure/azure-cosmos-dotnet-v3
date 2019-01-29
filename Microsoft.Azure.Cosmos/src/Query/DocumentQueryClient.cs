@@ -52,11 +52,11 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        RetryPolicy IDocumentQueryClient.RetryPolicy
+        IRetryPolicyFactory IDocumentQueryClient.ResetSessionTokenRetryPolicy
         {
             get
             {
-                return this.innerClient.RetryPolicy;
+                return this.innerClient.ResetSessionTokenRetryPolicy;
             }
         }
 

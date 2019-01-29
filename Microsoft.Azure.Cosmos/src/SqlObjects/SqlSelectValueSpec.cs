@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlSelectValueSpec.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -8,13 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlSelectValueSpec : SqlSelectSpec
     {
-        public SqlScalarExpression Expression
-        {
-            get;
-            private set;
-        }
-
-        public SqlSelectValueSpec(
+        private SqlSelectValueSpec(
             SqlScalarExpression expression)
             : base(SqlObjectKind.SelectValueSpec)
         {
@@ -22,14 +18,48 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 throw new ArgumentNullException("expression");
             }
-            
+
             this.Expression = expression;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlScalarExpression Expression
         {
-            builder.Append("VALUE ");
-            this.Expression.AppendToBuilder(builder);
+            get;
+        }
+
+        public static SqlSelectValueSpec Create(SqlScalarExpression expression)
+        {
+            return new SqlSelectValueSpec(expression);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlSelectSpecVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlSelectSpecVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlSelectSpecVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlSelectClause.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -8,53 +10,54 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlSelectClause : SqlObject
     {
-        public SqlSelectSpec SelectSpec
-        {
-            get;
-            private set;
-        }
+        public static readonly SqlSelectClause SelectStar = new SqlSelectClause(SqlSelectStarSpec.Singleton);
 
-        public SqlTopSpec TopSpec
-        {
-            get;
-            private set;
-        }
-
-        public bool HasDistinct
-        {
-            get;
-            private set;
-        }
-
-        public SqlSelectClause(SqlSelectSpec selectSpec, SqlTopSpec topSpec, bool hasDistinct = false)
+        private SqlSelectClause(SqlSelectSpec selectSpec, SqlTopSpec topSpec = null, bool hasDistinct = false)
             : base(SqlObjectKind.SelectClause)
         {
             if (selectSpec == null)
             {
                 throw new ArgumentNullException("selectSpec");
             }
-            
+
             this.SelectSpec = selectSpec;
             this.TopSpec = topSpec;
             this.HasDistinct = hasDistinct;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlSelectSpec SelectSpec
         {
-            builder.Append("SELECT ");
+            get;
+        }
 
-            if (this.HasDistinct)
-            {
-                builder.Append("DISTINCT ");
-            }
+        public SqlTopSpec TopSpec
+        {
+            get;
+        }
 
-            if(this.TopSpec != null)
-            {
-                this.TopSpec.AppendToBuilder(builder);
-                builder.Append(" ");
-            }
+        public bool HasDistinct
+        {
+            get;
+        }
 
-            this.SelectSpec.AppendToBuilder(builder);
+        public static SqlSelectClause Create(SqlSelectSpec selectSpec, SqlTopSpec topSpec = null, bool hasDistinct = false)
+        {
+            return new SqlSelectClause(selectSpec, topSpec, hasDistinct);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

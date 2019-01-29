@@ -22,11 +22,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             TranslationContext context = new TranslationContext();
 
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlScalarExpression scalarExpression = ExpressionToSql.VisitScalarExpression(inputExpression, context);
-            StringBuilder builder = new StringBuilder();
-
-            scalarExpression.AppendToBuilder(builder);
-            return builder.ToString();
+            SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
+            return scalarExpression.ToString();
         }
 
         internal static string TranslateExpressionOld(Expression inputExpression)
@@ -34,20 +31,15 @@ namespace Microsoft.Azure.Cosmos.Linq
             TranslationContext context = new TranslationContext();
 
             inputExpression = ConstantFolding.Fold(inputExpression);
-            SqlScalarExpression scalarExpression = ExpressionToSql.VisitScalarExpression(inputExpression, context);
-            StringBuilder builder = new StringBuilder();
-
-            scalarExpression.AppendToBuilder(builder);
-            return builder.ToString();
+            SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
+            return scalarExpression.ToString();
         }
 
         internal static SqlQuerySpec TranslateQuery(Expression inputExpression)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
             SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression);
-            StringBuilder builder = new StringBuilder();
-            query.AppendToBuilder(builder);
-            return new SqlQuerySpec(builder.ToString());
+            return new SqlQuerySpec(query.ToString());
         }
     }
 }

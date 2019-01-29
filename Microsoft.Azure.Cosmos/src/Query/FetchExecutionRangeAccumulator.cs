@@ -65,15 +65,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Updates the most recent end time internally and constructs a new FetchExecutionRange
         /// </summary>
+        /// <param name="activityId">The activity of the fetch.</param>
         /// <param name="numberOfDocuments">The number of documents that were fetched for this range.</param>
         /// <param name="retryCount">The number of times we retried for this fetch execution range.</param>
-        public void EndFetchRange(long numberOfDocuments, long retryCount)
+        public void EndFetchRange(string activityId, long numberOfDocuments, long retryCount)
         {
             if (this.isFetching)
             {
                 // Calculating the end time as the construction time and the stopwatch as a delta.
                 this.endTime = this.constructionTime.Add(this.stopwatch.Elapsed);
                 FetchExecutionRange fetchExecutionRange = new FetchExecutionRange(
+                    activityId,
                     this.startTime,
                     this.endTime,
                     this.partitionKeyRangeId,

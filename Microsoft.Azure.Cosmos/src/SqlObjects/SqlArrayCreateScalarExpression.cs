@@ -1,36 +1,86 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlArrayCreateScalarExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+
     internal sealed class SqlArrayCreateScalarExpression : SqlScalarExpression
     {
-        public SqlScalarExpression[] Items
-        {
-            get;
-            private set;
-        }
+        private static readonly SqlArrayCreateScalarExpression Empty = new SqlArrayCreateScalarExpression(new List<SqlScalarExpression>());
 
-        public SqlArrayCreateScalarExpression(
-            SqlScalarExpression[] items)
+        private SqlArrayCreateScalarExpression(IReadOnlyList<SqlScalarExpression> items)
             : base(SqlObjectKind.ArrayCreateScalarExpression)
         {
-            this.Items = items;
+            if (items == null)
+            {
+                throw new ArgumentNullException($"{nameof(items)} must not be null.");
+            }
+
+            foreach (SqlScalarExpression item in items)
+            {
+                if (item == null)
+                {
+                    throw new ArgumentException($"{nameof(item)} must not have null items.");
+                }
+            }
+
+            this.Items = new List<SqlScalarExpression>(items);
         }
 
-        public override void AppendToBuilder(System.Text.StringBuilder builder)
+        public IReadOnlyList<SqlScalarExpression> Items
         {
-            builder.Append("[");
-            for (int i = 0; i < this.Items.Length; i++)
-            {
-                if (i > 0)
-                {
-                    builder.Append(", ");
-                }
+            get;
+        }
 
-                this.Items[i].AppendToBuilder(builder);
-            }
-            builder.Append("]");
+        public static SqlArrayCreateScalarExpression Create()
+        {
+            return SqlArrayCreateScalarExpression.Empty;
+        }
+
+        public static SqlArrayCreateScalarExpression Create(params SqlScalarExpression[] items)
+        {
+            return new SqlArrayCreateScalarExpression(items);
+        }
+
+        public static SqlArrayCreateScalarExpression Create(IReadOnlyList<SqlScalarExpression> items)
+        {
+            return new SqlArrayCreateScalarExpression(items);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

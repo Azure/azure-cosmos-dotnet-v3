@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Sql
@@ -9,10 +9,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlExistsScalarExpression : SqlScalarExpression
     {
-        public SqlQuery SqlQuery { get; }
-
-        public SqlExistsScalarExpression(SqlQuery sqlQuery)
-            : base(SqlObjectKind.ExistsScalarExpression)
+        private SqlExistsScalarExpression(SqlQuery sqlQuery)
+          : base(SqlObjectKind.ExistsScalarExpression)
         {
             if (sqlQuery == null)
             {
@@ -22,12 +20,41 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.SqlQuery = sqlQuery;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlQuery SqlQuery { get; }
+
+        public static SqlExistsScalarExpression Create(SqlQuery sqlQuery)
         {
-            builder.Append("EXISTS");
-            builder.Append("(");
-            this.SqlQuery.AppendToBuilder(builder);
-            builder.Append(")");
+            return new SqlExistsScalarExpression(sqlQuery);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

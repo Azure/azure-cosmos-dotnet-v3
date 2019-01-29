@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class AuthorizationHelper
     {
         public const int MaxAuthorizationHeaderSize = 1024;
-        public const int DefaultAllowedClockSkewInSeconds = 300;
-        public const int DefaultMasterTokenExpiryInSeconds = 900;
 
         // This API is a helper method to create auth header based on client request.
         // Uri is split into resourceType/resourceId - 
@@ -51,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException("headers");
             }
-            
+
             string resourceType = string.Empty;
             string resourceIdValue = string.Empty;
             bool isNameBased = false;

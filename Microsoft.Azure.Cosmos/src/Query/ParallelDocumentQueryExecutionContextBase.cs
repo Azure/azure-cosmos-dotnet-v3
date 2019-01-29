@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Cosmos.Routing;
+    using Newtonsoft.Json;
 
     internal abstract class ParallelDocumentQueryExecutionContextBase<T> : DocumentQueryExecutionContextBase, IDocumentQueryExecutionComponent
     {
@@ -91,7 +92,15 @@ namespace Microsoft.Azure.Cosmos.Query
             this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
             this.responseHeaders = new StringKeyValueCollection();
 
-            this.actualMaxBufferedItemCount = Math.Max(this.MaxBufferedItemCount, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
+            if (IsMaxBufferedItemCountSet(this.MaxBufferedItemCount))
+            {
+                this.actualMaxBufferedItemCount = this.MaxBufferedItemCount;
+            }
+            else
+            {
+                this.actualMaxBufferedItemCount = ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize;
+            }
+
             this.currentAverageNumberOfRequestsPerTask = 1d;
 
             if (!string.IsNullOrEmpty(rewrittenQuery))
@@ -177,6 +186,14 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        protected int ActualMaxPageSize
+        {
+            get
+            {
+                return (int)this.actualMaxPageSize;
+            }
+        }
+
         protected abstract override string ContinuationToken
         {
             get;
@@ -253,8 +270,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     range,
                     taskPriorityFunc,
                     this.ExecuteRequestAsync<T>,
-                    () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.Client.RetryPolicy.GetRequestPolicy()),
-                    this.OnDocumentProducerCompleteFetching,
+                    () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.Client.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
+                    this.OnDocumentProducerPostCompleteFetching,
+                    this.OnDocumentProducerPreCompleteFetch,
                     this.CorrelatedActivityId,
                     initialPageSize,
                     initialContinuationToken));
@@ -312,8 +330,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     range,
                     taskPriorityFunc,
                     this.ExecuteRequestAsync<T>,
-                    () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.Client.RetryPolicy.GetRequestPolicy()),
-                    this.OnDocumentProducerCompleteFetching,
+                    () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.Client.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
+                    this.OnDocumentProducerPostCompleteFetching,
+                    this.OnDocumentProducerPreCompleteFetch,
                     this.CorrelatedActivityId,
                     replacedDocumentProducer.PageSize,
                     replacedDocumentProducer.CurrentBackendContinuationToken));
@@ -492,34 +511,47 @@ namespace Microsoft.Azure.Cosmos.Query
             return movedNext;
         }
 
-        private void OnDocumentProducerCompleteFetching(
+        private void OnDocumentProducerPreCompleteFetch(
             DocumentProducer<T> producer,
-            int size,
-            double resourceUnitUsage,
-            QueryMetrics queryMetrics,
-            long responseLengthBytes,
+            FetchMetadata fetchMetadata,
             CancellationToken token)
         {
             // Update charge and states
-            this.chargeTracker.AddCharge(resourceUnitUsage);
-            Interlocked.Add(ref this.totalBufferedItems, size);
+            this.chargeTracker.AddCharge(fetchMetadata.ResourceUnitUsage);
+            Interlocked.Add(ref this.totalBufferedItems, fetchMetadata.TotalItemsFetched);
             Interlocked.Increment(ref this.totalRequestRoundTrips);
-            this.IncrementResponseLengthBytes(responseLengthBytes);
-            this.partitionedQueryMetrics.Add(Tuple.Create(producer.TargetRange.Id, queryMetrics));
+            this.IncrementResponseLengthBytes(fetchMetadata.TotalResponseLengthBytes);
+            this.partitionedQueryMetrics.Add(Tuple.Create(producer.TargetRange.Id, fetchMetadata.QueryMetrics));
 
+            DefaultTrace.TraceVerbose(string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}, CorrelatedActivityId: {1} | Id: {2}, size: {3}, resourceUnitUsage: {4}",
+                DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                this.CorrelatedActivityId,
+                producer.TargetRange.Id,
+                fetchMetadata.TotalItemsFetched,
+                fetchMetadata.ResourceUnitUsage));
+        }
+
+        private void OnDocumentProducerPostCompleteFetching(
+            DocumentProducer<T> producer,
+            FetchMetadata fetchMetadata,
+            CancellationToken token)
+        {
             //Check to see if we can buffer more item
-            long countToAdd = size - this.FreeItemSpace;
+            long countToAdd = fetchMetadata.TotalItemsFetched - this.FreeItemSpace;
             if (countToAdd > 0 &&
                 this.actualMaxBufferedItemCount < MaxixmumDynamicMaxBufferedItemCountValue - countToAdd)
             {
                 DefaultTrace.TraceVerbose(string.Format(
                     CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {4} | Id: {1}, increasing MaxBufferedItemCount {2} by {3}.",
+                    "{0}, CorrelatedActivityId: {1} | Id: {2}, size: {3}, increasing MaxBufferedItemCount {4} by {5}.",
                     DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                    this.CorrelatedActivityId,
                     producer.TargetRange.Id,
+                    fetchMetadata.TotalItemsFetched,
                     this.actualMaxBufferedItemCount,
-                    countToAdd,
-                    this.CorrelatedActivityId));
+                    countToAdd));
 
                 countToAdd += this.actualMaxBufferedItemCount;
             }
@@ -546,11 +578,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             DefaultTrace.TraceVerbose(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0}, CorrelatedActivityId: {5} | Id: {1}, size: {2}, resourceUnitUsage: {3}, taskScheduler.CurrentRunningTaskCount: {4}",
+                "{0}, CorrelatedActivityId: {4} | Id: {1}, size: {2}, taskScheduler.CurrentRunningTaskCount: {3}",
                 DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                 producer.TargetRange.Id,
-                size,
-                resourceUnitUsage,
+                fetchMetadata.TotalItemsFetched,
                 this.TaskScheduler.CurrentRunningTaskCount,
                 this.CorrelatedActivityId));
         }
@@ -618,5 +649,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return Interlocked.Add(ref this.totalResponseLengthBytes, incrementValue);
         }
 
+        private static bool IsMaxBufferedItemCountSet(int maxBufferedItemCount)
+        {
+            return maxBufferedItemCount != default(int);
+        }
     }
 }

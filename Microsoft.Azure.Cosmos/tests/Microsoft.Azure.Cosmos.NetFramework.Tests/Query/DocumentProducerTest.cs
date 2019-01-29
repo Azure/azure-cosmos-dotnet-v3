@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Test possible race conditions in "DocumentProducer"
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(OperationCanceledException))]
+        [Owner("sboshra")]
+        [Ignore] // This test doesn't seem to function.
         public async Task ConcurrentMoveNextTryScheduleTestAsync()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -40,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Query
             IEnumerable<int> expectedValues = Enumerable.Range(1, maxValue);
             IDocumentClientRetryPolicy retryPolicy = new MockRetryPolicy(rand);
             ComparableTaskScheduler scheduler = new ComparableTaskScheduler(1);
-
             for (int trial = 0; trial < trials; ++trial)
             {
                 DocumentProducer<int> producer = new DocumentProducer<int>(
@@ -80,7 +80,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     },
                     () => retryPolicy,
-                    (produer, size, ru, queryMetrics, token, length) => { },
+                    (produer, metadata, token) => { },
+                    (produer, metadata, token) => { },
                     Guid.NewGuid(),
                     1000,
                     "0");
@@ -106,10 +107,83 @@ namespace Microsoft.Azure.Cosmos.Query
 
         }
 
+        [TestMethod]
+        [Owner("olivert")]
+        public async Task TestPreCompleteFetchCallbackAvoidsRace()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            Random rand = new Random(seed);
+            IDocumentClientRetryPolicy retryPolicy = new MockRetryPolicy(rand);
+            ComparableTaskScheduler scheduler = new ComparableTaskScheduler(1);
+
+            int itemCountPerResponse = 5;
+            List<FeedResponse<int>> producedFeedResponses = new List<FeedResponse<int>>();
+            List<int> actualFeedItems = new List<int>();
+            int preFetchCallbackItemCount = 0;
+
+            var responeHeaders = new StringKeyValueCollection()
+            {
+                {HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString() },
+            };
+
+            DocumentProducer<int> producer = new DocumentProducer<int>(
+                scheduler,
+                (continuation, pageSize) => null,
+                new PartitionKeyRange { Id = "test", MinInclusive = "", MaxExclusive = "ff" },
+                p => 0,
+                (request, token) =>
+                {
+                    var response = new FeedResponse<int>(
+                        Enumerable.Repeat(42, itemCountPerResponse),
+                        itemCountPerResponse,
+                        responeHeaders);
+
+                    // Add a continution on the first response so that at least two fetches are scheduled.
+                    if (producedFeedResponses.Count == 0)
+                    {
+                        response.ResponseContinuation = "testct";
+                    }
+
+                    producedFeedResponses.Add(response);
+                    return Task.FromResult(response);
+                },
+                () => retryPolicy,
+                postCompletFetchCallback: (p, metadata, token) => {
+                    p.TryScheduleFetch();
+                },
+                preCompleteFetchCallback: (p, metadata, token) => {
+
+                    // Sleep before item count update to help simulate the consumer thread enumeration
+                    // occurring before than the statistics increment on the callback.
+                    // With the fix, it should be guaranteed that this callback happens before new
+                    // items are buffered, so the enumeration will be paused until this callback completes.
+                    Thread.Sleep(1000);
+                    Interlocked.Add(ref preFetchCallbackItemCount, metadata.TotalItemsFetched);
+                },
+                correlatedActivityId: Guid.NewGuid(),
+                bufferCapacity: 1)
+            {
+                PageSize = 1000
+            };
+
+            int consumerTrackedItemCount = 0;
+            while (await producer.MoveNextAsync(CancellationToken.None))
+            {
+                consumerTrackedItemCount += Interlocked.Exchange(ref preFetchCallbackItemCount, 0);
+                actualFeedItems.Add(producer.Current);
+            }
+
+            // Check that the consumed items and aggregate statistics match the total that was produced.
+            int expectedItemCount = producedFeedResponses.Sum(f => f.Count);
+            Assert.AreEqual(expectedItemCount, actualFeedItems.Count);
+            Assert.AreEqual(expectedItemCount, consumerTrackedItemCount);
+        }
+
         /// <summary>
         /// Test possible InvalidOperationException in "DocumentProducer.MoveNextAsync"
         /// </summary>
         [TestMethod]
+        [Owner("sboshra")]
         [ExpectedException(typeof(InvalidOperationException))]
         public async Task TestInvalidOperationExceptionAsync()
         {
@@ -128,7 +202,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     return Task.FromResult(new FeedResponse<int>(new int[] { }, 0, new StringKeyValueCollection()));
                 },
                 () => retryPolicy,
-                (produer, size, ru, queryMetrics, token, length) => { },
+                (produer, metadata, token) => { },
+                (produer, metadata, token) => { },
                 Guid.NewGuid()
                 )
                 {
@@ -143,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Test possible InvalidOperationException in "DocumentProducer.FetchAsync"
         /// </summary>
         [TestMethod]
+        [Owner("sboshra")]
         [ExpectedException(typeof(OperationCanceledException))]
         public async Task TestOperationCanceledExceptionAsync()
         {
@@ -162,7 +238,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new Exception();
                 },
                 () => retryPolicy,
-                (produer, size, ru, queryMetrics, token, length) => { },
+                (produer, metadata, token) => { },
+                (produer, metadata, token) => { },
                 Guid.NewGuid()
                 )
                 {
@@ -189,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.FromTicks(this.rand.Next(25))));
             }
 
-            public Task<ShouldRetryResult> ShouldRetryAsync(CosmosResponseMessage httpResponseMessage, CancellationToken cancellationToken)
+            public Task<ShouldRetryResult> ShouldRetryAsync(CosmosResponseMessage cosmosResponseMessage, CancellationToken cancellationToken)
             {
                 return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.FromTicks(this.rand.Next(25))));
             }

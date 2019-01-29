@@ -4,13 +4,17 @@
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using System;
-    using System.Globalization;
-    using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Cosmos.SystemFunctions;
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.Linq.Expressions;
+    using System.Reflection;
+    using Microsoft.Azure.Cosmos;
+    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal abstract class BuiltinFunctionVisitor
     {
@@ -87,10 +91,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             // ToString with Objects (String and Guid only)
             if (methodCallExpression.Method.Name == "ToString" &&
                 methodCallExpression.Arguments.Count == 0 &&
-                methodCallExpression.Object != null &&
-                (methodCallExpression.Object.Type == typeof(Guid) || methodCallExpression.Object.Type == typeof(string)))
+                methodCallExpression.Object != null)
             {
-                return ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                return ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
             }
 
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));

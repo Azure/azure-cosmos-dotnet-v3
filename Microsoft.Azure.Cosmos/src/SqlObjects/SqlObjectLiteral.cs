@@ -1,7 +1,8 @@
+﻿//-----------------------------------------------------------------------------------------------------------------------------------------
+// <copyright file="SqlObjectLiteral.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
@@ -10,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlObjectLiteral : SqlLiteral
     {
-        private readonly bool isValueSerialized;
+        public readonly bool isValueSerialized;
 
         public object Value
         {
@@ -18,10 +19,10 @@ namespace Microsoft.Azure.Cosmos.Sql
             private set;
         }
 
-        public SqlObjectLiteral(object value, bool isValueSerialized)
+        private SqlObjectLiteral(object value, bool isValueSerialized)
             : base(SqlObjectKind.ObjectLiteral)
         {
-            if(value == null)
+            if (value == null)
             {
                 throw new ArgumentNullException("value");
             }
@@ -30,16 +31,34 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.isValueSerialized = isValueSerialized;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public static SqlObjectLiteral Create(object value, bool isValueSerialized)
         {
-            if (this.isValueSerialized)
-            {
-                builder.Append(this.Value);
-            }
-            else
-            {
-                builder.Append(JsonConvert.SerializeObject(this.Value));
-            }
+            return new SqlObjectLiteral(value, isValueSerialized);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlLiteralVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 }

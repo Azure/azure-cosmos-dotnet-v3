@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
     using System.Threading;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Common;
 
     internal class MockDocumentClient : DocumentClient
     {
@@ -87,7 +88,16 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             ApiType apitype = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
             Func<TransportClient, TransportClient> transportClientHandlerFactory = null) 
-            : base(serviceEndpoint, authKeyOrResourceToken, sendingRequestEventArgs, connectionPolicy, desiredConsistencyLevel, serializerSettings, apitype, receivedResponseEventArgs, transportClientHandlerFactory)
+            : base(serviceEndpoint, 
+                  authKeyOrResourceToken, 
+                  sendingRequestEventArgs, 
+                  connectionPolicy, 
+                  desiredConsistencyLevel, 
+                  serializerSettings, 
+                  apitype, 
+                  receivedResponseEventArgs, 
+                  null,
+                  transportClientHandlerFactory)
         {
             this.Init();
         }
@@ -99,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         public override ConsistencyLevel ConsistencyLevel => ConsistencyLevel.Session;
 
-        internal override RetryPolicy RetryPolicy => new RetryPolicy(null, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(null, new ConnectionPolicy());
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
         {
@@ -113,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(new ServerStoreModel(null), null, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null);
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
@@ -127,8 +137,9 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
-                            It.IsAny<CancellationToken>(),
-                            It.IsAny<bool>()
+                            It.IsAny<DocumentServiceRequest>(),
+                            It.IsAny<bool>(),
+                            It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
         }

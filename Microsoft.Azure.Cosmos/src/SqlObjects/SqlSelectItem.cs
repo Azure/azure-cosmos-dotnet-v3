@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlSelectItem.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -8,19 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlSelectItem : SqlObject
     {
-        public SqlScalarExpression Expression
-        {
-            get;
-            private set;
-        }
-
-        public SqlIdentifier Alias
-        {
-            get;
-            private set;
-        }
-
-        public SqlSelectItem(
+        private SqlSelectItem(
            SqlScalarExpression expression,
            SqlIdentifier alias)
             : base(SqlObjectKind.SelectItem)
@@ -29,19 +19,41 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 throw new ArgumentNullException("expression");
             }
-            
+
             this.Expression = expression;
             this.Alias = alias;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlScalarExpression Expression
         {
-            this.Expression.AppendToBuilder(builder);
-            if (this.Alias != null)
-            {
-                builder.Append(" AS ");
-                this.Alias.AppendToBuilder(builder);
-            }
+            get;
+        }
+
+        public SqlIdentifier Alias
+        {
+            get;
+        }
+
+        public static SqlSelectItem Create(
+            SqlScalarExpression expression,
+            SqlIdentifier alias = null)
+        {
+            return new SqlSelectItem(expression, alias);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

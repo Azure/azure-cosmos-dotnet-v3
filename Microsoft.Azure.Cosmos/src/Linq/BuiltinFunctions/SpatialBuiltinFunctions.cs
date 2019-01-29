@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal static class SpatialBuiltinFunctions
     {

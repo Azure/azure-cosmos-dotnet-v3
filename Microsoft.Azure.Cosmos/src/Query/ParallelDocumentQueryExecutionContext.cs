@@ -201,6 +201,11 @@ namespace Microsoft.Azure.Cosmos.Query
                         base.CurrentContinuationTokens[base.DocumentProducers[this.currentDocumentProducerIndex]] = null;
                     }
 
+                    if (result.Count >= maxElements)
+                    {
+                        break;
+                    }
+
                     continue;
                 }
 

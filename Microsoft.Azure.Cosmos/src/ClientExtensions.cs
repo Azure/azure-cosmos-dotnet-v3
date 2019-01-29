@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
 #if !NETSTANDARD16
-    using System.Diagnostics;
+    using System.Diagnostics;    
 #endif
 
     internal static class ClientExtensions

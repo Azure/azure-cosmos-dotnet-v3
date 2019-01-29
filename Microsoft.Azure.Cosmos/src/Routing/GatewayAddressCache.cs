@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -170,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
 
-                if (forceRefreshPartitionAddresses)
+                if (forceRefreshPartitionAddresses || request.ForceCollectionRoutingMapRefresh)
                 {
                     this.serverPartitionAddressCache.Refresh(
                         partitionKeyRangeIdentity,
@@ -178,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         request,
                         partitionKeyRangeIdentity.CollectionRid,
                         partitionKeyRangeIdentity.PartitionKeyRangeId,
-                        forceRefresh: true),
+                        forceRefresh: forceRefreshPartitionAddresses),
                         cancellationToken);
 
                     DateTime ignoreDateTime;
@@ -188,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 PartitionAddressInformation addresses = await this.serverPartitionAddressCache.GetAsync(
                         partitionKeyRangeIdentity,
                         null,
-                        () => this.GetAddressesForRangeId(
+                        async () => await this.GetAddressesForRangeId(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,

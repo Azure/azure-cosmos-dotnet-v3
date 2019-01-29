@@ -100,5 +100,12 @@ namespace Microsoft.Azure.Cosmos
                 this.startTime = value;
             }
         }
+
+        /// <summary>
+        /// Gets or sets whether change feed in the Azure Cosmos DB service 
+        /// should return tentative writes in addition to committed writes.
+        /// By default the flag is set to false meaning only committed writes will be sent in response.
+        /// </summary>
+        internal bool IncludeTentativeWrites { get; set; }
     }
 }

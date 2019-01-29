@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Common
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
 
     internal interface ICollectionRoutingMapCache
@@ -13,7 +14,8 @@ namespace Microsoft.Azure.Cosmos.Common
         Task<CollectionRoutingMap> TryLookupAsync(
             string collectionRid,
             CollectionRoutingMap previousValue,
-            CancellationToken cancellationToken,
-            bool forceRefreshCollectionRoutingMap = false);
+            DocumentServiceRequest request,
+            bool forceRefreshCollectionRoutingMap,
+            CancellationToken cancellationToken);
     }
 }
