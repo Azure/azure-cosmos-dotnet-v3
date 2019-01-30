@@ -1,0 +1,169 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select equality]]></Description>
+      <Expression><![CDATA[query.Select(s => (s.str == "5"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["str"] = "5") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select string concat]]></Description>
+      <Expression><![CDATA[query.Select(d => ("x" + d.str))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ("x" || root["str"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select string concat w const]]></Description>
+      <Expression><![CDATA[query.Select(d => (("x" + DisplayClass.constString) + d.str))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ("xs" || root["str"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array]]></Description>
+      <Expression><![CDATA[query.SelectMany(d => d.dblArray)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE d0 
+FROM root 
+JOIN d0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array property -> Filter x -> Select x expr]]></Description>
+      <Expression><![CDATA[query.SelectMany(z => z.dblArray).Where(x => (x > 2)).Select(x => (x + 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (z0 + 2) 
+FROM root 
+JOIN z0 IN root["dblArray"] 
+WHERE (z0 > 2) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array property -> Filter x equality -> Select x expr]]></Description>
+      <Expression><![CDATA[query.SelectMany(z => z.dblArray.Where(x => (x == 3)).Select(x => (x + 1)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (x0 + 1) 
+FROM root 
+JOIN x0 IN root["dblArray"] 
+WHERE (x0 = 3) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array property -> Select identity]]></Description>
+      <Expression><![CDATA[query.SelectMany(d => d.dblArray.Select(x => x))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE x0 
+FROM root 
+JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array property]]></Description>
+      <Expression><![CDATA[query.SelectMany(d => d.dblArray)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE d0 
+FROM root 
+JOIN d0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array property -> Select x expr]]></Description>
+      <Expression><![CDATA[query.SelectMany(z => z.dblArray.Select(x => (z.dbl + x)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (root["dbl"] + x0) 
+FROM root 
+JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array property -> Select new]]></Description>
+      <Expression><![CDATA[query.SelectMany(z => z.dblArray.Select(x => new AnonymousType(b = z.b, x = Truncate((x * 100)))))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"b": root["b"], "x": TRUNC((x0 * 100))} 
+FROM root 
+JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany identity]]></Description>
+      <Expression><![CDATA[query.SelectMany(x => x.dblArray)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE x0 
+FROM root 
+JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany x -> Select y]]></Description>
+      <Expression><![CDATA[query.SelectMany(x => x.dblArray.Select(y => y))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE y0 
+FROM root 
+JOIN y0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany x -> Select x.y]]></Description>
+      <Expression><![CDATA[query.SelectMany(x => x.dblArray.Select(y => y))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE y0 
+FROM root 
+JOIN y0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany array]]></Description>
+      <Expression><![CDATA[query.SelectMany(x => x.dblArray)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE x0 
+FROM root 
+JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

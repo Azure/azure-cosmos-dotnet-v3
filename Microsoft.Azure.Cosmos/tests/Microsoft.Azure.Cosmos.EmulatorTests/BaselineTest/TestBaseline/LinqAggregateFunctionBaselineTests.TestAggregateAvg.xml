@@ -1,0 +1,100 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Avg number]]></Description>
+      <Expression><![CDATA[query.Average(doc => doc.Number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter true flag -> Avg w/ mapping]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Flag).Average(doc => doc.Number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root 
+WHERE root["Flag"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter false flag -> Avg w/ mapping]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Average(doc => doc.Number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root 
+WHERE (NOT root["Flag"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Avg]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Average())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Avg w/ mapping]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Average(num => num))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Avg]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Average())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(m0) 
+FROM root 
+JOIN m0 IN root["Multiples"] 
+WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where) -> Avg(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 80))).Average(children => children.Sum(c => c.Grade)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(v1) 
+FROM (
+    SELECT VALUE v0 
+    FROM root 
+    JOIN (
+        SELECT VALUE ARRAY(
+            SELECT VALUE c0 
+            FROM root 
+            JOIN c0 IN root["Children"] 
+            WHERE (c0["Grade"] > 80)
+        )
+    ) AS v0
+) AS r0 
+JOIN (
+    SELECT VALUE SUM(c["Grade"]) 
+    FROM r0 
+    JOIN c IN r0
+) AS v1 
+]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

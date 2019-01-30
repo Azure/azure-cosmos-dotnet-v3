@@ -1,0 +1,98 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy JsonProperty]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.JsonProperty)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["jsonProperty"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending JsonProperty]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(doc => doc.JsonProperty)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["jsonProperty"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy DataMember]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.DataMember)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["dataMember"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending DataMember]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(doc => doc.DataMember)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["dataMember"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy Default]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.Default)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["Default"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending Default]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(doc => doc.Default)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["Default"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderBy JsonPropertyAndDataMember]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.JsonPropertyAndDataMember)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["jsonPropertyHasHigherPriority"] ASC ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OrderByDescending JsonPropertyAndDataMember]]></Description>
+      <Expression><![CDATA[query.OrderByDescending(doc => doc.JsonPropertyAndDataMember)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["jsonPropertyHasHigherPriority"] DESC ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

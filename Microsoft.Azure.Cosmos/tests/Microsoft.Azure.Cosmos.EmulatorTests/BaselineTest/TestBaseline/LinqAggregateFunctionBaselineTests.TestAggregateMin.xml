@@ -1,0 +1,94 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Min on doc]]></Description>
+      <Expression><![CDATA[query.Min()]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Min w/ doc mapping]]></Description>
+      <Expression><![CDATA[query.Min(doc => doc)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Min w/ doc mapping to number]]></Description>
+      <Expression><![CDATA[query.Min(doc => doc.Number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter true flag -> Min w/ doc mapping to number]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Flag).Min(doc => doc.Number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["Number"]) 
+FROM root 
+WHERE root["Flag"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter false flag -> Min w/ doc mapping to number]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Min(doc => doc.Number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["Number"]) 
+FROM root 
+WHERE (NOT root["Flag"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Min]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Min())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Min w/ mapping]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Min(num => num))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["Number"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Min]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Min())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(m0) 
+FROM root 
+JOIN m0 IN root["Multiples"] 
+WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>
