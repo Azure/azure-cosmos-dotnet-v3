@@ -4,24 +4,24 @@
 
 namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json;
     using System;
+    using System.Collections.Generic;
     using System.Security;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Moq;
-    using System.Threading;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Common;
+    using Newtonsoft.Json;
 
-    internal class MockDocumentClient : DocumentClient
+    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
+        Mock<GlobalEndpointManager> globalEndpointManager;
 
         public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         }
 
         public MockDocumentClient()
-            : base(null, null)
+            : base(new Uri("http://localhost"), null)
         {
             this.Init();
         }
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         public override ConsistencyLevel ConsistencyLevel => ConsistencyLevel.Session;
 
-        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(null, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
         {
@@ -119,6 +119,16 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
         {
             return Task.FromResult(this.partitionKeyRangeCache.Object);
+        }
+
+        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+            string resourceAddress,
+            string resourceType,
+            string requestVerb,
+            INameValueCollection headers,
+            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+        {
+            return null;
         }
 
         private void Init()
@@ -142,6 +152,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+
+            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
+
+            var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
+            this.Session = sessionContainer;
         }
     }
 }

@@ -5,10 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
@@ -42,19 +39,11 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
-            HttpStatusCode? statusCode = null;
-            SubStatusCodes? subStatusCode = null;
-
             DocumentClientException clientException = exception as DocumentClientException;
-            if (clientException != null)
-            {
-                statusCode = clientException.StatusCode;
-                subStatusCode = clientException.GetSubStatus();
-            }
 
             return this.ShouldRetryInternalAsync(
-                statusCode, 
-                subStatusCode,
+                clientException?.StatusCode,
+                clientException?.GetSubStatus(),
                 this.retryPolicy.ShouldRetryAsync(exception, cancellationToken),
                 cancellationToken);
         }
@@ -78,16 +67,19 @@ namespace Microsoft.Azure.Cosmos
         {
             ShouldRetryResult shouldRetry = await chainedRetryTask;
 
-            if (this.request == null) {
-                // someone didn't call OnBeforeSendRequest - nothing we can do
+            if (this.request == null)
+            {
+                DefaultTrace.TraceCritical("Cannot apply RenameCollectionAwareClientRetryPolicy as OnBeforeSendRequest has not been called and there is no DocumentServiceRequest context. Status Code {0} Sub Status Code {1}", 
+                    statusCode.HasValue? statusCode.Value : 0,
+                    subStatusCode.HasValue ? subStatusCode.Value : SubStatusCodes.Unknown);
                 return shouldRetry;
             }
 
-            if (!shouldRetry.ShouldRetry && !this.hasTriggered)
+            if (!shouldRetry.ShouldRetry && !this.hasTriggered && statusCode.HasValue && subStatusCode.HasValue)
             {
                 if (this.request.IsNameBased &&
-                    statusCode == HttpStatusCode.NotFound &&
-                    subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+                    statusCode.Value == HttpStatusCode.NotFound &&
+                    subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
                 {
                     // Clear the session token, because the collection name might be reused.
                     DefaultTrace.TraceWarning("Clear the the token for named base request {0}", request.ResourceAddress);
@@ -117,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
                             }
                         }
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         // When ResolveCollectionAsync throws an exception ignore it because it's an attempt to recover an existing
                         // error. When the recovery fails we return ShouldRetryResult.NoRetry and propaganate the original exception to the client

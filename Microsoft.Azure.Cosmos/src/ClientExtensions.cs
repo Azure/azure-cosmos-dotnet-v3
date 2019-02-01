@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, bool throwOnKnownClientErrorCodes = true)
+        public static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
         {
             using (responseMessage)
             {
@@ -61,7 +61,8 @@ namespace Microsoft.Azure.Cosmos
                     INameValueCollection headers = ClientExtensions.ExtractResponseHeaders(responseMessage);
                     return new DocumentServiceResponse(bufferedStream, headers, responseMessage.StatusCode, serializerSettings);
                 }
-                else if (!throwOnKnownClientErrorCodes && (responseMessage.StatusCode == HttpStatusCode.NotFound || responseMessage.StatusCode == HttpStatusCode.PreconditionFailed || responseMessage.StatusCode == HttpStatusCode.Conflict))
+                else if (request != null
+                    && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = ClientExtensions.ExtractResponseHeaders(responseMessage);
                     return new DocumentServiceResponse(null, headers, responseMessage.StatusCode, serializerSettings);

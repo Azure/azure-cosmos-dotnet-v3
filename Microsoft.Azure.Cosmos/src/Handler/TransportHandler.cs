@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private Task<DocumentServiceResponse> ProcessMessageAsync(
+        internal Task<DocumentServiceResponse> ProcessMessageAsync(
             CosmosRequestMessage request, 
             CancellationToken cancellationToken)
         {

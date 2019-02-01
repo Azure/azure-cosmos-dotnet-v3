@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
                             durationInMilliSeconds,
                             responseMessage.Headers);
 
-                        return await ClientExtensions.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, !request.UseStatusCodeForFailures);
+                        return await ClientExtensions.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
                     }
                 }
             };

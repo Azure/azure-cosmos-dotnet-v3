@@ -40,23 +40,44 @@ namespace Microsoft.Azure.Cosmos
             this.retryPolicy.OnBeforeSendRequest(request);
         }
 
-        public async Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
+            Exception exception, 
+            CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(exception, cancellationToken);
 
+            DocumentClientException clientException = exception as DocumentClientException;
+
+            return this.ShouldRetryInternal(
+                clientException?.StatusCode,
+                clientException?.GetSubStatus(),
+                shouldRetry);
+        }
+
+        public Task<ShouldRetryResult> ShouldRetryAsync(
+            CosmosResponseMessage cosmosResponseMessage, 
+            CancellationToken cancellationToken)
+        {
+            // Only used for collection cache whcih doesn't participate in pipeline
+            throw new NotImplementedException();
+        }
+
+        private ShouldRetryResult ShouldRetryInternal(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            ShouldRetryResult shouldRetryResult)
+        {
             if (this.request == null)
             {
                 // someone didn't call OnBeforeSendRequest - nothing we can do
-                return shouldRetry;
+                return shouldRetryResult;
             }
 
-            if (!shouldRetry.ShouldRetry && !this.hasTriggered)
+            if (!shouldRetryResult.ShouldRetry && !this.hasTriggered && statusCode.HasValue && subStatusCode.HasValue)
             {
-                DocumentClientException clientException = exception as DocumentClientException;
-
-                if (clientException != null && this.request.IsNameBased && 
-                    clientException.StatusCode == HttpStatusCode.NotFound &&
-                    clientException.GetSubStatus() == SubStatusCodes.ReadSessionNotAvailable)
+                if (this.request.IsNameBased &&
+                    statusCode.Value == HttpStatusCode.NotFound &&
+                    subStatusCode.Value == SubStatusCodes.ReadSessionNotAvailable)
                 {
                     // Clear the session token, because the collection name might be reused.
                     DefaultTrace.TraceWarning("Clear the the token for named base request {0}", request.ResourceAddress);
@@ -67,15 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return shouldRetry;
-        }
-
-        public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
-            CancellationToken cancellationToken)
-        {
-            // Only used for collection cache whcih doesn't participate in pipeline
-            throw new NotImplementedException();
+            return shouldRetryResult;
         }
     }
 }
