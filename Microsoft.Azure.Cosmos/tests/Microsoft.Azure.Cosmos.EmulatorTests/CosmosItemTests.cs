@@ -403,6 +403,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
+        /// Validate that the PopulateQueryMetrics feed option returns query metrics
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task ValidatePopulateQueryMetricsOnQuery()
+        {
+            // create a random set of data
+            IList<ToDoActivity> items = await CreateRandomItems(10, randomPartitionKey: false);
+
+            try
+            {
+                var query = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity");
+                var resultSetIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(query, "TBD", requestOptions: new CosmosQueryRequestOptions() { PopulateQueryMetrics = true });
+                while (resultSetIterator.HasMoreResults)
+                {
+                    var result = await resultSetIterator.FetchNextSetAsync();
+                    var resources = (FeedResponse<ToDoActivity>)result.Resources;
+
+                    // assert that query metrics were populated in the response.
+                    Assert.IsTrue(resources.QueryMetrics.Count() > 0);
+                }
+            }
+            finally
+            {
+                foreach (ToDoActivity item in items)
+                {
+                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(item.status, item.id);
+                    deleteResponse.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
         /// Validate that the max item count works correctly.
         /// </summary>
         /// <returns></returns>
