@@ -104,6 +104,17 @@ namespace Microsoft.Azure.Cosmos
         public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        ///  Gets or sets the populate query metrics request option for document query requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para> 
+        /// PopulateQueryMetrics is used to enable/disable getting metrics relating to query execution on document query requests.
+        /// </para>
+        /// </remarks>
+        public bool PopulateQueryMetrics { get; set; }
+
+
+        /// <summary>
         /// Gets or sets the number of concurrent operations run client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
         /// A positive property value limits the number of 
@@ -153,6 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount,
+                PopulateQueryMetrics = this.PopulateQueryMetrics
             };
         }
 
