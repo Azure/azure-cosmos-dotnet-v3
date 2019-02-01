@@ -14,7 +14,11 @@ namespace Microsoft.Azure.Cosmos
     /// <typeparam name="T"></typeparam>
     public class CosmosQueryResponse<T> : IEnumerable<T>
     {
-        private IEnumerable<T> Resources;
+        /// <summary>
+        /// Contains the metadata from the response headers from the Azure Cosmos DB call
+        /// </summary>
+        public IEnumerable<T> Resources;
+
         private bool HasMoreResults;
 
         /// <summary>
