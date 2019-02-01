@@ -27,11 +27,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a CosmosResponse object with the default properties set
         /// </summary>
-        /// <param name="cosmosResponseMessage"></param>
-        internal CosmosResponse(CosmosResponseMessage cosmosResponseMessage)
+        /// <param name="httpStatusCode">The status code of the response</param>
+        /// <param name="headers">The headers of the response</param>
+        /// <param name="resource">The object from the response</param>
+        internal CosmosResponse(
+            HttpStatusCode httpStatusCode,
+            CosmosResponseMessageHeaders headers,
+            T resource)
         {
-            this.Headers = cosmosResponseMessage.Headers;
-            this.StatusCode = cosmosResponseMessage.StatusCode;
+            this.Headers = headers;
+            this.StatusCode = httpStatusCode;
+            this.Resource = resource;
         }
 
         /// <summary>
@@ -110,57 +116,5 @@ namespace Microsoft.Azure.Cosmos
         /// cosmosResponse.Headers.GetHeaderValue("x-ms-resource-usage")
         /// </remarks>
         internal virtual string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
-
-        /// <summary>
-        /// Gets the stream body and converts it to the typed passed in.
-        /// This can throw JSON serialization exceptions
-        /// </summary>
-        /// <param name="cosmosResponseMessage">The response from the Cosmos service</param>
-        /// <param name="cosmosJsonSerializer">The JSON serializer</param>
-        private void InitializeResource(CosmosResponseMessage cosmosResponseMessage, CosmosJsonSerializer cosmosJsonSerializer)
-        {
-            this.Resource = ToObjectInternal(cosmosResponseMessage, cosmosJsonSerializer);
-        }
-        
-        internal T ToObjectInternal(CosmosResponseMessage cosmosResponseMessage, CosmosJsonSerializer cosmosJsonSerializer)
-        {
-            // Not finding something is part of a normal work-flow and should not be an exception.
-            // This prevents the unnecessary overhead of an exception
-            if (cosmosResponseMessage.StatusCode == HttpStatusCode.NotFound)
-            {
-                return default(T);
-            }
-
-            //Throw the exception
-            cosmosResponseMessage.EnsureSuccessStatusCode();
-
-            if (cosmosResponseMessage.Content == null)
-            {
-                return default(T);
-            }
-
-            return cosmosJsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
-        }
-
-        /// <summary>
-        /// Create the cosmos response using the custom JSON parser.
-        /// This factory exist to ensure that the HttpResponseMessage is
-        /// correctly disposed of, and to handle the async logic required to
-        /// read the stream and to convert it to an object.
-        /// </summary>
-        internal static CosmosResponseType InitResponse<CosmosResponseType, CosmosSettingsType>(
-            Func<CosmosResponseMessage, CosmosResponseType> createCosmosResponse,
-            CosmosJsonSerializer jsonSerializer,
-            CosmosResponseMessage cosmosResponseMessage,
-            CosmosIdentifier cosmosSetResource = null)
-            where CosmosResponseType : CosmosResponse<CosmosSettingsType>
-        {
-            using (cosmosResponseMessage)
-            {
-                CosmosResponseType cosmosResponse = createCosmosResponse(cosmosResponseMessage);
-                cosmosResponse.InitializeResource(cosmosResponseMessage, jsonSerializer);
-                return cosmosResponse;
-            }
-        }
     }
 }

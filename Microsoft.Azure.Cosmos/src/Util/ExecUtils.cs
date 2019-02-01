@@ -107,6 +107,30 @@ namespace Microsoft.Azure.Cosmos
                      .ContinueWith(task => responseCreator(task.Result), cancellationToken);
         }
 
+        internal static Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+            CosmosClient client,
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            CosmosRequestOptions requestOptions,
+            Object partitionKey,
+            Stream streamPayload,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            CosmosRequestMessage request = ExecUtils.GenerateCosmosRequestMessage(
+                client,
+                resourceUri,
+                resourceType,
+                operationType,
+                requestOptions,
+                partitionKey,
+                streamPayload,
+                requestEnricher);
+
+            return client.RequestHandler.SendAsync(request, cancellationToken);
+        }
+
         private static CosmosRequestMessage GenerateCosmosRequestMessage(
             CosmosClient client,
             Uri resourceUri,

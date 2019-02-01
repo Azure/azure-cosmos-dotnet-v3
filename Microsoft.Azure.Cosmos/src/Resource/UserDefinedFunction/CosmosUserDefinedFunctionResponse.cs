@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Net;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -23,11 +24,16 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        private CosmosUserDefinedFunctionResponse(
-            CosmosResponseMessage cosmosResponse,
-            CosmosUserDefinedFunction userDefinedFunction): base(cosmosResponse)
+        internal CosmosUserDefinedFunctionResponse(
+          HttpStatusCode httpStatusCode,
+          CosmosResponseMessageHeaders headers,
+          CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings,
+          CosmosUserDefinedFunction userDefinedFunction) : base(
+              httpStatusCode,
+              headers,
+              cosmosUserDefinedFunctionSettings)
         {
-            this.UserDefinedFunction = userDefinedFunction;
+             this.UserDefinedFunction = userDefinedFunction;
         }
 
         /// <summary>
@@ -43,26 +49,6 @@ namespace Microsoft.Azure.Cosmos
         public static implicit operator CosmosUserDefinedFunction(CosmosUserDefinedFunctionResponse response)
         {
             return response.UserDefinedFunction;
-        }
-
-        /// <summary>
-        /// Create the cosmos user defined function response.
-        /// Creates the response object, deserializes the
-        /// HTTP content stream, and disposes of the HttpResponseMessage
-        /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> from the Cosmos DB service</param>
-        /// <param name="jsonSerializer">The cosmos json serializer</param>
-        /// <param name="userDefinedFunction">The cosmos user defined function</param>
-        internal static CosmosUserDefinedFunctionResponse CreateResponse(
-            CosmosResponseMessage cosmosResponseMessage,
-            CosmosJsonSerializer jsonSerializer,
-            CosmosUserDefinedFunction userDefinedFunction)
-        {
-            return CosmosResponse<CosmosUserDefinedFunctionSettings>
-                .InitResponse<CosmosUserDefinedFunctionResponse, CosmosUserDefinedFunctionSettings>(
-                    (httpResponse) => new CosmosUserDefinedFunctionResponse(cosmosResponseMessage, userDefinedFunction),
-                    jsonSerializer,
-                    cosmosResponseMessage);
         }
     }
 }

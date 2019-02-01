@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
             storedProcedureSettings.Id = id;
             storedProcedureSettings.Body = body;
 
-            return ExecUtils.ProcessResourceOperationAsync<CosmosStoredProcedureResponse>(
+            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
                 this.container.Database.Client,
                 this.container.LinkUri,
                 ResourceType.StoredProcedure,
@@ -121,8 +121,9 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: storedProcedureSettings.GetResourceStream(),
                 requestEnricher: null,
-                responseCreator: response => this.client.ResponseFactory.CreateStoredProcedureResponse(response, new CosmosStoredProcedure(this.container, storedProcedureSettings.Id)),
                 cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
 
         /// <summary>

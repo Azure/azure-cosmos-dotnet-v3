@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
@@ -26,9 +27,14 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        private CosmosStoredProcedureResponse(
-            CosmosResponseMessage cosmosResponse,
-            CosmosStoredProcedure storedProcedure) : base(cosmosResponse)
+        internal CosmosStoredProcedureResponse(
+           HttpStatusCode httpStatusCode,
+           CosmosResponseMessageHeaders headers,
+           CosmosStoredProcedureSettings cosmosStoredProcedureSettings,
+           CosmosStoredProcedure storedProcedure) : base(
+               httpStatusCode,
+               headers,
+               cosmosStoredProcedureSettings)
         {
             this.StoredProcedure = storedProcedure;
         }
@@ -40,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosStoredProcedure StoredProcedure { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosDatabase"/> implictly from <see cref="CosmosStoredProcedureResponse"/>
+        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="CosmosStoredProcedureResponse"/>
         /// </summary>
         /// <param name="response">CosmosStoredProcedureResponse</param>
         public static implicit operator CosmosStoredProcedure(CosmosStoredProcedureResponse response)
@@ -70,26 +76,6 @@ namespace Microsoft.Azure.Cosmos
                 string logResults = this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.LogResults);
                 return string.IsNullOrEmpty(logResults) ? logResults : Uri.UnescapeDataString(logResults);
             }
-        }
-
-        /// <summary>
-        /// Create the cosmos stored procedure response.
-        /// Creates the response object, deserializes the
-        /// http content stream, and disposes of the HttpResponseMessage
-        /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> from the Cosmos DB service</param>
-        /// <param name="jsonSerializer">The cosmos json serializer</param>
-        /// <param name="storedProcedure">The cosmos stored procedure</param>
-        internal static CosmosStoredProcedureResponse CreateResponse(
-            CosmosResponseMessage cosmosResponseMessage,
-            CosmosJsonSerializer jsonSerializer,
-            CosmosStoredProcedure storedProcedure)
-        {
-            return CosmosResponse<CosmosStoredProcedureSettings>
-                .InitResponse<CosmosStoredProcedureResponse, CosmosStoredProcedureSettings>(
-                    (httpResponse) => new CosmosStoredProcedureResponse(httpResponse, storedProcedure),
-                    jsonSerializer,
-                    cosmosResponseMessage);
         }
     }
 }

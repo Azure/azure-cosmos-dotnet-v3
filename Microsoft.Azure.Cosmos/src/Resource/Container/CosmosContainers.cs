@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Concurrent;
     using System.Diagnostics;
+    using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -89,43 +90,20 @@ namespace Microsoft.Azure.Cosmos
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return CosmosContainers.ProcessCollectionCreateAsync(
-                containerSettings: containerSettings,
-                database: this.database,
-                throughput: throughput,
-                responseCreator: response => this.database.Client.ResponseFactory.CreateContainerResponse(
-                    response,
-                    new CosmosContainer(this.database, containerSettings.Id)),
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        internal static Task<T> ProcessCollectionCreateAsync<T>(
-            CosmosContainerSettings containerSettings,
-            CosmosDatabase database,
-            int? throughput,
-            Func<CosmosResponseMessage, T> responseCreator,
-            CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
             if (containerSettings == null)
             {
                 throw new ArgumentNullException(nameof(containerSettings));
             }
 
-            containerSettings.ValidateRequiredProperties();
-            database.Client.DocumentClient.ValidateResource(containerSettings);
-            return ExecUtils.ProcessResourceOperationAsync<T>(
-                database.Client,
-                database.LinkUri,
-                ResourceType.Collection,
-                OperationType.Create,
-                requestOptions,
-                partitionKey: null,
+            this.ValidateContainerSettings(containerSettings);
+
+            Task<CosmosResponseMessage> response = this.CreateContainerStreamAsync(
                 streamPayload: containerSettings.GetResourceStream(),
-                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
-                responseCreator: responseCreator,
+                throughput: throughput,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
         }
 
         /// <summary>
@@ -172,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
 
-            return CreateContainerAsync(
+            return this.CreateContainerAsync(
                 settings,
                 throughput,
                 requestOptions,
@@ -235,8 +213,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(containerSettings));
             }
 
-            containerSettings.ValidateRequiredProperties();
-            this.database.Client.DocumentClient.ValidateResource(containerSettings);
+            this.ValidateContainerSettings(containerSettings);
 
             CosmosContainer cosmosContainer = this[containerSettings.Id];
             CosmosContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
@@ -245,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 return cosmosContainerResponse;
             }
 
-            cosmosContainerResponse = await CreateContainerAsync(containerSettings, throughput, requestOptions, cancellationToken: cancellationToken);
+            cosmosContainerResponse = await this.CreateContainerAsync(containerSettings, throughput, requestOptions, cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosContainerResponse;
@@ -300,7 +277,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
-            return CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
+            return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
         }
 
         /// <summary>
@@ -329,9 +306,9 @@ namespace Microsoft.Azure.Cosmos
         {
             return new CosmosDefaultResultSetIterator<CosmosContainerSettings>(
                 maxItemCount,
-                continuationToken, 
-                null, 
-                ContainerFeedRequestExecutor);
+                continuationToken,
+                null,
+                this.ContainerFeedRequestExecutor);
         }
 
         /// <summary>
@@ -355,6 +332,92 @@ namespace Microsoft.Azure.Cosmos
                     id,
                     keyName => new CosmosContainer(this.database, keyName));
 
+        /// <summary>
+        /// Creates a container as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="streamPayload">The <see cref="CosmosContainerSettings"/> stream.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a Stream containing a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
+        internal virtual Task<CosmosResponseMessage> CreateContainerStreamAsync(
+                    Stream streamPayload,
+                    int? throughput = null,
+                    CosmosRequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessCollectionCreateAsync(
+                streamPayload: streamPayload,
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets an iterator to go through all the containers for the database
+        /// </summary>
+        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosQueryRequestOptions"/></param>
+        internal virtual CosmosResultSetIterator GetContainerStreamIterator(
+            int? maxItemCount = null,
+            string continuationToken = null,
+            CosmosQueryRequestOptions requestOptions = null)
+        {
+            return new CosmosDefaultResultSetStreamIterator(
+                maxItemCount,
+                continuationToken,
+                requestOptions,
+                this.ContainerStreamFeedRequestExecutor);
+        }
+
+        internal void ValidateContainerSettings(CosmosContainerSettings containerSettings)
+        {
+            containerSettings.ValidateRequiredProperties();
+            this.database.Client.DocumentClient.ValidateResource(containerSettings);
+        }
+
+        internal Task<CosmosResponseMessage> ProcessCollectionCreateAsync(
+            Stream streamPayload,
+            int? throughput,
+            CosmosRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return ExecUtils.ProcessResourceOperationStreamAsync(
+               client: this.client,
+               resourceUri: this.database.LinkUri,
+               resourceType: ResourceType.Collection,
+               operationType: OperationType.Create,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+               cancellationToken: cancellationToken);
+        }
+
+        private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutor(
+            int? maxItemCount,
+            string continuationToken,
+            CosmosRequestOptions requestOptions,
+            object state,
+            CancellationToken cancellationToken)
+        {
+            return ExecUtils.ProcessResourceOperationStreamAsync(
+               client: this.client,
+               resourceUri: this.database.LinkUri,
+               resourceType: ResourceType.Collection,
+               operationType: OperationType.ReadFeed,
+               partitionKey: null,
+               streamPayload: null,
+               requestOptions: requestOptions,
+               requestEnricher: request =>
+                {
+                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                },
+               cancellationToken: cancellationToken);
+        }
+
         private Task<CosmosQueryResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
@@ -370,7 +433,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Collection,
                 OperationType.ReadFeed,
                 options,
-                request => 
+                request =>
                 {
                     CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);

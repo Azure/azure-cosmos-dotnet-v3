@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Net;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -23,9 +24,14 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        private CosmosDatabaseResponse(
-            CosmosResponseMessage cosmosResponse,
-            CosmosDatabase database) : base(cosmosResponse)
+        internal CosmosDatabaseResponse(
+            HttpStatusCode httpStatusCode,
+            CosmosResponseMessageHeaders headers,
+            CosmosDatabaseSettings cosmosDatabaseSettings,
+            CosmosDatabase database) : base(
+                httpStatusCode, 
+                headers, 
+                cosmosDatabaseSettings)
         {
             this.Database = database;
         }
@@ -37,32 +43,12 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosDatabase Database { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosDatabase"/> implictly from <see cref="CosmosDatabaseResponse"/>
+        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="CosmosDatabaseResponse"/>
         /// </summary>
         /// <param name="response">CosmosDatabaseResponse</param>
         public static implicit operator CosmosDatabase(CosmosDatabaseResponse response)
         {
             return response.Database;
-        }
-
-        /// <summary>
-        /// Create the cosmos database response.
-        /// Creates the response object, deserializes the
-        /// http content stream, and disposes of the HttpResponseMessage
-        /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> from the Cosmos DB service</param>
-        /// <param name="jsonSerializer">The cosmos json serializer</param>
-        /// <param name="database">The cosmos database</param>
-        internal static CosmosDatabaseResponse CreateResponse(
-            CosmosResponseMessage cosmosResponseMessage,
-            CosmosJsonSerializer jsonSerializer,
-            CosmosDatabase database)
-        {
-            return CosmosResponse<CosmosDatabaseSettings>
-                .InitResponse<CosmosDatabaseResponse, CosmosDatabaseSettings>(
-                    (httpResponse) => new CosmosDatabaseResponse(cosmosResponseMessage, database),
-                    jsonSerializer,
-                    cosmosResponseMessage);
         }
     }
 }

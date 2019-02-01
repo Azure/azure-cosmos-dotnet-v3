@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
                 parametersStream = this.Client.CosmosJsonSerializer.ToStream<TInput>(input);
             }
 
-            return ExecUtils.ProcessResourceOperationAsync<CosmosItemResponse<TOutput>>(
+            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
                 this.Client,
                 this.LinkUri,
                 ResourceType.StoredProcedure,
@@ -261,8 +261,9 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 parametersStream,
                 null,
-                response => this.Client.ResponseFactory.CreateItemResponse<TOutput>(response),
                 cancellationToken);
+
+            return this.Client.ResponseFactory.CreateItemResponse<TOutput>(response);
         }
 
         internal virtual Task<CosmosStoredProcedureResponse> ProcessAsync(
@@ -272,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return ExecUtils.ProcessResourceOperationAsync<CosmosStoredProcedureResponse>(
+            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
                 this.Client,
                 this.LinkUri,
                 ResourceType.StoredProcedure,
@@ -281,8 +282,9 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 streamPayload,
                 null,
-                response => this.Client.ResponseFactory.CreateStoredProcedureResponse(response, this),
                 cancellationToken);
+
+            return this.Client.ResponseFactory.CreateStoredProcedureResponse(this, response);
         }
     }
 }

@@ -4,8 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Net.Http;
-    using System.Threading.Tasks;
+    using System.Net;
 
     /// <summary>
     /// The cosmos container response
@@ -24,9 +23,14 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        private CosmosContainerResponse(
-            CosmosResponseMessage cosmosResponse, 
-            CosmosContainer container) : base(cosmosResponse)
+        internal CosmosContainerResponse(
+            HttpStatusCode httpStatusCode,
+            CosmosResponseMessageHeaders headers,
+            CosmosContainerSettings cosmosContainerSettings,
+            CosmosContainer container) : base(
+                httpStatusCode,
+                headers,
+                cosmosContainerSettings)
         {
             this.Container = container;
         }
@@ -44,26 +48,6 @@ namespace Microsoft.Azure.Cosmos
         public static implicit operator CosmosContainer(CosmosContainerResponse response)
         {
             return response.Container;
-        }
-
-        /// <summary>
-        /// Create the cosmos container response.
-        /// Creates the response object, deserializes the
-        /// http content stream, and disposes of the HttpResponseMessage
-        /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> from the Cosmos DB service</param>
-        /// <param name="jsonSerializer">The cosmos json serializer</param>
-        /// <param name="container">The cosmos container</param>
-        internal static CosmosContainerResponse CreateResponse(
-            CosmosResponseMessage cosmosResponseMessage,
-            CosmosJsonSerializer jsonSerializer,
-            CosmosContainer container)
-        {
-            return CosmosResponse<CosmosContainerSettings>
-                .InitResponse<CosmosContainerResponse, CosmosContainerSettings>(
-                    (httpResponse) => new CosmosContainerResponse(cosmosResponseMessage, container),
-                    jsonSerializer,
-                    cosmosResponseMessage);
         }
     }
 }
