@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
@@ -391,16 +392,53 @@ namespace Microsoft.Azure.Cosmos
                  .Unwrap();
         }
 
+        /// <summary>
+        /// Gets the container's settings by using the internal cache.
+        /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
+        /// </summary>
+        /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
+        internal Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken)
+        {
+            return this.DocumentClient.GetCollectionCacheAsync()
+                .ContinueWith(collectionCacheTask => collectionCacheTask.Result.ResolveByNameAsync(this.Link, cancellationToken), cancellationToken)
+                .Unwrap();
+        }
+
         // Name based look-up, needs re-computation and can't be cached
         internal Task<string> GetRID(CancellationToken cancellationToken)
         {
-            return this.DocumentClient.GetCollectionCacheAsync()
-                .ContinueWith(
-                        collectionCacheTask =>
-                        collectionCacheTask.Result.ResolveByNameAsync(this.Link, cancellationToken), cancellationToken)
-                 .Unwrap()
-                 .ContinueWith(
-                        containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
+            return this.GetCachedContainerSettingsAsync(cancellationToken)
+                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
+        }
+
+        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken)
+        {
+            return this.GetCachedContainerSettingsAsync(cancellationToken)
+                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
+        }
+
+        internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
+        {
+            string collectionRID = null;
+            return this.GetRID(cancellationToken)
+                .ContinueWith(ridTask =>
+                {
+                    collectionRID = ridTask.Result;
+                    return this.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                })
+                .Unwrap()
+                .ContinueWith(partitionKeyRangeCachetask =>
+                {
+                    PartitionKeyRangeCache partitionKeyRangeCache = partitionKeyRangeCachetask.Result;
+                    return partitionKeyRangeCache.TryLookupAsync(
+                            collectionRID,
+                            null,
+                            null,
+                            false,
+                            cancellationToken);
+                })
+                .Unwrap();
         }
 
         private Task<CosmosResponseMessage> ProcessStreamAsync(
