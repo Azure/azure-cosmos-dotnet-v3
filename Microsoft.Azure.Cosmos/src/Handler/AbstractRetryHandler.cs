@@ -67,11 +67,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                CosmosResponseMessage cosmosResponseMessage = null;
                 ShouldRetryResult result;
+
                 try
                 {
-                    cosmosResponseMessage = await callbackMethod();
+                    CosmosResponseMessage cosmosResponseMessage = await callbackMethod();
                     if (cosmosResponseMessage.IsSuccessStatusCode)
                     {
                         return cosmosResponseMessage;

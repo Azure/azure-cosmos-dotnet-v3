@@ -81,6 +81,10 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+        /// <summary>
+        /// Used internally by friends ensrue robust argument and 
+        /// exception-less handling
+        /// </summary>
         internal static Task<T> ProcessResourceOperationAsync<T>(
             CosmosClient client,
             Uri resourceUri,
@@ -93,8 +97,27 @@ namespace Microsoft.Azure.Cosmos
             Func<CosmosResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            if (client.RequestHandler == null)
+            {
+                throw new ArgumentException(nameof(client));
+            }
+
+            if (resourceUri == null)
+            {
+                throw new ArgumentNullException(nameof(resourceUri));
+            }
+
+            if (responseCreator == null)
+            {
+                throw new ArgumentNullException(nameof(responseCreator));
+            }
+
             CosmosRequestMessage request = ExecUtils.GenerateCosmosRequestMessage(
-                client,
                 resourceUri,
                 resourceType,
                 operationType,
@@ -119,7 +142,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosRequestMessage request = ExecUtils.GenerateCosmosRequestMessage(
-                client,
                 resourceUri,
                 resourceType,
                 operationType,
@@ -132,7 +154,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static CosmosRequestMessage GenerateCosmosRequestMessage(
-            CosmosClient client,
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -153,11 +174,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKey pk = new PartitionKey(partitionKey);
                 request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
-            }
-
-            if (client.DocumentClient.UseMultipleWriteLocations)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
             }
 
             if (operationType == OperationType.Upsert)

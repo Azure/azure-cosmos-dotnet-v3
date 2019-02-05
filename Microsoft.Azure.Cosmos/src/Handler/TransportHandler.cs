@@ -62,6 +62,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosRequestMessage request, 
             CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler

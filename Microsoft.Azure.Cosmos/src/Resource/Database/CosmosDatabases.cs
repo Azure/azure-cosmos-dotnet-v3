@@ -159,8 +159,8 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosDefaultResultSetIterator<CosmosDatabaseSettings>(
                 maxItemCount,
                 continuationToken,
-                null,
-                this.DatabaseFeedRequestExecutor);
+                options: null,
+                nextDelegate: this.DatabaseFeedRequestExecutor);
         }
 
         /// <summary>
