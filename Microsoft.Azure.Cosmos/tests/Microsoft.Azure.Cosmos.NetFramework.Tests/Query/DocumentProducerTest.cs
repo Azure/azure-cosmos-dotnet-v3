@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Test possible race conditions in "DocumentProducer"
         /// </summary>
         [TestMethod]
-        [Owner("sboshra")]
         [Ignore] // This test doesn't seem to function.
         public async Task ConcurrentMoveNextTryScheduleTestAsync()
         {
@@ -108,7 +107,6 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         [TestMethod]
-        [Owner("olivert")]
         public async Task TestPreCompleteFetchCallbackAvoidsRace()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -183,7 +181,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Test possible InvalidOperationException in "DocumentProducer.MoveNextAsync"
         /// </summary>
         [TestMethod]
-        [Owner("sboshra")]
         [ExpectedException(typeof(InvalidOperationException))]
         public async Task TestInvalidOperationExceptionAsync()
         {
@@ -218,7 +215,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Test possible InvalidOperationException in "DocumentProducer.FetchAsync"
         /// </summary>
         [TestMethod]
-        [Owner("sboshra")]
         [ExpectedException(typeof(OperationCanceledException))]
         public async Task TestOperationCanceledExceptionAsync()
         {

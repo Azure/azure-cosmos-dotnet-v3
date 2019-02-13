@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class RntbdTests
     {
         [TestMethod]
-        [Owner("ovplaton")]
         public void DisposeNewChannelTest()
         {
             Guid activityId = Guid.NewGuid();
@@ -37,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("ovplaton")]
         public void DisposeInitializeFailedChannelTest()
         {
             Stopwatch sw = Stopwatch.StartNew();
@@ -57,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("ovplaton")]
         public async Task DisposeInitializeFailedChannelAsyncTest()
         {
             const int msPerBucket = 50;
@@ -82,7 +79,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("ovplaton")]
         public async Task CallInitializeFailedChannelAsyncTest()
         {
             TimeSpan totalRunTime = TimeSpan.FromSeconds(15.0);
@@ -149,7 +145,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("ovplaton")]
         public async Task ServerCloseOnConnectAsyncTest()
         {
             using (FaultyServer server = new FaultyServer())
@@ -241,7 +236,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("ovplaton")]
         public async Task ServerCloseOnSslNegotiationCompleteAsyncTest()
         {
             using (FaultyServer server = new FaultyServer())
@@ -342,7 +336,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [Ignore]
         [TestMethod]
-        [Owner("liphigao")]
         [Description("set up connection and do nothing, waiting for the connection to become idle.")]
         public async Task IdleChannelClosureAsyncTest()
         {

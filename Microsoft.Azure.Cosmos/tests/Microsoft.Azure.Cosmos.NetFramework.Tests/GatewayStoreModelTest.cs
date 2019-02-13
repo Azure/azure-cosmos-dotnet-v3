@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [Ignore]
         [TestMethod]
-        [Owner("kraman")]
         public async Task TestOpenAsyncFailFast()
         {
             Stopwatch watch = new Stopwatch();
@@ -68,7 +67,6 @@ namespace Microsoft.Azure.Cosmos
         /// Tests that after web exception we retry and request's content is preserved.
         /// </summary>
         [TestMethod]
-        [Owner("kraman")]
         public async Task TestRetries()
         {
             int run = 0;
@@ -127,7 +125,6 @@ namespace Microsoft.Azure.Cosmos
         /// Databases, Collections, Users, Permissions, PartitionKeyRanges, DatabaseAccounts and Offers
         /// </summary>
         [TestMethod]
-        [Owner("kraman")]
         public async Task TestSessionTokenForSessionConsistentResourceType()
         {
             GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
@@ -150,7 +147,6 @@ namespace Microsoft.Azure.Cosmos
         /// Documents, Sprocs, UDFs, Triggers 
         /// </summary>
         [TestMethod]
-        [Owner("kraman")]
         public async Task TestSessionTokenForSessionInconsistentResourceType()
         {
             GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
@@ -173,7 +169,6 @@ namespace Microsoft.Azure.Cosmos
         /// for collection operaion
         /// </summary>
         [TestMethod]
-        [Owner("kraman")]
         public async Task TestSessionTokenAvailability()
         {
             GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();

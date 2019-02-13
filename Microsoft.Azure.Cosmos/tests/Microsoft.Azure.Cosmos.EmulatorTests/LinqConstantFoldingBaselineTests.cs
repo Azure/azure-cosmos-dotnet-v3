@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
     public class LinqConstantFoldingBaselineTests : BaselineTests<LinqExpressionInput, LinqExpressionOutput>
     {
         [TestMethod]
-        [Owner("khdang")]
         public void TestUnaryOperators()
         {
             List<LinqExpressionInput> inputs = new List<LinqExpressionInput>();
@@ -47,7 +46,6 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestBinaryOperators()
         {
             var inputs = new List<LinqExpressionInput>();
@@ -100,7 +98,6 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestOtherExpressions()
         {
             List<LinqExpressionInput> inputs = new List<LinqExpressionInput>();

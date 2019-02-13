@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos
         /// Simple test for <see cref="SessionContainer"/> class.
         /// </summary>
         [TestMethod]
-        [Owner("jmondal")]
         public void TestSessionContainer()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -76,7 +75,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolveGlobalSessionTokenReturnsEmptyStringOnEmptyCache()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -87,7 +85,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolveGlobalSessionTokenReturnsEmptyStringOnCacheMiss()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -108,7 +105,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolveGlobalSessionTokenReturnsSerializedPartitionTokenMapUsingName()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -142,7 +138,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolveGlobalSessionTokenReturnsSerializedPartitionTokenMapUsingResourceId()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -176,7 +171,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolvePartitionLocalSessionTokenReturnsTokenMapUsingName()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -206,7 +200,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolvePartitionLocalSessionTokenReturnsTokenMapUsingResourceId()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -236,7 +229,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolvePartitionLocalSessionTokenReturnsNullOnPartitionMiss()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -266,7 +258,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolvePartitionLocalSessionTokenReturnsNullOnCollectionMiss()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -296,7 +287,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestResolvePartitionLocalSessionTokenReturnsTokenOnParentMatch()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -328,7 +318,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestClearTokenByCollectionFullnameRemovesToken()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -374,7 +363,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestClearTokenByResourceIdRemovesToken()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -420,7 +408,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestClearTokenKeepsUnmatchedCollection()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -471,7 +458,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenDoesntFailOnEmptySessionTokenHeader()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -480,7 +466,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenSetsTokenWhenRequestIsntNameBased()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -513,7 +498,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenGivesPriorityToOwnerFullNameOverResourceAddress()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -551,7 +535,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenIgnoresOwnerIdWhenRequestIsntNameBased()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -591,7 +574,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenSetsTokenWhenRequestIsNameBased()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -624,7 +606,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenGivesPriorityToOwnerIdOverResourceIdWhenRequestIsNameBased()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -664,7 +645,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenDoesntWorkForMasterQueries()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -695,7 +675,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenDoesntOverwriteHigherLSN()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -726,7 +705,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenOverwritesLowerLSN()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -757,7 +735,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestSetSessionTokenDoesNothingOnEmptySessionTokenHeader()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");
@@ -802,7 +779,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("derystso")]
         public void TestNewCollectionResourceIdInvalidatesOldCollectionResourceId()
         {
             SessionContainer sessionContainer = new SessionContainer("127.0.0.1");

@@ -280,7 +280,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Tests binary encoding of partition key
         /// </summary>
         [TestMethod]
-        [Owner("shreshts")]
         public void TestPartitionKeyBinaryEncoding()
         {
             Tuple<string, string>[] testCases =
@@ -307,7 +306,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Tests binary encoding of partition key
         /// </summary>
         [TestMethod]
-        [Owner("shreshts")]
         public void TestPartitionKeyBinaryEncodingV2()
         {
             Tuple<string, string>[] testCases =

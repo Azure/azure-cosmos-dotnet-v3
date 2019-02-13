@@ -44,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private Mock<IDocumentClientInternal> mockedClient;
 
         [TestMethod]
-        [Owner("atulk")]
         public void ValidateWriteEndpointOrderWithClientSideDisableMultipleWriteLocation()
         {
             this.Initialize(false, true, false);
@@ -54,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
         {
             await this.ValidateRetryOnSessionNotAvailabeWithEndpointDiscoveryDisabled(false, false, false);
@@ -119,7 +117,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryEnabled()
         {
             await this.ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryEnabledAsync(true);
@@ -191,7 +188,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateRetryOnReadSessionNotAvailabeWithEnableMultipleWriteLocationsAndEndpointDiscoveryEnabled()
         {
             await this.ValidateRetryOnReadSessionNotAvailabeWithEnableMultipleWriteLocationsAsync();
@@ -343,7 +339,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateRetryOnWriteForbiddenExceptionAsync()
         {
             this.Initialize(
@@ -400,7 +395,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateRetryOnDatabaseAccountNotFoundAsync()
         {
             await this.ValidateRetryOnDatabaseAccountNotFoundAsync(enableMultipleWriteLocations: false, isReadRequest: false);
@@ -479,7 +473,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateAsync()
         {
             for (int i = 0; i < 8; i++)

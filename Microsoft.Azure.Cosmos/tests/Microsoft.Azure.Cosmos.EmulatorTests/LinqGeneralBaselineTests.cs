@@ -89,7 +89,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestSelectMany()
         {
             var inputs = new List<LinqTestInput>();
@@ -169,7 +168,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestSimpleSubquery()
         {
             var inputs = new List<LinqTestInput>();
@@ -196,7 +194,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestQueryFlattening()
         {
             // these queries should make more sense when combined with where and orderby
@@ -734,7 +731,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         [TestMethod]
         [Ignore]
-        [Owner("khdang")]
         public void TestUnsupportedScenarios()
         {
             var inputs = new List<LinqTestInput>();
@@ -753,7 +749,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestOrderByTranslation()
         {
             var inputs = new List<LinqTestInput>();
@@ -811,7 +806,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         [TestMethod]
         [Ignore]
-        [Owner("khdang")]
         public void TestDistinctSelectManyIssues()
         {
             var inputs = new List<LinqTestInput>();
@@ -829,7 +823,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestDistinctTranslation()
         {
             var inputs = new List<LinqTestInput>();
@@ -1121,7 +1114,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateDynamicLinq()
         {
             var inputs = new List<LinqTestInput>();
@@ -1135,7 +1127,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateLinqQueries()
         {
             CosmosContainerSettings collection = client.CreateDocumentCollectionAsync(
@@ -1374,7 +1365,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateBasicQuery()
         {
             this.ValidateBasicQueryAsync().Wait();
@@ -1435,7 +1425,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateTransformQuery()
         {
             CosmosContainerSettings collection = new CosmosContainerSettings
@@ -1476,7 +1465,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateDynamicDocumentQuery() //Ensure query on custom property of document.
         {
             DocumentClient client = TestCommon.CreateClient(true);
@@ -1545,7 +1533,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateDynamicAttachmentQuery() //Ensure query on custom property of attachment.
         {
             IOrderedQueryable<SpecialAttachment2> attachmentQuery = client.CreateDocumentQuery<SpecialAttachment2>(testCollection);
@@ -1565,7 +1552,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestLinqTypeSystem()
         {
             Assert.AreEqual(null, TypeSystem.GetElementType(typeof(Book)));
@@ -1626,7 +1612,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateLinqOnDataDocumentType()
         {
             CosmosContainerSettings collection = client.CreateDocumentCollectionAsync(
@@ -1690,7 +1675,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateServerSideQueryEvalWithPagination()
         {
             this.ValidateServerSideQueryEvalWithPaginationScenario().Wait();

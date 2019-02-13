@@ -57,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestAggregateMax()
         {
             List<LinqAggregateInput> inputs = new List<LinqAggregateInput>();
@@ -73,7 +72,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestAggregateMin()
         {
             List<LinqAggregateInput> inputs = new List<LinqAggregateInput>();
@@ -89,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestAggregateSum()
         {
             List<LinqAggregateInput> inputs = new List<LinqAggregateInput>();
@@ -103,7 +100,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestAggregateCount()
         {
             List<LinqAggregateInput> inputs = new List<LinqAggregateInput>();
@@ -120,7 +116,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestAny()
         {
             List<LinqAggregateInput> inputs = new List<LinqAggregateInput>();
@@ -183,7 +178,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestAggregateAvg()
         {
             List<LinqAggregateInput> inputs = new List<LinqAggregateInput>();

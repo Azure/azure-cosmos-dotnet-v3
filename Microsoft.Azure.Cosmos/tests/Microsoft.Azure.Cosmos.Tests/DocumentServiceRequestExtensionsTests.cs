@@ -20,8 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tests to make sure IsValidStatusCodeForExceptionlessRetry works with UseStatusCodeForFailures
         /// </summary>
-        [TestMethod]
-        [Owner("maquaran")]
+        [TestMethod]        
         public void TestUseStatusCodeForFailures()
         {
             using (DocumentServiceRequest request =
@@ -50,8 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tests to make sure IsValidStatusCodeForExceptionlessRetry works with UseStatusCodeFor429
         /// </summary>
-        [TestMethod]
-        [Owner("maquaran")]
+        [TestMethod]        
         public void TestUseStatusCodeFor429()
         {
             using (DocumentServiceRequest request =

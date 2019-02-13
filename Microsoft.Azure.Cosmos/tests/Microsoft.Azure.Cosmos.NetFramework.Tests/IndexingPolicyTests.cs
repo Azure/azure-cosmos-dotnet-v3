@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     public class IndexingPolicyTests
     {
         [TestMethod]
-        [Owner("brchon")]
         public void Clone()
         {
             IndexingPolicy indexingPolicy = new IndexingPolicy()

@@ -200,7 +200,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateSQLTranslation()
         {
             int constInt = 2;
@@ -251,7 +250,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void ValidateSQLTranslationComplexData()
         {
             string constString = "s";

@@ -25,7 +25,6 @@ namespace Microsoft.Azure.Cosmos
     {
         [TestMethod]
         [ExpectedException(typeof(OperationCanceledException))]
-        [Owner("maquaran")]
         public async Task GatewayProcessMessageAsyncCancels()
         {
             using (CancellationTokenSource source = new CancellationTokenSource())
@@ -84,7 +83,6 @@ namespace Microsoft.Azure.Cosmos
 
         [TestMethod]
         [ExpectedException(typeof(OperationCanceledException))]
-        [Owner("maquaran")]
         public async Task GatewayProcessMessageAsyncCancelsOnDeadline()
         {
             // Cancellation deadline is before Request timeout
@@ -139,7 +137,6 @@ namespace Microsoft.Azure.Cosmos
 
         [TestMethod]
         [ExpectedException(typeof(OperationCanceledException))]
-        [Owner("maquaran")]
         public async Task ClientRetryPolicyShouldCancel()
         {
             CancellationToken notCancelledToken = new CancellationToken();

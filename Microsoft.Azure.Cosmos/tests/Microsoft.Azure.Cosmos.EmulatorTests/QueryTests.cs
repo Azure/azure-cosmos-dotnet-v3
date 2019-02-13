@@ -537,71 +537,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
         */
 
-        /// <summary>
-        /// Test for invalid precision
-        /// </summary>
-        [TestMethod]
-        public void TestIndexingPolicyNegative2()
-        {
-            try
-            {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
-                collectionDefinition.IndexingPolicy.Automatic = true;
-                collectionDefinition.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-
-                IncludedPath includedPath = new IncludedPath();
-                includedPath.Path = @"/Field/?";
-                includedPath.Indexes.Add(new RangeIndex() { DataType = DataType.Number, Precision = 0 });
-                includedPath.Indexes.Add(new RangeIndex() { DataType = DataType.String, Precision = -1 });
-                collectionDefinition.IndexingPolicy.IncludedPaths.Add(includedPath);
-                collectionDefinition.IndexingPolicy.ExcludedPaths.Add(new ExcludedPath() { Path = @"/" });
-
-                bool bException = false;
-                try
-                {
-                    CosmosContainerSettings collection = this.client.Create<CosmosContainerSettings>(database.GetIdOrFullName(), collectionDefinition);
-                }
-                catch (DocumentClientException e)
-                {
-                    bException = true;
-                    Assert.IsTrue(e.Message.Contains("The specified precision value 0 is not valid."));
-                }
-                Assert.IsTrue(bException);
-
-                ((RangeIndex)collectionDefinition.IndexingPolicy.IncludedPaths[0].Indexes[0]).Precision = 9;
-                bException = false;
-                try
-                {
-                    CosmosContainerSettings collection = this.client.Create<CosmosContainerSettings>(database.GetIdOrFullName(), collectionDefinition);
-                }
-                catch (DocumentClientException e)
-                {
-                    bException = true;
-                    Assert.IsTrue(e.Message.Contains("Please provide a value between 1 and 8, or -1 for maximum precision"));
-                }
-                Assert.IsTrue(bException);
-                ((RangeIndex)collectionDefinition.IndexingPolicy.IncludedPaths[0].Indexes[0]).Precision = -1;
-
-                ((RangeIndex)collectionDefinition.IndexingPolicy.IncludedPaths[0].Indexes[1]).Precision = 101;
-                bException = false;
-                try
-                {
-                    CosmosContainerSettings collection = this.client.Create<CosmosContainerSettings>(database.GetIdOrFullName(), collectionDefinition);
-                }
-                catch (DocumentClientException e)
-                {
-                    bException = true;
-                    Assert.IsTrue(e.Message.Contains("Please provide a value between 1 and 100, or -1 for maximum precision"));
-                }
-                Assert.IsTrue(bException);
-            }
-            catch (Exception e)
-            {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
-            }
-        }
-
         [TestMethod]
         public void TestQueryDocumentsSecondaryIndex()
         {
@@ -639,39 +574,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
             }
         }
-
-        [TestMethod]
-        public void TestQueryDocumentNoIndex()
-        {
-            try
-            {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentNoIndex" + Guid.NewGuid().ToString() });
-
-                CosmosContainerSettings sourceCollection = new CosmosContainerSettings
-                {
-                    Id = "TestQueryDocumentNoIndex" + Guid.NewGuid().ToString(),
-                };
-                sourceCollection.IndexingPolicy.Automatic = false;
-                sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
-
-                dynamic doc = new Document()
-                {
-                    Id = string.Format(CultureInfo.InvariantCulture, "doc{0}", 111)
-                };
-                doc.NumericField = 111;
-                doc.StringField = "111";
-
-                this.client.Create<Document>(collection.GetIdOrFullName(), (Document)doc);
-                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField= ""111""").AsEnumerable().Count());
-            }
-            catch (DocumentClientException e)
-            {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
-            }
-        }
-
 
         [TestMethod]
         public void TestQueryDocumentManualRemoveIndex()

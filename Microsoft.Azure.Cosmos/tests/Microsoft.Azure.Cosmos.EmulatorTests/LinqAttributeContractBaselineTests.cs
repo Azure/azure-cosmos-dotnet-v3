@@ -165,7 +165,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// 3) Default Member Name
         /// </summary>
         [TestMethod]
-        [Owner("brchon")]
         public void TestAttributePriority()
         {
             Assert.AreEqual("jsonProperty", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonProperty").First()));
@@ -178,7 +177,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// Tests to see if we are honoring the attribute contract in a where clause for LINQ Queries.
         /// </summary>
         [TestMethod]
-        [Owner("brchon")]
         public void TestWhereAttributeContract()
         {
             var inputs = new List<LinqTestInput>();
@@ -193,7 +191,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// Tests to see if we are honoring the attribute contract in a select clause for LINQ Queries.
         /// </summary>
         [TestMethod]
-        [Owner("brchon")]
         public void TestSelectAttributeContract()
         {
             var inputs = new List<LinqTestInput>();
@@ -208,7 +205,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// Tests to see if we are honoring the attribute contract in a orderby clause for LINQ Queries.
         /// </summary>
         [TestMethod]
-        [Owner("brchon")]
         public void TestOrderByAttributeContract()
         {
             var inputs = new List<LinqTestInput>();
@@ -227,7 +223,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// Tests to see if we are honoring the attribute contract in a member assignment.
         /// </summary>
         [TestMethod]
-        [Owner("brchon")]
         public void TestMemberAssignmentAttributeContract()
         {
             var inputs = new List<LinqTestInput>();
@@ -246,7 +241,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         /// Tests to see if we are honoring the attribute contract in constructors.
         /// </summary>
         [TestMethod]
-        [Owner("brchon")]
         public void TestNewAttributeContract()
         {
             var inputs = new List<LinqTestInput>();

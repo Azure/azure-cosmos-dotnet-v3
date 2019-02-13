@@ -152,7 +152,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestLiteralSerialization()
         {
             List<DataObject> testData = new List<DataObject>();
@@ -217,7 +216,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestTypeCheckFunctions()
         {
             // IsDefined, IsNull, and IsPrimitive are not supported on the client side.
@@ -238,7 +236,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestMemberInitializer()
         {
             const int Records = 100;
@@ -260,7 +257,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestStringEnumJsonConverter()
         {
             const int Records = 100;
@@ -295,7 +291,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestDateTimeJsonConverter()
         {
             const int Records = 100;
@@ -324,7 +319,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestNullableFields()
         {
             const int Records = 5;
@@ -358,7 +352,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         [TestMethod]
         [Ignore]
-        [Owner("khdang")]
         public void TestMathFunctionsIssues()
         {
             // These are issues in scenarios with integers casting
@@ -404,7 +397,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestMathFunctions()
         {
             const int Records = 20;
@@ -531,7 +523,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         [TestMethod]
         [Ignore]
-        [Owner("khdang")]
         public void TestStringFunctionsIssues()
         {
             // issue when doing string.Reverse()
@@ -542,7 +533,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestStringFunctions()
         {
             List<string> emptyList = new List<string>();
@@ -605,7 +595,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestArrayFunctions()
         {
             const int Records = 100;
@@ -662,7 +651,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestSpatialFunctions()
         {
             // The spatial functions are not supported on the client side.
@@ -691,7 +679,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestSpecialMethods()
         {
             const int Records = 100;
@@ -720,7 +707,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestConditional()
         {
             const int Records = 100;
@@ -748,7 +734,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestCoalesce()
         {
             const int Records = 100;
@@ -771,7 +756,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         [TestMethod]
         [TestCategory("Ignore")]
-        [Owner("khdang")]
         public void TestStringCompareTo()
         {
             var testQuery = client.CreateDocumentQuery<DataObject>(testCollection);
@@ -819,7 +803,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         [TestMethod]
         [TestCategory("Ignore")]
-        [Owner("khdang")]
         public void TestUDFs()
         {
             // The UDFs invokation are not supported on the client side.
@@ -853,7 +836,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestClausesOrderVariations()
         {
             const int Records = 100;
@@ -898,7 +880,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestSelectTop()
         {
             var generatedData = CreateDataTestSelectTop();
@@ -979,7 +960,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Owner("khdang")]
         public void TestSelectManyWithFilters()
         {
             var getQuery = CreateDataTestSelectManyWithFilters();

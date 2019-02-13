@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Query
     public class FeedOptionTests
     {
         [TestMethod]
-        [Owner("kirankk")]
         public async Task CheckConsistencyLevel()
         {
             FeedOptions fo = new FeedOptions();

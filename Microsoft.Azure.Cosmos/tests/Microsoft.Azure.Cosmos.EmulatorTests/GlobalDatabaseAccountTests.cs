@@ -132,7 +132,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateReadBarrierAsync()
         {
             using (new ActivityScope(Guid.NewGuid()))
@@ -185,7 +184,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("atulk")]
         public async Task ValidateVectorSessionTokenAsync()
         {
             await this.ValidateVectorSessionTokenAsync(ConnectionMode.Direct);
@@ -392,7 +390,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("swvya")]
         public async Task ValidateOfferReplace()
         {
             DocumentClient client = TestCommon.CreateClient(false);
@@ -458,7 +455,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("jih")]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void TestClientWithNoFailover()
         {
@@ -518,7 +514,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        [Owner("jih")]
         public void TestClientWithPreferredRegion()
         {
             TestClientWithPreferredRegionAsync().Wait();
@@ -574,7 +569,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("gaausfel")]
         public void TestUpsertOperationWithPreferredRegion()
         {
             TestUpsertOperationWithPreferredRegionAsync().Wait();
@@ -623,7 +617,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("gaausfel")]
         public void TestPreferredRegionOrder()
         {
             TestPreferredRegionOrderAsync().Wait();
@@ -655,7 +648,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("gaausfel")]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void TestDocumentClientMemoryLeakDirectTCP()
         {
@@ -670,7 +662,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("gaausfel")]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void TestDocumentClientMemoryLeakDirectHttps()
         {
@@ -685,7 +676,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("gaausfel")]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void TestDocumentClientMemoryLeakGatewayHttps()
         {
@@ -742,7 +732,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        [Owner("jih")]
         public void TestDatabaseAccountRegionList()
         {
             TestDatabaseAccountRegionListAsync().Wait();
@@ -776,14 +765,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("shreshts")]
         public void TestMasterCRUD()
         {
             ValidateMasterCRUDAsync().Wait();
         }
 
         [TestMethod]
-        [Owner("shreshts")]
         public void ValidatePartitionResourceCRUD()
         {
             this.ValidatePartitionResourceCRUDAsync().Wait();
@@ -838,7 +825,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("shpandir")]
         public void TestTopologyWriteStatus()
         {
             this.ValidateWriteStatus().Wait();
@@ -846,7 +832,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined in gated runs */]
-        [Owner("jih")]
         public void TestFailoverAPIs()
         {
             this.ValidateFailoverAPIs().Wait();
@@ -854,7 +839,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        [Owner("pasharma")]
         public void TestGeoCollectionCRUD()
         {
             ValidateCollectionCRUDAsync().Wait();
@@ -862,42 +846,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
-        [Owner("pasharma")]
         public void TestGeoPartitionedCollectionCRUD()
         {
             ValidatePartitionedCollectionCRUDAsync().Wait();
         }
 
         [TestMethod]
-        [Owner("jih")]
         public void TestFailoverWriteOperationRetryPolicy()
         {
             this.TestFailoverWriteOperationRetryPolicyAsync().Wait();
         }
 
         [TestMethod]
-        [Owner("shpandir")]
         public void ValidateUpdateServiceManagerConfigOperation()
         {
             this.ValidateUpdateServiceManagerConfigOperationAsync().Wait();
         }
 
         [TestMethod]
-        [Owner("shreshts")]
         public void ValidateCrossRegionCapacityAllocationWorkflow()
         {
             this.ValidateCrossRegionCapacityAllocationWorkflowAsync().Wait();
         }
 
         [TestMethod]
-        [Owner("sujitk")]
         public void ReadDocumentFromReadRegionWithRetry()
         {
             ReadDocumentFromReadRegionWithRetryAsync().Wait();
         }
 
         [TestMethod]
-        [Owner("swvya")]
         public void ValidateGetDatabaseAccountFromGateway()
         {
             ValidateGetDatabaseAccountFromGatewayAsync().Wait();
@@ -1034,7 +1012,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("sujitk")]
         public async Task RetryOnReadSessionNotAvailableMockTestAsync()
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy

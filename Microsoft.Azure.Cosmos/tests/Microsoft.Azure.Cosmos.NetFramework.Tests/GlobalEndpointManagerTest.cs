@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
         [TestMethod]
-        [Owner("sujitk")]
         public void EndpointFailureMockTest()
         {
             // Setup dummpy read locations for the database account
@@ -81,7 +80,6 @@ namespace Microsoft.Azure.Cosmos
         /// Unit test for LocationHelper class
         /// </summary>
         [TestMethod]
-        [Owner("gaausfel")]
         public void LocationHelperTest()
         {
             Uri globalEndpointUri = new Uri("https://contoso.documents.azure.com:443/");
@@ -101,7 +99,6 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
         [TestMethod]
-        [Owner("sujitk")]
         public void ReadLocationRemoveAndAddMockTest()
         {
             // Setup dummpy read locations for the database account

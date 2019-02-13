@@ -26,8 +26,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private static Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
 
-        [TestMethod]
-        [Owner("maquaran")]
+        [TestMethod]        
         [ExpectedException(typeof(NotFoundException))]
         public void TransportClient_DoesThrowFor404WithReadSessionNotAvailable_WithUseStatusCodeForFailures()
         {
@@ -56,8 +55,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        [TestMethod]
-        [Owner("maquaran")]
+        [TestMethod]        
         [DataRow((int)HttpStatusCode.NotFound)]
         [DataRow((int)HttpStatusCode.PreconditionFailed)]
         [DataRow((int)HttpStatusCode.Conflict)]
@@ -86,8 +84,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        [TestMethod]
-        [Owner("maquaran")]
+        [TestMethod]        
         public void TransportClient_DoesNotThrowFor429_WithUseStatusCodeFor429()
         {
             using (DocumentServiceRequest request =
@@ -112,8 +109,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        [TestMethod]
-        [Owner("maquaran")]
+        [TestMethod]        
         public async Task GatewayStoreClient_DoesNotThrowFor429_WithUseStatusCodeFor429()
         {
             using (DocumentServiceRequest request =
@@ -132,7 +128,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [DataRow((int)HttpStatusCode.NotFound)]
         [DataRow((int)HttpStatusCode.PreconditionFailed)]
         [DataRow((int)HttpStatusCode.Conflict)]
@@ -154,7 +149,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [DataRow(true)]
         [DataRow(false)]
 
@@ -166,7 +160,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [DataRow(true)]
         [DataRow(false)]
 
@@ -178,7 +171,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [DataRow(true)]
         [DataRow(false)]
 
@@ -190,7 +182,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [DataRow(true)]
         [DataRow(false)]
 
