@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
+            this.DisableSslVerification = false;
         }
 
         /// <summary>
@@ -318,6 +319,22 @@ namespace Microsoft.Azure.Cosmos
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
         /// </remarks>
         public RetryOptions RetryOptions
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the flag to determine whether SSL verification will be disabled when connecting to Cosmos DB over HTTPS.
+        /// </summary>
+        /// <remarks>
+        /// When the value of this property is true, the SDK will bypass the normal SSL certificate verification
+        /// process. This is useful when connecting the client to a Cosmos DB emulator across the network as
+        /// some Linux clients do not honor any self-signed certificates that are installed into ca-certificates.
+        /// Do not set this property when targeting Production environments.
+        /// <value>Default value is false.</value>
+        /// </remarks>
+        public bool DisableSslVerification
         {
             get;
             set;

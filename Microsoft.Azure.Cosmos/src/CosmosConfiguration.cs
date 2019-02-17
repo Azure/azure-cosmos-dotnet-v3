@@ -127,6 +127,18 @@ namespace Microsoft.Azure.Cosmos
         internal string AccountKey { get; }
 
         /// <summary>
+        /// Gets or sets the flag to determine whether SSL verification will be disabled when connecting to Cosmos DB over HTTPS.
+        /// </summary>
+        /// <remarks>
+        /// When the value of this property is true, the SDK will bypass the normal SSL certificate verification
+        /// process. This is useful when connecting the client to a Cosmos DB emulator across the network as
+        /// some Linux clients do not honor any self-signed certificates that are installed into ca-certificates.
+        /// Do not set this property when targeting Production environments.
+        /// <value>Default value is false.</value>
+        /// </remarks>
+        public virtual bool DisableSslVerification { get; set; }
+
+        /// <summary>
         /// A suffix to be added to the default user-agent for the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -442,6 +454,7 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionProtocol = this.ConnectionProtocol,
                 UserAgentContainer = this.UserAgentContainer,
                 UseMultipleWriteLocations = true,
+                DisableSslVerification = this.DisableSslVerification
             };
 
             if (this.CurrentRegion != null)
@@ -470,6 +483,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionMode = CosmosConfiguration.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosConfiguration.DefaultProtocol;
             this.ApiType = CosmosConfiguration.DefaultApiType;
+            this.DisableSslVerification = false;
         }
 
         private static string GetValueFromSqlConnectionString(DbConnectionStringBuilder builder, string keyName)

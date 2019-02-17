@@ -852,7 +852,7 @@ namespace Microsoft.Azure.Cosmos
            
             this.globalEndpointManager = new GlobalEndpointManager(this, this.connectionPolicy);
 
-            this.httpMessageHandler = new HttpRequestMessageHandler(this.sendingRequest, this.receivedResponse);
+            this.httpMessageHandler = new HttpRequestMessageHandler(this.sendingRequest, this.receivedResponse, this.connectionPolicy);
 
             this.mediaClient = new HttpClient(this.httpMessageHandler);
 
@@ -6785,11 +6785,22 @@ namespace Microsoft.Azure.Cosmos
             private readonly EventHandler<SendingRequestEventArgs> sendingRequest;
             private readonly EventHandler<ReceivedResponseEventArgs> receivedResponse;
 
-            public HttpRequestMessageHandler(EventHandler<SendingRequestEventArgs> sendingRequest, EventHandler<ReceivedResponseEventArgs> receivedResponse)
+            public HttpRequestMessageHandler(EventHandler<SendingRequestEventArgs> sendingRequest, EventHandler<ReceivedResponseEventArgs> receivedResponse, ConnectionPolicy connectionPolicy)
             {
                 this.sendingRequest = sendingRequest;
                 this.receivedResponse = receivedResponse;
-                InnerHandler = new HttpClientHandler();
+
+                var clientHandler = new HttpClientHandler();
+                if (connectionPolicy.DisableSslVerification)
+                {
+                    clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                    clientHandler.ServerCertificateCustomValidationCallback += (message, certificate2, x509Chain, sslPolicyErrors) =>
+                    {
+                        return true;
+                    };
+                }
+
+                InnerHandler = clientHandler;
             }
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
