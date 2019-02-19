@@ -66,14 +66,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static DocumentClient CreateClient(bool useGateway, Protocol protocol = Protocol.Tcp,
-            int timeoutInSeconds = 10,
+            int timeoutInSeconds = 60,
             ConsistencyLevel? defaultConsistencyLevel = null,
             AuthorizationTokenType tokenType = AuthorizationTokenType.PrimaryMasterKey,
             bool createForGeoRegion = false,
             bool enableEndpointDiscovery = true,
             bool? enableReadRequestFallback = null,
             List<string> preferredLocations = null,
-            RetryOptions retryOptions = null)
+            RetryOptions retryOptions = null,
+            ApiType apiType = ApiType.None,
+            EventHandler<ReceivedResponseEventArgs> recievedResponseEventHandler = null,
+            bool useMultipleWriteLocations = false)
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
 
@@ -102,15 +105,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //        throw new ArgumentException("tokenType");
             //}
 
-            ConnectionPolicy connectionPolicy = null;
-#if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
+            ConnectionPolicy connectionPolicy = null;
             if (useGateway)
             {
                 connectionPolicy = new ConnectionPolicy
                 {
                     ConnectionMode = ConnectionMode.Gateway,
+                    RequestTimeout = TimeSpan.FromSeconds(timeoutInSeconds),
                     EnableEndpointDiscovery = enableEndpointDiscovery,
+                    EnableReadRequestsFallback = enableReadRequestFallback,
+                    UseMultipleWriteLocations = useMultipleWriteLocations
                 };
             }
             else
@@ -121,17 +126,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ConnectionProtocol = protocol,
                     RequestTimeout = TimeSpan.FromSeconds(timeoutInSeconds),
                     EnableEndpointDiscovery = enableEndpointDiscovery,
-                    EnableReadRequestsFallback = enableReadRequestFallback
+                    EnableReadRequestsFallback = enableReadRequestFallback,
+                    UseMultipleWriteLocations = useMultipleWriteLocations,
                 };
             }
-#endif
-#if !DIRECT_MODE
-            connectionPolicy = new ConnectionPolicy
-            {
-                ConnectionMode = ConnectionMode.Gateway,
-                EnableEndpointDiscovery = enableEndpointDiscovery,
-            };
-#endif
+
             if (retryOptions != null)
             {
                 connectionPolicy.RetryOptions = retryOptions;
@@ -150,12 +149,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = new DocumentClient(
                 uri,
                 authKey,
+                null,
+                connectionPolicy,
+                defaultConsistencyLevel,
                 new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
                 },
-                connectionPolicy,
-                defaultConsistencyLevel);
+                apiType,
+                recievedResponseEventHandler);
 
             return client;
         }

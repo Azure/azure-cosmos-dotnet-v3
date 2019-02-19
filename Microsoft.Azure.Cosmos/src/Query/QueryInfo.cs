@@ -25,6 +25,20 @@ namespace Microsoft.Azure.Cosmos.Query
             set;
         }
 
+        [JsonProperty("offset")]
+        public int? Offset
+        {
+            get;
+            set;
+        }
+
+        [JsonProperty("limit")]
+        public int? Limit
+        {
+            get;
+            set;
+        }
+
         [JsonProperty("orderBy", ItemConverterType = typeof(StringEnumConverter))]
         public SortOrder[] OrderBy
         {
@@ -65,6 +79,22 @@ namespace Microsoft.Azure.Cosmos.Query
             get
             {
                 return this.Top != null;
+            }
+        }
+
+        public bool HasOffset
+        {
+            get
+            {
+                return this.Offset != null;
+            }
+        }
+
+        public bool HasLimit
+        {
+            get
+            {
+                return this.Limit != null;
             }
         }
 

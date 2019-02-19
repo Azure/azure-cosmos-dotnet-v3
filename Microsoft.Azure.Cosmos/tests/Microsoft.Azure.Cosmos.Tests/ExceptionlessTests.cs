@@ -199,10 +199,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="goThroughGateway">Whether or not to run the scenario using Gateway. If false, Direct will be used.</param>
         private static async Task<MockTransportHandler> TransportHandlerRunScenario(int responseStatusCode, bool goThroughGateway = true)
         {
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => new HttpResponseMessage((HttpStatusCode)responseStatusCode) {
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode) {
                 Content = new StringContent("{}"),
                 RequestMessage = httpRequest
-            };
+            });
 
             Func<Uri, DocumentServiceRequest, StoreResponse> sendDirectFunc = (uri, request) => new StoreResponse()
             {
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request, 
             int responseStatusCode)
         {
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => new HttpResponseMessage((HttpStatusCode)responseStatusCode);
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async httpRequest => await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode));
 
             GatewayStoreModel storeModel = MockGatewayStoreModel(sendFunc);
 

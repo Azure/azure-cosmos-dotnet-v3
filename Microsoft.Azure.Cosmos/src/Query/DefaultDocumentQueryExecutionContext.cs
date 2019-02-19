@@ -1,16 +1,14 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
+﻿//-----------------------------------------------------------------------
+// <copyright file="DefaultDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.Linq.Expressions;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -20,8 +18,17 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Default document query execution context for single partition queries or for split proofing general requests.
+    /// </summary>
     internal sealed class DefaultDocumentQueryExecutionContext : DocumentQueryExecutionContextBase
     {
+        // For a single partition collection the only partition is 0
+        private const string SinglePartitionKeyId = "0";
+
+        /// <summary>
+        /// Whether or not a continuation is expected.
+        /// </summary>
         private readonly bool isContinuationExpected;
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
         private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
@@ -29,65 +36,36 @@ namespace Microsoft.Azure.Cosmos.Query
         private long retries;
         private readonly PartitionRoutingHelper partitionRoutingHelper;
 
-        // For a single partition collection the only partition is 0
-        private const string singlePartitionKeyId = "0";
-
         public DefaultDocumentQueryExecutionContext(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            string resourceLink,
-            bool isContinuationExpected,
-            Guid correlatedActivityId) :
-            base(
-            client,
-            resourceTypeEnum,
-            resourceType,
-            expression,
-            feedOptions,
-            resourceLink,
-            false,
-            correlatedActivityId)
+            DocumentQueryExecutionContextBase.InitParams constructorParams,
+            bool isContinuationExpected) :
+            base(constructorParams)
         {
             this.isContinuationExpected = isContinuationExpected;
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
+            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(SinglePartitionKeyId);
             this.providedRangesCache = new Dictionary<string, IReadOnlyList<Range<string>>>();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(singlePartitionKeyId);
             this.retries = -1;
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
 
         public static Task<DefaultDocumentQueryExecutionContext> CreateAsync(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            string resourceLink,
+            DocumentQueryExecutionContextBase.InitParams constructorParams,
             bool isContinuationExpected,
-            CancellationToken cancellationToken,
-            Guid correlatedActivityId)
+            CancellationToken token)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            token.ThrowIfCancellationRequested();
             return Task.FromResult(new DefaultDocumentQueryExecutionContext(
-                client,
-                resourceTypeEnum,
-                resourceType,
-                expression,
-                feedOptions,
-                resourceLink,
-                isContinuationExpected,
-                correlatedActivityId));
+                constructorParams,
+                isContinuationExpected));
         }
 
         public override void Dispose()
         {
         }
 
-        protected override async Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken cancellationToken)
+        protected override async Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken token)
         {
             CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
             PartitionKeyRangeCache partitionKeyRangeCache = await this.Client.GetPartitionKeyRangeCache();
@@ -107,15 +85,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     this.fetchExecutionRangeAccumulator.BeginFetchRange();
                     ++this.retries;
-                    this.fetchSchedulingMetrics.Start();
-                    this.fetchExecutionRangeAccumulator.BeginFetchRange();
-                    FeedResponse<dynamic> response = await this.ExecuteOnceAsync(retryPolicyInstance, cancellationToken);
-                    this.fetchSchedulingMetrics.Stop();
-                    this.fetchExecutionRangeAccumulator.EndFetchRange(response.ActivityId, response.Count, this.retries);
-
-                    if (!string.IsNullOrEmpty(response.Headers[HttpConstants.HttpHeaders.QueryMetrics]))
+                    FeedResponse<dynamic> response = await this.ExecuteOnceAsync(retryPolicyInstance, token);
+                    if (!string.IsNullOrEmpty(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
-                        this.fetchExecutionRangeAccumulator.EndFetchRange(response.ActivityId, response.Count, this.retries);
+                        this.fetchExecutionRangeAccumulator.EndFetchRange(
+                            response.ActivityId, 
+                            response.Count, 
+                            this.retries);
                         response = new FeedResponse<dynamic>(
                             response,
                             response.Count,
@@ -124,14 +100,17 @@ namespace Microsoft.Azure.Cosmos.Query
                             new Dictionary<string, QueryMetrics>
                             {
                                 {
-                                    singlePartitionKeyId, 
+                                    SinglePartitionKeyId, 
                                     QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                                        response.Headers[HttpConstants.HttpHeaders.QueryMetrics],
+                                        response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
                                         new ClientSideMetrics(
                                             this.retries,
                                             response.RequestCharge,
                                             this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                            string.IsNullOrEmpty(response.ResponseContinuation) ? new List<Tuple<string, SchedulingTimeSpan>>() { new Tuple<string, SchedulingTimeSpan>(singlePartitionKeyId, this.fetchSchedulingMetrics.Elapsed)} : new List<Tuple<string, SchedulingTimeSpan>>()))
+                                            string.IsNullOrEmpty(response.ResponseContinuation) ? new List<Tuple<string, SchedulingTimeSpan>>()
+                                            {
+                                                new Tuple<string, SchedulingTimeSpan>(SinglePartitionKeyId, this.fetchSchedulingMetrics.Elapsed)
+                                            } : new List<Tuple<string, SchedulingTimeSpan>>()))
                                 }
                             },
                             response.RequestStatistics,
@@ -143,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     return response;
                 },
                 retryPolicyInstance,
-                cancellationToken);
+                token);
         }
 
         private async Task<FeedResponse<dynamic>> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
@@ -153,11 +132,6 @@ namespace Microsoft.Azure.Cosmos.Query
             // which shold be erased during retries.
             using (DocumentServiceRequest request = await this.CreateRequestAsync())
             {
-                if (retryPolicyInstance != null)
-                {
-                    retryPolicyInstance.OnBeforeSendRequest(request);
-                }
-
                 if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.PartitionKey])
                     || !request.ResourceType.IsPartitioned())
                 {
@@ -238,12 +212,12 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private async Task<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>> TryGetTargetPartitionKeyRangeAsync(
-            DocumentServiceRequest request,
-            CosmosContainerSettings collection,
-            QueryPartitionProvider queryPartitionProvider,
-            IRoutingMapProvider routingMapProvider,
-            Range<string> rangeFromContinuationToken,
-            List<CompositeContinuationToken> suppliedTokens)
+           DocumentServiceRequest request,
+           CosmosContainerSettings collection,
+           QueryPartitionProvider queryPartitionProvider,
+           IRoutingMapProvider routingMapProvider,
+           Range<string> rangeFromContinuationToken,
+           List<CompositeContinuationToken> suppliedTokens)
         {
             string version = request.Headers[HttpConstants.HttpHeaders.Version];
             version = string.IsNullOrEmpty(version) ? HttpConstants.Versions.CurrentVersion : version;
@@ -283,13 +257,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 else
                 {
                     providedRanges = new List<Range<string>>
-                                     {
-                                         new Range<string>(
-                                             PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                                             PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                                             true,
-                                             false)
-                                     };
+                    {
+                        new Range<string>(
+                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            true,
+                            false)
+                    };
                 }
 
                 this.providedRangesCache[collection.ResourceId] = providedRanges;

@@ -1184,97 +1184,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        public async Task TestRUsCalculationForParallelQuery()
-        {
-            string guid = Guid.NewGuid().ToString();
-            await this.CreateDataSet(true, "db" + guid, "coll" + guid, 1000, 35000);
-            await this.TestRUsCalculationForParallelQuery("db" + guid, "coll" + guid, true, Protocol.Https, false);
-            await this.TestRUsCalculationForParallelQuery("db" + guid, "coll" + guid, false, Protocol.Tcp, true);
-        }
-
-        internal async Task TestRUsCalculationForParallelQuery(string inputDatabaseId, string inputCollectionId, bool useGateway, Protocol protocol, bool isDeleteDB)
-        {
-            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            double errorMargin = 0.10;
-            Trace.TraceInformation(
-                "Start TestRUsCalculationForParallelQuery in {0} mode with seed{1}",
-                useGateway ? ConnectionMode.Gateway : ConnectionMode.Direct,
-                seed);
-
-            DocumentClient client = TestCommon.CreateClient(useGateway);
-            String queryText = "select root.partitionKey from root";
-            CosmosDatabaseSettings database = await client.ReadDatabaseAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}", inputDatabaseId));
-            CosmosContainerSettings coll = await client.ReadDocumentCollectionAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}/colls/{1}", inputDatabaseId, inputCollectionId));
-
-            int countSerial = 0;
-            double totalRUsSerial = 0;
-            FeedOptions feedOptionsSerial = new FeedOptions { EnableCrossPartitionQuery = true, MaxBufferedItemCount = 7000, MaxDegreeOfParallelism = 0 };
-            var query = client.CreateDocumentQuery(coll.AltLink, queryText, feedOptionsSerial).AsDocumentQuery();
-
-            while (query.HasMoreResults)
-            {
-                FeedResponse<dynamic> page = await query.ExecuteNextAsync().ConfigureAwait(false);
-                totalRUsSerial += page.RequestCharge;
-                countSerial += page.Count;
-            }
-
-            int countParallelOne = 0;
-            double totalRUsParallelOne = 0;
-            FeedOptions feedOptionsParallelOne = new FeedOptions { EnableCrossPartitionQuery = true, MaxBufferedItemCount = 7000, MaxDegreeOfParallelism = 1 };
-            query = client.CreateDocumentQuery(coll.AltLink, queryText, feedOptionsParallelOne).AsDocumentQuery();
-
-            while (query.HasMoreResults)
-            {
-                FeedResponse<dynamic> page = await query.ExecuteNextAsync().ConfigureAwait(false);
-                totalRUsParallelOne += page.RequestCharge;
-                countParallelOne += page.Count;
-            }
-
-            int countParallelMany = 0;
-            double totalRUsParallelMany = 0;
-            FeedOptions feedOptionsparallelMany = new FeedOptions { EnableCrossPartitionQuery = true, MaxBufferedItemCount = 7000, MaxDegreeOfParallelism = 100 };
-            query = client.CreateDocumentQuery(coll.AltLink, queryText, feedOptionsparallelMany).AsDocumentQuery();
-
-            while (query.HasMoreResults)
-            {
-                FeedResponse<dynamic> page = await query.ExecuteNextAsync().ConfigureAwait(false);
-                totalRUsParallelMany += page.RequestCharge;
-                countParallelMany += page.Count;
-            }
-
-            double delta = totalRUsSerial * errorMargin;
-
-            Assert.IsTrue(
-                Math.Abs(totalRUsSerial - totalRUsParallelOne) < delta,
-                this.getParallelRUCalculationDebugInfo(queryText, totalRUsSerial, totalRUsParallelOne, feedOptionsSerial.MaxDegreeOfParallelism, feedOptionsParallelOne.MaxDegreeOfParallelism));
-
-            Assert.IsTrue(
-                Math.Abs(totalRUsParallelOne - totalRUsParallelMany) < delta,
-                this.getParallelRUCalculationDebugInfo(queryText, totalRUsParallelOne, totalRUsParallelMany, feedOptionsParallelOne.MaxDegreeOfParallelism, feedOptionsparallelMany.MaxDegreeOfParallelism));
-
-            Assert.IsTrue(
-                Math.Abs(totalRUsSerial - totalRUsParallelMany) < delta,
-                this.getParallelRUCalculationDebugInfo(queryText, totalRUsSerial, totalRUsParallelMany, feedOptionsSerial.MaxDegreeOfParallelism, feedOptionsparallelMany.MaxDegreeOfParallelism));
-
-            if (isDeleteDB)
-            {
-                client.DeleteDatabaseAsync(database).Wait();
-            }
-        }
-
-        private string getParallelRUCalculationDebugInfo(string queryText, double ru1, double ru2, int dop1, int dop2)
-        {
-            return string.Format(
-               CultureInfo.InvariantCulture,
-               "Unequals RUs {0} (MaxDOP {1}) and {2} ( MaxDOP {3}). QueryText = {4}",
-               ru1,
-               dop1,
-               ru2,
-               dop2,
-               queryText);
-        }
-
         [Ignore]
         [TestMethod]
         public async Task TestQueryParallelExecution()
@@ -2036,6 +1945,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(queryMetricsFromAddition.ClientSideMetrics.FetchExecutionRanges.ToList()[1].ActivityId, guid.ToString());
         }
 
+        //Query metrics are not on by default anymore, but turned on hin Feed options. This to be quarantined until a recent FI from master to direct and sdk is completed
+        [TestCategory("Quarantine")]
         [TestMethod]
         public void TestQueryMetricsHeaders()
         {
@@ -2052,93 +1963,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return this.client.DeleteDatabaseAsync(database).Result;
             });
-        }
-
-        /// <summary>
-        /// Tests to see if the RequestCharge from the query metrics from each partition sums up to the total request charge of the feedresponse for each continuation of the query.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        public async Task TestQueryMetricsRUPerPartition()
-        {
-            DocumentClient client = TestCommon.CreateClient(false);
-
-            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            uint numberOfDocuments = 1000;
-            string partitionKey = "field_0";
-
-            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
-
-            await TestCommon.DeleteAllDatabasesAsync(client);
-            string guid = Guid.NewGuid().ToString();
-            CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
-
-            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
-                database,
-                new CosmosContainerSettings
-                {
-                    Id = "coll" + guid,
-                    PartitionKey = new PartitionKeyDefinition
-                    {
-                        Paths = new Collection<string> { "/" + partitionKey },
-                    }
-                },
-                new RequestOptions { OfferThroughput = 35000 });
-
-            IEnumerable<string> serializedDocuments = util.GetDocuments(numberOfDocuments);
-            IList<Document> documents = new List<Document>(serializedDocuments.Count());
-            foreach (string document in serializedDocuments)
-            {
-                ResourceResponse<Document> response = await client.CreateDocumentAsync(coll.SelfLink, JsonConvert.DeserializeObject(document));
-                documents.Add(response.Resource);
-            }
-
-            FeedOptions feedOptions = new FeedOptions
-            {
-                EnableCrossPartitionQuery = true,
-                PopulateQueryMetrics = true,
-                MaxItemCount = 1,
-                MaxDegreeOfParallelism = 0,
-            };
-
-            IDocumentQuery<dynamic> documentQuery = client.CreateDocumentQuery(coll, "SELECT * FROM c ORDER BY c._ts", feedOptions).AsDocumentQuery();
-
-            List<FeedResponse<dynamic>> feedResponses = new List<FeedResponse<dynamic>>();
-            while (documentQuery.HasMoreResults)
-            {
-                FeedResponse<dynamic> feedResonse = await documentQuery.ExecuteNextAsync();
-                feedResponses.Add(feedResonse);
-            }
-
-            List<QueryMetrics> queryMetricsList = new List<QueryMetrics>();
-            double aggregatedRequestCharge = 0;
-            bool firstFeedResponse = true;
-            foreach (FeedResponse<dynamic> feedResponse in feedResponses)
-            {
-                aggregatedRequestCharge += feedResponse.RequestCharge;
-                foreach (KeyValuePair<string, QueryMetrics> kvp in feedResponse.QueryMetrics)
-                {
-                    string partitionKeyRangeId = kvp.Key;
-                    QueryMetrics queryMetrics = kvp.Value;
-                    if (firstFeedResponse)
-                    {
-                        // For an orderby query the first execution should fan out to every partition
-                        Assert.IsTrue(queryMetrics.ClientSideMetrics.RequestCharge > 0, "queryMetrics.RequestCharge was not > 0 for PKRangeId: {0}", partitionKeyRangeId);
-                    }
-
-                    queryMetricsList.Add(queryMetrics);
-                }
-                firstFeedResponse = false;
-            }
-
-            QueryMetrics aggregatedQueryMetrics = QueryMetrics.CreateFromIEnumerable(queryMetricsList);
-            double requestChargeFromMetrics = aggregatedQueryMetrics.ClientSideMetrics.RequestCharge;
-
-            Assert.IsTrue(aggregatedRequestCharge > 0, "aggregatedRequestCharge was not > 0");
-            Assert.IsTrue(requestChargeFromMetrics > 0, "requestChargeFromMetrics was not > 0");
-            Assert.AreEqual(aggregatedRequestCharge, requestChargeFromMetrics, 0.1 * aggregatedRequestCharge, "Request Charge from FeedResponse and QueryMetrics do not equal.");
-
-            await client.DeleteDatabaseAsync(database);
         }
 
         [TestMethod]

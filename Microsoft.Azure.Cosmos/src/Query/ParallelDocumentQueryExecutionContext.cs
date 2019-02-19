@@ -1,7 +1,8 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
+﻿//-----------------------------------------------------------------------
+// <copyright file="ParallelDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -9,326 +10,251 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
-    using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
+    using Collections.Generic;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class ParallelDocumentQueryExecutionContext : ParallelDocumentQueryExecutionContextBase<object>
+    /// <summary>
+    /// ParallelDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
+    /// This class is responsible for draining cross partition queries that do not have order by conditions.
+    /// The way parallel queries work is that it drains from the left most partition first.
+    /// This class handles draining in the correct order and can also stop and resume the query 
+    /// by generating a continuation token and resuming from said continuation token.
+    /// </summary>
+    internal sealed class ParallelDocumentQueryExecutionContext : CrossPartitionQueryExecutionContext<object>
     {
-        private readonly string collectionRid;
-        private readonly IDictionary<string, int> documentProducerPositionCache;
-        private readonly Func<DocumentProducer<object>, int> taskPriorityFunc;
-        private int currentDocumentProducerIndex;
+        /// <summary>
+        /// The comparer used to determine which document to serve next.
+        /// </summary>
+        private static readonly IComparer<DocumentProducerTree<object>> MoveNextComparer = new ParllelDocumentProducerTreeComparer();
 
+        /// <summary>
+        /// The function to determine which partition to fetch from first.
+        /// </summary>
+        private static readonly Func<DocumentProducerTree<object>, int> FetchPriorityFunction = documentProducerTree => int.Parse(documentProducerTree.PartitionKeyRange.Id);
+
+        /// <summary>
+        /// The comparer used to determine, which continuation tokens should be returned to the user.
+        /// </summary>
+        private static readonly IEqualityComparer<object> EqualityComparer = new ParallelEqualityComparer();
+
+        /// <summary>
+        /// Initializes a new instance of the ParallelDocumentQueryExecutionContext class.
+        /// </summary>
+        /// <param name="constructorParams">The parameters for constructing the base class.</param>
+        /// <param name="rewrittenQuery">The rewritten query.</param>
         private ParallelDocumentQueryExecutionContext(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            string resourceLink,
-            string rewrittenQuery,
-            bool isContinuationExpected,
-            bool getLazyFeedResponse,
-            string collectionRid,
-            Guid correlatedActivityId) :
+            DocumentQueryExecutionContextBase.InitParams constructorParams,
+            string rewrittenQuery) :
             base(
-            client,
-            resourceTypeEnum,
-            resourceType,
-            expression,
-            feedOptions,
-            resourceLink,
-            rewrittenQuery,
-            correlatedActivityId,
-            isContinuationExpected,
-            getLazyFeedResponse,
-            isDynamicPageSizeAllowed: false)
+                constructorParams,
+                rewrittenQuery,
+                ParallelDocumentQueryExecutionContext.MoveNextComparer,
+                ParallelDocumentQueryExecutionContext.FetchPriorityFunction,
+                ParallelDocumentQueryExecutionContext.EqualityComparer)
         {
-            this.collectionRid = collectionRid;
-            this.documentProducerPositionCache = new Dictionary<string, int>();
-            this.taskPriorityFunc = (producer) => this.documentProducerPositionCache[producer.TargetRange.MinInclusive];
         }
 
-        public override bool IsDone
-        {
-            get
-            {
-                return this.TaskScheduler.IsStopped ||
-                    this.currentDocumentProducerIndex >= base.DocumentProducers.Count;
-            }
-        }
-
+        /// <summary>
+        /// For parallel queries the continuation token semantically holds two pieces of information:
+        /// 1) What physical partition did the user read up to
+        /// 2) How far into said partition did they read up to
+        /// And since the client consumes queries strictly in a left to right order we can partition the documents:
+        /// 1) Documents left of the continuation token have been drained
+        /// 2) Documents to the right of the continuation token still need to be served.
+        /// This is useful since we can have a single continuation token for all partitions.
+        /// </summary>
         protected override string ContinuationToken
         {
             get
             {
-                if (!this.IsContinuationExpected)
-                {
-                    return this.DefaultContinuationToken;
-                }
-
                 if (this.IsDone)
                 {
                     return null;
                 }
 
-                return (base.CurrentContinuationTokens.Count > 0) ?
-                    JsonConvert.SerializeObject(
-                    base.CurrentContinuationTokens.Select(kvp => new CompositeContinuationToken { Token = kvp.Value, Range = kvp.Key.TargetRange.ToRange() }),
+                IEnumerable<DocumentProducer<object>> activeDocumentProducers = this.GetActiveDocumentProducers();
+                return activeDocumentProducers.Count() > 0 ? JsonConvert.SerializeObject(
+                    activeDocumentProducers.Select((documentProducer) => new CompositeContinuationToken
+                    {
+                        Token = documentProducer.PreviousContinuationToken,
+                        Range = documentProducer.PartitionKeyRange.ToRange()
+                    }),
                     DefaultJsonSerializationSettings.Value) : null;
             }
         }
 
-        private DocumentProducer<object> CurrentDocumentProducer
-        {
-            get
-            {
-                if (this.currentDocumentProducerIndex < base.DocumentProducers.Count)
-                {
-                    return base.DocumentProducers[this.currentDocumentProducerIndex];
-                }
-
-                return null;
-            }
-        }
-
-        private Guid ActivityId
-        {
-            get
-            {
-
-                if (this.currentDocumentProducerIndex >= base.DocumentProducers.Count)
-                {
-                    throw new InvalidOperationException("There is no active document producer");
-                }
-
-                return this.CurrentDocumentProducer.ActivityId;
-            }
-        }
-
+        /// <summary>
+        /// Creates a ParallelDocumentQueryExecutionContext
+        /// </summary>
+        /// <param name="constructorParams">The params the construct the base class.</param>
+        /// <param name="initParams">The params to initialize the cross partition context.</param>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A task to await on, which in turn returns a ParallelDocumentQueryExecutionContext.</returns>
         public static async Task<ParallelDocumentQueryExecutionContext> CreateAsync(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            string resourceLink,
-            string collectionRid,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<PartitionKeyRange> targetRanges,
-            int initialPageSize,
-            bool isContinuationExpected,
-            bool getLazyFeedResponse,
-            string requestContinuation,
-            CancellationToken token,
-            Guid correlatedActivityId)
+            DocumentQueryExecutionContextBase.InitParams constructorParams,
+            CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams initParams,
+            CancellationToken token)
         {
             Debug.Assert(
-                !partitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
+                !initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
                 "Parallel~Context must not have order by query info.");
 
             ParallelDocumentQueryExecutionContext context = new ParallelDocumentQueryExecutionContext(
-                client,
-                resourceTypeEnum,
-                resourceType,
-                expression,
-                feedOptions,
-                resourceLink,
-                partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
-                isContinuationExpected,
-                getLazyFeedResponse,
-                collectionRid,
-                correlatedActivityId);
+                constructorParams,
+                initParams.PartitionedQueryExecutionInfo.QueryInfo.RewrittenQuery);
 
             await context.InitializeAsync(
-                collectionRid,
-                partitionedQueryExecutionInfo.QueryRanges,
-                targetRanges,
-                initialPageSize,
-                requestContinuation,
+                initParams.CollectionRid,
+                initParams.PartitionKeyRanges,
+                initParams.InitialPageSize,
+                initParams.RequestContinuation,
                 token);
 
             return context;
         }
 
+        /// <summary>
+        /// Drains documents from this execution context.
+        /// </summary>
+        /// <param name="maxElements">The maximum number of documents to drains.</param>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A task that when awaited on returns a FeedResponse of results.</returns>
         public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token)
         {
-            List<object> result = new List<object>();
-            List<Uri> replicaUris = new List<Uri>();
-            ClientSideRequestStatistics requestStats = new ClientSideRequestStatistics();
+            // In order to maintain the continuation token for the user we must drain with a few constraints
+            // 1) We fully drain from the left most partition before moving on to the next partition
+            // 2) We drain only full pages from the document producer so we aren't left with a partial page
+            //  otherwise we would need to add to the continuation token how many items to skip over on that page.
 
-            while (!this.IsDone)
+            // Only drain from the leftmost (current) document producer tree
+            DocumentProducerTree<object> currentDocumentProducerTree = this.PopCurrentDocumentProducerTree();
+
+            // This might be the first time we have seen this document producer tree so we need to buffer documents
+            if (currentDocumentProducerTree.Current == null)
             {
-                DocumentProducer<object> currentDocumentProducer = base.DocumentProducers[this.currentDocumentProducerIndex];
-
-                if (currentDocumentProducer.IsAtContinuationBoundary)
-                {
-                    if (maxElements - result.Count < currentDocumentProducer.ItemsTillNextContinuationBoundary)
-                    {
-                        break;
-                    }
-
-                    base.CurrentContinuationTokens[currentDocumentProducer] = currentDocumentProducer.ResponseContinuation;
-
-                    result.Add(currentDocumentProducer.Current);
-
-                    if(currentDocumentProducer.RequestStatistics != null)
-                    {
-                        replicaUris.AddRange(currentDocumentProducer.RequestStatistics.ContactedReplicas);
-                    }
-
-                    while (currentDocumentProducer.ItemsTillNextContinuationBoundary > 1)
-                    {
-                        bool hasMoreResults = await currentDocumentProducer.MoveNextAsync(token);
-                        Debug.Assert(hasMoreResults, "Expect hasMoreResults be true.");
-                        result.Add(currentDocumentProducer.Current);
-                    }
-                }
-
-                if (!await this.TryMoveNextProducerAsync(currentDocumentProducer, token))
-                {
-                    ++this.currentDocumentProducerIndex;
-
-                    if (this.currentDocumentProducerIndex < base.DocumentProducers.Count
-                        && !base.CurrentContinuationTokens.ContainsKey(base.DocumentProducers[this.currentDocumentProducerIndex]))
-                    {
-                        base.CurrentContinuationTokens[base.DocumentProducers[this.currentDocumentProducerIndex]] = null;
-                    }
-
-                    if (result.Count >= maxElements)
-                    {
-                        break;
-                    }
-
-                    continue;
-                }
-
-                if (maxElements >= int.MaxValue && result.Count > this.ActualMaxBufferedItemCount)
-                {
-                    break;
-                }
+                await currentDocumentProducerTree.MoveNextAsync(token);
             }
 
-            this.ReduceTotalBufferedItems(result.Count);
-            requestStats.ContactedReplicas.AddRange(replicaUris);
+            int itemsLeftInCurrentPage = currentDocumentProducerTree.ItemsLeftInCurrentPage;
 
-            return new FeedResponse<object>(result, result.Count, this.ResponseHeaders, requestStats, this.GetAndResetResponseLengthBytes());
+            // Only drain full pages or less if this is a top query.
+            List<object> results = new List<object>();
+            for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
+            {
+                results.Add(currentDocumentProducerTree.Current);
+                await currentDocumentProducerTree.MoveNextAsync(token);
+            }
+
+            if (currentDocumentProducerTree.HasMoreResults)
+            {
+                this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
+            }
+
+            // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
+            return new FeedResponse<object>(
+                results,
+                results.Count,
+                this.GetResponseHeaders(),
+                false,
+                this.GetQueryMetrics(),
+                null,
+                null,
+                this.GetAndResetResponseLengthBytes());
         }
 
+        /// <summary>
+        /// Initialize the execution context.
+        /// </summary>
+        /// <param name="collectionRid">The collection rid.</param>
+        /// <param name="partitionKeyRanges">The partition key ranges to drain documents from.</param>
+        /// <param name="initialPageSize">The initial page size.</param>
+        /// <param name="requestContinuation">The continuation token to resume from.</param>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
             string collectionRid,
-            List<Range<string>> queryRanges,
             List<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             string requestContinuation,
             CancellationToken token)
         {
-            this.InitializationSchedulingMetrics.Start();
-            try
+            IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges;
+            Dictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = null;
+            if (string.IsNullOrEmpty(requestContinuation))
             {
-                bool isContinuationNull = string.IsNullOrEmpty(requestContinuation);
-                IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges;
-                Dictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = null;
+                // If no continuation token is given then we need to hit all of the supplied partition key ranges.
+                filteredPartitionKeyRanges = partitionKeyRanges;
+            }
+            else
+            {
+                // If a continuation token is given then we need to figure out partition key range it maps to
+                // in order to filter the partition key ranges.
+                // For example if suppliedCompositeContinuationToken.Range.Min == partition3.Range.Min,
+                // then we know that partitions 0, 1, 2 are fully drained.
+                CompositeContinuationToken[] suppliedCompositeContinuationTokens = null;
 
-                if (isContinuationNull)
+                try
                 {
-                    filteredPartitionKeyRanges = partitionKeyRanges;
-                }
-                else
-                {
-                    CompositeContinuationToken[] suppliedCompositeContinuationTokens = null;
-
-                    try
+                    suppliedCompositeContinuationTokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>(requestContinuation, DefaultJsonSerializationSettings.Value);
+                    foreach (CompositeContinuationToken suppliedCompositeContinuationToken in suppliedCompositeContinuationTokens)
                     {
-                        suppliedCompositeContinuationTokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>(requestContinuation, DefaultJsonSerializationSettings.Value);
-
-                        foreach (CompositeContinuationToken suppliedContinuationToken in suppliedCompositeContinuationTokens)
+                        if (suppliedCompositeContinuationToken.Range == null || suppliedCompositeContinuationToken.Range.IsEmpty)
                         {
-                            if (suppliedContinuationToken.Range == null || suppliedContinuationToken.Range.IsEmpty)
-                            {
-                                DefaultTrace.TraceWarning(
-                                    string.Format(
-                                    CultureInfo.InvariantCulture,
-                                        "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid Range in the continuation token {3} for OrderBy~Context.",
-                                        DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                        this.CorrelatedActivityId,
-                                        this.DocumentProducers.Count != 0 ? this.ActivityId.ToString() : "No Activity ID yet.",
-                                        requestContinuation));
-                                throw new BadRequestException(RMResources.InvalidContinuationToken);
-                            }
-                        }
-
-                        if (suppliedCompositeContinuationTokens.Length == 0)
-                        {
-                            DefaultTrace.TraceWarning(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid format for continuation token {3} for OrderBy~Context.",
-                                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                    this.CorrelatedActivityId,
-                                    this.DocumentProducers.Count != 0 ? this.ActivityId.ToString() : "No Activity ID yet.",
-                                    requestContinuation));
+                            this.TraceWarning(string.Format(
+                                CultureInfo.InvariantCulture,
+                                "Invalid Range in the continuation token {0} for Parallel~Context.",
+                                requestContinuation));
                             throw new BadRequestException(RMResources.InvalidContinuationToken);
                         }
                     }
-                    catch (JsonException ex)
+
+                    if (suppliedCompositeContinuationTokens.Length == 0)
                     {
-                        DefaultTrace.TraceWarning(string.Format(
+                        this.TraceWarning(string.Format(
                             CultureInfo.InvariantCulture,
-                            "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid JSON in continuation token {3} for Parallel~Context, exception: {4}",
-                            DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                            this.CorrelatedActivityId,
-                            this.DocumentProducers.Count !=0 ? this.ActivityId.ToString() :  "No Activity ID yet.",
-                            requestContinuation,
-                            ex.Message));
-
-                        throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
+                            "Invalid format for continuation token {0} for Parallel~Context.",
+                            requestContinuation));
+                        throw new BadRequestException(RMResources.InvalidContinuationToken);
                     }
-
-                    filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);
                 }
-
-                base.DocumentProducers.Capacity = filteredPartitionKeyRanges.Count;
-
-                await base.InitializeAsync(
-                    collectionRid,
-                    queryRanges,
-                    this.taskPriorityFunc,
-                    filteredPartitionKeyRanges,
-                    initialPageSize,
-                    this.QuerySpec,
-                    (targetIndicesForFullContinuation != null) ? targetIndicesForFullContinuation.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token) : null,
-                    token);
-
-                this.PopulateDocumentProducerPositionCache();
-
-                // Prefetch if necessary, and populate consume queue.
-                if (this.ShouldPrefetch)
+                catch (JsonException ex)
                 {
-                    foreach (var producer in base.DocumentProducers)
-                    {
-                        producer.TryScheduleFetch();
-                    }
+                    this.TraceWarning(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Invalid JSON in continuation token {0} for Parallel~Context, exception: {1}",
+                        requestContinuation,
+                        ex.Message));
+
+                    throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
                 }
+
+                filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);
             }
-            finally
-            {
-                this.InitializationSchedulingMetrics.Stop();
-                DefaultTrace.TraceInformation(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | Parallel~Context.InitializeAsync, Scheduling Metrics: [{2}]",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    this.CorrelatedActivityId,
-                    this.InitializationSchedulingMetrics));
-            }
+
+            await base.InitializeAsync(
+                collectionRid,
+                filteredPartitionKeyRanges,
+                initialPageSize,
+                this.QuerySpec,
+                (targetIndicesForFullContinuation != null) ? targetIndicesForFullContinuation.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token) : null,
+                true,
+                null,
+                null,
+                token);
         }
 
+        /// <summary>
+        /// Given a continuation token and a list of partitionKeyRanges this function will return a list of partition key ranges you should resume with.
+        /// Note that the output list is just a right hand slice of the input list, since we know that for any continuation of a parallel query it is just
+        /// resuming from the partition that the query left off that.
+        /// </summary>
+        /// <param name="suppliedCompositeContinuationTokens">The continuation tokens that the user has supplied.</param>
+        /// <param name="partitionKeyRanges">The partition key ranges.</param>
+        /// <param name="targetRangeToContinuationMap">The output dictionary of partition key ranges to continuation token.</param>
+        /// <returns>The subset of partition to actually target.</returns>
         private IReadOnlyList<PartitionKeyRange> GetPartitionKeyRangesForContinuation(
             CompositeContinuationToken[] suppliedCompositeContinuationTokens,
             List<PartitionKeyRange> partitionKeyRanges,
@@ -337,45 +263,74 @@ namespace Microsoft.Azure.Cosmos.Query
             targetRangeToContinuationMap = new Dictionary<string, CompositeContinuationToken>();
             int minIndex = this.FindTargetRangeAndExtractContinuationTokens(
                 partitionKeyRanges,
-                suppliedCompositeContinuationTokens.Select(
-                    token => Tuple.Create(token, token.Range)
-                    ),
+                suppliedCompositeContinuationTokens.Select(token => Tuple.Create(token, token.Range)),
                 out targetRangeToContinuationMap);
 
+            // We know that all partitions to the left of the continuation token are fully drained so we can filter them out
             return new PartialReadOnlyList<PartitionKeyRange>(
                 partitionKeyRanges,
                 minIndex,
                 partitionKeyRanges.Count - minIndex);
         }
 
-        private Task<bool> TryMoveNextProducerAsync(DocumentProducer<object> producer, CancellationToken cancellationToken)
+        /// <summary>
+        /// For parallel queries we drain from left partition to right,
+        /// then by rid order within those partitions.
+        /// </summary>
+        private sealed class ParllelDocumentProducerTreeComparer : IComparer<DocumentProducerTree<object>>
         {
-            return base.TryMoveNextProducerAsync(
-                producer,
-                (currentProducer) => this.RepairParallelContext(currentProducer),
-                cancellationToken);
-        }
-
-        private async Task<DocumentProducer<object>> RepairParallelContext(DocumentProducer<object> producer)
-        {
-            List<PartitionKeyRange> replacementRanges = await base.GetReplacementRanges(producer.TargetRange, this.collectionRid);
-
-            await base.RepairContextAsync(
-                this.collectionRid,
-                this.currentDocumentProducerIndex,
-                this.taskPriorityFunc,
-                replacementRanges,
-                this.QuerySpec,
-                () => this.PopulateDocumentProducerPositionCache(this.currentDocumentProducerIndex));
-
-            return base.DocumentProducers[this.currentDocumentProducerIndex];
-        }
-
-        private void PopulateDocumentProducerPositionCache(int startingPosition = 0)
-        {
-            for (int index = startingPosition; index < this.DocumentProducers.Count; ++index)
+            /// <summary>
+            /// Compares two document producer trees in a parallel context and returns their comparison.
+            /// </summary>
+            /// <param name="documentProducerTree1">The first document producer tree.</param>
+            /// <param name="documentProducerTree2">The second document producer tree.</param>
+            /// <returns>
+            /// A negative number if the first comes before the second.
+            /// Zero if the two document producer trees are interchangeable.
+            /// A positive number if the second comes before the first.
+            /// </returns>
+            public int Compare(
+                DocumentProducerTree<object> documentProducerTree1,
+                DocumentProducerTree<object> documentProducerTree2)
             {
-                this.documentProducerPositionCache[base.DocumentProducers[index].TargetRange.MinInclusive] = index;
+                if (object.ReferenceEquals(documentProducerTree1, documentProducerTree2))
+                {
+                    return 0;
+                }
+
+                PartitionKeyRange partitionKeyRange1 = documentProducerTree1.PartitionKeyRange;
+                PartitionKeyRange partitionKeyRange2 = documentProducerTree2.PartitionKeyRange;
+                return string.CompareOrdinal(
+                    partitionKeyRange1.MinInclusive,
+                    partitionKeyRange2.MinInclusive);
+            }
+        }
+
+        /// <summary>
+        /// Comparer used to determine if we should return the continuation token to the user
+        /// </summary>
+        /// <remarks>This basically just says that the two object are never equals, so that we don't return a continuation for a partition we have started draining.</remarks>
+        private sealed class ParallelEqualityComparer : IEqualityComparer<object>
+        {
+            /// <summary>
+            /// Returns whether two parallel query items are equal.
+            /// </summary>
+            /// <param name="x">The first item.</param>
+            /// <param name="y">The second item.</param>
+            /// <returns>Whether two parallel query items are equal.</returns>
+            public new bool Equals(object x, object y)
+            {
+                return x == y;
+            }
+
+            /// <summary>
+            /// Gets the hash code of an object.
+            /// </summary>
+            /// <param name="obj">The object to hash.</param>
+            /// <returns>The hash code for the object.</returns>
+            public int GetHashCode(object obj)
+            {
+                return obj.GetHashCode();
             }
         }
     }

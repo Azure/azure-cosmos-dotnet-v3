@@ -1,12 +1,13 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
+﻿//-----------------------------------------------------------------------
+// <copyright file="ParallelQueryConfig.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 {
-    using System;
-    using System.Collections.Generic;
-
+    /// <summary>
+    /// This class stores all the default values used during cross partition queries.
+    /// </summary>
     internal sealed class ParallelQueryConfig
     {
         /// <summary>
@@ -34,13 +35,29 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// </summary> 
         public readonly int NumberOfNetworkCallsPerProcessor;
 
-        private static ParallelQueryConfig defaultInstance;
+        /// <summary>
+        /// Singleton instance.
+        /// </summary>
+        private static readonly ParallelQueryConfig DefaultInstance = new ParallelQueryConfig(
+            clientInternalMaxItemCount: 100,
+            defaultMaximumBufferSize: 100,
+            clientInternalPageSize: 100,
+            autoModeTasksIncrementFactor: 2,
+            numberOfNetworkCallsPerProcessor: 1);
 
-        public ParallelQueryConfig(
-            int clientInternalMaxItemCount, 
-            int defaultMaximumBufferSize, 
-            int clientInternalPageSize, 
-            int autoModeTasksIncrementFactor, 
+        /// <summary>
+        /// Initializes a new instance of the ParallelQueryConfig class.
+        /// </summary>
+        /// <param name="clientInternalMaxItemCount">The client's internal max item count.</param>
+        /// <param name="defaultMaximumBufferSize">The default maximum buffer size.</param>
+        /// <param name="clientInternalPageSize">The client's internal page size.</param>
+        /// <param name="autoModeTasksIncrementFactor">The increment factor for auto mode.</param>
+        /// <param name="numberOfNetworkCallsPerProcessor">Number of network calls per processor.</param>
+        private ParallelQueryConfig(
+            int clientInternalMaxItemCount,
+            int defaultMaximumBufferSize,
+            int clientInternalPageSize,
+            int autoModeTasksIncrementFactor,
             int numberOfNetworkCallsPerProcessor)
         {
             this.ClientInternalMaxItemCount = clientInternalMaxItemCount;
@@ -50,24 +67,13 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             this.NumberOfNetworkCallsPerProcessor = numberOfNetworkCallsPerProcessor;
         }
 
+        /// <summary>
+        /// Gets the configs for parallel queries.
+        /// </summary>
+        /// <returns>The configs for parallel queries.</returns>
         public static ParallelQueryConfig GetConfig()
         {
-            if (ParallelQueryConfig.defaultInstance == null)
-            {
-                ParallelQueryConfig.CreateOrUpdateConfig();
-            }
-
-            return ParallelQueryConfig.defaultInstance;
-        }
-
-        public static void CreateOrUpdateConfig(
-            int clientInternalMaxItemCount = 100, 
-            int defaultMaximumBufferSize = 100,
-            int clientInternalPageSize = 100,
-            int autoModeTasksIncrementFactor = 2, 
-            int numberOfNetworkCallsPerProcessor = 1)
-        {
-            ParallelQueryConfig.defaultInstance = new ParallelQueryConfig(clientInternalMaxItemCount, defaultMaximumBufferSize, clientInternalPageSize, autoModeTasksIncrementFactor, numberOfNetworkCallsPerProcessor);
+            return ParallelQueryConfig.DefaultInstance;
         }
     }
 }

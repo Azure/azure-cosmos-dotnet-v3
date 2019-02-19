@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
             else
             {
-                this.source.Stop();
+                this.Source.Stop();
                 feedResponse.ResponseContinuation = null;
             }
 

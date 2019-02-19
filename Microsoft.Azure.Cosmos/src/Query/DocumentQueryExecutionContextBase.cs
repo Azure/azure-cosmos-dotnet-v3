@@ -14,16 +14,77 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
-        public static readonly FeedResponse<dynamic> EmptyFeedResponse = new FeedResponse<dynamic>(Enumerable.Empty<dynamic>(), 0, new StringKeyValueCollection());
+        public struct InitParams
+        {
+            public IDocumentQueryClient Client { get; }
+            public ResourceType ResourceTypeEnum { get; }
+            public Type ResourceType { get; }
+            public Expression Expression { get; }
+            public FeedOptions FeedOptions { get; }
+            public string ResourceLink { get; }
+            public bool GetLazyFeedResponse { get; }
+            public Guid CorrelatedActivityId { get; }
+
+            public InitParams(
+                IDocumentQueryClient client,
+                ResourceType resourceTypeEnum,
+                Type resourceType,
+                Expression expression,
+                FeedOptions feedOptions,
+                string resourceLink,
+                bool getLazyFeedResponse,
+                Guid correlatedActivityId)
+            {
+                if(client == null)
+                {
+                    throw new ArgumentNullException($"{nameof(client)} can not be null.");
+                }
+
+                if (resourceType == null)
+                {
+                    throw new ArgumentNullException($"{nameof(resourceType)} can not be null.");
+                }
+
+                if (expression == null)
+                {
+                    throw new ArgumentNullException($"{nameof(expression)} can not be null.");
+                }
+
+                if (feedOptions == null)
+                {
+                    throw new ArgumentNullException($"{nameof(feedOptions)} can not be null.");
+                }
+
+                if (correlatedActivityId == Guid.Empty)
+                {
+                    throw new ArgumentException($"{nameof(correlatedActivityId)} can not be empty.");
+                }
+
+                this.Client = client;
+                this.ResourceTypeEnum = resourceTypeEnum;
+                this.ResourceType = resourceType;
+                this.Expression = expression;
+                this.FeedOptions = feedOptions;
+                this.ResourceLink = resourceLink;
+                this.GetLazyFeedResponse = getLazyFeedResponse;
+                this.CorrelatedActivityId = correlatedActivityId;
+            }
+        }
+
+        public static readonly FeedResponse<dynamic> EmptyFeedResponse = new FeedResponse<dynamic>(
+            Enumerable.Empty<dynamic>(),
+            Enumerable.Empty<dynamic>().Count(),
+            new StringKeyValueCollection());
         protected SqlQuerySpec querySpec;
         private readonly IDocumentQueryClient client;
         private readonly ResourceType resourceTypeEnum;
@@ -37,34 +98,17 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly Guid correlatedActivityId;
 
         protected DocumentQueryExecutionContextBase(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            string resourceLink,
-            bool getLazyFeedResponse,
-            Guid correlatedActivityId)
+           InitParams initParams)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException("client");
-            }
-
-            if (feedOptions == null)
-            {
-                throw new ArgumentNullException("feedOptions");
-            }
-
-            this.client = client;
-            this.resourceTypeEnum = resourceTypeEnum;
-            this.resourceType = resourceType;
-            this.expression = expression;
-            this.feedOptions = feedOptions;
-            this.resourceLink = resourceLink;
-            this.getLazyFeedResponse = getLazyFeedResponse;
+            this.client = initParams.Client;
+            this.resourceTypeEnum = initParams.ResourceTypeEnum;
+            this.resourceType = initParams.ResourceType;
+            this.expression = initParams.Expression;
+            this.feedOptions = initParams.FeedOptions;
+            this.resourceLink = initParams.ResourceLink;
+            this.getLazyFeedResponse = initParams.GetLazyFeedResponse;
+            this.correlatedActivityId = initParams.CorrelatedActivityId;
             this.isExpressionEvaluated = false;
-            this.correlatedActivityId = correlatedActivityId;
         }
 
         public bool ShouldExecuteQueryRequest
@@ -354,32 +398,48 @@ namespace Microsoft.Azure.Cosmos.Query
             return request;
         }
 
-        public async Task<FeedResponse<dynamic>> ExecuteRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public async Task<FeedResponse<dynamic>> ExecuteRequestAsync(
+            DocumentServiceRequest request, 
+            CancellationToken cancellationToken)
         {
-            return await (this.ShouldExecuteQueryRequest ? this.ExecuteQueryRequestAsync(request, cancellationToken) : this.ExecuteReadFeedRequestAsync(request, cancellationToken));
+            return await (this.ShouldExecuteQueryRequest ? 
+                this.ExecuteQueryRequestAsync(request, cancellationToken) : 
+                this.ExecuteReadFeedRequestAsync(request, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
+            DocumentServiceRequest request, 
+            CancellationToken cancellationToken)
         {
-            return await (this.ShouldExecuteQueryRequest ? this.ExecuteQueryRequestAsync<T>(request, cancellationToken) : this.ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
+            return await (this.ShouldExecuteQueryRequest ? 
+                this.ExecuteQueryRequestAsync<T>(request, cancellationToken) : 
+                this.ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
         }
 
-        public async Task<FeedResponse<dynamic>> ExecuteQueryRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public async Task<FeedResponse<dynamic>> ExecuteQueryRequestAsync(
+            DocumentServiceRequest request, 
+            CancellationToken cancellationToken)
         {
             return this.GetFeedResponse(await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(
+            DocumentServiceRequest request, 
+            CancellationToken cancellationToken)
         {
             return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
         }
 
-        public async Task<FeedResponse<dynamic>> ExecuteReadFeedRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public async Task<FeedResponse<dynamic>> ExecuteReadFeedRequestAsync(
+            DocumentServiceRequest request, 
+            CancellationToken cancellationToken)
         {
             return this.GetFeedResponse(await this.client.ReadFeedAsync(request, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
+            DocumentServiceRequest request, 
+            CancellationToken cancellationToken)
         {
             return this.GetFeedResponse<T>(await this.client.ReadFeedAsync(request, cancellationToken));
         }
@@ -479,7 +539,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return ex.StatusCode == (HttpStatusCode)StatusCodes.Gone && ex.GetSubStatus() == SubStatusCodes.PartitionKeyRangeGone;
         }
 
-        private async Task<DocumentServiceResponse> ExecuteQueryRequestInternalAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        private async Task<DocumentServiceResponse> ExecuteQueryRequestInternalAsync(
+            DocumentServiceRequest request, 
+            CancellationToken cancellationToken)
         {
             try
             {

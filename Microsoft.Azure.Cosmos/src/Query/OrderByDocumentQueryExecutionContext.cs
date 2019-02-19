@@ -1,6 +1,8 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+﻿//-----------------------------------------------------------------------
+// <copyright file="OrderByDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -8,219 +10,206 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
-    using System.Linq.Expressions;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
+    using Collections.Generic;
     using Newtonsoft.Json;
+    using ParallelQuery;
+    using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class OrderByDocumentQueryExecutionContext : ParallelDocumentQueryExecutionContextBase<OrderByQueryResult>
+    /// <summary>
+    /// OrderByDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
+    /// This class is responsible for draining cross partition queries that have order by conditions.
+    /// The way order by queries work is that they are doing a k-way merge of sorted lists from each partition with an added condition.
+    /// The added condition is that if 2 or more top documents from different partitions are equivalent then we drain from the left most partition first.
+    /// This way we can generate a single continuation token for all n partitions.
+    /// This class is able to stop and resume execution by generating continuation tokens and reconstructing an execution context from said token.
+    /// </summary>
+    internal sealed class OrderByDocumentQueryExecutionContext : CrossPartitionQueryExecutionContext<OrderByQueryResult>
     {
+        /// <summary>
+        /// Order by queries are rewritten to allow us to inject a filter.
+        /// This placeholder is so that we can just string replace it with the filter we want without having to understand the structure of the query.
+        /// </summary>
         private const string FormatPlaceHolder = "{documentdb-formattableorderbyquery-filter}";
+
+        /// <summary>
+        /// If query does not need a filter then we replace the FormatPlaceHolder with "true", since
+        /// "SELECT * FROM c WHERE blah and true" is the same as "SELECT * FROM c where blah"
+        /// </summary>
         private const string True = "true";
 
-        private static readonly Func<DocumentProducer<OrderByQueryResult>, int> TaskPriorityFunc =
-            producer => producer.BufferedItemCount;
+        /// <summary>
+        /// Function to determine the priority of fetches.
+        /// Basically we are fetching from the partition with the least number of buffered documents first.
+        /// </summary>
+        private static readonly Func<DocumentProducerTree<OrderByQueryResult>, int> FetchPriorityFunction = documentProducerTree => documentProducerTree.BufferedItemCount;
 
-        private readonly PriorityQueue<DocumentProducer<OrderByQueryResult>> documentProducerConsumerQueue;
-        private readonly IDictionary<string, string> filters;
-        private readonly OrderByConsumeComparer consumeComparer;
-
-        private DocumentProducer<OrderByQueryResult> currentDocumentProducer;
+        /// <summary>
+        /// Skip count used for JOIN queries.
+        /// You can read up more about this in the documentation for the continuation token.
+        /// </summary>
         private int skipCount;
+
+        /// <summary>
+        /// We need to keep track of the previousRid, since order by queries don't drain full pages.
+        /// </summary>
         private string previousRid;
-        private string collectionRid;
 
-        private QueryItem[] currentOrderByItems;
-
+        /// <summary>
+        /// Initializes a new instance of the OrderByDocumentQueryExecutionContext class.
+        /// </summary>
+        /// <param name="initPararms">The params used to construct the base class.</param>
+        /// <param name="rewrittenQuery">
+        /// For cross partition order by queries a query like "SELECT c.id, c.field_0 ORDER BY r.field_7 gets rewritten as:
+        /// <![CDATA[
+        /// SELECT r._rid, [{"item": r.field_7}] AS orderByItems, {"id": r.id, "field_0": r.field_0} AS payload
+        /// FROM r
+        /// WHERE({ document db - formattable order by query - filter})
+        /// ORDER BY r.field_7]]>
+        /// This is needed because we need to add additional filters to the query when we resume from a continuation,
+        /// and it lets us easily parse out the _rid orderByItems, and payload without parsing the entire document (and having to remember the order by field).
+        /// </param>
+        /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
         private OrderByDocumentQueryExecutionContext(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            string resourceLink,
+            DocumentQueryExecutionContextBase.InitParams initPararms,
             string rewrittenQuery,
-            bool isContinuationExpected,
-            bool getLazyFeedResponse,
-            OrderByConsumeComparer consumeComparer,
-            string collectionRid,
-            Guid correlatedActivityId) :
+            OrderByConsumeComparer consumeComparer) :
             base(
-            client,
-            resourceTypeEnum,
-            resourceType,
-            expression,
-            feedOptions,
-            resourceLink,
-            rewrittenQuery,
-            correlatedActivityId,
-            isContinuationExpected: isContinuationExpected,
-            getLazyFeedResponse: getLazyFeedResponse,
-            isDynamicPageSizeAllowed: true)
+                initPararms,
+                rewrittenQuery,
+                consumeComparer,
+                OrderByDocumentQueryExecutionContext.FetchPriorityFunction,
+                new OrderByEqualityComparer(consumeComparer))
         {
-            this.collectionRid = collectionRid;
-            this.documentProducerConsumerQueue = new PriorityQueue<DocumentProducer<OrderByQueryResult>>(consumeComparer);
-            this.filters = new Dictionary<string, string>();
-            this.consumeComparer = consumeComparer;
-        }
-
-        public override bool IsDone
-        {
-            get
-            {
-                return this.TaskScheduler.IsStopped ||
-                    (this.currentDocumentProducer == null && this.documentProducerConsumerQueue.Count <= 0);
-            }
-        }
-
-        public Guid ActivityId
-        {
-            get
-            {
-                if (this.currentDocumentProducer == null)
-                {
-                    throw new ArgumentNullException("currentDocumentProducer");
-                }
-
-                return this.currentDocumentProducer.ActivityId;
-            }
         }
 
         /// <summary>
-        /// Returns an serialized array of OrderByContinuationToken, if the query didn't finish producing all results. 
+        /// Gets the continuation token for an order by query.
         /// </summary>
-        /// <example>
-        /// Order by continuation token example.
-        /// <![CDATA[
-        ///  [{"compositeToken":{"token":"+RID:OpY0AN-mFAACAAAAAAAABA==#RT:1#TRC:1#RTD:qdTAEA==","range":{"min":"05C1D9CD673398","max":"05C1E399CD6732"}},"orderByItems"[{"item":2}],"rid":"OpY0AN-mFAACAAAAAAAABA==","skipCount":0,"filter":"r.key > 1"}]
-        /// ]]>
-        /// </example>
         protected override string ContinuationToken
         {
+            // In general the continuation token for order by queries contains the following information:
+            // 1) What partition did we leave off on
+            // 2) What value did we leave off 
+            // Along with the constraints that we get from how we drain the documents:
+            //      Let <x, y> mean that the last item we drained was item x from partition y.
+            //      Then we know that for all partitions
+            //          * < y that we have drained all items <= x
+            //          * > y that we have drained all items < x
+            //          * = y that we have drained all items <= x based on the backend continuation token for y
+            // With this information we have captured the progress for all partitions in a single continuation token.
             get
             {
-                if (!this.IsContinuationExpected)
-                {
-                    return this.DefaultContinuationToken;
-                }
-
                 if (this.IsDone)
                 {
                     return null;
                 }
 
-                this.UpdateCurrentDocumentProducer();
-
-                if (this.currentOrderByItems != null && this.consumeComparer.CompareOrderByItems(this.currentOrderByItems, this.currentDocumentProducer.Current.OrderByItems) != 0)
+                IEnumerable<DocumentProducer<OrderByQueryResult>> activeDocumentProducers = this.GetActiveDocumentProducers();
+                return activeDocumentProducers.Count() > 0 ? JsonConvert.SerializeObject(
+                    activeDocumentProducers.Select(
+                        (documentProducer) =>
                 {
-                    base.CurrentContinuationTokens.Clear();
-                }
-
-                for (int index = base.CurrentContinuationTokens.Count - 1; index >= 0; --index)
-                {
-                    if (this.consumeComparer.CompareOrderByItems(base.CurrentContinuationTokens.Keys[index].Current.OrderByItems, this.currentDocumentProducer.Current.OrderByItems) != 0)
-                    {
-                        base.CurrentContinuationTokens.RemoveAt(index);
-                    }
-                }
-
-                this.currentOrderByItems = this.currentDocumentProducer.Current.OrderByItems;
-
-                base.CurrentContinuationTokens[this.currentDocumentProducer] = null;
-
-                return (base.CurrentContinuationTokens.Count > 0) ?
-                    JsonConvert.SerializeObject(
-                    base.CurrentContinuationTokens.Keys.Select(producer => this.CreateCrossPartitionOrderByContinuationToken(producer)),
-                    DefaultJsonSerializationSettings.Value) : null;
+                    OrderByQueryResult orderByQueryResult = documentProducer.Current;
+                    string filter = documentProducer.Filter;
+                    return new OrderByContinuationToken(
+                        new CompositeContinuationToken
+                        {
+                            Token = documentProducer.PreviousContinuationToken,
+                            Range = documentProducer.PartitionKeyRange.ToRange(),
+                        },
+                        orderByQueryResult.OrderByItems,
+                        orderByQueryResult.Rid,
+                        this.ShouldIncrementSkipCount(documentProducer) ? this.skipCount + 1 : 0,
+                        filter);
+                }),
+                DefaultJsonSerializationSettings.Value) : null;
             }
         }
 
+        /// <summary>
+        /// Creates an OrderByDocumentQueryExecutionContext
+        /// </summary>
+        /// <param name="constructorParams">The parameters for the base class constructor.</param>
+        /// <param name="initParams">The parameters to initialize the base class.</param>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A task to await on, which in turn creates an OrderByDocumentQueryExecutionContext.</returns>
         public static async Task<OrderByDocumentQueryExecutionContext> CreateAsync(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            string resourceLink,
-            string collectionRid,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<PartitionKeyRange> partitionKeyRanges,
-            int initialPageSize,
-            bool isContinuationExpected,
-            bool getLazyFeedResponse,
-            string requestContinuation,
-            CancellationToken token,
-            Guid correlatedActivityId)
+            DocumentQueryExecutionContextBase.InitParams constructorParams,
+            CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams initParams,
+            CancellationToken token)
         {
             Debug.Assert(
-                partitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
+                initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
                 "OrderBy~Context must have order by query info.");
 
             OrderByDocumentQueryExecutionContext context = new OrderByDocumentQueryExecutionContext(
-                client,
-                resourceTypeEnum,
-                resourceType,
-                expression,
-                feedOptions,
-                resourceLink,
-                partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
-                isContinuationExpected,
-                getLazyFeedResponse,
-                new OrderByConsumeComparer(partitionedQueryExecutionInfo.QueryInfo.OrderBy),
-                collectionRid,
-                correlatedActivityId);
+                constructorParams,
+                initParams.PartitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
+                new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
 
             await context.InitializeAsync(
-                collectionRid,
-                partitionedQueryExecutionInfo.QueryRanges,
-                partitionKeyRanges,
-                partitionedQueryExecutionInfo.QueryInfo.OrderBy,
-                partitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
-                initialPageSize,
-                requestContinuation,
+                initParams.RequestContinuation,
+                initParams.CollectionRid,
+                initParams.PartitionKeyRanges,
+                initParams.InitialPageSize,
+                initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy,
+                initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
                 token);
 
             return context;
         }
 
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token)
+        /// <summary>
+        /// Drains a page of documents from this context.
+        /// </summary>
+        /// <param name="maxElements">The maximum number of elements.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task that when awaited on return a page of documents.</returns>
+        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
-            List<object> result = new List<object>();
-            List<Uri> replicaUris = new List<Uri>();
-            ClientSideRequestStatistics requestStats = new ClientSideRequestStatistics();
+            //// In order to maintain the continuation toke for the user we must drain with a few constraints
+            //// 1) We always drain from the partition, which has the highest priority item first
+            //// 2) If multiple partitions have the same priority item then we drain from the left most first
+            ////   otherwise we would need to keep track of how many of each item we drained from each partition
+            ////   (just like parallel queries).
+            //// Visually that look the following case where we have three partitions that are numbered and store letters.
+            //// For teaching purposes I have made each item a tuple of the following form:
+            ////      <item stored in partition, partition number>
+            //// So that duplicates across partitions are distinct, but duplicates within partitions are indistinguishable.
+            ////      |-------|   |-------|   |-------|
+            ////      | <a,1> |   | <a,2> |   | <a,3> |
+            ////      | <a,1> |   | <b,2> |   | <c,3> |
+            ////      | <a,1> |   | <b,2> |   | <c,3> |
+            ////      | <d,1> |   | <c,2> |   | <c,3> |
+            ////      | <d,1> |   | <e,2> |   | <f,3> |
+            ////      | <e,1> |   | <h,2> |   | <j,3> |
+            ////      | <f,1> |   | <i,2> |   | <k,3> |
+            ////      |-------|   |-------|   |-------|
+            //// Now the correct drain order in this case is:
+            ////  <a,1>,<a,1>,<a,1>,<a,2>,<a,3>,<b,2>,<b,2>,<c,2>,<c,3>,<c,3>,<c,3>,
+            ////  <d,1>,<d,1>,<e,1>,<e,2>,<f,1>,<f,3>,<h,2>,<i,2>,<j,3>,<k,3>
+            //// In more mathematical terms
+            ////  1) <x, y> always comes before <z, y> where x < z
+            ////  2) <i, j> always come before <i, k> where j < k
 
-            if (maxElements >= int.MaxValue)
+            List<object> results = new List<object>();
+            while (!this.IsDone && results.Count < maxElements)
             {
-                maxElements = this.ActualMaxBufferedItemCount;
-            }
+                // Only drain from the highest priority document producer 
+                // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
+                DocumentProducerTree<OrderByQueryResult> currentDocumentProducerTree = this.PopCurrentDocumentProducerTree();
+                OrderByQueryResult orderByQueryResult = currentDocumentProducerTree.Current;
 
-            while (!this.IsDone && result.Count < maxElements)
-            {
-                this.UpdateCurrentDocumentProducer();
+                // Only add the payload, since other stuff is garbage from the caller's perspective.
+                results.Add(orderByQueryResult.Payload);
 
-                DefaultTrace.TraceVerbose(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | OrderBy~Context.DrainAsync, currentDocumentProducer.Id: {3}, documentProducerConsumeQueue.Count: {4}",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    this.CorrelatedActivityId,
-                    this.ActivityId,
-                    this.currentDocumentProducer.TargetRange.Id,
-                    this.documentProducerConsumerQueue.Count));
-
-                OrderByQueryResult orderByResult = (OrderByQueryResult)this.currentDocumentProducer.Current;
-                result.Add(orderByResult.Payload);
-
-                if (this.currentDocumentProducer.RequestStatistics != null)
-                {
-                    replicaUris.AddRange(this.currentDocumentProducer.RequestStatistics.ContactedReplicas);
-                }
-
-                if (this.ShouldIncrementSkipCount(orderByResult.Rid))
+                // If we are at the begining of the page and seeing an rid from the previous page we should increment the skip count
+                // due to the fact that JOINs can make a document appear multiple times and across continuations, so we don't want to
+                // surface this more than needed. More information can be found in the continuation token docs.
+                if (this.ShouldIncrementSkipCount(currentDocumentProducerTree.CurrentDocumentProducerTree.Root))
                 {
                     ++this.skipCount;
                 }
@@ -229,75 +218,81 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.skipCount = 0;
                 }
 
-                this.previousRid = orderByResult.Rid;
+                this.previousRid = orderByQueryResult.Rid;
 
-                if (!await this.TryMoveNextProducerAsync(
-                    this.currentDocumentProducer,
-                    null,
-                    cancellationToken: token))
+                await currentDocumentProducerTree.MoveNextAsync(cancellationToken);
+
+                if (currentDocumentProducerTree.HasMoreResults)
                 {
-                    this.currentDocumentProducer = null;
+                    this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
                 }
             }
 
-            this.ReduceTotalBufferedItems(result.Count);
-            requestStats.ContactedReplicas.AddRange(replicaUris);
-
-            return new FeedResponse<object>(result, result.Count, this.ResponseHeaders, requestStats, this.GetAndResetResponseLengthBytes());
+            return new FeedResponse<object>(
+                results,
+                results.Count,
+                this.GetResponseHeaders(),
+                false,
+                this.GetQueryMetrics(),
+                null,
+                null,
+                this.GetAndResetResponseLengthBytes());
         }
 
-        private bool ShouldIncrementSkipCount(string rid)
+        /// <summary>
+        /// Gets whether or not we should increment the skip count based on the rid of the document.
+        /// </summary>
+        /// <param name="currentDocumentProducer">The current document producer.</param>
+        /// <returns>Whether or not we should increment the skip count.</returns>
+        private bool ShouldIncrementSkipCount(DocumentProducer<OrderByQueryResult> currentDocumentProducer)
         {
-            return !this.currentDocumentProducer.IsAtContinuationBoundary && string.Equals(this.previousRid, rid, StringComparison.Ordinal);
+            // If we are not at the begining of the page and we saw the same rid again.
+            return !currentDocumentProducer.IsAtBeginningOfPage && string.Equals(this.previousRid, currentDocumentProducer.Current.Rid, StringComparison.Ordinal);
         }
 
-        private void UpdateCurrentDocumentProducer()
-        {
-            if (this.documentProducerConsumerQueue.Count > 0)
-            {
-                if (this.currentDocumentProducer == null)
-                {
-                    this.currentDocumentProducer = this.documentProducerConsumerQueue.Dequeue();
-                }
-                else if (this.documentProducerConsumerQueue.Comparer.Compare(this.currentDocumentProducer, this.documentProducerConsumerQueue.Peek()) > 0)
-                {
-                    this.documentProducerConsumerQueue.Enqueue(this.currentDocumentProducer);
-                    this.currentDocumentProducer = this.documentProducerConsumerQueue.Dequeue();
-                }
-            }
-        }
-
+        /// <summary>
+        /// Initializes this execution context.
+        /// </summary>
+        /// <param name="requestContinuation">The continuation token to resume from (or null if none).</param>
+        /// <param name="collectionRid">The collection rid.</param>
+        /// <param name="partitionKeyRanges">The partition key ranges to drain from.</param>
+        /// <param name="initialPageSize">The initial page size.</param>
+        /// <param name="sortOrders">The sort orders.</param>
+        /// <param name="orderByExpressions">The order by expressions.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
+          string requestContinuation,
           string collectionRid,
-          List<Range<string>> queryRanges,
           List<PartitionKeyRange> partitionKeyRanges,
+          int initialPageSize,
           SortOrder[] sortOrders,
           string[] orderByExpressions,
-          int initialPageSize,
-          string requestContinuation,
           CancellationToken cancellationToken)
         {
-            this.InitializationSchedulingMetrics.Start();
             try
             {
-                OrderByContinuationToken[] suppliedContinuationTokens = this.ValidateAndExtractContinuationTokens(requestContinuation, sortOrders, orderByExpressions);
-                Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = null;
-                base.DocumentProducers.Capacity = partitionKeyRanges.Count;
-
-                if (suppliedContinuationTokens == null)
+                if (requestContinuation == null)
                 {
                     await base.InitializeAsync(
                         collectionRid,
-                        queryRanges,
-                        TaskPriorityFunc,
                         partitionKeyRanges,
                         initialPageSize,
-                        new SqlQuerySpec(this.QuerySpec.QueryText.Replace(FormatPlaceHolder, True), this.QuerySpec.Parameters),
-                        null,
-                        cancellationToken);
+                        token: cancellationToken,
+                        querySpecForInit: new SqlQuerySpec(this.QuerySpec.QueryText.Replace(FormatPlaceHolder, True), this.QuerySpec.Parameters),
+                        targetRangeToContinuationMap: null,
+                        deferFirstPage: false,
+                        filter: null,
+                        filterCallback: null);
                 }
                 else
                 {
+                    OrderByContinuationToken[] suppliedContinuationTokens = this.ValidateAndExtractContinuationToken(
+                        requestContinuation,
+                        sortOrders,
+                        orderByExpressions);
+                    Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = null;
+
                     RangeFilterInitializationInfo[] orderByInfos = this.GetPartitionKeyRangesInitializationInfo(
                         suppliedContinuationTokens,
                         partitionKeyRanges,
@@ -306,8 +301,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         out targetRangeToOrderByContinuationMap);
 
                     Debug.Assert(targetRangeToOrderByContinuationMap != null, "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
-
-                    this.currentOrderByItems = suppliedContinuationTokens[0].OrderByItems;
 
                     // For ascending order-by, left of target partition has filter expression > value,
                     // right of target partition has filter expression >= value, 
@@ -322,72 +315,253 @@ namespace Microsoft.Azure.Cosmos.Query
                         PartialReadOnlyList<PartitionKeyRange> partialRanges =
                             new PartialReadOnlyList<PartitionKeyRange>(partitionKeyRanges, info.StartIndex, info.EndIndex - info.StartIndex + 1);
 
-                        Task initTask = base.InitializeAsync(
+                        await base.InitializeAsync(
                             collectionRid,
-                            queryRanges,
-                            TaskPriorityFunc,
                             partialRanges,
                             initialPageSize,
                             new SqlQuerySpec(
                                 this.QuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
                                 this.QuerySpec.Parameters),
-                            targetRangeToOrderByContinuationMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompositeToken.Token),
+                            targetRangeToOrderByContinuationMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompositeContinuationToken.Token),
+                            false,
+                            info.Filter,
+                            async (documentProducerTree) =>
+                            {
+                                OrderByContinuationToken continuationToken;
+                                if (targetRangeToOrderByContinuationMap.TryGetValue(documentProducerTree.Root.PartitionKeyRange.Id, out continuationToken))
+                                {
+                                    await this.FilterAsync(
+                                        documentProducerTree,
+                                        sortOrders,
+                                        continuationToken,
+                                        cancellationToken);
+                                }
+                            },
                             cancellationToken);
-
-                        foreach (PartitionKeyRange range in partialRanges)
-                        {
-                            this.filters[range.Id] = info.Filter;
-                        }
-
-                        await initTask;
-                    }
-                }
-
-                // The Foreach loop below is an optimization for the following While loop. The While loop is made single-threaded as the base.DocumentProducers object can change during runtime due to split. Even though the While loop is single threaded, the Foreach loop below makes the producers fetch doucments concurrently. If any of the producers fails to produce due to split (i.e., encounters PartitionKeyRangeGoneException), then the while loop below will take out the failed document producers and replace it approprite ones and then call TryScheduleFetch() on them. 
-                foreach (var producer in base.DocumentProducers)
-                {
-                    producer.TryScheduleFetch();
-                }
-
-                // Fetch one item from each of the producers to initialize the priority-queue. "TryMoveNextProducerAsync()" has
-                // a side-effect that, if Split is encountered while trying to move, related parent producer will be taken out and child
-                // producers will be added to "base.DocumentProducers". 
-
-                for (int index = 0; index < base.DocumentProducers.Count; ++index)
-                {
-                    DocumentProducer<OrderByQueryResult> producer = base.DocumentProducers[index];
-
-                    if (await this.TryMoveNextProducerAsync(
-                        producer,
-                        targetRangeToOrderByContinuationMap,
-                        cancellationToken: cancellationToken))
-                    {
-                        producer = base.DocumentProducers[index];
-
-                        OrderByContinuationToken continuationToken =
-                            (targetRangeToOrderByContinuationMap != null && targetRangeToOrderByContinuationMap.ContainsKey(producer.TargetRange.Id)) ?
-                            targetRangeToOrderByContinuationMap[producer.TargetRange.Id] : null;
-
-                        if (continuationToken != null)
-                        {
-                            await this.FilterAsync(producer, sortOrders, continuationToken, cancellationToken);
-                        }
-
-                        this.documentProducerConsumerQueue.Enqueue(producer);
                     }
                 }
             }
             finally
             {
-                this.InitializationSchedulingMetrics.Stop();
-                DefaultTrace.TraceInformation(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | OrderBy~Context.InitializeAsync",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    this.CorrelatedActivityId));
+                this.TraceInformation("OrderBy~Context.InitializeAsync");
             }
         }
 
+        /// <summary>
+        /// Validates and extracts out the order by continuation tokens 
+        /// </summary>
+        /// <param name="requestContinuation">The string continuation token.</param>
+        /// <param name="sortOrders">The sort orders.</param>
+        /// <param name="orderByExpressions">The order by expressions.</param>
+        /// <returns>The continuation tokens.</returns>
+        private OrderByContinuationToken[] ValidateAndExtractContinuationToken(
+            string requestContinuation,
+            SortOrder[] sortOrders,
+            string[] orderByExpressions)
+        {
+            Debug.Assert(
+                !(orderByExpressions == null
+                || orderByExpressions.Length <= 0
+                || sortOrders == null
+                || sortOrders.Length <= 0
+                || orderByExpressions.Length != sortOrders.Length),
+                "Partitioned QueryExecutionInfo returned bogus results.");
+
+            if (string.IsNullOrWhiteSpace(requestContinuation))
+            {
+                throw new ArgumentNullException("continuation can not be null or empty.");
+            }
+
+            try
+            {
+                OrderByContinuationToken[] suppliedOrderByContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(requestContinuation, DefaultJsonSerializationSettings.Value);
+
+                if (suppliedOrderByContinuationTokens.Length == 0)
+                {
+                    this.TraceWarning($"Order by continuation token can not be empty: {requestContinuation}.");
+                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                }
+
+                foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
+                {
+                    if (suppliedOrderByContinuationToken.OrderByItems.Length != sortOrders.Length)
+                    {
+                        this.TraceWarning($"Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
+                        throw new BadRequestException(RMResources.InvalidContinuationToken);
+                    }
+                }
+
+                return suppliedOrderByContinuationTokens;
+            }
+            catch (JsonException ex)
+            {
+                this.TraceWarning($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
+
+                throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
+            }
+        }
+
+        /// <summary>
+        /// When resuming an order by query we need to filter the document producers.
+        /// </summary>
+        /// <param name="producer">The producer to filter down.</param>
+        /// <param name="sortOrders">The sort orders.</param>
+        /// <param name="continuationToken">The continuation token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task to await on.</returns>
+        private async Task FilterAsync(
+            DocumentProducerTree<OrderByQueryResult> producer,
+            SortOrder[] sortOrders,
+            OrderByContinuationToken continuationToken,
+            CancellationToken cancellationToken)
+        {
+            // When we resume a query on a partition there is a possibility that we only read a partial page from the backend
+            // meaning that will we repeat some documents if we didn't do anything about it. 
+            // The solution is to filter all the documents that come before in the sort order, since we have already emitted them to the client.
+            // The key is to seek until we get an order by value that matches the order by value we left off on.
+            // Once we do that we need to seek to the correct _rid within the term,
+            // since there might be many documents with the same order by value we left off on.
+
+            foreach (DocumentProducerTree<OrderByQueryResult> tree in producer)
+            {
+                ResourceId continuationRid;
+                if (!ResourceId.TryParse(continuationToken.Rid, out continuationRid))
+                {
+                    this.TraceWarning(string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Invalid Rid in the continuation token {0} for OrderBy~Context.",
+                        continuationToken.CompositeContinuationToken.Token));
+                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                }
+
+                Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
+                int itemToSkip = continuationToken.SkipCount;
+                bool continuationRidVerified = false;
+
+                while (true)
+                {
+                    OrderByQueryResult orderByResult = (OrderByQueryResult)tree.Current;
+                    // Throw away documents until it matches the item from the continuation token.
+                    int cmp = 0;
+                    for (int i = 0; i < sortOrders.Length; ++i)
+                    {
+                        cmp = ItemComparer.Instance.Compare(
+                            continuationToken.OrderByItems[i].GetItem(),
+                            orderByResult.OrderByItems[i].GetItem());
+
+                        if (cmp != 0)
+                        {
+                            cmp = sortOrders[i] != SortOrder.Descending ? cmp : -cmp;
+                            break;
+                        }
+                    }
+
+                    if (cmp < 0)
+                    {
+                        // We might have passed the item due to deletions and filters.
+                        break;
+                    }
+
+                    if (cmp == 0)
+                    {
+                        ResourceId rid;
+                        if (!resourceIds.TryGetValue(orderByResult.Rid, out rid))
+                        {
+                            if (!ResourceId.TryParse(orderByResult.Rid, out rid))
+                            {
+                                this.TraceWarning(string.Format(
+                                    CultureInfo.InvariantCulture,
+                                    "Invalid Rid in the continuation token {0} for OrderBy~Context.",
+                                    continuationToken.CompositeContinuationToken.Token));
+                                throw new BadRequestException(RMResources.InvalidContinuationToken);
+                            }
+
+                            resourceIds.Add(orderByResult.Rid, rid);
+                        }
+
+                        if (!continuationRidVerified)
+                        {
+                            if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
+                            {
+                                this.TraceWarning(string.Format(
+                                    CultureInfo.InvariantCulture,
+                                    "Invalid Rid in the continuation token {0} for OrderBy~Context.",
+                                    continuationToken.CompositeContinuationToken.Token));
+                                throw new BadRequestException(RMResources.InvalidContinuationToken);
+                            }
+
+                            continuationRidVerified = true;
+                        }
+
+                        // Once the item matches the order by items from the continuation tokens
+                        // We still need to remove all the documents that have a lower rid in the rid sort order.
+                        // If there is a tie in the sort order the documents should be in _rid order in the same direction as the first order by field.
+                        // So if it's ORDER BY c.age ASC, c.name DESC the _rids are ASC 
+                        // If ti's ORDER BY c.age DESC, c.name DESC the _rids are DESC
+                        cmp = continuationRid.Document.CompareTo(rid.Document);
+                        if (sortOrders[0] == SortOrder.Descending)
+                        {
+                            cmp = -cmp;
+                        }
+
+                        // We might have passed the item due to deletions and filters.
+                        // We also have a skip count for JOINs
+                        if (cmp < 0 || (cmp == 0 && itemToSkip-- <= 0))
+                        {
+                            break;
+                        }
+                    }
+
+                    if (!await tree.MoveNextAsync(cancellationToken))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the filters for every partition.
+        /// </summary>
+        /// <param name="suppliedContinuationTokens">The supplied continuation token.</param>
+        /// <param name="partitionKeyRanges">The partition key ranges.</param>
+        /// <param name="sortOrders">The sort orders.</param>
+        /// <param name="orderByExpressions">The order by expressions.</param>
+        /// <param name="targetRangeToContinuationTokenMap">The dictionary of target ranges to continuation token map.</param>
+        /// <returns>The filters for every partition.</returns>
+        private RangeFilterInitializationInfo[] GetPartitionKeyRangesInitializationInfo(
+            OrderByContinuationToken[] suppliedContinuationTokens,
+            List<PartitionKeyRange> partitionKeyRanges,
+            SortOrder[] sortOrders,
+            string[] orderByExpressions,
+            out Dictionary<string, OrderByContinuationToken> targetRangeToContinuationTokenMap)
+        {
+            int minIndex = this.FindTargetRangeAndExtractContinuationTokens(
+                partitionKeyRanges,
+                suppliedContinuationTokens
+                    .Select(token => Tuple.Create(token, token.CompositeContinuationToken.Range)),
+                out targetRangeToContinuationTokenMap);
+
+            FormattedFilterInfo formattedFilterInfo = this.GetFormattedFilters(
+                orderByExpressions,
+                suppliedContinuationTokens,
+                sortOrders);
+
+            return new RangeFilterInitializationInfo[]
+            {
+                new RangeFilterInitializationInfo(formattedFilterInfo.FilterForRangesLeftOfTargetRanges, 0, minIndex - 1),
+                new RangeFilterInitializationInfo(formattedFilterInfo.FiltersForTargetRange, minIndex, minIndex),
+                new RangeFilterInitializationInfo(formattedFilterInfo.FilterForRangesRightOfTargetRanges, minIndex + 1, partitionKeyRanges.Count - 1),
+            };
+        }
+
+        /// <summary>
+        /// Gets the formatted filters for every partition.
+        /// </summary>
+        /// <param name="expressions">The filter expressions.</param>
+        /// <param name="continuationTokens">The continuation token.</param>
+        /// <param name="sortOrders">The sort orders.</param>
+        /// <returns>The formatted filters for every partition.</returns>
         private FormattedFilterInfo GetFormattedFilters(
             string[] expressions,
             OrderByContinuationToken[] continuationTokens,
@@ -562,319 +736,84 @@ namespace Microsoft.Azure.Cosmos.Query
             return new Tuple<string, string, string>(left.ToString(), target.ToString(), right.ToString());
         }
 
-        private async Task FilterAsync(
-            DocumentProducer<OrderByQueryResult> producer,
-            SortOrder[] sortOrders,
-            OrderByContinuationToken continuationToken,
-            CancellationToken cancellationToken)
+        /// <summary>
+        /// Struct to hold all the filters for every partition.
+        /// </summary>
+        private struct FormattedFilterInfo
         {
-            // When we resume a query on a partition there is a possibility that we only read a partial page from the backend
-            // meaning that will we repeat some documents if we didn't do anything about it. 
-            // The solution is to filter all the documents that come before in the sort order, since we have already emitted them to the client.
-            // The key is to seek until we get an order by value that matches the order by value we left off on.
-            // Once we do that we need to seek to the correct _rid within the term,
-            // since there might be many documents with the same order by value we left off on.
-
-            ResourceId continuationRid;
-            if (!ResourceId.TryParse(continuationToken.Rid, out continuationRid))
-            {
-                DefaultTrace.TraceWarning(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid Rid in the continuation token {3} for OrderBy~Context.",
-                        DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                        this.CorrelatedActivityId,
-                        this.ActivityId,
-                        continuationToken.CompositeToken.Token));
-                throw new BadRequestException(RMResources.InvalidContinuationToken);
-            }
-
-            Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
-            int itemToSkip = continuationToken.SkipCount;
-            bool continuationRidVerified = false;
-
-            while (true)
-            {
-                OrderByQueryResult orderByResult = (OrderByQueryResult)producer.Current;
-                // Throw away documents until it matches the item from the continuation token.
-                int cmp = 0;
-                for (int i = 0; i < sortOrders.Length; ++i)
-                {
-                    cmp = ItemComparer.Instance.Compare(
-                        continuationToken.OrderByItems[i].GetItem(),
-                        orderByResult.OrderByItems[i].GetItem());
-
-                    if (cmp != 0)
-                    {
-                        cmp = sortOrders[i] != SortOrder.Descending ? cmp : -cmp;
-                        break;
-                    }
-                }
-
-                if (cmp < 0)
-                {
-                    // We might have passed the item due to deletions and filters.
-                    break;
-                }
-
-                if (cmp == 0)
-                {
-                    ResourceId rid;
-                    if (!resourceIds.TryGetValue(orderByResult.Rid, out rid))
-                    {
-                        if (!ResourceId.TryParse(orderByResult.Rid, out rid))
-                        {
-                            DefaultTrace.TraceWarning(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid Rid in the continuation token {3} for OrderBy~Context.",
-                                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                    this.CorrelatedActivityId,
-                                    this.ActivityId,
-                                    continuationToken.CompositeToken.Token));
-                            throw new BadRequestException(RMResources.InvalidContinuationToken);
-                        }
-
-                        resourceIds.Add(orderByResult.Rid, rid);
-                    }
-
-                    if (!continuationRidVerified)
-                    {
-                        if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
-                        {
-                            DefaultTrace.TraceWarning(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid Rid in the continuation token {3} for OrderBy~Context.",
-                                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                    this.CorrelatedActivityId,
-                                    this.ActivityId,
-                                    continuationToken.CompositeToken.Token));
-                            throw new BadRequestException(RMResources.InvalidContinuationToken);
-                        }
-
-                        continuationRidVerified = true;
-                    }
-
-                    // Once the item matches the order by items from the continuation tokens
-                    // We still need to remove all the documents that have a lower rid in the rid sort order.
-                    // If there is a tie in the sort order the documents should be in _rid order in the same direction as the first order by field.
-                    // So if it's ORDER BY c.age ASC, c.name DESC the _rids are ASC 
-                    // If ti's ORDER BY c.age DESC, c.name DESC the _rids are DESC
-
-                    cmp = continuationRid.Document.CompareTo(rid.Document);
-                    if (sortOrders[0] == SortOrder.Descending)
-                    {
-                        cmp = -cmp;
-                    }
-
-                    // We might have passed the item due to deletions and filters.
-                    // We also have a skip count for JOINs
-                    if (cmp < 0 || (cmp == 0 && itemToSkip-- <= 0))
-                    {
-                        break;
-                    }
-                }
-
-                if (!await producer.MoveNextAsync(cancellationToken))
-                {
-                    break;
-                }
-            }
-        }
-
-        private OrderByContinuationToken CreateCrossPartitionOrderByContinuationToken(DocumentProducer<OrderByQueryResult> documentProducer)
-        {
-            OrderByQueryResult orderByResult = documentProducer.Current;
-
-            string filter = null;
-            this.filters.TryGetValue(documentProducer.TargetRange.Id, out filter);
-
-            return new OrderByContinuationToken
-            {
-                CompositeToken = new CompositeContinuationToken
-                {
-                    Token = documentProducer.PreviousResponseContinuation,
-                    Range = documentProducer.TargetRange.ToRange(),
-                },
-                OrderByItems = orderByResult.OrderByItems,
-                Rid = orderByResult.Rid,
-                SkipCount = this.ShouldIncrementSkipCount(orderByResult.Rid) ? this.skipCount + 1 : 0,
-                Filter = filter
-            };
-        }
-
-        private Task<bool> TryMoveNextProducerAsync(
-            DocumentProducer<OrderByQueryResult> producer,
-            Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap,
-            CancellationToken cancellationToken)
-        {
-            return base.TryMoveNextProducerAsync(
-               producer,
-               (currentProducer) => this.RepairOrderByContext(currentProducer, targetRangeToOrderByContinuationMap),
-               cancellationToken);
-        }
-
-        private async Task<DocumentProducer<OrderByQueryResult>> RepairOrderByContext(
-            DocumentProducer<OrderByQueryResult> parentProducer,
-            Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap)
-        {
-            List<PartitionKeyRange> replacementRanges = await base.GetReplacementRanges(parentProducer.TargetRange, this.collectionRid);
-            string parentRangeId = parentProducer.TargetRange.Id;
-            int indexOfCurrentDocumentProducer = base.DocumentProducers.BinarySearch(
-                        parentProducer,
-                        Comparer<DocumentProducer<OrderByQueryResult>>.Create(
-                            (producer1, producer2) => string.CompareOrdinal(producer1.TargetRange.MinInclusive, producer2.TargetRange.MinInclusive)));
-
-            Debug.Assert(indexOfCurrentDocumentProducer >= 0, "Index of a producer in the Producers list can't be < 0");
-
-            // default filter is "true", since it gets used when we replace the FormatPlaceHolder and if there is no parent filter, then the query becomes
-            // SELECT * FROM c where blah and true
-            string parentFilter;
-            if (!this.filters.TryGetValue(parentRangeId, out parentFilter))
-            {
-                parentFilter = True;
-            }
-
-            replacementRanges.ForEach(pkr => this.filters.Add(pkr.Id, parentFilter));
-
-            await base.RepairContextAsync(
-                this.collectionRid,
-                indexOfCurrentDocumentProducer,
-                TaskPriorityFunc,
-                replacementRanges,
-                new SqlQuerySpec(
-                    this.QuerySpec.QueryText.Replace(FormatPlaceHolder, parentFilter),
-                    this.QuerySpec.Parameters));
-
-            this.filters.Remove(parentRangeId);
-
-            if (targetRangeToOrderByContinuationMap != null && targetRangeToOrderByContinuationMap.ContainsKey(parentRangeId))
-            {
-                for (int index = 0; index < replacementRanges.Count; ++index)
-                {
-                    targetRangeToOrderByContinuationMap[replacementRanges[index].Id] = targetRangeToOrderByContinuationMap[parentRangeId];
-                    targetRangeToOrderByContinuationMap[replacementRanges[index].Id].CompositeToken.Range = replacementRanges[index].ToRange();
-                }
-
-                targetRangeToOrderByContinuationMap.Remove(parentRangeId);
-            }
-
-            return base.DocumentProducers[indexOfCurrentDocumentProducer];
-        }
-
-        private RangeFilterInitializationInfo[] GetPartitionKeyRangesInitializationInfo(
-            OrderByContinuationToken[] suppliedContinuationTokens,
-            List<PartitionKeyRange> partitionKeyRanges,
-            SortOrder[] sortOrders,
-            string[] orderByExpressions,
-            out Dictionary<string, OrderByContinuationToken> targetRangeToContinuationTokenMap)
-        {
-            int minIndex = base.FindTargetRangeAndExtractContinuationTokens(
-                partitionKeyRanges,
-                suppliedContinuationTokens.Select(
-                    token => Tuple.Create(token, token.CompositeToken.Range)),
-                out targetRangeToContinuationTokenMap);
-
-            FormattedFilterInfo formattedFilterInfo = this.GetFormattedFilters(
-                orderByExpressions,
-                suppliedContinuationTokens,
-                sortOrders);
-
-            return new RangeFilterInitializationInfo[]
-            {
-                new RangeFilterInitializationInfo(formattedFilterInfo.FilterForRangesLeftOfTargetRanges, 0, minIndex - 1),
-                new RangeFilterInitializationInfo(formattedFilterInfo.FiltersForTargetRange, minIndex, minIndex),
-                new RangeFilterInitializationInfo(formattedFilterInfo.FilterForRangesRightOfTargetRanges, minIndex + 1, partitionKeyRanges.Count - 1),
-            };
-        }
-
-        private OrderByContinuationToken[] ValidateAndExtractContinuationTokens(string requestContinuation, SortOrder[] sortOrders, string[] orderByExpressions)
-        {
-            OrderByContinuationToken[] suppliedCompositeContinuationTokens = null;
-
-            try
-            {
-                if (!string.IsNullOrEmpty(requestContinuation))
-                {
-                    suppliedCompositeContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(requestContinuation, DefaultJsonSerializationSettings.Value);
-                    if (suppliedCompositeContinuationTokens == null)
-                    {
-                        throw new JsonException();
-                    }
-
-                    if (orderByExpressions == null || orderByExpressions.Length <= 0 || orderByExpressions.Length != sortOrders.Length)
-                    {
-                        DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}, CorrelatedActivityId: {this.CorrelatedActivityId} | Invalid order-by expression in the continuation token {requestContinuation} for OrderBy~Context.");
-                        throw new BadRequestException(RMResources.InvalidContinuationToken);
-                    }
-
-                    foreach (OrderByContinuationToken suppliedToken in suppliedCompositeContinuationTokens)
-                    {
-                        if (suppliedToken.CompositeToken == null ||
-                                suppliedToken.CompositeToken.Range == null ||
-                                suppliedToken.OrderByItems == null ||
-                                suppliedToken.OrderByItems.Length <= 0)
-                        {
-                            DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}, CorrelatedActivityId: {this.CorrelatedActivityId} | One of more fields missing in the continuation token {requestContinuation} for OrderBy~Context.");
-                            throw new BadRequestException($"One of more fields missing in the continuation token {requestContinuation} for OrderBy~Context.");
-                        }
-                        else
-                        {
-                            if (suppliedToken.OrderByItems.Length != sortOrders.Length)
-                            {
-                                DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}, CorrelatedActivityId: {this.CorrelatedActivityId} | Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
-                                throw new BadRequestException($"Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
-                            }
-                        }
-                    }
-
-                    if (suppliedCompositeContinuationTokens.Length == 0)
-                    {
-                        DefaultTrace.TraceWarning(
-                            string.Format(
-                                CultureInfo.InvariantCulture,
-                                "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid continuation format {3} for OrderBy~Context.",
-                                DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                                this.CorrelatedActivityId,
-                                this.ActivityId,
-                                requestContinuation));
-                        throw new BadRequestException(RMResources.InvalidContinuationToken);
-                    }
-                }
-            }
-            catch (JsonException ex)
-            {
-                DefaultTrace.TraceWarning(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | Invalid JSON in continuation token {3} for OrderBy~Context, exception: {4}",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    this.CorrelatedActivityId,
-                    this.currentDocumentProducer == null ? "No Activity ID yet" : this.ActivityId.ToString(),
-                    requestContinuation,
-                    ex.Message));
-
-                throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
-            }
-
-            return suppliedCompositeContinuationTokens;
-        }
-
-        public struct FormattedFilterInfo
-        {
-            /*
-             * There could be multiple target ranges for split. And they could be diffrent as they can
-             * make diffrent amount of progress. 
-             */
+            /// <summary>
+            /// Filters for current partition.
+            /// </summary>
             public readonly string FiltersForTargetRange;
+
+            /// <summary>
+            /// Filters for partitions left of the current partition.
+            /// </summary>
             public readonly string FilterForRangesLeftOfTargetRanges;
+
+            /// <summary>
+            /// Filters for partitions right of the current partition.
+            /// </summary>
             public readonly string FilterForRangesRightOfTargetRanges;
 
+            /// <summary>
+            /// Initializes a new instance of the FormattedFilterInfo struct.
+            /// </summary>
+            /// <param name="leftFilter">The filters for the partitions left of the current partition.</param>
+            /// <param name="targetFilter">The filters for the current partition.</param>
+            /// <param name="rightFilters">The filters for the partitions right of the current partition.</param>
             public FormattedFilterInfo(string leftFilter, string targetFilter, string rightFilters)
             {
                 this.FilterForRangesLeftOfTargetRanges = leftFilter;
                 this.FiltersForTargetRange = targetFilter;
                 this.FilterForRangesRightOfTargetRanges = rightFilters;
+            }
+        }
+
+        /// <summary>
+        /// Equality comparer used to determine if a document producer needs it's continuation token returned.
+        /// Basically just says that the continuation token can be flushed once you stop seeing duplicates.
+        /// </summary>
+        private sealed class OrderByEqualityComparer : IEqualityComparer<OrderByQueryResult>
+        {
+            /// <summary>
+            /// The order by comparer.
+            /// </summary>
+            private readonly OrderByConsumeComparer orderByConsumeComparer;
+
+            /// <summary>
+            /// Initializes a new instance of the OrderByEqualityComparer class.
+            /// </summary>
+            /// <param name="orderByConsumeComparer">The order by consume comparer.</param>
+            public OrderByEqualityComparer(OrderByConsumeComparer orderByConsumeComparer)
+            {
+                if (orderByConsumeComparer == null)
+                {
+                    throw new ArgumentNullException($"{nameof(orderByConsumeComparer)} can not be null.");
+                }
+
+                this.orderByConsumeComparer = orderByConsumeComparer;
+            }
+
+            /// <summary>
+            /// Gets whether two OrderByQueryResult instances are equal.
+            /// </summary>
+            /// <param name="x">The first.</param>
+            /// <param name="y">The second.</param>
+            /// <returns>Whether two OrderByQueryResult instances are equal.</returns>
+            public bool Equals(OrderByQueryResult x, OrderByQueryResult y)
+            {
+                return this.orderByConsumeComparer.CompareOrderByItems(x.OrderByItems, y.OrderByItems) == 0;
+            }
+
+            /// <summary>
+            /// Gets the hash code for object.
+            /// </summary>
+            /// <param name="obj">The object to hash.</param>
+            /// <returns>The hash code for the OrderByQueryResult object.</returns>
+            public int GetHashCode(OrderByQueryResult obj)
+            {
+                return 0;
             }
         }
     }
