@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             this.SubStatusCode = subStatusCode;
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
-            this.ActivityId = ActivityId;
+            this.ActivityId = activityId;
         }
 
         /// <summary>
