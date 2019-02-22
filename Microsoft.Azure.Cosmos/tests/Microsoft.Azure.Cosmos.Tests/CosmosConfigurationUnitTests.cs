@@ -136,5 +136,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             var configuration = new CosmosConfiguration(connectionString);
             Assert.IsInstanceOfType(configuration.CosmosJsonSerializer, typeof(CosmosJsonSerializerWrapper));
         }
+
+        [TestMethod]
+        public void VerifySslVerificationDefaultsToFalse()
+        {
+            var configuration = new CosmosConfiguration(ConnectionString);
+
+            //Verify GetConnectionPolicy returns the correct values for default
+            ConnectionPolicy policy = configuration.GetConnectionPolicy();
+            Assert.AreEqual(false, policy.DisableSslVerification, "DisableSslVerification should default to false");
+        }
+
+        [TestMethod]
+        public void VerifyDisableSslVerificationIsConfigured()
+        {
+            var configuration = new CosmosConfiguration(ConnectionString)
+            {
+                DisableSslVerification = true
+            };
+
+            //Verify that ConnectionPolicy.DisableSslVerification is set by CosmosConfiguration
+            ConnectionPolicy policy = configuration.GetConnectionPolicy();
+            Assert.AreEqual(true, policy.DisableSslVerification, "DisableSslVerification should be set by CosmosConfiguration");
+        }
     }
 }
