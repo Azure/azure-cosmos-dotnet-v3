@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// CosmosStoredProcedure cosmosStoredProcedure = await this.container.StoredProcedures.CreateStoredProceducreAsync(
+        /// CosmosStoredProcedure cosmosStoredProcedure = await this.container.StoredProcedures.CreateStoredProcedureAsync(
         ///         id: "appendString",
         ///         body: sprocBody);
         /// 

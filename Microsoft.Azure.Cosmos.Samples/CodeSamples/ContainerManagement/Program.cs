@@ -10,7 +10,7 @@
         //Read configuration
         private static readonly string databaseId = "samples";
         private static readonly string containerId = "container-samples";
-        private static readonly string partitionKey = "/acitivtyId";
+        private static readonly string partitionKey = "/activityId";
 
         private static CosmosDatabase database = null;
 
@@ -203,7 +203,7 @@
     public class ToDoActivity
     {
         public string id = null;
-        public string acitivtyId = null;
+        public string activityId = null;
         public string status = null;
     }
 }
