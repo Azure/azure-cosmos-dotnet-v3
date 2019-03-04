@@ -172,7 +172,15 @@ namespace Microsoft.Azure.Cosmos
 
             if (partitionKey != null)
             {
-                PartitionKey pk = new PartitionKey(partitionKey);
+                PartitionKey pk = null;
+                if (partitionKey.GetType() == typeof(PartitionKey))
+                {
+                    pk = (PartitionKey)partitionKey;
+                }
+                else
+                {
+                    pk = new PartitionKey(partitionKey);
+                }
                 request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
             }
 

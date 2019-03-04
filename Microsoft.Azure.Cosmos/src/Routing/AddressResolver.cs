@@ -583,7 +583,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new InternalServerErrorException(string.Format(CultureInfo.InvariantCulture, "partition key is null '{0}'", partitionKeyString));
             }
 
-            if (partitionKey.Components.Count == collection.PartitionKey.Paths.Count)
+            if (partitionKey.Equals(PartitionKeyInternal.Empty) || partitionKey.Components.Count == collection.PartitionKey.Paths.Count)
             {
                 // Although we can compute effective partition key here, in general case this Gateway can have outdated
                 // partition key definition cached - like if collection with same name but with Range partitioning is created.
