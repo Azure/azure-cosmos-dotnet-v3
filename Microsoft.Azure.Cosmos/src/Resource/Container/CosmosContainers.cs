@@ -5,13 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Diagnostics;
     using System.IO;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
@@ -23,23 +19,8 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `containers.GetContainerIterator()` before every single `item.read()` call, to ensure the container exists;
     /// do this once on application start up.
     /// </summary>
-    public class CosmosContainers
+    public abstract class CosmosContainers
     {
-        private readonly CosmosDatabase database;
-        private readonly CosmosClient client;
-        private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
-
-        /// <summary>
-        /// Create a <see cref="CosmosContainers"/>
-        /// </summary>
-        /// <param name="database">The <see cref="CosmosDatabase"/> the container set is related to.</param>
-        protected internal CosmosContainers(CosmosDatabase database)
-        {
-            this.database = database;
-            this.client = database.Client;
-            this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
-        }
-
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
@@ -84,27 +65,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosContainerResponse> CreateContainerAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (containerSettings == null)
-            {
-                throw new ArgumentNullException(nameof(containerSettings));
-            }
-
-            this.ValidateContainerSettings(containerSettings);
-
-            Task<CosmosResponseMessage> response = this.CreateContainerStreamAsync(
-                streamPayload: containerSettings.GetResourceStream(),
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-
-            return this.client.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -141,21 +106,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosContainerResponse> CreateContainerAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
             CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
-
-            return this.CreateContainerAsync(
-                settings,
-                throughput,
-                requestOptions,
-                cancellationToken);
-        }
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Check if a container exists, and if it doesn't, create it.
@@ -202,36 +158,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual async Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerSettings containerSettings,
             int? throughput = null,
             CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (containerSettings == null)
-            {
-                throw new ArgumentNullException(nameof(containerSettings));
-            }
-
-            this.ValidateContainerSettings(containerSettings);
-
-            CosmosContainer cosmosContainer = this[containerSettings.Id];
-            CosmosContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
-            {
-                return cosmosContainerResponse;
-            }
-
-            cosmosContainerResponse = await this.CreateContainerAsync(containerSettings, throughput, requestOptions, cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
-            {
-                return cosmosContainerResponse;
-            }
-
-            // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
-            // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            return await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
-        }
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Check if a container exists, and if it doesn't, create it.
@@ -269,16 +200,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
+        public abstract Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
             CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
-            return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
-        }
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Gets an iterator to go through all the containers for the database
@@ -300,16 +227,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosResultSetIterator<CosmosContainerSettings> GetContainerIterator(
+        public abstract CosmosResultSetIterator<CosmosContainerSettings> GetContainerIterator(
             int? maxItemCount = null,
-            string continuationToken = null)
-        {
-            return new CosmosDefaultResultSetIterator<CosmosContainerSettings>(
-                maxItemCount,
-                continuationToken,
-                null,
-                this.ContainerFeedRequestExecutor);
-        }
+            string continuationToken = null);
 
         /// <summary>
         /// Returns a reference to a container object. 
@@ -327,119 +247,31 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosContainer this[string id] =>
-                this.containerCache.GetOrAdd(
-                    id,
-                    keyName => new CosmosContainer(this.database, keyName));
+        public abstract CosmosContainer this[string id] { get; }
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="streamPayload">The <see cref="CosmosContainerSettings"/> stream.</param>
+        /// <param name="streamPayload">The <see cref="CosmosContainerSettings"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a Stream containing a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
-        internal virtual Task<CosmosResponseMessage> CreateContainerStreamAsync(
-                    Stream streamPayload,
-                    int? throughput = null,
-                    CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessCollectionCreateAsync(
-                streamPayload: streamPayload,
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
+        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
+        public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
+            Stream streamPayload,
+            int? throughput = null,
+            CosmosRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Gets an iterator to go through all the containers for the database
         /// </summary>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosQueryRequestOptions"/></param>
-        internal virtual CosmosResultSetIterator GetContainerStreamIterator(
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the request <see cref="CosmosQueryRequestOptions"/></param>
+        public abstract CosmosResultSetIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null)
-        {
-            return new CosmosDefaultResultSetStreamIterator(
-                maxItemCount,
-                continuationToken,
-                requestOptions,
-                this.ContainerStreamFeedRequestExecutor);
-        }
-
-        internal void ValidateContainerSettings(CosmosContainerSettings containerSettings)
-        {
-            containerSettings.ValidateRequiredProperties();
-            this.database.Client.DocumentClient.ValidateResource(containerSettings);
-        }
-
-        internal Task<CosmosResponseMessage> ProcessCollectionCreateAsync(
-            Stream streamPayload,
-            int? throughput,
-            CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-               client: this.client,
-               resourceUri: this.database.LinkUri,
-               resourceType: ResourceType.Collection,
-               operationType: OperationType.Create,
-               partitionKey: null,
-               streamPayload: streamPayload,
-               requestOptions: requestOptions,
-               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
-               cancellationToken: cancellationToken);
-        }
-
-        private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutor(
-            int? maxItemCount,
-            string continuationToken,
-            CosmosRequestOptions requestOptions,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-               client: this.client,
-               resourceUri: this.database.LinkUri,
-               resourceType: ResourceType.Collection,
-               operationType: OperationType.ReadFeed,
-               partitionKey: null,
-               streamPayload: null,
-               requestOptions: requestOptions,
-               requestEnricher: request =>
-                {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-               cancellationToken: cancellationToken);
-        }
-
-        private Task<CosmosQueryResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
-            int? maxItemCount,
-            string continuationToken,
-            CosmosRequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(state == null);
-
-            return ExecUtils.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosContainerSettings>>(
-                this.database.Client,
-                this.database.LinkUri,
-                ResourceType.Collection,
-                OperationType.ReadFeed,
-                options,
-                request =>
-                {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                response => this.client.ResponseFactory.CreateResultSetQueryResponse<CosmosContainerSettings>(response),
-                cancellationToken);
-        }
+            CosmosQueryRequestOptions requestOptions = null);
     }
 }

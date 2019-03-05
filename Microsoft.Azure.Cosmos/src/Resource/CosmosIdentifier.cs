@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Globalization;
     using System.Text;
 
     /// <summary>
@@ -13,65 +14,66 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public abstract class CosmosIdentifier
     {
-        internal abstract string UriPathSegment { get; }
-
-        internal CosmosIdentifier(
-            CosmosClient cosmosClient,
-            string parentLink,
-            string id)
-        {
-            this.Id = id;
-            this.Client = cosmosClient;
-            this.Link = GetLinkString(parentLink);
-            this.LinkUri = GetLinkUri();
-        }
+        private static readonly char[] InvalidCharacters = new char[] { '/', '\\', '?', '#' };
 
         /// <summary>
         /// The Id of the cosmos resource
         /// </summary>
-        public virtual string Id { get; }
+        public abstract string Id { get; }
 
         /// <summary>
         /// The Cosmos client that is used for the request
         /// </summary>
-        internal CosmosClient Client { get; }
-
-        /// <summary>
-        /// The Cosmos resource URI as a string
-        /// </summary>
-        internal string Link { get; }
+        internal abstract CosmosClient Client { get; }
 
         /// <summary>
         /// The Cosmos resource URI
         /// </summary>
-        internal Uri LinkUri { get; }
+        internal abstract Uri LinkUri { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
         /// </summary>
         /// <param name="parentLink">The parent link URI (/dbs/mydbId) </param>
+        /// <param name="uriPathSegment">The URI path segment</param>
         /// <returns>A resource link in the format of {parentLink}/this.UriPathSegment/this.Name with this.Name being a Uri escaped version</returns>
-        private string GetLinkString(string parentLink)
+        protected Uri GetLink(string parentLink, string uriPathSegment)
         {
             int parentLinkLength = parentLink?.Length ?? 0;
             string idUriEscaped = Uri.EscapeUriString(this.Id);
 
-            StringBuilder stringBuilder = new StringBuilder(parentLinkLength + 2 + this.UriPathSegment.Length + idUriEscaped.Length);
+            StringBuilder stringBuilder = new StringBuilder(parentLinkLength + 2 + uriPathSegment.Length + idUriEscaped.Length);
             if (parentLinkLength > 0)
             {
                 stringBuilder.Append(parentLink);
             }
 
             stringBuilder.Append("/");
-            stringBuilder.Append(this.UriPathSegment);
+            stringBuilder.Append(uriPathSegment);
             stringBuilder.Append("/");
             stringBuilder.Append(idUriEscaped);
-            return stringBuilder.ToString();
+            return new Uri(stringBuilder.ToString(), UriKind.Relative);
         }
 
-        private Uri GetLinkUri()
+        internal static void ValidateResource(CosmosResource resource)
         {
-            return new Uri(this.Link, UriKind.Relative);
+            if (!string.IsNullOrEmpty(resource.Id))
+            {
+                int match = resource.Id.IndexOfAny(CosmosIdentifier.InvalidCharacters);
+                if (match != -1)
+                {
+                    throw new ArgumentException(string.Format(
+                                CultureInfo.CurrentUICulture,
+                                RMResources.InvalidCharacterInResourceName,
+                                resource.Id[match]
+                                ));
+                }
+
+                if (resource.Id[resource.Id.Length - 1] == ' ')
+                {
+                    throw new ArgumentException(RMResources.InvalidSpaceEndingInResourceName);
+                }
+            }
         }
     }
 }

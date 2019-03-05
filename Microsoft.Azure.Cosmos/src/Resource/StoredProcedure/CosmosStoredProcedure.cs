@@ -15,28 +15,8 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosStoredProcedures"/> for creating new stored procedures, and reading/querying all stored procedures;
     /// </summary>
-    public class CosmosStoredProcedure : CosmosIdentifier
+    public abstract class CosmosStoredProcedure : CosmosIdentifier
     {
-        /// <summary>
-        /// Create a <see cref="CosmosStoredProcedure"/>
-        /// </summary>
-        /// <param name="container">The <see cref="CosmosContainer"/></param>
-        /// <param name="storedProcedureId">The cosmos stored procedure id.</param>
-        /// <remarks>
-        /// Note that the stored procedure must be explicitly created, if it does not already exist, before
-        /// you can read from it or write to it.
-        /// </remarks>
-        protected internal CosmosStoredProcedure(
-            CosmosContainer container,
-            string storedProcedureId)
-            : base(container.Client,
-                container.Link,
-                storedProcedureId)
-        {
-        }
-
-        internal override string UriPathSegment => Paths.StoredProceduresPathSegment;
-
         /// <summary>
         /// Reads a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -67,17 +47,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosStoredProcedureResponse> ReadAsync(
+        public abstract Task<CosmosStoredProcedureResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessAsync(
-                partitionKey: null,
-                streamPayload: null,
-                operationType: OperationType.Read,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Replaces a <see cref="CosmosStoredProcedureSettings"/> in the Azure Cosmos service as an asynchronous operation.
@@ -122,29 +94,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosStoredProcedureResponse> ReplaceAsync(
+        public abstract Task<CosmosStoredProcedureResponse> ReplaceAsync(
                     string body,
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (string.IsNullOrEmpty(body))
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
-            CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings()
-            {
-                Id = this.Id,
-                Body = body,
-            };
-
-            return this.ProcessAsync(
-                partitionKey: null,
-                streamPayload: storedProcedureSettings.GetResourceStream(),
-                operationType: OperationType.Replace,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Delete a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -178,17 +131,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosStoredProcedureResponse> DeleteAsync(
+        public abstract Task<CosmosStoredProcedureResponse> DeleteAsync(
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessAsync(
-                partitionKey: null,
-                streamPayload: null,
-                operationType: OperationType.Delete,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service.
@@ -224,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// CosmosStoredProcedure cosmosStoredProcedure = await this.container.StoredProcedures.CreateStoredProcedureAsync(
+        /// CosmosStoredProcedure cosmosStoredProcedure = await this.container.StoredProcedures.CreateStoredProceducreAsync(
         ///         id: "appendString",
         ///         body: sprocBody);
         /// 
@@ -234,57 +179,10 @@ namespace Microsoft.Azure.Cosmos
         /// /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
+        public abstract Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
             CosmosStoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosItems.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream parametersStream;
-            if (input != null && !input.GetType().IsArray)
-            {
-                parametersStream = this.Client.CosmosJsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
-            }
-            else
-            {
-                parametersStream = this.Client.CosmosJsonSerializer.ToStream<TInput>(input);
-            }
-
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.Client,
-                this.LinkUri,
-                ResourceType.StoredProcedure,
-                OperationType.ExecuteJavaScript,
-                requestOptions,
-                partitionKey,
-                parametersStream,
-                null,
-                cancellationToken);
-
-            return this.Client.ResponseFactory.CreateItemResponse<TOutput>(response);
-        }
-
-        internal virtual Task<CosmosStoredProcedureResponse> ProcessAsync(
-            object partitionKey,
-            Stream streamPayload,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            CancellationToken cancellationToken)
-        {
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.Client,
-                this.LinkUri,
-                ResourceType.StoredProcedure,
-                operationType,
-                requestOptions,
-                partitionKey,
-                streamPayload,
-                null,
-                cancellationToken);
-
-            return this.Client.ResponseFactory.CreateStoredProcedureResponse(this, response);
-        }
+            CancellationToken cancellationToken = default(CancellationToken));
     }
 }

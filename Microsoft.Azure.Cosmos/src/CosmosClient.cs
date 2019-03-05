@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             this.AccountConsistencyLevel = this.DocumentClient.ConsistencyLevel;
 
             this.RequestHandler = clientPipelineBuilder.Build();
-            this.Databases = new CosmosDatabases(this);
+            this.Databases = new CosmosDatabasesImpl(this);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 

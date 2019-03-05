@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -28,13 +29,17 @@ namespace Microsoft.Azure.Cosmos
         protected internal CosmosUserDefinedFunction(
             CosmosContainer container,
             string userDefinedFunctionId)
-            : base(container.Client,
-                container.Link,
-                userDefinedFunctionId)
         {
+            this.Id = userDefinedFunctionId;
+            this.Client = container.Client;
+            this.LinkUri = GetLink(container.LinkUri.OriginalString, Paths.UserDefinedFunctionsPathSegment);
         }
 
-        internal override string UriPathSegment => Paths.UserDefinedFunctionsPathSegment;
+        public override string Id { get; }
+
+        internal override CosmosClient Client { get; }
+
+        internal override Uri LinkUri { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
