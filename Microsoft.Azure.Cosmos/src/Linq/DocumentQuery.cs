@@ -13,9 +13,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class DocumentQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
@@ -330,18 +332,74 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
             }
 
-            // Have to do all this, since dynamic cast loses all the internal members.
             FeedResponse<dynamic> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
-            FeedResponse<TResponse> finalResponse = (dynamic)response;
-            finalResponse = new FeedResponse<TResponse>(
-                finalResponse,
-                finalResponse.Count,
-                finalResponse.Headers,
-                finalResponse.UseETagAsContinuation,
-                finalResponse.QueryMetrics,
-                finalResponse.RequestStatistics,
-                response.DisallowContinuationTokenMessage,
-                finalResponse.ResponseLengthBytes);
+
+            FeedResponse<TResponse> finalResponse;
+            if (response.Count > 0 && IsCosmosElement(response.First().GetType()))
+            {
+                List<TResponse> typedResults = new List<TResponse>(response.Count);
+                // We know all the items are LazyCosmosElements
+                foreach(CosmosElement cosmosElement in response)
+                {
+                    // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
+                    // TODO: in the future we should deserialize using the LazyCosmosElement.
+                    // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
+                    TResponse typedValue;
+                    switch (cosmosElement.Type)
+                    {
+                        case CosmosElementType.String:
+                            typedValue = JToken.FromObject((cosmosElement as CosmosString).Value)
+                                .ToObject<TResponse>();
+                            break;
+                        case CosmosElementType.Number:
+                            typedValue = JToken.FromObject((cosmosElement as CosmosNumber).GetValueAsDouble())
+                               .ToObject<TResponse>();
+                            break;
+                        case CosmosElementType.Object:
+                            typedValue = JsonConvert.DeserializeObject<TResponse>((cosmosElement as LazyCosmosObject).ToString());
+                            break;
+                        case CosmosElementType.Array:
+                            typedValue = JsonConvert.DeserializeObject<TResponse>((cosmosElement as LazyCosmosObject).ToString());
+                            break;
+                        case CosmosElementType.Boolean:
+                            typedValue = JToken.FromObject((cosmosElement as CosmosBoolean).Value)
+                               .ToObject<TResponse>();
+                            break;
+                        case CosmosElementType.Null:
+                            typedValue = JValue.CreateNull().ToObject<TResponse>();
+                            break;
+                        default:
+                            throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElement.Type}");
+                    }
+
+                    typedResults.Add(typedValue);
+                }
+
+                finalResponse = new FeedResponse<TResponse>(
+                    typedResults,
+                    typedResults.Count,
+                    response.Headers,
+                    response.UseETagAsContinuation,
+                    response.QueryMetrics,
+                    response.RequestStatistics,
+                    response.DisallowContinuationTokenMessage,
+                    response.ResponseLengthBytes);
+            }
+            else
+            {
+                // Have to do all this, since dynamic cast loses all the internal members.
+                finalResponse = (dynamic)response;
+                finalResponse = new FeedResponse<TResponse>(
+                    finalResponse,
+                    finalResponse.Count,
+                    finalResponse.Headers,
+                    finalResponse.UseETagAsContinuation,
+                    finalResponse.QueryMetrics,
+                    finalResponse.RequestStatistics,
+                    response.DisallowContinuationTokenMessage,
+                    finalResponse.ResponseLengthBytes);
+            }
+            
             if (!this.HasMoreResults && !tracedLastExecution)
             {
                 DefaultTrace.TraceInformation(
@@ -354,6 +412,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                 tracedLastExecution = true;
             }
             return finalResponse;
+        }
+
+        private static bool IsCosmosElement(Type type)
+        {
+            return (
+                (type == typeof(CosmosElement))
+                || type.BaseType == typeof(CosmosArray)
+                || type.BaseType == typeof(CosmosObject)
+                || type.BaseType == typeof(CosmosString)
+                || type.BaseType == typeof(CosmosNumber)
+                || type.BaseType == typeof(CosmosBoolean)
+                || type.BaseType == typeof(CosmosNull));
         }
     }
 }

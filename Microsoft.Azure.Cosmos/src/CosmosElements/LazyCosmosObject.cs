@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Json;
 
     internal class LazyCosmosObject : CosmosObject, ILazyCosmosElement
@@ -93,6 +94,13 @@
             }
 
             return gotValue;
+        }
+
+        public override string ToString()
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            this.WriteToWriter(jsonWriter);
+            return Encoding.UTF8.GetString(jsonWriter.GetResult());
         }
 
         public void WriteToWriter(IJsonWriter jsonWriter)

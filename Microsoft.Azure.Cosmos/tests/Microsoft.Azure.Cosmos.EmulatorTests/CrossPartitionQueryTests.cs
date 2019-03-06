@@ -584,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
-                new OrderByItem[] { new OrderByItem() },
+                new List<OrderByItem> { new OrderByItem() },
                 "asdf",
                 42,
                 "asdf");
@@ -1304,14 +1304,61 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(actualPartitionKeyValues.SetEquals(args.ExpectedPartitionKeyValues));
         }
 
-        private struct AggregateTestArgs
+        [TestMethod]
+        public async Task TestBasicCrossPartitionQuery()
         {
-            public int NumberOfDocumentsDifferentPartitionKey;
-            public int NumberOfDocsWithSamePartitionKey;
-            public string PartitionKey;
-            public string UniquePartitionKey;
-            public string Field;
-            public object[] Values;
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+
+            await CrossPartitionQueryTests.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.Partitioned,
+                documents,
+                this.TestBasicCrossPartitionQuery);
+        }
+
+        private async Task TestBasicCrossPartitionQuery(
+            DocumentClient documentClient, 
+            CosmosContainerSettings documentCollection, 
+            IEnumerable<Document> documents)
+        {
+            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+            {
+                foreach (int maxItemCount in new int[] { 10, 100 })
+                {
+                    FeedOptions feedOptions = new FeedOptions
+                    {
+                        EnableCrossPartitionQuery = true,
+                        MaxBufferedItemCount = 7000,
+                        MaxItemCount = maxItemCount,
+                        MaxDegreeOfParallelism = maxDegreeOfParallelism,
+                        PopulateQueryMetrics = true,
+                    };
+
+                    List<JToken> actualFromQueryWithoutContinutionTokens;
+                    actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
+                        documentClient,
+                        documentCollection,
+                        "SELECT * FROM c",
+                        feedOptions);
+
+                    List<JToken> actualFromQueryWithContinutionTokens;
+                    actualFromQueryWithContinutionTokens = await QueryWithContinuationTokens<JToken>(
+                        documentClient,
+                        documentCollection,
+                        "SELECT * FROM c",
+                        feedOptions);
+
+                    Assert.IsTrue(
+                        actualFromQueryWithoutContinutionTokens.SequenceEqual(
+                            actualFromQueryWithContinutionTokens, 
+                            JToken.EqualityComparer));
+
+                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                }  
+            }
         }
 
         [TestMethod]
@@ -1370,6 +1417,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.TestQueryCrossPartitionAggregateFunctionsAsync,
                 aggregateTestArgs,
                 "/" + aggregateTestArgs.PartitionKey);
+        }
+
+        private struct AggregateTestArgs
+        {
+            public int NumberOfDocumentsDifferentPartitionKey;
+            public int NumberOfDocsWithSamePartitionKey;
+            public string PartitionKey;
+            public string UniquePartitionKey;
+            public string Field;
+            public object[] Values;
         }
 
         private struct AggregateQueryArguments

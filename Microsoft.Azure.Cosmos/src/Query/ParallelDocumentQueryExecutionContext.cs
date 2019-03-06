@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query
             int itemsLeftInCurrentPage = currentDocumentProducerTree.ItemsLeftInCurrentPage;
 
             // Only drain full pages or less if this is a top query.
-            List<object> results = new List<object>();
+            List<CosmosElement> results = new List<CosmosElement>();
             for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
             {
                 results.Add(currentDocumentProducerTree.Current);
