@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Interface for all DocumentQueryExecutionComponents
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="token">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token);
+        Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Stops this document query execution component.

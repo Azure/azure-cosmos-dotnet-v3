@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new InvalidOperationException($"Underlying object does not have an 'item' field.");
                 }
 
-                return ToObject(cosmosElement);
+                return cosmosElement.ToObject();
             }
         }
 
@@ -73,39 +73,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 return cosmosElement.Type;
             }
-        }
-
-        private static object ToObject(CosmosElement cosmosElement)
-        {
-            if (cosmosElement == null)
-            {
-                throw new ArgumentNullException($"{nameof(cosmosElement)} must not be null.");
-            }
-
-            object obj;
-            switch (cosmosElement.Type)
-            {
-                case CosmosElementType.String:
-                    obj = (cosmosElement as CosmosString).Value;
-                    break;
-
-                case CosmosElementType.Number:
-                    obj = (cosmosElement as CosmosNumber).GetValueAsDouble();
-                    break;
-
-                case CosmosElementType.Boolean:
-                    obj = (cosmosElement as CosmosBoolean).Value;
-                    break;
-
-                case CosmosElementType.Null:
-                    obj = null;
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(CosmosElementType)}: {cosmosElement.Type}");
-            }
-
-            return obj;
         }
 
         /// <summary>

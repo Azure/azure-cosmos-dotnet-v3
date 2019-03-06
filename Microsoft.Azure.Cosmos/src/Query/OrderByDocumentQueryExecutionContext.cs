@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation toke for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ////  1) <x, y> always comes before <z, y> where x < z
             ////  2) <i, j> always come before <i, k> where j < k
 
-            List<object> results = new List<object>();
+            List<CosmosElement> results = new List<CosmosElement>();
             while (!this.IsDone && results.Count < maxElements)
             {
                 // Only drain from the highest priority document producer 
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return new FeedResponse<object>(
+            return new FeedResponse<CosmosElement>(
                 results,
                 results.Count,
                 this.GetResponseHeaders(),

@@ -65,9 +65,9 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                foreach (T item in dynamicFeed)
+                foreach (dynamic item in dynamicFeed)
                 {
-                    typedResults.Add(item);
+                    typedResults.Add(JsonConvert.DeserializeObject<T>(JToken.FromObject(item).ToString()));
                 }
             }
 

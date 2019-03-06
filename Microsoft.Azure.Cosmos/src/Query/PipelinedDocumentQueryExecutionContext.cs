@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
 
@@ -266,7 +267,21 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             try
             {
-                return await this.component.DrainAsync(this.actualPageSize, token);
+                List<dynamic> dynamics = new List<dynamic>();
+                FeedResponse<CosmosElement> feedResponse = await this.component.DrainAsync(this.actualPageSize, token);
+                foreach (CosmosElement element in feedResponse)
+                {
+                    dynamics.Add(element.ToObject());
+                }
+
+                return new FeedResponse<dynamic>(
+                    dynamics,
+                    feedResponse.Count,
+                    feedResponse.Headers,
+                    feedResponse.UseETagAsContinuation,
+                    feedResponse.QueryMetrics,
+                    feedResponse.RequestStatistics,
+                    responseLengthBytes: feedResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {

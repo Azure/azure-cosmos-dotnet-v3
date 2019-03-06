@@ -5,8 +5,8 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global min/max from the local min/max of multiple partitions and continuations.
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
         }
 
-        public void Aggregate(object item)
+        public void Aggregate(CosmosElement localMinMax)
         {
             // If the value became undefinded at some point then it should stay that way.
             if (this.globalMinMax == Undefined.Value)
@@ -46,50 +46,49 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 return;
             }
 
-            if (item == Undefined.Value)
+            if (localMinMax == null)
             {
                 // If we got an undefined in the pipeline then the whole thing becomes undefined.
                 this.globalMinMax = Undefined.Value;
                 return;
             }
 
+            object unwrappedLocalMinMax = localMinMax.ToObject();
             // Check to see if we got the higher precision result 
             // and unwrap the object to get the actual item of interest
-            JObject jObject = item as JObject;
-            if (jObject != null)
+            if (localMinMax is CosmosObject cosmosObject)
             {
-                JToken countToken = jObject["count"];
-                if (countToken != null)
+                if (cosmosObject["count"] is CosmosNumber countToken)
                 {
                     // We know the object looks like: {"min": MIN(c.blah), "count": COUNT(c.blah)}
-                    if (countToken.ToObject<long>() == 0)
+                    if (countToken.GetValueAsLong() == 0)
                     {
                         // Ignore the value since the continuation / partition had no results that matched the filter so min is undefined.
                         return;
                     }
 
-                    JToken min = jObject["min"];
-                    JToken max = jObject["max"];
+                    CosmosElement min = cosmosObject["min"];
+                    CosmosElement max = cosmosObject["max"];
 
                     // Note that JToken won't equal null as long as a value is there
                     // even if that value is a JSON null.
                     if (min != null)
                     {
-                        item = min.ToObject<object>();
+                        unwrappedLocalMinMax = min.ToObject();
                     }
                     else if (max != null)
                     {
-                        item = max.ToObject<object>();
+                        unwrappedLocalMinMax = max.ToObject();
                     }
                     else
                     {
-                        item = Undefined.Value;
+                        unwrappedLocalMinMax = Undefined.Value;
                     }
                 }
             }
 
             if (!ItemComparer.IsMinOrMax(this.globalMinMax) 
-                && (!ItemTypeHelper.IsPrimitive(item) || !ItemTypeHelper.IsPrimitive(this.globalMinMax)))
+                && (!ItemTypeHelper.IsPrimitive(unwrappedLocalMinMax) || !ItemTypeHelper.IsPrimitive(this.globalMinMax)))
             {
                 // This means we are comparing non primitives with is undefined
                 this.globalMinMax = Undefined.Value;
@@ -99,21 +98,21 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             // Finally do the comparision
             if (this.isMinAggregation)
             {
-                if (ItemComparer.Instance.Compare(item, this.globalMinMax) < 0)
+                if (ItemComparer.Instance.Compare(unwrappedLocalMinMax, this.globalMinMax) < 0)
                 {
-                    this.globalMinMax = item;
+                    this.globalMinMax = unwrappedLocalMinMax;
                 }
             }
             else
             {
-                if (ItemComparer.Instance.Compare(item, this.globalMinMax) > 0)
+                if (ItemComparer.Instance.Compare(unwrappedLocalMinMax, this.globalMinMax) > 0)
                 {
-                    this.globalMinMax = item;
+                    this.globalMinMax = unwrappedLocalMinMax;
                 }
             }
         }
 
-        public object GetResult()
+        public CosmosElement GetResult()
         {
             object result;
             if (this.globalMinMax == ItemComparer.MinValue || this.globalMinMax == ItemComparer.MaxValue)
@@ -126,7 +125,17 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 result = this.globalMinMax;
             }
 
-            return result;
+            CosmosElement cosmosElement;
+            if(result == Undefined.Value)
+            {
+                cosmosElement = null;
+            }
+            else
+            {
+                cosmosElement = CosmosElement.FromObject(this.globalMinMax);
+            }
+
+            return cosmosElement;
         }
     }
 }

@@ -6,7 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
-    using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global count from the local counts from multiple partitions and continuations.
@@ -24,18 +24,23 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// Adds a count to the running count.
         /// </summary>
         /// <param name="localCount">The count to add.</param>
-        public void Aggregate(object localCount)
+        public void Aggregate(CosmosElement localCount)
         {
-            this.globalCount += Convert.ToInt64(localCount, CultureInfo.InvariantCulture);
+            if (!(localCount is CosmosNumber cosmosNumber))
+            {
+                throw new ArgumentException($"{nameof(localCount)} must be a number.");
+            }
+
+            this.globalCount += cosmosNumber.GetValueAsLong();
         }
 
         /// <summary>
         /// Gets the global count.
         /// </summary>
         /// <returns>The global count.</returns>
-        public object GetResult()
+        public CosmosElement GetResult()
         {
-            return this.globalCount;
+            return new EagerCosmosNumber(this.globalCount);
         }
     }
 }
