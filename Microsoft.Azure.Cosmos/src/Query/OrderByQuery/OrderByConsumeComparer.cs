@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// This flag used to determine whether we should support mixed type order by.
         /// For testing purposes we might turn it on to test mixed type order by on index v2.
         /// </summary>
-        [ThreadStatic]
         public static bool AllowMixedTypeOrderByTestFlag;
 
         /// <summary>

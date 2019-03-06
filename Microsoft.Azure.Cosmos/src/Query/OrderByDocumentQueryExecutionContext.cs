@@ -248,10 +248,10 @@ namespace Microsoft.Azure.Cosmos.Query
         private bool ShouldIncrementSkipCount(DocumentProducer currentDocumentProducer)
         {
             // If we are not at the begining of the page and we saw the same rid again.
-            return !currentDocumentProducer.IsAtBeginningOfPage && 
+            return !currentDocumentProducer.IsAtBeginningOfPage &&
                 string.Equals(
-                    this.previousRid, 
-                    new OrderByQueryResult(currentDocumentProducer.Current).Rid, 
+                    this.previousRid,
+                    new OrderByQueryResult(currentDocumentProducer.Current).Rid,
                     StringComparison.Ordinal);
         }
 
@@ -429,8 +429,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             foreach (DocumentProducerTree tree in producer)
             {
-                ResourceId continuationRid;
-                if (!ResourceId.TryParse(continuationToken.Rid, out continuationRid))
+                if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
                     this.TraceWarning(string.Format(
                         CultureInfo.InvariantCulture,
@@ -811,7 +810,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 OrderByQueryResult orderByQueryResultX = new OrderByQueryResult(x);
                 OrderByQueryResult orderByQueryResultY = new OrderByQueryResult(y);
                 return this.orderByConsumeComparer.CompareOrderByItems(
-                    orderByQueryResultX.OrderByItems, 
+                    orderByQueryResultX.OrderByItems,
                     orderByQueryResultY.OrderByItems) == 0;
             }
 

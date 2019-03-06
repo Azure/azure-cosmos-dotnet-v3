@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Xml;
     using Linq;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -248,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal delegate DocumentClient DocumentClientFactory(ConnectionMode connectionMode);
 
-        private static Task CreateIngestQueryDelete(
+        private async static Task CreateIngestQueryDelete(
             ConnectionModes connectionModes,
             CollectionTypes collectionTypes,
             IEnumerable<string> documents,
@@ -262,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return query(documentClient, documentCollection, inputDocuments);
             };
 
-            return CrossPartitionQueryTests.CreateIngestQueryDelete<object>(
+            await CrossPartitionQueryTests.CreateIngestQueryDelete<object>(
                 connectionModes,
                 collectionTypes,
                 documents,
@@ -273,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documentClientFactory);
         }
 
-        private static Task CreateIngestQueryDelete<T>(
+        private async static Task CreateIngestQueryDelete<T>(
             ConnectionModes connectionModes,
             CollectionTypes collectionTypes,
             IEnumerable<string> documents,
@@ -283,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IndexingPolicy indexingPolicy = null,
             DocumentClientFactory documentClientFactory = null)
         {
-            return CrossPartitionQueryTests.CreateIngestQueryDelete(
+            await CrossPartitionQueryTests.CreateIngestQueryDelete(
                 connectionModes,
                 collectionTypes,
                 documents,
@@ -323,9 +324,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            string partitionKey = "/id",
            IndexingPolicy indexingPolicy = null)
         {
-            int retryCount = 5;
-            bool passed = false;
-            List<Exception> exceptionHistory = new List<Exception>();
+            int retryCount = 1;
+            AggregateException exceptionHistory = new AggregateException();
             while (retryCount-- > 0)
             {
                 try
@@ -398,7 +398,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await Task.WhenAll(deleteCollectionTasks);
 
                     // If you made it here then it's all good
-                    passed = true;
                     break;
                 }
                 catch (Exception ex)
@@ -409,12 +408,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     else
                     {
-                        exceptionHistory.Add(ex);
+                        List<Exception> previousExceptions = exceptionHistory.InnerExceptions.ToList();
+                        previousExceptions.Add(ex);
+                        exceptionHistory = new AggregateException(previousExceptions);
                     }
                 }
             }
 
-            Assert.IsTrue(passed, $"Exception History: {string.Join(Environment.NewLine, exceptionHistory)}");
+            if (exceptionHistory.InnerExceptions.Count > 0)
+            {
+                throw exceptionHistory;
+            }
         }
 
         private static ConnectionMode GetTargetConnectionMode(ConnectionModes connectionMode)
@@ -582,9 +586,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(compositeContinuationToken.Token, deserializedCompositeContinuationToken.Token);
             //Assert.IsTrue(compositeContinuationToken.Range.Equals(deserializedCompositeContinuationToken.Range));
 
+            
+            string orderByItemSerialized = @"{""item"" : 1337 }";
+            byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
+            OrderByItem orderByItem = new OrderByItem(LazyCosmosElementFactory.CreateFromBuffer(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
-                new List<OrderByItem> { new OrderByItem() },
+                new List<OrderByItem> { orderByItem },
                 "asdf",
                 42,
                 "asdf");
@@ -597,7 +605,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //    orderByContinuationToken.CompositeContinuationToken.Range.Equals(
             //    deserializedOrderByContinuationToken.CompositeContinuationToken.Range));
             Assert.AreEqual(orderByContinuationToken.Filter, deserializedOrderByContinuationToken.Filter);
-            //Assert.AreEqual(orderByContinuationToken.OrderByItems, deserializedOrderByContinuationToken.OrderByItems);
+            Assert.AreEqual(orderByContinuationToken.OrderByItems[0].Item, deserializedOrderByContinuationToken.OrderByItems[0].Item);
             Assert.AreEqual(orderByContinuationToken.Rid, deserializedOrderByContinuationToken.Rid);
             Assert.AreEqual(orderByContinuationToken.SkipCount, deserializedOrderByContinuationToken.SkipCount);
         }
@@ -2305,7 +2313,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string indexV2Api = HttpConstants.Versions.v2018_09_17;
             string indexV1Api = HttpConstants.Versions.v2017_11_15;
 
-            Func<bool, OrderByTypes[], Action<Exception>, Task> runWithAllowMixedTypeOrderByFlag = (allowMixedTypeOrderByTestFlag, orderByTypes, expectedExcpetionHandler) =>
+            Func<bool, OrderByTypes[], Action<Exception>, Task> runWithAllowMixedTypeOrderByFlag = async (allowMixedTypeOrderByTestFlag, orderByTypes, expectedExcpetionHandler) =>
             {
                 bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
                 string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
@@ -2313,11 +2321,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlag;
-                    return CrossPartitionQueryTests.RunWithApiVersion(
+                    await CrossPartitionQueryTests.RunWithApiVersion(
                         apiVersion,
-                        () =>
+                        async () =>
                         {
-                            return CrossPartitionQueryTests.CreateIngestQueryDelete<Tuple<OrderByTypes[], Action<Exception>>>(
+                            await CrossPartitionQueryTests.CreateIngestQueryDelete<Tuple<OrderByTypes[], Action<Exception>>>(
                                 ConnectionModes.Direct,
                                 CollectionTypes.Partitioned,
                                 documents,
@@ -2366,12 +2374,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(
                         // Either we get the weird client exception for having mixed types
-                        exception.Message.Contains("Looks up a localized string similar to Cannot execute cross partition order-by queries on mix types.")
+                        exception.Message.Contains("Cannot execute cross partition order-by queries on mix types.")
                         // Or the results are just messed up since the pages in isolation were not mixed typed.
                         || exception.GetType() == typeof(AssertFailedException));
                 });
 
-            // Mixed type orderby should work for all scenarios, since for now the primitives are accepted to not be served from the index.
+            // Mixed type orderby should work for all scenarios,
+            // since for now the non primitives are accepted to not be served from the index.
             await runWithAllowMixedTypeOrderByFlag(
                 doAllowMixedTypes,
                 new OrderByTypes[]
@@ -3428,9 +3437,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await CrossPartitionQueryTests.RunWithApiVersion(
                 HttpConstants.Versions.v2018_09_17,
-                () =>
+                async () =>
                 {
-                    return CrossPartitionQueryTests.CreateIngestQueryDelete(
+                    await CrossPartitionQueryTests.CreateIngestQueryDelete(
                         ConnectionModes.Direct,
                         CollectionTypes.Partitioned | CollectionTypes.NonPartitioned,
                         documents,
