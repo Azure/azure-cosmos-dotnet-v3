@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class CosmosStoredProceduresImpl : CosmosStoredProcedures
+    internal sealed class CosmosStoredProceduresCore : CosmosStoredProcedures
     {
         private readonly CosmosContainer container;
         private readonly CosmosClient client;
 
-        internal CosmosStoredProceduresImpl(CosmosContainer container)
+        internal CosmosStoredProceduresCore(CosmosContainer container)
         {
             this.container = container;
             this.client = container.Client;
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return new CosmosStoredProcedureImpl(this.container, id);
+                return new CosmosStoredProcedureCore(this.container, id);
             }
         }
 

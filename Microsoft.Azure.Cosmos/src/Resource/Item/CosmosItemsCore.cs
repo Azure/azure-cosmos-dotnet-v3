@@ -13,13 +13,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
 
-    internal sealed class CosmosItemsImpl : CosmosItems
+    internal sealed class CosmosItemsCore : CosmosItems
     {
         private string cachedUriSegmentWithoutId { get; }
         private CosmosJsonSerializer cosmosJsonSerializer { get; }
         private CosmosClient client { get; }
 
-        internal CosmosItemsImpl(CosmosContainer container)
+        internal CosmosItemsCore(CosmosContainer container)
         {
             this.client = container.Client;
             this.container = container;
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            CosmosItemsImpl.ValidatePartitionKey(partitionKey, requestOptions);
+            CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             return ExecUtils.ProcessResourceOperationStreamAsync(

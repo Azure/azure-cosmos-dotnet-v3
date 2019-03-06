@@ -13,13 +13,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class CosmosContainersImpl : CosmosContainers
+    internal sealed class CosmosContainersCore : CosmosContainers
     {
         private readonly CosmosDatabase database;
         private readonly CosmosClient client;
         private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
         
-        internal CosmosContainersImpl(CosmosDatabase database)
+        internal CosmosContainersCore(CosmosDatabase database)
         {
             this.database = database;
             this.client = database.Client;
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosContainer this[string id] =>
                 this.containerCache.GetOrAdd(
                     id,
-                    keyName => new CosmosContainerImpl(this.database, keyName));
+                    keyName => new CosmosContainerCore(this.database, keyName));
 
         public override Task<CosmosResponseMessage> CreateContainerStreamAsync(
                     Stream streamPayload,

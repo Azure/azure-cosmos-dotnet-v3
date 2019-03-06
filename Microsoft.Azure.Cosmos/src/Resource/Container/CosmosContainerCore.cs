@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
 
-    internal sealed class CosmosContainerImpl : CosmosContainer
+    internal sealed class CosmosContainerCore : CosmosContainer
     {
-        internal CosmosContainerImpl(
+        internal CosmosContainerCore(
             CosmosDatabase database,
             string containerId)
         {
@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos
             this.Client = database.Client;
             this.LinkUri =  GetLink(database.LinkUri.OriginalString, Paths.CollectionsPathSegment);
             this.Database = database;
-            this.Items = new CosmosItemsImpl(this);
-            this.StoredProcedures = new CosmosStoredProceduresImpl(this);
+            this.Items = new CosmosItemsCore(this);
+            this.StoredProcedures = new CosmosStoredProceduresCore(this);
             this.DocumentClient = this.Client.DocumentClient;
             this.Triggers = new CosmosTriggers(this);
             this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this);

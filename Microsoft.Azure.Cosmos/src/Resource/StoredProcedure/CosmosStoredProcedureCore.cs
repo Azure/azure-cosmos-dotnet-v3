@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class CosmosStoredProcedureImpl : CosmosStoredProcedure
+    internal sealed class CosmosStoredProcedureCore : CosmosStoredProcedure
     {
-        internal CosmosStoredProcedureImpl(
+        internal CosmosStoredProcedureCore(
             CosmosContainer container,
             string storedProcedureId)
         {
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosStoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosItemsImpl.ValidatePartitionKey(partitionKey, requestOptions);
+            CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
 
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)

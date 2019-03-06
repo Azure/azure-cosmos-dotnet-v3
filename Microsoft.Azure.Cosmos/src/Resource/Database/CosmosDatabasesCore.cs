@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class CosmosDatabasesImpl : CosmosDatabases
+    internal sealed class CosmosDatabasesCore : CosmosDatabases
     {
         private readonly CosmosClient client;
         private readonly ConcurrentDictionary<string, CosmosDatabase> databasesCache;
 
-        internal CosmosDatabasesImpl(
+        internal CosmosDatabasesCore(
             CosmosClient client)
         {
             this.client = client;
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                 // TODO: Argument check and singleton database
                 this.databasesCache.GetOrAdd(
                     id,
-                    keyName => new CosmosDatabaseImpl(this.client, keyName));
+                    keyName => new CosmosDatabaseCore(this.client, keyName));
 
         public override Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                 Stream streamPayload,

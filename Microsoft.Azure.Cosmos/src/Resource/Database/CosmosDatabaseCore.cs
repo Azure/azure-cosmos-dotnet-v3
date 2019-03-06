@@ -10,16 +10,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
 
-    internal sealed class CosmosDatabaseImpl : CosmosDatabase
+    internal sealed class CosmosDatabaseCore : CosmosDatabase
     {
-        internal CosmosDatabaseImpl(
+        internal CosmosDatabaseCore(
             CosmosClient client,
             string databaseId)
         {
             this.Id = databaseId;
             this.Client = client;
             this.LinkUri = GetLink(null, Paths.DatabasesPathSegment);
-            this.Containers = new CosmosContainersImpl(this);
+            this.Containers = new CosmosContainersCore(this);
         }
 
         public override CosmosContainers Containers { get; }
