@@ -11,8 +11,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -22,6 +24,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosContainer Container = null;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
+
+        private static CosmosContainer fixedContainer = null;
+        private static readonly string utc_date = DateTime.UtcNow.ToString("r");
+
+        private static readonly string nonPartitionContainerId = "fixed-Container";
+        private static readonly string nonPartitionItemId = "fixed-Container-Item";
+        private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -36,6 +45,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             this.Container = response;
             this.jsonSerializer = new CosmosDefaultJsonSerializer();
+            await CreateNonPartitionCollectionItem();
+            fixedContainer = database.Containers[nonPartitionContainerId];
         }
 
         [TestCleanup]
@@ -525,6 +536,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        // Read write non partition collection item.
+        [TestMethod]
+        public async Task ReadNonPartitionItemAsync()
+        {
+            CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
+            Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
+            Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemPartitionKeyName);
+
+            CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
+                partitionKey: PartitionKey.Empty,
+                id: nonPartitionItemId);
+
+            Assert.IsNotNull(response.Resource);
+            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
+            Assert.IsNotNull(response.Resource.id == nonPartitionItemId);
+
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
@@ -551,16 +580,78 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createdList;
         }
 
-        private ToDoActivity CreateRandomToDoActivity(string pk = null)
+        private async Task CreateNonPartitionCollectionItem()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            //Creating non partition collection, rest api used instead of .NET SDK api as it is not supported anymore.
+            var client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "colls";
+            string resourceId = string.Format("dbs/{0}", this.database.Id);
+            string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+
+            string authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+            String containerDefinition = "{\n  \"id\": \"" + nonPartitionContainerId + "\"\n}";
+            StringContent containerContent = new StringContent(containerDefinition);
+            Uri requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), containerContent);
+
+            //Creating non partition collection item.
+            verb = "POST";
+            resourceType = "docs";
+            resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
+            resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
+            authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Remove("authorization");
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+
+            String itemDefinition = JsonConvert.SerializeObject(CreateRandomToDoActivity(id : nonPartitionItemId));
+            StringContent itemContent = new StringContent(itemDefinition);
+            requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), itemContent);
+        }
+
+        private string GenerateMasterKeyAuthorizationSignature(string verb, string resourceId, string resourceType, string key, string keyType, string tokenVersion)
+        {
+            var hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
+
+            string payLoad = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}\n{1}\n{2}\n{3}\n{4}\n",
+                    verb.ToLowerInvariant(),
+                    resourceType.ToLowerInvariant(),
+                    resourceId,
+                    utc_date.ToLowerInvariant(),
+                    ""
+            );
+
+            byte[] hashPayLoad = hmacSha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payLoad));
+            string signature = Convert.ToBase64String(hashPayLoad);
+
+            return System.Web.HttpUtility.UrlEncode(String.Format(System.Globalization.CultureInfo.InvariantCulture, "type={0}&ver={1}&sig={2}",
+                keyType,
+                tokenVersion,
+                signature));
+        }
+
+        private ToDoActivity CreateRandomToDoActivity(string pk = null, string id = null)
         {
             if (string.IsNullOrEmpty(pk))
             {
                 pk = "TBD" + Guid.NewGuid().ToString();
             }
-
+            if(id == null)
+            {
+                id = Guid.NewGuid().ToString();
+            }
             return new ToDoActivity()
             {
-                id = Guid.NewGuid().ToString(),
+                id = id,
                 description = "CreateRandomToDoActivity",
                 status = pk,
                 taskNum = 42,

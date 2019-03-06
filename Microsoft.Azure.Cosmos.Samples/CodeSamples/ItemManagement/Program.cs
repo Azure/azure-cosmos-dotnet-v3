@@ -31,7 +31,7 @@
     // 1.5 - Replace a item
     // 1.6 - Upsert a item
     // 1.7 - Delete a item
-    // 1.8 - Read non partition collection item with emty partition key.
+    // 1.8 - Read write non partition collection item.
     //
     // 2. Work with dynamic objects
     //
@@ -140,7 +140,7 @@
         /// 1.5 - Replace a item
         /// 1.6 - Upsert a item
         /// 1.7 - Delete a item
-        /// 1.8 - read a non partition container item
+        /// 1.8 - read write a non partition container item
         /// </summary>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
         {
@@ -156,7 +156,7 @@
 
             await Program.DeleteItemAsync();
 
-            await Program.ReadNonPartitionItemAsync();
+            await Program.ReadWriteNonPartitionItemAsync();
         }
 
         private static async Task<SalesOrder> CreateItemsAsync()
@@ -393,15 +393,19 @@
             Console.WriteLine("Request charge of delete operation: {0}", response.RequestCharge);
             Console.WriteLine("StatusCode of operation: {0}", response.StatusCode);
         }
-        private static async Task ReadNonPartitionItemAsync()
+        private static async Task ReadWriteNonPartitionItemAsync()
         {
-            Console.WriteLine("\n1.8 - Reading non partitioned container item");
+            Console.WriteLine("\n1.8 - Reading writing non partitioned container item");
             CosmosItemResponse<SalesOrder> response = await fixedContainer.Items.ReadItemAsync<SalesOrder>(
                 partitionKey: PartitionKey.Empty,
                 id: nonPartitionItemId);
 
             Console.WriteLine("Request charge of read operation: {0}", response.RequestCharge);
             Console.WriteLine("StatusCode of operation: {0}", response.StatusCode);
+
+            SalesOrderAfterMigration salesOrderAfterMigration = GetSalesOrderSampleAfterMigration("ItemAfterMigration");
+            CosmosItemResponse<SalesOrderAfterMigration> response2 = await fixedContainer.Items.CreateItemAsync(salesOrderAfterMigration.partitionKey, salesOrderAfterMigration);
+            Console.WriteLine("StatusCode of operation : {0}", response2.StatusCode);
         }
 
         private static T FromStream<T>(Stream stream)
@@ -465,7 +469,38 @@
                 },
             };
 
-            // Set the "ttl" property to auto-expire sales orders in 30 days 
+            // Set the "ttl" property to auto-expire sales orders in 30 days
+            salesOrder.TimeToLive = 60 * 60 * 24 * 30;
+
+            return salesOrder;
+        }
+
+        private static SalesOrderAfterMigration GetSalesOrderSampleAfterMigration(string itemId)
+        {
+            SalesOrderAfterMigration salesOrder = new SalesOrderAfterMigration
+            {
+                Id = itemId,
+                AccountNumber = "Account1",
+                partitionKey = Guid.NewGuid().ToString(),
+                PurchaseOrderNumber = "PO18009186470",
+                OrderDate = new DateTime(2005, 7, 1),
+                SubTotal = 419.4589m,
+                TaxAmount = 12.5838m,
+                Freight = 472.3108m,
+                TotalDue = 985.018m,
+                Items = new SalesOrderDetail[]
+                {
+                    new SalesOrderDetail
+                    {
+                        OrderQty = 1,
+                        ProductId = 760,
+                        UnitPrice = 419.4589m,
+                        LineTotal = 419.4589m
+                    }
+                },
+            };
+
+            // Set the "ttl" property to auto-expire sales orders in 30 days
             salesOrder.TimeToLive = 60 * 60 * 24 * 30;
 
             return salesOrder;
