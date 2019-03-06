@@ -6,7 +6,7 @@
     <Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <VersionPrefix>3.0.0.4</VersionPrefix>
+    <VersionPrefix>3.0.0.6</VersionPrefix>
     <VersionSuffix>-preview</VersionSuffix>
     <Version Condition=" '$(IsNightly)' == '1' ">$(VersionPrefix)$(VersionSuffix)-nightly$(CurrentDate)</Version>
     <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(VersionPrefix)$(VersionSuffix)</Version>
