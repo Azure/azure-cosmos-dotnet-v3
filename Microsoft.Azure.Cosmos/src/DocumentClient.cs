@@ -6793,7 +6793,6 @@ namespace Microsoft.Azure.Cosmos
                 var clientHandler = new HttpClientHandler();
                 if (connectionPolicy.DisableSslVerification)
                 {
-                    clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
                     clientHandler.ServerCertificateCustomValidationCallback += (message, certificate2, x509Chain, sslPolicyErrors) =>
                     {
                         return true;
