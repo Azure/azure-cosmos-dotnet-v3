@@ -584,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
-                new QueryItem[] { new QueryItem() },
+                new OrderByItem[] { new OrderByItem() },
                 "asdf",
                 42,
                 "asdf");

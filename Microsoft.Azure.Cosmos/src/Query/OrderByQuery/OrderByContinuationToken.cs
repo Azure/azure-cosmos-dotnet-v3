@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json;
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="filter">The filter (refer to property documentation).</param>
         public OrderByContinuationToken(
             CompositeContinuationToken compositeContinuationToken,
-            QueryItem[] orderByItems,
+            List<OrderByItem> orderByItems,
             string rid,
             int skipCount,
             string filter)
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException($"{nameof(orderByItems)} can not be null.");
             }
 
-            if (orderByItems.Length == 0)
+            if (orderByItems.Count == 0)
             {
                 throw new ArgumentException($"{nameof(orderByItems)} can not be empty.");
             }
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Right now, we don't support orderBy by multiple fields, so orderByItems is an array of one element. 
         /// </remarks>>
         [JsonProperty("orderByItems")]
-        public QueryItem[] OrderByItems
+        public List<OrderByItem> OrderByItems
         {
             get;
         }
