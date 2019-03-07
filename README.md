@@ -14,6 +14,8 @@ https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos?view=azure-dotnet-p
 ## Samples
 Our [Samples folder](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/CodeSamples) is a good starting point.
 
+## Diagnose and troubleshooting issues
+https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk
 
 # Contributing
 

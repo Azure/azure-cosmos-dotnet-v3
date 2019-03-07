@@ -1,3 +1,0 @@
-;At least one of these owners is required to sign off each pull request
-kirankk
-kirillg
