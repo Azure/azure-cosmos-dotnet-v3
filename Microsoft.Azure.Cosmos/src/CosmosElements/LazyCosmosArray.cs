@@ -37,7 +37,7 @@
             get
             {
                 IJsonNavigatorNode arrayItemNode = this.jsonNavigator.GetArrayItemAt(this.jsonNavigatorNode, index);
-                return LazyCosmosElementFactory.CreateTokenFromNavigatorAndNode(this.jsonNavigator, arrayItemNode);
+                return LazyCosmosElementFactory.Create(this.jsonNavigator, arrayItemNode);
             }
         }
 
@@ -46,7 +46,7 @@
         public override IEnumerator<CosmosElement> GetEnumerator() => this
             .jsonNavigator
             .GetArrayItems(this.jsonNavigatorNode)
-            .Select((arrayItem) => LazyCosmosElementFactory.CreateTokenFromNavigatorAndNode(this.jsonNavigator, arrayItem))
+            .Select((arrayItem) => LazyCosmosElementFactory.Create(this.jsonNavigator, arrayItem))
             .GetEnumerator();
 
         public override void WriteToWriter(IJsonWriter jsonWriter)

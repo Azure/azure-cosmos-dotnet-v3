@@ -10,15 +10,17 @@
     /// </summary>
     internal static class LazyCosmosElementFactory
     {
-        public static CosmosElement CreateFromBuffer(byte[] buffer)
+        public static CosmosElement Create(byte[] buffer)
         {
             IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
 
-            return LazyCosmosElementFactory.CreateTokenFromNavigatorAndNode(jsonNavigator, jsonNavigatorNode);
+            return LazyCosmosElementFactory.Create(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosElement CreateTokenFromNavigatorAndNode(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
+        public static CosmosElement Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
         {
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
             CosmosElement item;
