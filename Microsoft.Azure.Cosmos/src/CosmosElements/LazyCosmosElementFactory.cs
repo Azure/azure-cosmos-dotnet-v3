@@ -29,11 +29,11 @@
                     break;
 
                 case JsonNodeType.False:
-                    item = LazyCosmosFalse.Singleton;
+                    item = CosmosBoolean.False;
                     break;
 
                 case JsonNodeType.True:
-                    item = LazyCosmosTrue.Singleton;
+                    item = CosmosBoolean.True;
                     break;
 
                 case JsonNodeType.Number:
