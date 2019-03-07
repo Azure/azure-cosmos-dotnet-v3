@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static void CleanUp()
         {
             IEnumerable<CosmosDatabaseSettings> allDatabases = from database in CrossPartitionQueryTests.Client.CreateDatabaseQuery()
-                                                 select database;
+                                                               select database;
 
             foreach (CosmosDatabaseSettings database in allDatabases)
             {
@@ -524,35 +524,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Task.Delay(0);
         }
 
-        [TestMethod]
-        [TestCategory("Quarantine")]
-        [TestCategory("Ignore") /* Used to filter out ignored tests in lab runs */]
-        public void CheckThatAllTestsAreRunning()
-        {
-            // In general I don't want any of these tests being ignored or quarentined.
-            // Please work with me if it needs to be.
-            // I do not want these tests turned off for being "flaky", since they have been 
-            // very stable and if they fail it's because something lower level is probably going wrong.
-
-            Assert.AreEqual(0, typeof(CrossPartitionQueryTests)
-                .GetMethods()
-                .Where(method => method.GetCustomAttributes(typeof(TestMethodAttribute), true).Length != 0)
-                .Where(method => method.GetCustomAttributes(typeof(TestCategoryAttribute), true).Length != 0)
-                .Count(), $"One the {nameof(CrossPartitionQueryTests)} is not being run.");
-        }
-
-        [TestMethod]
-        [TestCategory("Ignore")]
-        public async Task TestExceptionCatching()
-        {
-            await CrossPartitionQueryTests.CreateIngestQueryDelete<Exception>(
-                ConnectionModes.Direct,
-                CollectionTypes.Partitioned,
-                CrossPartitionQueryTests.NoDocuments,
-                this.RandomlyThrowException,
-                new ServiceUnavailableException());
-        }
-
         private async Task RandomlyThrowException(DocumentClient documentClient, CosmosContainerSettings collection, IEnumerable<Document> documents = null, Exception exception = null)
         {
             await CrossPartitionQueryTests.NoOp();
@@ -586,7 +557,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(compositeContinuationToken.Token, deserializedCompositeContinuationToken.Token);
             //Assert.IsTrue(compositeContinuationToken.Range.Equals(deserializedCompositeContinuationToken.Range));
 
-            
+
             string orderByItemSerialized = @"{""item"" : 1337 }";
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
             OrderByItem orderByItem = new OrderByItem(LazyCosmosElementFactory.CreateFromBuffer(bytes));
@@ -679,9 +650,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 bool gotBadRequest = false;
                 foreach (Exception inner in e.InnerExceptions)
                 {
-                    if (inner is BadRequestException)
+                    if (inner is DocumentClientException dce)
                     {
-                        gotBadRequest = true;
+                        if (dce.StatusCode == HttpStatusCode.BadRequest)
+                        {
+                            gotBadRequest = true;
+                        }
                     }
                 }
 
@@ -1328,8 +1302,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestBasicCrossPartitionQuery(
-            DocumentClient documentClient, 
-            CosmosContainerSettings documentCollection, 
+            DocumentClient documentClient,
+            CosmosContainerSettings documentCollection,
             IEnumerable<Document> documents)
         {
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
@@ -1361,11 +1335,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Assert.IsTrue(
                         actualFromQueryWithoutContinutionTokens.SequenceEqual(
-                            actualFromQueryWithContinutionTokens, 
+                            actualFromQueryWithContinutionTokens,
                             JToken.EqualityComparer));
 
                     Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
-                }  
+                }
             }
         }
 
@@ -1417,7 +1391,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc.SetPropertyValue(aggregateTestArgs.PartitionKey, i + 1);
                 documents.Add(doc.ToString());
             }
-            
+
             await CrossPartitionQueryTests.CreateIngestQueryDelete<AggregateTestArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.Partitioned | CollectionTypes.NonPartitioned,
@@ -1890,8 +1864,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             await CrossPartitionQueryTests.CreateIngestQueryDelete(
-                ConnectionModes.Direct ,
-                CollectionTypes.Partitioned ,
+                ConnectionModes.Direct,
+                CollectionTypes.Partitioned,
                 documents,
                 this.TestQueryDistinct,
                 "/id");
@@ -3065,28 +3039,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail("Expect exception");
             }
-            catch (BadRequestException)
+            catch (DocumentClientException dce)
             {
-            }
-
-            try
-            {
-                CompositeContinuationToken[] tokens = new CompositeContinuationToken[1];
-                tokens[0] = new CompositeContinuationToken { Range = Range<string>.GetPointRange(string.Empty) };
-                await Client.CreateDocumentQuery<Document>(
-                    collection,
-                    new FeedOptions
-                    {
-                        EnableCrossPartitionQuery = true,
-                        MaxDegreeOfParallelism = -1,
-                        RequestContinuation = JsonConvert.SerializeObject(tokens),
-                        MaxItemCount = 10,
-                    }).AsDocumentQuery().ExecuteNextAsync();
-
-                Assert.Fail("Expect exception");
-            }
-            catch (BadRequestException)
-            {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
             }
 
             try
@@ -3104,8 +3059,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail("Expect exception");
             }
-            catch (BadRequestException)
+            catch (DocumentClientException dce)
             {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
             }
 
             try
@@ -3123,8 +3079,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail("Expect exception");
             }
-            catch (BadRequestException)
+            catch (DocumentClientException dce)
             {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
             }
 
             try
@@ -3142,8 +3099,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail("Expect exception");
             }
-            catch (BadRequestException)
+            catch (DocumentClientException dce)
             {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
             }
             #endregion
 
@@ -3923,7 +3881,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await AssertResponseLength(queryClient, coll, "SELECT TOP 32 * FROM r", isTopQuery: true, maxItemCount: 10);
         }
 
-        private async Task AssertResponseLength(DocumentClient client, CosmosContainerSettings coll, string query, bool isTopQuery = false, int maxItemCount = 1, int maxBufferedCount = -1, int maxReadItemCount = -1)
+        private async Task AssertResponseLength(
+            DocumentClient client,
+            CosmosContainerSettings coll,
+            string query,
+            bool isTopQuery = false,
+            int maxItemCount = 1,
+            int maxBufferedCount = -1,
+            int maxReadItemCount = -1)
         {
             long expectedResponseLength = 0;
             long actualResponseLength = 0;

@@ -407,7 +407,6 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceResponse documentServiceResponse = await this.ExecuteQueryRequestInternalAsync(
                 request,
                 cancellationToken);
-
             // Execute the callback an each element of the page
             // For example just could get a response like this
             // {
@@ -425,6 +424,7 @@ namespace Microsoft.Azure.Cosmos.Query
             // And you should execute the callback on each document in "Documents".
             MemoryStream memoryStream = new MemoryStream();
             documentServiceResponse.ResponseBody.CopyTo(memoryStream);
+            long responseLengthBytes = memoryStream.Length;
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
             string resourceName = resourceType.Name + "s";
 
@@ -445,7 +445,6 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             int itemCount = cosmosArray.Count;
-            long responseLengthBytes = documentServiceResponse.ResponseBody.CanSeek ? documentServiceResponse.ResponseBody.Length : 0;
             return new FeedResponse<CosmosElement>(
                 cosmosArray, 
                 itemCount, 
