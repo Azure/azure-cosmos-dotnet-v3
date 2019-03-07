@@ -1,8 +1,10 @@
 ﻿namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    internal abstract class CosmosNull : CosmosElement
+    internal sealed class CosmosNull : CosmosElement
     {
-        protected CosmosNull()
+        public static readonly CosmosNull Singleton = new CosmosNull();
+
+        private CosmosNull()
             : base(CosmosElementType.Null)
         {
         }

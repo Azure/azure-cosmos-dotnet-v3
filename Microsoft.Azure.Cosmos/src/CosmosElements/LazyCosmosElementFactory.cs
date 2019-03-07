@@ -25,7 +25,7 @@
             switch (jsonNodeType)
             {
                 case JsonNodeType.Null:
-                    item = LazyCosmosNull.Singleton;
+                    item = CosmosNull.Singleton;
                     break;
 
                 case JsonNodeType.False:
