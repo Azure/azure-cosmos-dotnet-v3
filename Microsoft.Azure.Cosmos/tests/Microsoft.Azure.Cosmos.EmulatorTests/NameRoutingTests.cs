@@ -14,7 +14,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -458,11 +459,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = databaseId });
             CosmosContainerSettings collection = await TestCommon.CreateCollectionAsync(client, database.SelfLink, new CosmosContainerSettings() { Id = collectionId });
 
-            LinqTests.Book myDocument = new LinqTests.Book();
+            LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book();
             myDocument.Id = Guid.NewGuid().ToString();
             myDocument.Title = "My Book"; //Simple Property.
-            myDocument.Languages = new LinqTests.Language[] { new LinqTests.Language { Name = "English", Copyright = "London Publication" }, new LinqTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
-            myDocument.Author = new LinqTests.Author { Name = "Don", Location = "France" }; //Complex Property
+            myDocument.Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
+            myDocument.Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }; //Complex Property
             myDocument.Price = 9.99;
 
             await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myDocument);
@@ -471,12 +472,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Testing the ReplaceDocumentAsync API with DocumentUri as the parameter
             Document replacedDocument = await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, myDocument.Id), myDocument);
 
-            IQueryable<LinqTests.Book> docQuery = from book in client.CreateDocumentQuery<LinqTests.Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                                                  where book.Title == "My Book"
-                                                  select book;
+            IQueryable<LinqGeneralBaselineTests.Book> docQuery = from book in client.CreateDocumentQuery<LinqGeneralBaselineTests.Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                                                                 where book.Title == "My Book"
+                                                                 select book;
             Assert.AreEqual(0, docQuery.AsEnumerable().Count(), "Query Count doesnt match");
 
-            docQuery = from book in client.CreateDocumentQuery<LinqTests.Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+            docQuery = from book in client.CreateDocumentQuery<LinqGeneralBaselineTests.Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
                        where book.Title == "My new Book"
                        select book;
             Assert.AreEqual(1, docQuery.AsEnumerable().Count(), "Query Count doesnt match");
@@ -485,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Testing the ReplaceDocumentAsync API with Document SelfLink as the parameter
             await client.ReplaceDocumentAsync(replacedDocument.SelfLink, myDocument);
 
-            docQuery = from book in client.CreateDocumentQuery<LinqTests.Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+            docQuery = from book in client.CreateDocumentQuery<LinqGeneralBaselineTests.Book>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
                        where book.Title == "My old Book"
                        select book;
             Assert.AreEqual(1, docQuery.AsEnumerable().Count(), "Query Count doesnt match");

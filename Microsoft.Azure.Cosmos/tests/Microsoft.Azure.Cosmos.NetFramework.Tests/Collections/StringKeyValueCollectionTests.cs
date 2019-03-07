@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Collections
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -19,6 +20,21 @@ namespace Microsoft.Azure.Cosmos.Collections
     [TestClass]
     public class StringKeyValueCollectionTests
     {
+        private INameValueCollectionFactory PreTestInitFactory { get; set; }
+
+        [TestInitialize]
+        public void Init()
+        {
+            this.PreTestInitFactory = StringKeyValueCollection.factory;
+            StringKeyValueCollection.SetNameValueCollectionFactory(StringKeyValueCollection.DefaultNameValueCollectionFactory());
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            StringKeyValueCollection.SetNameValueCollectionFactory(this.PreTestInitFactory);
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -1152,26 +1168,27 @@ namespace Microsoft.Azure.Cosmos.Collections
         /// 
         /// </summary>
         [TestMethod]
-        [TestCategory(TestTypeCategory.Quarantine)]
         public void TestGetEnumeratorInvalid()
         {
-            foreach (NameValueCollectionType type in NameValueCollectionTypes)
-            {
-                TestGetEnumeratorInvalid(0, type);
-                TestGetEnumeratorInvalid(10, type);
-            }
+            TestGetEnumeratorInvalid(0);
+            TestGetEnumeratorInvalid(10);
         }
 
-        private void TestGetEnumeratorInvalid(int count, NameValueCollectionType type)
+        private void TestGetEnumeratorInvalid(int count)
         {
-            INameValueCollection nameValueCollection = CreateNameValueCollection(count, 0, type);
+            INameValueCollection nameValueCollection = CreateNameValueCollection(count, type: NameValueCollectionType.StringKeyValueCollection);
             IEnumerator enumerator = nameValueCollection.GetEnumerator();
+            Trace.TraceInformation($"Collection type: {nameValueCollection.GetType()} Enumerator type: {enumerator.GetType()}");
 
             // Has not started enumerating
             AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
 
             // Has finished enumerating
             while (enumerator.MoveNext()) ;
+            AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
+
+            // Has reset enumerating
+            enumerator.Reset();
             AssertThrow(typeof(InvalidOperationException), () => { var tmp = enumerator.Current; });
 
             // Modify collection

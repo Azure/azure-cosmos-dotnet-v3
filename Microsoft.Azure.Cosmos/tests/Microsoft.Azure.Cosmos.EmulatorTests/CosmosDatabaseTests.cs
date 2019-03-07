@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -52,6 +53,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task StreamCrudTestAsync()
+        {
+            CosmosDatabase database = await this.CreateDatabaseStreamHelper();
+
+            using (CosmosResponseMessage response = await database.ReadStreamAsync())
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsNotNull(response.Headers);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+            }
+
+            using (CosmosResponseMessage response = await database.DeleteStreamAsync())
+            {
+                Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+                Assert.IsNotNull(response.Headers);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+            }
+        }
+
+        [TestMethod]
+        public async Task StreamCreateConflictTestAsync()
+        {
+            CosmosDatabaseSettings databaseSettings = new CosmosDatabaseSettings()
+            {
+                Id = Guid.NewGuid().ToString()
+            };
+            
+            using (CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseStreamAsync(databaseSettings.GetResourceStream()))
+            {
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                Assert.IsNotNull(response.Headers);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+            }
+
+            // Stream operations do not throw exceptions.
+            using (CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseStreamAsync(databaseSettings.GetResourceStream()))
+            {
+                Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+                Assert.IsNotNull(response.Headers);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+            }
+
+            using (CosmosResponseMessage response = await this.cosmosClient.Databases[databaseSettings.Id].DeleteStreamAsync())
+            {
+                Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+                Assert.IsNotNull(response.Headers);
+                Assert.IsTrue(response.Headers.RequestCharge > 0);
+            }
         }
 
         [TestMethod]
@@ -246,6 +298,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK || (response.StatusCode == HttpStatusCode.Created && !databaseExists));
 
             return response;
+        }
+
+        private async Task<CosmosDatabase> CreateDatabaseStreamHelper(
+            string databaseId = null,
+            int? throughput = null,
+            bool databaseExists = false)
+        {
+            if (string.IsNullOrEmpty(databaseId))
+            {
+                databaseId = Guid.NewGuid().ToString();
+            }
+
+            CosmosDatabaseSettings databaseSettings = new CosmosDatabaseSettings() { Id = databaseId };
+            using(Stream streamPayload = databaseSettings.GetResourceStream())
+            {
+                CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseStreamAsync(
+                    streamPayload, 
+                    throughput: 400);
+
+                Assert.IsNotNull(response);
+                Assert.IsNotNull(response.Headers.RequestCharge);
+                Assert.IsNotNull(response.Headers.ActivityId);
+
+                Assert.IsTrue(response.StatusCode == HttpStatusCode.OK || (response.StatusCode == HttpStatusCode.Created && !databaseExists));
+
+                return this.cosmosClient.Databases[databaseId];
+            }
         }
 
         private void ValidateHeaders(CosmosDatabaseResponse cosmosDatabaseResponse)

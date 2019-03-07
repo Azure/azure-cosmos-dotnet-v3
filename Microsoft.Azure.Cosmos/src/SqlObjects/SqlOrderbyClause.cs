@@ -1,20 +1,18 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlOrderbyClause.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
 
     internal sealed class SqlOrderbyClause : SqlObject
     {
-        public SqlOrderbyItem[] OrderbyItems
-        {
-            get;
-            private set;
-        }
-
-        public SqlOrderbyClause(SqlOrderbyItem[] orderbyItems)
+        private SqlOrderbyClause(IReadOnlyList<SqlOrderByItem> orderbyItems)
             : base(SqlObjectKind.OrderByClause)
         {
             if (orderbyItems == null)
@@ -22,18 +20,45 @@ namespace Microsoft.Azure.Cosmos.Sql
                 throw new ArgumentNullException("orderbyItems");
             }
 
+            foreach (SqlOrderByItem sqlOrderbyItem in orderbyItems)
+            {
+                if (sqlOrderbyItem == null)
+                {
+                    throw new ArgumentException($"{nameof(sqlOrderbyItem)} must have have null items.");
+                }
+            }
+
             this.OrderbyItems = orderbyItems;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public IReadOnlyList<SqlOrderByItem> OrderbyItems
         {
-            builder.Append("ORDER BY ");
-            this.OrderbyItems[0].AppendToBuilder(builder);
-            for(int i = 1; i < this.OrderbyItems.Length; i++)
-            {
-                builder.Append(", ");
-                this.OrderbyItems[i].AppendToBuilder(builder);
-            }
+            get;
+        }
+
+        public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems)
+        {
+            return new SqlOrderbyClause(orderbyItems);
+        }
+
+        public static SqlOrderbyClause Create(IReadOnlyList<SqlOrderByItem> orderbyItems)
+        {
+            return new SqlOrderbyClause(orderbyItems);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

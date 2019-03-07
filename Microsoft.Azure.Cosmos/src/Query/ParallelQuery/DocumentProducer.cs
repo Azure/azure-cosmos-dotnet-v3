@@ -1,611 +1,644 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
-namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
+﻿//-----------------------------------------------------------------------
+// <copyright file="DocumentProducer.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.Internal;
 
+    /// <summary>
+    /// The DocumentProducer is the base unit of buffering and iterating through documents.
+    /// Note that a document producer will let you iterate through documents within the pages of a partition and maintain any state.
+    /// In pseudo code this works out to:
+    /// for page in partition:
+    ///     for document in page:
+    ///         yield document
+    ///     update_state()
+    /// </summary>
+    /// <typeparam name="T">The type of document buffered.</typeparam>
     internal sealed class DocumentProducer<T>
     {
-        private const double ItemBufferTheshold = 0.1;
-        // The absolute max page size is 4mb
-        private const int GlobalMaxPageSize = 4 * 1024 * 1024;
+        /// <summary>
+        /// The buffered pages that is thread safe, since the producer and consumer of the queue can be on different threads.
+        /// </summary>
+        private readonly AsyncCollection<FeedResponse<T>> bufferedPages;
 
-        private readonly ComparableTaskScheduler taskScheduler;
-        private readonly AsyncCollection<FetchResult> itemBuffer;
-        private readonly Func<string, int, DocumentServiceRequest> createRequestFunc;
-        private readonly PartitionKeyRange targetRange;
-        private readonly Func<DocumentProducer<T>, int> taskPriorityFunc;
+        /// <summary>
+        /// The document producer can only be fetching one page at a time.
+        /// Since the fetch function can be called by the execution contexts or the scheduler, we use this semaphore to keep the fetch function thread safe.
+        /// </summary>
+        private readonly SemaphoreSlim fetchSemaphore;
+
+        /// <summary>
+        /// The callback function used to create a <see cref="DocumentServiceRequest"/> that is the entry point to fetch documents from the backend.
+        /// </summary>
+        private readonly Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc;
+
+        /// <summary>
+        /// The callback used to take a <see cref="DocumentServiceRequest"/> and retrieve a page of documents as a <see cref="FeedResponse{T}"/>
+        /// </summary>
         private readonly Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc;
-        private readonly Guid correlatedActivityId;
+
+        /// <summary>
+        /// Callback used to create a retry policy that will be used to determine when and how to retry fetches.
+        /// </summary>
         private readonly Func<IDocumentClientRetryPolicy> createRetryPolicyFunc;
+
+        /// <summary>
+        /// Once a document producer tree finishes fetching document they should call on this function so that the higher level execution context can aggregate the number of documents fetched, the request charge, and the query metrics.
+        /// </summary>
         private readonly ProduceAsyncCompleteDelegate produceAsyncCompleteCallback;
 
-        private readonly SchedulingStopwatch moveNextSchedulingMetrics;
+        /// <summary>
+        /// Keeps track of when a fetch happens and ends to calculate scheduling metrics.
+        /// </summary>
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
+
+        /// <summary>
+        /// Keeps track of fetch ranges.
+        /// </summary>
         private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
 
-        private readonly SemaphoreSlim fetchStateSemaphore;
-        
-        private Guid activityId;
-        private long isFetching;
-        private bool isDone;
-        private long bufferedItemCount;
+        /// <summary>
+        /// Equality comparer to determine if you have come across a distinct document according to the sort order.
+        /// </summary>
+        private readonly IEqualityComparer<T> equalityComparer;
+
+        /// <summary>
+        /// The current element in the iteration.
+        /// </summary>
         private T current;
-        private long numDocumentsFetched;
 
-        private long retries;
+        /// <summary>
+        /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
+        /// </summary>
+        private long pageSize;
 
+        /// <summary>
+        /// Previous continuation token for the page that the user has read from the document producer.
+        /// This is used for generating the composite continuation token.
+        /// </summary>
+        private string previousContinuationToken;
+
+        /// <summary>
+        /// The current continuation token that the user has read from the document producer tree.
+        /// This is used for determining whether there are more results.
+        /// </summary>
+        private string currentContinuationToken;
+
+        /// <summary>
+        /// The current backend continuation token, since the document producer tree may buffer multiple pages ahead of the consumer.
+        /// </summary>
+        private string backendContinuationToken;
+
+        /// <summary>
+        /// The number of items left in the current page, which is used by parallel queries since they need to drain full pages.
+        /// </summary>
+        private int itemsLeftInCurrentPage;
+
+        /// <summary>
+        /// The number of items currently buffered, which is used by the scheduler incase you want to implement give less full document producers a higher priority.
+        /// </summary>
+        private long bufferedItemCount;
+
+        /// <summary>
+        /// The current page that is being enumerated.
+        /// </summary>
+        private IEnumerator<T> currentPage;
+
+        /// <summary>
+        /// The last activity id seen from the backend.
+        /// </summary>
+        private Guid activityId;
+
+        /// <summary>
+        /// Whether or not the document producer has started fetching.
+        /// </summary>
+        private bool hasStartedFetching;
+
+        /// <summary>
+        /// Whether or not the document producer has started fetching.
+        /// </summary>
+        private bool hasMoreResults;
+
+        /// <summary>
+        /// Filter predicate for the document producer that is used by order by execution context.
+        /// </summary>
+        private string filter;
+
+        /// <summary>
+        /// Whether we are at the beginning of the page. This is needed for order by queries in order to determine if we need to skip a document for a join.
+        /// </summary>
+        private bool isAtBeginningOfPage;
+
+        /// <summary>
+        /// Whether or not we need to emit a continuation token for this document producer at the end of a continuation.
+        /// </summary>
+        private bool isActive;
+
+        /// <summary>
+        /// An enumerator is positioned before the first element of the collection and the first call to MoveNextAsync will move the enumerator over the first element of the collection.
+        /// This flag keeps track of whether we are in that scenario.
+        /// </summary>
+        private bool hasInitialized;
+
+        /// <summary>
+        /// Initializes a new instance of the DocumentProducer class.
+        /// </summary>
+        /// <param name="partitionKeyRange">The partition key range.</param>
+        /// <param name="createRequestFunc">The callback to create a request.</param>
+        /// <param name="executeRequestFunc">The callback to execute the request.</param>
+        /// <param name="createRetryPolicyFunc">The callback to create the retry policy.</param>
+        /// <param name="produceAsyncCompleteCallback">The callback to call once you are done fetching.</param>
+        /// <param name="equalityComparer">The comparer to use to determine whether the producer has seen a new document.</param>
+        /// <param name="initialPageSize">The initial page size.</param>
+        /// <param name="initialContinuationToken">The initial continuation token.</param>
         public DocumentProducer(
-            ComparableTaskScheduler taskScheduler,
-            Func<string, int, DocumentServiceRequest> createRequestFunc,
-            PartitionKeyRange targetRange,
-            Func<DocumentProducer<T>, int> taskPriorityFunc,
+            PartitionKeyRange partitionKeyRange,
+            Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
             Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
-            Guid correlatedActivityId,
+            IEqualityComparer<T> equalityComparer,
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            if (taskScheduler == null)
+            this.bufferedPages = new AsyncCollection<FeedResponse<T>>();
+            this.fetchSemaphore = new SemaphoreSlim(1, 1);
+            if (partitionKeyRange == null)
             {
-                throw new ArgumentNullException("taskScheduler");
+                throw new ArgumentNullException(nameof(partitionKeyRange));
             }
 
             if (createRequestFunc == null)
             {
-                throw new ArgumentNullException("documentServiceRequest");
-            }
-
-            if (targetRange == null)
-            {
-                throw new ArgumentNullException("targetRange");
-            }
-
-            if (taskPriorityFunc == null)
-            {
-                throw new ArgumentNullException("taskPriorityFunc");
+                throw new ArgumentNullException(nameof(createRequestFunc));
             }
 
             if (executeRequestFunc == null)
             {
-                throw new ArgumentNullException("executeRequestFunc");
+                throw new ArgumentNullException(nameof(executeRequestFunc));
             }
 
             if (createRetryPolicyFunc == null)
             {
-                throw new ArgumentNullException("createRetryPolicyFunc");
+                throw new ArgumentNullException(nameof(createRetryPolicyFunc));
             }
 
             if (produceAsyncCompleteCallback == null)
             {
-                throw new ArgumentNullException("produceAsyncCallback");
+                throw new ArgumentNullException(nameof(produceAsyncCompleteCallback));
             }
 
-            this.taskScheduler = taskScheduler;
-            this.itemBuffer = new AsyncCollection<FetchResult>();
-            this.createRequestFunc = createRequestFunc;
-            this.targetRange = targetRange;
-            this.taskPriorityFunc = taskPriorityFunc;
-            this.createRetryPolicyFunc = createRetryPolicyFunc;
-            this.executeRequestFunc = executeRequestFunc;
-            this.produceAsyncCompleteCallback = produceAsyncCompleteCallback;
-            this.PageSize = initialPageSize;
-            if ((int)this.PageSize < 0)
+            if (equalityComparer == null)
             {
-                throw new ArithmeticException("page size is negative..");
+                throw new ArgumentNullException(nameof(equalityComparer));
             }
-            this.correlatedActivityId = correlatedActivityId;
-            this.CurrentBackendContinuationToken = initialContinuationToken;
 
-            this.moveNextSchedulingMetrics = new SchedulingStopwatch();
-            this.moveNextSchedulingMetrics.Ready();
+            this.PartitionKeyRange = partitionKeyRange;
+            this.createRequestFunc = createRequestFunc;
+            this.executeRequestFunc = executeRequestFunc;
+            this.createRetryPolicyFunc = createRetryPolicyFunc;
+            this.produceAsyncCompleteCallback = produceAsyncCompleteCallback;
+            this.equalityComparer = equalityComparer;
+            this.pageSize = initialPageSize;
+            this.currentContinuationToken = initialContinuationToken;
+            this.backendContinuationToken = initialContinuationToken;
+            this.previousContinuationToken = initialContinuationToken;
+            if (!string.IsNullOrEmpty(initialContinuationToken))
+            {
+                this.hasStartedFetching = true;
+                this.isActive = true;
+            }
+
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(this.targetRange.Id);
+            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(this.PartitionKeyRange.Id);
 
-            this.fetchStateSemaphore = new SemaphoreSlim(1, 1);
+            this.hasMoreResults = true;
         }
 
         public delegate void ProduceAsyncCompleteDelegate(
             DocumentProducer<T> producer,
-            int size,
-            double resourceUnitUsage,
+            int numberOfDocuments,
+            double requestCharge,
             QueryMetrics queryMetrics,
-            long responseLengthBytes,
+            long responseLengthInBytes,
             CancellationToken token);
 
-        public int BufferedItemCount
+        /// <summary>
+        /// Gets the <see cref="PartitionKeyRange"/> for the partition that this document producer is fetching from.
+        /// </summary>
+        public PartitionKeyRange PartitionKeyRange
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets or sets the filter predicate for the document producer that is used by order by execution context.
+        /// </summary>
+        public string Filter
         {
             get
             {
-                return (int)Interlocked.Read(ref this.bufferedItemCount);
+                return this.filter;
+            }
+
+            set
+            {
+                this.filter = value;
             }
         }
 
         /// <summary>
-        ///     Gets the current element in the iteration.
+        /// Gets the previous continuation token.
+        /// </summary>
+        public string PreviousContinuationToken
+        {
+            get
+            {
+                return this.previousContinuationToken;
+            }
+        }
+
+        /// <summary>
+        /// Gets the backend continuation token.
+        /// </summary>
+        public string BackendContinuationToken
+        {
+            get
+            {
+                return this.backendContinuationToken;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the continuation token for this producer needs to be given back as part of the composite continuation token.
+        /// </summary>
+        public bool IsActive
+        {
+            get
+            {
+                return this.isActive;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this producer is at the beginning of the page.
+        /// </summary>
+        public bool IsAtBeginningOfPage
+        {
+            get
+            {
+                return this.isAtBeginningOfPage;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this producer has more results.
+        /// </summary>
+        public bool HasMoreResults
+        {
+            get
+            {
+                return this.hasMoreResults;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this producer has more backend results.
+        /// </summary>
+        public bool HasMoreBackendResults
+        {
+            get
+            {
+                return this.hasStartedFetching == false
+                    || (this.hasStartedFetching == true && !string.IsNullOrEmpty(this.backendContinuationToken));
+            }
+        }
+
+        /// <summary>
+        /// Gets how many items are left in the current page.
+        /// </summary>
+        public int ItemsLeftInCurrentPage
+        {
+            get
+            {
+                return this.itemsLeftInCurrentPage;
+            }
+        }
+
+        /// <summary>
+        /// Gets how many documents are buffered in this producer.
+        /// </summary>
+        public int BufferedItemCount
+        {
+            get
+            {
+                return (int)this.bufferedItemCount;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the page size of this producer.
+        /// </summary>
+        public long PageSize
+        {
+            get
+            {
+                return this.pageSize;
+            }
+
+            set
+            {
+                this.pageSize = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets the activity for the last request made by this document producer.
+        /// </summary>
+        public Guid ActivityId
+        {
+            get
+            {
+                return this.activityId;
+            }
+        }
+
+        /// <summary>
+        /// Gets the current document in this producer.
         /// </summary>
         public T Current
         {
             get
             {
-                if (this.isDone)
-                {
-                    throw new InvalidOperationException("Producer is closed");
-                }
-
                 return this.current;
             }
-            private set
-            {
-                this.current = value;
-            }
-        }
-
-        public PartitionKeyRange TargetRange
-        {
-            get
-            {
-                return this.targetRange;
-            }
-        }
-
-        public bool FetchedAll
-        {
-            get
-            {
-                return this.HasStartedFetching && string.IsNullOrEmpty(this.CurrentBackendContinuationToken);
-            }
-        }
-
-        public long PageSize
-        {
-            get;
-            set;
-        }
-
-        public long NormalizedPageSize
-        {
-            get
-            {
-                return this.PageSize == -1 ? 1000 : Math.Min(this.PageSize, GlobalMaxPageSize);
-            }
-        }
-
-        public string PreviousResponseContinuation
-        {
-            get;
-            private set;
-        }
-
-        public string ResponseContinuation
-        {
-            get;
-            private set;
-        }
-
-        public string CurrentBackendContinuationToken
-        {
-            get;
-            private set;
-        }
-
-        public int ItemsTillNextContinuationBoundary
-        {
-            get;
-            private set;
-        }
-
-        public bool IsAtContinuationBoundary
-        {
-            get;
-            private set;
-        }
-
-        public Guid ActivityId
-        {
-            get { return this.activityId; }
-            private set { this.activityId = value; }
-        }
-
-        public ClientSideRequestStatistics RequestStatistics
-        {
-            get;
-            private set;
-        }
-
-        private bool ShouldFetch
-        {
-            get
-            {
-                return (this.ItemsTillNextContinuationBoundary - 1) < this.NormalizedPageSize * ItemBufferTheshold && this.itemBuffer.Count <= 0;
-            }
-        }
-
-        private bool HasStartedFetching { get; set; }
-
-        private IEnumerator<T> CurrentEnumerator { get; set; }
-
-        public long TotalResponseLengthBytes { get; private set; }
-
-        public bool TryScheduleFetch(TimeSpan delay = default(TimeSpan))
-        {
-            if (this.FetchedAll)
-            {
-                return false;
-            }
-
-            if (Interlocked.CompareExchange(ref this.isFetching, 1, 0) != 0)
-            {
-                return false;
-            }
-
-            this.ScheduleFetch(this.createRetryPolicyFunc(), delay);
-            return true;
         }
 
         /// <summary>
-        ///     Advances to the next element in the sequence, returning the result asynchronously.
+        /// Moves to the next document in the producer.
         /// </summary>
-        /// <param name="cancellationToken">Cancellation token that can be used to cancel the operation.</param>
-        /// <returns>
-        ///     Task containing the result of the operation: true if the DocumentProducer was successfully advanced
-        ///     to the next element; false if the DocumentProducer has passed the end of the sequence.
-        /// </returns>
-        public async Task<bool> MoveNextAsync(CancellationToken cancellationToken)
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>Whether or not we successfully moved to the next document.</returns>
+        public async Task<bool> MoveNextAsync(CancellationToken token)
         {
-            this.moveNextSchedulingMetrics.Start();
+            token.ThrowIfCancellationRequested();
+
+            T originalCurrent = this.current;
+            bool movedNext = await this.MoveNextAsyncImplementation(token);
+            if (!movedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.current)))
+            {
+                this.isActive = false;
+            }
+
+            return movedNext;
+        }
+
+        /// <summary>
+        /// Buffers more documents if the producer is empty.
+        /// </summary>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A task to await on.</returns>
+        public async Task BufferMoreIfEmpty(CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+
+            if (this.bufferedPages.Count == 0)
+            {
+                await this.BufferMoreDocuments(token);
+            }
+        }
+
+        /// <summary>
+        /// Buffers more documents in the producer.
+        /// </summary>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A task to await on.</returns>
+        public async Task BufferMoreDocuments(CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+
             try
             {
-                if (this.isDone)
+                await this.fetchSemaphore.WaitAsync();
+                if (!this.HasMoreBackendResults)
                 {
-                    return false;
+                    // Just NOP
+                    return;
                 }
 
-                if (await this.GetShouldFetchAsync(cancellationToken))
-                {
-                    this.TryScheduleFetch();
-                }
-
-                if (this.MoveNextInternal())
-                {
-                    this.IsAtContinuationBoundary = false;
-                    --this.ItemsTillNextContinuationBoundary;
-                    return true;
-                }
-
-                FetchResult fetchResult = await this.itemBuffer.TakeAsync(cancellationToken);
-                switch (fetchResult.Type)
-                {
-                    case FetchResultType.Done:
-                        this.isDone = true;
-                        return false;
-                    case FetchResultType.Exception:
-                        fetchResult.ExceptionDispatchInfo.Throw();
-                        return false;
-                    case FetchResultType.Result:
-                        this.UpdateStates(fetchResult.FeedResponse);
-                        return true;
-                    default:
-                        throw new InvalidProgramException(fetchResult.Type.ToString());
-                }
-            }
-            finally
-            {
-                this.moveNextSchedulingMetrics.Stop();
-            }
-        }
-
-        private async Task<bool> GetShouldFetchAsync(CancellationToken cancellationToken)
-        {
-            if (this.FetchedAll)
-            {
-                return false;
-            }
-
-            if (this.ShouldFetch)
-            {
-                await this.fetchStateSemaphore.WaitAsync(cancellationToken);
-                try
-                {
-                    return this.ShouldFetch && Interlocked.Read(ref this.isFetching) == 0;
-                }
-                finally
-                {
-                    this.fetchStateSemaphore.Release();
-                }
-            }
-
-            return false;
-        }
-
-        private void ScheduleFetch(IDocumentClientRetryPolicy retryPolicyInstance, TimeSpan delay = default(TimeSpan))
-        {
-            // For the same DocumentProducer, the priorities of scheduled tasks monotonically decrease. 
-            // This makes sure the tasks are scheduled fairly across all DocumentProducer's.
-            bool scheduled = this.taskScheduler.TryQueueTask(
-                new DocumentProducerComparableTask(
-                    this,
-                    retryPolicyInstance),
-                delay);
-
-            if (!scheduled)
-            {
-                Interlocked.Exchange(ref this.isFetching, 0);
-                throw new InvalidOperationException("Failed to schedule");
-            }
-        }
-
-        private bool MoveNextInternal()
-        {
-            if (this.CurrentEnumerator == null || !this.CurrentEnumerator.MoveNext())
-            {
-                return false;
-            }
-
-            this.Current = this.CurrentEnumerator.Current;
-
-            Interlocked.Decrement(ref this.bufferedItemCount);
-
-            return true;
-        }
-
-        private void UpdateStates(FeedResponse<T> feedResponse)
-        {
-            this.PreviousResponseContinuation = this.ResponseContinuation;
-            this.ResponseContinuation = feedResponse.ResponseContinuation;
-            this.ItemsTillNextContinuationBoundary = feedResponse.Count;
-            this.IsAtContinuationBoundary = true;
-            this.CurrentEnumerator = feedResponse.GetEnumerator();
-            this.RequestStatistics = feedResponse.RequestStatistics;
-            this.TotalResponseLengthBytes += feedResponse.ResponseLengthBytes;
-
-            this.MoveNextInternal();
-        }
-
-        private void UpdateRequestContinuationToken(string continuationToken)
-        {
-            this.CurrentBackendContinuationToken = continuationToken;
-            this.HasStartedFetching = true;
-        }
-
-        private async Task<DocumentProducer<T>> FetchAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
-        {
-            // TODO: This workflow could be simplified.
-            FetchResult exceptionFetchResult = null;
-            try
-            {
                 this.fetchSchedulingMetrics.Start();
                 this.fetchExecutionRangeAccumulator.BeginFetchRange();
-                FeedResponse<T> feedResponse = null;
-                double requestCharge = 0;
-                long responseLengthBytes = 0;
-                QueryMetrics queryMetrics = QueryMetrics.Zero;
-                do
+                int pageSize = (int)Math.Min(this.pageSize, (long)int.MaxValue);
+                using (DocumentServiceRequest request = this.createRequestFunc(this.PartitionKeyRange, this.backendContinuationToken, pageSize))
                 {
-                    int pageSize = (int)Math.Min(this.PageSize, (long)int.MaxValue);
+                    // BUG: retryPolicyInstance shound not be shared betweet different requests
+                    IDocumentClientRetryPolicy retryPolicy = this.createRetryPolicyFunc();
+                    retryPolicy.OnBeforeSendRequest(request);
 
-                    Debug.Assert(pageSize >= 0, string.Format("pageSize was negative ... this.PageSize: {0}", this.PageSize));
-                    using (DocumentServiceRequest request = this.createRequestFunc(this.CurrentBackendContinuationToken, pageSize))
+                    // Custom backoff and retry
+                    while (true)
                     {
-                        retryPolicyInstance = retryPolicyInstance ?? this.createRetryPolicyFunc();
-                        retryPolicyInstance.OnBeforeSendRequest(request);
-
-                        // Custom backoff and retry
-                        ExceptionDispatchInfo exception = null;
+                        int retries = 0;
                         try
                         {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            feedResponse = await this.executeRequestFunc(request, cancellationToken);
-                            this.fetchExecutionRangeAccumulator.EndFetchRange(feedResponse.Count, Interlocked.Read(ref this.retries));
-                            this.ActivityId = Guid.Parse(feedResponse.ActivityId);
+                            FeedResponse<T> feedResponse = await this.executeRequestFunc(request, token);
+                            this.fetchExecutionRangeAccumulator.EndFetchRange(
+                                feedResponse.ActivityId,
+                                feedResponse.Count,
+                                retries);
+                            this.fetchSchedulingMetrics.Stop();
+                            this.hasStartedFetching = true;
+                            this.backendContinuationToken = feedResponse.ResponseContinuation;
+                            this.activityId = Guid.Parse(feedResponse.ActivityId);
+                            await this.bufferedPages.AddAsync(feedResponse);
+                            Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
+
+                            QueryMetrics queryMetrics = QueryMetrics.Zero;
+                            if (feedResponse.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics] != null)
+                            {
+                                queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
+                                    feedResponse.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
+                                    new ClientSideMetrics(
+                                        retries,
+                                        feedResponse.RequestCharge,
+                                        this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
+                                        new List<Tuple<string, SchedulingTimeSpan>>()));
+                            }
+
+                            if (!this.HasMoreBackendResults)
+                            {
+                                queryMetrics = QueryMetrics.CreateWithSchedulingMetrics(
+                                    queryMetrics,
+                                    new List<Tuple<string, SchedulingTimeSpan>>
+                                    {
+                                        new Tuple<string, SchedulingTimeSpan>(
+                                            this.PartitionKeyRange.Id,
+                                            this.fetchSchedulingMetrics.Elapsed)
+                                    });
+                            }
+
+                            this.produceAsyncCompleteCallback(
+                                this,
+                                feedResponse.Count,
+                                feedResponse.RequestCharge,
+                                queryMetrics,
+                                feedResponse.ResponseLengthBytes,
+                                token);
+
+                            break;
                         }
-                        catch (Exception ex)
+                        catch (Exception exception)
                         {
-                            exception = ExceptionDispatchInfo.Capture(ex);
+                            // See if we need to retry or just throw
+                            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(exception, token);
+                            if (!shouldRetryResult.ShouldRetry)
+                            {
+                                if (shouldRetryResult.ExceptionToThrow != null)
+                                {
+                                    throw shouldRetryResult.ExceptionToThrow;
+                                }
+                                else
+                                {
+                                    // Propagate original exception.
+                                    throw;
+                                }
+                            }
+                            else
+                            {
+                                await Task.Delay(shouldRetryResult.BackoffTime);
+                                retries++;
+                            }
                         }
-
-                        if (exception != null)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-
-                            ShouldRetryResult shouldRetryResult = await retryPolicyInstance.ShouldRetryAsync(exception.SourceException, cancellationToken);
-
-                            shouldRetryResult.ThrowIfDoneTrying(exception);
-
-                            this.ScheduleFetch(retryPolicyInstance, shouldRetryResult.BackoffTime);
-                            Interlocked.Increment(ref this.retries);
-                            return this;
-                        }
-
-                        requestCharge += feedResponse.RequestCharge;
-                        responseLengthBytes += feedResponse.ResponseLengthBytes;
-                        if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
-                        {
-                            queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                                feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
-                                new ClientSideMetrics(this.retries, requestCharge,
-                                this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                new List<Tuple<string, SchedulingTimeSpan>>()),
-                                this.activityId);
-                            // Reset the counters.
-                            Interlocked.Exchange(ref this.retries, 0);
-                        }
-
-                        this.UpdateRequestContinuationToken(feedResponse.ResponseContinuation);
-
-                        retryPolicyInstance = null;
-                        this.numDocumentsFetched += feedResponse.Count;
                     }
                 }
-
-                while (!this.FetchedAll && feedResponse.Count <= 0);
-                await this.CompleteFetchAsync(feedResponse, cancellationToken);
-                this.produceAsyncCompleteCallback(this, feedResponse.Count, requestCharge, queryMetrics, responseLengthBytes, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceWarning(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1}, ActivityId {2} | DocumentProducer Id: {3}, Exception in FetchAsync: {4}",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    this.correlatedActivityId,
-                    this.ActivityId,
-                    this.targetRange.Id,
-                    ex.Message));
-
-                exceptionFetchResult = new FetchResult(ExceptionDispatchInfo.Capture(ex));
             }
             finally
             {
                 this.fetchSchedulingMetrics.Stop();
-                if (this.FetchedAll)
-                {   
-                    // One more callback to send the scheduling metrics
-                    this.produceAsyncCompleteCallback(
-                        producer: this,
-                        size: 0,
-                        resourceUnitUsage: 0,
-                        queryMetrics: QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                            QueryMetrics.Zero.ToDelimitedString(),
-                            new ClientSideMetrics(
-                                retries: 0,
-                                requestCharge: 0,
-                                fetchExecutionRanges: new List<FetchExecutionRange>(),
-                                partitionSchedulingTimeSpans: new List<Tuple<string, SchedulingTimeSpan>> { 
-                                    new Tuple<string, SchedulingTimeSpan>(this.targetRange.Id, this.fetchSchedulingMetrics.Elapsed)}),
-                            Guid.Empty),
-                        responseLengthBytes: 0,
-                        token: cancellationToken);
-                }
+                this.fetchSemaphore.Release();
             }
-
-            if (exceptionFetchResult != null)
-            {
-                this.UpdateRequestContinuationToken(this.CurrentBackendContinuationToken);
-                await this.itemBuffer.AddAsync(exceptionFetchResult, cancellationToken);
-            }
-
-            return this;
         }
 
-        private async Task CompleteFetchAsync(FeedResponse<T> feedResponse, CancellationToken cancellationToken)
+        public void Shutdown()
         {
-            await this.fetchStateSemaphore.WaitAsync(cancellationToken);
-            try
+            this.hasMoreResults = false;
+        }
+
+        /// <summary>
+        /// Implementation of move next async.
+        /// After this function is called the wrapper function determines if a distinct document has been read and updates the 'isActive' flag.
+        /// </summary>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
+        private async Task<bool> MoveNextAsyncImplementation(CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+
+            if (!this.HasMoreResults)
             {
-                if (feedResponse.Count > 0)
+                return false;
+            }
+
+            await this.BufferMoreIfEmpty(token);
+
+            if (!this.hasInitialized)
+            {
+                // First time calling move next async so we are just going to call movenextpage to get the ball rolling
+                this.hasInitialized = true;
+                if(await this.MoveNextPage(token))
                 {
-                    await this.itemBuffer.AddAsync(new FetchResult(feedResponse), cancellationToken);
-                    Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
+                    return true;
                 }
-
-                if (this.FetchedAll)
+                else
                 {
-                    await this.itemBuffer.AddAsync(FetchResult.DoneResult, cancellationToken);
+                    this.hasMoreResults = false;
+                    return false;
                 }
-
-                Interlocked.Exchange(ref this.isFetching, 0);
-            }
-            finally
-            {
-                this.fetchStateSemaphore.Release();
-            }
-        }
-
-        private sealed class DocumentProducerComparableTask : ComparableTask
-        {
-            private readonly DocumentProducer<T> producer;
-            private readonly IDocumentClientRetryPolicy retryPolicyInstance;
-
-            public DocumentProducerComparableTask(
-                DocumentProducer<T> producer,
-                IDocumentClientRetryPolicy retryPolicyInstance) :
-                base(producer.taskPriorityFunc(producer))
-            {
-                this.producer = producer;
-                this.retryPolicyInstance = retryPolicyInstance;
             }
 
-            public override Task StartAsync(CancellationToken cancellationToken)
-            {
-                return this.producer.FetchAsync(this.retryPolicyInstance, cancellationToken);
-            }
+            Interlocked.Decrement(ref this.bufferedItemCount);
+            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
+            this.isAtBeginningOfPage = false;
 
-            public override bool Equals(IComparableTask other)
+            // Always try reading from current page first
+            if (this.MoveNextDocumentWithinCurrentPage())
             {
-                return this.Equals(other as DocumentProducerComparableTask);
+                this.current = this.currentPage.Current;
+                return true;
             }
-
-            public override int GetHashCode()
+            else
             {
-                return this.producer.TargetRange.GetHashCode();
-            }
-
-            private bool Equals(DocumentProducerComparableTask other)
-            {
-                return this.producer.TargetRange.Equals(other.producer.TargetRange);
+                // We might be at a continuation boundary so we need to move to the next page
+                if (await this.MoveNextPage(token))
+                {
+                    return true;
+                }
+                else
+                {
+                    this.hasMoreResults = false;
+                    return false;
+                }
             }
         }
 
-        private sealed class FetchResult
+        /// <summary>
+        /// Tries to moved to the next document within the current page that we are reading from.
+        /// </summary>
+        /// <returns>Whether the operation was successful.</returns>
+        private bool MoveNextDocumentWithinCurrentPage()
         {
-            public static readonly FetchResult DoneResult = new FetchResult()
+            if (this.currentPage == null || !this.currentPage.MoveNext())
             {
-                Type = FetchResultType.Done,
-            };
-
-            public FetchResult(FeedResponse<T> feedResponse)
-            {
-                this.FeedResponse = feedResponse;
-                this.Type = FetchResultType.Result;
+                return false;
             }
 
-            public FetchResult(ExceptionDispatchInfo exceptionDispatchInfo)
-            {
-                this.ExceptionDispatchInfo = exceptionDispatchInfo;
-                this.Type = FetchResultType.Exception;
-            }
-
-            private FetchResult()
-            {
-            }
-
-            public FetchResultType Type
-            {
-                get;
-                private set;
-            }
-
-            public FeedResponse<T> FeedResponse
-            {
-                get;
-                private set;
-            }
-
-            public ExceptionDispatchInfo ExceptionDispatchInfo
-            {
-                get;
-                private set;
-            }
+            this.current = this.currentPage.Current;
+            return true;
         }
 
-        private enum FetchResultType
+        /// <summary>
+        /// Tries to the move to the next page in the document producer.
+        /// </summary>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>Whether the operation was successful.</returns>
+        private async Task<bool> MoveNextPage(CancellationToken token)
         {
-            Done,
-            Exception,
-            Result,
+            token.ThrowIfCancellationRequested();
+
+            if (this.bufferedPages.Count == 0)
+            {
+                return false;
+            }
+
+            if (this.itemsLeftInCurrentPage != 0)
+            {
+                throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
+            }
+
+            FeedResponse<T> feedResponse = await this.bufferedPages.TakeAsync(token);
+            this.previousContinuationToken = this.currentContinuationToken;
+            this.currentContinuationToken = feedResponse.ResponseContinuation;
+            this.currentPage = feedResponse.GetEnumerator();
+            this.itemsLeftInCurrentPage = feedResponse.Count;
+            if (this.MoveNextDocumentWithinCurrentPage())
+            {
+                this.isAtBeginningOfPage = true;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

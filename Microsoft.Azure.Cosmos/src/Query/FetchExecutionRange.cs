@@ -16,27 +16,31 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class FetchExecutionRange
     {
-        private readonly DateTime startTime;
-        private readonly DateTime endTime;
-        private readonly string partitionKeyRangeId;
-        private readonly long numberOfDocuments;
-        private readonly long retryCount;
-
         /// <summary>
         /// Initializes a new instance of the FetchExecutionRange class.
         /// </summary>
+        /// <param name="activityId">The activityId of the fetch</param>
         /// <param name="startTime">The start time of the fetch.</param>
         /// <param name="endTime">The end time of the fetch.</param>
         /// <param name="partitionKeyRangeId">The partitionkeyrangeid from which you are fetching for.</param>
         /// <param name="numberOfDocuments">The number of documents that were fetched in the particular execution range.</param>
         /// <param name="retryCount">The number of times we retried for this fetch execution range.</param>
-        public FetchExecutionRange(DateTime startTime, DateTime endTime, string partitionKeyRangeId, long numberOfDocuments, long retryCount)
+        public FetchExecutionRange(string activityId, DateTime startTime, DateTime endTime, string partitionKeyRangeId, long numberOfDocuments, long retryCount)
         {
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.partitionKeyRangeId = partitionKeyRangeId;
-            this.numberOfDocuments = numberOfDocuments;
-            this.retryCount = retryCount;
+            this.ActivityId = activityId;
+            this.StartTime = startTime;
+            this.EndTime = endTime;
+            this.PartitionId = partitionKeyRangeId;
+            this.NumberOfDocuments = numberOfDocuments;
+            this.RetryCount = retryCount;
+        }
+
+        /// <summary>
+        /// Gets the activityId of the fetch.
+        /// </summary>
+        public string ActivityId
+        {
+            get;
         }
 
         /// <summary>
@@ -44,10 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DateTime StartTime
         {
-            get
-            {
-                return this.startTime;
-            }
+            get;
         }
 
         /// <summary>
@@ -55,10 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DateTime EndTime
         {
-            get
-            {
-                return this.endTime;
-            }
+            get;
         }
 
         /// <summary>
@@ -66,10 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public string PartitionId
         {
-            get
-            {
-                return this.partitionKeyRangeId;
-            }
+            get;
         }
 
         /// <summary>
@@ -77,10 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public long NumberOfDocuments
         {
-            get
-            {
-                return this.numberOfDocuments;
-            }
+            get;
         }
 
         /// <summary>
@@ -88,10 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public long RetryCount
         {
-            get
-            {
-                return this.retryCount;
-            }
+            get;
         }
     }
 }

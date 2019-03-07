@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
 
@@ -24,9 +25,14 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        private CosmosTriggerResponse(
-            CosmosResponseMessage cosmosResponse,
-            CosmosTrigger trigger) : base(cosmosResponse)
+        internal CosmosTriggerResponse(
+           HttpStatusCode httpStatusCode,
+           CosmosResponseMessageHeaders headers,
+           CosmosTriggerSettings cosmosTriggerSettings,
+           CosmosTrigger trigger) : base(
+               httpStatusCode,
+               headers,
+               cosmosTriggerSettings)
         {
             this.Trigger = trigger;
         }
@@ -44,26 +50,6 @@ namespace Microsoft.Azure.Cosmos
         public static implicit operator CosmosTrigger(CosmosTriggerResponse response)
         {
             return response.Trigger;
-        }
-
-        /// <summary>
-        /// Create the cosmos trigger response.
-        /// Creates the response object, deserializes the
-        /// http content stream, and disposes of the HttpResponseMessage
-        /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> from the Cosmos DB service</param>
-        /// <param name="jsonSerializer">The cosmos json serializer</param>
-        /// <param name="trigger">The cosmos trigger</param>
-        internal static CosmosTriggerResponse CreateResponse(
-            CosmosResponseMessage cosmosResponseMessage,
-            CosmosJsonSerializer jsonSerializer,
-            CosmosTrigger trigger)
-        {
-            return CosmosResponse<CosmosTriggerSettings>
-                .InitResponse<CosmosTriggerResponse, CosmosTriggerSettings>(
-                    (httpResponse) => new CosmosTriggerResponse(cosmosResponseMessage, trigger),
-                    jsonSerializer,
-                    cosmosResponseMessage);
         }
     }
 }

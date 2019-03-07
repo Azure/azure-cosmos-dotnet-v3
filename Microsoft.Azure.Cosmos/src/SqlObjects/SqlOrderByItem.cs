@@ -1,26 +1,16 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlOrderByItem.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Text;
 
-    internal sealed class SqlOrderbyItem : SqlObject
+    internal sealed class SqlOrderByItem : SqlObject
     {
-        public SqlScalarExpression Expression
-        {
-            get;
-            private set;
-        }
-
-        public bool IsDescending
-        {
-            get;
-            private set;
-        }
-
-        public SqlOrderbyItem(
+        private SqlOrderByItem(
             SqlScalarExpression expression,
             bool isDescending)
             : base(SqlObjectKind.OrderByItem)
@@ -34,17 +24,34 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.IsDescending = isDescending;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlScalarExpression Expression
         {
-            this.Expression.AppendToBuilder(builder);
-            if (this.IsDescending)
-            {
-                builder.Append(" DESC");
-            }
-            else
-            {
-                builder.Append(" ASC");
-            }
+            get;
+        }
+
+        public bool IsDescending
+        {
+            get;
+        }
+
+        public static SqlOrderByItem Create(SqlScalarExpression expression, bool isDescending)
+        {
+            return new SqlOrderByItem(expression, isDescending);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

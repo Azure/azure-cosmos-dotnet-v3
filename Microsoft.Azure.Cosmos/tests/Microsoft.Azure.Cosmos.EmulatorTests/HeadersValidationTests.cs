@@ -50,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void ValidatePageSizeGatway()
         {
             var client = TestCommon.CreateClient(true);
@@ -148,7 +147,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void ValidateConsistencyLevelRntbd()
         {
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
@@ -157,7 +155,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void ValidateConsistencyLevelHttps()
         {
             //var client = TestCommon.CreateClient(false, Protocol.Https);
@@ -192,7 +189,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void ValidateIndexingDirectiveGateway()
         {
             var client = TestCommon.CreateClient(true);
@@ -200,7 +196,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public void ValidateIndexingDirectiveRntbd()
         {
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
@@ -512,7 +507,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public async Task ValidateCollectionIndexProgressHeadersHttps()
         {
             var client = TestCommon.CreateClient(false, Protocol.Https);

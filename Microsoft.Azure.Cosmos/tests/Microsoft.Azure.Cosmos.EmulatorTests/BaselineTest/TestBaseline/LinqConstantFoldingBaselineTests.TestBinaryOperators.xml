@@ -1,0 +1,412 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[true true equal]]></Description>
+      <Expression><![CDATA[(True == True)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[true true not equal]]></Description>
+      <Expression><![CDATA[(True != True)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[false true equal]]></Description>
+      <Expression><![CDATA[(False == True)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[false true not equal]]></Description>
+      <Expression><![CDATA[(False != True)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[false false equal]]></Description>
+      <Expression><![CDATA[(False == False)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[false false not equal]]></Description>
+      <Expression><![CDATA[(False != False)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[null null equal]]></Description>
+      <Expression><![CDATA[(null == null)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[null null not equal]]></Description>
+      <Expression><![CDATA[(null != null)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 1 equal]]></Description>
+      <Expression><![CDATA[(1 == 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 1 not equal]]></Description>
+      <Expression><![CDATA[(1 != 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 1 <]]></Description>
+      <Expression><![CDATA[(1 < 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 1 <=]]></Description>
+      <Expression><![CDATA[(1 <= 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 1 >]]></Description>
+      <Expression><![CDATA[(1 > 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 1 >=]]></Description>
+      <Expression><![CDATA[(1 >= 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[2 1 equal]]></Description>
+      <Expression><![CDATA[(2 == 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[2 1 not equal]]></Description>
+      <Expression><![CDATA[(2 != 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[2 1 <]]></Description>
+      <Expression><![CDATA[(2 < 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[2 1 <=]]></Description>
+      <Expression><![CDATA[(2 <= 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[2 1 >]]></Description>
+      <Expression><![CDATA[(2 > 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[2 1 >=]]></Description>
+      <Expression><![CDATA[(2 >= 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 2 equal]]></Description>
+      <Expression><![CDATA[(1 == 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 2 not equal]]></Description>
+      <Expression><![CDATA[(1 != 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 2 <]]></Description>
+      <Expression><![CDATA[(1 < 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 2 <=]]></Description>
+      <Expression><![CDATA[(1 <= 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 2 >]]></Description>
+      <Expression><![CDATA[(1 > 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[1 2 >=]]></Description>
+      <Expression><![CDATA[(1 >= 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[a a equal]]></Description>
+      <Expression><![CDATA[("a" == "a")]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[true]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[true]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[a a not equal]]></Description>
+      <Expression><![CDATA[("a" != "a")]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Add]]></Description>
+      <Expression><![CDATA[(12 + 34)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[46]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[46]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Subtract]]></Description>
+      <Expression><![CDATA[(45 - 34)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[11]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[11]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiply]]></Description>
+      <Expression><![CDATA[(10 * 20)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[200]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[200]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Divide]]></Description>
+      <Expression><![CDATA[(10 / 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[5]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[5]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Modulo]]></Description>
+      <Expression><![CDATA[(101 % 3)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[2]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[2]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[And]]></Description>
+      <Expression><![CDATA[(1 & 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[0]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Or]]></Description>
+      <Expression><![CDATA[(3 | 4)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[7]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[7]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ExclusiveOr]]></Description>
+      <Expression><![CDATA[(5 ^ 6)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[3]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[3]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[LeftShift]]></Description>
+      <Expression><![CDATA[(1 << 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[4]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[4]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RightShift]]></Description>
+      <Expression><![CDATA[(100 >> 1)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[50]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[50]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Add constInt]]></Description>
+      <Expression><![CDATA[(2 + 6)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[8]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[8]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Add param]]></Description>
+      <Expression><![CDATA[(x + 2)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[(x + 2)]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[(x + 2)]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[AndAlso]]></Description>
+      <Expression><![CDATA[(True AndAlso False)]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[false]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[false]]></TranslationOldOutput>
+    </Output>
+  </Result>
+</Results>

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Collections;
@@ -257,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (typeof(T) == typeof(double))
             {
-                return (T)(object)double.Parse(value);
+                return (T)(object)double.Parse(value, CultureInfo.InvariantCulture);
             }
 
             return (T)(object)value;

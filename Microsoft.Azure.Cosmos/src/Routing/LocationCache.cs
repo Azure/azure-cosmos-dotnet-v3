@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net;
     using Microsoft.Azure.Cosmos.Internal;
 
+
     /// <summary>
     /// Implements the abstraction to resolve target location for geo-replicated DatabaseAccount
     /// with multiple writable and readable locations.

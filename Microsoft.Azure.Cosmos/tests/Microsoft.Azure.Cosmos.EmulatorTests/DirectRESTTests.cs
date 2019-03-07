@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
-    using Microsoft.Azure.Documents.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.CSharp.RuntimeBinder;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -865,7 +865,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public async Task TestBadPartitionKeyDefinition()
         {
             using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
@@ -907,7 +906,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public async Task TestBadQueryHeaders()
         {
             DocumentClient client = TestCommon.CreateClient(true);

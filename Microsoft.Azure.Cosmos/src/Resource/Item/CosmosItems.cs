@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.client = container.Client;
             this.container = container;
             this.cosmosJsonSerializer = this.container.Client.CosmosJsonSerializer;
-            this.cachedUriSegmentWithoutId = GetResourceSegmentUriWithoutId();
+            this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
         }
 
         internal readonly CosmosContainer container;
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -167,13 +167,13 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemAsync<T>(
-                partitionKey,
-                null,
-                item,
-                OperationType.Create,
-                requestOptions,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
+                partitionKey: partitionKey,
+                streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         /// <summary>
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -281,12 +281,13 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemAsync<T>(
-                partitionKey,
-                id,
-                OperationType.Read,
-                requestOptions,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.ReadItemStreamAsync(
+                partitionKey: partitionKey,
+                id: id,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         /// <summary>
@@ -342,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -406,13 +407,13 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemAsync<T>(
-                partitionKey,
-                null,
-                item,
-                OperationType.Upsert,
-                requestOptions,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(
+                partitionKey: partitionKey,
+                streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         /// <summary>
@@ -467,7 +468,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 streamPayload,
@@ -523,13 +524,14 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemAsync<T>(
-                partitionKey,
-                id,
-                item,
-                OperationType.Replace,
-                requestOptions,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(
+               partitionKey: partitionKey,
+               id: id,
+               streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         /// <summary>
@@ -573,7 +575,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -618,12 +620,13 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessItemAsync<T>(
-                partitionKey,
-                id,
-                OperationType.Delete,
-                requestOptions,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.DeleteItemStreamAsync(
+               partitionKey: partitionKey,
+               id: id,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         /// <summary>
@@ -659,7 +662,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 null,
-                ItemFeedRequestExecutor<T>);
+                this.ItemFeedRequestExecutor<T>);
         }
 
         /// <summary>
@@ -696,7 +699,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosItemRequestOptions requestOptions = null)
         {
-            return new CosmosDefaultResultSetStreamIterator(maxItemCount, continuationToken, requestOptions, ItemStreamFeedRequestExecutor);
+            return new CosmosDefaultResultSetStreamIterator(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
         }
 
         /// <summary>
@@ -754,7 +757,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 requestOptions,
-                FeedOrQueryRequestExecutor,
+                this.FeedOrQueryRequestExecutor,
                 cxt);
         }
 
@@ -805,7 +808,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
-            return CreateItemQueryAsStream(
+            return this.CreateItemQueryAsStream(
                 new CosmosSqlQueryDefinition(sqlQueryText),
                 partitionKey,
                 maxItemCount,
@@ -867,7 +870,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 options,
-                NextResultSetAsync<T>,
+                this.NextResultSetAsync<T>,
                 sqlQueryDefinition.ToSqlQuerySpec());
         }
 
@@ -911,7 +914,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
-            return CreateItemQuery<T>(
+            return this.CreateItemQuery<T>(
                 new CosmosSqlQueryDefinition(sqlQueryText),
                 partitionKey,
                 maxItemCount,
@@ -970,7 +973,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 options,
-                NextResultSetAsync<T>,
+                this.NextResultSetAsync<T>,
                 sqlQueryDefinition.ToSqlQuerySpec());
         }
 
@@ -1016,7 +1019,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return CreateItemQuery<T>(
+            return this.CreateItemQuery<T>(
                 new CosmosSqlQueryDefinition(sqlQueryText),
                 maxConcurrency,
                 maxItemCount,
@@ -1058,56 +1061,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        /// <summary>
-        /// Process item operations that do not have an input object (Read/Delete).
-        /// </summary>
-        internal virtual Task<CosmosItemResponse<T>> ProcessItemAsync<T>(
-            object partitionKey,
-            string itemId,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            CancellationToken cancellationToken)
-        {
-            Uri resourceUri = GetResourceUri(requestOptions, operationType, itemId);
-            return ExecUtils.ProcessResourceOperationAsync<CosmosItemResponse<T>>(
-                this.container.Database.Client,
-                resourceUri,
-                ResourceType.Document,
-                operationType,
-                requestOptions,
-                partitionKey,
-                null,
-                null,
-                response => this.client.ResponseFactory.CreateItemResponse<T>(response),
-                cancellationToken);
-        }
-
-        /// <summary>
-        /// Process item operations that have an input object that need to be serialized
-        /// </summary>
-        internal virtual Task<CosmosItemResponse<T>> ProcessItemAsync<T>(
-            object partitionKey,
-            string itemId,
-            T item,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            CancellationToken cancellationToken)
-        {
-            CosmosItems.ValidatePartitionKey(partitionKey, requestOptions);
-            Uri resourceUri = GetResourceUri(requestOptions, operationType, itemId);
-            return ExecUtils.ProcessResourceOperationAsync<CosmosItemResponse<T>>(
-                this.container.Database.Client,
-                resourceUri,
-                ResourceType.Document,
-                operationType,
-                requestOptions,
-                partitionKey,
-                this.cosmosJsonSerializer.ToStream(item),
-                null,
-                response => this.client.ResponseFactory.CreateItemResponse<T>(response),
-                cancellationToken);
-        }
-
         internal virtual Task<CosmosResponseMessage> ProcessItemStreamAsync(
             object partitionKey,
             string itemId,
@@ -1117,9 +1070,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosItems.ValidatePartitionKey(partitionKey, requestOptions);
-            Uri resourceUri = GetResourceUri(requestOptions, operationType, itemId);
+            Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
+            return ExecUtils.ProcessResourceOperationStreamAsync(
                 this.container.Database.Client,
                 resourceUri,
                 ResourceType.Document,
@@ -1128,7 +1081,6 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 streamPayload,
                 null,
-                response => response,
                 cancellationToken);
         }
 
@@ -1196,11 +1148,11 @@ namespace Microsoft.Azure.Cosmos
 
             Uri resourceUri = this.container.LinkUri;
             Tuple<object, SqlQuerySpec> cxt = (Tuple<object, SqlQuerySpec>)state;
-            object partitonKey = cxt.Item1;
+            object partitionKey = cxt.Item1;
             SqlQuerySpec querySpec = cxt.Item2;
-            if (partitonKey == null)
+            if (partitionKey == null && options?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKey) == false)
             {
-                throw new NotImplementedException(nameof(partitonKey));
+                throw new NotImplementedException(nameof(partitionKey));
             }
 
             if (querySpec == null)
@@ -1208,7 +1160,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new NotImplementedException(nameof(querySpec));
             }
 
-            OperationType queryOperationType = this.client.CosmosConfiguration.ConnectionMode == ConnectionMode.Direct ? OperationType.Query : OperationType.SqlQuery;
+            OperationType queryOperationType = this.client.Configuration.ConnectionMode == ConnectionMode.Direct ? OperationType.Query : OperationType.SqlQuery;
             Stream streamPayload = this.cosmosJsonSerializer.ToStream(querySpec);
             return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
                 client: this.container.Database.Client,
@@ -1222,7 +1174,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => response,
-                partitionKey: partitonKey,
+                partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
         }
@@ -1241,7 +1193,7 @@ namespace Microsoft.Azure.Cosmos
                     return this.container.LinkUri;
 
                 default:
-                    return ContcatCachedUriWithId(itemId);
+                    return this.ContcatCachedUriWithId(itemId);
             }
         }
 
@@ -1250,14 +1202,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static void ValidatePartitionKey(object partitionKey, CosmosRequestOptions requestOptions)
         {
-            if (partitionKey != null && (partitionKey is string && !string.IsNullOrEmpty((string)partitionKey)))
+            if (partitionKey != null)
             {
                 return;
             }
 
-            if (requestOptions.Properties.TryGetValue(
-                WFConstants.BackendHeaders.EffectivePartitionKeyString,
-                out object partitionKeyValue) && partitionKeyValue != null)
+            if (requestOptions?.Properties != null
+                && requestOptions.Properties.TryGetValue(
+                    WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyValue)
+                && effectivePartitionKeyValue != null)
             {
                 return;
             }

@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+            Exception exception,
             CancellationToken cancellationToken)
         {
             DocumentClientException clientException = exception as DocumentClientException;
@@ -57,13 +57,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
+            CosmosResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             return await this.ShouldRetryAsyncInternal(cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
                 cancellationToken,
-                () => this.nextRetryPolicy?.ShouldRetryAsync(cosmosResponseMessage, cancellationToken));
+                continueIfNotHandled: null);
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
@@ -72,9 +72,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<ShouldRetryResult> ShouldRetryAsyncInternal(
-            HttpStatusCode? statusCode, 
-            SubStatusCodes? subStatusCode, 
-            CancellationToken cancellationToken, 
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            CancellationToken cancellationToken,
             Func<Task<ShouldRetryResult>> continueIfNotHandled)
         {
             if (statusCode.HasValue
@@ -96,13 +96,15 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey))
                 {
                     CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                    CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, cancellationToken);
+                    CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, false, cancellationToken);
                     if (routingMap != null)
                     {
                         // Force refresh.
                         await this.partitionKeyRangeCache.TryLookupAsync(
                                 collection.ResourceId,
                                 routingMap,
+                                request,
+                                false,
                                 cancellationToken);
                     }
                 }
@@ -111,7 +113,14 @@ namespace Microsoft.Azure.Cosmos
                 return ShouldRetryResult.RetryAfter(TimeSpan.FromSeconds(0));
             }
 
-            return await (continueIfNotHandled != null ? continueIfNotHandled() : Task.FromResult(ShouldRetryResult.NoRetry()));
+            if(continueIfNotHandled != null)
+            {
+                return await continueIfNotHandled() ?? ShouldRetryResult.NoRetry();
+            }
+            else
+            {
+                return await Task.FromResult(ShouldRetryResult.NoRetry());
+            }
         }
     }
 }

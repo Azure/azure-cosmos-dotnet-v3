@@ -1,86 +1,95 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlNumberLiteral.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Globalization;
     using System.Text;
+    using Collections.Generic;
     using Newtonsoft.Json;
+    using System.Collections.Generic;
+    using System.Linq;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {
-        public object Value
-        {
-            get;
-            private set;
-        }
+        private const int Capacity = 256;
+        private static readonly Dictionary<long, SqlNumberLiteral> FrequentLongs = Enumerable
+            .Range(-Capacity, Capacity)
+            .ToDictionary(x => (long)x, x => new SqlNumberLiteral((long)x));
+        private static readonly Dictionary<double, SqlNumberLiteral> FrequentDoubles = Enumerable
+            .Range(-Capacity, Capacity)
+            .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
 
-        private SqlNumberLiteral(object value)
+        private readonly Lazy<string> toStringValue;
+
+        private SqlNumberLiteral(Number64 value)
             : base(SqlObjectKind.NumberLiteral)
         {
             this.Value = value;
+            this.toStringValue = new Lazy<string>(() => 
+            {
+                return this.Value.ToString();
+            });
         }
 
-        public SqlNumberLiteral(Byte value)
-            : this((object)value)
+        public Number64 Value
         {
+            get;
         }
 
-        public SqlNumberLiteral(Decimal value)
-            : this((object)value)
+        public override string ToString()
         {
+            return this.toStringValue.Value;
         }
 
-        public SqlNumberLiteral(Double value)
-            : this((object)value)
+        public static SqlNumberLiteral Create(double number)
         {
+            SqlNumberLiteral sqlNumberLiteral;
+            if(!SqlNumberLiteral.FrequentDoubles.TryGetValue(number, out sqlNumberLiteral))
+            {
+                sqlNumberLiteral = new SqlNumberLiteral(number);
+            }
+
+            return sqlNumberLiteral;
         }
 
-        public SqlNumberLiteral(Int16 value)
-            : this((object)value)
+        public static SqlNumberLiteral Create(long number)
         {
+            SqlNumberLiteral sqlNumberLiteral;
+            if (!SqlNumberLiteral.FrequentLongs.TryGetValue(number, out sqlNumberLiteral))
+            {
+                sqlNumberLiteral = new SqlNumberLiteral(number);
+            }
+
+            return sqlNumberLiteral;
         }
 
-        public SqlNumberLiteral(Int32 value)
-            : this((object)value)
+        public override void Accept(SqlObjectVisitor visitor)
         {
+            visitor.Visit(this);
         }
 
-        public SqlNumberLiteral(Int64 value)
-            : this((object)value)
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
         {
+            return visitor.Visit(this);
         }
 
-        public SqlNumberLiteral(SByte value)
-            : this((object)value)
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
         {
+            return visitor.Visit(this, input);
         }
 
-        public SqlNumberLiteral(Single value)
-            : this((object)value)
+        public override void Accept(SqlLiteralVisitor visitor)
         {
+            visitor.Visit(this);
         }
 
-        public SqlNumberLiteral(UInt16 value)
-            : this((object)value)
+        public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
         {
-        }
-
-        public SqlNumberLiteral(UInt32 value)
-            : this((object)value)
-        {
-        }
-
-        public SqlNumberLiteral(UInt64 value)
-            : this((object)value)
-        {
-        }
-
-        public override void AppendToBuilder(StringBuilder builder)
-        {
-            builder.AppendFormat(CultureInfo.InvariantCulture, "{0}", JsonConvert.SerializeObject(this.Value));
+            return visitor.Visit(this);
         }
     }
 }

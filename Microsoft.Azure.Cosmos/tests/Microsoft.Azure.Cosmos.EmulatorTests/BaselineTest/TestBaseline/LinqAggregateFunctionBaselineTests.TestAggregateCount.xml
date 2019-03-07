@@ -1,0 +1,118 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count]]></Description>
+      <Expression><![CDATA[query.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter true flag -> Count]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Flag).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE root["Flag"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter false flag -> Count]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE (NOT root["Flag"]) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Count]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Count]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+JOIN m0 IN root["Multiples"] 
+WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count w/ boolean filter]]></Description>
+      <Expression><![CDATA[query.Count(doc => doc.Flag))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE root["Flag"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Count w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Count(doc => (doc.Number < -7)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE (root["Number"] < -7) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Count w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Count(num => (num < -13)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM root 
+WHERE (root["Number"] < -13) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select) -> Count(Sum)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Multiples).Count(array => (array.Sum() > 5)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE root["Multiples"] 
+    FROM root
+) AS r0 
+JOIN (
+    SELECT VALUE SUM(v0) 
+    FROM r0 
+    JOIN v0 IN r0
+) AS v1 
+WHERE (v1 > 5) 
+]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

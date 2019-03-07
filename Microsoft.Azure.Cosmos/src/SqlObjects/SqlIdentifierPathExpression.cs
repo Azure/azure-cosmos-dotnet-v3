@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlIdentifierPathExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -8,32 +10,50 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlIdentifierPathExpression : SqlPathExpression
     {
-        public SqlIdentifier Value
-        {
-            get;
-            private set;
-        }
-
-        public SqlIdentifierPathExpression(SqlPathExpression parentPath, SqlIdentifier value)
+        private SqlIdentifierPathExpression(SqlPathExpression parentPath, SqlIdentifier value)
             : base(SqlObjectKind.IdentifierPathExpression, parentPath)
         {
             if (value == null)
             {
                 throw new ArgumentNullException("value");
             }
-            
+
             this.Value = value;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlIdentifier Value
         {
-            if (this.ParentPath != null)
-            {
-                this.ParentPath.AppendToBuilder(builder);
-                builder.Append(".");
-            }
+            get;
+        }
 
-            this.Value.AppendToBuilder(builder);
+        public static SqlIdentifierPathExpression Create(SqlPathExpression parentPath, SqlIdentifier value)
+        {
+            return new SqlIdentifierPathExpression(parentPath, value);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlPathExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlPathExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 }

@@ -58,10 +58,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private Task<DocumentServiceResponse> ProcessMessageAsync(
+        internal Task<DocumentServiceResponse> ProcessMessageAsync(
             CosmosRequestMessage request, 
             CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler

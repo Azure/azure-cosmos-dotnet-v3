@@ -2,14 +2,17 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
+    using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Newtonsoft.Json;
@@ -48,13 +51,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public int IndexAndValidate(int pageSize = 1000)
         {
-            System.Diagnostics.Trace.TraceInformation("Using collection {0}", collectionLink);
+            Trace.TraceInformation("Using collection {0}", collectionLink);
 
             DateTime startTime = DateTime.Now;
             this.ReadAllDocsAndBuildInvertedIndex();
 
             int toReturn = this.QueryAndVerifyDocuments(pageSize).Result;
-            System.Diagnostics.Trace.TraceInformation("Inverted index creation and query took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+            Trace.TraceInformation("Inverted index creation and query took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
             return toReturn;
         }
 
@@ -95,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = cont, MaxItemCount = 1000 })).Result;
 
-                System.Diagnostics.Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", response.Count);
+                Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", response.Count);
 
                 foreach (JToken doc in response)
                 {
@@ -194,15 +197,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (numberOfQueries > 0 && numberOfQueries % 100 == 0)
                 {
-                    System.Diagnostics.Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + @": Executing query {0} of {1}",
+                    Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + @": Executing query {0} of {1}",
                                            (numberOfQueries + 1), this.invertedIndex.Count);
-                    System.Diagnostics.Trace.TraceInformation(@"    Query latency per page (avg ms) {0} after {1} pages",
+                    Trace.TraceInformation(@"    Query latency per page (avg ms) {0} after {1} pages",
                                            totalQueryLatencyAllPages.TotalMilliseconds / numberOfPages, numberOfPages);
-                    System.Diagnostics.Trace.TraceInformation(@"    Query latency per query (avg ms) {0} after {1} queries",
+                    Trace.TraceInformation(@"    Query latency per query (avg ms) {0} after {1} queries",
                                            totalQueryLatencyAllPages.TotalMilliseconds / numberOfQueries, numberOfQueries);
-                    System.Diagnostics.Trace.TraceInformation(@"    Number of results per page {0} after {1} pages",
+                    Trace.TraceInformation(@"    Number of results per page {0} after {1} pages",
                                            resultCount / (double)numberOfPages, numberOfPages);
-                    System.Diagnostics.Trace.TraceInformation(@"    Number of results per query {0} after {1} queries",
+                    Trace.TraceInformation(@"    Number of results per query {0} after {1} queries",
                                            resultCount / (double)numberOfQueries, numberOfQueries);
                 }
 
@@ -221,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         if (!keyVal.Value.Contains(id))
                         {
 
-                            System.Diagnostics.Trace.TraceInformation(
+                            Trace.TraceInformation(
                                 DateTime.Now.ToString("HH:mm:ss.ffff") +
                                 @": The doc id {0} for query {1} was not expected in the results, query activityId: {2}", id, query, queryResultsPage.ActivityId);
 
@@ -231,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         if (idSet.Contains(id))
                         {
-                            System.Diagnostics.Trace.TraceInformation(
+                            Trace.TraceInformation(
                                 DateTime.Now.ToString("HH:mm:ss.ffff") +
                                 @": Same document id {0} returned twice for query ({1}), query activityId: {2}", id, query, queryResultsPage.ActivityId);
 
@@ -249,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (!idSet.Contains(queryOracleId))
                     {
-                        System.Diagnostics.Trace.TraceInformation(
+                        Trace.TraceInformation(
                             DateTime.Now.ToString("HH:mm:ss.ffff") +
                             @": The doc id {0} was expected for query {1} but was not obtained, query all pages activitiIDs: ({2})", queryOracleId, query, String.Join(",", activityIDsAllQueryPages));
 
@@ -266,20 +269,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (!anyFailures)
             {
-                System.Diagnostics.Trace.TraceInformation(@"*** TEST PASSED ***");
+                Trace.TraceInformation(@"*** TEST PASSED ***");
                 return 0;
             }
             else
             {
-                System.Diagnostics.Trace.TraceInformation(@"*** TEST FAILED ***");
+                Trace.TraceInformation(@"*** TEST FAILED ***");
                 int result = -1;
 
                 //In case of a failure, retry only failed queries after sleeping for couple of minutes.
                 if (enableRetries && this.retryCount < 10)
                 {
-                    System.Diagnostics.Trace.TraceInformation(String.Format(CultureInfo.InvariantCulture, @"*** Retrying {0} Failed queries ***", failedQueries.Count));
+                    Trace.TraceInformation(String.Format(CultureInfo.InvariantCulture, @"*** Retrying {0} Failed queries ***", failedQueries.Count));
                     this.retryCount++;
-                    Task.Delay(120 * 1000).Wait();
+                    Thread.Sleep(120 * 1000);
                     result = await this.RetryFailedQueries(pageSize);
                 }
 
@@ -322,8 +325,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (DocumentClientException exc)
                 {
-                    System.Diagnostics.Trace.TraceInformation("Activity Id: {0}", exc.ActivityId);
-                    System.Diagnostics.Trace.TraceInformation("Query String: {0}", queryString);
+                    Trace.TraceInformation("Activity Id: {0}", exc.ActivityId);
+                    Trace.TraceInformation("Query String: {0}", queryString);
                     if ((int)exc.StatusCode != 429)
                     {
                         throw;
@@ -331,8 +334,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     if (--nMaxRetry > 0)
                     {
-                        System.Diagnostics.Trace.TraceInformation("Sleeping for {0} due to throttle", exc.RetryAfter.TotalSeconds);
-                        Task.Delay(exc.RetryAfter).Wait();
+                        Trace.TraceInformation("Sleeping for {0} due to throttle", exc.RetryAfter.TotalSeconds);
+                        Thread.Sleep(exc.RetryAfter);
                     }
                     else
                     {

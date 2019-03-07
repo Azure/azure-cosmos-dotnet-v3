@@ -1,7 +1,6 @@
 ﻿namespace Cosmos.Samples.Shared
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -10,19 +9,19 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
-    
+
     //------------------------------------------------------------------------------------------------
     // This sample demonstrates the use of Cosmos's server side JavaScript capabilities
     // using Stored Procedures
     //------------------------------------------------------------------------------------------------
-
     public class Program
     {
         //Assign a id for your database & collection 
         private static readonly string DatabaseId = "samples";
         private static readonly string ContainerId = "serversidejs-samples";
 
-        public static void Main(string[] args)
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        public static async Task Main(string[] args)
         {
             try
             {
@@ -37,7 +36,7 @@
                 }
 
                 string authKey = configuration["AuthorizationKey"];
-                if(string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
+                if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
                 {
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
@@ -47,7 +46,7 @@
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    Program.RunDemoAsync(client, DatabaseId, ContainerId).GetAwaiter().GetResult();
+                    await Program.RunDemoAsync(client, DatabaseId, ContainerId);
                 }
             }
             catch (CosmosException cre)
@@ -67,8 +66,8 @@
         }
 
         private static async Task RunDemoAsync(
-            CosmosClient client, 
-            string databaseId, 
+            CosmosClient client,
+            string databaseId,
             string containerId)
         {
             CosmosDatabase database = await client.Databases.CreateDatabaseIfNotExistsAsync(DatabaseId);
@@ -118,7 +117,7 @@
                 Id = Guid.NewGuid().ToString(),
                 LastName = "Estel",
                 Headquarters = "Russia",
-                Locations = new Location[] { new Location{ Country = "Russia", City = "Novosibirsk" } },
+                Locations = new Location[] { new Location { Country = "Russia", City = "Novosibirsk" } },
                 Income = 50000
             };
 
@@ -132,7 +131,7 @@
 
             await container.Items.DeleteItemAsync<SampleDocument>(doc.LastName, doc.Id);
         }
-        
+
         /// <summary>
         /// Import many documents using stored procedure.
         /// </summary>
@@ -173,7 +172,7 @@
                 //    but that would cause script to run longer. Since script has timeout, unload the script as much
                 //    as we can and do the parsing by client and framework. The script will get JavaScript objects.
                 string argsJson = CreateBulkInsertScriptArguments(fileNames, currentCount, fileCount, maxScriptSize);
-                var args = new dynamic[] { JsonConvert.DeserializeObject<dynamic>(argsJson) };
+                dynamic[] args = new dynamic[] { JsonConvert.DeserializeObject<dynamic>(argsJson) };
 
                 // 6. execute the batch.
                 CosmosItemResponse<int> scriptResult = await container.StoredProcedures[scriptId].ExecuteAsync<dynamic, int>("Andersen", args);
@@ -210,7 +209,7 @@
 
             // 2. Prepare to run stored procedure. 
             string orderByFieldName = "FamilyId";
-            var filterQuery = string.Format(CultureInfo.InvariantCulture, "SELECT r.FamilyId FROM root r WHERE r.{0} > 10", orderByFieldName);
+            string filterQuery = string.Format(CultureInfo.InvariantCulture, "SELECT r.FamilyId FROM root r WHERE r.{0} > 10", orderByFieldName);
             // Note: in order to do a range query (> 10) on this field, the collection must have a range index set for this path (see ReadOrCreateCollection).
 
             int? continuationToken = null;
@@ -218,15 +217,15 @@
             do
             {
                 // 3. Run the stored procedure.
-                var response = await container.StoredProcedures[scriptId].ExecuteAsync<object, OrderByResult>(
+                CosmosItemResponse<OrderByResult> response = await container.StoredProcedures[scriptId].ExecuteAsync<object, OrderByResult>(
                     "Andersen",
-                    new  { filterQuery, orderByFieldName, continuationToken });
+                    new { filterQuery, orderByFieldName, continuationToken });
 
                 // 4. Process stored procedure response.
                 continuationToken = response.Resource.Continuation;
 
                 Console.WriteLine("Printing documents filtered/ordered by '{0}' and ordered by '{1}', batch #{2}:", filterQuery, orderByFieldName, batchCount++);
-                foreach (var doc in response.Resource.Result)
+                foreach (dynamic doc in response.Resource.Result)
                 {
                     Console.WriteLine(doc.ToString());
                 }
@@ -278,7 +277,7 @@
             [JsonProperty("LastName")]
             public string DeviceId { get; set; }
         }
-      
+
         internal class OrderByResult
         {
             public dynamic[] Result { get; set; }
@@ -293,7 +292,7 @@
         /// <returns>Script as a string</returns>
         private static string CreateBulkInsertScriptArguments(string[] docFileNames, int currentIndex, int maxCount, int maxScriptSize)
         {
-            var jsonDocumentArray = new StringBuilder();
+            StringBuilder jsonDocumentArray = new StringBuilder();
             jsonDocumentArray.Append("[");
 
             if (currentIndex >= maxCount) return string.Empty;
@@ -312,7 +311,7 @@
             jsonDocumentArray.Append("]");
             return jsonDocumentArray.ToString();
         }
-        
+
         /// <summary>
         /// If a Stored Procedure is found on the DocumentCollection for the Id supplied it is deleted
         /// </summary>

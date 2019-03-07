@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlBetweenScalarExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -7,31 +9,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlBetweenScalarExpression : SqlScalarExpression
     {
-        public SqlScalarExpression Expression
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression LeftExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression RightExpression
-        {
-            get;
-            private set;
-        }
-
-        public bool IsNot
-        {
-            get;
-            private set;
-        }
-
-        public SqlBetweenScalarExpression(
+        private SqlBetweenScalarExpression(
             SqlScalarExpression expression,
             SqlScalarExpression leftExpression,
             SqlScalarExpression rightExpression,
@@ -44,21 +22,63 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.IsNot = isNot;
         }
 
-        public override void AppendToBuilder(System.Text.StringBuilder builder)
+        public SqlScalarExpression Expression
         {
-            builder.Append("(")
-                   .Append(this.Expression);
-            
-            if(this.IsNot)
-            {
-                builder.Append(" NOT");
-            }
+            get;
+        }
 
-            builder.Append(" BETWEEN ")
-                   .Append(this.LeftExpression)
-                   .Append(" AND ")
-                   .Append(this.RightExpression)
-                   .Append(")");
+        public SqlScalarExpression LeftExpression
+        {
+            get;
+        }
+
+        public SqlScalarExpression RightExpression
+        {
+            get;
+        }
+
+        public bool IsNot
+        {
+            get;
+        }
+
+        public static SqlBetweenScalarExpression Create(
+            SqlScalarExpression expression,
+            SqlScalarExpression leftExpression,
+            SqlScalarExpression rightExpression,
+            bool isNot = false)
+        {
+            return new SqlBetweenScalarExpression(expression, leftExpression, rightExpression, isNot);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

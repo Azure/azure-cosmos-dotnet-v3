@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return ExecUtils.ProcessResourceOperationAsync<CosmosUserDefinedFunctionResponse>(
+            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
                 this.Client,
                 this.LinkUri,
                 ResourceType.UserDefinedFunction,
@@ -186,8 +186,9 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 streamPayload,
                 null,
-                response => this.Client.ResponseFactory.CreateUserDefinedFunctionResponse(response, this),
                 cancellationToken);
+
+            return this.Client.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
         }
     }
 }

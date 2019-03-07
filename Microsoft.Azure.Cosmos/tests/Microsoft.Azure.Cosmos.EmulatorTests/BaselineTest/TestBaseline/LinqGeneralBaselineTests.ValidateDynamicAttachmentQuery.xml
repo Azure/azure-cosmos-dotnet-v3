@@ -1,0 +1,26 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter equality on custom property]]></Description>
+      <Expression><![CDATA[query.Where(attachment => (attachment.Title == "My Book Title2"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Title"] = "My Book Title2") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter equality on custom property #2]]></Description>
+      <Expression><![CDATA[query.Where(attachment => (attachment.Title == "My Book Title"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["Title"] = "My Book Title") ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

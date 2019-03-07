@@ -1,45 +1,27 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlConditionalScalarExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Text;
-    using System.Globalization;
 
     internal sealed class SqlConditionalScalarExpression : SqlScalarExpression
     {
-        public SqlScalarExpression ConditionExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression FirstExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlScalarExpression SecondExpression
-        {
-            get;
-            private set;
-        }
-
-        public SqlConditionalScalarExpression(
+        private SqlConditionalScalarExpression(
             SqlScalarExpression condition,
             SqlScalarExpression first,
-            SqlScalarExpression second
-            )
+            SqlScalarExpression second)
             : base(SqlObjectKind.ConditionalScalarExpression)
         {
-            if(condition == null)
+            if (condition == null)
             {
                 throw new ArgumentNullException("condition");
             }
 
-            if(first == null)
+            if (first == null)
             {
                 throw new ArgumentNullException("first");
             }
@@ -54,15 +36,57 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.SecondExpression = second;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlScalarExpression ConditionExpression
         {
-            builder.Append('(');
-            this.ConditionExpression.AppendToBuilder(builder);
-            builder.Append(" ? ");
-            this.FirstExpression.AppendToBuilder(builder);
-            builder.Append(" : ");
-            this.SecondExpression.AppendToBuilder(builder);
-            builder.Append(')');
+            get;
+        }
+
+        public SqlScalarExpression FirstExpression
+        {
+            get;
+        }
+
+        public SqlScalarExpression SecondExpression
+        {
+            get;
+        }
+
+        public static SqlConditionalScalarExpression Create(
+            SqlScalarExpression condition,
+            SqlScalarExpression first,
+            SqlScalarExpression second)
+        {
+            return new SqlConditionalScalarExpression(condition, first, second);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

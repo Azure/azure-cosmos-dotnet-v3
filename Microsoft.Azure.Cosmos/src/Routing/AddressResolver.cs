@@ -27,16 +27,16 @@ namespace Microsoft.Azure.Cosmos
         private ICollectionRoutingMapCache collectionRoutingMapCache;
         private IAddressCache addressCache;
 
-        private readonly ServiceIdentity masterServiceIdentity;
+        private readonly IMasterServiceIdentityProvider masterServiceIdentityProvider;
 
         private readonly IRequestSigner requestSigner;
         private readonly string location;
 
         private readonly PartitionKeyRangeIdentity masterPartitionKeyRangeIdentity = new PartitionKeyRangeIdentity(PartitionKeyRange.MasterPartitionKeyRangeId);
 
-        public AddressResolver(ServiceIdentity masterServiceIdentity, IRequestSigner requestSigner, string location)
+        public AddressResolver(IMasterServiceIdentityProvider masterServiceIdentityProvider, IRequestSigner requestSigner, string location)
         {
-            this.masterServiceIdentity = masterServiceIdentity;
+            this.masterServiceIdentityProvider = masterServiceIdentityProvider;
             this.requestSigner = requestSigner;
             this.location = location;
         }
@@ -186,7 +186,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (ReplicatedResourceClient.IsReadingFromMaster(request.ResourceType, request.OperationType) && request.PartitionKeyRangeIdentity == null)
             {
-                ServiceIdentity serviceIdentity = this.masterServiceIdentity;
+                // Client implementation, GlobalAddressResolver passes in a null IMasterServiceIdentityProvider, because it does't actually use the serviceIdentity
+                // in the addressCache.TryGetAddresses method. In GatewayAddressCache.cs, the master address is resolved by making a call to Gateway AddressFeed,
+                // not using the serviceIdentity that is passed in
+                ServiceIdentity serviceIdentity = this.masterServiceIdentityProvider?.MasterServiceIdentity;
                 PartitionKeyRangeIdentity partitionKeyRangeIdentity = this.masterPartitionKeyRangeIdentity;
                 PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
                     request,
@@ -212,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
 
             var collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId, null, cancellationToken, request.ForceCollectionRoutingMapRefresh);
+                collection.ResourceId, null, request, request.ForceCollectionRoutingMapRefresh, cancellationToken);
 
             if (request.ForcePartitionKeyRangeRefresh)
             {
@@ -220,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
                 request.ForcePartitionKeyRangeRefresh = false;
                 if (routingMap != null)
                 {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, cancellationToken);
+                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, false, cancellationToken);
                 }
             }
 
@@ -235,6 +238,8 @@ namespace Microsoft.Azure.Cosmos
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: null,
+                        request:request,
+                        forceRefreshCollectionRoutingMap: false,
                         cancellationToken: cancellationToken);
             }
 
@@ -267,6 +272,8 @@ namespace Microsoft.Azure.Cosmos
                         routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                             collection.ResourceId,
                             previousValue: null,
+                            request:request,
+                            forceRefreshCollectionRoutingMap: false,
                             cancellationToken: cancellationToken);
                     }
                 }
@@ -277,6 +284,8 @@ namespace Microsoft.Azure.Cosmos
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: routingMap,
+                        request:request,
+                        forceRefreshCollectionRoutingMap: false,
                         cancellationToken: cancellationToken);
                 }
 

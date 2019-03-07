@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ExecUtils.ProcessResourceOperationAsync<CosmosTriggerResponse>(
+            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
                 this.container.Database.Client,
                 this.container.LinkUri,
                 ResourceType.Trigger,
@@ -104,8 +104,9 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: triggerSettings.GetResourceStream(),
                 requestEnricher: null,
-                responseCreator: response => this.client.ResponseFactory.CreateTriggerResponse(response, new CosmosTrigger(this.container, triggerSettings.Id)),
                 cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateTriggerResponse(this[triggerSettings.Id], response);
         }
 
         /// <summary>

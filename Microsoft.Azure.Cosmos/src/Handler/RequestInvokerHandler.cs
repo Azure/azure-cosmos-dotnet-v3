@@ -26,6 +26,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosRequestMessage request, 
             CancellationToken cancellationToken)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             CosmosRequestOptions promotedRequestOptions = request.RequestOptions;
             if (promotedRequestOptions != null)
             {
@@ -70,9 +75,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         throw task.Exception;
                     }
 
+                    this.FillMultiMasterContext(request);
                     return base.SendAsync(request, cancellationToken);
                 })
                 .Unwrap();
+        }
+
+        private void FillMultiMasterContext(CosmosRequestMessage request)
+        {
+            if (this.client.DocumentClient.UseMultipleWriteLocations)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
+            }
         }
     }
 }

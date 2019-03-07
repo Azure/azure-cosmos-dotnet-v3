@@ -1,14 +1,14 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos;
-using Polly;
-
-namespace Cosmos.Samples.Handlers
+﻿namespace Cosmos.Samples.Handlers
 {
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Polly;
+
     /// <summary>
     /// Using Polly to retry on Throttles.
     /// </summary>
-    class ThrottlingHandler: CosmosRequestHandler
+    class ThrottlingHandler : CosmosRequestHandler
     {
         public override Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request,

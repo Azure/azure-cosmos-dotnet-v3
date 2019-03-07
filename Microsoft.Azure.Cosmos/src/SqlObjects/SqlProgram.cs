@@ -1,25 +1,48 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlProgram.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
+    using System;
+
     internal sealed class SqlProgram : SqlObject
     {
-        public SqlQuery Query
-        {
-            get;
-            private set;
-        }
-
-        public SqlProgram(SqlQuery query)
+        private SqlProgram(SqlQuery query)
             : base(SqlObjectKind.Program)
         {
+            if (query == null)
+            {
+                throw new ArgumentNullException($"{nameof(query)} must not be null.");
+            }
+
             this.Query = query;
         }
 
-        public override void AppendToBuilder(System.Text.StringBuilder builder)
+        public SqlQuery Query
         {
-            this.Query.AppendToBuilder(builder);
+            get;
+        }
+
+        public static SqlProgram Create(SqlQuery query)
+        {
+            return new SqlProgram(query);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

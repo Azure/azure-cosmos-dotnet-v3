@@ -10,8 +10,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// This class is used as a proxy to wrap the DefaultDocumentQueryExecutionContext which is needed 
@@ -76,17 +78,9 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId)
         {
             token.ThrowIfCancellationRequested();
-
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(client, resourceTypeEnum, resourceType, expression, feedOptions, resourceLink, false, correlatedActivityId);
             IDocumentQueryExecutionContext innerExecutionContext =
-             new DefaultDocumentQueryExecutionContext(
-                client,
-                resourceTypeEnum,
-                resourceType,
-                expression,
-                feedOptions,
-                resourceLink,
-                isContinuationExpected,
-                correlatedActivityId);
+             new DefaultDocumentQueryExecutionContext(constructorParams, isContinuationExpected);
 
             return Task.FromResult(new ProxyDocumentQueryExecutionContext(innerExecutionContext, client,
                 resourceTypeEnum,
@@ -143,19 +137,14 @@ namespace Microsoft.Azure.Cosmos.Query
                     queryExecutionContext.GetTargetPartitionKeyRanges(collection.ResourceId,
                         partitionedQueryExecutionInfo.QueryRanges);
 
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
             this.innerExecutionContext = await DocumentQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContext(
-                this.client,
-                this.resourceTypeEnum,
-                this.resourceType,
-                this.expression,
-                this.feedOptions,
-                this.resourceLink,
-                isContinuationExpected,
+                constructorParams,
                 partitionedQueryExecutionInfo,
                 partitionKeyRanges,
                 this.collection.ResourceId,
-                token,
-                this.correlatedActivityId);
+                this.isContinuationExpected,
+                token);
 
             return await this.innerExecutionContext.ExecuteNextAsync(token);
         }

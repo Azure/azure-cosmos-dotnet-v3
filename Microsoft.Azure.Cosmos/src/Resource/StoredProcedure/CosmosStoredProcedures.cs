@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// CosmosStoredProcedure cosmosStoredProcedure = await this.container.StoredProcedures.CreateStoredProceducreAsync(
+        /// CosmosStoredProcedure cosmosStoredProcedure = await this.container.StoredProcedures.CreateStoredProcedureAsync(
         ///         id: "appendString",
         ///         body: sprocBody);
         /// 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosStoredProcedureResponse> CreateStoredProceducreAsync(
+        public virtual Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
                     CosmosRequestOptions requestOptions = null,
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
             storedProcedureSettings.Id = id;
             storedProcedureSettings.Body = body;
 
-            return ExecUtils.ProcessResourceOperationAsync<CosmosStoredProcedureResponse>(
+            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
                 this.container.Database.Client,
                 this.container.LinkUri,
                 ResourceType.StoredProcedure,
@@ -121,8 +121,9 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: storedProcedureSettings.GetResourceStream(),
                 requestEnricher: null,
-                responseCreator: response => this.client.ResponseFactory.CreateStoredProcedureResponse(response, new CosmosStoredProcedure(this.container, storedProcedureSettings.Id)),
                 cancellationToken: cancellationToken);
+
+            return this.client.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
 
         /// <summary>

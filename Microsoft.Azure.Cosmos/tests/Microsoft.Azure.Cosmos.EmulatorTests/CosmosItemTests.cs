@@ -4,9 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -15,9 +12,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
-    [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
     public class CosmosItemTests : BaseCosmosClientHelper
     {
         private CosmosContainer Container = null;
@@ -53,6 +53,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
             CosmosItemResponse<ToDoActivity> deleteResponse = await this.Container.Items.DeleteItemAsync<ToDoActivity>(partitionKey: testItem.status, id: testItem.id);
+            Assert.IsNotNull(deleteResponse);
+        }
+
+        [TestMethod]
+        public async Task CreateDropItemUndefinedPartitionKeyTest()
+        {
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString()
+            };
+
+            CosmosItemResponse<dynamic> response = await this.Container.Items.CreateItemAsync<dynamic>(partitionKey: Undefined.Value, item: testItem);
+            Assert.IsNotNull(response);
+            Assert.IsNotNull(response.MaxResourceQuota);
+            Assert.IsNotNull(response.CurrentResourceQuotaUsage);
+
+            CosmosItemResponse<dynamic> deleteResponse = await this.Container.Items.DeleteItemAsync<dynamic>(partitionKey: "[{}]", id: testItem.id);
             Assert.IsNotNull(deleteResponse);
         }
 
@@ -376,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Test max size at 1
                 CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, "TBD", maxItemCount: 1 );
+                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, "TBD", maxItemCount: 1);
                 while (setIterator.HasMoreResults)
                 {
                     CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();

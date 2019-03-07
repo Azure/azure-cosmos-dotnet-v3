@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlArrayIteratorCollectionExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Sql
@@ -9,19 +11,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlArrayIteratorCollectionExpression : SqlCollectionExpression
     {
-        public SqlIdentifier Alias
-        {
-            get;
-            private set;
-        }
-
-        public SqlCollection Collection
-        {
-            get;
-            private set;
-        }
-
-        public SqlArrayIteratorCollectionExpression(
+        private SqlArrayIteratorCollectionExpression(
            SqlIdentifier alias,
            SqlCollection collection)
             : base(SqlObjectKind.ArrayIteratorCollectionExpression)
@@ -40,11 +30,51 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.Collection = collection;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlIdentifier Alias
         {
-            this.Alias.AppendToBuilder(builder);
-            builder.Append(" IN ");
-            this.Collection.AppendToBuilder(builder);
+            get;
+        }
+
+        public SqlCollection Collection
+        {
+            get;
+        }
+
+        public static SqlArrayIteratorCollectionExpression Create(
+            SqlIdentifier alias,
+            SqlCollection collection)
+        {
+            return new SqlArrayIteratorCollectionExpression(alias, collection);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlCollectionExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlCollectionExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlCollectionExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

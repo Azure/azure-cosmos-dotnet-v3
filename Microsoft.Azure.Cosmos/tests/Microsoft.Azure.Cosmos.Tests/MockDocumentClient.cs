@@ -4,39 +4,40 @@
 
 namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json;
     using System;
+    using System.Collections.Generic;
     using System.Security;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Moq;
-    using System.Threading;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Newtonsoft.Json;
 
-    internal class MockDocumentClient : DocumentClient
+    internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
+        Mock<GlobalEndpointManager> globalEndpointManager;
 
-        public static CosmosClient CreateMockCosmosClient(CosmosRequestHandler preProcessingHandler = null, CosmosConfiguration configuration = null)
+        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
-            CosmosConfiguration cosmosConfiguration =
-                configuration?.AddCustomHandlers(preProcessingHandler)
-                ?? new CosmosConfiguration("http://localhost", Guid.NewGuid().ToString())
-                    .AddCustomHandlers(preProcessingHandler);
+            
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            if (customizeClientBuilder != null)
+            {
+                customizeClientBuilder(cosmosClientBuilder);
+            }
 
-            return new CosmosClient(
-                cosmosConfiguration,
-                documentClient);
+            return cosmosClientBuilder.Build(documentClient);
         }
 
         public MockDocumentClient()
-            : base(null, null)
+            : base(new Uri("http://localhost"), null)
         {
             this.Init();
         }
@@ -87,7 +88,16 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             ApiType apitype = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
             Func<TransportClient, TransportClient> transportClientHandlerFactory = null) 
-            : base(serviceEndpoint, authKeyOrResourceToken, sendingRequestEventArgs, connectionPolicy, desiredConsistencyLevel, serializerSettings, apitype, receivedResponseEventArgs, transportClientHandlerFactory)
+            : base(serviceEndpoint, 
+                  authKeyOrResourceToken, 
+                  sendingRequestEventArgs, 
+                  connectionPolicy, 
+                  desiredConsistencyLevel, 
+                  serializerSettings, 
+                  apitype, 
+                  receivedResponseEventArgs, 
+                  null,
+                  transportClientHandlerFactory)
         {
             this.Init();
         }
@@ -99,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         public override ConsistencyLevel ConsistencyLevel => ConsistencyLevel.Session;
 
-        internal override RetryPolicy RetryPolicy => new RetryPolicy(null, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
         {
@@ -111,9 +121,19 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
 
+        string IAuthorizationTokenProvider.GetUserAuthorizationToken(
+            string resourceAddress,
+            string resourceType,
+            string requestVerb,
+            INameValueCollection headers,
+            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+        {
+            return null;
+        }
+
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(new ServerStoreModel(null), null, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null);
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
@@ -127,10 +147,16 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
-                            It.IsAny<CancellationToken>(),
-                            It.IsAny<bool>()
+                            It.IsAny<DocumentServiceRequest>(),
+                            It.IsAny<bool>(),
+                            It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+
+            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
+
+            var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
+            this.Session = sessionContainer;
         }
     }
 }

@@ -1,0 +1,110 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsoDateTimeConverter = filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["IsoTime"] = "2016-09-13T00:00:00") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsoDateTimeConverter > filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.IsoTime > new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["IsoTime"] > "2016-09-13T00:00:00") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsoDateTimeConverter < filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.IsoTime < new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["IsoTime"] < "2016-09-13T00:00:00") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UnixDateTimeConverter = filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.UnixTime == new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["UnixTime"] = 1473724800) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UnixDateTimeConverter > filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.UnixTime > new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["UnixTime"] > 1473724800) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UnixDateTimeConverter < filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.UnixTime < new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["UnixTime"] < 1473724800) ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Default (ISO) = filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DefaultTime == new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DefaultTime"] = "2016-09-13T00:00:00") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Default (ISO) > filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DefaultTime > new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DefaultTime"] > "2016-09-13T00:00:00") ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Default (ISO) < filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DefaultTime < new DateTime(2016, 9, 13, 0, 0, 0)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["DefaultTime"] < "2016-09-13T00:00:00") ]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

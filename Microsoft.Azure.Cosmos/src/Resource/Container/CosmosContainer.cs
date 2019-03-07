@@ -4,11 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
@@ -156,11 +157,11 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessAsync(
-                null,
-                operationType: OperationType.Read,
+            Task<CosmosResponseMessage> response = this.ReadStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+
+            return this.Client.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         /// <summary>
@@ -203,11 +204,12 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Database.Client.DocumentClient.ValidateResource(containerSettings);
 
-            return ProcessAsync(
-                containerSettings,
-                operationType: OperationType.Replace,
+            Task<CosmosResponseMessage> response = this.ReplaceStreamAsync(
+                streamPayload: containerSettings.GetResourceStream(),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+
+            return this.Client.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         /// <summary>
@@ -238,11 +240,11 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessAsync(
-                null,
-                operationType: OperationType.Delete,
+            Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
+
+            return this.Client.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         /// <summary>
@@ -309,19 +311,73 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Delete a <see cref="CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
+        internal virtual Task<CosmosResponseMessage> DeleteStreamAsync(
+            CosmosContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessStreamAsync(
+               streamPayload: null,
+               operationType: OperationType.Delete,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Replace a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="streamPayload">The <see cref="CosmosContainerSettings"/> stream.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        internal virtual Task<CosmosResponseMessage> ReplaceStreamAsync(
+            Stream streamPayload,
+            CosmosContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessStreamAsync(
+                streamPayload: streamPayload,
+                operationType: OperationType.Replace,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.
+        /// </returns>
+        internal virtual Task<CosmosResponseMessage> ReadStreamAsync(
+            CosmosContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessStreamAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
         internal virtual Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return GetRID(cancellationToken)
+            return this.GetRID(cancellationToken)
                 .ContinueWith(task => task.Result == null ?
                     Task.FromResult(new CosmosOfferResult(
-                        statusCode: HttpStatusCode.Found, 
+                        statusCode: HttpStatusCode.Found,
                         cosmosRequestException: new CosmosException(
                             message: RMResources.NotFound,
                             statusCode: HttpStatusCode.Found,
                             subStatusCode: (int)SubStatusCodes.Unknown,
                             activityId: null,
-                            requestCharge: 0))):
+                            requestCharge: 0))) :
                     this.Database.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken),
                     cancellationToken)
                 .Unwrap();
@@ -331,39 +387,76 @@ namespace Microsoft.Azure.Cosmos
             int targetThroughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return GetRID(cancellationToken)
+            return this.GetRID(cancellationToken)
                  .ContinueWith(task => this.Database.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
                  .Unwrap();
+        }
+
+        /// <summary>
+        /// Gets the container's settings by using the internal cache.
+        /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
+        /// </summary>
+        /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
+        internal Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken)
+        {
+            return this.DocumentClient.GetCollectionCacheAsync()
+                .ContinueWith(collectionCacheTask => collectionCacheTask.Result.ResolveByNameAsync(this.Link, cancellationToken), cancellationToken)
+                .Unwrap();
         }
 
         // Name based look-up, needs re-computation and can't be cached
         internal Task<string> GetRID(CancellationToken cancellationToken)
         {
-            return this.DocumentClient.GetCollectionCacheAsync()
-                .ContinueWith(
-                        collectionCacheTask =>
-                        collectionCacheTask.Result.ResolveByNameAsync(this.Link, cancellationToken), cancellationToken)
-                 .Unwrap()
-                 .ContinueWith(
-                        containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
+            return this.GetCachedContainerSettingsAsync(cancellationToken)
+                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
         }
 
-        private Task<CosmosContainerResponse> ProcessAsync(
-            CosmosContainerSettings containerSettings,
+        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken)
+        {
+            return this.GetCachedContainerSettingsAsync(cancellationToken)
+                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
+        }
+
+        internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
+        {
+            string collectionRID = null;
+            return this.GetRID(cancellationToken)
+                .ContinueWith(ridTask =>
+                {
+                    collectionRID = ridTask.Result;
+                    return this.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                })
+                .Unwrap()
+                .ContinueWith(partitionKeyRangeCachetask =>
+                {
+                    PartitionKeyRangeCache partitionKeyRangeCache = partitionKeyRangeCachetask.Result;
+                    return partitionKeyRangeCache.TryLookupAsync(
+                            collectionRID,
+                            null,
+                            null,
+                            false,
+                            cancellationToken);
+                })
+                .Unwrap();
+        }
+
+        private Task<CosmosResponseMessage> ProcessStreamAsync(
+            Stream streamPayload,
             OperationType operationType,
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ExecUtils.ProcessResourceOperationAsync<CosmosContainerResponse>(
-                this.Client,
-                this.LinkUri,
-                ResourceType.Collection,
-                operationType,
-                requestOptions,
-                containerSettings?.GetResourceStream(),
-                response =>
-                    this.Client.ResponseFactory.CreateContainerResponse(response, this),
-                cancellationToken);
+            return ExecUtils.ProcessResourceOperationStreamAsync(
+              client: this.Client,
+              resourceUri: this.LinkUri,
+              resourceType: ResourceType.Collection,
+              operationType: operationType,
+              partitionKey: null,
+              streamPayload: streamPayload,
+              requestOptions: requestOptions,
+              requestEnricher: null,
+              cancellationToken: cancellationToken);
         }
     }
 }

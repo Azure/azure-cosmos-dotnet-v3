@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Documents.Services.Management.Tests
+﻿namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
     using System.Diagnostics;
     using System.Globalization;

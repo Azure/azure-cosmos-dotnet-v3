@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
 
     [TestClass]
-    [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
     public class CosmosJsonSerializerTests : BaseCosmosClientHelper
     {
         private CosmosDefaultJsonSerializer jsonSerializer = null;
@@ -57,9 +56,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             mockJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>())).Callback<Stream>(x => { x.Dispose(); fromStreamCount++; }).Returns(testItem);
 
             //Create a new cosmos client with the mocked cosmos json serializer
-            CosmosConfiguration configuration = TestCommon.GetDefaultConfiguration();
-            configuration.UseCustomJsonSerializer(mockJsonSerializer.Object);
-            CosmosClient mockClient = TestCommon.CreateCosmosClient(configuration);
+            CosmosClient mockClient = TestCommon.CreateCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(mockJsonSerializer.Object));
             CosmosContainer mockContainer = mockClient.Databases[this.database.Id].Containers[this.container.Id];
 
             //Validate that the custom json serializer is used for creating the item

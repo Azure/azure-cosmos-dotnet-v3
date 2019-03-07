@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Collections.Concurrent;
     using System.Globalization;
+    using System.Linq;
     using System.Linq.Expressions;
 
     internal static class Utilities
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Generate a new parameter.
+        /// Generate a new parameter and add it to the current scope.
         /// </summary>
         /// <param name="prefix">Prefix for the parameter name.</param>
         /// <param name="type">Parameter type.</param>
@@ -50,10 +51,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             int suffix = 0;
             while (true)
             {
-                string name = prefix + (suffix > 0 ? suffix.ToString(CultureInfo.InvariantCulture) : "");
+                string name = prefix + suffix.ToString(CultureInfo.InvariantCulture);
                 ParameterExpression param = Expression.Parameter(type, name);
-                if (!inScope.Contains(param))
+                if (!inScope.Any(p => p.Name.Equals(name)))
+                {
+                    inScope.Add(param);
                     return param;
+                }
                 suffix++;
             }
         }

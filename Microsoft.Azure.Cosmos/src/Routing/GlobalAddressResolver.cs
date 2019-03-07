@@ -79,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosContainerSettings collection,
             CancellationToken cancellationToken)
         {
-            CollectionRoutingMap routingMap = 
-                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, cancellationToken);
+            CollectionRoutingMap routingMap =
+                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, false, cancellationToken);
 
             if (routingMap == null)
             {
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (this.addressCacheByEndpoint.Count > this.maxEndpoints)
             {
                 IEnumerable<Uri> allEndpoints = this.endpointManager.WriteEndpoints.Union(this.endpointManager.ReadEndpoints);
-                Queue<Uri> endpoints = new Queue<Uri>(allEndpoints.Reverse());
+                Queue<Uri> endpoints = new Queue<Uri>(allEndpoints.Reverse());                
 
                 while (this.addressCacheByEndpoint.Count > this.maxEndpoints)
                 {

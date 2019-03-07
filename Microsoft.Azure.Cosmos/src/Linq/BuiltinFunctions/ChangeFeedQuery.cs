@@ -4,21 +4,23 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
+    using System.Diagnostics;
+    using System.Net;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Globalization;
 
     /// <summary>
     /// Provides interface for historical change feed.
     /// </summary>
     /// <typeparam name="TResource">Source Resource Type (e.g. Document)</typeparam>
-    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource> where TResource: CosmosResource, new()
+    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource> where TResource : CosmosResource, new()
     {
         #region Fields
         private const string IfNoneMatchAllHeaderValue = "*";   // This means start from current.
@@ -32,16 +34,16 @@ namespace Microsoft.Azure.Cosmos.Linq
         #endregion Fields
 
         #region Constructor
-        public ChangeFeedQuery(DocumentClient client, ResourceType resourceType, string resourceLink, ChangeFeedOptions feedOptions) 
+        public ChangeFeedQuery(DocumentClient client, ResourceType resourceType, string resourceLink, ChangeFeedOptions feedOptions)
         {
             Debug.Assert(client != null);
-            
+
             this.client = client;
             this.resourceType = resourceType;
             this.resourceLink = resourceLink;
             this.feedOptions = feedOptions ?? new ChangeFeedOptions();
 
-            if(feedOptions.PartitionKey != null && !string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
+            if (feedOptions.PartitionKey != null && !string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
             {
                 throw new ArgumentException(RMResources.PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified, "feedOptions");
             }
@@ -52,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.nextIfNoneMatch = feedOptions.RequestContinuation;
                 canUseStartFromBeginning = false;
             }
-            
+
             if (feedOptions.StartTime.HasValue)
             {
                 this.ifModifiedSince = ConvertToHttpTime(feedOptions.StartTime.Value);
@@ -78,10 +80,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <value>Boolean value representing if whether there are potentially additional results that can be retrieved.</value>
         /// <remarks>Initially returns true. This value is set based on whether the last execution returned a continuation token.</remarks>
-        public bool HasMoreResults 
+        public bool HasMoreResults
         {
-            get 
-            { 
+            get
+            {
                 return this.lastStatusCode != HttpStatusCode.NotModified;
             }
         }
@@ -110,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         #region Private
         public Task<FeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicy = this.client.RetryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicy = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellationToken), retryPolicy, cancellationToken);
         }
@@ -167,14 +169,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 throw new ForbiddenException(RMResources.PartitionKeyRangeIdOrPartitionKeyMustBeSpecified);
             }
-            
+
             // On REST level, change feed is using IfNoneMatch/ETag instead of continuation.
-            if(this.nextIfNoneMatch != null)
+            if (this.nextIfNoneMatch != null)
             {
                 headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, this.nextIfNoneMatch);
             }
 
-            if(this.ifModifiedSince != null)
+            if (this.ifModifiedSince != null)
             {
                 headers.Set(HttpConstants.HttpHeaders.IfModifiedSince, this.ifModifiedSince);
             }
@@ -185,6 +187,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 PartitionKeyInternal partitionKey = feedOptions.PartitionKey.InternalKey;
                 headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.ToJsonString());
+            }
+
+            if (this.feedOptions.IncludeTentativeWrites)
+            {
+                headers.Set(HttpConstants.HttpHeaders.IncludeTentativeWrites, bool.TrueString);
             }
 
             using (DocumentServiceRequest request = this.client.CreateDocumentServiceRequest(

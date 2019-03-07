@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Collections;
 
     /// <summary>
     /// Tests for <see cref="GatewayStoreModel"/>.
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Stopwatch watch = new Stopwatch();
             watch.Start();
-            
+
             string accountEndpoint = "https://veryrandomurl123456789.documents.azure.com:443/";
 
             try
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
                 await myclient.OpenAsync();
             }
-            catch (Exception )
+            catch (Exception)
             {
 
             }
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             double totalms = watch.Elapsed.TotalMilliseconds;
 
             // it should fail fast and not into the retry logic.
-            Assert.IsTrue(totalms < 400, string.Format($"Total time in ms {totalms}"));
+            Assert.IsTrue(totalms < 400, string.Format($"Actual time : {totalms} expected: 400"));
         }
 
         /// <summary>
@@ -70,20 +71,20 @@ namespace Microsoft.Azure.Cosmos
         {
             int run = 0;
             Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
-                {
-                    string content = await request.Content.ReadAsStringAsync();
-                    Assert.AreEqual("content1", content);
+            {
+                string content = await request.Content.ReadAsStringAsync();
+                Assert.AreEqual("content1", content);
 
-                    if (run == 0)
-                    {
-                        run++;
-                        throw new WebException("", WebExceptionStatus.ConnectFailure);
-                    }
-                    else
-                    {
-                        return new HttpResponseMessage(HttpStatusCode.OK){Content = new StringContent("Response")};
-                    }
-                };
+                if (run == 0)
+                {
+                    run++;
+                    throw new WebException("", WebExceptionStatus.ConnectFailure);
+                }
+                else
+                {
+                    return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
+                }
+            };
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
@@ -103,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
                 ApiType.None,
                 messageHandler);
 
-            using (DocumentServiceRequest request = 
+            using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
                     Cosmos.Internal.OperationType.Query,
                     Cosmos.Internal.ResourceType.Document,
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionConsistentResourceType()
         {
-            GatewayStoreModel storeModel= GetGatewayStoreModelForConsistencyTest();
+            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
@@ -200,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
 
         private class MockMessageHandler : HttpMessageHandler
         {
-            private readonly Func<HttpRequestMessage,Task<HttpResponseMessage>> sendFunc;
+            private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc;
 
             public MockMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> func)
             {
@@ -227,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
                         sessionToken = singleToken;
                         break;
                     }
-                    Assert.AreEqual(sessionToken, "0:9");
+                    Assert.AreEqual(sessionToken, "0:1#100#1=20#2=5#3=30");
                 }
                 else
                 {
@@ -243,12 +244,12 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
 
-            ConcurrentDictionary<string, ISessionToken> token = new ConcurrentDictionary<string, ISessionToken>();
-            token["0"] = new SimpleSessionToken(9);
-            ConcurrentDictionary<string, ConcurrentDictionary<string, ISessionToken>> sessionTokensNameBased = new ConcurrentDictionary<string, ConcurrentDictionary<string, ISessionToken>>();
-            sessionTokensNameBased["dbs/db1/colls/coll1"] = token;
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            sessionContainer.SetSessionToken(
+                    ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
+                    "dbs/db1/colls/coll1",
+                    new DictionaryNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "0:1#100#1=20#2=5#3=30" } });
 
-            ISessionContainer sessionContainer = new SessionContainer(string.Empty, null, sessionTokensNameBased);
             DocumentClientEventSource eventSource = new DocumentClientEventSource();
             HttpMessageHandler httpMessageHandler = new MockMessageHandler(messageHandler);
 
@@ -267,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task TestGatewayStoreModelProcessMessageAsync(GatewayStoreModel storeModel, DocumentServiceRequest request)
         {
-            request.Headers["x-ms-session-token"] = "0:9";
+            request.Headers["x-ms-session-token"] = "0:1#100#1=20#2=5#3=30";
             await storeModel.ProcessMessageAsync(request);
             request.Headers.Remove("x-ms-session-token");
             request.Headers["x-ms-consistency-level"] = "Session";

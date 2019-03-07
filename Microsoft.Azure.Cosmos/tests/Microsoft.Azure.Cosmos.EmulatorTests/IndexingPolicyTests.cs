@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IndexingPolicyTests.documentClient,
             Guid.NewGuid().ToString());
 
-        private static readonly IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new IndexingPolicyEqualityComparer();
+        private static readonly IndexingPolicy.IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new IndexingPolicy.IndexingPolicyEqualityComparer();
 
         private static readonly Dictionary<Version, Assembly> documentClientAssemblyDictionary = new Dictionary<Version, Assembly>();
 
@@ -273,13 +273,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy);
         }
 
+        [Ignore]
         [TestMethod]
         public async Task CompositeIndex()
         {
             IndexingPolicy indexingPolicy = new IndexingPolicy()
             {
                 Automatic = true,
-                Type = IndexPolicyType.Range,
                 IncludedPaths = new Collection<IncludedPath>()
                 {
                     new IncludedPath()
@@ -289,22 +289,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExcludedPaths = new Collection<ExcludedPath>(),
                 IndexingMode = IndexingMode.Consistent,
-                AdditionalIndexes = new AdditionalIndexes()
+                CompositeIndexes = new Collection<Collection<CompositePath>>()
                 {
-                    Composite = new Collection<Collection<CompositePath>>()
+                    new Collection<CompositePath>()
                     {
-                        new Collection<CompositePath>()
+                        new CompositePath()
                         {
-                            new CompositePath()
-                            {
-                                Path = "/name",
-                                Order = CompositePathSortOrder.Ascending
-                            },
-                            new CompositePath()
-                            {
-                                Path = "/age",
-                                Order = CompositePathSortOrder.Descending
-                            }
+                            Path = "/name",
+                            Order = CompositePathSortOrder.Ascending
+                        },
+                        new CompositePath()
+                        {
+                            Path = "/age",
+                            Order = CompositePathSortOrder.Descending
                         }
                     }
                 }
@@ -516,54 +513,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class AdditionalIndexesEqualityComparer : IEqualityComparer<AdditionalIndexes>
-        {
-            private static readonly CompositePathEqualityComparer compositePathEqualityComparer = new CompositePathEqualityComparer();
-            private static readonly CompositePathsEqualityComparer compositePathsEqualityComparer = new CompositePathsEqualityComparer();
-
-            public bool Equals(AdditionalIndexes additionalIndexes1, AdditionalIndexes additionalIndexes2)
-            {
-                if (Object.ReferenceEquals(additionalIndexes1, additionalIndexes2))
-                {
-                    return true;
-                }
-
-                if (additionalIndexes1 == null || additionalIndexes2 == null)
-                {
-                    return false;
-                }
-
-                HashSet<HashSet<CompositePath>> compositeIndex1 = new HashSet<HashSet<CompositePath>>(compositePathsEqualityComparer);
-                HashSet<HashSet<CompositePath>> compositeIndex2 = new HashSet<HashSet<CompositePath>>(compositePathsEqualityComparer);
-
-                foreach (Collection<CompositePath> compositePaths in additionalIndexes1.Composite)
-                {
-                    HashSet<CompositePath> hashedCompositePaths = new HashSet<CompositePath>(compositePaths, compositePathEqualityComparer);
-                    compositeIndex1.Add(hashedCompositePaths);
-                }
-
-                foreach (Collection<CompositePath> compositePaths in additionalIndexes2.Composite)
-                {
-                    HashSet<CompositePath> hashedCompositePaths = new HashSet<CompositePath>(compositePaths, compositePathEqualityComparer);
-                    compositeIndex2.Add(hashedCompositePaths);
-                }
-
-                return compositeIndex1.SetEquals(compositeIndex2);
-            }
-
-            public int GetHashCode(AdditionalIndexes additionalIndexes)
-            {
-                int hashCode = 0;
-                foreach (Collection<CompositePath> compositePaths in additionalIndexes.Composite)
-                {
-                    HashSet<CompositePath> hashedCompositePaths = new HashSet<CompositePath>(compositePaths, compositePathEqualityComparer);
-                    hashCode = hashCode ^ compositePathsEqualityComparer.GetHashCode(hashedCompositePaths);
-                }
-
-                return hashCode;
-            }
-        }
-
         private class IndexEqualityComparer : IEqualityComparer<Index>
         {
             public bool Equals(Index index1, Index index2)
@@ -711,59 +660,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public int GetHashCode(ExcludedPath excludedPath1)
             {
                 return excludedPath1.Path.GetHashCode();
-            }
-        }
-
-        private class IndexingPolicyEqualityComparer : IEqualityComparer<IndexingPolicy>
-        {
-            private static readonly AdditionalIndexesEqualityComparer additionalIndexesEqualityComparer = new AdditionalIndexesEqualityComparer();
-            private static readonly IncludedPathEqualityComparer includedPathEqualityComparer = new IncludedPathEqualityComparer();
-            private static readonly ExcludedPathEqualityComparer excludedPathEqualityComparer = new ExcludedPathEqualityComparer();
-
-            public bool Equals(IndexingPolicy indexingPolicy1, IndexingPolicy indexingPolicy2)
-            {
-                if (Object.ReferenceEquals(indexingPolicy1, indexingPolicy2))
-                {
-                    return true;
-                }
-
-                bool isEqual = true;
-                isEqual &= (indexingPolicy1 != null && indexingPolicy2 != null);
-                isEqual &= (indexingPolicy1.Automatic == indexingPolicy2.Automatic);
-                isEqual &= (indexingPolicy1.IndexingMode == indexingPolicy2.IndexingMode);
-                isEqual &= (indexingPolicy1.Type == indexingPolicy2.Type);
-                isEqual &= additionalIndexesEqualityComparer.Equals(indexingPolicy1.AdditionalIndexes, indexingPolicy2.AdditionalIndexes);
-
-                HashSet<IncludedPath> includedPaths1 = new HashSet<IncludedPath>(indexingPolicy1.IncludedPaths, includedPathEqualityComparer);
-                HashSet<IncludedPath> includedPaths2 = new HashSet<IncludedPath>(indexingPolicy2.IncludedPaths, includedPathEqualityComparer);
-                isEqual &= includedPaths1.SetEquals(includedPaths2);
-
-                HashSet<ExcludedPath> excludedPaths1 = new HashSet<ExcludedPath>(indexingPolicy1.ExcludedPaths, excludedPathEqualityComparer);
-                HashSet<ExcludedPath> excludedPaths2 = new HashSet<ExcludedPath>(indexingPolicy2.ExcludedPaths, excludedPathEqualityComparer);
-                isEqual &= excludedPaths1.SetEquals(excludedPaths2);
-
-                return isEqual;
-            }
-
-            public int GetHashCode(IndexingPolicy indexingPolicy)
-            {
-                int hashCode = 0;
-                hashCode = hashCode ^ indexingPolicy.Automatic.GetHashCode();
-                hashCode = hashCode ^ indexingPolicy.IndexingMode.GetHashCode();
-                hashCode = hashCode ^ indexingPolicy.Type.GetHashCode();
-                hashCode = hashCode ^ additionalIndexesEqualityComparer.GetHashCode(indexingPolicy.AdditionalIndexes);
-
-                foreach (IncludedPath includedPath in indexingPolicy.IncludedPaths)
-                {
-                    hashCode = hashCode ^ includedPathEqualityComparer.GetHashCode(includedPath);
-                }
-
-                foreach (ExcludedPath excludedPath in indexingPolicy.ExcludedPaths)
-                {
-                    hashCode = hashCode ^ excludedPathEqualityComparer.GetHashCode(excludedPath);
-                }
-
-                return hashCode;
             }
         }
         #endregion

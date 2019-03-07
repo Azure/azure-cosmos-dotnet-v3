@@ -1,0 +1,205 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any]]></Description>
+      <Expression><![CDATA[query.Any())]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter true flag -> Any]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Flag).Any())]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE root["Flag"]
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter false flag -> Any]]></Description>
+      <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Any())]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (NOT root["Flag"])
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Any]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Any())]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root["Number"] 
+    FROM root
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Any]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Any())]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE m0 
+    FROM root 
+    JOIN m0 IN root["Multiples"] 
+    WHERE ((m0 % 3) = 0)
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any w/ boolean filter]]></Description>
+      <Expression><![CDATA[query.Any(doc => doc.Flag))]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE root["Flag"]
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Any(doc => (doc.Number < -7)))]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (root["Number"] < -7)
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Any w/ operator filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Number).Any(num => (num < -13)))]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v0) > 0) 
+FROM (
+    SELECT VALUE root["Number"] 
+    FROM root 
+    WHERE (root["Number"] < -13)
+) AS v0 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Select) -> Any(Sum)]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.Multiples).Any(array => (array.Sum() > 5)))]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v2) > 0) 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT VALUE root["Multiples"] 
+        FROM root
+    ) AS r0 
+    JOIN (
+        SELECT VALUE SUM(v0) 
+        FROM r0 
+        JOIN v0 IN r0
+    ) AS v1 
+    WHERE (v1 > 5)
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select(Where) -> Any(Sum(map))]]></Description>
+      <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Pets.Count() > 0))).Any(children => (children.Sum(c => c.Grade) > 150)))]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE (COUNT(v2) > 0) 
+FROM (
+    SELECT VALUE r0 
+    FROM (
+        SELECT VALUE v0 
+        FROM root 
+        JOIN (
+            SELECT VALUE ARRAY(
+                SELECT VALUE c0 
+                FROM root 
+                JOIN c0 IN root["Children"] 
+                WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+            )
+        ) AS v0
+    ) AS r0 
+    JOIN (
+        SELECT VALUE SUM(c["Grade"]) 
+        FROM r0 
+        JOIN c IN r0
+    ) AS v1 
+    WHERE (v1 > 150)
+) AS v2 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[BadRequestException: Message: {"Errors":["Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates."]}, ]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

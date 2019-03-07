@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlSelectStarSpec.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -7,13 +9,46 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlSelectStarSpec : SqlSelectSpec
     {
-        public SqlSelectStarSpec()
-            : base(SqlObjectKind.SelectStarSpec)
-        { }
+        public static readonly SqlSelectStarSpec Singleton = new SqlSelectStarSpec();
 
-        public override void AppendToBuilder(StringBuilder builder)
+        private SqlSelectStarSpec()
+            : base(SqlObjectKind.SelectStarSpec)
         {
-            builder.Append("*");
+        }
+
+        public static SqlSelectStarSpec Create()
+        {
+            return SqlSelectStarSpec.Singleton;
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+        
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlSelectSpecVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlSelectSpecVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlSelectSpecVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

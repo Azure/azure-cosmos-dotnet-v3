@@ -10,8 +10,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
 
+    /// <summary>
+    /// This is for routing cross partition queries through the old client side partition collections.
+    /// Please ignore.
+    /// </summary>
     internal sealed class MultiCollectionDocumentQueryExecutionContext : IDocumentQueryExecutionContext
     {
         private readonly List<IDocumentQueryExecutionContext> childQueryExecutionContexts;

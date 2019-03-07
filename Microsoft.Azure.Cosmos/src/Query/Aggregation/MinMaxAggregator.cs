@@ -1,30 +1,47 @@
-﻿using Microsoft.Azure.Cosmos.Internal;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿//-----------------------------------------------------------------------
+// <copyright file="MinMaxAggregator.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
+    using Microsoft.Azure.Cosmos.Internal;
+    using Newtonsoft.Json.Linq;
+
+    /// <summary>
+    /// Concrete implementation of IAggregator that can take the global min/max from the local min/max of multiple partitions and continuations.
+    /// Let min/max_i,j be the min/max from the ith continuation in the jth partition, 
+    /// then the min/max for the entire query is MIN/MAX(min/max_i,j for all i and j).
+    /// </summary>
     internal sealed class MinMaxAggregator : IAggregator
     {
+        /// <summary>
+        /// Whether or not the aggregation is a min or a max.
+        /// </summary>
         private readonly bool isMinAggregation;
-        private object value;
-        private bool initialized;
+        
+        /// <summary>
+        /// The global max of all items seen.
+        /// </summary>
+        private object globalMinMax;
 
         public MinMaxAggregator(bool isMinAggregation)
         {
             this.isMinAggregation = isMinAggregation;
+            if (this.isMinAggregation)
+            {
+                globalMinMax = ItemComparer.MaxValue;
+            }
+            else
+            {
+                globalMinMax = ItemComparer.MinValue;
+            }
         }
 
         public void Aggregate(object item)
         {
             // If the value became undefinded at some point then it should stay that way.
-            if (this.value == Undefined.Value)
+            if (this.globalMinMax == Undefined.Value)
             {
                 return;
             }
@@ -32,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             if (item == Undefined.Value)
             {
                 // If we got an undefined in the pipeline then the whole thing becomes undefined.
-                this.value = Undefined.Value;
+                this.globalMinMax = Undefined.Value;
                 return;
             }
 
@@ -71,42 +88,45 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 }
             }
 
-            if (!this.initialized)
-            {
-                // If this is the first item then just take it
-                this.value = item;
-                this.initialized = true;
-                return;
-            }
-
-            if (!ItemTypeHelper.IsPrimitive(item) || !ItemTypeHelper.IsPrimitive(this.value))
+            if (!ItemComparer.IsMinOrMax(this.globalMinMax) 
+                && (!ItemTypeHelper.IsPrimitive(item) || !ItemTypeHelper.IsPrimitive(this.globalMinMax)))
             {
                 // This means we are comparing non primitives with is undefined
-                this.value = Undefined.Value;
+                this.globalMinMax = Undefined.Value;
                 return;
             }
 
+            // Finally do the comparision
             if (this.isMinAggregation)
             {
-                if (ItemComparer.Instance.Compare(item, this.value) < 0)
+                if (ItemComparer.Instance.Compare(item, this.globalMinMax) < 0)
                 {
-                    this.value = item;
+                    this.globalMinMax = item;
                 }
             }
             else
             {
-                if (ItemComparer.Instance.Compare(item, this.value) > 0)
+                if (ItemComparer.Instance.Compare(item, this.globalMinMax) > 0)
                 {
-                    this.value = item;
+                    this.globalMinMax = item;
                 }
             }
-
-            this.initialized = true;
         }
 
         public object GetResult()
         {
-            return this.initialized ? this.value : Undefined.Value;
+            object result;
+            if (this.globalMinMax == ItemComparer.MinValue || this.globalMinMax == ItemComparer.MaxValue)
+            {
+                // The filter did not match any documents.
+                result = Undefined.Value;
+            }
+            else
+            {
+                result = this.globalMinMax;
+            }
+
+            return result;
         }
     }
 }

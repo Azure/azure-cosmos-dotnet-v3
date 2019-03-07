@@ -1,21 +1,36 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
+﻿//-----------------------------------------------------------------------
+// <copyright file="QueryItem.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
-    using System;
-    using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Internal;
 
+    /// <summary>
+    /// Used to lazily bind a item from a query.
+    /// </summary>
     internal sealed class QueryItem
     {
-        private static readonly JsonSerializerSettings NoDateParseHandlingJsonSerializerSettings = new JsonSerializerSettings { DateParseHandling = DateParseHandling.None };
-
+        private static readonly JsonSerializerSettings NoDateParseHandlingJsonSerializerSettings = new JsonSerializerSettings
+        {
+            DateParseHandling = DateParseHandling.None
+        };
+        /// <summary>
+        /// whether or not the item has been deserizalized yet.
+        /// </summary>
         private bool isItemDeserialized;
+
+        /// <summary>
+        /// The actual item.
+        /// </summary>
         private object item;
 
+        /// <summary>
+        /// The raw value of the item.
+        /// </summary>
         [JsonProperty("item")]
         private JRaw RawItem
         {
@@ -23,6 +38,11 @@ namespace Microsoft.Azure.Cosmos.Query
             set;
         }
 
+        /// <summary>
+        /// Gets the item and deserializes it if it hasn't already been.
+        /// </summary>
+        /// <remarks>This can be replaced with Lazy of T</remarks>
+        /// <returns>The item.</returns>
         public object GetItem()
         {
             if (!this.isItemDeserialized)

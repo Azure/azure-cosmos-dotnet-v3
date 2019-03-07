@@ -1,18 +1,27 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
-
+﻿//-----------------------------------------------------------------------
+// <copyright file="ItemTypeHelper.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
 
+    /// <summary>
+    /// Utility class for item types.
+    /// </summary>
     internal static class ItemTypeHelper
     {
+        /// <summary>
+        /// Gets an ItemType based on the provided value.
+        /// </summary>
+        /// <param name="value">The value of the item.</param>
+        /// <returns>The ItemType of the value.</returns>
         public static ItemType GetItemType(object value)
         {
-            if(value is Undefined)
+            if (value is Undefined)
             {
                 return ItemType.NoValue;
             }
@@ -37,15 +46,25 @@ namespace Microsoft.Azure.Cosmos.Query
                 return ItemType.Number;
             }
 
-            throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,"Unrecognized type {0}", value.GetType().ToString()));
+            throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Unrecognized type {0}", value.GetType().ToString()));
         }
 
+        /// <summary>
+        /// Determines if an object is a primitive value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>Whether or not the item type is primitive.</returns>
         public static bool IsPrimitive(object value)
         {
             return (value == null || value is bool || value is string || IsNumeric(value));
         }
 
-        private static bool IsNumeric(object value)
+        /// <summary>
+        /// Gets whether an object is a numeric type.
+        /// </summary>
+        /// <param name="value">The value to examine.</param>
+        /// <returns>Whether it is a numeric type.</returns>
+        public static bool IsNumeric(object value)
         {
             return value is sbyte
                     || value is byte

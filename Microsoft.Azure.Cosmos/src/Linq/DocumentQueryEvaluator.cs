@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static readonly string[] LinqSupportedMethods =
             new string[] 
             {
+                "Any",
                 "Average",
                 "Count",
                 "Max",

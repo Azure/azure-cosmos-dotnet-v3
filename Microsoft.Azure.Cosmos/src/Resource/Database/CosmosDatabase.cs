@@ -4,9 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
@@ -34,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosDatabase(
-            CosmosClient client, 
+            CosmosClient client,
             string databaseId) :
             base(client,
                 null,
@@ -93,10 +91,11 @@ namespace Microsoft.Azure.Cosmos
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessAsync(
-                OperationType.Read,
-                requestOptions,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.ReadStreamAsync(
+                        requestOptions: requestOptions,
+                        cancellationToken: cancellationToken);
+
+            return this.Client.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
         /// <summary>
@@ -128,10 +127,11 @@ namespace Microsoft.Azure.Cosmos
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessAsync(
-                OperationType.Delete,
-                requestOptions,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
+                        requestOptions: requestOptions,
+                        cancellationToken: cancellationToken);
+
+            return this.Client.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
         /// <summary>
@@ -198,6 +198,36 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        internal virtual Task<CosmosResponseMessage> ReadStreamAsync(
+                    CosmosRequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessAsync(
+                OperationType.Read,
+                requestOptions,
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Delete a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        internal virtual Task<CosmosResponseMessage> DeleteStreamAsync(
+                    CosmosRequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessAsync(
+                OperationType.Delete,
+                requestOptions,
+                cancellationToken);
+        }
+
         internal virtual Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -210,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
             int targetThroughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            var rid = this.GetRID(cancellationToken);
+            Task<string> rid = this.GetRID(cancellationToken);
             return rid.ContinueWith(task => this.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
                 .Unwrap();
         }
@@ -225,20 +255,20 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        private Task<CosmosDatabaseResponse> ProcessAsync(
+        private Task<CosmosResponseMessage> ProcessAsync(
             OperationType operationType,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ExecUtils.ProcessResourceOperationAsync<CosmosDatabaseResponse>(
-                this.Client,
-                this.LinkUri,
-                ResourceType.Database,
-                operationType,
-                requestOptions,
+            return ExecUtils.ProcessResourceOperationStreamAsync(
+                client: this.Client,
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.Database,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                partitionKey: null,
                 streamPayload: null,
-                responseCreator: response =>
-                    this.Client.ResponseFactory.CreateDatabaseResponse(response, this),
+                requestEnricher: null,
                 cancellationToken: cancellationToken);
         }
     }

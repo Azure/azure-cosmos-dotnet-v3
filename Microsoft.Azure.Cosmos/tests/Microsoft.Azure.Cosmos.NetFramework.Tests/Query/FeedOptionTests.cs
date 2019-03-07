@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Query
     public class FeedOptionTests
     {
         [TestMethod]
-        [Owner("kirankk")]
         public async Task CheckConsistencyLevel()
         {
             FeedOptions fo = new FeedOptions();
@@ -64,8 +63,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 FeedOptions feedOptions, 
                 string resourceLink, 
                 bool getLazyFeedResponse, 
-                Guid correlatedActivityId) 
-                : base(client, resourceTypeEnum, resourceType, expression, feedOptions, resourceLink, getLazyFeedResponse, correlatedActivityId)
+                Guid correlatedActivityId)
+                : base(new DocumentQueryExecutionContextBase.InitParams(
+                    client,
+                    resourceTypeEnum,
+                    resourceType,
+                    expression,
+                    feedOptions,
+                    resourceLink,
+                    getLazyFeedResponse,
+                    correlatedActivityId))
             {
             }
 

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -29,6 +30,11 @@ namespace Microsoft.Azure.Cosmos
             NextResultSetDelegate nextDelegate,
             object state = null)
         {
+            if (nextDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(nextDelegate));
+            }
+
             this.nextResultSetDelegate = nextDelegate;
             this.HasMoreResults = true;
             this.state = state;

@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlGeoNearCallScalarExpression.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -40,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             set;
         }
 
-        public SqlGeoNearCallScalarExpression(
+        private SqlGeoNearCallScalarExpression(
             SqlScalarExpression propertyRef,
             SqlScalarExpression geometry,
             uint? num = null,
@@ -55,30 +57,44 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.MaximumDistance = Math.Max(0, maxDistance);
         }
 
-        public override void AppendToBuilder(System.Text.StringBuilder builder)
+        public static SqlGeoNearCallScalarExpression Create(
+            SqlScalarExpression propertyRef,
+            SqlScalarExpression geometry,
+            uint? num = null,
+            double minDistance = 0,
+            double maxDistance = 1e4)
         {
-            builder.Append("(")
-                   .Append("_ST_DISTANCE")
-                   .Append("(")
-                   .Append(this.PropertyRef)
-                   .Append(",")
-                   .Append(this.Geometry)
-                   .Append(")")
-                   .Append(" BETWEEN ");
+            return new SqlGeoNearCallScalarExpression(propertyRef, geometry, num, minDistance, maxDistance);
+        }
 
-            if (this.NumberOfPoints == null)
-            {
-                builder.Append(this.MinimumDistance)
-                       .Append(" AND ")
-                       .Append(this.MaximumDistance);
-            }
-            else
-            {
-                builder.Append(SqlGeoNearCallScalarExpression.NearMinimumDistanceName)
-                       .Append(" AND ")
-                       .Append(SqlGeoNearCallScalarExpression.NearMaximumDistanceName);
-            }
-            builder.Append(")");
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlScalarExpressionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlScalarExpressionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlScalarExpressionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

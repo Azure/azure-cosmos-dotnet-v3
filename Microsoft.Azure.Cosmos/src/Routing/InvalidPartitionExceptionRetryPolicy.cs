@@ -86,7 +86,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            return continueIfNotHandled != null ? continueIfNotHandled() : Task.FromResult(ShouldRetryResult.NoRetry());
+            if (continueIfNotHandled != null)
+            {
+                return continueIfNotHandled().ContinueWith(x => x.Result ?? ShouldRetryResult.NoRetry());
+            }
+            else
+            {
+                return Task.FromResult(ShouldRetryResult.NoRetry());
+            }
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)

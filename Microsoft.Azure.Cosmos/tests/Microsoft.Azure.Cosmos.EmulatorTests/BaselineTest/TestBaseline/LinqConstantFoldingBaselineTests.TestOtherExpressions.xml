@@ -1,0 +1,82 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[param]]></Description>
+      <Expression><![CDATA[Param]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[Param]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[Param]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[new array with 1 elem]]></Description>
+      <Expression><![CDATA[new [] {1}]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[[1]]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[[1]]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[new array with 2 elems]]></Description>
+      <Expression><![CDATA[new [] {1, 2}]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[[1, 2]]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[[1, 2]]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[new array with different types]]></Description>
+      <Expression><![CDATA[new [] {1, "two"}]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[[1, "two"]]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[[1, "two"]]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[array index]]></Description>
+      <Expression><![CDATA[new [] {3, 4}[1]]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[4]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[4]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[int?]]></Description>
+      <Expression><![CDATA[1]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[1]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[1]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[null]]></Description>
+      <Expression><![CDATA[null]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[null]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[null]]></TranslationOldOutput>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[int?]]></Description>
+      <Expression><![CDATA[1]]></Expression>
+    </Input>
+    <Output>
+      <TranslationOutput><![CDATA[1]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[1]]></TranslationOldOutput>
+    </Output>
+  </Result>
+</Results>

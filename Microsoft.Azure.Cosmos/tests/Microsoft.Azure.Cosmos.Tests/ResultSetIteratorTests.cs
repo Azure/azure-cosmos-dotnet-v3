@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using System;
     using System.Linq;
     using System.Net.Http;
@@ -51,16 +52,41 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateFillCosmosQueryRequestOptions()
+        {
+            Mock<CosmosQueryRequestOptions> options = new Mock<CosmosQueryRequestOptions>() { CallBase = true };
+
+            CosmosRequestMessage request = new CosmosRequestMessage {
+                OperationType = Internal.OperationType.SqlQuery
+            };
+
+            options.Object.EnableCrossPartitionQuery = true;
+            options.Object.EnableScanInQuery = true;
+            options.Object.SessionToken = "SessionToken";
+            options.Object.ConsistencyLevel = ConsistencyLevel.BoundedStaleness;
+            options.Object.FillRequestOptions(request);
+
+            Assert.AreEqual(bool.TrueString, request.Headers[Internal.HttpConstants.HttpHeaders.IsQuery]);
+            Assert.AreEqual(bool.TrueString, request.Headers[Internal.HttpConstants.HttpHeaders.EnableCrossPartitionQuery]);
+            Assert.AreEqual(Internal.RuntimeConstants.MediaTypes.QueryJson, request.Headers[Internal.HttpConstants.HttpHeaders.ContentType]);
+            Assert.AreEqual(bool.TrueString, request.Headers[Internal.HttpConstants.HttpHeaders.EnableScanInQuery]);
+            Assert.AreEqual(options.Object.SessionToken, request.Headers[Internal.HttpConstants.HttpHeaders.SessionToken]);
+            Assert.AreEqual(options.Object.ConsistencyLevel.ToString(), request.Headers[Internal.HttpConstants.HttpHeaders.ConsistencyLevel]);
+            options.Verify(m => m.FillRequestOptions(It.Is<CosmosRequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
+        }
+
+        [TestMethod]
         public async Task VerifyCosmosDefaultResultSetStreamIteratorOperationType()
         {
-            CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient();
-            
-            CosmosDatabase database = new CosmosDatabase(mockClient, "database");
-            CosmosContainer container = new CosmosContainer(database, "container");
-            CosmosItems item = new CosmosItems(container);
+            CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
+
+            CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetIterator setIterator = item
-                .CreateItemQueryAsStream(sql, "pk", requestOptions: new CosmosQueryRequestOptions());
+            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
+                sqlQueryDefinition: sql, 
+                partitionKey: "pk", 
+                requestOptions: new CosmosQueryRequestOptions());
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(
@@ -69,10 +95,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 );
                 return TestHandler.ReturnSuccess();
             });
+
             mockClient.RequestHandler.InnerHandler = testHandler;
-            mockClient.CosmosConfiguration.UseConnectionModeDirect();
             CosmosResponseMessage response = await setIterator.FetchNextSetAsync();
 
+            //Test gateway mode
+            mockClient = MockDocumentClient.CreateMockCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeGateway());
+            container = mockClient.Databases["database"].Containers["container"];
+            setIterator = container.Items.CreateItemQueryAsStream(
+                sqlQueryDefinition: sql,
+                partitionKey: "pk",
+                requestOptions: new CosmosQueryRequestOptions());
             testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(
                     14, //OperationType.Query
@@ -80,8 +114,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 );
                 return TestHandler.ReturnSuccess();
             });
+            
             mockClient.RequestHandler.InnerHandler = testHandler;
-            mockClient.CosmosConfiguration.UseConnectionModeGateway();
             response = await setIterator.FetchNextSetAsync();
         }
 

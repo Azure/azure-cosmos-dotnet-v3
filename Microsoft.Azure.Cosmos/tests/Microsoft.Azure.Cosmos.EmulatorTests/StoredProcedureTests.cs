@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sprocBody = "function() { { var x = 42; } }";
 
             CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProceducreAsync(sprocId, sprocBody);
+                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
             double requestCharge = storedProcedureResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 sprocIds[i] = sprocId;
 
                 CosmosStoredProcedureResponse storedProcedureResponse =
-                    await this.container.StoredProcedures.CreateStoredProceducreAsync(sprocId, sprocBody);
+                    await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
                 Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             }
 
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }";
 
             CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProceducreAsync(sprocId, sprocBody);
+                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sprocBody = "function() { { var x = 42; } }";
 
             CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProceducreAsync(sprocId, sprocBody);
+                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
             CosmosStoredProcedure cosmosStoredProcedure = storedProcedureResponse;
             CosmosStoredProcedureSettings cosmosStoredProcedureSettings = storedProcedureResponse;
 
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }";
 
             CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProceducreAsync(sprocId, sprocBody);
+                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 

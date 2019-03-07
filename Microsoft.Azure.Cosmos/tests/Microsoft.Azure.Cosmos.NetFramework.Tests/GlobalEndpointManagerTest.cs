@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.ObjectModel;
     using System.Threading;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -19,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
-        [Ignore]
         [TestMethod]
         public void EndpointFailureMockTest()
         {
@@ -79,7 +80,6 @@ namespace Microsoft.Azure.Cosmos
         /// Unit test for LocationHelper class
         /// </summary>
         [TestMethod]
-        [Owner("rnagpal")]
         public void LocationHelperTest()
         {
             Uri globalEndpointUri = new Uri("https://contoso.documents.azure.com:443/");

@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestPreProcessingHandler()
         {
             CosmosRequestHandler preProcessHandler = new PreProcessingTestHandler();
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient(preProcessHandler);
+            CosmosClient client = MockDocumentClient.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
 
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
             Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));

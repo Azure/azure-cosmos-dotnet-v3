@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Globalization;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
@@ -88,7 +89,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                             if (retryCount == 0)
                             {
-                                Assert.IsFalse(request.ClearSessionTokenOnSessionReadFailure);
                                 Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, this.endpointManager.ReadEndpoints[0]);
                             }
                             else
@@ -149,8 +149,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                             if (retryCount == 0)
                             {
-                                Assert.IsFalse(request.ClearSessionTokenOnSessionReadFailure);
-
                                 Uri expectedEndpoint = isPreferredLocationsListEmpty ?
                                     new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint) : // All requests go to write endpoint
                                     LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
@@ -159,8 +157,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                             }
                             else if (retryCount == 1)
                             {
-                                Assert.IsTrue(request.ClearSessionTokenOnSessionReadFailure);
-
                                 // Second request must go to write endpoint
                                 Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
@@ -224,16 +220,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                             if (retryCount == 0)
                             {
-                                Assert.IsFalse(request.ClearSessionTokenOnSessionReadFailure);
-
                                 Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 1)
                             {
-                                Assert.IsFalse(request.ClearSessionTokenOnSessionReadFailure);
-
                                 // Second request must go to first write endpoint
                                 Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
 
@@ -241,8 +233,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                             }
                             else if (retryCount == 2)
                             {
-                                Assert.IsTrue(request.ClearSessionTokenOnSessionReadFailure);
-
                                 // Second request must go to first write endpoint
                                 Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
@@ -299,16 +289,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                             if (retryCount == 0)
                             {
-                                Assert.IsFalse(request.ClearSessionTokenOnSessionReadFailure);
-
                                 Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 1)
                             {
-                                Assert.IsFalse(request.ClearSessionTokenOnSessionReadFailure);
-
                                 // Second request must go to first write endpoint
                                 Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
 
@@ -316,16 +302,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                             }
                             else if (retryCount == 2)
                             {
-                                Assert.IsFalse(request.ClearSessionTokenOnSessionReadFailure);
-
                                 // Second request must go to first write endpoint
                                 Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 3)
                             {
-                                Assert.IsTrue(request.ClearSessionTokenOnSessionReadFailure);
-
                                 // Second request must go to first write endpoint
                                 Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[2]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
@@ -356,7 +338,140 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [Ignore]
+        [TestMethod]
+        public async Task ValidateRetryOnWriteForbiddenExceptionAsync()
+        {
+            this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, true, new RetryOptions());
+
+            using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false))
+            {
+                int retryCount = 0;
+
+                await BackoffRetryUtility<bool>.ExecuteAsync(
+                    () =>
+                    {
+                        retryCount++;
+                        retryPolicy.OnBeforeSendRequest(request);
+
+                        if (retryCount == 1)
+                        {
+                            this.mockedClient.ResetCalls();
+
+                            Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
+
+                            Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+
+                            StringKeyValueCollection headers = new StringKeyValueCollection();
+                            headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.WriteForbidden).ToString();
+                            DocumentClientException forbiddenException = new ForbiddenException(RMResources.Forbidden, headers);
+
+                            throw forbiddenException;
+                        }
+                        else if (retryCount == 2)
+                        {
+                            this.mockedClient.Verify(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>()), Times.Once);
+
+                            // Next request must go to next preferred endpoint
+                            Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
+                            Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+
+                            return Task.FromResult(true);
+                        }
+                        else
+                        {
+                            Assert.Fail();
+                        }
+
+                        return Task.FromResult(true);
+                    },
+                    retryPolicy);
+            }
+        }
+
+        [TestMethod]
+        public async Task ValidateRetryOnDatabaseAccountNotFoundAsync()
+        {
+            await this.ValidateRetryOnDatabaseAccountNotFoundAsync(enableMultipleWriteLocations: false, isReadRequest: false);
+            await this.ValidateRetryOnDatabaseAccountNotFoundAsync(enableMultipleWriteLocations: false, isReadRequest: true);
+            await this.ValidateRetryOnDatabaseAccountNotFoundAsync(enableMultipleWriteLocations: true, isReadRequest: false);
+            await this.ValidateRetryOnDatabaseAccountNotFoundAsync(enableMultipleWriteLocations: true, isReadRequest: true);
+        }
+
+        private async Task ValidateRetryOnDatabaseAccountNotFoundAsync(bool enableMultipleWriteLocations, bool isReadRequest)
+        {
+            this.Initialize(
+                useMultipleWriteLocations: enableMultipleWriteLocations,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false);
+
+            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, true, new RetryOptions());
+
+            int expectedRetryCount = isReadRequest || enableMultipleWriteLocations ? 2 : 1;
+
+            using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
+            {
+                int retryCount = 0;
+
+                try
+                {
+                    await BackoffRetryUtility<bool>.ExecuteAsync(
+                        () =>
+                        {
+                            retryCount++;
+                            retryPolicy.OnBeforeSendRequest(request);
+
+                            if (retryCount == 1)
+                            {
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
+
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+
+                                StringKeyValueCollection headers = new StringKeyValueCollection();
+                                headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.DatabaseAccountNotFound).ToString();
+                                DocumentClientException forbiddenException = new ForbiddenException(RMResources.NotFound, headers);
+
+                                throw forbiddenException;
+                            }
+                            else if (retryCount == 2)
+                            {
+                                // Next request must go to next preferred endpoint
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+
+                                return Task.FromResult(true);
+                            }
+                            else
+                            {
+                                Assert.Fail();
+                            }
+
+                            return Task.FromResult(true);
+                        },
+                        retryPolicy);
+                }
+                catch (ForbiddenException)
+                {
+                    if (expectedRetryCount == 1)
+                    {
+                        DefaultTrace.TraceInformation("Received expected ForbiddenException");
+                    }
+                    else
+                    {
+                        Assert.Fail();
+                    }
+                }
+                
+                Assert.AreEqual(expectedRetryCount, retryCount);
+            }
+        }
+
         [TestMethod]
         public async Task ValidateAsync()
         {

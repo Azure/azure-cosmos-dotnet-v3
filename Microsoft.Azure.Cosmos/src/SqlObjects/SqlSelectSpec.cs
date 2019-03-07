@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlSelectSpec.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -7,6 +9,13 @@ namespace Microsoft.Azure.Cosmos.Sql
     {
         protected SqlSelectSpec(SqlObjectKind kind)
             : base(kind)
-        { }
+        {
+        }
+
+        public abstract void Accept(SqlSelectSpecVisitor visitor);
+
+        public abstract TResult Accept<TResult>(SqlSelectSpecVisitor<TResult> visitor);
+
+        public abstract TResult Accept<T, TResult>(SqlSelectSpecVisitor<T, TResult> visitor, T input);
     }
 }

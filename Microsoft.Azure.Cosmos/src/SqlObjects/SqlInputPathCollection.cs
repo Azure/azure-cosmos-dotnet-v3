@@ -1,5 +1,7 @@
 ﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
+// <copyright file="SqlInputPathCollection.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
 //-----------------------------------------------------------------------------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
@@ -8,19 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal sealed class SqlInputPathCollection : SqlCollection
     {
-        public SqlIdentifier Input
-        {
-            get;
-            private set;
-        }
-
-        public SqlPathExpression RelativePath
-        {
-            get;
-            private set;
-        }
-
-        public SqlInputPathCollection(
+        private SqlInputPathCollection(
             SqlIdentifier input,
             SqlPathExpression relativePath)
             : base(SqlObjectKind.InputPathCollection)
@@ -29,18 +19,56 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 throw new ArgumentNullException("input");
             }
-            
+
             this.Input = input;
             this.RelativePath = relativePath;
         }
 
-        public override void AppendToBuilder(StringBuilder builder)
+        public SqlIdentifier Input
         {
-            this.Input.AppendToBuilder(builder);
-            if (this.RelativePath != null)
-            {
-                this.RelativePath.AppendToBuilder(builder);
-            }
+            get;
+        }
+
+        public SqlPathExpression RelativePath
+        {
+            get;
+        }
+
+        public static SqlInputPathCollection Create(
+            SqlIdentifier input,
+            SqlPathExpression relativePath)
+        {
+            return new SqlInputPathCollection(input, relativePath);
+        }
+
+        public override void Accept(SqlObjectVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        public override void Accept(SqlCollectionVisitor visitor)
+        {
+            visitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(SqlCollectionVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
+        }
+
+        public override TResult Accept<T, TResult>(SqlCollectionVisitor<T, TResult> visitor, T input)
+        {
+            return visitor.Visit(this, input);
         }
     }
 }

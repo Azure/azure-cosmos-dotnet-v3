@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Newtonsoft.Json.Linq;
     using VisualStudio.TestTools.UnitTesting;
 
@@ -260,16 +261,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static async Task PartitionedCollectionSmokeTest(DocumentClient client, bool sharedOffer = false, bool sharedThroughputCollections = false, int numberOfCollections = 1)
         {
-            if(!sharedOffer && sharedThroughputCollections)
+            if (!sharedOffer && sharedThroughputCollections)
             {
                 throw new ArgumentException("Shared throughput collections are not supported without shared offer");
             }
 
             string uniqDatabaseName = string.Format("SmokeTest_{0}", Guid.NewGuid().ToString("N"));
             RequestOptions options = new RequestOptions { OfferThroughput = 50000 };
-            CosmosDatabaseSettings database = sharedOffer ? await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = uniqDatabaseName }, options) : await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = uniqDatabaseName });
+            CosmosDatabaseSettings  database = sharedOffer ? await client.CreateDatabaseAsync(new CosmosDatabaseSettings  { Id = uniqDatabaseName }, options) : await client.CreateDatabaseAsync(new CosmosDatabaseSettings  { Id = uniqDatabaseName });
             Assert.AreEqual(database.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName));
-            CosmosDatabaseSettings readbackdatabase = await client.ReadDatabaseAsync(database.SelfLink);
+            CosmosDatabaseSettings  readbackdatabase = await client.ReadDatabaseAsync(database.SelfLink);
             List<dynamic> results = await ClientTestsUtils.SqlQueryDatabases(client, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqDatabaseName), 10);
             Assert.AreEqual(1, results.Count, "Should have queried and found 1 document");
             Assert.AreEqual(database.ResourceId, ((QueryResult)results[0]).ResourceId);
@@ -291,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
                 CosmosContainerSettings collection;
-                if (sharedThroughputCollections) 
+                if (sharedThroughputCollections)
                 {
                     collection = await TestCommon.CreateCollectionAsync(client, database.SelfLink, new CosmosContainerSettings { Id = uniqCollectionName, PartitionKey = partitionKeyDefinition });
                 }
@@ -314,13 +315,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testCollections.Add(collection);
 
                 string uniqDocumentName = "SmokeTestDocument" + Guid.NewGuid().ToString("N");
-                LinqTests.Book myDocument = new LinqTests.Book();
+                LinqGeneralBaselineTests.Book myDocument = new LinqGeneralBaselineTests.Book();
                 myDocument.Id = uniqDocumentName;
                 myDocument.Title = "My Book"; //Simple Property.
-                myDocument.Languages = new LinqTests.Language[] { new LinqTests.Language { Name = "English", Copyright = "London Publication" }, new LinqTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
-                myDocument.Author = new LinqTests.Author { Name = "Don", Location = "France" }; //Complex Property
+                myDocument.Languages = new LinqGeneralBaselineTests.Language[] { new LinqGeneralBaselineTests.Language { Name = "English", Copyright = "London Publication" }, new LinqGeneralBaselineTests.Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
+                myDocument.Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }; //Complex Property
                 myDocument.Price = 9.99;
-                myDocument.Editions = new List<LinqTests.Edition>() { new LinqTests.Edition() { Name = "First", Year = 2001 }, new LinqTests.Edition() { Name = "Second", Year = 2005 } };
+                myDocument.Editions = new List<LinqGeneralBaselineTests.Edition>() { new LinqGeneralBaselineTests.Edition() { Name = "First", Year = 2001 }, new LinqGeneralBaselineTests.Edition() { Name = "Second", Year = 2005 } };
                 Document document = await client.CreateDocumentAsync(collection.SelfLink, myDocument);
                 Assert.AreEqual(document.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName, uniqCollectionName, uniqDocumentName, typeof(Document)));
                 results = await SqlQueryDocuments(client, collection.SelfLink, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqDocumentName), 10);  // query through collection link
@@ -362,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
                 // No Range Index on ts - override with scan
-                FeedOptions queryFeedOptions1 = new FeedOptions() { EnableScanInQuery = true , EnableCrossPartitionQuery = true};
+                FeedOptions queryFeedOptions1 = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
                 results = await SqlQueryDocuments(client, collection.SelfLink, string.Format(@"SELECT r.name FROM root r WHERE r.Price>0"), 10, queryFeedOptions1);
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 document");
 
@@ -437,8 +438,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 results = await SqlQueryUserDefinedFunctions(client, collection.UserDefinedFunctionsLink, string.Format(@"SELECT r.id, r._rid FROM root r WHERE r.id=""{0}""", uniqUserDefinedFunctionName), 10);  // query through UserDefinedFunctionsLink
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 userDefinedFunction");
 
-                RequestOptions requestOptions = new RequestOptions { PartitionKey = new PartitionKey(document.Id) };
-
                 //Test select array
                 var queryArray = client.CreateDocumentQuery(collection.SelfLink, "SELECT VALUE [1, 2, 3, 4]").AsDocumentQuery();
                 JArray result = queryArray.ExecuteNextAsync().Result.FirstOrDefault();
@@ -448,6 +447,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(result[2], 3);
                 Assert.AreEqual(result[3], 4);
 
+                RequestOptions requestOptions = new RequestOptions { PartitionKey = new PartitionKey(document.Id) };
                 await client.DeleteDocumentAsync(document.SelfLink, requestOptions);
             }
 
@@ -457,6 +457,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             await client.DeleteDatabaseAsync(database.SelfLink);
         }
+
         private class QueryResult : CosmosResource
         {
         }

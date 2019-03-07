@@ -79,7 +79,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// then Thread 2 will also fail with the same exception.
         /// </summary>
         [TestMethod]
-        [TestCategory("Quarantine") /* Used to filter out quarantined tests in gated runs */]
         public async Task TestCancelOnOneThreadDoesNotCancelAnother()
         {
             AsyncCache<int, int> cache = new AsyncCache<int, int>();

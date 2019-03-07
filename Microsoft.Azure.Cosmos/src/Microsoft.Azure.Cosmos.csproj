@@ -6,7 +6,7 @@
     <Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <VersionPrefix>3.0.0.1</VersionPrefix>
+    <VersionPrefix>3.0.0.6</VersionPrefix>
     <VersionSuffix>-preview</VersionSuffix>
     <Version Condition=" '$(IsNightly)' == '1' ">$(VersionPrefix)$(VersionSuffix)-nightly$(CurrentDate)</Version>
     <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(VersionPrefix)$(VersionSuffix)</Version>
@@ -32,17 +32,22 @@
     <ShippingScope>External</ShippingScope>
     <SigningType>Product</SigningType>
     <DebugType>portable</DebugType>
-    <IncludeSymbols Condition=" '$(IsPublic)' == '1' ">false</IncludeSymbols>
-    <IncludeSymbols Condition=" '$(IsPublic)' == '0' Or '$(IsPublic)' == '' ">true</IncludeSymbols>
-    <IncludeSource Condition=" '$(IsPublic)' == '1' ">false</IncludeSource>
-    <IncludeSource Condition=" '$(IsPublic)' == '0' Or '$(IsPublic)' == '' ">true</IncludeSource>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSource>false</IncludeSource>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
   </PropertyGroup>
   
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[3.0.0.1-preview,)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(Version),)" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[$(Version),)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">

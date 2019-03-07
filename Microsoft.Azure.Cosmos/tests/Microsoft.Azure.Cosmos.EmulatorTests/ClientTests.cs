@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -76,11 +77,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabaseSettings db = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             CosmosContainerSettings coll = TestCommon.CreateCollectionAsync(client, db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result;
 
-            LinqTests.Book myBook = new LinqTests.Book();
+            LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
             myBook.Id = Guid.NewGuid().ToString();
             myBook.Title = "Azure DocumentDB 101";
 
-            Document doc = client.CreateDocumentAsync(coll.SelfLink, myBook).Result.Resource;
+            Document doc = client.CreateDocumentAsync(coll, myBook).Result.Resource;
 
             myBook.Title = "Azure DocumentDB 201";
             client.ReplaceDocumentAsync(doc.SelfLink, myBook).Wait();

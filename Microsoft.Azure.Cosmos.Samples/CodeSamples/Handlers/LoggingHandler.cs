@@ -1,17 +1,17 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.DataContracts;
-using Microsoft.Azure.Cosmos;
-
-namespace Cosmos.Samples.Handlers
+﻿namespace Cosmos.Samples.Handlers
 {
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.ApplicationInsights;
+    using Microsoft.ApplicationInsights.DataContracts;
+    using Microsoft.Azure.Cosmos;
+
     /// <summary>
     /// This handler will send telemetry to Application Insights
     /// </summary>
     class LoggingHandler : CosmosRequestHandler
     {
-        private TelemetryClient telemetryClient;
+        private readonly TelemetryClient telemetryClient;
         public LoggingHandler()
         {
             this.telemetryClient = new TelemetryClient();
@@ -22,10 +22,10 @@ namespace Cosmos.Samples.Handlers
             CancellationToken cancellationToken)
         {
 
-            using (var operation = this.telemetryClient.StartOperation<RequestTelemetry>("CosmosDBRequest"))
+            using (Microsoft.ApplicationInsights.Extensibility.IOperationHolder<RequestTelemetry> operation = this.telemetryClient.StartOperation<RequestTelemetry>("CosmosDBRequest"))
             {
                 this.telemetryClient.TrackTrace($"{request.Method.Method} - {request.RequestUri.ToString()}");
-                var response = await base.SendAsync(request, cancellationToken);
+                CosmosResponseMessage response = await base.SendAsync(request, cancellationToken);
 
                 operation.Telemetry.ResponseCode = ((int)response.StatusCode).ToString();
                 operation.Telemetry.Success = response.IsSuccessStatusCode;

@@ -18,7 +18,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class RuntimeExecutionTimes
     {
-        public static readonly RuntimeExecutionTimes Zero = new RuntimeExecutionTimes(default(TimeSpan), default(TimeSpan), default(TimeSpan));
+        internal static readonly RuntimeExecutionTimes Zero = new RuntimeExecutionTimes(
+            queryEngineExecutionTime: default(TimeSpan),
+            systemFunctionExecutionTime: default(TimeSpan),
+            userDefinedFunctionExecutionTime: default(TimeSpan));
+
+        private readonly TimeSpan queryEngineExecutionTime;
+        private readonly TimeSpan systemFunctionExecutionTime;
+        private readonly TimeSpan userDefinedFunctionExecutionTime;
 
         /// <summary>
         /// Initializes a new instance of the RuntimeExecutionTimes class.
@@ -32,17 +39,20 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan systemFunctionExecutionTime,
             TimeSpan userDefinedFunctionExecutionTime)
         {
-            this.QueryEngineExecutionTime = queryEngineExecutionTime;
-            this.SystemFunctionExecutionTime = systemFunctionExecutionTime;
-            this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTime;
+            this.queryEngineExecutionTime = queryEngineExecutionTime;
+            this.systemFunctionExecutionTime = systemFunctionExecutionTime;
+            this.userDefinedFunctionExecutionTime = userDefinedFunctionExecutionTime;
         }
 
         /// <summary>
         /// Gets the total query runtime execution time in the Azure Cosmos DB service.
         /// </summary>
-        public TimeSpan QueryEngineExecutionTime
+        internal TimeSpan QueryEngineExecutionTime
         {
-            get;
+            get
+            {
+                return this.queryEngineExecutionTime;
+            }
         }
 
         /// <summary>
@@ -50,7 +60,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public TimeSpan SystemFunctionExecutionTime
         {
-            get;
+            get
+            {
+                return this.systemFunctionExecutionTime;
+            }
         }
 
         /// <summary>
@@ -58,7 +71,21 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public TimeSpan UserDefinedFunctionExecutionTime
         {
-            get;
+            get
+            {
+                return this.userDefinedFunctionExecutionTime;
+            }
+        }
+
+        /// <summary>
+        /// Gets the total query runtime execution time in the Azure DocumentDB database service.
+        /// </summary>
+        public TimeSpan TotalTime
+        {
+            get
+            {
+                return this.queryEngineExecutionTime;
+            }
         }
 
         /// <summary>
@@ -66,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
         /// <returns>A new RuntimeExecutionTimes from the backend delimited string.</returns>
-        public static RuntimeExecutionTimes CreateFromDelimitedString(string delimitedString)
+        internal static RuntimeExecutionTimes CreateFromDelimitedString(string delimitedString)
         {
             Dictionary<string, double> metrics = QueryMetricsUtils.ParseDelimitedString(delimitedString);
 
@@ -94,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="runtimeExecutionTimesList">The IEnumerable to aggregate.</param>
         /// <returns>A new RuntimeExecutionTimes that is the sum of all elements in an IEnumerable.</returns>
-        public static RuntimeExecutionTimes CreateFromIEnumerable(IEnumerable<RuntimeExecutionTimes> runtimeExecutionTimesList)
+        internal static RuntimeExecutionTimes CreateFromIEnumerable(IEnumerable<RuntimeExecutionTimes> runtimeExecutionTimesList)
         {
             if (runtimeExecutionTimesList == null)
             {
@@ -107,78 +134,15 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (RuntimeExecutionTimes runtimeExecutionTime in runtimeExecutionTimesList)
             {
-                queryEngineExecutionTime += runtimeExecutionTime.QueryEngineExecutionTime;
-                systemFunctionExecutionTime += runtimeExecutionTime.SystemFunctionExecutionTime;
-                userDefinedFunctionExecutionTime += runtimeExecutionTime.UserDefinedFunctionExecutionTime;
+                queryEngineExecutionTime += runtimeExecutionTime.queryEngineExecutionTime;
+                systemFunctionExecutionTime += runtimeExecutionTime.systemFunctionExecutionTime;
+                userDefinedFunctionExecutionTime += runtimeExecutionTime.userDefinedFunctionExecutionTime;
             }
 
             return new RuntimeExecutionTimes(
                 queryEngineExecutionTime,
                 systemFunctionExecutionTime,
                 userDefinedFunctionExecutionTime);
-        }
-
-        /// <summary>
-        /// Gets the delimited string as if from a backend response.
-        /// </summary>
-        /// <returns>The delimited string as if from a backend response.</returns>
-        public string ToDelimitedString()
-        {
-            const string FormatString = "{0}={1:0.00};{2}={3:0.00}";
-
-            // queryEngineExecutionTime is not emitted, since it is calculated as
-            // vmExecutionTime - indexLookupTime - documentLoadTime - documentWriteTime
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                FormatString,
-                QueryMetricsConstants.SystemFunctionExecuteTimeInMs,
-                this.SystemFunctionExecutionTime.TotalMilliseconds,
-                QueryMetricsConstants.UserDefinedFunctionExecutionTimeInMs,
-                this.UserDefinedFunctionExecutionTime.TotalMilliseconds);
-        }
-
-        /// <summary>
-        /// Gets a human readable plain text of the RuntimeExecutionTimes (Please use monospace font).
-        /// </summary>
-        /// <param name="indentLevel">The indent / nesting level of the RuntimeExecutionTimes.</param>
-        /// <returns>A human readable plain text of the QueryMetrics.</returns>
-        public string ToTextString(int indentLevel = 0)
-        {
-            if (indentLevel == int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException("indentLevel", "input must be less than Int32.MaxValue");
-            }
-
-            StringBuilder stringBuilder = new StringBuilder();
-
-            // Checked block is needed to suppress potential overflow warning ... even though I check it above
-            checked
-            {
-                QueryMetricsUtils.AppendHeaderToStringBuilder(
-                    stringBuilder,
-                    QueryMetricsConstants.RuntimeExecutionTimesText,
-                    indentLevel);
-
-                QueryMetricsUtils.AppendMillisecondsToStringBuilder(
-                    stringBuilder,
-                    QueryMetricsConstants.TotalExecutionTimeText,
-                    this.QueryEngineExecutionTime.TotalMilliseconds,
-                    indentLevel + 1);
-
-                QueryMetricsUtils.AppendMillisecondsToStringBuilder(
-                    stringBuilder,
-                    QueryMetricsConstants.SystemFunctionExecuteTimeText,
-                    this.SystemFunctionExecutionTime.TotalMilliseconds,
-                    indentLevel + 1);
-
-                QueryMetricsUtils.AppendMillisecondsToStringBuilder(
-                    stringBuilder,
-                    QueryMetricsConstants.UserDefinedFunctionExecutionTimeText,
-                    this.UserDefinedFunctionExecutionTime.TotalMilliseconds,
-                    indentLevel + 1);
-            }
-
-            return stringBuilder.ToString();
         }
     }
 }

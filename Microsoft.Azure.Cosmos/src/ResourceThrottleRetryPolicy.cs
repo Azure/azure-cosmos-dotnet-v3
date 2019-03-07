@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                     return Task.FromResult(ShouldRetryResult.NoRetry());
                 }
 
-                return this.ShouldRetryAsyncInternal(dce.RetryAfter);
+                return this.ShouldRetryInternalAsync(dce.RetryAfter);
             }
 
             DefaultTrace.TraceError(
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
+            CosmosResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -91,10 +91,10 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(ShouldRetryResult.NoRetry());
             }
 
-            return this.ShouldRetryAsyncInternal(cosmosResponseMessage?.Headers.RetryAfter);
+            return this.ShouldRetryInternalAsync(cosmosResponseMessage?.Headers.RetryAfter);
         }
 
-        private Task<ShouldRetryResult> ShouldRetryAsyncInternal(TimeSpan? retryAfter)
+        private Task<ShouldRetryResult> ShouldRetryInternalAsync(TimeSpan? retryAfter)
         {
             TimeSpan retryDelay = TimeSpan.Zero;
             if (this.currentAttemptCount < this.maxAttemptCount &&
@@ -139,11 +139,11 @@ namespace Microsoft.Azure.Cosmos
         { }
 
         /// <summary>
-        /// Returns True if the retry is needed.
+        /// Returns True if the given <paramref name="retryAfter"/> is within retriable bounds
         /// </summary>
         /// <param name="retryAfter">Value of x-ms-retry-after-ms header</param>
         /// <param name="retryDelay">retryDelay</param>
-        /// <returns>True if the exception is re-triable; False otherwise</returns>
+        /// <returns>True if the exception is retriable; False otherwise</returns>
         private bool CheckIfRetryNeeded(
             TimeSpan? retryAfter, 
             out TimeSpan retryDelay)
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
 
             return false;
         }
-
+        
         private bool IsValidThrottleStatusCode(HttpStatusCode? statusCode)
         {
             return statusCode.HasValue && (int)statusCode.Value == (int)StatusCodes.TooManyRequests;

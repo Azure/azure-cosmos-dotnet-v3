@@ -1,7 +1,6 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
@@ -12,8 +11,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Security;
     using System.Net.Sockets;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Rntbd;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -28,16 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Assuming that this machine isn't running SMTP.
             using (Rntbd.Channel channel = new Rntbd.Channel(
                 new Uri("rntbd://localhost:25"),
-                new Rntbd.ChannelProperties(
-                    new UserAgentContainer(),
-                    certificateHostNameOverride: null,
-                    timerPool: new TimerPool(1),
-                    requestTimeout: TimeSpan.FromSeconds(1.0),
-                    openTimeout: TimeSpan.FromSeconds(1.0),
-                    maxChannels: ushort.MaxValue,
-                    maxRequestsPerChannel: 100,
-                    receiveHangDetectionTime: TimeSpan.FromSeconds(2.0),
-                    sendHangDetectionTime: TimeSpan.FromSeconds(0.5))))
+                RntbdTests.GetChannelProperties()))
             {
             }
         }
@@ -54,16 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Assuming that this machine isn't running SMTP.
                 using (Rntbd.Channel channel = new Rntbd.Channel(
                     new Uri("rntbd://localhost:25"),
-                    new Rntbd.ChannelProperties(
-                        new UserAgentContainer(),
-                        certificateHostNameOverride: null,
-                        timerPool: new TimerPool(1),
-                        requestTimeout: TimeSpan.FromSeconds(1.0),
-                        openTimeout: TimeSpan.FromSeconds(1.0),
-                        maxChannels: ushort.MaxValue,
-                        maxRequestsPerChannel: 100,
-                        receiveHangDetectionTime: TimeSpan.FromSeconds(2.0),
-                        sendHangDetectionTime: TimeSpan.FromSeconds(0.5))))
+                    RntbdTests.GetChannelProperties()))
                 {
                     channel.Initialize(activityId);
                 }
@@ -86,16 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Assuming that this machine isn't running SMTP.
                 using (Rntbd.Channel channel = new Rntbd.Channel(
                     new Uri("rntbd://localhost:25"),
-                    new Rntbd.ChannelProperties(
-                        new UserAgentContainer(),
-                        certificateHostNameOverride: null,
-                        timerPool: new TimerPool(1),
-                        requestTimeout: TimeSpan.FromSeconds(1.0),
-                        openTimeout: TimeSpan.FromSeconds(1.0),
-                        maxChannels: ushort.MaxValue,
-                        maxRequestsPerChannel: 100,
-                        receiveHangDetectionTime: TimeSpan.FromSeconds(2.0),
-                        sendHangDetectionTime: TimeSpan.FromSeconds(0.5))))
+                    RntbdTests.GetChannelProperties()))
                 {
                     channel.Initialize(activityId);
                     await Task.Delay(r.Next(1, buckets) * msPerBucket);
@@ -115,16 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Trace.CorrelationManager.ActivityId = activityId;
                 using (Rntbd.Channel channel = new Rntbd.Channel(
                     new Uri("rntbd://localhost:25"),
-                    new Rntbd.ChannelProperties(
-                        new UserAgentContainer(),
-                        certificateHostNameOverride: null,
-                        timerPool: new TimerPool(1),
-                        requestTimeout: TimeSpan.FromSeconds(1.0),
-                        openTimeout: TimeSpan.FromSeconds(1.0),
-                        maxChannels: ushort.MaxValue,
-                        maxRequestsPerChannel: 100,
-                        receiveHangDetectionTime: TimeSpan.FromSeconds(2.0),
-                        sendHangDetectionTime: TimeSpan.FromSeconds(0.5))))
+                    RntbdTests.GetChannelProperties()))
                 {
                     channel.Initialize(activityId);
                     Stopwatch innerSw = Stopwatch.StartNew();
@@ -141,16 +107,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                                 ResourceOperation.ReadDocument,
                                 activityId);
                         }
-                        catch (DocumentClientException e)
+                        catch (TransportException e)
                         {
-                            Assert.AreEqual(activityId.ToString(), e.ActivityId);
-                            Assert.AreEqual("Gone", e.Error.Code);
-                            Exception rootCause = e;
-                            Exception nextRootCause = e.InnerException;
-                            while (nextRootCause != null)
+                            Assert.AreEqual(activityId, e.ActivityId);
+                            Assert.IsTrue(
+                                (e.ErrorCode == TransportErrorCode.ConnectFailed) ||
+                                (e.ErrorCode == TransportErrorCode.ConnectTimeout),
+                                "Expected ConnectFailed or ConnectTimeout. Actual: {0}",
+                                e.ErrorCode);
+                            Exception rootCause = e.GetBaseException();
+                            if (e.Equals(rootCause))
                             {
-                                rootCause = nextRootCause;
-                                nextRootCause = nextRootCause.InnerException;
+                                return;
                             }
                             SocketException socketException = rootCause as SocketException;
                             if (socketException != null)
@@ -165,10 +133,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                             }
                             else
                             {
-                                GoneException goneException = rootCause as GoneException;
                                 IOException ioException = rootCause as IOException;
-                                Assert.IsTrue(goneException != null || ioException != null,
-                                    "Expected GoneException or IOException. Actual: {0} ({1})",
+                                Assert.IsTrue(ioException != null,
+                                    "Expected IOException. Actual: {0} ({1})",
                                     rootCause.Message, rootCause.GetType());
                             }
                         }
@@ -214,16 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                             using (Rntbd.Channel channel = new Rntbd.Channel(
                                 server.Uri,
-                                new Rntbd.ChannelProperties(
-                                    new UserAgentContainer(),
-                                    certificateHostNameOverride: "localhost",
-                                    timerPool: new TimerPool(1),
-                                    requestTimeout: TimeSpan.FromSeconds(1.0),
-                                    openTimeout: TimeSpan.FromSeconds(1.0),
-                                    maxChannels: ushort.MaxValue,
-                                    maxRequestsPerChannel: 100,
-                                    receiveHangDetectionTime: TimeSpan.FromSeconds(2.0),
-                                    sendHangDetectionTime: TimeSpan.FromSeconds(0.5))))
+                                RntbdTests.GetChannelProperties()))
                             {
                                 channel.Initialize(activityId);
 
@@ -240,17 +198,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                                         resourceOperation,
                                         activityId);
                                 }
-                                catch (DocumentClientException e)
+                                catch (TransportException e)
                                 {
-                                    Assert.AreEqual(activityId.ToString(), e.ActivityId);
-                                    Assert.AreEqual("Gone", e.Error.Code);
-                                    Exception rootCause = e;
-                                    Exception nextRootCause = e.InnerException;
-                                    while (nextRootCause != null)
-                                    {
-                                        rootCause = nextRootCause;
-                                        nextRootCause = nextRootCause.InnerException;
-                                    }
+                                    Assert.AreEqual(activityId, e.ActivityId);
+                                    Assert.AreEqual(
+                                        TransportErrorCode.SslNegotiationFailed, e.ErrorCode);
+                                    Exception rootCause = e.GetBaseException();
                                     SocketException socketException = rootCause as SocketException;
                                     if (socketException != null)
                                     {
@@ -319,16 +272,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                             using (Rntbd.Channel channel = new Rntbd.Channel(
                                 server.Uri,
-                                new Rntbd.ChannelProperties(
-                                    new UserAgentContainer(),
-                                    certificateHostNameOverride: "localhost",
-                                    timerPool: new TimerPool(1),
-                                    requestTimeout: TimeSpan.FromSeconds(1.0),
-                                    openTimeout: TimeSpan.FromSeconds(1.0),
-                                    maxChannels: ushort.MaxValue,
-                                    maxRequestsPerChannel: 100,
-                                    receiveHangDetectionTime: TimeSpan.FromSeconds(2.0),
-                                    sendHangDetectionTime: TimeSpan.FromSeconds(0.5))))
+                                RntbdTests.GetChannelProperties()))
                             {
                                 channel.Initialize(activityId);
 
@@ -345,20 +289,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                                         resourceOperation,
                                         activityId);
                                 }
-                                catch (DocumentClientException e)
+                                catch (TransportException e)
                                 {
-                                    Assert.AreEqual(activityId.ToString(), e.ActivityId);
-                                    if (!string.Equals("ServiceUnavailable", e.Error.Code) &&
-                                        !string.Equals("Gone", e.Error.Code))
+                                    Assert.AreEqual(activityId, e.ActivityId);
+                                    Assert.IsTrue(
+                                        (e.ErrorCode == TransportErrorCode.ReceiveFailed) ||
+                                        (e.ErrorCode == TransportErrorCode.SslNegotiationFailed) ||
+                                        (e.ErrorCode == TransportErrorCode.ReceiveStreamClosed),
+                                        "Expected ReceiveFailed or ReceiveStreamClosed. Actual: {0}",
+                                        e.ErrorCode);
+                                    Exception rootCause = e.GetBaseException();
+                                    if (e.Equals(rootCause))
                                     {
-                                        Assert.Fail("Unexpected error code: {0}", e.Error.Code);
-                                    }
-                                    Exception rootCause = e;
-                                    Exception nextRootCause = e.InnerException;
-                                    while (nextRootCause != null)
-                                    {
-                                        rootCause = nextRootCause;
-                                        nextRootCause = nextRootCause.InnerException;
+                                        return;
                                     }
                                     SocketException socketException = rootCause as SocketException;
                                     if (socketException != null)
@@ -374,10 +317,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                                     }
                                     else
                                     {
-                                        GoneException goneException = rootCause as GoneException;
                                         IOException ioException = rootCause as IOException;
-                                        Assert.IsTrue(goneException != null || ioException != null,
-                                            "Expected GoneException or IOException. Actual: {0} ({1})",
+                                        Assert.IsTrue(ioException != null,
+                                            "Expected IOException. Actual: {0} ({1})",
                                             rootCause.Message, rootCause.GetType());
                                     }
                                 }
@@ -392,7 +334,111 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [Ignore]
+        [TestMethod]
+        [Description("set up connection and do nothing, waiting for the connection to become idle.")]
+        public async Task IdleChannelClosureAsyncTest()
+        {
+            using (FaultyServer server = new FaultyServer())
+            {
+                try
+                {
+                    await server.StartAsync();
+
+                    TimeSpan runTime = TimeSpan.FromSeconds(45.0);
+                    Stopwatch sw = Stopwatch.StartNew();
+
+                    Guid activityId = Guid.NewGuid();
+                    Trace.CorrelationManager.ActivityId = activityId;
+
+                    ChannelProperties channelProperties = new ChannelProperties(
+                        new UserAgentContainer(),
+                        certificateHostNameOverride: "localhost",
+                        requestTimerPool: new TimerPool(1),
+                        requestTimeout: TimeSpan.FromSeconds(3.0),
+                        openTimeout: TimeSpan.FromSeconds(3.0),
+                        maxChannels: ushort.MaxValue,
+                        partitionCount: 1,
+                        maxRequestsPerChannel: 100,
+                        receiveHangDetectionTime: TimeSpan.FromSeconds(11.0),
+                        sendHangDetectionTime: TimeSpan.FromSeconds(3.0),
+                        idleTimeout: TimeSpan.FromSeconds(5),
+                        idleTimerPool: new TimerPool(1));
+
+                    using (Channel channel = new Channel(
+                        server.Uri,
+                        channelProperties))
+                    {
+                        AutoResetEvent initializationEvent = new AutoResetEvent(initialState: false);
+                        ManualResetEventSlim connectionClosedEvent = new ManualResetEventSlim(initialState: false);
+
+                        channel.OnInitializationComplete += () =>
+                        {
+                            Trace.WriteLine("channel initialization event is fired");
+                            initializationEvent.Set();
+                        };
+                        channel.SubscribeToConnectionClosure(() =>
+                        {
+                            Trace.WriteLine("channel connection closure event is fired");
+                            connectionClosedEvent.Set();
+                        });
+
+                        channel.Initialize(activityId);
+                        Assert.IsTrue(initializationEvent.WaitOne());
+                        Trace.WriteLine("channel initialization completes");
+
+                        Assert.IsTrue(channel.Healthy);
+                        Assert.IsFalse(connectionClosedEvent.IsSet);
+                        Trace.WriteLine($"Start waiting for idle: {DateTime.UtcNow}");
+                        bool isChannelIdleAndClosed = false;
+
+                        while (sw.Elapsed < runTime)
+                        {
+                            if (!channel.Healthy)
+                            {
+                                Assert.IsTrue(channel.IsIdle);
+                                Trace.WriteLine($"Idle: {DateTime.UtcNow}");
+                                if (connectionClosedEvent.Wait(TimeSpan.FromSeconds(2)))
+                                {
+                                    Trace.WriteLine($"Connection closed: {DateTime.UtcNow}");
+                                    sw.Stop();
+                                    isChannelIdleAndClosed = true;
+                                    break;
+                                }
+                            }
+
+                            await Task.Delay(TimeSpan.FromSeconds(2));
+                        }
+
+                        Assert.IsTrue(isChannelIdleAndClosed);
+                        Assert.IsTrue(sw.Elapsed < runTime);
+                    }
+                }
+                finally
+                {
+                    await server.StopAsync();
+                }
+            }
+        }
+
         #region Static helpers
+
+        private static ChannelProperties GetChannelProperties()
+        {
+            return new Rntbd.ChannelProperties(
+                new UserAgentContainer(),
+                certificateHostNameOverride: "localhost",
+                requestTimerPool: new TimerPool(1),
+                requestTimeout: TimeSpan.FromSeconds(1.0),
+                openTimeout: TimeSpan.FromSeconds(1.0),
+                maxChannels: ushort.MaxValue,
+                partitionCount: 1,
+                maxRequestsPerChannel: 100,
+                receiveHangDetectionTime: TimeSpan.FromSeconds(15.0),
+                sendHangDetectionTime: TimeSpan.FromSeconds(5.0),
+                idleTimeout: TimeSpan.FromSeconds(-1),
+                idleTimerPool: null);
+        }
 
         // Suspends the calling thread for a brief amount of time
         // (between 0 and 3 64 Hz ticks).
@@ -501,6 +547,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serverEndpoint.Address.ToString(),
                     serverEndpoint.Port);
                 this.uri = uriBuilder.Uri;
+
+                Trace.WriteLine($"Faulty server: start to listen to endpoint: {this.uri}");
                 CancellationToken cancellation = this.serverShutdown.Token;
                 this.acceptLoop = Task.Factory.StartNew(
                     async () => { await this.AcceptAsync(cancellation); },
@@ -511,6 +559,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public async Task StopAsync()
             {
+                Trace.WriteLine($"Faulty server is stopping...");
+
                 this.serverShutdown.Cancel();
                 this.listener.Stop();
                 Task completedTask = await Task.WhenAny(
@@ -520,6 +570,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Trace.WriteLine("Timed out while waiting for graceful shutdown");
                     // Timeout
                     this.ConsumeException(this.acceptLoop, "accept loop");
+                }
+                else
+                {
+                    Trace.WriteLine($"Faulty server is stopped gracefully.");
                 }
             }
 
@@ -564,7 +618,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                                 this.ConsumeException(acceptTask, "accept");
                                 continue;
                             }
+
                             // New connection
+                            Trace.WriteLine("Faulty server: a connection is opening.");
                             TcpClient connection = acceptTask.Result;
                             lock (connectionCountLock)
                             {
@@ -578,9 +634,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                                 },
                                 shutdownSignal,
                                 TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
-                                TaskScheduler.Current);
+                                TaskScheduler.Current).Unwrap();
                             var ignored = connectionTask.ContinueWith(t =>
                             {
+                                Trace.WriteLine($"Faulty server: a connection is closed. Parent task: {t.IsCompleted}");
                                 TaskCompletionSource<object> done = null;
                                 lock (connectionCountLock)
                                 {
@@ -649,6 +706,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (this.CloseConnection(ConnectionEventType.ConnectionAccepted))
                         {
+                            Trace.WriteLine("Faulty server: closing connection at ConnectionAccepted event");
                             return;
                         }
                         connection.NoDelay = true;
@@ -665,21 +723,41 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                             if (this.CloseConnection(ConnectionEventType.SslNegotiationComplete))
                             {
+                                Trace.WriteLine("Faulty server: closing connection at SslNegotiationComplete event");
                                 return;
                             }
 
-                            byte[] readBuffer = new byte[16 * 1024];
-                            int totalAvailable = 0;
+                            // context negotiation
+                            Trace.WriteLine("Faulty server: start context negotiation...");
+                            byte[] readBuffer = new byte[2 * 1024];
+                            int offset = 0;
+                            int bytesRead = await encryptedStream.ReadAsync(readBuffer, offset, readBuffer.Length - offset);
+                            Trace.WriteLine($"Faulty server: got context negotiation from client: {bytesRead} bytes");
+                            Assert.IsTrue(bytesRead > 0 && bytesRead < readBuffer.Length);
+
+                            Trace.WriteLine("Faulty server: start replying negotiating context.");
+                            byte[] contextResponse = this.BuildContextResponse();
+                            await encryptedStream.WriteAsync(contextResponse, 0, contextResponse.Length);
+                            Trace.WriteLine("Faulty server: Negotiating context is completed.");
+
+                            // request handling loop
                             while (!shutdownSignal.IsCancellationRequested)
                             {
-                                int bytesRead = await encryptedStream.ReadAsync(readBuffer, totalAvailable, readBuffer.Length - totalAvailable);
-                                if (bytesRead == 0)
+                                readBuffer = new byte[16 * 1024];
+                                offset = 0;
+                                bytesRead = await encryptedStream.ReadAsync(readBuffer, offset, readBuffer.Length - offset, shutdownSignal);
+                                if (bytesRead > 0)
                                 {
-                                    Trace.WriteLine("Server: Connection closed by peer");
-                                    return;
+                                    throw new NotImplementedException("request is not supported yet");
                                 }
-                                totalAvailable += bytesRead;
+                                else
+                                {
+                                    Trace.WriteLine($"Faulty server: Reached end of the request stream. {DateTime.UtcNow}");
+                                    await Task.Delay(500);
+                                }
                             }
+
+                            Trace.WriteLine($"Faulty server: Quiting connection loop. {DateTime.UtcNow}");
                         }
                     }
                 }
@@ -688,6 +766,55 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Trace.WriteLine(e.Message);
                     throw;
                 }
+            }
+
+            private byte[] BuildContextResponse()
+            {
+                // metadata
+                ushort serverAgentIdentifier = (ushort)RntbdConstants.ConnectionContextResponseTokenIdentifiers.ServerAgent;
+                byte serverAgentTokenType = (byte)RntbdTokenTypes.SmallString;
+                byte[] serverAgentValue = Encoding.UTF8.GetBytes("faultyServer");
+                byte serverAgentValueLength = (byte)serverAgentValue.Length;
+                ushort serverVersionIdentifier = (ushort)RntbdConstants.ConnectionContextResponseTokenIdentifiers.ServerVersion;
+                byte serverVersionTokenType = (byte)RntbdTokenTypes.SmallString;
+                byte[] serverVersionValue = Encoding.UTF8.GetBytes("1.0.0.0");
+                byte serverVersionValueLength = (byte)serverVersionValue.Length;
+
+                // header
+                UInt32 status = 200;
+                byte[] activityIdBytes = Guid.NewGuid().ToByteArray();
+                UInt32 totalLength =
+                    sizeof(UInt32) /* totalLength */
+                    + sizeof(UInt32) /* status */
+                    + 16 /* sizeof(Guid) */
+                    + (sizeof(ushort) + sizeof(byte) + sizeof(byte) + (uint)serverAgentValue.Length)
+                    + (sizeof(ushort) + sizeof(byte) + sizeof(byte) + (uint)serverVersionValue.Length);
+
+                byte[] responseMessage = new byte[totalLength];
+                using (MemoryStream writeStream = new MemoryStream(responseMessage, true))
+                {
+                    using (BinaryWriter writer = new BinaryWriter(writeStream))
+                    {
+                        // header
+                        writer.Write(totalLength);
+                        writer.Write(status);
+                        writer.Write(activityIdBytes);
+
+                        // metadata
+                        writer.Write(serverAgentIdentifier);
+                        writer.Write(serverAgentTokenType);
+                        writer.Write(serverAgentValueLength);
+                        writer.Write(serverAgentValue);
+                        writer.Write(serverVersionIdentifier);
+                        writer.Write(serverVersionTokenType);
+                        writer.Write(serverVersionValueLength);
+                        writer.Write(serverVersionValue);
+
+                        writer.Flush();
+                    }
+                }
+
+                return responseMessage;
             }
 
             private bool CloseConnection(ConnectionEventType eventType)

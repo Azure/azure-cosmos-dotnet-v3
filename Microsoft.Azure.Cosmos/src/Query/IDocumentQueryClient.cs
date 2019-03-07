@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
     {
         QueryCompatibilityMode QueryCompatibilityMode { get; set; }
 
-        RetryPolicy RetryPolicy { get; }
+        IRetryPolicyFactory ResetSessionTokenRetryPolicy { get; }
 
         Uri ServiceEndpoint { get; }
 

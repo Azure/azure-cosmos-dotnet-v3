@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class ClientExtensions
     {
+        internal const string MediaTypeJson = "application/json";
+
         public static async Task<HttpResponseMessage> GetAsync(this HttpClient client,
             Uri uri,
             INameValueCollection additionalHeaders = null,
@@ -46,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, bool throwOnKnownClientErrorCodes = true)
+        public static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
         {
             using (responseMessage)
             {
@@ -61,7 +63,8 @@ namespace Microsoft.Azure.Cosmos
                     INameValueCollection headers = ClientExtensions.ExtractResponseHeaders(responseMessage);
                     return new DocumentServiceResponse(bufferedStream, headers, responseMessage.StatusCode, serializerSettings);
                 }
-                else if (!throwOnKnownClientErrorCodes && (responseMessage.StatusCode == HttpStatusCode.NotFound || responseMessage.StatusCode == HttpStatusCode.PreconditionFailed || responseMessage.StatusCode == HttpStatusCode.Conflict))
+                else if (request != null
+                    && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = ClientExtensions.ExtractResponseHeaders(responseMessage);
                     return new DocumentServiceResponse(null, headers, responseMessage.StatusCode, serializerSettings);
@@ -90,31 +93,49 @@ namespace Microsoft.Azure.Cosmos
 
         private static async Task<DocumentClientException> CreateDocumentClientException(HttpResponseMessage responseMessage)
         {
-            Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-
-            Error error = CosmosResource.LoadFrom<Error>(readStream);
-
             // ensure there is no local ActivityId, since in Gateway mode ActivityId
             // should always come from message headers
             Trace.CorrelationManager.ActivityId = Guid.Empty;
 
-            bool isNameBased = false;
-            bool isFeed = false;
-            string resourceTypeString;
-            string resourceIdOrFullName;
-
             string resourceLink = responseMessage.RequestMessage.RequestUri.LocalPath;
-            if (!PathsHelper.TryParsePathSegments(resourceLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased))
+            if (!PathsHelper.TryParsePathSegments(
+                resourceLink, 
+                out bool isFeed, 
+                out string resourceTypeString, 
+                out string resourceIdOrFullName, 
+                out bool isNameBased))
             {
                 // if resourceLink is invalid - we will not set resourceAddress in exception.
             }
 
-            return new DocumentClientException(error,
-                responseMessage.Headers, responseMessage.StatusCode)
+            // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
+            if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, ClientExtensions.MediaTypeJson, StringComparison.OrdinalIgnoreCase))
             {
-                StatusDescription = responseMessage.ReasonPhrase,
-                ResourceAddress = resourceIdOrFullName
-            };
+                Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
+                Error error = CosmosResource.LoadFrom<Error>(readStream);
+                return new DocumentClientException(
+                    error,
+                    responseMessage.Headers,
+                    responseMessage.StatusCode)
+                {
+                    StatusDescription = responseMessage.ReasonPhrase,
+                    ResourceAddress = resourceIdOrFullName
+                };
+            }
+            else
+            {
+                string message = responseMessage.Content == null ? null : await responseMessage.Content.ReadAsStringAsync();
+                return new DocumentClientException(
+                    message: message,
+                    innerException: null,
+                    responseHeaders: responseMessage.Headers,
+                    statusCode: responseMessage.StatusCode,
+                    requestUri: responseMessage.RequestMessage.RequestUri)
+                {
+                    StatusDescription = responseMessage.ReasonPhrase,
+                    ResourceAddress = resourceIdOrFullName
+                };
+            }
         }
 
         private static INameValueCollection ExtractResponseHeaders(HttpResponseMessage responseMessage)

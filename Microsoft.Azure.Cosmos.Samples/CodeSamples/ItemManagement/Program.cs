@@ -1,14 +1,16 @@
-﻿using Microsoft.Azure.Cosmos;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Linq;
-using System;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-
-namespace Cosmos.Samples.Shared
+﻿namespace Cosmos.Samples.Shared
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Text;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Configuration;
+    using Newtonsoft.Json;
+
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
     // 
@@ -52,11 +54,14 @@ namespace Cosmos.Samples.Shared
     {
         private static readonly string databaseId = "samples";
         private static readonly string containerId = "item-samples";
+        private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         //Reusable instance of ItemClient which represents the connection to a Cosmos endpoint
         private static CosmosDatabase database = null;
         private static CosmosContainer container = null;
-        public static void Main(string[] args)
+
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        public static async Task Main(string[] args)
         {
             try
             {
@@ -81,9 +86,9 @@ namespace Cosmos.Samples.Shared
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    Program.Initialize(client).GetAwaiter().GetResult();
-                    Program.RunItemsDemo().GetAwaiter().GetResult();
-                    Program.Cleanup().GetAwaiter().GetResult();
+                    await Program.Initialize(client);
+                    await Program.RunItemsDemo();
+                    await Program.Cleanup();
                 }
             }
             catch (CosmosException cre)
@@ -129,11 +134,11 @@ namespace Cosmos.Samples.Shared
         /// </summary>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
         {
-            await Program.CreateItemsAsync();
+            SalesOrder result = await Program.CreateItemsAsync();
 
             await Program.ReadItemAsync();
 
-            SalesOrder result = await Program.QueryItems();
+            await Program.QueryItems();
 
             await Program.ReplaceItemAsync(result);
 
@@ -142,27 +147,51 @@ namespace Cosmos.Samples.Shared
             await Program.DeleteItemAsync();
         }
 
-        private static async Task CreateItemsAsync()
+        private static async Task<SalesOrder> CreateItemsAsync()
         {
             Console.WriteLine("\n1.1 - Creating items");
 
             // Create a SalesOrder object. This object has nested properties and various types including numbers, DateTimes and strings.
             // This can be saved as JSON as is without converting into rows/columns.
             SalesOrder salesOrder = GetSalesOrderSample("SalesOrder1");
-            await container.Items.CreateItemAsync(salesOrder.AccountNumber, salesOrder);
+            CosmosItemResponse<SalesOrder> response = await container.Items.CreateItemAsync(salesOrder.AccountNumber, salesOrder);
+            SalesOrder salesOrder1 = response;
+            Console.WriteLine($"\n1.1.1 - Item created {salesOrder1.Id}");
 
             // As your app evolves, let's say your object has a new schema. You can insert SalesOrderV2 objects without any 
             // changes to the database tier.
             SalesOrder2 newSalesOrder = GetSalesOrderV2Sample("SalesOrder2");
-            await container.Items.CreateItemAsync(newSalesOrder.AccountNumber, newSalesOrder);
+            CosmosItemResponse<SalesOrder2> response2 = await container.Items.CreateItemAsync(newSalesOrder.AccountNumber, newSalesOrder);
+            SalesOrder2 salesOrder2 = response2;
+            Console.WriteLine($"\n1.1.2 - Item created {salesOrder2.Id}");
+
+            // For better performance create a SalesOrder object from a stream. 
+            SalesOrder salesOrderV3 = GetSalesOrderSample("SalesOrderV3");
+            using (Stream stream = Program.ToStream<SalesOrder>(salesOrderV3))
+            {
+                using (CosmosResponseMessage responseMessage = await container.Items.CreateItemStreamAsync(salesOrderV3.AccountNumber, stream))
+                {
+                    // Item stream operations do not throw exceptions for better performance
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
+                        Console.WriteLine($"\n1.1.2 - Item created {streamResponse.Id}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Create item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                    }
+                }
+            }
+
+            return salesOrder;
         }
 
         private static async Task ReadItemAsync()
         {
             Console.WriteLine("\n1.2 - Reading Item by Id");
 
-            // Note that Reads require a partition key to be specified. This can be skipped if your collection is not
-            // partitioned i.e. does not have a partition key definition during creation.
+            // Note that Reads require a partition key to be specified.
             CosmosItemResponse<SalesOrder> response = await container.Items.ReadItemAsync<SalesOrder>(
                 partitionKey: "Account1",
                 id: "SalesOrder1");
@@ -172,9 +201,26 @@ namespace Cosmos.Samples.Shared
             Console.WriteLine("Request Units Charge for reading an Item by Id {0}", response.RequestCharge);
 
             SalesOrder readOrder = (SalesOrder)response;
+
+            // Read the same item but as a stream.
+            using (CosmosResponseMessage responseMessage = await container.Items.ReadItemStreamAsync(
+                partitionKey: "Account1",
+                id: "SalesOrder1"))
+            {
+                // Item stream operations do not throw exceptions for better performance
+                if (responseMessage.IsSuccessStatusCode)
+                {
+                    SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
+                    Console.WriteLine($"\n1.2.2 - Item created {streamResponse.Id}");
+                }
+                else
+                {
+                    Console.WriteLine($"Read item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                }
+            }
         }
 
-        private static async Task<SalesOrder> QueryItems()
+        private static async Task QueryItems()
         {
             //******************************************************************************************************************
             // 1.4 - Query for items by a property other than Id
@@ -182,12 +228,6 @@ namespace Cosmos.Samples.Shared
             // NOTE: Operations like AsEnumerable(), ToList(), ToArray() will make as many trips to the database
             //       as required to fetch the entire result-set. Even if you set MaxItemCount to a smaller number. 
             //       MaxItemCount just controls how many results to fetch each trip. 
-            //       If you don't want to fetch the full set of results, then use CreateItemQuery().AsItemQuery()
-            //       For more on this please refer to the Queries project.
-            //
-            // NOTE: If you want to get the RU charge for a query you also need to use CreateItemQuery().AsItemQuery()
-            //       and check the RequestCharge property of this IQueryable response
-            //       Once again, refer to the Queries project for more information and examples of this
             //******************************************************************************************************************
             Console.WriteLine("\n1.4 - Querying for an item using its AccountNumber property");
 
@@ -196,17 +236,52 @@ namespace Cosmos.Samples.Shared
                 .UseParameter("@AccountInput", "Account1");
 
             CosmosResultSetIterator<SalesOrder> resultSet = container.Items.CreateItemQuery<SalesOrder>(
-                query, maxConcurrency: 1,
+                query,
+                partitionKey: "Account1",
                 maxItemCount: 1);
 
+            List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
             while (resultSet.HasMoreResults)
             {
                 SalesOrder sale = (await resultSet.FetchNextSetAsync()).First();
-                Console.WriteLine($"Account Number: {sale.AccountNumber}; Id: {sale.Id} ");
-                return sale;
+                Console.WriteLine($"\n1.4.1 Account Number: {sale.AccountNumber}; Id: {sale.Id} ");
+                allSalesForAccount1.Add(sale);
             }
 
-            throw new ArgumentNullException("No Sale order found by query");
+            Console.WriteLine($"\n1.4.2 Query found {allSalesForAccount1.Count} items.");
+
+            // Use the same query as before but get the cosmos response message to access the stream directly
+            CosmosResultSetIterator streamResultSet = container.Items.CreateItemQueryAsStream(
+                query,
+                partitionKey: "Account1",
+                maxItemCount: 10);
+
+            List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
+            while (streamResultSet.HasMoreResults)
+            {
+                using (CosmosResponseMessage responseMessage = await streamResultSet.FetchNextSetAsync())
+                {
+                    // Item stream operations do not throw exceptions for better performance
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
+                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
+                        Console.WriteLine($"\n1.4.3 - Item Query via stream {salesOrders.Count}");
+                        allSalesForAccount1FromStream.AddRange(salesOrders);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Query item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                    }
+                }
+            }
+
+            Console.WriteLine($"\n1.4.4 Query found {allSalesForAccount1FromStream.Count} items.");
+
+            if (allSalesForAccount1.Count != allSalesForAccount1FromStream.Count)
+            {
+                throw new InvalidDataException($"Both query operations should return the same list");
+            }
         }
 
         private static async Task ReplaceItemAsync(SalesOrder order)
@@ -227,6 +302,27 @@ namespace Cosmos.Samples.Shared
             SalesOrder updated = response.Resource;
             Console.WriteLine($"Request charge of replace operation: {response.RequestCharge}");
             Console.WriteLine($"Shipped date of updated item: {updated.ShippedDate}");
+
+            order.ShippedDate = DateTime.UtcNow;
+            using (Stream stream = Program.ToStream<SalesOrder>(order))
+            {
+                using (CosmosResponseMessage responseMessage = await container.Items.ReplaceItemStreamAsync(
+                    partitionKey: order.AccountNumber,
+                    id: order.Id,
+                    streamPayload: stream))
+                {
+                    // Item stream operations do not throw exceptions for better performance
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
+                        Console.WriteLine($"\n1.5.2 - Item replace via stream {streamResponse.Id}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Replace item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                    }
+                }
+            }
         }
 
         private static async Task UpsertItemAsync()
@@ -252,6 +348,27 @@ namespace Cosmos.Samples.Shared
             Console.WriteLine($"StatusCode of this operation: { response.StatusCode}");
             Console.WriteLine($"Id of upserted item: {upserted.Id}");
             Console.WriteLine($"AccountNumber of upserted item: {upserted.AccountNumber}");
+
+            // For better performance upsert a SalesOrder object from a stream. 
+            SalesOrder salesOrderV4 = GetSalesOrderSample("SalesOrder4");
+            using (Stream stream = Program.ToStream<SalesOrder>(salesOrderV4))
+            {
+                using (CosmosResponseMessage responseMessage = await container.Items.UpsertItemStreamAsync(
+                    partitionKey: salesOrderV4.AccountNumber,
+                    streamPayload: stream))
+                {
+                    // Item stream operations do not throw exceptions for better performance
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
+                        Console.WriteLine($"\n1.6.2 - Item upserted via stream {streamResponse.Id}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Upsert item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                    }
+                }
+            }
         }
 
         private static async Task DeleteItemAsync()
@@ -263,6 +380,43 @@ namespace Cosmos.Samples.Shared
 
             Console.WriteLine("Request charge of delete operation: {0}", response.RequestCharge);
             Console.WriteLine("StatusCode of operation: {0}", response.StatusCode);
+        }
+
+        private static T FromStream<T>(Stream stream)
+        {
+            using (stream)
+            {
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                {
+                    return (T)(object)(stream);
+                }
+
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                    {
+                        return Program.Serializer.Deserialize<T>(jsonTextReader);
+                    }
+                }
+            }
+        }
+
+        private static Stream ToStream<T>(T input)
+        {
+            MemoryStream streamPayload = new MemoryStream();
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: Encoding.Default, bufferSize: 1024, leaveOpen: true))
+            {
+                using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    writer.Formatting = Newtonsoft.Json.Formatting.None;
+                    Program.Serializer.Serialize(writer, input);
+                    writer.Flush();
+                    streamWriter.Flush();
+                }
+            }
+
+            streamPayload.Position = 0;
+            return streamPayload;
         }
 
         private static SalesOrder GetSalesOrderSample(string itemId)
