@@ -41,7 +41,8 @@
         {
             get
             {
-                return this.lazyNumber.Value % 1 != 0;
+                // Until we have Number64 a LazyCosmosNumber is always a double.
+                return true;
             }
         }
 
@@ -49,7 +50,8 @@
         {
             get
             {
-                return this.lazyNumber.Value % 1 == 0;
+                // Until we have Number64 a LazyCosmosNumber is always a double.
+                return false;
             }
         }
 
@@ -60,7 +62,7 @@
 
         public override long? AsLong()
         {
-            return (long)this.lazyNumber.Value;
+            return null;
         }
 
         public void WriteToWriter(IJsonWriter jsonWriter)
