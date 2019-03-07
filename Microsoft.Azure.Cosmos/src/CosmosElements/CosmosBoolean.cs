@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosBoolean.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
@@ -19,6 +24,11 @@
             get;
         }
 
+        public static CosmosBoolean Create(bool boolean)
+        {
+            return boolean ? CosmosBoolean.True : CosmosBoolean.False;
+        }
+
         public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
@@ -34,11 +44,6 @@
             {
                 jsonWriter.WriteBoolValue(false);
             }
-        }
-
-        public static CosmosBoolean Create(bool boolean)
-        {
-            return boolean ? CosmosBoolean.True : CosmosBoolean.False;
         }
     }
 }

@@ -1,7 +1,12 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosString.LazyCosmosString.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    using Microsoft.Azure.Cosmos.Json;
     using System;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosString : CosmosElement
     {
@@ -52,7 +57,7 @@
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                jsonWriter.WriteJsonNode(this.jsonNavigator, jsonNavigatorNode);
+                jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
             }
         }
     } 

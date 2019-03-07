@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosObject.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System.Collections;
     using System.Collections.Generic;
@@ -7,13 +12,8 @@
     internal abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
     {
         protected CosmosObject()
-            : base (CosmosElementType.Object)
+            : base(CosmosElementType.Object)
         {
-        }
-
-        public abstract CosmosElement this[string key]
-        {
-            get;
         }
 
         public abstract IEnumerable<string> Keys
@@ -31,15 +31,9 @@
             get;
         }
 
-        public abstract bool ContainsKey(string key);
-
-        public abstract bool TryGetValue(string key, out CosmosElement value);
-
-        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator()
+        public abstract CosmosElement this[string key]
         {
-            return this.GetEnumerator();
+            get;
         }
 
         public static CosmosObject Create(
@@ -52,6 +46,17 @@
         public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
         {
             return new EagerCosmosObject(dictionary);
+        }
+
+        public abstract bool ContainsKey(string key);
+
+        public abstract bool TryGetValue(string key, out CosmosElement value);
+
+        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
         }
     }
 }

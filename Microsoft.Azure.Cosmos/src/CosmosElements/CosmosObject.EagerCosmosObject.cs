@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosObject.EagerCosmosObject.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
@@ -21,13 +26,13 @@
                 this.dictionary = new Dictionary<string, CosmosElement>(dictionary);
             }
 
-            public override CosmosElement this[string key] => this.dictionary[key];
-
             public override IEnumerable<string> Keys => this.dictionary.Keys;
 
             public override IEnumerable<CosmosElement> Values => this.dictionary.Values;
 
             public override int Count => this.dictionary.Count;
+
+            public override CosmosElement this[string key] => this.dictionary[key];
 
             public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
 

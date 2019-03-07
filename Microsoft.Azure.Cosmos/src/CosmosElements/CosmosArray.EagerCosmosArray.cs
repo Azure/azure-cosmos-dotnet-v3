@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosArray.EagerCosmosArray.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
@@ -28,6 +33,8 @@
                 this.cosmosElements = new List<CosmosElement>(elements);
             }
 
+            public override int Count => this.cosmosElements.Count;
+
             public override CosmosElement this[int index]
             {
                 get
@@ -35,8 +42,6 @@
                     return this.cosmosElements[index];
                 }
             }
-
-            public override int Count => this.cosmosElements.Count;
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this.cosmosElements.GetEnumerator();
 

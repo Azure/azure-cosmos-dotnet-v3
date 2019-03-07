@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosNull.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
@@ -12,6 +17,11 @@
         {
         }
 
+        public static CosmosNull Create()
+        {
+            return CosmosNull.Singleton;
+        }
+
         public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
@@ -20,11 +30,6 @@
             }
 
             jsonWriter.WriteNullValue();
-        }
-
-        public static CosmosNull Create()
-        {
-            return CosmosNull.Singleton;
         }
     }
 }

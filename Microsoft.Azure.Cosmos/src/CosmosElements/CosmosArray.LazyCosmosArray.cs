@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosArray.LazyCosmosArray.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
@@ -36,6 +41,8 @@
                 this.jsonNavigatorNode = jsonNavigatorNode;
             }
 
+            public override int Count => this.jsonNavigator.GetArrayItemCount(this.jsonNavigatorNode);
+
             public override CosmosElement this[int index]
             {
                 get
@@ -44,8 +51,6 @@
                     return LazyCosmosElementFactory.Create(this.jsonNavigator, arrayItemNode);
                 }
             }
-
-            public override int Count => this.jsonNavigator.GetArrayItemCount(this.jsonNavigatorNode);
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this
                 .jsonNavigator
@@ -64,6 +69,4 @@
             }
         }
     }
-
-        
 }

@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosObject.LazyCosmosObject.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
@@ -34,19 +39,6 @@
                 this.jsonNavigatorNode = jsonNavigatorNode;
             }
 
-            public override CosmosElement this[string key]
-            {
-                get
-                {
-                    if (!this.TryGetValue(key, out CosmosElement value))
-                    {
-                        value = null;
-                    }
-
-                    return value;
-                }
-            }
-
             public override IEnumerable<string> Keys => this
                 .jsonNavigator
                 .GetObjectProperties(this.jsonNavigatorNode)
@@ -60,6 +52,19 @@
             public override int Count => this
                 .jsonNavigator
                 .GetObjectPropertyCount(this.jsonNavigatorNode);
+
+            public override CosmosElement this[string key]
+            {
+                get
+                {
+                    if (!this.TryGetValue(key, out CosmosElement value))
+                    {
+                        value = null;
+                    }
+
+                    return value;
+                }
+            }
 
             public override bool ContainsKey(string key) => this.jsonNavigator.TryGetObjectProperty(
                 this.jsonNavigatorNode,
@@ -104,7 +109,7 @@
                     throw new ArgumentNullException($"{nameof(jsonWriter)} must not be null.");
                 }
 
-                jsonWriter.WriteJsonNode(this.jsonNavigator, jsonNavigatorNode);
+                jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
             }
         }
     }  
