@@ -17,8 +17,8 @@
             get;
         }
 
-        public abstract double GetValueAsDouble();
+        public abstract double? AsDouble();
 
-        public abstract long GetValueAsLong();
+        public abstract long? AsLong();
     }
 }

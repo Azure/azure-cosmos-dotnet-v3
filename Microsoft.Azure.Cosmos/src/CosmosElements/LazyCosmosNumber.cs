@@ -53,12 +53,12 @@
             }
         }
 
-        public override double GetValueAsDouble()
+        public override double? AsDouble()
         {
             return this.lazyNumber.Value;
         }
 
-        public override long GetValueAsLong()
+        public override long? AsLong()
         {
             return (long)this.lazyNumber.Value;
         }
