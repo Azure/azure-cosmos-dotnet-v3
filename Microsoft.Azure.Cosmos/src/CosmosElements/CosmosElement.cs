@@ -14,6 +14,6 @@
             get;
         }
 
-        public abstract void WriteToWriter(IJsonWriter jsonWriter);
+        public abstract void WriteTo(IJsonWriter jsonWriter);
     }
 }

@@ -12,13 +12,13 @@
             get;
         }
 
-        public abstract bool IsDouble
+        public abstract bool IsFloatingPoint
         {
             get;
         }
 
-        public abstract double? AsDouble();
+        public abstract double? AsFloatingPoint();
 
-        public abstract long? AsLong();
+        public abstract long? AsInteger();
     }
 }

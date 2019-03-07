@@ -12,7 +12,7 @@
         {
         }
 
-        public override void WriteToWriter(IJsonWriter jsonWriter)
+        public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {

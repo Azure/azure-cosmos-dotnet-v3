@@ -12,10 +12,21 @@
 
         public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
         {
-            LazyCosmosElementUtils.ValidateNavigatorAndNode(
-                jsonNavigator, 
-                jsonNavigatorNode, 
-                JsonNodeType.Object);
+            if (jsonNavigator == null)
+            {
+                throw new ArgumentNullException($"{nameof(jsonNavigator)}");
+            }
+
+            if (jsonNavigatorNode == null)
+            {
+                throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
+            }
+
+            JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
+            if (type != JsonNodeType.Object)
+            {
+                throw new ArgumentException($"{nameof(jsonNavigatorNode)} must not be a {JsonNodeType.Object} node. Got {type} instead.");
+            }
 
             this.jsonNavigator = jsonNavigator;
             this.jsonNavigatorNode = jsonNavigatorNode;
@@ -84,7 +95,7 @@
             return gotValue;
         }
 
-        public override void WriteToWriter(IJsonWriter jsonWriter)
+        public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {

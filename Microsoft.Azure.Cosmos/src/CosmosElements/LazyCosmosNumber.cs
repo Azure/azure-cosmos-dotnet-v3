@@ -13,10 +13,21 @@
 
         public LazyCosmosNumber(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
         {
-            LazyCosmosElementUtils.ValidateNavigatorAndNode(
-                jsonNavigator,
-                jsonNavigatorNode,
-                JsonNodeType.Number);
+            if (jsonNavigator == null)
+            {
+                throw new ArgumentNullException($"{nameof(jsonNavigator)}");
+            }
+
+            if (jsonNavigatorNode == null)
+            {
+                throw new ArgumentNullException($"{nameof(jsonNavigatorNode)}");
+            }
+
+            JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
+            if (type != JsonNodeType.Number)
+            {
+                throw new ArgumentException($"{nameof(jsonNavigatorNode)} must not be a {JsonNodeType.Number} node. Got {type} instead.");
+            }
 
             this.jsonNavigator = jsonNavigator;
             this.jsonNavigatorNode = jsonNavigatorNode;
@@ -26,7 +37,7 @@
             });
         }
 
-        public override bool IsDouble
+        public override bool IsFloatingPoint
         {
             get
             {
@@ -44,21 +55,21 @@
             }
         }
 
-        public override double? AsDouble()
+        public override double? AsFloatingPoint()
         {
             return this.lazyNumber.Value;
         }
 
-        public override long? AsLong()
+        public override long? AsInteger()
         {
             return null;
         }
 
-        public override void WriteToWriter(IJsonWriter jsonWriter)
+        public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {
-                throw new ArgumentNullException($"{nameof(jsonWriter)} must not be null.");
+                throw new ArgumentNullException($"{nameof(jsonWriter)}");
             }
 
             jsonWriter.WriteJsonNode(this.jsonNavigator, jsonNavigatorNode);
