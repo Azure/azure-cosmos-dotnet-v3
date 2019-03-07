@@ -5,8 +5,8 @@
     
     internal sealed class CosmosBoolean : CosmosElement
     {
-        public static readonly CosmosBoolean True = new CosmosBoolean(true);
-        public static readonly CosmosBoolean False = new CosmosBoolean(false);
+        private static readonly CosmosBoolean True = new CosmosBoolean(true);
+        private static readonly CosmosBoolean False = new CosmosBoolean(false);
 
         private CosmosBoolean(bool value)
             : base(CosmosElementType.Boolean)
@@ -34,6 +34,11 @@
             {
                 jsonWriter.WriteBoolValue(false);
             }
+        }
+
+        public static CosmosBoolean Create(bool boolean)
+        {
+            return boolean ? CosmosBoolean.True : CosmosBoolean.False;
         }
     }
 }

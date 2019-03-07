@@ -5,7 +5,7 @@
 
     internal sealed class CosmosNull : CosmosElement
     {
-        public static readonly CosmosNull Singleton = new CosmosNull();
+        private static readonly CosmosNull Singleton = new CosmosNull();
 
         private CosmosNull()
             : base(CosmosElementType.Null)
@@ -20,6 +20,11 @@
             }
 
             jsonWriter.WriteNullValue();
+        }
+
+        public static CosmosNull Create()
+        {
+            return CosmosNull.Singleton;
         }
     }
 }

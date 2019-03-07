@@ -27,32 +27,32 @@
             switch (jsonNodeType)
             {
                 case JsonNodeType.Null:
-                    item = CosmosNull.Singleton;
+                    item = CosmosNull.Create();
                     break;
 
                 case JsonNodeType.False:
-                    item = CosmosBoolean.False;
+                    item = CosmosBoolean.Create(false);
                     break;
 
                 case JsonNodeType.True:
-                    item = CosmosBoolean.True;
+                    item = CosmosBoolean.Create(true);
                     break;
 
                 case JsonNodeType.Number:
-                    item = new LazyCosmosNumber(jsonNavigator, jsonNavigatorNode);
+                    item = CosmosNumber.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
                 case JsonNodeType.FieldName:
                 case JsonNodeType.String:
-                    item = new LazyCosmosString(jsonNavigator, jsonNavigatorNode);
+                    item = CosmosString.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
                 case JsonNodeType.Array:
-                    item = new LazyCosmosArray(jsonNavigator, jsonNavigatorNode);
+                    item = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
                 case JsonNodeType.Object:
-                    item = new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
+                    item = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
                 default:

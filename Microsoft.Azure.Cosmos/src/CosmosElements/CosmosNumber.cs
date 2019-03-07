@@ -1,6 +1,8 @@
 ﻿namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    internal abstract class CosmosNumber : CosmosElement
+    using Microsoft.Azure.Cosmos.Json;
+
+    internal abstract partial class CosmosNumber : CosmosElement
     {
         protected CosmosNumber()
             : base (CosmosElementType.Number)
@@ -20,5 +22,17 @@
         public abstract double? AsFloatingPoint();
 
         public abstract long? AsInteger();
+
+        public static CosmosNumber Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosNumber(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosNumber Create(Number64 number)
+        {
+            return new EagerCosmosNumber(number);
+        }
     }
 }

@@ -2,11 +2,12 @@
 {
     using System.Collections;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+    internal abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
     {
         protected CosmosArray()
-            : base (CosmosElementType.Array)
+            : base(CosmosElementType.Array)
         {
         }
 
@@ -25,6 +26,18 @@
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();
+        }
+
+        public static CosmosArray Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosArray(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosArray Create(IEnumerable<CosmosElement> cosmosElements)
+        {
+            return new EagerCosmosArray(cosmosElements);
         }
     }
 }
