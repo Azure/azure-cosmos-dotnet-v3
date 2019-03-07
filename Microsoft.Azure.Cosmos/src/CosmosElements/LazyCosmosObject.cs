@@ -12,21 +12,10 @@
 
         public LazyCosmosObject(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
         {
-            if (jsonNavigator == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonNavigator)} must not be null.");
-            }
-
-            if (jsonNavigatorNode == null)
-            {
-                throw new ArgumentNullException($"{nameof(jsonNavigatorNode)} must not be null.");
-            }
-
-            JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
-            if (type != JsonNodeType.Object)
-            {
-                throw new ArgumentException($"{nameof(jsonNavigatorNode)} must not be a {JsonNodeType.Object} node. Got {type} instead.");
-            }
+            LazyCosmosElementUtils.ValidateNavigatorAndNode(
+                jsonNavigator, 
+                jsonNavigatorNode, 
+                JsonNodeType.Object);
 
             this.jsonNavigator = jsonNavigator;
             this.jsonNavigatorNode = jsonNavigatorNode;
