@@ -3,7 +3,7 @@
     using Microsoft.Azure.Cosmos.Json;
     using System;
 
-    internal sealed class LazyCosmosNumber : CosmosNumber, ILazyCosmosElement
+    internal sealed class LazyCosmosNumber : CosmosNumber
     {
         private readonly IJsonNavigator jsonNavigator;
         private readonly IJsonNavigatorNode jsonNavigatorNode;
@@ -65,7 +65,7 @@
             return null;
         }
 
-        public void WriteToWriter(IJsonWriter jsonWriter)
+        public override void WriteToWriter(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {

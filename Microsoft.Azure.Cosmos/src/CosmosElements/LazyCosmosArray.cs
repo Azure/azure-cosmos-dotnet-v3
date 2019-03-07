@@ -5,7 +5,7 @@
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal sealed class LazyCosmosArray : CosmosArray, ILazyCosmosElement
+    internal sealed class LazyCosmosArray : CosmosArray
     {
         private readonly IJsonNavigator jsonNavigator;
         private readonly IJsonNavigatorNode jsonNavigatorNode;
@@ -49,7 +49,7 @@
             .Select((arrayItem) => LazyCosmosElementFactory.CreateTokenFromNavigatorAndNode(this.jsonNavigator, arrayItem))
             .GetEnumerator();
 
-        public void WriteToWriter(IJsonWriter jsonWriter)
+        public override void WriteToWriter(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {

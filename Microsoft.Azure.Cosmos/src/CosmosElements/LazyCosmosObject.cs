@@ -5,7 +5,7 @@
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal class LazyCosmosObject : CosmosObject, ILazyCosmosElement
+    internal class LazyCosmosObject : CosmosObject
     {
         private readonly IJsonNavigator jsonNavigator;
         private readonly IJsonNavigatorNode jsonNavigatorNode;
@@ -95,7 +95,7 @@
             return gotValue;
         }
 
-        public void WriteToWriter(IJsonWriter jsonWriter)
+        public override void WriteToWriter(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
             {
