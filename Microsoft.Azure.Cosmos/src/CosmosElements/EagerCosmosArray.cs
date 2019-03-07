@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
 
@@ -36,5 +37,10 @@
         public override int Count => this.cosmosElements.Count;
 
         public override IEnumerator<CosmosElement> GetEnumerator() => this.cosmosElements.GetEnumerator();
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this.cosmosElements);
+        }
     }
 }

@@ -1890,8 +1890,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             await CrossPartitionQueryTests.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.Partitioned | CollectionTypes.NonPartitioned,
+                ConnectionModes.Direct ,
+                CollectionTypes.Partitioned ,
                 documents,
                 this.TestQueryDistinct,
                 "/id");
@@ -2027,10 +2027,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     while (documentQueryWithoutDistinct.HasMoreResults)
                     {
                         FeedResponse<JToken> feedResponse = await documentQueryWithoutDistinct.ExecuteNextAsync<JToken>();
-                        UInt192? hash;
                         foreach (JToken document in feedResponse)
                         {
-                            if (documentsSeen.Add(document, out hash))
+                            if (documentsSeen.Add(document, out UInt192? hash))
                             {
                                 documentsFromWithoutDistinct.Add(document);
                             }
@@ -4008,14 +4007,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal sealed class MockDistinctMap : DistinctMap
+        internal sealed class MockDistinctMap
         {
             // using custom comparer, since newtonsoft thinks this:
             // JToken.DeepEquals(JToken.Parse("8.1851780346865681E+307"), JToken.Parse("1.0066367885961673E+308"))
             // >> True
             private readonly HashSet<JToken> jTokenSet = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
 
-            public override bool Add(JToken jToken, out UInt192? hash)
+            public bool Add(JToken jToken, out UInt192? hash)
             {
                 hash = null;
                 return this.jTokenSet.Add(jToken);

@@ -5,6 +5,7 @@
 
     internal sealed class LazyCosmosNumber : CosmosNumber, ILazyCosmosElement
     {
+        private const long MaxSafeInteger = 2 ^ 53 - 1;
         private readonly IJsonNavigator jsonNavigator;
         private readonly IJsonNavigatorNode jsonNavigatorNode;
 
@@ -41,7 +42,7 @@
         {
             get
             {
-                return this.lazyNumber.Value % 1 != 0;
+                return !this.IsInteger;
             }
         }
 
@@ -49,7 +50,7 @@
         {
             get
             {
-                return this.lazyNumber.Value % 1 == 0;
+                return this.lazyNumber.Value % 1 == 0 && this.lazyNumber.Value <= MaxSafeInteger;
             }
         }
 

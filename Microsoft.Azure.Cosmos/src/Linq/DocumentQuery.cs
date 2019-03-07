@@ -261,8 +261,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    IEnumerable<T> result = (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
-                    foreach (T item in result)
+                    FeedResponse<dynamic> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
+                    FeedResponse<T> typedFeedResponse = FeedResponseBinder.Convert<T>(feedResponse);
+                    foreach (T item in typedFeedResponse)
                     {
                         yield return item;
                     }
@@ -347,18 +348,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 tracedLastExecution = true;
             }
             return typedFeedResponse;
-        }
-
-        private static bool IsCosmosElement(Type type)
-        {
-            return (
-                (type == typeof(CosmosElement))
-                || type.BaseType == typeof(CosmosArray)
-                || type.BaseType == typeof(CosmosObject)
-                || type.BaseType == typeof(CosmosString)
-                || type.BaseType == typeof(CosmosNumber)
-                || type.BaseType == typeof(CosmosBoolean)
-                || type.BaseType == typeof(CosmosNull));
         }
     }
 }

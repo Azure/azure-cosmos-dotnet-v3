@@ -105,8 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             FeedResponse<CosmosElement> feedResponse = await base.DrainAsync(maxElements, cancellationToken);
             foreach (CosmosElement document in feedResponse)
             {
-                JToken jToken = DistinctDocumentQueryExecutionComponent.GetJTokenFromObject(document);
-                if (this.distinctMap.Add(jToken, out this.lastHash))
+                if (this.distinctMap.Add(document, out this.lastHash))
                 {
                     distinctResults.Add(document);
                 }

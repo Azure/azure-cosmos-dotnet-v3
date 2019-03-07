@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -43,13 +44,13 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Adds a JToken to this map if it hasn't already been added.
             /// </summary>
-            /// <param name="jToken">The token to add.</param>
+            /// <param name="cosmosElement">The element to add.</param>
             /// <param name="hash">The hash of the token.</param>
             /// <returns>Whether or not the item was added to this Distinct Map.</returns>
             /// <remarks>This function assumes data is added in sorted order.</remarks>
-            public override bool Add(JToken jToken, out UInt192? hash)
+            public override bool Add(CosmosElement cosmosElement, out UInt192? hash)
             {
-                hash = DistinctMap.GetHash(jToken);
+                hash = DistinctMap.GetHash(cosmosElement);
 
                 bool added;
                 if (this.lastHash != hash)

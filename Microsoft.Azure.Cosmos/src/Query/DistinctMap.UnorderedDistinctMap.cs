@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json.Linq;
 
@@ -147,53 +148,46 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Adds a JToken to this map if it hasn't already been added.
             /// </summary>
-            /// <param name="jToken">The token to add.</param>
+            /// <param name="cosmosElement">The element to add.</param>
             /// <param name="hash">The hash of the token.</param>
             /// <returns>Whether or not the item was added to this Distinct Map.</returns>
-            public override bool Add(JToken jToken, out UInt192? hash)
+            public override bool Add(CosmosElement cosmosElement, out UInt192? hash)
             {
                 // Unordered distinct does not need to return a valid hash.
                 // Since it doesn't need the last hash for a continuation.
                 hash = null;
                 bool added = false;
-                JTokenType jTokenType = jToken.Type;
-                switch (jTokenType)
+                CosmosElementType cosmosElementType = cosmosElement.Type;
+                switch (cosmosElementType)
                 {
-                    case JTokenType.Object:
-                        added = this.AddObjectValue((JObject)jToken);
+                    case CosmosElementType.Array:
+                        added = this.AddArrayValue(cosmosElement as CosmosArray);
                         break;
-                    case JTokenType.Array:
-                        added = this.AddArrayValue((JArray)jToken);
+
+                    case CosmosElementType.Boolean:
+                        added = this.AddSimpleValue((cosmosElement as CosmosBoolean).Value ? SimpleValues.True : SimpleValues.False);
                         break;
-                    case JTokenType.Integer:
-                    case JTokenType.Float:
-                        added = this.AddNumberValue((double)jToken);
-                        break;
-                    case JTokenType.Guid:
-                    case JTokenType.Uri:
-                    case JTokenType.TimeSpan:
-                    case JTokenType.Date:
-                    case JTokenType.String:
-                        added = this.AddStringValue(jToken.ToString());
-                        break;
-                    case JTokenType.Boolean:
-                        added = this.AddSimpleValue((bool)jToken ? SimpleValues.True : SimpleValues.False);
-                        break;
-                    case JTokenType.Null:
+
+                    case CosmosElementType.Null:
                         added = this.AddSimpleValue(SimpleValues.Null);
                         break;
-                    case JTokenType.None:
-                    case JTokenType.Constructor:
-                    case JTokenType.Property:
-                    case JTokenType.Comment:
-                    case JTokenType.Undefined:
-                    case JTokenType.Raw:
-                    case JTokenType.Bytes:
+
+                    case CosmosElementType.Number:
+                        added = this.AddNumberValue((cosmosElement as CosmosNumber).GetValueAsDouble());
+                        break;
+
+                    case CosmosElementType.Object:
+                        added = this.AddObjectValue(cosmosElement as CosmosObject);
+                        break;
+
+                    case CosmosElementType.String:
+                        added = this.AddStringValue((cosmosElement as CosmosString).Value);
+                        break;
 
                     default:
-                        throw new ArgumentException($"Unexpected JTokenType of: {jTokenType}");
+                        throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElementType}");
                 }
-
+                
                 return added;
             }
 
@@ -268,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 else
                 {
                     // Else the string is too large and we will just store the hash.
-                    UInt192 uint192Value = DistinctMap.GetHash(value);
+                    UInt192 uint192Value = DistinctMap.GetHash(new EagerCosmosString(value));
                     added = this.stringLength24Plus.Add(uint192Value);
                 }
 
@@ -280,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// </summary>
             /// <param name="array">The array to add.</param>
             /// <returns>Whether or not the value was successfully added.</returns>
-            private bool AddArrayValue(JArray array)
+            private bool AddArrayValue(CosmosArray array)
             {
                 UInt192 hash = DistinctMap.GetHash(array);
                 return this.arrays.Add(hash);
@@ -289,11 +283,11 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Adds an object value to the distinct map.
             /// </summary>
-            /// <param name="jObject">The object to add.</param>
+            /// <param name="cosmosObject">The object to add.</param>
             /// <returns>Whether or not the value was successfully added.</returns>
-            private bool AddObjectValue(JObject jObject)
+            private bool AddObjectValue(CosmosObject cosmosObject)
             {
-                UInt192 hash = DistinctMap.GetHash(jObject);
+                UInt192 hash = DistinctMap.GetHash(cosmosObject);
                 return this.objects.Add(hash);
             }
         }

@@ -5,6 +5,7 @@
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
+    using Newtonsoft.Json;
 
     internal sealed class EagerCosmosObject : CosmosObject
     {
@@ -35,6 +36,11 @@
         public override bool TryGetValue(string key, out CosmosElement value)
         {
             return this.dictionary.TryGetValue(key, out value);
+        }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this.dictionary);
         }
     }
 }

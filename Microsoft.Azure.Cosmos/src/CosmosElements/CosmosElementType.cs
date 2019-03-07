@@ -2,11 +2,11 @@
 {
     internal enum CosmosElementType
     {
-        String,
-        Number,
-        Object,
         Array,
         Boolean,
-        Null
+        Null,
+        Number,
+        Object,
+        String,
     }
 }

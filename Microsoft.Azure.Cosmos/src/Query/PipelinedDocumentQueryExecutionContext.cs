@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 FeedResponse<CosmosElement> feedResponse = await this.component.DrainAsync(this.actualPageSize, token);
                 foreach (CosmosElement element in feedResponse)
                 {
-                    dynamics.Add(element.ToObject());
+                    dynamics.Add(element);
                 }
 
                 return new FeedResponse<dynamic>(
@@ -281,7 +281,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     feedResponse.UseETagAsContinuation,
                     feedResponse.QueryMetrics,
                     feedResponse.RequestStatistics,
-                    responseLengthBytes: feedResponse.ResponseLengthBytes);
+                    feedResponse.DisallowContinuationTokenMessage,
+                    feedResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {
