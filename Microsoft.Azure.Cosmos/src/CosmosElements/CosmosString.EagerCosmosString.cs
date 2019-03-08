@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException($"{nameof(value)} must not be null.");
+                    throw new ArgumentNullException($"{nameof(value)}");
                 }
 
                 this.Value = value;

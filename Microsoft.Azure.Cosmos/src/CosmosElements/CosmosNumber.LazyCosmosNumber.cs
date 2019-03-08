@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Number)
                 {
-                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must not be a {JsonNodeType.Number} node. Got {type} instead.");
+                    throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.Number} node. Got {type} instead.");
                 }
 
                 this.jsonNavigator = jsonNavigator;

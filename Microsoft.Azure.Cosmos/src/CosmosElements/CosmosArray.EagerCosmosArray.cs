@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 if (elements == null)
                 {
-                    throw new ArgumentNullException($"{nameof(elements)} must not be null.");
+                    throw new ArgumentNullException($"{nameof(elements)}");
                 }
 
                 foreach (CosmosElement element in elements)

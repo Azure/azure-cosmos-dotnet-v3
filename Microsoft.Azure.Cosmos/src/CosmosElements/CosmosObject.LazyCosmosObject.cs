@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 JsonNodeType type = jsonNavigator.GetNodeType(jsonNavigatorNode);
                 if (type != JsonNodeType.Object)
                 {
-                    throw new ArgumentException($"{nameof(jsonNavigatorNode)} must not be a {JsonNodeType.Object} node. Got {type} instead.");
+                    throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.Object} node. Got {type} instead.");
                 }
 
                 this.jsonNavigator = jsonNavigator;
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 if (jsonWriter == null)
                 {
-                    throw new ArgumentNullException($"{nameof(jsonWriter)} must not be null.");
+                    throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
                 jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);

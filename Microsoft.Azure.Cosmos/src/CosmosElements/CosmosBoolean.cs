@@ -36,14 +36,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 throw new ArgumentNullException($"{nameof(jsonWriter)}");
             }
 
-            if (this.Value)
-            {
-                jsonWriter.WriteBoolValue(true);
-            }
-            else
-            {
-                jsonWriter.WriteBoolValue(false);
-            }
+            jsonWriter.WriteBoolValue(this.Value);
         }
     }
 }
