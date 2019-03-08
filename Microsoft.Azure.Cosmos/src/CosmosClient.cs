@@ -143,7 +143,9 @@ namespace Microsoft.Azure.Cosmos
                 apitype: cosmosClientConfiguration.ApiType,
                 sendingRequestEventArgs: cosmosClientConfiguration.SendingRequestEventArgs,
                 transportClientHandlerFactory: cosmosClientConfiguration.TransportClientHandlerFactory,
-                connectionPolicy: cosmosClientConfiguration.GetConnectionPolicy());
+                connectionPolicy: cosmosClientConfiguration.GetConnectionPolicy(),
+                enableCpuMonitor: cosmosClientConfiguration.EnableCpuMonitor,
+                storeClientFactory: cosmosClientConfiguration.StoreClientFactory);
 
             Init(
                 cosmosClientConfiguration,

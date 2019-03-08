@@ -107,12 +107,12 @@ function orderBy(filterQuery, orderByFieldName, continuationToken) {
         // Now next batch to return to client has i elements.
         // Slice the continuationResult if needed and discard the end.
         var partialResult = continuationResult;
-        var newContinuation = null;
+        var newContinuation = continuationToken + i;
         if (i < continuationResult.length) {
             partialResult = continuationResult.slice(0, i);
         }
 
         // Finally, set response body.
-        response.setBody({ result: result, continuation: newContinuation });
+        response.setBody({ result: partialResult, continuation: newContinuation });
     }
 }

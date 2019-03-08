@@ -33,11 +33,11 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[3.0.0.4-preview,)" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[3.0.0.6-preview,)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[3.0.0.4-preview,)" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[3.0.0.6-preview,)" />
   </ItemGroup>
   
   <ItemGroup>
