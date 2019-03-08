@@ -12,8 +12,7 @@
     <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(VersionPrefix)$(VersionSuffix)</Version>
     <FileVersion>$(VersionPrefix)</FileVersion>
     <Authors>Microsoft</Authors>
-    <TargetFramework Condition=" '$(IsPublic)' == '1'">netstandard2.0</TargetFramework>
-    <TargetFrameworks Condition=" '$(IsPublic)' == '0' Or '$(IsPublic)' == ''">netstandard2.0;net461</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
