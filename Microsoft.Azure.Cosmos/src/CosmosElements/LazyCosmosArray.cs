@@ -50,13 +50,6 @@
             .Select((arrayItem) => LazyCosmosElementFactory.CreateTokenFromNavigatorAndNode(this.jsonNavigator, arrayItem))
             .GetEnumerator();
 
-        public override string ToString()
-        {
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            this.WriteToWriter(jsonWriter);
-            return Encoding.UTF8.GetString(jsonWriter.GetResult());
-        }
-
         public void WriteToWriter(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)

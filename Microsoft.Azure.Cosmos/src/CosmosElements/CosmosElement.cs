@@ -4,6 +4,7 @@
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal abstract class CosmosElement
     {
