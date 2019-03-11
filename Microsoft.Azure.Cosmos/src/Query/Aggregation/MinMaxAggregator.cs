@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 if (cosmosObject["count"] is CosmosNumber countToken)
                 {
                     // We know the object looks like: {"min": MIN(c.blah), "count": COUNT(c.blah)}
-                    if (countToken.GetValueAsLong() == 0)
+                    if (countToken.AsInteger().Value == 0)
                     {
                         // Ignore the value since the continuation / partition had no results that matched the filter so min is undefined.
                         return;

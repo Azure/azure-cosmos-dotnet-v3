@@ -252,5 +252,27 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosClientConfiguration.ApiType = apiType;
             return this;
         }
+
+        /// <summary>
+        /// Specify a store client factory to use for all transport requests for cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// This method enables transport client sharing among multiple cosmos client instances inside a single process.
+        /// </remarks>
+        /// <param name="storeClientFactory">Instance of store client factory to use to create transport client for an instance of cosmos client.</param>
+        internal CosmosClientBuilder UseStoreClientFactory(IStoreClientFactory storeClientFactory)
+        {
+            this.cosmosClientConfiguration.StoreClientFactory = storeClientFactory;
+            return this;
+        }
+
+        /// <summary>
+        /// Disables CPU monitoring for transport client which will inhibit troubleshooting of timeout exceptions.
+        /// </summary>
+        internal CosmosClientBuilder DisableCpuMonitor()
+        {
+            this.cosmosClientConfiguration.EnableCpuMonitor = false;
+            return this;
+        }
     }
 }

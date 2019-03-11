@@ -37,14 +37,14 @@ namespace Microsoft.Azure.Cosmos
 
                         case CosmosElementType.Number:
                             CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                            if (cosmosNumber.IsDouble)
+                            if (cosmosNumber.IsFloatingPoint)
                             {
-                                typedValue = JToken.FromObject(cosmosNumber.GetValueAsDouble())
+                                typedValue = JToken.FromObject(cosmosNumber.AsFloatingPoint().Value)
                                .ToObject<T>();
                             }
                             else
                             {
-                                typedValue = JToken.FromObject(cosmosNumber.GetValueAsLong())
+                                typedValue = JToken.FromObject(cosmosNumber.AsInteger().Value)
                                .ToObject<T>();
                             }
                             break;
@@ -102,8 +102,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return (
                 (type == typeof(CosmosElement))
-                || type.BaseType == typeof(CosmosTrue)
-                || type.BaseType == typeof(CosmosFalse)
+                || type.BaseType == typeof(CosmosBoolean)
                 || type.BaseType == typeof(CosmosArray)
                 || type.BaseType == typeof(CosmosObject)
                 || type.BaseType == typeof(CosmosString)

@@ -13,23 +13,23 @@
         public bool Equals(CosmosNumber number1, CosmosNumber number2)
         {
             double double1;
-            if (number1.IsDouble)
+            if (number1.IsFloatingPoint)
             {
-                double1 = number1.GetValueAsDouble();
+                double1 = number1.AsFloatingPoint().Value;
             }
             else
             {
-                double1 = number1.GetValueAsLong();
+                double1 = number1.AsInteger().Value;
             }
 
             double double2;
-            if (number2.IsDouble)
+            if (number2.IsFloatingPoint)
             {
-                double2 = number2.GetValueAsDouble();
+                double2 = number2.AsFloatingPoint().Value;
             }
             else
             {
-                double2 = number2.GetValueAsLong();
+                double2 = number2.AsInteger().Value;
             }
 
             return double1 == double2;
@@ -115,12 +115,12 @@
             {
                 case CosmosElementType.Array:
                     return this.Equals(
-                        cosmosElement1 as CosmosArray, 
+                        cosmosElement1 as CosmosArray,
                         cosmosElement2 as CosmosArray);
 
                 case CosmosElementType.Boolean:
                     return this.Equals(
-                        (cosmosElement1 as CosmosBoolean), 
+                        (cosmosElement1 as CosmosBoolean),
                         (cosmosElement2 as CosmosBoolean));
 
                 case CosmosElementType.Null:
@@ -133,12 +133,12 @@
 
                 case CosmosElementType.Object:
                     return this.Equals(
-                        cosmosElement1 as CosmosObject, 
+                        cosmosElement1 as CosmosObject,
                         cosmosElement2 as CosmosObject);
 
                 case CosmosElementType.String:
                     return this.Equals(
-                        (cosmosElement1 as CosmosString), 
+                        (cosmosElement1 as CosmosString),
                         (cosmosElement2 as CosmosString));
 
                 default:

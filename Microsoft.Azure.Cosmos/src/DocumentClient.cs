@@ -84,12 +84,14 @@ namespace Microsoft.Azure.Cosmos
         private const string MaxChannelsPerHostConfig = "CosmosDbMaxTcpChannelsPerHost";
         private const string RntbdReceiveHangDetectionTimeConfig = "CosmosDbTcpReceiveHangDetectionTimeSeconds";
         private const string RntbdSendHangDetectionTimeConfig = "CosmosDbTcpSendHangDetectionTimeSeconds";
+        private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
         private const int MaxConcurrentConnectionOpenRequestsPerProcessor = 25;
         private const int DefaultMaxRequestsPerRntbdChannel = 30;
         private const int DefaultRntbdPartitionCount = 1;
         private const int DefaultMaxRntbdChannelsPerHost = ushort.MaxValue;
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
+        private const bool DefaultEnableCpuMonitor = true;
 
         private ConnectionPolicy connectionPolicy;
         private RetryPolicy retryPolicy;
@@ -104,6 +106,7 @@ namespace Microsoft.Azure.Cosmos
         private int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
+        private bool enableCpuMonitor = DefaultEnableCpuMonitor;
 
         //Auth
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
@@ -126,8 +129,13 @@ namespace Microsoft.Azure.Cosmos
         private object initializationSyncLock;  /* guards initializeTask */
 
         // creator of TransportClient is responsible for disposing it.
-        private StoreClientFactory storeClientFactory;
+        private IStoreClientFactory storeClientFactory;
         private HttpClient mediaClient;
+
+        // Flag that indicates whether store client factory must be disposed whenever client is disposed.
+        // Setting this flag to false will result in store client factory not being disposed when client is disposed.
+        // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
+        private bool isStoreClientFactoryCreatedInternally;
 
         //Based on connectivity mode we will either have ServerStoreModel / GatewayStoreModel here.
         private IStoreModel storeModel;
@@ -341,6 +349,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serializerSettings">The custom JsonSerializer settings to be used for serialization/derialization.</param>
         /// <param name="apitype">Api type for the account</param>
         /// <param name="sessionContainer">The default session container with which DocumentClient is created</param>
+        /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
+        /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal. 
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -361,7 +371,9 @@ namespace Microsoft.Azure.Cosmos
                               ApiType apitype = ApiType.None,
                               EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
                               ISessionContainer sessionContainer = null,
-                              Func<TransportClient, TransportClient> transportClientHandlerFactory = null)
+                              Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
+                              bool? enableCpuMonitor = null,
+                              IStoreClientFactory storeClientFactory = null)
         {
             if (authKeyOrResourceToken == null)
             {
@@ -396,7 +408,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.transportClientHandlerFactory = transportClientHandlerFactory;
-            this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel, sessionContainer);
+            this.Initialize(serviceEndpoint: serviceEndpoint,
+                connectionPolicy: connectionPolicy,
+                desiredConsistencyLevel: desiredConsistencyLevel,
+                sessionContainer: sessionContainer,
+                enableCpuMonitor: enableCpuMonitor, 
+                storeClientFactory: storeClientFactory);
         }
 
         /// <summary>
@@ -745,7 +762,9 @@ namespace Microsoft.Azure.Cosmos
         internal virtual void Initialize(Uri serviceEndpoint,
             ConnectionPolicy connectionPolicy = null,
             ConsistencyLevel? desiredConsistencyLevel = null,
-            ISessionContainer sessionContainer = null)
+            ISessionContainer sessionContainer = null,
+            bool? enableCpuMonitor = null,
+            IStoreClientFactory storeClientFactory = null)
         {
             if (serviceEndpoint == null)
             {
@@ -869,6 +888,23 @@ namespace Microsoft.Azure.Cosmos
                     this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
                 }
             }
+
+            if (enableCpuMonitor.HasValue)
+            {
+                this.enableCpuMonitor = enableCpuMonitor.Value;
+            }
+            else
+            {
+                string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
+                if (!string.IsNullOrEmpty(enableCpuMonitorString))
+                {
+                    bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
+                    if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                    {
+                        this.enableCpuMonitor = enableCpuMonitorFlag;
+                    }
+                }
+            }
 #endif
             this.ServiceEndpoint = serviceEndpoint.OriginalString.EndsWith("/", StringComparison.Ordinal) ? serviceEndpoint : new Uri(serviceEndpoint.OriginalString + "/");
 
@@ -921,7 +957,7 @@ namespace Microsoft.Azure.Cosmos
             this.eventSource = new DocumentClientEventSource();
 
             this.initializeTask = TaskHelper.InlineIfPossible(
-                () => this.GetInitializationTask(),
+                () => this.GetInitializationTask(storeClientFactory: storeClientFactory),
                 new ResourceThrottleRetryPolicy(
                     this.connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                     this.connectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
@@ -951,7 +987,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always called from under the lock except when called from Initialize method during construction.
-        private async Task GetInitializationTask()
+        private async Task GetInitializationTask(IStoreClientFactory storeClientFactory)
         {
             await this.InitializeGatewayConfigurationReader();
 
@@ -982,7 +1018,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.InitializeDirectConnectivity();
+                this.InitializeDirectConnectivity(storeClientFactory);
             }
         }
 
@@ -1218,7 +1254,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.storeClientFactory != null)
             {
-                this.storeClientFactory.Dispose();
+                // Dispose only if this store client factory was created and is owned by this instance of document client, otherwise just release the reference
+                if (isStoreClientFactoryCreatedInternally)
+                {
+                    this.storeClientFactory.Dispose();
+                }
+
                 this.storeClientFactory = null;
             }
 
@@ -1365,7 +1406,7 @@ namespace Microsoft.Azure.Cosmos
                 // if the task has not been updated by another caller, update it
                 if (object.ReferenceEquals(this.initializeTask, initTask))
                 {
-                    this.initializeTask = this.GetInitializationTask();
+                    this.initializeTask = this.GetInitializationTask(storeClientFactory: null);
                 }
 
                 initTask = this.initializeTask;
@@ -6467,24 +6508,36 @@ namespace Microsoft.Azure.Cosmos
             return ValidationHelpers.ValidateConsistencyLevel(backendConsistency, desiredConsistency);
         }
 
-        private void InitializeDirectConnectivity()
+        private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
         {
-            this.storeClientFactory = new StoreClientFactory(
-                this.connectionPolicy.ConnectionProtocol,
-                (int) this.connectionPolicy.RequestTimeout.TotalSeconds,
-                this.maxConcurrentConnectionOpenRequests,
-                this.connectionPolicy.UserAgentContainer,
-                this.eventSource,
-                null,
-                this.openConnectionTimeoutInSeconds,
-                this.idleConnectionTimeoutInSeconds,
-                this.timerPoolGranularityInSeconds,
-                this.maxRntbdChannels,
-                this.rntbdPartitionCount,
-                this.maxRequestsPerRntbdChannel,
-                this.rntbdReceiveHangDetectionTimeSeconds,
-                this.rntbdSendHangDetectionTimeSeconds,
-                this.transportClientHandlerFactory);
+            // Check if we have a store client factory in input and if we do, do not initialize another store client
+            // The purpose is to reuse store client factory across all document clients inside compute gateway
+            if (storeClientFactory != null)
+            {
+                this.storeClientFactory = storeClientFactory;
+                this.isStoreClientFactoryCreatedInternally = false;
+            }
+            else
+            {
+                this.storeClientFactory = new StoreClientFactory(
+                    this.connectionPolicy.ConnectionProtocol,
+                    (int)this.connectionPolicy.RequestTimeout.TotalSeconds,
+                    this.maxConcurrentConnectionOpenRequests,
+                    this.connectionPolicy.UserAgentContainer,
+                    this.eventSource,
+                    null,
+                    this.openConnectionTimeoutInSeconds,
+                    this.idleConnectionTimeoutInSeconds,
+                    this.timerPoolGranularityInSeconds,
+                    this.maxRntbdChannels,
+                    this.rntbdPartitionCount,
+                    this.maxRequestsPerRntbdChannel,
+                    this.rntbdReceiveHangDetectionTimeSeconds,
+                    this.rntbdSendHangDetectionTimeSeconds,
+                    this.transportClientHandlerFactory,
+                    this.enableCpuMonitor);
+                this.isStoreClientFactoryCreatedInternally = true;
+            }
 
             this.AddressResolver = new GlobalAddressResolver(
                 this.globalEndpointManager,

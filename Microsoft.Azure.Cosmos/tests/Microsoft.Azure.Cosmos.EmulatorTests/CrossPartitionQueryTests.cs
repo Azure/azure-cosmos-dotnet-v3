@@ -560,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string orderByItemSerialized = @"{""item"" : 1337 }";
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
-            OrderByItem orderByItem = new OrderByItem(LazyCosmosElementFactory.CreateFromBuffer(bytes));
+            OrderByItem orderByItem = new OrderByItem(LazyCosmosElementFactory.Create(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
                 new List<OrderByItem> { orderByItem },

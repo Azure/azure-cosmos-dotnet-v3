@@ -87,7 +87,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                         throw new ArgumentException($"value for the {SumName} field was not a number");
                     }
 
-                    sum = cosmosSum.GetValueAsDouble();
+                    if (cosmosSum.IsFloatingPoint)
+                    {
+                        sum = cosmosSum.AsFloatingPoint().Value;
+                    }
+                    else
+                    {
+                        sum = cosmosSum.AsInteger().Value;
+                    }
                 }
                 else
                 {
@@ -105,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                     throw new ArgumentException($"value for the {CountName} field was not a number");
                 }
 
-                count = cosmosCount.GetValueAsLong();
+                count = cosmosCount.AsInteger().Value;
 
                 return new AverageInfo(sum, count);
             }
@@ -155,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                     return null;
                 }
 
-                return new EagerCosmosNumber(this.Sum.Value / this.Count);
+                return CosmosNumber.Create(this.Sum.Value / this.Count);
             }
         }
     }

@@ -1,4 +1,9 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosElement.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using Microsoft.Azure.Cosmos.Query;
     using System;
@@ -17,6 +22,8 @@
         {
             get;
         }
+
+        public abstract void WriteTo(IJsonWriter jsonWriter);
 
         public object ToObject()
         {
@@ -44,13 +51,13 @@
 
                 case CosmosElementType.Number:
                     CosmosNumber cosmosNumber = this as CosmosNumber;
-                    if (cosmosNumber.IsDouble)
+                    if (cosmosNumber.IsFloatingPoint)
                     {
-                        obj = cosmosNumber.GetValueAsDouble();
+                        obj = cosmosNumber.AsFloatingPoint().Value;
                     }
                     else
                     {
-                        obj = cosmosNumber.GetValueAsLong();
+                        obj = cosmosNumber.AsInteger().Value;
                     }
 
                     break;
@@ -81,23 +88,23 @@
             CosmosElement cosmosElement;
             if (obj is null)
             {
-                cosmosElement = LazyCosmosNull.Singleton;
+                cosmosElement = CosmosNull.Create();
             }
             else if (obj is bool boolean)
             {
-                cosmosElement = boolean ? (CosmosBoolean)LazyCosmosTrue.Singleton : (CosmosBoolean)LazyCosmosFalse.Singleton;
+                cosmosElement = CosmosBoolean.Create(boolean);
             }
             else if (obj is double objAsDouble)
             {
-                cosmosElement = new EagerCosmosNumber(objAsDouble);
+                cosmosElement = CosmosNumber.Create(objAsDouble);
             }
             else if (obj is long objAsLong)
             {
-                cosmosElement = new EagerCosmosNumber(objAsLong);
+                cosmosElement = CosmosNumber.Create(objAsLong);
             }
             else if (obj is string objAsString)
             {
-                cosmosElement = new EagerCosmosString(objAsString);
+                cosmosElement = CosmosString.Create(objAsString);
             }
             else if (obj is object[] objectArray)
             {
@@ -107,7 +114,7 @@
                     cosmosElements.Add(CosmosElement.FromObject(item));
                 }
 
-                cosmosElement = new EagerCosmosArray(cosmosElements);
+                cosmosElement = CosmosArray.Create(cosmosElements);
             }
             else if(obj is Dictionary<string, object> dictionary)
             {
@@ -117,7 +124,7 @@
                     cosmosDictionary.Add(kvp.Key, CosmosElement.FromObject(kvp.Value));
                 }
 
-                cosmosElement = new EagerCosmosObject(cosmosDictionary);
+                cosmosElement = CosmosObject.Create(cosmosDictionary);
             }
             else
             {

@@ -1,9 +1,16 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosNumber.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    internal abstract class CosmosNumber : CosmosElement
+    using Microsoft.Azure.Cosmos.Json;
+
+    internal abstract partial class CosmosNumber : CosmosElement
     {
         protected CosmosNumber()
-            : base (CosmosElementType.Number)
+            : base(CosmosElementType.Number)
         {
         }
 
@@ -12,13 +19,25 @@
             get;
         }
 
-        public abstract bool IsDouble
+        public abstract bool IsFloatingPoint
         {
             get;
         }
 
-        public abstract double GetValueAsDouble();
+        public static CosmosNumber Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosNumber(jsonNavigator, jsonNavigatorNode);
+        }
 
-        public abstract long GetValueAsLong();
+        public static CosmosNumber Create(Number64 number)
+        {
+            return CosmosNumber.Create(number);
+        }
+
+        public abstract double? AsFloatingPoint();
+
+        public abstract long? AsInteger();
     }
 }
