@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.Net.Http;
+
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -209,6 +211,21 @@ namespace Microsoft.Azure.Cosmos
         {
             this.cosmosClientConfiguration.MaxRetryWaitTimeOnThrottledRequests = maxRetryWaitTimeOnThrottledRequests;
             this.cosmosClientConfiguration.MaxRetryAttemptsOnThrottledRequests = maxRetryAttemptsOnThrottledRequests;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the HTTP handler stack to use for sending requests.
+        /// </summary>
+        /// <param name="handler">The HTTP handler stack to use for sending requests</param>
+        /// <remarks>
+        /// A custom HttpMessageHandler (e.g., HttpClientHandler) may be used to override SSL self-signed certificate verification when connecting to the Cosmos DB emulator
+        /// in a development environment. It may also be used to specify an HTTP proxy.
+        /// </remarks>
+        /// <seealso cref="System.Net.Http.HttpMessageHandler"/>
+        public virtual CosmosClientBuilder UseHttpMessageHandler(HttpMessageHandler handler)
+        {
+            this.cosmosClientConfiguration.HttpMessageHandler = handler;
             return this;
         }
 

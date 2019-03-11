@@ -162,6 +162,9 @@ namespace Microsoft.Azure.Cosmos
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
+
+        /// This will form the inner handler for HttpClient requests
+        private HttpMessageHandler innerHandler;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
 
         //Callback for on execution of scalar LINQ queries event.
@@ -336,6 +339,47 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the 
+        /// specified service endpoint, an authorization key (or resource token) a connection policy
+        /// and a custom HttpMessageHandler
+        /// for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
+        /// <param name="authKeyOrResourceToken">The authorization key or resource token to use to create the client.</param>
+        /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler)</param>
+        /// <param name="connectionPolicy">(Optional) The connection policy for the client.</param>
+        /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
+        /// <remarks>
+        /// The service endpoint can be obtained from the Azure Management Portal. 
+        /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
+        /// If however you are connecting as a specific Azure Cosmos DB User, the value passed to <paramref name="authKeyOrResourceToken"/> is the ResourceToken obtained from the permission feed for the user.
+        /// <para>
+        /// Using Direct connectivity, wherever possible, is recommended.
+        /// </para>
+        /// <para>
+        /// A custom HttpMessageHandler may be used to override SSL self-signed certificate verification when connecting to the Cosmos DB emulator
+        /// in a development environment, or for specifying an HTTP proxy. 
+        /// </para>
+        /// </remarks>
+        /// <seealso cref="Uri"/>
+        /// <seealso cref="ConnectionPolicy"/>
+        /// <seealso cref="ConsistencyLevel"/>
+        public DocumentClient(Uri serviceEndpoint,
+            string authKeyOrResourceToken,
+            HttpMessageHandler handler,
+            ConnectionPolicy connectionPolicy = null,
+            ConsistencyLevel? desiredConsistencyLevel = null)
+            : this(serviceEndpoint, authKeyOrResourceToken, sendingRequestEventArgs: null, connectionPolicy: connectionPolicy, desiredConsistencyLevel: desiredConsistencyLevel)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException("handler");
+            }
+
+            this.innerHandler = handler;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DocumentClient"/> class using the 
         /// specified service endpoint, an authorization key (or resource token) and a connection policy
         /// for the Azure Cosmos DB service.
         /// </summary>
@@ -349,6 +393,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serializerSettings">The custom JsonSerializer settings to be used for serialization/derialization.</param>
         /// <param name="apitype">Api type for the account</param>
         /// <param name="sessionContainer">The default session container with which DocumentClient is created</param>
+        /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler)</param>
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <remarks>
@@ -372,6 +417,7 @@ namespace Microsoft.Azure.Cosmos
                               EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
                               ISessionContainer sessionContainer = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
+                              HttpMessageHandler handler = null,
                               bool? enableCpuMonitor = null,
                               IStoreClientFactory storeClientFactory = null)
         {
@@ -407,6 +453,7 @@ namespace Microsoft.Azure.Cosmos
                 this.authKeyHashFunction = new StringHMACSHA256Hash(authKeyOrResourceToken);
             }
 
+            this.innerHandler = handler;
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.Initialize(serviceEndpoint: serviceEndpoint,
                 connectionPolicy: connectionPolicy,
@@ -917,7 +964,7 @@ namespace Microsoft.Azure.Cosmos
            
             this.globalEndpointManager = new GlobalEndpointManager(this, this.connectionPolicy);
 
-            this.httpMessageHandler = new HttpRequestMessageHandler(this.sendingRequest, this.receivedResponse);
+            this.httpMessageHandler = new HttpRequestMessageHandler(this.sendingRequest, this.receivedResponse, innerHandler);
 
             this.mediaClient = new HttpClient(this.httpMessageHandler);
 
@@ -6894,11 +6941,12 @@ namespace Microsoft.Azure.Cosmos
             private readonly EventHandler<SendingRequestEventArgs> sendingRequest;
             private readonly EventHandler<ReceivedResponseEventArgs> receivedResponse;
 
-            public HttpRequestMessageHandler(EventHandler<SendingRequestEventArgs> sendingRequest, EventHandler<ReceivedResponseEventArgs> receivedResponse)
+            public HttpRequestMessageHandler(EventHandler<SendingRequestEventArgs> sendingRequest, EventHandler<ReceivedResponseEventArgs> receivedResponse, HttpMessageHandler innerHandler = null)
             {
                 this.sendingRequest = sendingRequest;
                 this.receivedResponse = receivedResponse;
-                InnerHandler = new HttpClientHandler();
+
+                InnerHandler = innerHandler ?? new HttpClientHandler();
             }
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

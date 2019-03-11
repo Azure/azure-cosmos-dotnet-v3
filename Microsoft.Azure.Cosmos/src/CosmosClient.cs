@@ -145,7 +145,8 @@ namespace Microsoft.Azure.Cosmos
                 transportClientHandlerFactory: cosmosClientConfiguration.TransportClientHandlerFactory,
                 connectionPolicy: cosmosClientConfiguration.GetConnectionPolicy(),
                 enableCpuMonitor: cosmosClientConfiguration.EnableCpuMonitor,
-                storeClientFactory: cosmosClientConfiguration.StoreClientFactory);
+                storeClientFactory: cosmosClientConfiguration.StoreClientFactory,
+                handler: cosmosClientConfiguration.HttpMessageHandler);
 
             Init(
                 cosmosClientConfiguration,

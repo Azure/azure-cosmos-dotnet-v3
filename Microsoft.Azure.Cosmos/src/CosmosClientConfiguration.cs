@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System.Net.Http;
+
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -279,6 +281,11 @@ namespace Microsoft.Azure.Cosmos
         /// Optional store client factory instance to use for all transport requests.
         /// </summary>
         internal IStoreClientFactory StoreClientFactory { get; set; }
+
+        /// <summary>
+        /// The HTTP handler stack to use for sending requests (e.g., HttpClientHandler)
+        /// </summary>
+        internal HttpMessageHandler HttpMessageHandler { get; set; }
 
         /// <summary>
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
