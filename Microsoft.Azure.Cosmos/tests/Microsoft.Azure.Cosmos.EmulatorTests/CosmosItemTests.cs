@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             this.Container = response;
             this.jsonSerializer = new CosmosDefaultJsonSerializer();
-            await CreateNonPartitionCollectionItem();
+            await CreateNonPartitionContainerItem();
             fixedContainer = database.Containers[nonPartitionContainerId];
         }
 
@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        // Read write non partition collection item.
+        // Read write non partition Container item.
         [TestMethod]
         public async Task ReadNonPartitionItemAsync()
         {
@@ -580,11 +580,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createdList;
         }
 
-        private async Task CreateNonPartitionCollectionItem()
+        private async Task CreateNonPartitionContainerItem()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            //Creating non partition collection, rest api used instead of .NET SDK api as it is not supported anymore.
+            //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
             var client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(endpoint);
             string verb = "POST";
@@ -602,7 +602,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), containerContent);
 
-            //Creating non partition collection item.
+            //Creating non partition Container item.
             verb = "POST";
             resourceType = "docs";
             resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);

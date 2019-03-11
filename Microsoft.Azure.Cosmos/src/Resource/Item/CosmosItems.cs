@@ -860,7 +860,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions options = requestOptions ?? new CosmosQueryRequestOptions();
             if (partitionKey != null)
             {
-                PartitionKey pk = new PartitionKey(partitionKey);
+                PartitionKey pk = ExecUtils.GetPartitionKey(partitionKey);
                 options.PartitionKey = pk;
             }
 

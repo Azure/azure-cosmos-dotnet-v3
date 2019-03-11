@@ -26,12 +26,12 @@
     // 1. Basic CRUD operations on a item using regular POCOs
     // 1.1 - Create a item
     // 1.2 - Read a item by its Id
-    // 1.3 - Read all items in a Collection
+    // 1.3 - Read all items in a Container
     // 1.4 - Query for items by a property other than Id
     // 1.5 - Replace a item
     // 1.6 - Upsert a item
     // 1.7 - Delete a item
-    // 1.8 - Read write non partition collection item.
+    // 1.8 - Read write non partition Container item.
     //
     // 2. Work with dynamic objects
     //
@@ -135,7 +135,7 @@
         /// 1. Basic CRUD operations on a item
         /// 1.1 - Create a item
         /// 1.2 - Read a item by its Id
-        /// 1.3 - Read all items in a Collection
+        /// 1.3 - Read all items in a Container
         /// 1.4 - Query for items by a property other than Id
         /// 1.5 - Replace a item
         /// 1.6 - Upsert a item
@@ -692,9 +692,9 @@
             Console.WriteLine("Read doc with StatusCode of {0}", response.StatusCode);
         }
 
-        private static async Task CreateNonPartitionCollectionItem()
+        private static async Task CreateNonPartitionContainerItem()
         {
-            //Creating non partition collection, rest api used instead of .NET SDK api as it is not supported anymore.
+            //Creating non partition container, rest api used instead of .NET SDK api as it is not supported anymore.
             var client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(endpoint);
             string verb = "POST";
@@ -712,7 +712,7 @@
             Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), containerContent);
 
-            //Creating non partition collection item.
+            //Creating non partition container item.
             verb = "POST";
             resourceType = "docs";
             resourceId = string.Format("dbs/{0}/colls/{1}", databaseId,nonPartitionContainerId);
@@ -772,11 +772,11 @@
             // Delete the existing container to prevent create item conflicts
             await database.Containers[containerId].DeleteAsync();
 
-            // We create a partitioned collection here which needs a partition key. Partitioned collections
+            // We create a partitioned container here which needs a partition key. Partitioned containers
             // can be created with very high values of provisioned throughput (up to Throughput = 250,000)
             // and used to store up to 250 GB of data. You can also skip specifying a partition key to create
-            // single partition collections that store up to 10 GB of data.
-            // For this demo, we create a collection to store SalesOrders. We set the partition key to the account
+            // single partition containers that store up to 10 GB of data.
+            // For this demo, we create a container to store SalesOrders. We set the partition key to the account
             // number so that we can retrieve all sales orders for an account efficiently from a single partition,
             // and perform transactions across multiple sales order for a single account number. 
             CosmosContainerSettings containerSettings = new CosmosContainerSettings(containerId, partitionKeyPath: "/AccountNumber");
@@ -789,8 +789,8 @@
                 containerSettings,
                 throughput: 1000);
 
-            // Create fixed partition collection.
-            await CreateNonPartitionCollectionItem();
+            // Create fixed partition container.
+            await CreateNonPartitionContainerItem();
 
             fixedContainer = database.Containers[nonPartitionContainerId];
         }

@@ -172,15 +172,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (partitionKey != null)
             {
-                PartitionKey pk = null;
-                if (partitionKey.GetType() == typeof(PartitionKey))
-                {
-                    pk = (PartitionKey)partitionKey;
-                }
-                else
-                {
-                    pk = new PartitionKey(partitionKey);
-                }
+                PartitionKey pk = GetPartitionKey(partitionKey);
                 request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
             }
 
@@ -192,6 +184,20 @@ namespace Microsoft.Azure.Cosmos
             requestEnricher?.Invoke(request);
 
             return request;
+        }
+
+        internal static PartitionKey GetPartitionKey(Object partitionKey)
+        {
+            PartitionKey pk = null;
+            if (partitionKey.GetType() == typeof(PartitionKey))
+            {
+                pk = (PartitionKey)partitionKey;
+            }
+            else
+            {
+                pk = new PartitionKey(partitionKey);
+            }
+            return pk;
         }
 
         internal static HttpMethod GetHttpMethod(
