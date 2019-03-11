@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Interface for all document query execution contexts
@@ -28,6 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on, which in return provides a FeedResponse of documents.</returns>
-        Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token);
+        Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token);
     }
 }

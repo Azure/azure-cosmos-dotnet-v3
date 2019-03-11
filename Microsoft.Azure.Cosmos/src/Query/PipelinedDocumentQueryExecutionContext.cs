@@ -263,18 +263,18 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
-        public async Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token)
+        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
         {
             try
             {
-                List<dynamic> dynamics = new List<dynamic>();
+                List<CosmosElement> dynamics = new List<CosmosElement>();
                 FeedResponse<CosmosElement> feedResponse = await this.component.DrainAsync(this.actualPageSize, token);
                 foreach (CosmosElement element in feedResponse)
                 {
                     dynamics.Add(element);
                 }
 
-                return new FeedResponse<dynamic>(
+                return new FeedResponse<CosmosElement>(
                     dynamics,
                     feedResponse.Count,
                     feedResponse.Headers,

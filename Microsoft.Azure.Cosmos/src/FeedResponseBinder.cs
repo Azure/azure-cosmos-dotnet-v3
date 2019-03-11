@@ -92,6 +92,74 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.ResponseLengthBytes);
         }
 
+        //This method is invoked via expression as part of dynamic binding of cast operator.
+        public static FeedResponse<T> Convert<T>(FeedResponse<CosmosElement> cosmosElementFeed)
+        {
+            List<T> typedResults = new List<T>(cosmosElementFeed.Count);
+
+            // We know all the items are LazyCosmosElements
+            foreach (CosmosElement cosmosElement in cosmosElementFeed)
+            {
+                // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
+                // TODO: in the future we should deserialize using the LazyCosmosElement.
+                // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
+                T typedValue;
+                switch (cosmosElement.Type)
+                {
+                    case CosmosElementType.String:
+                        typedValue = JToken.FromObject((cosmosElement as CosmosString).Value)
+                            .ToObject<T>();
+                        break;
+
+                    case CosmosElementType.Number:
+                        CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
+                        if (cosmosNumber.IsDouble)
+                        {
+                            typedValue = JToken.FromObject(cosmosNumber.GetValueAsDouble())
+                           .ToObject<T>();
+                        }
+                        else
+                        {
+                            typedValue = JToken.FromObject(cosmosNumber.GetValueAsLong())
+                           .ToObject<T>();
+                        }
+                        break;
+
+                    case CosmosElementType.Object:
+                        typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosObject).ToString());
+                        break;
+
+                    case CosmosElementType.Array:
+                        typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosArray).ToString());
+                        break;
+
+                    case CosmosElementType.Boolean:
+                        typedValue = JToken.FromObject((cosmosElement as CosmosBoolean).Value)
+                           .ToObject<T>();
+                        break;
+
+                    case CosmosElementType.Null:
+                        typedValue = JValue.CreateNull().ToObject<T>();
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElement.Type}");
+                }
+
+                typedResults.Add(typedValue);
+            }
+
+            return new FeedResponse<T>(
+                typedResults,
+                cosmosElementFeed.Count,
+                cosmosElementFeed.Headers,
+                cosmosElementFeed.UseETagAsContinuation,
+                cosmosElementFeed.QueryMetrics,
+                cosmosElementFeed.RequestStatistics,
+                cosmosElementFeed.DisallowContinuationTokenMessage,
+                cosmosElementFeed.ResponseLengthBytes);
+        }
+
         public static IQueryable<T> AsQueryable<T>(FeedResponse<dynamic> dynamicFeed)
         {
             FeedResponse<T> response = FeedResponseBinder.Convert<T>(dynamicFeed);

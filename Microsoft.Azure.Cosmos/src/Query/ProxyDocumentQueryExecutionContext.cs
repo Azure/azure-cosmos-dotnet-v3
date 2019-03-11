@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Newtonsoft.Json;
@@ -103,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.innerExecutionContext.Dispose();
         }
 
-        public async Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token)
+        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
         {
             if (this.IsDone)
             {

@@ -24,28 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query
     internal static class DocumentQueryExecutionContextFactory
     {
         private const int PageSizeFactorForTop = 5;
-        public static async Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(
-            IDocumentQueryClient client,
-            ResourceType resourceTypeEnum,
-            Type resourceType,
-            Expression expression,
-            FeedOptions feedOptions,
-            IEnumerable<string> documentFeedLinks,
-            bool isContinuationExpected,
-            CancellationToken token,
-            Guid correlatedActivityId)
-        {
-            return await MultiCollectionDocumentQueryExecutionContext.CreateAsync(
-                client,
-                resourceTypeEnum,
-                resourceType,
-                expression,
-                feedOptions,
-                documentFeedLinks,
-                isContinuationExpected,
-                token,
-                correlatedActivityId);
-        }
 
         public static async Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(
             IDocumentQueryClient client,

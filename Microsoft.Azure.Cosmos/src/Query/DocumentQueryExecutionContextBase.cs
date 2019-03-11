@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly string resourceLink;
         private readonly bool getLazyFeedResponse;
         private bool isExpressionEvaluated;
-        private FeedResponse<dynamic> lastPage;
+        private FeedResponse<CosmosElement> lastPage;
         private readonly Guid correlatedActivityId;
 
         protected DocumentQueryExecutionContextBase(
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(this.QuerySpec, partitionKeyDefinition, requireFormattableOrderByQuery, isContinuationExpected);
         }
 
-        public virtual async Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken)
+        public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)
         {
             if (this.IsDone)
             {
@@ -453,13 +453,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 responseLengthBytes);
         }
 
-        public async Task<FeedResponse<dynamic>> ExecuteRequestAsync(
+        public Task<FeedResponse<CosmosElement>> ExecuteRequestAsync(
             DocumentServiceRequest request, 
             CancellationToken cancellationToken)
         {
-            return await (this.ShouldExecuteQueryRequest ? 
-                this.ExecuteQueryRequestAsync(request, cancellationToken) : 
-                this.ExecuteReadFeedRequestAsync(request, cancellationToken));
+            return this.ExecuteQueryRequestAsync(request, cancellationToken);
         }
 
         public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
@@ -471,7 +469,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
         }
 
-        public async Task<FeedResponse<dynamic>> ExecuteQueryRequestAsync(
+        public async Task<FeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
             DocumentServiceRequest request, 
             CancellationToken cancellationToken)
         {
@@ -483,13 +481,6 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
-        }
-
-        public async Task<FeedResponse<dynamic>> ExecuteReadFeedRequestAsync(
-            DocumentServiceRequest request, 
-            CancellationToken cancellationToken)
-        {
-            return this.GetFeedResponse(await this.client.ReadFeedAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
@@ -567,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public abstract void Dispose();
 
-        protected abstract Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken cancellationToken);
+        protected abstract Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
 
         protected async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
         {
@@ -706,15 +697,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private FeedResponse<dynamic> GetFeedResponse(DocumentServiceResponse response)
+        private FeedResponse<CosmosElement> GetFeedResponse(DocumentServiceResponse response)
         {
             int itemCount = 0;
 
             long responseLengthBytes = response.ResponseBody.CanSeek ? response.ResponseBody.Length : 0;
 
-            IEnumerable<dynamic> responseFeed = response.GetQueryResponse(this.resourceType, out itemCount);
+            IEnumerable<CosmosElement> responseFeed = response.GetQueryResponse(this.resourceType, out itemCount).Cast<CosmosElement>();
 
-            return new FeedResponse<dynamic>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
+            return new FeedResponse<CosmosElement>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
         }
 
         private FeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)
