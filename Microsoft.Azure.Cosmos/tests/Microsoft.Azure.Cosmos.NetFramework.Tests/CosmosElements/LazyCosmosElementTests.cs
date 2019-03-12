@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [ClassInitialize]
         public static void TestInitialize(TestContext testContext)
         {
-            int numberOfPeople = 10;
+            int numberOfPeople = 2;
             people = new List<Person>();
 
             Random random = new Random(1234);
@@ -128,7 +128,19 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             {
                 get
                 {
-                    return (int)((this.cosmosObject[nameof(Person.Age)] as CosmosNumber).AsInteger());
+                    CosmosNumber cosmosNumber = this.cosmosObject[nameof(Person.Age)] as CosmosNumber;
+
+                    int age;
+                    if (cosmosNumber.IsFloatingPoint)
+                    {
+                        age = (int)cosmosNumber.AsFloatingPoint().Value;
+                    }
+                    else
+                    {
+                        age = (int)cosmosNumber.AsInteger().Value;
+                    }
+
+                    return age;
                 }
             }
 
@@ -164,7 +176,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(Encoding.UTF8);
             lazilyDeserializedPeople.WriteTo(jsonWriter);
             byte[] bufferedResult = jsonWriter.GetResult();
-            Assert.IsTrue(bufferedSerializedPeople.SequenceEqual(bufferedResult));
+
+            string bufferedSerializedPeopleString = ByteArrayToString(bufferedSerializedPeople);
+            string bufferedResultString = ByteArrayToString(bufferedResult);
+            Assert.AreEqual(bufferedSerializedPeopleString, bufferedResultString);
         }
 
         #region CurratedDocs
@@ -297,17 +312,24 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             string path = string.Format("TestJsons/{0}", filename);
             string json = File.ReadAllText(path);
 
-            IEnumerable<object> documents;
+            IEnumerable<object> documents = null;
             try
             {
-                documents = JsonConvert.DeserializeObject<List<object>>(json);
-            }
-            catch (JsonSerializationException)
-            {
-                documents = new List<object>
+                try
                 {
-                    JsonConvert.DeserializeObject<object>(json)
-                };
+                    documents = JsonConvert.DeserializeObject<List<object>>(json);
+                }
+                catch (JsonSerializationException)
+                {
+                    documents = new List<object>
+                    {
+                        JsonConvert.DeserializeObject<object>(json)
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Failed to get JSON payload: {json.Substring(0, 128)} {ex}");
             }
 
             documents = documents.OrderBy(x => Guid.NewGuid()).Take(100);
@@ -454,6 +476,11 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         private static void VisitCosmosNull(CosmosNull cosmosNull, IJsonWriter jsonWriter)
         {
             jsonWriter.WriteNullValue();
+        }
+
+        private static string ByteArrayToString(byte[] ba)
+        {
+            return BitConverter.ToString(ba).Replace("-", "");
         }
         #endregion
     }
