@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                 people.Add(Person.CreateRandomPerson(random));
             }
 
-            serializedPeople = JsonConvert.SerializeObject(people);
+            serializedPeople = JsonConvert.SerializeObject(people, Formatting.None);
             bufferedSerializedPeople = Encoding.UTF8.GetBytes(serializedPeople);
         }
 
