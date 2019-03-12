@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
     /// <summary>
     /// Tests for LazyCosmosElementTests.
     /// </summary>
+    //[Ignore]
     [TestClass]
     public class LazyCosmosElementTests
     {
@@ -177,8 +178,8 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             lazilyDeserializedPeople.WriteTo(jsonWriter);
             byte[] bufferedResult = jsonWriter.GetResult();
 
-            string bufferedSerializedPeopleString = ByteArrayToString(bufferedSerializedPeople);
-            string bufferedResultString = ByteArrayToString(bufferedResult);
+            string bufferedSerializedPeopleString = Encoding.UTF8.GetString(bufferedSerializedPeople);
+            string bufferedResultString = Encoding.UTF8.GetString(bufferedResult);
             Assert.AreEqual(bufferedSerializedPeopleString, bufferedResultString);
         }
 
