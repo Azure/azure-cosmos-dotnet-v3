@@ -3694,17 +3694,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "SELECT * FROM c ORDER BY c._ts",
                     feedOptions).AsDocumentQuery();
 
-                List<FeedResponse<dynamic>> feedResponses = new List<FeedResponse<dynamic>>();
+                List<FeedResponse<CosmosElement>> feedResponses = new List<FeedResponse<CosmosElement>>();
                 while (documentQuery.HasMoreResults)
                 {
-                    FeedResponse<dynamic> feedResonse = await documentQuery.ExecuteNextAsync();
+                    FeedResponse<CosmosElement> feedResonse = await documentQuery.ExecuteNextAsync();
                     feedResponses.Add(feedResonse);
                 }
 
                 List<QueryMetrics> queryMetricsList = new List<QueryMetrics>();
                 double aggregatedRequestCharge = 0;
                 bool firstFeedResponse = true;
-                foreach (FeedResponse<dynamic> feedResponse in feedResponses)
+                foreach (FeedResponse<CosmosElement> feedResponse in feedResponses)
                 {
                     aggregatedRequestCharge += feedResponse.RequestCharge;
                     foreach (KeyValuePair<string, QueryMetrics> kvp in feedResponse.QueryMetrics)
@@ -3807,7 +3807,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Headers headers = new Headers();
                     while (query.HasMoreResults)
                     {
-                        FeedResponse<dynamic> page = await query.ExecuteNextAsync().ConfigureAwait(false);
+                        FeedResponse<CosmosElement> page = await query.ExecuteNextAsync().ConfigureAwait(false);
                         headers.TotalRUs += page.RequestCharge;
                         headers.NumberOfDocuments += page.Count;
 
@@ -3958,7 +3958,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 while (docQuery.HasMoreResults && (maxReadItemCount < 0 || maxReadItemCount > totalReadCount))
                 {
-                    FeedResponse<dynamic> response = await docQuery.ExecuteNextAsync();
+                    FeedResponse<CosmosElement> response = await docQuery.ExecuteNextAsync();
 
                     Console.WriteLine("{0} : FeedResponse: Query: {1}, ActivityId: {2}, OuterActivityId: {3}, RequestCharge: {4}, ResponseLength: {5}, ItemCount: {6}",
                         DateTime.UtcNow,

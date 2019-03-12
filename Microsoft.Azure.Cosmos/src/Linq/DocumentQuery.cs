@@ -204,9 +204,10 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Executes the query to retrieve the next page of results.
         /// </summary>
         /// <returns></returns>        
-        public Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<FeedResponse<CosmosElement>> ExecuteNextAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ExecuteNextAsync<dynamic>(cancellationToken);
+            return this.ExecuteNextAsync<CosmosElement>(cancellationToken);
         }
 
         /// <summary>
@@ -261,8 +262,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    FeedResponse<dynamic> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
-                    FeedResponse<T> typedFeedResponse = FeedResponseBinder.Convert<T>(feedResponse);
+                    FeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
+                    FeedResponse<T> typedFeedResponse = FeedResponseBinder.Convert<T>(
+                        feedResponse,
+                        this.feedOptions.ContentSerializationFormat.GetValueOrDefault(ContentSerializationFormat.JsonText),
+                        this.feedOptions.JsonSerializerSettings);
                     foreach (T item in typedFeedResponse)
                     {
                         yield return item;
@@ -333,8 +337,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
             }
 
-            FeedResponse<dynamic> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
-            FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.Convert<TResponse>(response);
+            FeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
+            FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.Convert<TResponse>(
+                response,
+                this.feedOptions.ContentSerializationFormat.GetValueOrDefault(ContentSerializationFormat.JsonText),
+                this.feedOptions.JsonSerializerSettings);
 
             if (!this.HasMoreResults && !tracedLastExecution)
             {

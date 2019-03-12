@@ -15,6 +15,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Linq;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Newtonsoft.Json;
+    using System.IO;
 
     /// <summary>
     /// Provides interface for historical change feed.
@@ -93,9 +96,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<FeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<FeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellationToken);
+            FeedResponse<CosmosElement> feedResponse = await this.ExecuteNextAsync(cancellationToken);
+            return FeedResponseBinder.Convert<TResult>(
+                feedResponse,
+                ContentSerializationFormat.JsonText,
+                new JsonSerializerSettings());
         }
 
         /// <summary>
@@ -103,55 +110,71 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ExecuteNextAsync<dynamic>(cancellationToken);
+            return await this.ReadDocumentChangeFeedAsync(
+                this.resourceLink, 
+                cancellationToken);
         }
         #endregion IDocumentQuery<TResource>
 
         #region Private
-        public Task<FeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
+        public Task<FeedResponse<CosmosElement>> ReadDocumentChangeFeedAsync(
+            string resourceLink, 
+            CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicy = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
-                () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellationToken), retryPolicy, cancellationToken);
+                () => this.ReadDocumentChangeFeedPrivateAsync(resourceLink, retryPolicy, cancellationToken), retryPolicy, cancellationToken);
         }
 
-        private async Task<FeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<FeedResponse<CosmosElement>> ReadDocumentChangeFeedPrivateAsync(
+            string link, 
+            IDocumentClientRetryPolicy retryPolicyInstance, 
+            CancellationToken cancellationToken)
         {
             using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellationToken))
             {
                 this.lastStatusCode = response.StatusCode;
                 this.nextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
-                if (response.ResponseBody != null && response.ResponseBody.Length > 0)
+
+                MemoryStream memoryStream = new MemoryStream();
+                response.ResponseBody.CopyTo(memoryStream);
+                long responseLengthBytes = memoryStream.Length;
+                Microsoft.Azure.Cosmos.Json.IJsonNavigator jsonNavigator = Microsoft.Azure.Cosmos.Json.JsonNavigator.Create(memoryStream.ToArray());
+                string resourceName = resourceType.ToResourceTypeString() + "s";
+
+                if (!jsonNavigator.TryGetObjectProperty(
+                    jsonNavigator.GetRootNode(),
+                    resourceName,
+                    out Microsoft.Azure.Cosmos.Json.ObjectProperty objectProperty))
                 {
-                    long responseLengthInBytes = response.ResponseBody.Length;
-                    int itemCount = 0;
-                    var feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
-                    var feedResponse = new FeedResponse<dynamic>(
-                        feedResource,
-                        itemCount,
-                        response.Headers,
-                        true,
-                        null,
-                        response.RequestStats,
-                        responseLengthBytes: responseLengthInBytes);
-                    return (dynamic)feedResponse;
+                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
                 }
-                else
+
+                Microsoft.Azure.Cosmos.Json.IJsonNavigatorNode cosmosElements = objectProperty.ValueNode;
+                if (!(CosmosElement.Dispatch(
+                    jsonNavigator,
+                    cosmosElements) is CosmosArray cosmosArray))
                 {
-                    return new FeedResponse<TResult>(
-                        Enumerable.Empty<TResult>(),
-                        0,
-                        response.Headers,
-                        true,
-                        null,
-                        response.RequestStats);
+                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
                 }
+
+                int itemCount = cosmosArray.Count;
+                return new FeedResponse<CosmosElement>(
+                    cosmosArray,
+                    itemCount,
+                    response.Headers,
+                    response.RequestStats,
+                    responseLengthBytes);
             }
         }
 
-        private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<DocumentServiceResponse> GetFeedResponseAsync(
+            string resourceLink, 
+            ResourceType resourceType, 
+            IDocumentClientRetryPolicy retryPolicyInstance, 
+            CancellationToken cancellationToken)
         {
             INameValueCollection headers = new StringKeyValueCollection();
 

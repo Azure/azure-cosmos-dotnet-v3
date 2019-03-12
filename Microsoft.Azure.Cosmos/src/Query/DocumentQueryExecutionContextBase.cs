@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly string resourceLink;
         private readonly bool getLazyFeedResponse;
         private bool isExpressionEvaluated;
-        private FeedResponse<dynamic> lastPage;
+        private FeedResponse<CosmosElement> lastPage;
         private readonly Guid correlatedActivityId;
 
         protected DocumentQueryExecutionContextBase(
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(this.QuerySpec, partitionKeyDefinition, requireFormattableOrderByQuery, isContinuationExpected);
         }
 
-        public virtual async Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken)
+        public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)
         {
             if (this.IsDone)
             {
@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public abstract void Dispose();
 
-        protected abstract Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken cancellationToken);
+        protected abstract Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
 
         protected async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
         {

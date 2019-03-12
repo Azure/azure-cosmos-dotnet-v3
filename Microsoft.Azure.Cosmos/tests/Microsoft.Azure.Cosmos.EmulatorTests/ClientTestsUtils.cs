@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Test select array
                 var queryArray = client.CreateDocumentQuery(collection.SelfLink, "SELECT VALUE [1, 2, 3, 4]").AsDocumentQuery();
-                JArray result = queryArray.ExecuteNextAsync().Result.FirstOrDefault();
+                JArray result = queryArray.ExecuteNextAsync<JArray>().Result.FirstOrDefault();
 
                 Assert.AreEqual(result[0], 1);
                 Assert.AreEqual(result[1], 2);

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using System;
     using System.Threading;
     using System.Threading.Tasks;
@@ -46,6 +47,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="token">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token = default(CancellationToken));
+        Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token = default(CancellationToken));
     }
 }
