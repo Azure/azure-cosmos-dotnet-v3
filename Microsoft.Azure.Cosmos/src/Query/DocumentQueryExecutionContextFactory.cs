@@ -66,10 +66,10 @@ namespace Microsoft.Azure.Cosmos.Query
             if (CustomTypeExtensions.ByPassQueryParsing())
             {
                 // We create a ProxyDocumentQueryExecutionContext that will be initialized with DefaultDocumentQueryExecutionContext
-                // which will be used to send the query to Gateway and on getting 400(bad request) with 1004(cross parition query not servable), we initialize it with
-                // PipelinedDocumentQueryExecutionContext by providing the parition query execution info that's needed(which we get from the exception returned from Gateway).
+                // which will be used to send the query to Gateway and on getting 400(bad request) with 1004(cross partition query not servable), we initialize it with
+                // PipelinedDocumentQueryExecutionContext by providing the partition query execution info that's needed(which we get from the exception returned from Gateway).
                 ProxyDocumentQueryExecutionContext proxyQueryExecutionContext =
-                    await ProxyDocumentQueryExecutionContext.CreateAsync(
+                    ProxyDocumentQueryExecutionContext.CreateAsync(
                         client,
                         resourceTypeEnum,
                         resourceType,
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             CancellationToken cancellationToken)
         {
-            // Figure out the optimial page size.
+            // Figure out the optimal page size.
             long initialPageSize = constructorParams.FeedOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
 
             if (initialPageSize < -1 || initialPageSize == 0)

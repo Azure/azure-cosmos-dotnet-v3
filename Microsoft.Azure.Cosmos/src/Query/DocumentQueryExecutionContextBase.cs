@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Query
             documentServiceResponse.ResponseBody.CopyTo(memoryStream);
             long responseLengthBytes = memoryStream.Length;
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
-            string resourceName = resourceType.Name + "s";
+            string resourceName = request.ResourceType + "s";
 
             if(!jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(), 
@@ -453,13 +453,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 responseLengthBytes);
         }
 
-        public Task<FeedResponse<CosmosElement>> ExecuteRequestAsync(
-            DocumentServiceRequest request, 
-            CancellationToken cancellationToken)
-        {
-            return this.ExecuteQueryRequestAsync(request, cancellationToken);
-        }
-
         public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
             DocumentServiceRequest request, 
             CancellationToken cancellationToken)
@@ -467,13 +460,6 @@ namespace Microsoft.Azure.Cosmos.Query
             return await (this.ShouldExecuteQueryRequest ? 
                 this.ExecuteQueryRequestAsync<T>(request, cancellationToken) : 
                 this.ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
-        }
-
-        public async Task<FeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
-            DocumentServiceRequest request, 
-            CancellationToken cancellationToken)
-        {
-            return this.GetFeedResponse(await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(
@@ -695,17 +681,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     request.Headers[HttpConstants.HttpHeaders.PartitionKey] = partitionKey.ToJsonString();
                 }
             }
-        }
-
-        private FeedResponse<CosmosElement> GetFeedResponse(DocumentServiceResponse response)
-        {
-            int itemCount = 0;
-
-            long responseLengthBytes = response.ResponseBody.CanSeek ? response.ResponseBody.Length : 0;
-
-            IEnumerable<CosmosElement> responseFeed = response.GetQueryResponse(this.resourceType, out itemCount).Cast<CosmosElement>();
-
-            return new FeedResponse<CosmosElement>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
         }
 
         private FeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)

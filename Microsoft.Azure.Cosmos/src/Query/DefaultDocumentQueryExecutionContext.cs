@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.PartitionKey])
                     || !request.ResourceType.IsPartitioned())
                 {
-                    return await this.ExecuteRequestAsync(request, cancellationToken);
+                    return await this.ExecuteLazyRequestAsync(request, cancellationToken);
                 }
 
                 CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!string.IsNullOrEmpty(base.PartitionKeyRangeId))
                 {
                     request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, base.PartitionKeyRangeId));
-                    return await this.ExecuteRequestAsync(request, cancellationToken);
+                    return await this.ExecuteLazyRequestAsync(request, cancellationToken);
                 }
 
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop for parsing the query, 
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (CustomTypeExtensions.ByPassQueryParsing())
                 {
                     request.UseGatewayMode = true;
-                    return await this.ExecuteRequestAsync(request, cancellationToken);
+                    return await this.ExecuteLazyRequestAsync(request, cancellationToken);
                 }
 
                 QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync(cancellationToken);
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, queryRoutingInfo.Item1.ResolvedRange.Id));
 
-                FeedResponse<CosmosElement> response = await this.ExecuteRequestAsync(request, cancellationToken);
+                FeedResponse<CosmosElement> response = await this.ExecuteLazyRequestAsync(request, cancellationToken);
 
                 if (!await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                     response.Headers,

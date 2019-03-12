@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             // We know all the items are LazyCosmosElements
             foreach (CosmosElement cosmosElement in cosmosElementFeed)
             {
-                // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
+                // For now we will just to string the whole thing and have newtonsoft do the deserialization
                 // TODO: in the future we should deserialize using the LazyCosmosElement.
                 // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
                 T typedValue;
