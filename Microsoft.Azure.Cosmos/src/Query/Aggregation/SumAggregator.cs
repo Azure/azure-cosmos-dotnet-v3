@@ -40,9 +40,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                     throw new ArgumentException("localSum must be a number.");
                 }
 
-
-
-                this.globalSum += cosmosNumber.AsFloatingPoint().Value;
+                if (cosmosNumber.IsFloatingPoint)
+                {
+                    this.globalSum += cosmosNumber.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    this.globalSum += cosmosNumber.AsInteger().Value;
+                }
             }
         }
 
@@ -57,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 return null;
             }
 
-            return CosmosElement.FromObject(this.globalSum);
+            return CosmosNumber.Create(this.globalSum);
         }
     }
 }

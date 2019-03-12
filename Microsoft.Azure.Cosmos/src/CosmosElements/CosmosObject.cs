@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
         {
-            return CosmosObject.Create(dictionary);
+            return new EagerCosmosObject(dictionary);
         }
 
         public abstract bool ContainsKey(string key);

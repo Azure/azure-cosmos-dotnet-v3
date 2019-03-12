@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    
+
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global weighted average from the local weighted average of multiple partitions and continuations.
     /// The way this works is that for each continuation in each partition we decompose the average into a sum and count.
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 }
 
                 double? sum;
-                if(cosmosObject.TryGetValue(SumName, out CosmosElement sumPropertyValue))
+                if (cosmosObject.TryGetValue(SumName, out CosmosElement sumPropertyValue))
                 {
                     if (!(sumPropertyValue is CosmosNumber cosmosSum))
                     {
@@ -112,7 +112,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                     throw new ArgumentException($"value for the {CountName} field was not a number");
                 }
 
-                count = cosmosCount.AsInteger().Value;
+                if (cosmosCount.IsFloatingPoint)
+                {
+                    count = (long)cosmosCount.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    count = cosmosCount.AsInteger().Value;
+                }
 
                 return new AverageInfo(sum, count);
             }

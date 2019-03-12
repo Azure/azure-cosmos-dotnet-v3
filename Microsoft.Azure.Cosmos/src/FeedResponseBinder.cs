@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                             break;
 
                         case CosmosElementType.Null:
-                            typedValue = JValue.CreateNull().ToObject<T>();
+                            typedValue = default(T);
                             break;
 
                         default:
@@ -102,13 +102,13 @@ namespace Microsoft.Azure.Cosmos
         {
             return (
                 (type == typeof(CosmosElement))
-                || type.BaseType == typeof(CosmosBoolean)
+                || type.BaseType == typeof(CosmosElement)
+                || type == typeof(CosmosNull)
+                || type == typeof(CosmosBoolean)
                 || type.BaseType == typeof(CosmosArray)
                 || type.BaseType == typeof(CosmosObject)
                 || type.BaseType == typeof(CosmosString)
-                || type.BaseType == typeof(CosmosNumber)
-                || type.BaseType == typeof(CosmosBoolean)
-                || type.BaseType == typeof(CosmosNull));
+                || type.BaseType == typeof(CosmosNumber));
         }
     }
 }

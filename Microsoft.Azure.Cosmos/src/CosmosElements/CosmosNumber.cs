@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosNumber Create(Number64 number)
         {
-            return CosmosNumber.Create(number);
+            return new EagerCosmosNumber(number);
         }
 
         public abstract double? AsFloatingPoint();

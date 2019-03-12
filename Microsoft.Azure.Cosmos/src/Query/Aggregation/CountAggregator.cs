@@ -31,7 +31,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 throw new ArgumentException($"{nameof(localCount)} must be a number.");
             }
 
-            this.globalCount += cosmosNumber.AsInteger().Value;
+            if (cosmosNumber.IsFloatingPoint)
+            {
+                this.globalCount += (long)cosmosNumber.AsFloatingPoint().Value;
+            }
+            else
+            {
+                this.globalCount += cosmosNumber.AsInteger().Value;
+            }
         }
 
         /// <summary>

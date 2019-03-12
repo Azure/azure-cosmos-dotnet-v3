@@ -55,11 +55,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
+                jsonWriter.WriteObjectStart();
+
                 foreach (KeyValuePair<string, CosmosElement> kvp in this)
                 {
                     jsonWriter.WriteFieldName(kvp.Key);
                     kvp.Value.WriteTo(jsonWriter);
                 }
+
+                jsonWriter.WriteObjectEnd();
             }
         }
     }  

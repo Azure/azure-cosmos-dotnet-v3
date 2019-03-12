@@ -560,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string orderByItemSerialized = @"{""item"" : 1337 }";
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
-            OrderByItem orderByItem = new OrderByItem(LazyCosmosElementFactory.Create(bytes));
+            OrderByItem orderByItem = new OrderByItem(CosmosElement.Create(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
                 new List<OrderByItem> { orderByItem },
@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //    orderByContinuationToken.CompositeContinuationToken.Range.Equals(
             //    deserializedOrderByContinuationToken.CompositeContinuationToken.Range));
             Assert.AreEqual(orderByContinuationToken.Filter, deserializedOrderByContinuationToken.Filter);
-            Assert.AreEqual(orderByContinuationToken.OrderByItems[0].Item, deserializedOrderByContinuationToken.OrderByItems[0].Item);
+            Assert.IsTrue(CosmosElementEqualityComparer.Value.Equals(orderByContinuationToken.OrderByItems[0].Item, deserializedOrderByContinuationToken.OrderByItems[0].Item));
             Assert.AreEqual(orderByContinuationToken.Rid, deserializedOrderByContinuationToken.Rid);
             Assert.AreEqual(orderByContinuationToken.SkipCount, deserializedOrderByContinuationToken.SkipCount);
         }
@@ -1194,7 +1194,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         while (query.HasMoreResults)
                         {
-                            foreach (string item in await query.ExecuteNextAsync())
+                            foreach (string item in await query.ExecuteNextAsync<string>())
                             {
                                 response.Add(item);
                             }
@@ -1500,7 +1500,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                         else
                         {
-                            Assert.AreEqual(argument.ExpectedValue, items.Single(), message);
+                            object expected = argument.ExpectedValue;
+                            object actual = items.Single();
+
+                            if (expected is long)
+                            {
+                                expected = (double)((long)expected);
+                            }
+
+                            if (actual is long)
+                            {
+                                actual = (double)((long)actual);
+                            }
+
+                            Assert.AreEqual(expected, actual, message);
                         }
                     }
                 }
@@ -1522,8 +1535,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
                     var aggregate = documentClient.CreateDocumentQuery(collection, query).ToList().Single();
+                    var expected = data.Item2;
+
+                    if (aggregate is long)
+                    {
+                        aggregate = (double)((long)aggregate);
+                    }
+
+                    if (expected is long)
+                    {
+                        expected = (double)((long)expected);
+                    }
+
                     Assert.AreEqual(
-                        data.Item2,
+                        expected,
                         aggregate,
                         string.Format(CultureInfo.InvariantCulture, "query: {0}, data: {1}", query, JsonConvert.SerializeObject(data)));
 
@@ -2417,7 +2442,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             public int Compare(object x, object y)
             {
-                return ItemComparer.Instance.Compare(x, y);
+                CosmosElement element1 = ObjectToCosmosElement(x);
+                CosmosElement element2 = ObjectToCosmosElement(y);
+
+                return ItemComparer.Instance.Compare(element1, element2);
+            }
+
+            private static CosmosElement ObjectToCosmosElement(object obj)
+            {
+                string json = JToken.FromObject(obj).ToString();
+                byte[] bytes = Encoding.UTF8.GetBytes(json);
+                return CosmosElement.Create(bytes);
             }
         }
 
@@ -2554,7 +2589,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         if (orderByTypes.HasFlag(OrderByTypes.Number))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => ItemTypeHelper.IsNumeric(x)));
+                            expected = expected.Concat(insertedDocs.Where(x => x is double || x is int || x is long));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Object))

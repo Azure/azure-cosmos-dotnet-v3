@@ -52,10 +52,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
+                jsonWriter.WriteArrayStart();
+
                 foreach (CosmosElement arrayItem in this)
                 {
                     arrayItem.WriteTo(jsonWriter);
                 }
+
+                jsonWriter.WriteArrayEnd();
             }
         }
     }

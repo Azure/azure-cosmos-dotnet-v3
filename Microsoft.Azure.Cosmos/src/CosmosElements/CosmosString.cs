@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosString Create(string value)
         {
-            return CosmosString.Create(value);
+            return new EagerCosmosString(value);
         }
     }
 }

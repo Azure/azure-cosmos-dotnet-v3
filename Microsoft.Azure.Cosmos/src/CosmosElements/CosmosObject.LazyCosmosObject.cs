@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public override IEnumerable<CosmosElement> Values => this
                 .jsonNavigator
                 .GetObjectProperties(this.jsonNavigatorNode)
-                .Select((objectProperty) => LazyCosmosElementFactory.Create(this.jsonNavigator, objectProperty.ValueNode));
+                .Select((objectProperty) => CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode));
 
             public override int Count => this
                 .jsonNavigator
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     (objectProperty) =>
                     new KeyValuePair<string, CosmosElement>(
                         this.jsonNavigator.GetStringValue(objectProperty.NameNode),
-                        LazyCosmosElementFactory.Create(this.jsonNavigator, objectProperty.ValueNode)))
+                        CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode)))
                 .GetEnumerator();
 
             public override bool TryGetValue(string key, out CosmosElement value)
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     key,
                     out ObjectProperty objectProperty))
                 {
-                    value = LazyCosmosElementFactory.Create(this.jsonNavigator, objectProperty.ValueNode);
+                    value = CosmosElement.Dispatch(this.jsonNavigator, objectProperty.ValueNode);
                     gotValue = true;
                 }
                 else

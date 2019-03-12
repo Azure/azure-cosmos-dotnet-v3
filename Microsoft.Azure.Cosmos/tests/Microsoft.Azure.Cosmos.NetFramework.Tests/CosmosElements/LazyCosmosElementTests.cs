@@ -128,7 +128,15 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             {
                 get
                 {
-                    return (int)((this.cosmosObject[nameof(Person.Age)] as CosmosNumber).AsInteger());
+                    CosmosNumber cosmosNumber = this.cosmosObject[nameof(Person.Age)] as CosmosNumber;
+                    if (cosmosNumber.IsFloatingPoint)
+                    {
+                        return (int)cosmosNumber.AsFloatingPoint().Value;
+                    }
+                    else
+                    {
+                        return (int)cosmosNumber.AsInteger().Value;
+                    }
                 }
             }
 
@@ -149,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void TestQuickNavigation()
         {
-            CosmosArray lazilyDeserializedPeople = LazyCosmosElementFactory.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
             LazilyDeserializedPerson lazilyDeserializedFirstPerson = new LazilyDeserializedPerson(lazilyDeserializedPeople[0] as CosmosObject);
 
             Assert.AreEqual(people.First().Name, lazilyDeserializedFirstPerson.Name);
@@ -160,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void WriteToWriter()
         {
-            CosmosArray lazilyDeserializedPeople = LazyCosmosElementFactory.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
             IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(Encoding.UTF8);
             lazilyDeserializedPeople.WriteTo(jsonWriter);
             byte[] bufferedResult = jsonWriter.GetResult();
@@ -277,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         {
             byte[] payload = LazyCosmosElementTests.GetPayload(filename);
 
-            CosmosElement cosmosElement = LazyCosmosElementFactory.Create(payload);
+            CosmosElement cosmosElement = CosmosElement.Create(payload);
 
             IJsonWriter jsonWriterIndexer = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
             IJsonWriter jsonWriterEnumerable = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);

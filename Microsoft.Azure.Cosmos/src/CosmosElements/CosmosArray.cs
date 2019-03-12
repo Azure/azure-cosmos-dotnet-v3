@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public static CosmosArray Create(IEnumerable<CosmosElement> cosmosElements)
         {
-            return CosmosArray.Create(cosmosElements);
+            return new EagerCosmosArray(cosmosElements);
         }
 
         public abstract IEnumerator<CosmosElement> GetEnumerator();

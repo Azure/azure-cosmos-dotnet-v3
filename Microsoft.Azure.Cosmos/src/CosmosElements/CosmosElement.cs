@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Json;
+    using System.Text;
 
     internal abstract class CosmosElement
     {
@@ -23,115 +24,65 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             get;
         }
 
+        public override string ToString()
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            this.WriteTo(jsonWriter);
+            return Encoding.UTF8.GetString(jsonWriter.GetResult());
+        }
+
         public abstract void WriteTo(IJsonWriter jsonWriter);
 
-        public object ToObject()
+        public static CosmosElement Create(byte[] buffer)
         {
-            object obj;
-            switch (this.Type)
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
+            IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
+
+            return CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosElement Dispatch(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
+            CosmosElement item;
+            switch (jsonNodeType)
             {
-                case CosmosElementType.Array:
-                    List<object> objectArray = new List<object>();
-                    CosmosArray cosmosArray = this as CosmosArray;
-                    foreach (CosmosElement arrayItem in cosmosArray)
-                    {
-                        objectArray.Add(arrayItem.ToObject());
-                    }
-
-                    obj = objectArray.ToArray();
+                case JsonNodeType.Null:
+                    item = CosmosNull.Create();
                     break;
 
-                case CosmosElementType.Boolean:
-                    obj = (this as CosmosBoolean).Value;
+                case JsonNodeType.False:
+                    item = CosmosBoolean.Create(false);
                     break;
 
-                case CosmosElementType.Null:
-                    obj = null;
+                case JsonNodeType.True:
+                    item = CosmosBoolean.Create(true);
                     break;
 
-                case CosmosElementType.Number:
-                    CosmosNumber cosmosNumber = this as CosmosNumber;
-                    if (cosmosNumber.IsFloatingPoint)
-                    {
-                        obj = cosmosNumber.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        obj = cosmosNumber.AsInteger().Value;
-                    }
-
+                case JsonNodeType.Number:
+                    item = CosmosNumber.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
-                case CosmosElementType.Object:
-                    Dictionary<string, object> dictionary = new Dictionary<string, object>();
-                    foreach (KeyValuePair<string, CosmosElement> kvp in this as CosmosObject)
-                    {
-                        dictionary.Add(kvp.Key, kvp.Value.ToObject());
-                    }
-
-                    obj = dictionary;
+                case JsonNodeType.FieldName:
+                case JsonNodeType.String:
+                    item = CosmosString.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
-                case CosmosElementType.String:
-                    obj = (this as CosmosString).Value;
+                case JsonNodeType.Array:
+                    item = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
+                case JsonNodeType.Object:
+                    item = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
                 default:
-                    throw new ArgumentException($"Unknown {nameof(CosmosElementType)}: {this.Type}");
+                    throw new ArgumentException($"Unknown {nameof(JsonNodeType)}: {jsonNodeType}");
             }
 
-            return obj;
-        }
-
-        public static CosmosElement FromObject(object obj)
-        {
-            CosmosElement cosmosElement;
-            if (obj is null)
-            {
-                cosmosElement = CosmosNull.Create();
-            }
-            else if (obj is bool boolean)
-            {
-                cosmosElement = CosmosBoolean.Create(boolean);
-            }
-            else if (obj is double objAsDouble)
-            {
-                cosmosElement = CosmosNumber.Create(objAsDouble);
-            }
-            else if (obj is long objAsLong)
-            {
-                cosmosElement = CosmosNumber.Create(objAsLong);
-            }
-            else if (obj is string objAsString)
-            {
-                cosmosElement = CosmosString.Create(objAsString);
-            }
-            else if (obj is object[] objectArray)
-            {
-                List<CosmosElement> cosmosElements = new List<CosmosElement>();
-                foreach (object item in objectArray)
-                {
-                    cosmosElements.Add(CosmosElement.FromObject(item));
-                }
-
-                cosmosElement = CosmosArray.Create(cosmosElements);
-            }
-            else if(obj is Dictionary<string, object> dictionary)
-            {
-                Dictionary<string, CosmosElement> cosmosDictionary = new Dictionary<string, CosmosElement>();
-                foreach(KeyValuePair<string, object> kvp in dictionary)
-                {
-                    cosmosDictionary.Add(kvp.Key, CosmosElement.FromObject(kvp.Value));
-                }
-
-                cosmosElement = CosmosObject.Create(cosmosDictionary);
-            }
-            else
-            {
-                throw new ArgumentException($"Can't conver object {obj} to {nameof(CosmosElement)}");
-            }
-
-            return cosmosElement;
+            return item;
         }
     }
 }
