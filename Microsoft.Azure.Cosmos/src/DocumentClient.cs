@@ -1085,7 +1085,9 @@ namespace Microsoft.Azure.Cosmos
                         container.HostName,
                         this.ServiceEndpoint.Host));
                 }
-                this.sessionContainer = container;
+
+                this.sessionContainer.ReplaceCurrrentStateWithStateOf(container);
+
             }
         }
 
