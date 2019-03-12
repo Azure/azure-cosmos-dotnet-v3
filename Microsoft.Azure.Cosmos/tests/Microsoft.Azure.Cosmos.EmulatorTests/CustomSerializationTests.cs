@@ -53,6 +53,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestSetup()
         {
+            //Lowering client version to support document client non partition collection creation for v2 test cases.
+            //Eventaully we will move to cosmos client for all the test cases.
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
             databaseName = ConfigurationManager.AppSettings["DatabaseAccountId"];
             collectionName = Guid.NewGuid().ToString();
             partitionedCollectionName = Guid.NewGuid().ToString();

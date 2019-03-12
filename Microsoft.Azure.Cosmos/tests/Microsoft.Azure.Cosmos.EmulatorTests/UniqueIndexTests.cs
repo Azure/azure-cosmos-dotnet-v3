@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
+            //Lowering client version to support document client non partition collection creation for v2 test cases.
+            //Eventaully we will move to cosmos client for all the test cases.
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
             this.client = TestCommon.CreateClient(true);
             this.database = TestCommon.CreateOrGetDatabase(this.client);
         }
