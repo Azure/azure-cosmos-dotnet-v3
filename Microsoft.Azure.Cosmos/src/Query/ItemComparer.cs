@@ -36,6 +36,11 @@ namespace Microsoft.Azure.Cosmos.Query
         public static readonly MaxValueItem MaxValue = MaxValueItem.Singleton;
 
         /// <summary>
+        /// Undefined is represented by null in the CosmosElement library.
+        /// </summary>
+        private static readonly CosmosElement Undefined = null;
+
+        /// <summary>
         /// Compares to objects and returns their partial sort relationship.
         /// </summary>
         /// <param name="element1">The first element to compare.</param>
@@ -72,69 +77,76 @@ namespace Microsoft.Azure.Cosmos.Query
                 return -1;
             }
 
+            if (element1 == Undefined)
+            {
+                return -1;
+            }
+
+            if (element2 == Undefined)
+            {
+                return 1;
+            }
+
             CosmosElementType type1 = element1.Type;
             CosmosElementType type2 = element2.Type;
 
             int cmp = CompareTypes(type1, type2);
-            if (cmp != 0)
+            if (cmp == 0)
             {
-                // If one item type comes before another item type, then just return that.
-                return cmp;
-            }
+                // If they are the same type then you need to break the tie.
+                switch (type1)
+                {
+                    case CosmosElementType.Boolean:
+                        cmp = Comparer<bool>.Default.Compare(
+                            (element1 as CosmosBoolean).Value,
+                            (element2 as CosmosBoolean).Value);
+                        break;
 
-            // If they are the same type then you need to break the tie.
-            switch (type1)
-            {
-                case CosmosElementType.Boolean:
-                    cmp = Comparer<bool>.Default.Compare(
-                        (element1 as CosmosBoolean).Value,
-                        (element2 as CosmosBoolean).Value);
-                    break;
+                    case CosmosElementType.Null:
+                        // All nulls are the same.
+                        cmp = 0;
+                        break;
 
-                case CosmosElementType.Null:
-                    // All nulls are the same.
-                    cmp = 0;
-                    break;
+                    case CosmosElementType.Number:
+                        CosmosNumber number1 = element1 as CosmosNumber;
+                        CosmosNumber number2 = element2 as CosmosNumber;
 
-                case CosmosElementType.Number:
-                    CosmosNumber number1 = element1 as CosmosNumber;
-                    CosmosNumber number2 = element2 as CosmosNumber;
+                        double double1;
+                        if (number1.IsFloatingPoint)
+                        {
+                            double1 = number1.AsFloatingPoint().Value;
+                        }
+                        else
+                        {
+                            double1 = number1.AsInteger().Value;
+                        }
 
-                    double double1;
-                    if (number1.IsFloatingPoint)
-                    {
-                        double1 = number1.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        double1 = number1.AsInteger().Value;
-                    }
+                        double double2;
+                        if (number2.IsFloatingPoint)
+                        {
+                            double2 = number2.AsFloatingPoint().Value;
+                        }
+                        else
+                        {
+                            double2 = number2.AsInteger().Value;
+                        }
 
-                    double double2;
-                    if (number2.IsFloatingPoint)
-                    {
-                        double2 = number2.AsFloatingPoint().Value;
-                    }
-                    else
-                    {
-                        double2 = number2.AsInteger().Value;
-                    }
-                    
-                    cmp = Comparer<double>.Default.Compare(
-                        double1,
-                        double2);
-                    break;
+                        cmp = Comparer<double>.Default.Compare(
+                            double1,
+                            double2);
+                        break;
 
-                case CosmosElementType.String:
-                    CosmosString string1 = element1 as CosmosString;
-                    CosmosString string2 = element2 as CosmosString;
-                    cmp = string.CompareOrdinal(
-                        string1.Value, 
-                        string2.Value);
-                    break;
+                    case CosmosElementType.String:
+                        CosmosString string1 = element1 as CosmosString;
+                        CosmosString string2 = element2 as CosmosString;
+                        cmp = string.CompareOrdinal(
+                            string1.Value,
+                            string2.Value);
+                        break;
 
-                default:
-                    throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {type1}");
+                    default:
+                        throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {type1}");
+                }
             }
 
             return cmp;
@@ -185,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Query
             public static readonly MinValueItem Singleton = new MinValueItem();
 
             private MinValueItem()
-                : base(CosmosElementType.Object)
+                : base(default(CosmosElementType))
             {
             }
 
@@ -203,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Query
             public static readonly MaxValueItem Singleton = new MaxValueItem();
 
             private MaxValueItem()
-                : base(CosmosElementType.Object)
+                : base(default(CosmosElementType))
             {
             }
 

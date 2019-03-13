@@ -55,20 +55,6 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        [JsonIgnore]
-        public CosmosElementType Type
-        {
-            get
-            {
-                if (!this.cosmosObject.TryGetValue(ItemName, out CosmosElement cosmosElement))
-                {
-                    throw new InvalidOperationException($"Underlying object does not have an 'item' field.");
-                }
-
-                return cosmosElement.Type;
-            }
-        }
-
         /// <summary>
         /// Custom converter to serialize and deserialize the payload.
         /// </summary>

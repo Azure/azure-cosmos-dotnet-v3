@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal struct AggregateItem
     {
-        private const string ItemName1 = "item";
         private const string ItemName2 = "item2";
 
         private readonly CosmosObject cosmosObject;
@@ -35,11 +34,8 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!this.cosmosObject.TryGetValue(ItemName2, out CosmosElement cosmosElement))
                 {
-                    if (!this.cosmosObject.TryGetValue(ItemName1, out cosmosElement))
-                    {
-                        // Undefined
-                        cosmosElement = null;
-                    }
+                    // Undefined
+                    cosmosElement = null;
                 }
 
                 return cosmosElement;

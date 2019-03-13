@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// If items1 was ["Brandon", 22] and items2 was ["Brandon", 23] then we would say have to look at the age to break the tie and in this case 23 comes first in a descending order.
         /// Some examples of composite order by: http://www.dofactory.com/sql/order-by
         /// </example>
-        public int CompareOrderByItems(List<OrderByItem> items1, List<OrderByItem> items2)
+        public int CompareOrderByItems(IList<OrderByItem> items1, IList<OrderByItem> items2)
         {
             if (object.ReferenceEquals(items1, items2))
             {
@@ -151,12 +151,12 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// </summary>
         /// <param name="items1">The items relevant to the sort for the first partition.</param>
         /// <param name="items2">The items relevant to the sort for the second partition.</param>
-        private void CheckTypeMatching(List<OrderByItem> items1, List<OrderByItem> items2)
+        private void CheckTypeMatching(IList<OrderByItem> items1, IList<OrderByItem> items2)
         {
             for (int i = 0; i < items1.Count; ++i)
             {
-                CosmosElementType itemType1 = items1[i].Type;
-                CosmosElementType itemType2 = items2[i].Type;
+                CosmosElementType itemType1 = items1[i].Item.Type;
+                CosmosElementType itemType2 = items2[i].Item.Type;
 
                 if (itemType1 != itemType2)
                 {
