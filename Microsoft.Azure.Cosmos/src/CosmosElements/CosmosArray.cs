@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System.Collections;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Json; 
+    using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
     {
