@@ -542,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
             Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
-            Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemPartitionKeyName);
+            Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0],PartitionKey.SystemPartitionKeyPath);
 
             CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
                 partitionKey: PartitionKey.Empty,
