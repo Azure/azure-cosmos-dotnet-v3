@@ -970,7 +970,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
-            returnedDoc = Client.CreateDocumentQuery<Document>(collection, new FeedOptions { PartitionKey = key }).AsEnumerable().Single();
+            returnedDoc = Client.CreateDocumentQuery<Document>(collection, "select * from t", new FeedOptions { PartitionKey = key }).AsEnumerable().Single();
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
             returnedDoc = Client.CreateDocumentQuery<Document>(

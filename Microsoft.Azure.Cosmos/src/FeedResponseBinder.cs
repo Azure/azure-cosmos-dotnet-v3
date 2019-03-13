@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             // We know all the items are LazyCosmosElements
             foreach (CosmosElement cosmosElement in cosmosElementFeed)
             {
-                // For now we will just to string the whole thing and have newtonsoft do the deserialization
+                // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
                 // TODO: in the future we should deserialize using the LazyCosmosElement.
                 // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
                 T typedValue;
@@ -113,14 +113,14 @@ namespace Microsoft.Azure.Cosmos
 
                     case CosmosElementType.Number:
                         CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                        if (cosmosNumber.IsDouble)
+                        if (cosmosNumber.IsFloatingPoint)
                         {
-                            typedValue = JToken.FromObject(cosmosNumber.GetValueAsDouble())
+                            typedValue = JToken.FromObject(cosmosNumber.AsFloatingPoint().Value)
                            .ToObject<T>();
                         }
                         else
                         {
-                            typedValue = JToken.FromObject(cosmosNumber.GetValueAsLong())
+                            typedValue = JToken.FromObject(cosmosNumber.AsInteger().Value)
                            .ToObject<T>();
                         }
                         break;
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
                         break;
 
                     case CosmosElementType.Null:
-                        typedValue = JValue.CreateNull().ToObject<T>();
+                        typedValue = default(T);
                         break;
 
                     default:
