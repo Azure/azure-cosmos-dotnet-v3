@@ -173,7 +173,18 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.Number:
-                        added = this.AddNumberValue((cosmosElement as CosmosNumber).GetValueAsDouble());
+                        CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
+                        double number;
+                        if (cosmosNumber.IsFloatingPoint)
+                        {
+                            number = cosmosNumber.AsFloatingPoint().Value;
+                        }
+                        else
+                        {
+                            number = cosmosNumber.AsInteger().Value;
+                        }
+
+                        added = this.AddNumberValue(number);
                         break;
 
                     case CosmosElementType.Object:
@@ -262,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 else
                 {
                     // Else the string is too large and we will just store the hash.
-                    UInt192 uint192Value = DistinctMap.GetHash(new EagerCosmosString(value));
+                    UInt192 uint192Value = DistinctMap.GetHash(CosmosString.Create(value));
                     added = this.stringLength24Plus.Add(uint192Value);
                 }
 

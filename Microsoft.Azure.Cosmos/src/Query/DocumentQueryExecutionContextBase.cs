@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             IJsonNavigatorNode cosmosElements = objectProperty.ValueNode;
-            if (!(LazyCosmosElementFactory.CreateTokenFromNavigatorAndNode(
+            if (!(CosmosElement.Dispatch(
                 jsonNavigator,
                 cosmosElements) is CosmosArray cosmosArray))
             {

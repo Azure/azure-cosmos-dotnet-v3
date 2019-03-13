@@ -41,15 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query
             this.cosmosObject = cosmosObject;
         }
 
-        public bool IsDefined
-        {
-            get
-            {
-                return this.cosmosObject.ContainsKey(ItemName);
-            }
-        }
-
-        public object Item
+        [JsonConverter(typeof(CosmosElementJsonConverter))]
+        public CosmosElement Item
         {
             get
             {
@@ -58,10 +51,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new InvalidOperationException($"Underlying object does not have an 'item' field.");
                 }
 
-                return cosmosElement.ToObject();
+                return cosmosElement;
             }
         }
 
+        [JsonIgnore]
         public CosmosElementType Type
         {
             get
@@ -106,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 JToken jToken = JToken.Load(reader);
                 // TODO: In the future we can go from jToken to CosmosElement if we have the eager implemenation.
-                CosmosElement cosmosElement = LazyCosmosElementFactory.CreateFromBuffer(Encoding.UTF8.GetBytes(jToken.ToString()));
+                CosmosElement cosmosElement = CosmosElement.Create(Encoding.UTF8.GetBytes(jToken.ToString()));
                 return new OrderByItem(cosmosElement);
             }
 
@@ -120,10 +114,10 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 writer.WriteStartObject();
                 OrderByItem orderByItem = (OrderByItem)value;
-                if (orderByItem.IsDefined)
+                if (orderByItem.Item != null)
                 {
                     writer.WritePropertyName(ItemName);
-                    writer.WriteValue(orderByItem.Item);
+                    new CosmosElementJsonConverter().WriteJson(writer, orderByItem.Item, serializer);
                 }
 
                 writer.WriteEndObject();

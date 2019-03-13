@@ -182,7 +182,18 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.Number:
-                        hash = this.GetNumberHash((cosmosElement as CosmosNumber).GetValueAsDouble(), seed);
+                        CosmosNumber cosmosNumber = (cosmosElement as CosmosNumber);
+                        double number;
+                        if (cosmosNumber.IsFloatingPoint)
+                        {
+                            number = cosmosNumber.AsFloatingPoint().Value;
+                        }
+                        else
+                        {
+                            number = cosmosNumber.AsInteger().Value;
+                        }
+
+                        hash = this.GetNumberHash(number, seed);
                         break;
 
                     case CosmosElementType.Object:
@@ -329,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
                     UInt192 nameHash = this.GetHashToken(
-                        new EagerCosmosString(kvp.Key), 
+                        CosmosString.Create(kvp.Key), 
                         this.HashSeedValues.PropertyName);
                     UInt192 propertyHash = this.GetHashToken(kvp.Value, nameHash);
 

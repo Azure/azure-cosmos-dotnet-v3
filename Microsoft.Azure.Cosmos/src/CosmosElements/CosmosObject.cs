@@ -1,18 +1,19 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//-----------------------------------------------------------------------
+// <copyright file="CosmosObject.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System.Collections;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+    internal abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
     {
         protected CosmosObject()
-            : base (CosmosElementType.Object)
+            : base(CosmosElementType.Object)
         {
-        }
-
-        public abstract CosmosElement this[string key]
-        {
-            get;
         }
 
         public abstract IEnumerable<string> Keys
@@ -28,6 +29,23 @@
         public abstract int Count
         {
             get;
+        }
+
+        public abstract CosmosElement this[string key]
+        {
+            get;
+        }
+
+        public static CosmosObject Create(
+            IJsonNavigator jsonNavigator,
+            IJsonNavigatorNode jsonNavigatorNode)
+        {
+            return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
+        }
+
+        public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
+        {
+            return new EagerCosmosObject(dictionary);
         }
 
         public abstract bool ContainsKey(string key);

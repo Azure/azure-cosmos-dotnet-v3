@@ -10,11 +10,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Utility class used to compare all items that we get back from a query.
     /// </summary>
-    internal sealed class ItemComparer : IComparer
+    internal sealed class ItemComparer : IComparer<CosmosElement>
     {
         /// <summary>
         /// Singleton item comparer.
@@ -25,55 +27,55 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The minimum value out of all possible items.
         /// </summary>
         /// <remarks>Note that this isn't a real item.</remarks>
-        public static readonly MinValueItem MinValue = new MinValueItem();
+        public static readonly MinValueItem MinValue = MinValueItem.Singleton;
 
         /// <summary>
         /// The maximum value out of all possible items.
         /// </summary>
         /// <remarks>Note that this isn't a real item.</remarks>
-        public static readonly MaxValueItem MaxValue = new MaxValueItem();
+        public static readonly MaxValueItem MaxValue = MaxValueItem.Singleton;
 
         /// <summary>
         /// Compares to objects and returns their partial sort relationship.
         /// </summary>
-        /// <param name="obj1">The first object to compare.</param>
-        /// <param name="obj2">The second object to compare.</param>
+        /// <param name="element1">The first element to compare.</param>
+        /// <param name="element2">The second element to compare.</param>
         /// <returns>
         /// Less than zero if obj1 comes before obj2 in the sort order.
         /// Zero if obj1 and obj2 are interchangeable in the sort order.
         /// Greater than zero if obj2 comes before obj1 in the sort order.
         /// </returns>
-        public int Compare(object obj1, object obj2)
+        public int Compare(CosmosElement element1, CosmosElement element2)
         {
-            if (object.ReferenceEquals(obj1, obj2))
+            if (object.ReferenceEquals(element1, element2))
             {
                 return 0;
             }
 
-            if (obj1 is MinValueItem)
+            if (object.ReferenceEquals(element1, MinValueItem.Singleton))
             {
                 return -1;
             }
 
-            if (obj2 is MinValueItem)
+            if (object.ReferenceEquals(element2, MinValueItem.Singleton))
             {
                 return 1;
             }
 
-            if (obj1 is MaxValueItem)
+            if (object.ReferenceEquals(element1, MaxValueItem.Singleton))
             {
                 return 1;
             }
 
-            if (obj2 is MaxValueItem)
+            if (object.ReferenceEquals(element2, MaxValueItem.Singleton))
             {
                 return -1;
             }
 
-            ItemType type1 = ItemTypeHelper.GetItemType(obj1);
-            ItemType type2 = ItemTypeHelper.GetItemType(obj2);
+            CosmosElementType type1 = element1.Type;
+            CosmosElementType type2 = element2.Type;
 
-            int cmp = type1.CompareTo(type2);
+            int cmp = CompareTypes(type1, type2);
             if (cmp != 0)
             {
                 // If one item type comes before another item type, then just return that.
@@ -83,42 +85,132 @@ namespace Microsoft.Azure.Cosmos.Query
             // If they are the same type then you need to break the tie.
             switch (type1)
             {
-                case ItemType.NoValue:
-                case ItemType.Null:
-                    // All null and no values are not distinguishable.
-                    return 0;
-                case ItemType.Bool:
-                    return Comparer<bool>.Default.Compare((bool)obj1, (bool)obj2);
-                case ItemType.Number:
-                    return Comparer<double>.Default.Compare(
-                        Convert.ToDouble(obj1, CultureInfo.InvariantCulture),
-                        Convert.ToDouble(obj2, CultureInfo.InvariantCulture));
-                case ItemType.String:
-                    return string.CompareOrdinal((string)obj1, (string)obj2);
+                case CosmosElementType.Boolean:
+                    cmp = Comparer<bool>.Default.Compare(
+                        (element1 as CosmosBoolean).Value,
+                        (element2 as CosmosBoolean).Value);
+                    break;
+
+                case CosmosElementType.Null:
+                    // All nulls are the same.
+                    cmp = 0;
+                    break;
+
+                case CosmosElementType.Number:
+                    CosmosNumber number1 = element1 as CosmosNumber;
+                    CosmosNumber number2 = element2 as CosmosNumber;
+
+                    double double1;
+                    if (number1.IsFloatingPoint)
+                    {
+                        double1 = number1.AsFloatingPoint().Value;
+                    }
+                    else
+                    {
+                        double1 = number1.AsInteger().Value;
+                    }
+
+                    double double2;
+                    if (number2.IsFloatingPoint)
+                    {
+                        double2 = number2.AsFloatingPoint().Value;
+                    }
+                    else
+                    {
+                        double2 = number2.AsInteger().Value;
+                    }
+                    
+                    cmp = Comparer<double>.Default.Compare(
+                        double1,
+                        double2);
+                    break;
+
+                case CosmosElementType.String:
+                    CosmosString string1 = element1 as CosmosString;
+                    CosmosString string2 = element2 as CosmosString;
+                    cmp = string.CompareOrdinal(
+                        string1.Value, 
+                        string2.Value);
+                    break;
+
                 default:
-                    string errorMessage = string.Format(CultureInfo.InvariantCulture, "Unexpected type: {0}", type1);
-                    Debug.Assert(false, errorMessage);
-                    throw new InvalidCastException(errorMessage);
+                    throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {type1}");
             }
+
+            return cmp;
         }
 
-        public static bool IsMinOrMax(object obj)
+        public static bool IsMinOrMax(CosmosElement obj)
         {
             return obj == MinValue || obj == MaxValue;
+        }
+
+        private static int CompareTypes(CosmosElementType cosmosElementType1, CosmosElementType cosmosElementType2)
+        {
+            int order1 = TypeToOrder(cosmosElementType1);
+            int order2 = TypeToOrder(cosmosElementType2);
+
+            return order1 - order2;
+        }
+
+        private static int TypeToOrder(CosmosElementType cosmosElementType)
+        {
+            int order;
+            switch (cosmosElementType)
+            {
+                case CosmosElementType.Null:
+                    order = 0;
+                    break;
+                case CosmosElementType.Boolean:
+                    order = 1;
+                    break;
+                case CosmosElementType.Number:
+                    order = 2;
+                    break;
+                case CosmosElementType.String:
+                    order = 3;
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {cosmosElementType}");
+            }
+
+            return order;
         }
 
         /// <summary>
         /// Represents the minimum value item.
         /// </summary>
-        public sealed class MinValueItem
+        public sealed class MinValueItem : CosmosElement
         {
+            public static readonly MinValueItem Singleton = new MinValueItem();
+
+            private MinValueItem()
+                : base(CosmosElementType.Object)
+            {
+            }
+
+            public override void WriteTo(IJsonWriter jsonWriter)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         /// <summary>
         /// Represent the maximum value item.
         /// </summary>
-        public sealed class MaxValueItem
+        public sealed class MaxValueItem : CosmosElement
         {
+            public static readonly MaxValueItem Singleton = new MaxValueItem();
+
+            private MaxValueItem()
+                : base(CosmosElementType.Object)
+            {
+            }
+
+            public override void WriteTo(IJsonWriter jsonWriter)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

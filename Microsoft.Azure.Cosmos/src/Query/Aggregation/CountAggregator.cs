@@ -31,7 +31,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 throw new ArgumentException($"{nameof(localCount)} must be a number.");
             }
 
-            this.globalCount += cosmosNumber.GetValueAsLong();
+            if (cosmosNumber.IsFloatingPoint)
+            {
+                this.globalCount += (long)cosmosNumber.AsFloatingPoint().Value;
+            }
+            else
+            {
+                this.globalCount += cosmosNumber.AsInteger().Value;
+            }
         }
 
         /// <summary>
@@ -40,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// <returns>The global count.</returns>
         public CosmosElement GetResult()
         {
-            return new EagerCosmosNumber(this.globalCount);
+            return CosmosNumber.Create(this.globalCount);
         }
     }
 }

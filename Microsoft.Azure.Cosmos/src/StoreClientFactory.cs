@@ -29,8 +29,8 @@ namespace Microsoft.Azure.Cosmos
             int maxRequestsPerRntbdChannel = 30,  // RNTBD
             int receiveHangDetectionTimeSeconds = 65,  // RNTBD
             int sendHangDetectionTimeSeconds = 10,  // RNTBD
-            Func<TransportClient, TransportClient> transportClientHandlerFactory = null // Interceptor factory
-            )
+            Func<TransportClient, TransportClient> transportClientHandlerFactory = null, // Interceptor factory
+            bool enableCpuMonitor = true)
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -169,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
                         OpenTimeout = TimeSpan.FromSeconds(openTimeoutInSeconds),
                         TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds),
                         IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
+                        EnableCpuMonitor = enableCpuMonitor
                     });
             }
             else

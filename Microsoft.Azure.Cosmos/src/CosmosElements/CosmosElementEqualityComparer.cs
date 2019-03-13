@@ -10,19 +10,39 @@
 
         private CosmosElementEqualityComparer() { }
 
-        public bool Equals(double double1, double double2)
+        public bool Equals(CosmosNumber number1, CosmosNumber number2)
         {
+            double double1;
+            if (number1.IsFloatingPoint)
+            {
+                double1 = number1.AsFloatingPoint().Value;
+            }
+            else
+            {
+                double1 = number1.AsInteger().Value;
+            }
+
+            double double2;
+            if (number2.IsFloatingPoint)
+            {
+                double2 = number2.AsFloatingPoint().Value;
+            }
+            else
+            {
+                double2 = number2.AsInteger().Value;
+            }
+
             return double1 == double2;
         }
 
-        public bool Equals(string string1, string string2)
+        public bool Equals(CosmosString string1, CosmosString string2)
         {
-            return string1.Equals(string2);
+            return string1.Value.Equals(string2.Value);
         }
 
-        public bool Equals(bool bool1, bool bool2)
+        public bool Equals(CosmosBoolean bool1, CosmosBoolean bool2)
         {
-            return bool1 == bool2;
+            return bool1.Value == bool2.Value;
         }
 
         public bool Equals(CosmosArray cosmosArray1, CosmosArray cosmosArray2)
@@ -95,31 +115,31 @@
             {
                 case CosmosElementType.Array:
                     return this.Equals(
-                        cosmosElement1 as CosmosArray, 
+                        cosmosElement1 as CosmosArray,
                         cosmosElement2 as CosmosArray);
 
                 case CosmosElementType.Boolean:
                     return this.Equals(
-                        (cosmosElement1 as CosmosBoolean).Value, 
-                        (cosmosElement2 as CosmosBoolean).Value);
+                        (cosmosElement1 as CosmosBoolean),
+                        (cosmosElement2 as CosmosBoolean));
 
                 case CosmosElementType.Null:
                     return true;
 
                 case CosmosElementType.Number:
                     return this.Equals(
-                        (cosmosElement1 as CosmosNumber).GetValueAsDouble(),
-                        (cosmosElement2 as CosmosNumber).GetValueAsDouble());
+                        (cosmosElement1 as CosmosNumber),
+                        (cosmosElement2 as CosmosNumber));
 
                 case CosmosElementType.Object:
                     return this.Equals(
-                        cosmosElement1 as CosmosObject, 
+                        cosmosElement1 as CosmosObject,
                         cosmosElement2 as CosmosObject);
 
                 case CosmosElementType.String:
                     return this.Equals(
-                        (cosmosElement1 as CosmosString).Value, 
-                        (cosmosElement2 as CosmosString).Value);
+                        (cosmosElement1 as CosmosString),
+                        (cosmosElement2 as CosmosString));
 
                 default:
                     throw new ArgumentException();
