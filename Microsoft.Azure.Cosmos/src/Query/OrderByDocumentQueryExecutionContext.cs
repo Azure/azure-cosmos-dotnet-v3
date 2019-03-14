@@ -600,7 +600,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private Tuple<string, string, string> GetFormattedFilters(
             string[] expressions,
-            object[] orderByItems,
+            CosmosElement[] orderByItems,
             SortOrder[] sortOrders)
         {
             // When we run cross partition queries, 
@@ -643,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 //            <= for the partitions to the right
                 string expression = expressions.First();
                 SortOrder sortOrder = sortOrders.First();
-                object orderByItem = orderByItems.First();
+                CosmosElement orderByItem = orderByItems.First();
                 string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
                 left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
                 target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
@@ -684,7 +684,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     ArraySegment<string> expressionPrefix = new ArraySegment<string>(expressions, 0, prefixLength);
                     ArraySegment<SortOrder> sortOrderPrefix = new ArraySegment<SortOrder>(sortOrders, 0, prefixLength);
-                    ArraySegment<object> orderByItemsPrefix = new ArraySegment<object>(orderByItems, 0, prefixLength);
+                    ArraySegment<CosmosElement> orderByItemsPrefix = new ArraySegment<CosmosElement>(orderByItems, 0, prefixLength);
 
                     bool lastPrefix = prefixLength == numOrderByItems;
                     bool firstPrefix = prefixLength == 1;
@@ -695,7 +695,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         string expression = expressionPrefix.ElementAt(index);
                         SortOrder sortOrder = sortOrderPrefix.ElementAt(index);
-                        object orderByItem = orderByItemsPrefix.ElementAt(index);
+                        CosmosElement orderByItem = orderByItemsPrefix.ElementAt(index);
                         bool lastItem = (index == prefixLength - 1);
 
                         // Append Expression

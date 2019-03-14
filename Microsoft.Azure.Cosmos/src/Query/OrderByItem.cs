@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.cosmosObject = cosmosObject;
         }
 
-        [JsonConverter(typeof(CosmosElementJsonConverter))]
         public CosmosElement Item
         {
             get

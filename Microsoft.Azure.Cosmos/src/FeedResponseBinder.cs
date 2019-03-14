@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                             break;
 
                         case CosmosElementType.Null:
-                            typedValue = default(T);
+                            typedValue = JValue.CreateNull().ToObject<T>();
                             break;
 
                         default:

@@ -575,7 +575,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Assert.IsTrue(
             //    orderByContinuationToken.CompositeContinuationToken.Range.Equals(
             //    deserializedOrderByContinuationToken.CompositeContinuationToken.Range));
-            Assert.AreEqual(orderByContinuationToken.Filter, deserializedOrderByContinuationToken.Filter);
             Assert.IsTrue(CosmosElementEqualityComparer.Value.Equals(orderByContinuationToken.OrderByItems[0].Item, deserializedOrderByContinuationToken.OrderByItems[0].Item));
             Assert.AreEqual(orderByContinuationToken.Rid, deserializedOrderByContinuationToken.Rid);
             Assert.AreEqual(orderByContinuationToken.SkipCount, deserializedOrderByContinuationToken.SkipCount);
@@ -1336,7 +1335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(
                         actualFromQueryWithoutContinutionTokens.SequenceEqual(
                             actualFromQueryWithContinutionTokens,
-                            JToken.EqualityComparer));
+                            JsonTokenEqualityComparer.Value));
 
                     Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
                 }
@@ -1889,8 +1888,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             await CrossPartitionQueryTests.CreateIngestQueryDelete(
-                ConnectionModes.Direct,
-                CollectionTypes.Partitioned,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.Partitioned | CollectionTypes.NonPartitioned,
                 documents,
                 this.TestQueryDistinct,
                 "/id");
@@ -2051,9 +2050,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     string collectionTypePrefix = collection.HasPartitionKey ? "Partitioned" : "NonPartitioned";
-                    Assert.IsTrue(
-                        documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JToken.EqualityComparer),
-                        $"Documents didn't match for {queryWithDistinct}, with page size: {pageSize} on a {collectionTypePrefix} collection");
+                    try
+                    {
+                        Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
+                        for (int i = 0; i < documentsFromWithDistinct.Count; i++)
+                        {
+                            JToken documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
+                            JToken documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
+                            Assert.IsTrue(
+                                JsonTokenEqualityComparer.Value.Equals(documentFromWithDistinct, documentFromWithoutDistinct),
+                                $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a {collectionTypePrefix} collection");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        throw e;
+                    }
                 }
             }
             #endregion
@@ -2203,7 +2215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     string collectionTypePrefix = collection.HasPartitionKey ? "Partitioned" : "NonPartitioned";
                     Assert.IsTrue(
-                        documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JToken.EqualityComparer),
+                        documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JsonTokenEqualityComparer.Value),
                         $"Documents didn't match for {queryWithDistinct} on a {collectionTypePrefix} collection");
                 }
             }
@@ -2450,7 +2462,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             private static CosmosElement ObjectToCosmosElement(object obj)
             {
-                string json = JToken.FromObject(obj).ToString();
+                string json = JsonConvert.SerializeObject(obj != null ? JToken.FromObject(obj) : JValue.CreateNull());
                 byte[] bytes = Encoding.UTF8.GetBytes(json);
                 return CosmosElement.Create(bytes);
             }

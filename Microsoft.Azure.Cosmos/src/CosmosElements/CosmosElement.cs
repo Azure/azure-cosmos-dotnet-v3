@@ -5,13 +5,11 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    using Microsoft.Azure.Cosmos.Query;
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.Json;
     using System.Text;
 
+    [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
     internal abstract class CosmosElement
     {
         protected CosmosElement(CosmosElementType cosmosItemType)
