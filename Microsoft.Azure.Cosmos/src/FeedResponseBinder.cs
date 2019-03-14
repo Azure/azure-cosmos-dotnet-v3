@@ -31,8 +31,27 @@ namespace Microsoft.Azure.Cosmos
 
             jsonWriter.WriteArrayEnd();
 
-            List<T> typedResults;
-            using (MemoryStream memoryStream = new MemoryStream(jsonWriter.GetResult()))
+                        case CosmosElementType.Array:
+                            typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosArray).ToString());
+                            break;
+
+                        case CosmosElementType.Boolean:
+                            typedValue = JToken.FromObject((cosmosElement as CosmosBoolean).Value)
+                               .ToObject<T>();
+                            break;
+
+                        case CosmosElementType.Null:
+                            typedValue = JValue.CreateNull().ToObject<T>();
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElement.Type}");
+                    }
+
+                    typedResults.Add(typedValue);
+                }
+            }
+            else
             {
                 using (JsonCosmosDBReader reader = new JsonCosmosDBReader(memoryStream))
                 {
