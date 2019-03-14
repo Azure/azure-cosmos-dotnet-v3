@@ -14,9 +14,7 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosDefaultResultSetIterator : CosmosResultSetIterator
     {
         internal delegate Task<CosmosQueryResponse> NextResultSetDelegate(
-            int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
             object state,
             CancellationToken cancellationToken);
 
@@ -69,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override Task<CosmosQueryResponse> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken)
+            return this.nextResultSetDelegate(this.continuationToken, this.state, cancellationToken)
                 .ContinueWith(task =>
                 {
                     CosmosQueryResponse response = task.Result;

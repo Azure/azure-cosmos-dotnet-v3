@@ -746,22 +746,34 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual CosmosResultSetIterator CreateItemQueryAsStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
-            object partitionKey,
+            object partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
-            
 
-            Tuple<object, SqlQuerySpec> cxt = new Tuple<object, SqlQuerySpec>(partitionKey, sqlQueryDefinition.ToSqlQuerySpec());
+            FeedOptions feedOptions = requestOptions.ToFeedOptions();
+            feedOptions.RequestContinuation = continuationToken;
+            feedOptions.MaxItemCount = maxItemCount;
+            feedOptions.EnableCrossPartitionQuery = true;
+            if (partitionKey != null)
+            {
+                PartitionKey pk = new PartitionKey(partitionKey);
+                feedOptions.PartitionKey = pk;
+            }
+
+            DocumentQuery<CosmosQueryResponse> documentQuery = (DocumentQuery<CosmosQueryResponse>)this.client.DocumentClient.CreateDocumentQuery<CosmosQueryResponse>(
+                collectionLink: this.container.Link,
+                feedOptions: feedOptions,
+                querySpec: sqlQueryDefinition.ToSqlQuerySpec());
 
             return new CosmosDefaultResultSetIterator(
                 maxItemCount,
                 continuationToken,
                 requestOptions,
                 this.QueryRequestExecutor,
-                cxt);
+                documentQuery);
         }
 
         /// <summary>
@@ -806,7 +818,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual CosmosResultSetIterator CreateItemQueryAsStream(
             string sqlQueryText,
-            object partitionKey,
+            object partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
@@ -1138,37 +1150,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<CosmosQueryResponse> QueryRequestExecutor(
-            int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            CosmosQueryRequestOptions cosmosQueryRequestOptions = options as CosmosQueryRequestOptions ?? new CosmosQueryRequestOptions();
-            FeedOptions feedOptions = cosmosQueryRequestOptions.ToFeedOptions();
-            feedOptions.RequestContinuation = continuationToken;
-            feedOptions.MaxItemCount = maxItemCount;
-            feedOptions.EnableCrossPartitionQuery = true;
-            //var documentClientResult = new DocumentQuery<Document>(
-            //    this.client.DocumentClient,
-            //    ResourceType.Document,
-            //    typeof(Document),
-            //    this.container.Link,
-            //    feedOptions).AsSQL<CosmosQueryResponse>((SqlQuerySpec)state).AsDocumentQuery<CosmosQueryResponse>();
-            //DocumentQuery<CosmosResponseMessage> documentClientResult = this.client.DocumentClient.CreateDocumentQuery<CosmosResponseMessage>(
-            //    collectionLink: this.container.Link,
-            //    feedOptions: feedOptions,
-            //    querySpec: state as SqlQuerySpec);
-
-            Tuple<object, SqlQuerySpec> cxt = (Tuple<object, SqlQuerySpec>)state;
-            DocumentQuery<CosmosQueryResponse> documentClientResult = (DocumentQuery<CosmosQueryResponse>)this.client.DocumentClient.CreateDocumentQuery<CosmosQueryResponse>(
-                collectionLink: this.container.Link,
-                feedOptions: feedOptions,
-                querySpec: cxt.Item2);
-
+            DocumentQuery<CosmosQueryResponse> documentQuery = (DocumentQuery<CosmosQueryResponse>)state;
             try
             {
-                return await documentClientResult.ExecuteNextQueryStreamAsync(cancellationToken);
+                return await documentQuery.ExecuteNextQueryStreamAsync(cancellationToken);
             }
             catch (DocumentClientException exception)
             {
