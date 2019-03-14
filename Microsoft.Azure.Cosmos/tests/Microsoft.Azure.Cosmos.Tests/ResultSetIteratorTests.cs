@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            CosmosResultSetIterator resultSetIterator = new CosmosDefaultResultSetStreamIterator(
+            CosmosResultSetFeedIterator resultSetIterator = new CosmosDefaultResultSetFeedIterator(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
+            CosmosResultSetFeedIterator setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql, 
                 partitionKey: "pk", 
                 requestOptions: new CosmosQueryRequestOptions());

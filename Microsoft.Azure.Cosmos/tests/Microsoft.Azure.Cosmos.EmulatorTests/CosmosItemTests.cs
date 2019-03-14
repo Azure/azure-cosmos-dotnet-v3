@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 deleteList = await CreateRandomItems(3, randomPartitionKey: true);
                 itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
-                CosmosResultSetIterator setIterator =
+                CosmosResultSetFeedIterator setIterator =
                     this.Container.Items.GetItemStreamIterator();
                 while (setIterator.HasMoreResults)
                 {
@@ -290,20 +290,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 iterationCount++;
 
-                using (CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
+                using (CosmosQueryResponse response = await setIterator.FetchNextSetAsync())
                 {
-                    lastContinuationToken = response.Headers.Continuation;
+                    lastContinuationToken = response.ContinuationToken;
                     Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
+                    JsonSerializer serializer = new JsonSerializer();
 
                     using (StreamReader sr = new StreamReader(response.Content))
                     using (JsonTextReader jtr = new JsonTextReader(sr))
                     {
-                        JObject result = JObject.Load(jtr);
-
-                        JArray documents = result["Documents"].ToObject<JArray>();
-                        ToDoActivity[] readTodoActivities = documents
-                            .ToObject<ToDoActivity[]>()
-                            .OrderBy(e => e.id)
+                        ToDoActivity[] results = serializer.Deserialize<ToDoActivity[]>(jtr);
+                        ToDoActivity[] readTodoActivities = results.OrderBy(e => e.id)
                             .ToArray();
 
                         ToDoActivity[] expectedTodoActivities = deleteList
@@ -315,11 +312,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         totalReadItem += expectedTodoActivities.Length;
                         string expectedSerialized = JsonConvert.SerializeObject(expectedTodoActivities);
                         string readSerialized = JsonConvert.SerializeObject(readTodoActivities);
-                        Trace.TraceInformation($"Query Response: {Environment.NewLine} {result.ToString()}");
                         Trace.TraceInformation($"Expected: {Environment.NewLine} {expectedSerialized}");
                         Trace.TraceInformation($"Read: {Environment.NewLine} {readSerialized}");
 
-                        int count = result["_count"].ToObject<int>();
+                        int count = results.Length;
                         Assert.AreEqual(maxItemCount, count);
 
                         Assert.AreEqual(expectedSerialized, readSerialized);

@@ -5,85 +5,45 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.IO;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal static class FeedResponseBinder
     {
-        //Helper to materialize Any IResourceFeed<T> from IResourceFeed<dynamic> as long as source
-        //conversion from dynamic to T.
-
-        //This method is invoked via expression as part of dynamic binding of cast operator.
-        public static FeedResponse<T> Convert<T>(FeedResponse<dynamic> dynamicFeed)
+        /// <summary>
+        /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
+        /// </summary>
+        public static FeedResponse<T> Convert<T>(
+            FeedResponse<CosmosElement> dynamicFeed,
+            ContentSerializationFormat contentSerializationFormat,
+            Newtonsoft.Json.JsonSerializerSettings serializerSettings)
         {
-            List<T> typedResults = new List<T>(dynamicFeed.Count);
-            if (dynamicFeed.Count > 0 && IsCosmosElement(dynamicFeed.First().GetType()))
+            IJsonWriter jsonWriter = JsonWriter.Create(ContentToJsonSerializationFormat(contentSerializationFormat));
+
+            jsonWriter.WriteArrayStart();
+
+            foreach (CosmosElement cosmosElement in dynamicFeed)
             {
-                // We know all the items are LazyCosmosElements
-                foreach (CosmosElement cosmosElement in dynamicFeed)
-                {
-                    // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
-                    // TODO: in the future we should deserialize using the LazyCosmosElement.
-                    // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
-                    T typedValue;
-                    switch (cosmosElement.Type)
-                    {
-                        case CosmosElementType.String:
-                            typedValue = JToken.FromObject((cosmosElement as CosmosString).Value)
-                                .ToObject<T>();
-                            break;
-
-                        case CosmosElementType.Number:
-                            CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                            if (cosmosNumber.IsFloatingPoint)
-                            {
-                                typedValue = JToken.FromObject(cosmosNumber.AsFloatingPoint().Value)
-                               .ToObject<T>();
-                            }
-                            else
-                            {
-                                typedValue = JToken.FromObject(cosmosNumber.AsInteger().Value)
-                               .ToObject<T>();
-                            }
-                            break;
-
-                        case CosmosElementType.Object:
-                            typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosObject).ToString());
-                            break;
-
-                        case CosmosElementType.Array:
-                            typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosArray).ToString());
-                            break;
-
-                        case CosmosElementType.Boolean:
-                            typedValue = JToken.FromObject((cosmosElement as CosmosBoolean).Value)
-                               .ToObject<T>();
-                            break;
-
-                        case CosmosElementType.Null:
-                            typedValue = default(T);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElement.Type}");
-                    }
-
-                    typedResults.Add(typedValue);
-                }
+                cosmosElement.WriteTo(jsonWriter);
             }
-            else
+
+            jsonWriter.WriteArrayEnd();
+
+            List<T> typedResults;
+            using (MemoryStream memoryStream = new MemoryStream(jsonWriter.GetResult()))
             {
-                foreach (T item in dynamicFeed)
+                using (JsonCosmosDBReader reader = new JsonCosmosDBReader(memoryStream))
                 {
-                    typedResults.Add(item);
+                    Newtonsoft.Json.JsonSerializer serializer = Newtonsoft.Json.JsonSerializer.Create(serializerSettings);
+                    typedResults = serializer.Deserialize<List<T>>(reader);
                 }
             }
 
             return new FeedResponse<T>(
                 typedResults,
-                dynamicFeed.Count,
+                typedResults.Count,
                 dynamicFeed.Headers,
                 dynamicFeed.UseETagAsContinuation,
                 dynamicFeed.QueryMetrics,
@@ -92,91 +52,41 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.ResponseLengthBytes);
         }
 
-        //This method is invoked via expression as part of dynamic binding of cast operator.
-        public static FeedResponse<T> Convert<T>(FeedResponse<CosmosElement> cosmosElementFeed)
+        public static CosmosQueryResponse ConvertToCosmosQueryResponse(
+            FeedResponse<CosmosElement> dynamicFeed,
+            ContentSerializationFormat contentSerializationFormat,
+            Newtonsoft.Json.JsonSerializerSettings serializerSettings)
         {
-            List<T> typedResults = new List<T>(cosmosElementFeed.Count);
+            IJsonWriter jsonWriter = JsonWriter.Create(ContentToJsonSerializationFormat(contentSerializationFormat));
 
-            // We know all the items are LazyCosmosElements
-            foreach (CosmosElement cosmosElement in cosmosElementFeed)
+            jsonWriter.WriteArrayStart();
+
+            foreach (CosmosElement cosmosElement in dynamicFeed)
             {
-                // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
-                // TODO: in the future we should deserialize using the LazyCosmosElement.
-                // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
-                T typedValue;
-                switch (cosmosElement.Type)
-                {
-                    case CosmosElementType.String:
-                        typedValue = JToken.FromObject((cosmosElement as CosmosString).Value)
-                            .ToObject<T>();
-                        break;
-
-                    case CosmosElementType.Number:
-                        CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                        if (cosmosNumber.IsFloatingPoint)
-                        {
-                            typedValue = JToken.FromObject(cosmosNumber.AsFloatingPoint().Value)
-                           .ToObject<T>();
-                        }
-                        else
-                        {
-                            typedValue = JToken.FromObject(cosmosNumber.AsInteger().Value)
-                           .ToObject<T>();
-                        }
-                        break;
-
-                    case CosmosElementType.Object:
-                        typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosObject).ToString());
-                        break;
-
-                    case CosmosElementType.Array:
-                        typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosArray).ToString());
-                        break;
-
-                    case CosmosElementType.Boolean:
-                        typedValue = JToken.FromObject((cosmosElement as CosmosBoolean).Value)
-                           .ToObject<T>();
-                        break;
-
-                    case CosmosElementType.Null:
-                        typedValue = default(T);
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElement.Type}");
-                }
-
-                typedResults.Add(typedValue);
+                cosmosElement.WriteTo(jsonWriter);
             }
 
-            return new FeedResponse<T>(
-                typedResults,
-                cosmosElementFeed.Count,
-                cosmosElementFeed.Headers,
-                cosmosElementFeed.UseETagAsContinuation,
-                cosmosElementFeed.QueryMetrics,
-                cosmosElementFeed.RequestStatistics,
-                cosmosElementFeed.DisallowContinuationTokenMessage,
-                cosmosElementFeed.ResponseLengthBytes);
+            jsonWriter.WriteArrayEnd();
+
+            MemoryStream memoryStream = new MemoryStream(jsonWriter.GetResult());
+            return new CosmosQueryResponse(
+                dynamicFeed.Headers,
+                memoryStream,
+                dynamicFeed.ResponseContinuation);
         }
 
-        public static IQueryable<T> AsQueryable<T>(FeedResponse<dynamic> dynamicFeed)
+        private static Microsoft.Azure.Cosmos.Json.JsonSerializationFormat ContentToJsonSerializationFormat(
+            ContentSerializationFormat contentSerializationFormat)
         {
-            FeedResponse<T> response = FeedResponseBinder.Convert<T>(dynamicFeed);
-            return response.AsQueryable<T>();
-        }
-
-        private static bool IsCosmosElement(Type type)
-        {
-            return (
-                (type == typeof(CosmosElement))
-                || type.BaseType == typeof(CosmosElement)
-                || type == typeof(CosmosNull)
-                || type == typeof(CosmosBoolean)
-                || type.BaseType == typeof(CosmosArray)
-                || type.BaseType == typeof(CosmosObject)
-                || type.BaseType == typeof(CosmosString)
-                || type.BaseType == typeof(CosmosNumber));
+            switch (contentSerializationFormat)
+            {
+                case ContentSerializationFormat.JsonText:
+                    return JsonSerializationFormat.Text;
+                case ContentSerializationFormat.CosmosBinary:
+                    return JsonSerializationFormat.Binary;
+                default:
+                    throw new ArgumentException($"Unknown {nameof(ContentSerializationFormat)} : {contentSerializationFormat}");
+            }
         }
     }
 }
