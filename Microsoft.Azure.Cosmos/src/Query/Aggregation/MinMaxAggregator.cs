@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// The global max of all items seen.
         /// </summary>
         private object globalMinMax;
+
         public MinMaxAggregator(bool isMinAggregation)
         {
             this.isMinAggregation = isMinAggregation;
