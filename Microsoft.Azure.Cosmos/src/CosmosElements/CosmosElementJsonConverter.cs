@@ -5,6 +5,7 @@
     using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Text;
 
@@ -65,78 +66,17 @@
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            //// TODO use the newtonsoft wrapper for this.
-            return CosmosElement.Create(Encoding.UTF8.GetBytes(JToken.Load(reader).ToString()));
+            JToken token = JToken.Load(reader);
+            string json = JsonConvert.SerializeObject(token);
+            byte[] buffer = Encoding.UTF8.GetBytes(json);
+            return CosmosElement.Create(buffer);
         }
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            JsonNewtonsoftInteropWriter writerInterop = new JsonNewtonsoftInteropWriter(writer);
+            JsonNewtonsoftWriter writerInterop = JsonNewtonsoftWriter.Create(writer);
             CosmosElement cosmosElement = value as CosmosElement;
             cosmosElement.WriteTo(writerInterop);
         }
-
-        //private static CosmosElement ReadCosmosElementFromReader(JsonReader reader)
-        //{
-        //    CosmosElement cosmosElement;
-        //    if (reader.TokenType == JsonToken.Integer)
-        //    {
-        //        cosmosElement = CosmosNumber.Create((long)reader.Value);
-        //    }
-        //    else if (reader.TokenType == JsonToken.Float)
-        //    {
-        //        cosmosElement = CosmosNumber.Create((double)reader.Value);
-        //    }
-        //    else if (reader.TokenType == JsonToken.String || reader.TokenType == JsonToken.Date)
-        //    {
-        //        cosmosElement = CosmosString.Create(reader.Value.ToString());
-        //    }
-        //    else if (reader.TokenType == JsonToken.Null)
-        //    {
-        //        cosmosElement = CosmosNull.Create();
-        //    }
-        //    else if (reader.TokenType == JsonToken.Boolean)
-        //    {
-        //        cosmosElement = CosmosBoolean.Create((bool)reader.Value);
-        //    }
-        //    else if (reader.TokenType == JsonToken.StartArray)
-        //    {
-        //        List<CosmosElement> cosmosElements = new List<CosmosElement>();
-        //        // Skip Array Start Token
-        //        reader.Read();
-        //        while(reader.TokenType != JsonToken.EndArray)
-        //        {
-        //            CosmosElement arrayItem = ReadCosmosElementFromReader(reader);
-        //            cosmosElements.Add(arrayItem);
-        //        }
-
-        //        cosmosElement = CosmosArray.Create(cosmosElements);
-        //    }
-        //    else if (reader.TokenType == JsonToken.StartObject)
-        //    {
-        //        Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-        //        // Skip Object Start Token
-        //        reader.Read();
-        //        while (reader.TokenType != JsonToken.EndObject)
-        //        {
-        //            string key = (string)reader.Value;
-        //            reader.Read();
-
-        //            CosmosElement value = ReadCosmosElementFromReader(reader);
-
-        //            dictionary[key] = value;
-        //        }
-
-        //        cosmosElement = CosmosObject.Create(dictionary);
-        //    }
-        //    else
-        //    {
-        //        throw new ArgumentException($"Unknown type: {reader.ValueType}");
-        //    }
-
-        //    reader.Read();
-
-        //    return cosmosElement;
-        //}
     }
 }

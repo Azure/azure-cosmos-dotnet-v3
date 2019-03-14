@@ -7,15 +7,40 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
+    using Newtonsoft.Json.Linq;
 
-    internal abstract class JsonNewtonsoftWriter :  Microsoft.Azure.Cosmos.Json.JsonWriter
+    internal sealed class JsonNewtonsoftWriter :  Microsoft.Azure.Cosmos.Json.JsonWriter
     {
-        protected readonly Newtonsoft.Json.JsonWriter writer;
+        private readonly Newtonsoft.Json.JsonWriter writer;
+        private readonly StringBuilder stringBuilder;
 
-        protected JsonNewtonsoftWriter(Newtonsoft.Json.JsonWriter writer)
+        private JsonNewtonsoftWriter(
+            Newtonsoft.Json.JsonWriter writer, 
+            StringBuilder stringBuilder)
             : base(true)
         {
+            if (writer == null)
+            {
+                throw new ArgumentNullException($"{nameof(writer)}");
+            }
+
             this.writer = writer;
+            this.stringBuilder = stringBuilder;
+        }
+
+        public static JsonNewtonsoftWriter Create()
+        {
+            StringBuilder sb = new StringBuilder();
+            StringWriter sw = new StringWriter(sb);
+            Newtonsoft.Json.JsonWriter writer = new Newtonsoft.Json.JsonTextWriter(sw);
+            return new JsonNewtonsoftWriter(writer, sb);
+        }
+
+        public static JsonNewtonsoftWriter Create(Newtonsoft.Json.JsonWriter writer)
+        {
+            return new JsonNewtonsoftWriter(writer, null);
         }
 
         public override long CurrentLength
@@ -25,6 +50,8 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
                 throw new NotImplementedException();
             }
         }
+
+        public override JsonSerializationFormat SerializationFormat => this.writer is Newtonsoft.Json.JsonTextWriter ? JsonSerializationFormat.Text : JsonSerializationFormat.Binary;
 
         public override void WriteArrayEnd()
         {
@@ -88,6 +115,11 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
         protected override void WriteRawJsonToken(JsonTokenType jsonTokenType, IReadOnlyList<byte> rawJsonToken)
         {
             throw new NotImplementedException();
+        }
+
+        public override byte[] GetResult()
+        {
+            return Encoding.UTF8.GetBytes(this.stringBuilder.ToString());
         }
     }
 }
