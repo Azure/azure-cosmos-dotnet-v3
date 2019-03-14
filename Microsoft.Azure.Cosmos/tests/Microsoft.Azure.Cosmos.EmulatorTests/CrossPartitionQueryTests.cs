@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string[] NoDocuments = new string[] { };
         private static DocumentClient GatewayClient = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
         private static DocumentClient DirectClient = TestCommon.CreateClient(false, defaultConsistencyLevel: ConsistencyLevel.Session);
+        private static CosmosClient CosmosGatewayClient = TestCommon.CreateCosmosClient(true);
         private static DocumentClient Client = DirectClient;
         private static CosmosDatabaseSettings database;
         private static AsyncLocal<LocalCounter> responseLengthBytes = new AsyncLocal<LocalCounter>();
@@ -60,9 +61,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [ClassInitialize]
-        public static void Initialize(TestContext textContext)
+        public static async Task Initialize(TestContext textContext)
         {
-            CrossPartitionQueryTests.CleanUp();
+            await CrossPartitionQueryTests.CleanUp();
         }
 
         [TestInitialize]
@@ -197,14 +198,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new Tuple<CosmosContainerSettings, List<Document>>(nonPartitionedCollection, insertedDocuments);
         }
 
-        private static void CleanUp()
+        private static async Task CleanUp()
         {
-            IEnumerable<CosmosDatabaseSettings> allDatabases = from database in CrossPartitionQueryTests.Client.CreateDatabaseQuery()
-                                                               select database;
+            CosmosResultSetIterator<CosmosDatabaseSettings> allDatabases = CrossPartitionQueryTests.CosmosGatewayClient.Databases.GetDatabaseIterator();
 
-            foreach (CosmosDatabaseSettings database in allDatabases)
+            while (allDatabases.HasMoreResults)
             {
-                CrossPartitionQueryTests.Client.DeleteDatabaseAsync(database.SelfLink).Wait();
+                foreach(var db in await allDatabases.FetchNextSetAsync())
+                {
+                    await CrossPartitionQueryTests.CosmosGatewayClient.Databases[db.Id].DeleteAsync();
+                }
             }
         }
 

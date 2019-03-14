@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetFeedIterator setIterator = container.Items.CreateItemQueryAsStream(
+            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql, 
                 partitionKey: "pk", 
                 requestOptions: new CosmosQueryRequestOptions());
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosResponseMessage response = await setIterator.FetchNextSetAsync();
+            CosmosQueryResponse response = await setIterator.FetchNextSetAsync();
 
             //Test gateway mode
             mockClient = MockDocumentClient.CreateMockCosmosClient(
