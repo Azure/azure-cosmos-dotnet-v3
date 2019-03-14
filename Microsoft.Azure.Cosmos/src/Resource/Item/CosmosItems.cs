@@ -1155,18 +1155,25 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             DocumentQuery<CosmosQueryResponse> documentQuery = (DocumentQuery<CosmosQueryResponse>)state;
+            // DEVNOTE: Remove try catch once query pipeline is converted to exceptionless
             try
             {
                 return await documentQuery.ExecuteNextQueryStreamAsync(cancellationToken);
             }
             catch (DocumentClientException exception)
             {
-                throw new CosmosException(
-                    message: exception.Message,
-                    statusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
-                    subStatusCode: (int)exception.GetSubStatus(),
-                    activityId: exception.ActivityId,
-                    requestCharge: exception.RequestCharge);
+                return new CosmosQueryResponse(
+                    new CosmosException(
+                        message: exception.Message,
+                        statusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
+                        subStatusCode: (int)exception.GetSubStatus(),
+                        activityId: exception.ActivityId,
+                        requestCharge: exception.RequestCharge),
+                    exception.Headers);
+            }
+            catch (Exception exception)
+            {
+                return new CosmosQueryResponse(exception);
             }
         }
 

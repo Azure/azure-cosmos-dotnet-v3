@@ -34,8 +34,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal CosmosQueryResponse(
-            INameValueCollection responseHeaders, 
-            Exception exception)
+            Exception exception,
+            INameValueCollection responseHeaders = null)
         {
             this.ContinuationToken = null;
             this.Content = null;
@@ -68,6 +68,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
+                if (this._responseHeaders == null)
+                {
+                    return 0;
+                }
+
                 return Helpers.GetHeaderValueDouble(
                     this._responseHeaders,
                     HttpConstants.HttpHeaders.RequestCharge,
@@ -85,9 +90,19 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
+                if (this._responseHeaders == null)
+                {
+                    return null;
+                }
+
                 return this._responseHeaders[HttpConstants.HttpHeaders.ActivityId];
             }
         }
+
+        /// <summary>
+        /// Returns true if the operation succeeded
+        /// </summary>
+        public virtual bool IsSuccess => this.Exception == null;
 
         /// <summary>
         /// Dispose of the response content
