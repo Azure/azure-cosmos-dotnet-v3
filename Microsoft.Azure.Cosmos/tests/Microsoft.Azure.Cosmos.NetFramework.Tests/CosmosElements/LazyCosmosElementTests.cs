@@ -141,6 +141,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
                         age = (int)cosmosNumber.AsInteger().Value;
                     }
 
+                    return age;
+                }
+            }
+
             public IEnumerable<LazilyDeserializedPerson> Children
             {
                 get
