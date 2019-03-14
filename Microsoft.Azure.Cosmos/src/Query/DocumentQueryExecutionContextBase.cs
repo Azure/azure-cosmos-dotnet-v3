@@ -425,8 +425,8 @@ namespace Microsoft.Azure.Cosmos.Query
             MemoryStream memoryStream = new MemoryStream();
             documentServiceResponse.ResponseBody.CopyTo(memoryStream);
             long responseLengthBytes = memoryStream.Length;
-            IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
-            string resourceName = request.ResourceType + "s";
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.GetBuffer());
+            string resourceName = request.ResourceType.ToResourceTypeString() + "s";
 
             if(!jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(), 

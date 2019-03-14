@@ -6,7 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
+    using System;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global min/max from the local min/max of multiple partitions and continuations.
@@ -141,10 +141,29 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         private static bool CosmosElementIsPrimitive(CosmosElement cosmosElement)
         {
             CosmosElementType cosmosElementType = cosmosElement.Type;
-            return cosmosElementType == CosmosElementType.Boolean
-                || cosmosElementType == CosmosElementType.Null
-                || cosmosElementType == CosmosElementType.Number
-                || cosmosElementType == CosmosElementType.String;
+            switch (cosmosElementType)
+            {
+                case CosmosElementType.Array:
+                    return false;
+
+                case CosmosElementType.Boolean:
+                    return true;
+
+                case CosmosElementType.Null:
+                    return true;
+
+                case CosmosElementType.Number:
+                    return true;
+
+                case CosmosElementType.Object:
+                    return false;
+
+                case CosmosElementType.String:
+                    return true;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(CosmosElementType)} : {cosmosElementType}.");
+            }
         }
     }
 }
