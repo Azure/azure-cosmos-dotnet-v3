@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// ParallelDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -23,22 +24,22 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This class handles draining in the correct order and can also stop and resume the query 
     /// by generating a continuation token and resuming from said continuation token.
     /// </summary>
-    internal sealed class ParallelDocumentQueryExecutionContext : CrossPartitionQueryExecutionContext<object>
+    internal sealed class ParallelDocumentQueryExecutionContext : CrossPartitionQueryExecutionContext
     {
         /// <summary>
         /// The comparer used to determine which document to serve next.
         /// </summary>
-        private static readonly IComparer<DocumentProducerTree<object>> MoveNextComparer = new ParllelDocumentProducerTreeComparer();
+        private static readonly IComparer<DocumentProducerTree> MoveNextComparer = new ParllelDocumentProducerTreeComparer();
 
         /// <summary>
         /// The function to determine which partition to fetch from first.
         /// </summary>
-        private static readonly Func<DocumentProducerTree<object>, int> FetchPriorityFunction = documentProducerTree => int.Parse(documentProducerTree.PartitionKeyRange.Id);
+        private static readonly Func<DocumentProducerTree, int> FetchPriorityFunction = documentProducerTree => int.Parse(documentProducerTree.PartitionKeyRange.Id);
 
         /// <summary>
         /// The comparer used to determine, which continuation tokens should be returned to the user.
         /// </summary>
-        private static readonly IEqualityComparer<object> EqualityComparer = new ParallelEqualityComparer();
+        private static readonly IEqualityComparer<CosmosElement> EqualityComparer = new ParallelEqualityComparer();
 
         /// <summary>
         /// Initializes a new instance of the ParallelDocumentQueryExecutionContext class.
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     return null;
                 }
 
-                IEnumerable<DocumentProducer<object>> activeDocumentProducers = this.GetActiveDocumentProducers();
+                IEnumerable<DocumentProducer> activeDocumentProducers = this.GetActiveDocumentProducers();
                 return activeDocumentProducers.Count() > 0 ? JsonConvert.SerializeObject(
                     activeDocumentProducers.Select((documentProducer) => new CompositeContinuationToken
                     {
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>A task to await on, which in turn returns a ParallelDocumentQueryExecutionContext.</returns>
         public static async Task<ParallelDocumentQueryExecutionContext> CreateAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
-            CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams initParams,
+            CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             CancellationToken token)
         {
             Debug.Assert(
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drains.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task that when awaited on returns a FeedResponse of results.</returns>
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints
             // 1) We fully drain from the left most partition before moving on to the next partition
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query
             //  otherwise we would need to add to the continuation token how many items to skip over on that page.
 
             // Only drain from the leftmost (current) document producer tree
-            DocumentProducerTree<object> currentDocumentProducerTree = this.PopCurrentDocumentProducerTree();
+            DocumentProducerTree currentDocumentProducerTree = this.PopCurrentDocumentProducerTree();
 
             // This might be the first time we have seen this document producer tree so we need to buffer documents
             if (currentDocumentProducerTree.Current == null)
@@ -141,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query
             int itemsLeftInCurrentPage = currentDocumentProducerTree.ItemsLeftInCurrentPage;
 
             // Only drain full pages or less if this is a top query.
-            List<object> results = new List<object>();
+            List<CosmosElement> results = new List<CosmosElement>();
             for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
             {
                 results.Add(currentDocumentProducerTree.Current);
@@ -154,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
-            return new FeedResponse<object>(
+            return new FeedResponse<CosmosElement>(
                 results,
                 results.Count,
                 this.GetResponseHeaders(),
@@ -277,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// For parallel queries we drain from left partition to right,
         /// then by rid order within those partitions.
         /// </summary>
-        private sealed class ParllelDocumentProducerTreeComparer : IComparer<DocumentProducerTree<object>>
+        private sealed class ParllelDocumentProducerTreeComparer : IComparer<DocumentProducerTree>
         {
             /// <summary>
             /// Compares two document producer trees in a parallel context and returns their comparison.
@@ -290,8 +291,8 @@ namespace Microsoft.Azure.Cosmos.Query
             /// A positive number if the second comes before the first.
             /// </returns>
             public int Compare(
-                DocumentProducerTree<object> documentProducerTree1,
-                DocumentProducerTree<object> documentProducerTree2)
+                DocumentProducerTree documentProducerTree1,
+                DocumentProducerTree documentProducerTree2)
             {
                 if (object.ReferenceEquals(documentProducerTree1, documentProducerTree2))
                 {
@@ -310,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Comparer used to determine if we should return the continuation token to the user
         /// </summary>
         /// <remarks>This basically just says that the two object are never equals, so that we don't return a continuation for a partition we have started draining.</remarks>
-        private sealed class ParallelEqualityComparer : IEqualityComparer<object>
+        private sealed class ParallelEqualityComparer : IEqualityComparer<CosmosElement>
         {
             /// <summary>
             /// Returns whether two parallel query items are equal.
@@ -318,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="x">The first item.</param>
             /// <param name="y">The second item.</param>
             /// <returns>Whether two parallel query items are equal.</returns>
-            public new bool Equals(object x, object y)
+            public bool Equals(CosmosElement x, CosmosElement y)
             {
                 return x == y;
             }
@@ -328,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// </summary>
             /// <param name="obj">The object to hash.</param>
             /// <returns>The hash code for the object.</returns>
-            public int GetHashCode(object obj)
+            public int GetHashCode(CosmosElement obj)
             {
                 return obj.GetHashCode();
             }

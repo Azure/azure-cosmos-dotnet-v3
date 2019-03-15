@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Routing;
 
@@ -33,23 +34,22 @@ namespace Microsoft.Azure.Cosmos.Query
     ///             yield document.
     /// And the way this is done is by buffering pages and updating the state of the DocumentProducerTree whenever a user crosses a page boundary.
     /// </summary>
-    /// <typeparam name="T">The type of document buffered.</typeparam>
-    internal sealed class DocumentProducerTree<T> : IEnumerable<DocumentProducerTree<T>>
+    internal sealed class DocumentProducerTree : IEnumerable<DocumentProducerTree>
     {
         /// <summary>
         /// Root of the document producer tree.
         /// </summary>
-        private readonly DocumentProducer<T> root;
+        private readonly DocumentProducer root;
 
         /// <summary>
         /// The child partitions of this node in the tree that are added after a split.
         /// </summary>
-        private readonly PriorityQueue<DocumentProducerTree<T>> children;
+        private readonly PriorityQueue<DocumentProducerTree> children;
 
         /// <summary>
         /// Callback to create child document producer trees once a split happens.
         /// </summary>
-        private readonly Func<PartitionKeyRange, string, DocumentProducerTree<T>> createDocumentProducerTreeCallback;
+        private readonly Func<PartitionKeyRange, string, DocumentProducerTree> createDocumentProducerTreeCallback;
 
         /// <summary>
         /// The client that is used to get the routing map on a split.
@@ -90,11 +90,11 @@ namespace Microsoft.Azure.Cosmos.Query
         public DocumentProducerTree(
             PartitionKeyRange partitionKeyRange,
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc,
+            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
-            Action<DocumentProducerTree<T>, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
-            IComparer<DocumentProducerTree<T>> documentProducerTreeComparer,
-            IEqualityComparer<T> equalityComparer,
+            Action<DocumentProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
+            IComparer<DocumentProducerTree> documentProducerTreeComparer,
+            IEqualityComparer<CosmosElement> equalityComparer,
             IDocumentQueryClient client,
             bool deferFirstPage,
             string collectionRid,
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentException($"{nameof(collectionRid)} can not be null or empty.");
             }
 
-            this.root = new DocumentProducer<T>(
+            this.root = new DocumentProducer(
                 partitionKeyRange,
                 createRequestFunc,
                 executeRequestFunc,
@@ -156,11 +156,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 initialPageSize,
                 initialContinuationToken);
 
-            this.children = new PriorityQueue<DocumentProducerTree<T>>(documentProducerTreeComparer, true);
+            this.children = new PriorityQueue<DocumentProducerTree>(documentProducerTreeComparer, true);
             this.deferFirstPage = deferFirstPage;
             this.client = client;
             this.collectionRid = collectionRid;
-            this.createDocumentProducerTreeCallback = DocumentProducerTree<T>.CreateDocumentProducerTreeCallback(
+            this.createDocumentProducerTreeCallback = DocumentProducerTree.CreateDocumentProducerTreeCallback(
                 createRequestFunc,
                 executeRequestFunc,
                 createRetryPolicyFunc,
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the root document from the tree.
         /// </summary>
-        public DocumentProducer<T> Root
+        public DocumentProducer Root
         {
             get
             {
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the current (highest priority) document producer tree from all subtrees.
         /// </summary>
-        public DocumentProducerTree<T> CurrentDocumentProducerTree
+        public DocumentProducerTree CurrentDocumentProducerTree
         {
             get
             {
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the current item from the document producer tree.
         /// </summary>
-        public T Current
+        public CosmosElement Current
         {
             get
             {
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the document producers that need their continuation token return to the user.
         /// </summary>
         /// <returns>The document producers that need their continuation token return to the user.</returns>
-        public IEnumerable<DocumentProducer<T>> GetActiveDocumentProducers()
+        public IEnumerable<DocumentProducer> GetActiveDocumentProducers()
         {
             if (!this.HasSplit)
             {
@@ -485,9 +485,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
                 else
                 {
-                    foreach (DocumentProducerTree<T> child in this.children)
+                    foreach (DocumentProducerTree child in this.children)
                     {
-                        foreach (DocumentProducer<T> activeDocumentProducer in child.GetActiveDocumentProducers())
+                        foreach (DocumentProducer activeDocumentProducer in child.GetActiveDocumentProducers())
                         {
                             yield return activeDocumentProducer;
                         }
@@ -500,16 +500,16 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the enumerator for all the leaf level document producers.
         /// </summary>
         /// <returns>The enumerator for all the leaf level document producers.</returns>
-        public IEnumerator<DocumentProducerTree<T>> GetEnumerator()
+        public IEnumerator<DocumentProducerTree> GetEnumerator()
         {
             if (this.children.Count == 0)
             {
                 yield return this;
             }
 
-            foreach (DocumentProducerTree<T> child in this.children)
+            foreach (DocumentProducerTree child in this.children)
             {
-                foreach (DocumentProducerTree<T> documentProducer in child)
+                foreach (DocumentProducerTree documentProducer in child)
                 {
                     yield return documentProducer;
                 }
@@ -539,13 +539,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="collectionRid">The collection to drain from.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <returns>A function that given a partition key range and continuation token will create a document producer.</returns>
-        private static Func<PartitionKeyRange, string, DocumentProducerTree<T>> CreateDocumentProducerTreeCallback(
+        private static Func<PartitionKeyRange, string, DocumentProducerTree> CreateDocumentProducerTreeCallback(
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc,
+            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
-            Action<DocumentProducerTree<T>, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
-            IComparer<DocumentProducerTree<T>> documentProducerTreeComparer,
-            IEqualityComparer<T> equalityComparer,
+            Action<DocumentProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
+            IComparer<DocumentProducerTree> documentProducerTreeComparer,
+            IEqualityComparer<CosmosElement> equalityComparer,
             IDocumentQueryClient documentClient,
             bool deferFirstPage,
             string collectionRid,
@@ -553,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             return (partitionKeyRange, continuationToken) =>
             {
-                return new DocumentProducerTree<T>(
+                return new DocumentProducerTree(
                     partitionKeyRange,
                     createRequestFunc,
                     executeRequestFunc,
@@ -680,10 +680,10 @@ namespace Microsoft.Azure.Cosmos.Query
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
                     return await function(cancellationToken);
                 }
-                catch (DocumentClientException dce) when (DocumentProducerTree<T>.IsSplitException(dce))
+                catch (DocumentClientException dce) when (DocumentProducerTree.IsSplitException(dce))
                 {
                     // Split just happened
-                    DocumentProducerTree<T> splitDocumentProducerTree = this.CurrentDocumentProducerTree;
+                    DocumentProducerTree splitDocumentProducerTree = this.CurrentDocumentProducerTree;
 
                     if (!functionNeedsBeReexecuted)
                     {
@@ -695,7 +695,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     List<PartitionKeyRange> replacementRanges = await this.GetReplacementRanges(splitDocumentProducerTree.PartitionKeyRange, this.collectionRid);
                     foreach (PartitionKeyRange replacementRange in replacementRanges)
                     {
-                        DocumentProducerTree<T> replacementDocumentProducerTree = this.createDocumentProducerTreeCallback(replacementRange, splitDocumentProducerTree.root.BackendContinuationToken);
+                        DocumentProducerTree replacementDocumentProducerTree = this.createDocumentProducerTreeCallback(replacementRange, splitDocumentProducerTree.root.BackendContinuationToken);
 
                         if (!this.deferFirstPage)
                         {
