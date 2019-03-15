@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private bool _isDisposed = false;
         private INameValueCollection _responseHeaders = null;
+        private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
 
         /// <summary>
         /// Create a <see cref="CosmosQueryResponse{T}"/>
@@ -26,10 +27,14 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQueryResponse(
             INameValueCollection responseHeaders,
             Stream content,
-            string continuationToken)
+            int count,
+            string continuationToken,
+            IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
         {
             this._responseHeaders = responseHeaders;
+            this._queryMetrics = queryMetrics;
             this.Content = content;
+            this.Count = count;
             this.ContinuationToken = continuationToken;
         }
 
@@ -57,6 +62,11 @@ namespace Microsoft.Azure.Cosmos
         /// The exception if the operation failed.
         /// </summary>
         public virtual Exception Exception { get; }
+
+        /// <summary>
+        /// The number of items in the query response
+        /// </summary>
+        public virtual int Count { get; }
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -96,6 +106,17 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 return this._responseHeaders[HttpConstants.HttpHeaders.ActivityId];
+            }
+        }
+
+        /// <summary>
+        /// Get <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> for each individual partition in the Azure Cosmos DB service
+        /// </summary>
+        internal IReadOnlyDictionary<string, QueryMetrics> QueryMetrics
+        {
+            get
+            {
+                return this._queryMetrics;
             }
         }
 

@@ -85,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
             CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql, 
+                maxConcurrency: 1,
                 partitionKey: "pk", 
                 requestOptions: new CosmosQueryRequestOptions());
 
@@ -105,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             container = mockClient.Databases["database"].Containers["container"];
             setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql,
+                maxConcurrency: 1,
                 partitionKey: "pk",
                 requestOptions: new CosmosQueryRequestOptions());
             testHandler = new TestHandler((request, cancellationToken) => {

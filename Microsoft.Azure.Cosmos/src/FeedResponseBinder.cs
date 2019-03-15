@@ -72,7 +72,9 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosQueryResponse(
                 dynamicFeed.Headers,
                 memoryStream,
-                dynamicFeed.ResponseContinuation);
+                dynamicFeed.Count,
+                dynamicFeed.ResponseContinuation,
+                dynamicFeed.QueryMetrics);
         }
 
         private static Microsoft.Azure.Cosmos.Json.JsonSerializationFormat ContentToJsonSerializationFormat(

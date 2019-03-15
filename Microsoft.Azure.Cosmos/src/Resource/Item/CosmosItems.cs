@@ -708,6 +708,7 @@ namespace Microsoft.Azure.Cosmos
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="maxConcurrency">The number of concurrent operations run client side during parallel query execution in the Azure Cosmos DB service.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -746,17 +747,19 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual CosmosResultSetIterator CreateItemQueryAsStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
+            int maxConcurrency,
             object partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
+            requestOptions.maxConcurrency = maxConcurrency;
+            requestOptions.EnableCrossPartitionQuery = true;
 
             FeedOptions feedOptions = requestOptions.ToFeedOptions();
             feedOptions.RequestContinuation = continuationToken;
             feedOptions.MaxItemCount = maxItemCount;
-            feedOptions.EnableCrossPartitionQuery = true;
             if (partitionKey != null)
             {
                 PartitionKey pk = new PartitionKey(partitionKey);
@@ -781,6 +784,7 @@ namespace Microsoft.Azure.Cosmos
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryText">The cosmos SQL query string.</param>
+        /// <param name="maxConcurrency">The number of concurrent operations run client side during parallel query execution in the Azure Cosmos DB service.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -818,6 +822,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual CosmosResultSetIterator CreateItemQueryAsStream(
             string sqlQueryText,
+            int maxConcurrency,
             object partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
@@ -825,6 +830,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.CreateItemQueryAsStream(
                 new CosmosSqlQueryDefinition(sqlQueryText),
+                maxConcurrency,
                 partitionKey,
                 maxItemCount,
                 continuationToken,
