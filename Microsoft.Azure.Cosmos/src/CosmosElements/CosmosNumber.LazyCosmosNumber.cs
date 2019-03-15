@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class LazyCosmosNumber : CosmosNumber
         {
+            private const long MaxSafeInteger = 2 ^ 53 - 1;
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
 
@@ -50,8 +51,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 get
                 {
-                    // Until we have Number64 a LazyCosmosNumber is always a double.
-                    return true;
+                    return !this.IsInteger;
                 }
             }
 
@@ -59,8 +59,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 get
                 {
-                    // Until we have Number64 a LazyCosmosNumber is always a double.
-                    return false;
+                    return this.lazyNumber.Value % 1 == 0 && this.lazyNumber.Value <= MaxSafeInteger;
                 }
             }
 
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override long? AsInteger()
             {
-                return null;
+                return (long)this.lazyNumber.Value;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
@@ -81,7 +80,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
+                if (this.IsFloatingPoint)
+                {
+                    jsonWriter.WriteNumberValue(this.AsFloatingPoint().Value);
+                }
+                else
+                {
+                    jsonWriter.WriteIntValue(this.AsInteger().Value);
+                }
             }
         }
     } 

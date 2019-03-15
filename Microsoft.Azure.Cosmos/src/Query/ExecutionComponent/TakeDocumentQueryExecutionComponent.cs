@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json;
 
@@ -91,11 +91,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
         {
-            FeedResponse<object> results = await base.DrainAsync(maxElements, token);
-            List<object> takedDocuments = results.Take(this.takeCount).ToList();
-            results = new FeedResponse<object>(
+            FeedResponse<CosmosElement> results = await base.DrainAsync(maxElements, token);
+            List<CosmosElement> takedDocuments = results.Take(this.takeCount).ToList();
+            results = new FeedResponse<CosmosElement>(
                 takedDocuments,
                 takedDocuments.Count,
                 results.Headers,

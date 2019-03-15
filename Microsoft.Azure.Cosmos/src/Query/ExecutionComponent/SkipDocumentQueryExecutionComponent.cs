@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json;
 
@@ -56,13 +57,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
         {
-            FeedResponse<object> sourcePage = await base.DrainAsync(maxElements, token);
+            FeedResponse<CosmosElement> sourcePage = await base.DrainAsync(maxElements, token);
 
             // skip the documents but keep all the other headers
-            List<object> documentsAfterSkip = sourcePage.Skip(this.skipCount).ToList();
-            FeedResponse<object> offsetPage = new FeedResponse<object>(
+            List<CosmosElement> documentsAfterSkip = sourcePage.Skip(this.skipCount).ToList();
+            FeedResponse<CosmosElement> offsetPage = new FeedResponse<CosmosElement>(
                     documentsAfterSkip,
                     documentsAfterSkip.Count(),
                     sourcePage.Headers,
