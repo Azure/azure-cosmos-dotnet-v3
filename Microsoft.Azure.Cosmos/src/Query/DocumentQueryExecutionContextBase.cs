@@ -425,7 +425,21 @@ namespace Microsoft.Azure.Cosmos.Query
             MemoryStream memoryStream = new MemoryStream();
             documentServiceResponse.ResponseBody.CopyTo(memoryStream);
             long responseLengthBytes = memoryStream.Length;
-            IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
+            byte[] content = memoryStream.ToArray();
+            IJsonNavigator jsonNavigator = null;
+
+            // Use the users custom navigator first. If it returns null back try the
+            // internal navigator.
+            if (this.feedOptions.CreateCustomNavigator != null)
+            {
+                jsonNavigator = this.feedOptions.CreateCustomNavigator(content);
+            }
+
+            if(jsonNavigator == null)
+            {
+                jsonNavigator = JsonNavigator.Create(content);
+            }
+
             string resourceName = request.ResourceType.ToResourceTypeString() + "s";
 
             if(!jsonNavigator.TryGetObjectProperty(

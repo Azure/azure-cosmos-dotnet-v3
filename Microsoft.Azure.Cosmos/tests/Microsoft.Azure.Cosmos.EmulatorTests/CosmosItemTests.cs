@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                     {
                         Assert.IsTrue(iter.IsSuccess);
-                        Assert.IsNull(iter.Exception);
+                        Assert.IsNull(iter.ErrorMessage);
                         Assert.IsTrue(iter.Count <= 5);
                         totalRequstCharge += iter.RequestCharge;
 
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                     {
                         Assert.IsTrue(iter.IsSuccess);
-                        Assert.IsNull(iter.Exception);
+                        Assert.IsNull(iter.ErrorMessage);
                         Assert.IsTrue(iter.Count <= 5);
                         totalRequstCharge += iter.RequestCharge;
                         ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);

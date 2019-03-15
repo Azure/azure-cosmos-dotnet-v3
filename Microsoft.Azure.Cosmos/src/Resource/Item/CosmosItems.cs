@@ -1169,17 +1169,8 @@ namespace Microsoft.Azure.Cosmos
             catch (DocumentClientException exception)
             {
                 return new CosmosQueryResponse(
-                    new CosmosException(
-                        message: exception.Message,
-                        statusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
-                        subStatusCode: (int)exception.GetSubStatus(),
-                        activityId: exception.ActivityId,
-                        requestCharge: exception.RequestCharge),
-                    exception.Headers);
-            }
-            catch (Exception exception)
-            {
-                return new CosmosQueryResponse(exception);
+                        errorMessage: exception.Message,
+                        httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError);
             }
         }
 

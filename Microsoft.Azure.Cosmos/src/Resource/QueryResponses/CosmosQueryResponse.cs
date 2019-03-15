@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
 
@@ -44,16 +45,19 @@ namespace Microsoft.Azure.Cosmos
             this.Content = content;
             this.Count = count;
             this.ContinuationToken = continuationToken;
+            this.StatusCode = HttpStatusCode.OK;
         }
 
         internal CosmosQueryResponse(
-            Exception exception,
+            string errorMessage,
+            HttpStatusCode httpStatusCode,
             INameValueCollection responseHeaders = null)
         {
             this.ContinuationToken = null;
             this.Content = null;
             this._responseHeaders = responseHeaders;
-            this.Exception = exception;
+            this.StatusCode = httpStatusCode;
+            this.ErrorMessage = errorMessage;
         }
 
         /// <summary>
@@ -67,9 +71,14 @@ namespace Microsoft.Azure.Cosmos
         public virtual Stream Content { get; protected set; }
 
         /// <summary>
+        /// Gets the <see cref="HttpStatusCode"/> of the current response.
+        /// </summary>
+        public virtual HttpStatusCode StatusCode { get; private set; }
+
+        /// <summary>
         /// The exception if the operation failed.
         /// </summary>
-        public virtual Exception Exception { get; }
+        public virtual string ErrorMessage { get; }
 
         /// <summary>
         /// The number of items in the query response
@@ -131,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns true if the operation succeeded
         /// </summary>
-        public virtual bool IsSuccess => this.Exception == null;
+        public virtual bool IsSuccess => this.StatusCode == HttpStatusCode.OK;
 
         /// <summary>
         /// Dispose of the response content

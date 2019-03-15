@@ -17,10 +17,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public static FeedResponse<T> Convert<T>(
             FeedResponse<CosmosElement> dynamicFeed,
-            ContentSerializationFormat contentSerializationFormat,
-            Newtonsoft.Json.JsonSerializerSettings serializerSettings)
+            IJsonWriter jsonWriter)
         {
-            IJsonWriter jsonWriter = JsonWriter.Create(ContentToJsonSerializationFormat(contentSerializationFormat));
+            if(jsonWriter == null)
+            {
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            }
 
             jsonWriter.WriteArrayStart();
 
@@ -36,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (JsonCosmosDBReader reader = new JsonCosmosDBReader(memoryStream))
                 {
-                    Newtonsoft.Json.JsonSerializer serializer = Newtonsoft.Json.JsonSerializer.Create(serializerSettings);
+                    Newtonsoft.Json.JsonSerializer serializer = Newtonsoft.Json.JsonSerializer.Create();
                     typedResults = serializer.Deserialize<List<T>>(reader);
                 }
             }
@@ -54,10 +56,12 @@ namespace Microsoft.Azure.Cosmos
 
         public static CosmosQueryResponse ConvertToCosmosQueryResponse(
             FeedResponse<CosmosElement> dynamicFeed,
-            ContentSerializationFormat contentSerializationFormat,
-            Newtonsoft.Json.JsonSerializerSettings serializerSettings)
+            IJsonWriter jsonWriter)
         {
-            IJsonWriter jsonWriter = JsonWriter.Create(ContentToJsonSerializationFormat(contentSerializationFormat));
+            if (jsonWriter == null)
+            {
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            }
 
             jsonWriter.WriteArrayStart();
 
@@ -75,20 +79,6 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.Count,
                 dynamicFeed.ResponseContinuation,
                 dynamicFeed.QueryMetrics);
-        }
-
-        private static Microsoft.Azure.Cosmos.Json.JsonSerializationFormat ContentToJsonSerializationFormat(
-            ContentSerializationFormat contentSerializationFormat)
-        {
-            switch (contentSerializationFormat)
-            {
-                case ContentSerializationFormat.JsonText:
-                    return JsonSerializationFormat.Text;
-                case ContentSerializationFormat.CosmosBinary:
-                    return JsonSerializationFormat.Binary;
-                default:
-                    throw new ArgumentException($"Unknown {nameof(ContentSerializationFormat)} : {contentSerializationFormat}");
-            }
         }
     }
 }
