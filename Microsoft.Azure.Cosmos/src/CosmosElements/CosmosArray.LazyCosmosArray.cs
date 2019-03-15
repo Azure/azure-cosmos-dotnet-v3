@@ -48,14 +48,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 get
                 {
                     IJsonNavigatorNode arrayItemNode = this.jsonNavigator.GetArrayItemAt(this.jsonNavigatorNode, index);
-                    return LazyCosmosElementFactory.Create(this.jsonNavigator, arrayItemNode);
+                    return CosmosElement.Dispatch(this.jsonNavigator, arrayItemNode);
                 }
             }
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this
                 .jsonNavigator
                 .GetArrayItems(this.jsonNavigatorNode)
-                .Select((arrayItem) => LazyCosmosElementFactory.Create(this.jsonNavigator, arrayItem))
+                .Select((arrayItem) => CosmosElement.Dispatch(this.jsonNavigator, arrayItem))
                 .GetEnumerator();
 
             public override void WriteTo(IJsonWriter jsonWriter)

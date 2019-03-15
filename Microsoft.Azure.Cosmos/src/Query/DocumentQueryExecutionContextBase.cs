@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
@@ -396,6 +398,59 @@ namespace Microsoft.Azure.Cosmos.Query
             this.PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
 
             return request;
+        }
+
+        public async Task<FeedResponse<CosmosElement>> ExecuteLazyRequestAsync(
+            DocumentServiceRequest request,
+            CancellationToken cancellationToken)
+        {
+            DocumentServiceResponse documentServiceResponse = await this.ExecuteQueryRequestInternalAsync(
+                request,
+                cancellationToken);
+            // Execute the callback an each element of the page
+            // For example just could get a response like this
+            // {
+            //    "_rid": "qHVdAImeKAQ=",
+            //    "Documents": [{
+            //        "id": "03230",
+            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
+            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
+            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
+            //        "_attachments": "attachments\/",
+            //        "_ts": 1501107886
+            //    }],
+            //    "_count": 1
+            // }
+            // And you should execute the callback on each document in "Documents".
+            MemoryStream memoryStream = new MemoryStream();
+            documentServiceResponse.ResponseBody.CopyTo(memoryStream);
+            long responseLengthBytes = memoryStream.Length;
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
+            string resourceName = request.ResourceType.ToResourceTypeString() + "s";
+
+            if(!jsonNavigator.TryGetObjectProperty(
+                jsonNavigator.GetRootNode(), 
+                resourceName, 
+                out ObjectProperty objectProperty))
+            {
+                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+            }
+
+            IJsonNavigatorNode cosmosElements = objectProperty.ValueNode;
+            if (!(CosmosElement.Dispatch(
+                jsonNavigator,
+                cosmosElements) is CosmosArray cosmosArray))
+            {
+                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+            }
+
+            int itemCount = cosmosArray.Count;
+            return new FeedResponse<CosmosElement>(
+                cosmosArray, 
+                itemCount, 
+                documentServiceResponse.Headers, 
+                documentServiceResponse.RequestStats, 
+                responseLengthBytes);
         }
 
         public async Task<FeedResponse<dynamic>> ExecuteRequestAsync(

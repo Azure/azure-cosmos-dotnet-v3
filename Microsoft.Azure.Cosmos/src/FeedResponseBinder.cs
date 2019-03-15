@@ -3,8 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal static class FeedResponseBinder
     {
@@ -14,31 +18,97 @@ namespace Microsoft.Azure.Cosmos
         //This method is invoked via expression as part of dynamic binding of cast operator.
         public static FeedResponse<T> Convert<T>(FeedResponse<dynamic> dynamicFeed)
         {
-            if (typeof(T) == typeof(object))
+            List<T> typedResults = new List<T>(dynamicFeed.Count);
+            if (dynamicFeed.Count > 0 && IsCosmosElement(dynamicFeed.First().GetType()))
             {
-                return (FeedResponse<T>)(object)dynamicFeed;
-            }
-            IList<T> result = new List<T>();
+                // We know all the items are LazyCosmosElements
+                foreach (CosmosElement cosmosElement in dynamicFeed)
+                {
+                    // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
+                    // TODO: in the future we should deserialize using the LazyCosmosElement.
+                    // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
+                    T typedValue;
+                    switch (cosmosElement.Type)
+                    {
+                        case CosmosElementType.String:
+                            typedValue = JToken.FromObject((cosmosElement as CosmosString).Value)
+                                .ToObject<T>();
+                            break;
 
-            foreach (T item in dynamicFeed)
+                        case CosmosElementType.Number:
+                            CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
+                            if (cosmosNumber.IsFloatingPoint)
+                            {
+                                typedValue = JToken.FromObject(cosmosNumber.AsFloatingPoint().Value)
+                               .ToObject<T>();
+                            }
+                            else
+                            {
+                                typedValue = JToken.FromObject(cosmosNumber.AsInteger().Value)
+                               .ToObject<T>();
+                            }
+                            break;
+
+                        case CosmosElementType.Object:
+                            typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosObject).ToString());
+                            break;
+
+                        case CosmosElementType.Array:
+                            typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosArray).ToString());
+                            break;
+
+                        case CosmosElementType.Boolean:
+                            typedValue = JToken.FromObject((cosmosElement as CosmosBoolean).Value)
+                               .ToObject<T>();
+                            break;
+
+                        case CosmosElementType.Null:
+                            typedValue = JValue.CreateNull().ToObject<T>();
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElement.Type}");
+                    }
+
+                    typedResults.Add(typedValue);
+                }
+            }
+            else
             {
-                result.Add(item);
+                foreach (T item in dynamicFeed)
+                {
+                    typedResults.Add(item);
+                }
             }
 
             return new FeedResponse<T>(
-                result,
+                typedResults,
                 dynamicFeed.Count,
                 dynamicFeed.Headers,
                 dynamicFeed.UseETagAsContinuation,
                 dynamicFeed.QueryMetrics,
                 dynamicFeed.RequestStatistics,
-                responseLengthBytes: dynamicFeed.ResponseLengthBytes);
+                dynamicFeed.DisallowContinuationTokenMessage,
+                dynamicFeed.ResponseLengthBytes);
         }
 
         public static IQueryable<T> AsQueryable<T>(FeedResponse<dynamic> dynamicFeed)
         {
             FeedResponse<T> response = FeedResponseBinder.Convert<T>(dynamicFeed);
             return response.AsQueryable<T>();
+        }
+
+        private static bool IsCosmosElement(Type type)
+        {
+            return (
+                (type == typeof(CosmosElement))
+                || type.BaseType == typeof(CosmosElement)
+                || type == typeof(CosmosNull)
+                || type == typeof(CosmosBoolean)
+                || type.BaseType == typeof(CosmosArray)
+                || type.BaseType == typeof(CosmosObject)
+                || type.BaseType == typeof(CosmosString)
+                || type.BaseType == typeof(CosmosNumber));
         }
     }
 }

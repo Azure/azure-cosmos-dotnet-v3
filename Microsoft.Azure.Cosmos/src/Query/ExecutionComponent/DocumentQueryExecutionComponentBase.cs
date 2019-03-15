@@ -5,11 +5,12 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using System;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Base class for all DocumentQueryExecutionComponents that implements and IDocumentQueryExecutionComponent
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="source">The source to drain documents from.</param>
         protected DocumentQueryExecutionComponentBase(IDocumentQueryExecutionComponent source)
         {
-            if(source == null)
+            if (source == null)
             {
                 throw new ArgumentNullException("source for a component can not be null.");
             }
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">Upper bound for the number of documents you wish to receive.</param>
         /// <param name="token">The cancellation token to use.</param>
         /// <returns>A FeedResponse of documents.</returns>
-        public virtual Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token)
+        public virtual Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
         {
             return this.Source.DrainAsync(maxElements, token);
         }

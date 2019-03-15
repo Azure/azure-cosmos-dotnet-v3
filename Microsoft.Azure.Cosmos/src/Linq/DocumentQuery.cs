@@ -13,9 +13,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class DocumentQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
@@ -259,8 +261,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    IEnumerable<T> result = (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
-                    foreach (T item in result)
+                    FeedResponse<dynamic> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
+                    FeedResponse<T> typedFeedResponse = FeedResponseBinder.Convert<T>(feedResponse);
+                    foreach (T item in typedFeedResponse)
                     {
                         yield return item;
                     }
@@ -330,18 +333,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
             }
 
-            // Have to do all this, since dynamic cast loses all the internal members.
             FeedResponse<dynamic> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
-            FeedResponse<TResponse> finalResponse = (dynamic)response;
-            finalResponse = new FeedResponse<TResponse>(
-                finalResponse,
-                finalResponse.Count,
-                finalResponse.Headers,
-                finalResponse.UseETagAsContinuation,
-                finalResponse.QueryMetrics,
-                finalResponse.RequestStatistics,
-                response.DisallowContinuationTokenMessage,
-                finalResponse.ResponseLengthBytes);
+            FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.Convert<TResponse>(response);
+
             if (!this.HasMoreResults && !tracedLastExecution)
             {
                 DefaultTrace.TraceInformation(
@@ -353,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         this.executeNextAysncMetrics));
                 tracedLastExecution = true;
             }
-            return finalResponse;
+            return typedFeedResponse;
         }
     }
 }
