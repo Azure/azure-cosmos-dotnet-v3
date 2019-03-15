@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 bool getLazyFeedResponse,
                 Guid correlatedActivityId)
             {
-                if(client == null)
+                if (client == null)
                 {
                     throw new ArgumentNullException($"{nameof(client)} can not be null.");
                 }
@@ -113,53 +113,17 @@ namespace Microsoft.Azure.Cosmos.Query
             this.isExpressionEvaluated = false;
         }
 
-        public bool ShouldExecuteQueryRequest
-        {
-            get
-            {
-                return this.QuerySpec != null;
-            }
-        }
+        public bool ShouldExecuteQueryRequest => this.QuerySpec != null;
 
-        public IDocumentQueryClient Client
-        {
-            get
-            {
-                return this.client;
-            }
-        }
+        public IDocumentQueryClient Client => this.client;
 
-        public Type ResourceType
-        {
-            get
-            {
-                return this.resourceType;
-            }
-        }
+        public Type ResourceType => this.resourceType;
 
-        public ResourceType ResourceTypeEnum
-        {
-            get
-            {
-                return this.resourceTypeEnum;
-            }
-        }
+        public ResourceType ResourceTypeEnum => this.resourceTypeEnum;
 
-        public string ResourceLink
-        {
-            get
-            {
-                return this.resourceLink;
-            }
-        }
+        public string ResourceLink => this.resourceLink;
 
-        public int? MaxItemCount
-        {
-            get
-            {
-                return this.feedOptions.MaxItemCount;
-            }
-        }
+        public int? MaxItemCount => this.feedOptions.MaxItemCount;
 
         protected SqlQuerySpec QuerySpec
         {
@@ -175,61 +139,19 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        protected PartitionKeyInternal PartitionKeyInternal
-        {
-            get
-            {
-                return this.feedOptions.PartitionKey == null ? null : this.feedOptions.PartitionKey.InternalKey;
-            }
-        }
+        protected PartitionKeyInternal PartitionKeyInternal => this.feedOptions.PartitionKey == null ? null : this.feedOptions.PartitionKey.InternalKey;
 
-        protected int MaxBufferedItemCount
-        {
-            get
-            {
-                return this.feedOptions.MaxBufferedItemCount;
-            }
-        }
+        protected int MaxBufferedItemCount => this.feedOptions.MaxBufferedItemCount;
 
-        protected int MaxDegreeOfParallelism
-        {
-            get
-            {
-                return this.feedOptions.MaxDegreeOfParallelism;
-            }
-        }
+        protected int MaxDegreeOfParallelism => this.feedOptions.MaxDegreeOfParallelism;
 
-        protected string PartitionKeyRangeId
-        {
-            get
-            {
-                return this.feedOptions.PartitionKeyRangeId;
-            }
-        }
+        protected string PartitionKeyRangeId => this.feedOptions.PartitionKeyRangeId;
 
-        protected virtual string ContinuationToken
-        {
-            get
-            {
-                return this.lastPage == null ? this.feedOptions.RequestContinuation : this.lastPage.ResponseContinuation;
-            }
-        }
+        protected virtual string ContinuationToken => this.lastPage == null ? this.feedOptions.RequestContinuation : this.lastPage.ResponseContinuation;
 
-        public virtual bool IsDone
-        {
-            get
-            {
-                return this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
-            }
-        }
+        public virtual bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
-        public Guid CorrelatedActivityId
-        {
-            get
-            {
-                return this.correlatedActivityId;
-            }
-        }
+        public Guid CorrelatedActivityId => this.correlatedActivityId;
 
         public async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
             PartitionKeyDefinition partitionKeyDefinition,
@@ -250,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            this.lastPage = await this.ExecuteInternalAsync(cancellationToken);
+            this.lastPage = await ExecuteInternalAsync(cancellationToken);
             return this.lastPage;
         }
 
@@ -378,7 +300,8 @@ namespace Microsoft.Azure.Cosmos.Query
             if (this.feedOptions.CosmosSerializationOptions != null)
             {
                 requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationOptions.ContentSerializationFormat;
-            }else if (this.feedOptions.ContentSerializationFormat.HasValue)
+            }
+            else if (this.feedOptions.ContentSerializationFormat.HasValue)
             {
                 requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
             }
@@ -388,17 +311,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec, PartitionKeyInternal partitionKey)
         {
-            DocumentServiceRequest request = this.CreateDocumentServiceRequest(requestHeaders, querySpec);
-            this.PopulatePartitionKeyInfo(request, partitionKey);
+            DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
+            PopulatePartitionKeyInfo(request, partitionKey);
 
             return request;
         }
 
         public DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec, PartitionKeyRange targetRange, string collectionRid)
         {
-            DocumentServiceRequest request = this.CreateDocumentServiceRequest(requestHeaders, querySpec);
+            DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
 
-            this.PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
+            PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
 
             return request;
         }
@@ -407,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            DocumentServiceResponse documentServiceResponse = await this.ExecuteQueryRequestInternalAsync(
+            DocumentServiceResponse documentServiceResponse = await ExecuteQueryRequestInternalAsync(
                 request,
                 cancellationToken);
             // Execute the callback an each element of the page
@@ -436,18 +359,21 @@ namespace Microsoft.Azure.Cosmos.Query
             if (this.feedOptions.CosmosSerializationOptions != null)
             {
                 jsonNavigator = this.feedOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
+                if (jsonNavigator == null)
+                {
+                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
+                }
             }
-
-            if(jsonNavigator == null)
+            else
             {
                 jsonNavigator = JsonNavigator.Create(content);
             }
 
             string resourceName = request.ResourceType.ToResourceTypeString() + "s";
 
-            if(!jsonNavigator.TryGetObjectProperty(
-                jsonNavigator.GetRootNode(), 
-                resourceName, 
+            if (!jsonNavigator.TryGetObjectProperty(
+                jsonNavigator.GetRootNode(),
+                resourceName,
                 out ObjectProperty objectProperty))
             {
                 throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
@@ -463,34 +389,34 @@ namespace Microsoft.Azure.Cosmos.Query
 
             int itemCount = cosmosArray.Count;
             return new FeedResponse<CosmosElement>(
-                cosmosArray, 
-                itemCount, 
-                documentServiceResponse.Headers, 
-                documentServiceResponse.RequestStats, 
+                cosmosArray,
+                itemCount,
+                documentServiceResponse.Headers,
+                documentServiceResponse.RequestStats,
                 responseLengthBytes);
         }
 
         public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
-            DocumentServiceRequest request, 
+            DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            return await (this.ShouldExecuteQueryRequest ? 
-                this.ExecuteQueryRequestAsync<T>(request, cancellationToken) : 
-                this.ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
+            return await (this.ShouldExecuteQueryRequest ?
+                ExecuteQueryRequestAsync<T>(request, cancellationToken) :
+                ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(
-            DocumentServiceRequest request, 
+            DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
+            return GetFeedResponse<T>(await ExecuteQueryRequestInternalAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
-            DocumentServiceRequest request, 
+            DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            return this.GetFeedResponse<T>(await this.client.ReadFeedAsync(request, cancellationToken));
+            return GetFeedResponse<T>(await this.client.ReadFeedAsync(request, cancellationToken));
         }
 
         public void PopulatePartitionKeyRangeInfo(DocumentServiceRequest request, PartitionKeyRange range, string collectionRid)
@@ -589,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private async Task<DocumentServiceResponse> ExecuteQueryRequestInternalAsync(
-            DocumentServiceRequest request, 
+            DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
             try
@@ -605,8 +531,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec)
         {
             DocumentServiceRequest request = querySpec != null ?
-                this.CreateQueryDocumentServiceRequest(requestHeaders, querySpec) :
-                this.CreateReadFeedDocumentServiceRequest(requestHeaders);
+                CreateQueryDocumentServiceRequest(requestHeaders, querySpec) :
+                CreateReadFeedDocumentServiceRequest(requestHeaders);
 
             if (this.feedOptions.JsonSerializerSettings != null)
             {
@@ -702,11 +628,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private FeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)
         {
-            int itemCount = 0;
 
             long responseLengthBytes = response.ResponseBody.CanSeek ? response.ResponseBody.Length : 0;
 
-            IEnumerable<T> responseFeed = response.GetQueryResponse<T>(this.resourceType, this.getLazyFeedResponse, out itemCount);
+            IEnumerable<T> responseFeed = response.GetQueryResponse<T>(this.resourceType, this.getLazyFeedResponse, out int itemCount);
 
             return new FeedResponse<T>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
         }

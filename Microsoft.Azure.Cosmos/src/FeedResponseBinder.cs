@@ -15,19 +15,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
         /// </summary>
-        public static FeedResponse<T> Convert<T>(
-            FeedResponse<CosmosElement> dynamicFeed,
-            CosmosSerializationOptions cosmosSerializationOptions)
+        public static FeedResponse<T> Convert<T>(FeedResponse<CosmosElement> dynamicFeed)
         {
-            IJsonWriter jsonWriter = null;
-            if(cosmosSerializationOptions != null)
-            {
-                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
-            }
-            else
-            {
-                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            }
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
 
             jsonWriter.WriteArrayStart();
 
@@ -63,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
             FeedResponse<CosmosElement> dynamicFeed,
             CosmosSerializationOptions cosmosSerializationOptions)
         {
-            IJsonWriter jsonWriter = null;
+            IJsonWriter jsonWriter;
             if (cosmosSerializationOptions != null)
             {
                 jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();

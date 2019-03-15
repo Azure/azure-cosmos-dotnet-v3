@@ -300,9 +300,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 while (!localQueryExecutionContext.IsDone)
                 {
                     FeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
-                    FeedResponse<T> typedFeedResponse = FeedResponseBinder.Convert<T>(
-                       feedResponse,
-                       this.feedOptions.CosmosSerializationOptions);
+                    FeedResponse<T> typedFeedResponse = FeedResponseBinder.Convert<T>(feedResponse);
                     foreach (T item in typedFeedResponse)
                     {
                         yield return item;
@@ -405,9 +403,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             FeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
-            FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.Convert<TResponse>(
-                       response,
-                       this.feedOptions.CosmosSerializationOptions);
+            FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.Convert<TResponse>(response);
 
             if (!this.HasMoreResults && !tracedLastExecution)
             {

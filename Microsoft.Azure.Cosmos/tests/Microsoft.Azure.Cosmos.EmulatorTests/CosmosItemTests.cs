@@ -11,11 +11,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using JsonReader = Json.JsonReader;
+    using JsonWriter = Json.JsonWriter;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -332,6 +336,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Assert.IsFalse(setIterator.HasMoreResults);
         }
 
+
         /// <summary>
         /// Validate multiple partition query
         /// </summary>
@@ -464,6 +469,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
                 resultList = resultList.OrderBy(x => x.taskNum).ToList();
+                for (int i = 0; i < verifiedOrderBy.Count(); i++)
+                {
+                    Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
+                    Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
+                }
+            }
+            finally
+            {
+                foreach (ToDoActivity delete in deleteList)
+                {
+                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
+                    deleteResponse.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Validate multiple partition query
+        /// </summary>
+        [TestMethod]
+        public async Task ItemQueryStreamSerializationSetting()
+        {
+            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
+            try
+            {
+                deleteList = await CreateRandomItems(101, randomPartitionKey: true);
+
+                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
+                CosmosSerializationOptions options = new CosmosSerializationOptions(
+                    ContentSerializationFormat.CosmosBinary.ToString(),
+                    (content) => JsonNavigator.Create(content),
+                    () => JsonWriter.Create(JsonSerializationFormat.Binary));
+
+                CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
+                {
+                    CosmosSerializationOptions = options
+                };
+
+                List<ToDoActivity> resultList = new List<ToDoActivity>();
+                double totalRequstCharge = 0;
+                CosmosResultSetIterator setIterator =
+                    this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
+                while (setIterator.HasMoreResults)
+                {
+                    using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
+                    {
+                        Assert.IsTrue(iter.IsSuccess);
+                        Assert.IsNull(iter.ErrorMessage);
+                        Assert.IsTrue(iter.Count <= 5);
+                        totalRequstCharge += iter.RequestCharge;
+                        IJsonReader reader = JsonReader.Create(iter.Content);
+                        IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                        textWriter.WriteAll(reader);
+                        string json = Encoding.UTF8.GetString(textWriter.GetResult());
+                        Assert.IsNotNull(json);
+                        ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
+                        resultList.AddRange(responseActivities);
+                    }
+                }
+
+                Assert.AreEqual(deleteList.Count, resultList.Count);
+                Assert.IsTrue(totalRequstCharge > 0);
+
+                List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
                 for (int i = 0; i < verifiedOrderBy.Count(); i++)
                 {
                     Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
