@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// Whether or not the aggregation is a min or a max.
         /// </summary>
         private readonly bool isMinAggregation;
-        
+
         /// <summary>
         /// The global max of all items seen.
         /// </summary>
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 {
                     // We know the object looks like: {"min": MIN(c.blah), "count": COUNT(c.blah)}
                     long count;
-                    if(countToken.IsFloatingPoint)
+                    if (countToken.IsFloatingPoint)
                     {
                         count = (long)countToken.AsFloatingPoint().Value;
                     }
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 }
             }
 
-            if (!ItemComparer.IsMinOrMax(this.globalMinMax) 
+            if (!ItemComparer.IsMinOrMax(this.globalMinMax)
                 && (!CosmosElementIsPrimitive(localMinMax) || !CosmosElementIsPrimitive(this.globalMinMax)))
             {
                 // This means we are comparing non primitives with is undefined
@@ -140,6 +140,11 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 
         private static bool CosmosElementIsPrimitive(CosmosElement cosmosElement)
         {
+            if (cosmosElement == null)
+            {
+                return false;
+            }
+
             CosmosElementType cosmosElementType = cosmosElement.Type;
             switch (cosmosElementType)
             {
