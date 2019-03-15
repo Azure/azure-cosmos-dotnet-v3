@@ -124,6 +124,14 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableCrossPartitionQuery {get; set;}
 
         /// <summary>
+        /// Gets or sets the ContentSerializationFormat for the feed (query/read feed) operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// If the document is stored in a different serialization format then the one requested, then there will be a rewrite over the wire, but the source document will be untouched.
+        /// </remarks>
+        internal ContentSerializationFormat? ContentSerializationFormat { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
@@ -158,6 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount,
+                ContentSerializationFormat = this.ContentSerializationFormat,
             };
         }
 
