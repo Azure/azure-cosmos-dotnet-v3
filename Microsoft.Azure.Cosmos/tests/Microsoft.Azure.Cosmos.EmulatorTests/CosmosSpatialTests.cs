@@ -1,25 +1,27 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
     using System.Net;
-    using System.Text;
     using System.Threading.Tasks;
 
     [TestClass]
     public class CosmosSpatialTests : BaseCosmosClientHelper
     {
         private CosmosContainer Container = null;
+        private DocumentClient client;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
+        private readonly string spatialName = "spatialName";
 
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.TestInit();
+            this.client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
             string PartitionKey = "/partitionKey";
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
@@ -42,7 +44,7 @@
         {
             SpatialItem spatialItem = new SpatialItem
             {
-                Name = "testUser",
+                Name = spatialName,
                 partitionKey = Guid.NewGuid().ToString(),
                 id = Guid.NewGuid().ToString(),
                 multiPolygon = GetMultiPoygon(),
@@ -56,6 +58,14 @@
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.IsNotNull(readResponse.Resource.multiPolygon);
 
+            IDocumentQuery<SpatialItem> spatialQuery = this.client.CreateDocumentQuery<SpatialItem>(this.Container.Link, "select * from root", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery(); ;
+            FeedResponse<SpatialItem> queryResponse = spatialQuery.ExecuteNextAsync<SpatialItem>().GetAwaiter().GetResult();
+            Assert.IsTrue(queryResponse.Count == 1);
+            foreach (var item in queryResponse)
+            {
+                Assert.IsTrue(item.multiPolygon.Equals(GetMultiPoygon()));
+            }
+
             CosmosItemResponse<SpatialItem> deleteResponse = await this.Container.Items.DeleteItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, id: spatialItem.id);
             Assert.IsNotNull(deleteResponse);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
@@ -66,7 +76,7 @@
         {
             SpatialItem spatialItem = new SpatialItem
             {
-                Name = "testUser",
+                Name = spatialName,
                 partitionKey = Guid.NewGuid().ToString(),
                 id = Guid.NewGuid().ToString(),
                 polygon = GetPolygon(),
@@ -90,7 +100,7 @@
         {
             SpatialItem spatialItem = new SpatialItem
             {
-                Name = "testUser",
+                Name = spatialName,
                 partitionKey = Guid.NewGuid().ToString(),
                 id = Guid.NewGuid().ToString(),
                 lineString = getLineString(),
@@ -114,7 +124,7 @@
         {
             SpatialItem spatialItem = new SpatialItem
             {
-                Name = "testUser",
+                Name = spatialName,
                 partitionKey = Guid.NewGuid().ToString(),
                 id = Guid.NewGuid().ToString(),
                 point = GetPoint(),
