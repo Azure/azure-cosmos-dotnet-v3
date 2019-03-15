@@ -75,6 +75,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             options.Verify(m => m.FillRequestOptions(It.Is<CosmosRequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
         }
 
+        // DEVNOTE: Query is not wired into the handler pipeline yet.
+        [Ignore]
         [TestMethod]
         public async Task VerifyCosmosDefaultResultSetStreamIteratorOperationType()
         {
