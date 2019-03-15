@@ -22,6 +22,14 @@ namespace Microsoft.Azure.Cosmos
         private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
 
         /// <summary>
+        /// Empty constructor that can be used for unit testing
+        /// </summary>
+        public CosmosQueryResponse()
+        {
+
+        }
+
+        /// <summary>
         /// Create a <see cref="CosmosQueryResponse{T}"/>
         /// </summary>
         internal CosmosQueryResponse(

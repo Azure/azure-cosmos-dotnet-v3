@@ -972,7 +972,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
-            returnedDoc = Client.CreateDocumentQuery<Document>(collection, "select * from t", new FeedOptions { PartitionKey = key }).AsEnumerable().Single();
+            returnedDoc = Client.CreateDocumentQuery<Document>(collection, "SELECT * FROM t", new FeedOptions { PartitionKey = key }).AsEnumerable().Single();
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
             returnedDoc = Client.CreateDocumentQuery<Document>(
@@ -3086,7 +3086,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await Client.CreateDocumentQuery<Document>(
                     collection,
-                    "select * from t",
+                    "SELECT * FROM t",
                     new FeedOptions
                     {
                         EnableCrossPartitionQuery = true,
@@ -3815,7 +3815,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         PopulateQueryMetrics = true,
                     };
 
-                    SqlQuerySpec spec = new SqlQuerySpec("select * from t");
+                    SqlQuerySpec spec = new SqlQuerySpec("SELECT * FROM t");
                     var query = documentClient.CreateDocumentQuery(documentCollection, spec, feedOptions).AsDocumentQuery();
 
                     Headers headers = new Headers();

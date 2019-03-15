@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos
         protected string continuationToken;
 
         /// <summary>
+        /// The max item count to return as part of the query
+        /// </summary>
+        protected int? MaxItemCount;
+
+        /// <summary>
         /// The query options for the result set
         /// </summary>
         protected readonly CosmosRequestOptions queryOptions;
@@ -56,17 +61,14 @@ namespace Microsoft.Azure.Cosmos
         protected readonly object state;
 
         /// <summary>
-        /// The max item count to return as part of the query
-        /// </summary>
-        protected int? MaxItemCount;
-
-        /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
         public override Task<CosmosQueryResponse> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             return this.nextResultSetDelegate(this.continuationToken, this.state, cancellationToken)
                 .ContinueWith(task =>
                 {
@@ -140,6 +142,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override Task<CosmosQueryResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             return this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken)
                 .ContinueWith(task =>
                 {
