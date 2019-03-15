@@ -375,7 +375,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
             }
 
-            if (this.feedOptions.ContentSerializationFormat.HasValue)
+            if (this.feedOptions.CosmosSerializationOptions != null)
+            {
+                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationOptions.ContentSerializationFormat;
+            }else if (this.feedOptions.ContentSerializationFormat.HasValue)
             {
                 requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
             }
@@ -430,9 +433,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Use the users custom navigator first. If it returns null back try the
             // internal navigator.
-            if (this.feedOptions.CreateCustomNavigator != null)
+            if (this.feedOptions.CosmosSerializationOptions != null)
             {
-                jsonNavigator = this.feedOptions.CreateCustomNavigator(content);
+                jsonNavigator = this.feedOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
             }
 
             if(jsonNavigator == null)

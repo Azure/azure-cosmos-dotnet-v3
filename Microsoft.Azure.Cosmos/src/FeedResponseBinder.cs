@@ -17,9 +17,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public static FeedResponse<T> Convert<T>(
             FeedResponse<CosmosElement> dynamicFeed,
-            IJsonWriter jsonWriter)
+            CosmosSerializationOptions cosmosSerializationOptions)
         {
-            if(jsonWriter == null)
+            IJsonWriter jsonWriter = null;
+            if(cosmosSerializationOptions != null)
+            {
+                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
+            }
+            else
             {
                 jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }
@@ -56,9 +61,14 @@ namespace Microsoft.Azure.Cosmos
 
         public static CosmosQueryResponse ConvertToCosmosQueryResponse(
             FeedResponse<CosmosElement> dynamicFeed,
-            IJsonWriter jsonWriter)
+            CosmosSerializationOptions cosmosSerializationOptions)
         {
-            if (jsonWriter == null)
+            IJsonWriter jsonWriter = null;
+            if (cosmosSerializationOptions != null)
+            {
+                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
+            }
+            else
             {
                 jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }

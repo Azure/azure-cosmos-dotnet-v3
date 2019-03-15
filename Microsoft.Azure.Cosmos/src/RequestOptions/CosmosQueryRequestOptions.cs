@@ -125,17 +125,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool EnableCrossPartitionQuery {get; set;}
 
-        internal CreateCustomNavigator CustomNavigator { get; set; }
-
-        internal IJsonWriter JsonWriter { get; set; }
-
-        /// <summary>
-        /// Gets or sets the ContentSerializationFormat for the feed (query/read feed) operation in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// If the document is stored in a different serialization format then the one requested, then there will be a rewrite over the wire, but the source document will be untouched.
-        /// </remarks>
-        internal delegate IJsonNavigator CreateCustomNavigator(byte[] content);
+        internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -172,8 +162,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount,
-                JsonWriter = this.JsonWriter,
-                CreateCustomNavigator = this.CustomNavigator,
+                CosmosSerializationOptions = this.CosmosSerializationOptions,
             };
         }
 
