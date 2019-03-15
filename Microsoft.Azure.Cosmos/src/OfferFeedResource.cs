@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                Collection<Offer> collection = base.GetObjectCollection<Offer>(
+                Collection<Offer> collection = this.GetObjectCollection<Offer>(
                     OfferFeedResource.CollectionName, 
                     typeof(Offer), 
                     this.AltLink, 

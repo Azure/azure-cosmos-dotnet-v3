@@ -237,6 +237,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\m1\CosmosDB\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\Microsoft.Azure.Cosmos.Direct.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 
