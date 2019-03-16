@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Common
 #if !NETSTANDARD16
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 #endif
 
     /// <summary>

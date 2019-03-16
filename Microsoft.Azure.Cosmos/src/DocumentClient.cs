@@ -22,6 +22,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -2037,9 +2040,9 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a stored procedure as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the collection to create the stored procedure in. E.g. dbs/db_rid/colls/col_rid/</param>
-        /// <param name="storedProcedure">The <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> object to create.</param>
+        /// <param name="storedProcedure">The <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
-        /// <returns>The <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="storedProcedure"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -2054,10 +2057,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of stored procedures for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -2077,19 +2080,19 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosStoredProcedureSettings>> CreateStoredProcedureAsync(string collectionLink, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateStoredProcedurePrivateAsync(collectionLink, storedProcedure, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosStoredProcedureSettings>> CreateStoredProcedurePrivateAsync(
+        private async Task<ResourceResponse<StoredProcedure>> CreateStoredProcedurePrivateAsync(
             string collectionLink,
-            CosmosStoredProcedureSettings storedProcedure,
+            StoredProcedure storedProcedure,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
@@ -2122,7 +2125,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosStoredProcedureSettings>(await this.CreateAsync(request));
+                return new ResourceResponse<StoredProcedure>(await this.CreateAsync(request));
             }
         }
 
@@ -2130,7 +2133,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to create the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="trigger">The <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> object to create.</param>
+        /// <param name="trigger">The <see cref="Microsoft.Azure.Cosmos.Trigger"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="trigger"/> is not set.</exception>
@@ -2147,10 +2150,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of triggers for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.Trigger"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.Trigger"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -2182,17 +2185,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosTriggerSettings>> CreateTriggerAsync(string collectionLink, CosmosTriggerSettings trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> CreateTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateTriggerPrivateAsync(collectionLink, trigger, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosTriggerSettings>> CreateTriggerPrivateAsync(string collectionLink, CosmosTriggerSettings trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> CreateTriggerPrivateAsync(string collectionLink, Trigger trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2222,7 +2225,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosTriggerSettings>(await this.CreateAsync(request));
+                return new ResourceResponse<Trigger>(await this.CreateAsync(request));
             }
         }
 
@@ -2230,7 +2233,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to create the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="function">The <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> object to create.</param>
+        /// <param name="function">The <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="function"/> is not set.</exception>
@@ -2247,10 +2250,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of user defined functions for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -2269,19 +2272,19 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> CreateUserDefinedFunctionAsync(string collectionLink, CosmosUserDefinedFunctionSettings function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateUserDefinedFunctionPrivateAsync(collectionLink, function, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> CreateUserDefinedFunctionPrivateAsync(
+        private async Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionPrivateAsync(
             string collectionLink,
-            CosmosUserDefinedFunctionSettings function,
+            UserDefinedFunction function,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
@@ -2313,7 +2316,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosUserDefinedFunctionSettings>(await this.CreateAsync(request));
+                return new ResourceResponse<UserDefinedFunction>(await this.CreateAsync(request));
             }
         }
 
@@ -2589,9 +2592,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Delete a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="storedProcedureLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> to delete. E.g. dbs/db_rid/colls/col_rid/sprocs/sproc_rid/ </param>
+        /// <param name="storedProcedureLink">The link of the <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> to delete. E.g. dbs/db_rid/colls/col_rid/sprocs/sproc_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureLink"/> is not set.</exception>
@@ -2614,17 +2617,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosStoredProcedureSettings>> DeleteStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteStoredProcedurePrivateAsync(storedProcedureLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosStoredProcedureSettings>> DeleteStoredProcedurePrivateAsync(string storedProcedureLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedurePrivateAsync(string storedProcedureLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2646,14 +2649,14 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosStoredProcedureSettings>(await this.DeleteAsync(request));
+                return new ResourceResponse<StoredProcedure>(await this.DeleteAsync(request));
             }
         }
 
         /// <summary>
-        /// Delete a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="Microsoft.Azure.Cosmos.Trigger"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="triggerLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> to delete. E.g. dbs/db_rid/colls/col_rid/triggers/trigger_rid/ </param>
+        /// <param name="triggerLink">The link of the <see cref="Microsoft.Azure.Cosmos.Trigger"/> to delete. E.g. dbs/db_rid/colls/col_rid/triggers/trigger_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerLink"/> is not set.</exception>
@@ -2676,17 +2679,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosTriggerSettings>> DeleteTriggerAsync(string triggerLink, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> DeleteTriggerAsync(string triggerLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteTriggerPrivateAsync(triggerLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosTriggerSettings>> DeleteTriggerPrivateAsync(string triggerLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> DeleteTriggerPrivateAsync(string triggerLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2708,14 +2711,14 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosTriggerSettings>(await this.DeleteAsync(request));
+                return new ResourceResponse<Trigger>(await this.DeleteAsync(request));
             }
         }
 
         /// <summary>
-        /// Delete a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="functionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> to delete. E.g. dbs/db_rid/colls/col_rid/udfs/udf_rid/ </param>
+        /// <param name="functionLink">The link of the <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> to delete. E.g. dbs/db_rid/colls/col_rid/udfs/udf_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionLink"/> is not set.</exception>
@@ -2738,17 +2741,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> DeleteUserDefinedFunctionAsync(string functionLink, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(string functionLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteUserDefinedFunctionPrivateAsync(functionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> DeleteUserDefinedFunctionPrivateAsync(string functionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionPrivateAsync(string functionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2770,7 +2773,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosUserDefinedFunctionSettings>(await this.DeleteAsync(request));
+                return new ResourceResponse<UserDefinedFunction>(await this.DeleteAsync(request));
             }
         }
 
@@ -3061,12 +3064,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Replaces a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// Replaces a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="storedProcedure">The updated <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> to replace the existing resource with.</param>
+        /// <param name="storedProcedure">The updated <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> to replace the existing resource with.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedure"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -3096,18 +3099,18 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosStoredProcedureSettings>> ReplaceStoredProcedureAsync(CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(StoredProcedure storedProcedure, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceStoredProcedurePrivateAsync(storedProcedure, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosStoredProcedureSettings>> ReplaceStoredProcedurePrivateAsync(
-            CosmosStoredProcedureSettings storedProcedure,
+        private async Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedurePrivateAsync(
+            StoredProcedure storedProcedure,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
@@ -3135,17 +3138,17 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosStoredProcedureSettings>(await this.UpdateAsync(request));
+                return new ResourceResponse<StoredProcedure>(await this.UpdateAsync(request));
             }
         }
 
         /// <summary>
-        /// Replaces a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// Replaces a <see cref="Microsoft.Azure.Cosmos.Trigger"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="trigger">The updated <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> to replace the existing resource with.</param>
+        /// <param name="trigger">The updated <see cref="Microsoft.Azure.Cosmos.Trigger"/> to replace the existing resource with.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Trigger"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="trigger"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -3175,17 +3178,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosTriggerSettings>> ReplaceTriggerAsync(CosmosTriggerSettings trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Trigger trigger, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceTriggerPrivateAsync(trigger, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosTriggerSettings>> ReplaceTriggerPrivateAsync(CosmosTriggerSettings trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
+        private async Task<ResourceResponse<Trigger>> ReplaceTriggerPrivateAsync(Trigger trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
         {
             await this.EnsureValidClientAsync();
 
@@ -3210,17 +3213,17 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosTriggerSettings>(await this.UpdateAsync(request));
+                return new ResourceResponse<Trigger>(await this.UpdateAsync(request));
             }
         }
 
         /// <summary>
-        /// Replaces a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// Replaces a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="function">The updated <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> to replace the existing resource with.</param>
+        /// <param name="function">The updated <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> to replace the existing resource with.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="function"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -3250,18 +3253,18 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReplaceUserDefinedFunctionAsync(CosmosUserDefinedFunctionSettings function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(UserDefinedFunction function, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceUserDefinedFunctionPrivateAsync(function, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReplaceUserDefinedFunctionPrivateAsync(
-            CosmosUserDefinedFunctionSettings function,
+        private async Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionPrivateAsync(
+            UserDefinedFunction function,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
@@ -3289,7 +3292,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosUserDefinedFunctionSettings>(await this.UpdateAsync(request));
+                return new ResourceResponse<UserDefinedFunction>(await this.UpdateAsync(request));
             }
         }
 
@@ -3780,12 +3783,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="storedProcedureLink">The link of the stored procedure to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -3825,19 +3828,19 @@ namespace Microsoft.Azure.Cosmos
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this._ReadStoredProcedureAsync(storedProcedureLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosStoredProcedureSettings>> _ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<StoredProcedure>> _ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3859,17 +3862,17 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosStoredProcedureSettings>(await this.ReadAsync(request));
+                return new ResourceResponse<StoredProcedure>(await this.ReadAsync(request));
             }
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Microsoft.Azure.Cosmos.Trigger"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="triggerLink">The link to the CosmosTriggerSettings to be read.</param>
+        /// <param name="triggerLink">The link to the Trigger to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Trigger"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -3909,19 +3912,19 @@ namespace Microsoft.Azure.Cosmos
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<CosmosTriggerSettings>> ReadTriggerAsync(string triggerLink, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> ReadTriggerAsync(string triggerLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadTriggerPrivateAsync(triggerLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosTriggerSettings>> ReadTriggerPrivateAsync(string triggerLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> ReadTriggerPrivateAsync(string triggerLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3943,17 +3946,17 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosTriggerSettings>(await this.ReadAsync(request));
+                return new ResourceResponse<Trigger>(await this.ReadAsync(request));
             }
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="functionLink">The link to the User Defined Function to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -3993,19 +3996,19 @@ namespace Microsoft.Azure.Cosmos
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionAsync(string functionLink, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(string functionLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedFunctionPrivateAsync(functionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionPrivateAsync(string functionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionPrivateAsync(string functionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4027,7 +4030,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosUserDefinedFunctionSettings>(await this.ReadAsync(request));
+                return new ResourceResponse<UserDefinedFunction>(await this.ReadAsync(request));
             }
         }
 
@@ -4554,12 +4557,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="storedProceduresLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/col_rid/sprocs/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProceduresLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -4599,18 +4602,18 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null)
+        public Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadStoredProcedureFeedPrivateAsync(storedProceduresLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureFeedPrivateAsync(string storedProceduresLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedPrivateAsync(string storedProceduresLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4623,12 +4626,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.Trigger"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="triggersLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/col_rid/triggers/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Trigger"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggersLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -4668,19 +4671,19 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
 
-        public Task<FeedResponse<CosmosTriggerSettings>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null)
+        public Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadTriggerFeedPrivateAsync(triggersLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<CosmosTriggerSettings>> ReadTriggerFeedPrivateAsync(string triggersLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<FeedResponse<Trigger>> ReadTriggerFeedPrivateAsync(string triggersLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4693,12 +4696,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="userDefinedFunctionsLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/col_rid/udfs/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionsLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -4738,18 +4741,18 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null)
+        public Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedFunctionFeedPrivateAsync(userDefinedFunctionsLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionFeedPrivateAsync(string userDefinedFunctionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedPrivateAsync(string userDefinedFunctionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5121,7 +5124,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, params dynamic[] procedureParams)
@@ -5153,7 +5156,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
@@ -5187,7 +5190,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
@@ -5546,9 +5549,9 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts a stored procedure as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the collection to upsert the stored procedure in. E.g. dbs/db_rid/colls/col_rid/</param>
-        /// <param name="storedProcedure">The <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> object to upsert.</param>
+        /// <param name="storedProcedure">The <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
-        /// <returns>The <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="storedProcedure"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -5563,10 +5566,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of stored procedures for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/> you tried to upsert was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.StoredProcedure"/> you tried to upsert was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -5586,19 +5589,19 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosStoredProcedureSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosStoredProcedureSettings>> UpsertStoredProcedureAsync(string collectionLink, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertStoredProcedurePrivateAsync(collectionLink, storedProcedure, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosStoredProcedureSettings>> UpsertStoredProcedurePrivateAsync(
+        private async Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedurePrivateAsync(
             string collectionLink,
-            CosmosStoredProcedureSettings storedProcedure,
+            StoredProcedure storedProcedure,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
@@ -5631,7 +5634,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosStoredProcedureSettings>(await this.UpsertAsync(request));
+                return new ResourceResponse<StoredProcedure>(await this.UpsertAsync(request));
             }
         }
 
@@ -5639,7 +5642,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to upsert the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="trigger">The <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> object to upsert.</param>
+        /// <param name="trigger">The <see cref="Microsoft.Azure.Cosmos.Trigger"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="trigger"/> is not set.</exception>
@@ -5656,10 +5659,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of triggers for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.Trigger"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/> you tried to upsert was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.Trigger"/> you tried to upsert was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -5691,17 +5694,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosTriggerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosTriggerSettings>> UpsertTriggerAsync(string collectionLink, CosmosTriggerSettings trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> UpsertTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertTriggerPrivateAsync(collectionLink, trigger, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosTriggerSettings>> UpsertTriggerPrivateAsync(string collectionLink, CosmosTriggerSettings trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> UpsertTriggerPrivateAsync(string collectionLink, Trigger trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5731,7 +5734,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosTriggerSettings>(await this.UpsertAsync(request));
+                return new ResourceResponse<Trigger>(await this.UpsertAsync(request));
             }
         }
 
@@ -5739,7 +5742,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to upsert the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="function">The <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> object to upsert.</param>
+        /// <param name="function">The <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="function"/> is not set.</exception>
@@ -5756,10 +5759,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of user defined functions for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/> you tried to upsert was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> you tried to upsert was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -5778,19 +5781,19 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> UpsertUserDefinedFunctionAsync(string collectionLink, CosmosUserDefinedFunctionSettings function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertUserDefinedFunctionPrivateAsync(collectionLink, function, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> UpsertUserDefinedFunctionPrivateAsync(
+        private async Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionPrivateAsync(
             string collectionLink,
-            CosmosUserDefinedFunctionSettings function,
+            UserDefinedFunction function,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
@@ -5822,7 +5825,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosUserDefinedFunctionSettings>(await this.UpsertAsync(request));
+                return new ResourceResponse<UserDefinedFunction>(await this.UpsertAsync(request));
             }
         }
 

@@ -6,13 +6,14 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents the consistency policy of a database account of the Azure Cosmos DB service.
     /// </summary>
-    public sealed class CosmosConsistencySettings : JsonSerializable
+    public sealed class CosmosConsistencySettings
     {
         private const ConsistencyLevel defaultDefaultConsistencyLevel = ConsistencyLevel.Session;
 
@@ -37,70 +38,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.DefaultConsistencyLevel)]
-        public ConsistencyLevel DefaultConsistencyLevel
-        {
-            get
-            {
-                return base.GetValue<ConsistencyLevel>(Constants.Properties.DefaultConsistencyLevel, CosmosConsistencySettings.defaultDefaultConsistencyLevel);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.DefaultConsistencyLevel, value.ToString());
-            }
-        }
+        public ConsistencyLevel DefaultConsistencyLevel { get; set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms difference in sequence numbers (aka version) in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.MaxStalenessPrefix)]
-        public int MaxStalenessPrefix
-        {
-            get
-            {
-                return base.GetValue<int>(Constants.Properties.MaxStalenessPrefix, CosmosConsistencySettings.DefaultMaxStalenessPrefix);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.MaxStalenessPrefix, value);
-            }
-        }
+        public int MaxStalenessPrefix { get; set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms time interval in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.MaxStalenessIntervalInSeconds)]
-        public int MaxStalenessIntervalInSeconds
-        {
-            get
-            {
-                return base.GetValue<int>(Constants.Properties.MaxStalenessIntervalInSeconds, CosmosConsistencySettings.DefaultMaxStalenessInterval);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.MaxStalenessIntervalInSeconds, value);
-            }
-        }
-
-        internal void Validate()
-        {
-            Helpers.ValidateNonNegativeInteger(Constants.Properties.MaxStalenessPrefix, this.MaxStalenessPrefix);
-            Helpers.ValidateNonNegativeInteger(Constants.Properties.MaxStalenessIntervalInSeconds, this.MaxStalenessIntervalInSeconds);
-
-            if (this.DefaultConsistencyLevel == ConsistencyLevel.BoundedStaleness &&
-                (this.MaxStalenessIntervalInSeconds < CosmosConsistencySettings.MaxStalenessIntervalInSecondsMinValue || this.MaxStalenessIntervalInSeconds > CosmosConsistencySettings.MaxStalenessIntervalInSecondsMaxValue))
-            {
-                throw new BadRequestException(
-                    string.Format(CultureInfo.CurrentUICulture, RMResources.InvalidMaxStalenessInterval, CosmosConsistencySettings.MaxStalenessIntervalInSecondsMinValue, CosmosConsistencySettings.MaxStalenessIntervalInSecondsMaxValue));
-            }
-
-            if (this.DefaultConsistencyLevel == ConsistencyLevel.BoundedStaleness &&
-                (this.MaxStalenessPrefix < CosmosConsistencySettings.MaxStalenessPrefixMinValue || this.MaxStalenessPrefix > CosmosConsistencySettings.MaxStalenessPrefixMaxValue))
-            {
-                throw new BadRequestException(
-                    string.Format(CultureInfo.CurrentUICulture, RMResources.InvalidMaxStalenessPrefix, CosmosConsistencySettings.MaxStalenessPrefixMinValue, CosmosConsistencySettings.MaxStalenessPrefixMaxValue));
-            }
-        }
+        public int MaxStalenessIntervalInSeconds { get; set; }
     }
 }

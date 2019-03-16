@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Newtonsoft.Json;
     using ParallelQuery;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// OrderByDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.

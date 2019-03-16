@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -35,25 +36,14 @@ namespace Microsoft.Azure.Cosmos
     /// For example if you want to run a query like "SELECT * FROM c ORDER BY c.age, c.height",
     /// then you need to add "/age" and "/height" as composite paths to your composite index.
     /// </summary>
-    internal sealed class CompositePath : JsonSerializable, ICloneable
+    internal sealed class CompositePath 
     {
         /// <summary>
         /// Gets or sets the full path in a document used for composite indexing.
         /// We do not support wildcards in the path.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.Path)]
-        public string Path
-        {
-            get
-            {
-                return this.GetValue<string>(Constants.Properties.Path);
-            }
-
-            set
-            {
-                this.SetValue(Constants.Properties.Path, value);
-            }
-        }
+        public string Path { get; set; }
 
         /// <summary>
         /// Gets or sets the sort order for the composite path.
@@ -80,19 +70,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.SetValue(Constants.Properties.Order, value);
             }
-        }
-
-        /// <summary>
-        /// Clones the composite path.
-        /// </summary>
-        /// <returns>The cloned composite path.</returns>
-        public object Clone()
-        {
-            return new CompositePath()
-            {
-                Path = this.Path,
-                Order = this.Order,
-            };
         }
     }
 }

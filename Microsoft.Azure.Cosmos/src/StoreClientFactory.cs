@@ -5,7 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
 
     internal sealed class StoreClientFactory : IStoreClientFactory, IDisposable
     {
@@ -29,8 +30,7 @@ namespace Microsoft.Azure.Cosmos
             int maxRequestsPerRntbdChannel = 30,  // RNTBD
             int receiveHangDetectionTimeSeconds = 65,  // RNTBD
             int sendHangDetectionTimeSeconds = 10,  // RNTBD
-            Func<TransportClient, TransportClient> transportClientHandlerFactory = null // Interceptor factory
-            )
+            bool enableCpuMonitor = true)
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -156,8 +156,8 @@ namespace Microsoft.Azure.Cosmos
                     openTimeoutInSeconds,
                     idleTimeoutInSeconds,
                     timerPoolGranularityInSeconds);
-                this.transportClient = new Rntbd.TransportClient(
-                    new Rntbd.TransportClient.Options(TimeSpan.FromSeconds(requestTimeoutInSeconds))
+                this.transportClient = new Documents.Rntbd.TransportClient(
+                    new Documents.Rntbd.TransportClient.Options(TimeSpan.FromSeconds(requestTimeoutInSeconds))
                     {
                         MaxChannels = maxRntbdChannels,
                         PartitionCount = rntbdPartitionCount,
@@ -169,19 +169,15 @@ namespace Microsoft.Azure.Cosmos
                         OpenTimeout = TimeSpan.FromSeconds(openTimeoutInSeconds),
                         TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds),
                         IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
+                        EnableCpuMonitor = enableCpuMonitor
                     });
             }
             else
             {
                 throw new ArgumentOutOfRangeException("protocol", protocol, "Invalid protocol value");
             }
-            this.protocol = protocol;
 
-            if (transportClientHandlerFactory != null)
-            {
-                this.fallbackClient = transportClientHandlerFactory(this.fallbackClient);
-                this.transportClient = transportClientHandlerFactory(this.transportClient);
-            }
+            this.protocol = protocol;
         }
 
         public StoreClient CreateStoreClient(
@@ -192,7 +188,8 @@ namespace Microsoft.Azure.Cosmos
             bool enableRequestDiagnostics = false,
             bool enableReadRequestsFallback = false,
             bool useFallbackClient = true,
-            bool useMultipleWriteLocations = false)
+            bool useMultipleWriteLocations = false,
+            bool detectClientConnectivityIssues = false)
         {
             this.ThrowIfDisposed();
             if (useFallbackClient && this.fallbackClient != null)
@@ -207,7 +204,8 @@ namespace Microsoft.Azure.Cosmos
                     this.fallbackClient,
                     enableRequestDiagnostics,
                     enableReadRequestsFallback,
-                    useMultipleWriteLocations);
+                    useMultipleWriteLocations,
+                    detectClientConnectivityIssues);
             }
             return new StoreClient(
                 addressResolver,
@@ -218,7 +216,8 @@ namespace Microsoft.Azure.Cosmos
                 this.transportClient,
                 enableRequestDiagnostics,
                 enableReadRequestsFallback,
-                useMultipleWriteLocations);
+                useMultipleWriteLocations,
+                detectClientConnectivityIssues);
         }
 
         #region IDisposable

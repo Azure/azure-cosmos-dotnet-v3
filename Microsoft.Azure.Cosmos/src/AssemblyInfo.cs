@@ -4,7 +4,6 @@
 
 using System.Runtime.CompilerServices;
 
-#if !SignAssembly
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Tests")]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.EmulatorTests")]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends.Tests")]
@@ -12,22 +11,3 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests")]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
-#endif
-
-[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2" + AssemblyRef.MoqPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Tests" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.EmulatorTests" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends.Tests" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Tests" + AssemblyRef.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.EmulatorTests" + AssemblyRef.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends.Tests" + AssemblyRef.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends" + AssemblyRef.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyRef.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table" + AssemblyRef.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table.Tests" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table.Tests" + AssemblyRef.TestPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyRef.ProductPublicKey)]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyRef.TestPublicKey)]

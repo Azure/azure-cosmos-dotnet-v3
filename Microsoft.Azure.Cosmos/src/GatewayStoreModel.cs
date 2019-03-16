@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework

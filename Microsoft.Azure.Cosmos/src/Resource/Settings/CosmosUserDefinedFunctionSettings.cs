@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -61,16 +62,6 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The body of the user defined function.</value>
         /// <remarks>This must be a valid JavaScript function e.g. "function (input) { return input.toLowerCase(); }".</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public string Body
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Body);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Body, value);
-            }
-        }
+        public string Body { get; set; }
     }
 }

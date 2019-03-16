@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using System.Collections.ObjectModel;
 
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, if unique key policy defines a unique key with single property path, there could be only one document that has missing value for this property.
     /// </remarks>
     /// <seealso cref="UniqueKeyPolicy"/>
-    public sealed class UniqueKey : JsonSerializable
+    public sealed class UniqueKey 
     {
         private Collection<string> paths;
 
@@ -32,17 +33,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
-        public Collection<string> Paths
+        public Collection<string> Paths 
         {
             get
             {
                 if (this.paths == null)
                 {
-                    this.paths = base.GetValue<Collection<string>>(Constants.Properties.Paths);
-                    if (this.paths == null)
-                    {
-                        this.paths = new Collection<string>();
-                    }
+                    this.paths = new Collection<string>();
                 }
 
                 return this.paths;
@@ -50,15 +47,6 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.paths = value;
-                base.SetValue(Constants.Properties.Paths, value);
-            }
-        }
-
-        internal override void OnSave()
-        {
-            if (this.paths != null)
-            {
-                base.SetValue(Constants.Properties.Paths, this.paths);
             }
         }
     }

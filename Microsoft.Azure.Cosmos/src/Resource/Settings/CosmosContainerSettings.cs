@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 

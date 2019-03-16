@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The IDocumentClient interface captures the API signatures of the Azure Cosmos DB service .NET SDK.
@@ -421,9 +422,9 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a stored procedure as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the collection to create the stored procedure in. E.g. dbs/db_rid/colls/col_rid/</param>
-        /// <param name="storedProcedure">The <see cref="CosmosStoredProcedureSettings"/> object to create.</param>
+        /// <param name="storedProcedure">The <see cref="StoredProcedure"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
-        /// <returns>The <see cref="CosmosStoredProcedureSettings"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="StoredProcedure"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="storedProcedure"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -438,10 +439,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of stored procedures for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosStoredProcedureSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="StoredProcedure"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosStoredProcedureSettings"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="StoredProcedure"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -461,22 +462,22 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> CreateStoredProcedureAsync(string collectionLink, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null);
 
         /// <summary>
         /// Creates a stored procedure as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentCollectionUri">The URI of the document collection to create the stored procedure in.</param>
-        /// <param name="storedProcedure">The <see cref="CosmosStoredProcedureSettings"/> object.</param>
+        /// <param name="storedProcedure">The <see cref="StoredProcedure"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> CreateStoredProcedureAsync(
+        Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(
             Uri documentCollectionUri,
-            CosmosStoredProcedureSettings storedProcedure,
+            StoredProcedure storedProcedure,
             RequestOptions options = null);
 
 
@@ -484,7 +485,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to create the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="trigger">The <see cref="CosmosTriggerSettings"/> object to create.</param>
+        /// <param name="trigger">The <see cref="Trigger"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="trigger"/> is not set.</exception>
@@ -501,10 +502,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of triggers for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosTriggerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Trigger"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosTriggerSettings"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Trigger"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -536,26 +537,26 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosTriggerSettings>> CreateTriggerAsync(string collectionLink, CosmosTriggerSettings trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> CreateTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null);
 
         /// <summary>
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentCollectionUri">The URI of the document collection to create the trigger in.</param>
-        /// <param name="trigger">The <see cref="CosmosTriggerSettings"/> object.</param>
+        /// <param name="trigger">The <see cref="Trigger"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosTriggerSettings>> CreateTriggerAsync(Uri documentCollectionUri, CosmosTriggerSettings trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> CreateTriggerAsync(Uri documentCollectionUri, Trigger trigger, RequestOptions options = null);
 
         /// <summary>
         /// Creates a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to create the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="function">The <see cref="CosmosUserDefinedFunctionSettings"/> object to create.</param>
+        /// <param name="function">The <see cref="UserDefinedFunction"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="function"/> is not set.</exception>
@@ -572,10 +573,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of user defined functions for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosUserDefinedFunctionSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="UserDefinedFunction"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosUserDefinedFunctionSettings"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="UserDefinedFunction"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -594,22 +595,22 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> CreateUserDefinedFunctionAsync(string collectionLink, CosmosUserDefinedFunctionSettings function, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null);
 
         /// <summary>
         /// Creates a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentCollectionUri">The URI of the document collection to create the user defined function in.</param>
-        /// <param name="function">The <see cref="CosmosUserDefinedFunctionSettings"/> object.</param>
+        /// <param name="function">The <see cref="UserDefinedFunction"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> CreateUserDefinedFunctionAsync(
+        Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(
             Uri documentCollectionUri,
-            CosmosUserDefinedFunctionSettings function,
+            UserDefinedFunction function,
             RequestOptions options = null);
 
         #endregion
@@ -738,9 +739,9 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="storedProcedureLink">The link of the <see cref="CosmosStoredProcedureSettings"/> to delete. E.g. dbs/db_rid/colls/col_rid/sprocs/sproc_rid/ </param>
+        /// <param name="storedProcedureLink">The link of the <see cref="StoredProcedure"/> to delete. E.g. dbs/db_rid/colls/col_rid/sprocs/sproc_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureLink"/> is not set.</exception>
@@ -763,11 +764,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> DeleteStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null);
 
         /// <summary>
         /// Delete a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
@@ -775,12 +776,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedureUri">The URI of the stored procedure to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> DeleteStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null);
 
         /// <summary>
-        /// Delete a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="Trigger"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="triggerLink">The link of the <see cref="CosmosTriggerSettings"/> to delete. E.g. dbs/db_rid/colls/col_rid/triggers/trigger_rid/ </param>
+        /// <param name="triggerLink">The link of the <see cref="Trigger"/> to delete. E.g. dbs/db_rid/colls/col_rid/triggers/trigger_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerLink"/> is not set.</exception>
@@ -803,11 +804,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosTriggerSettings>> DeleteTriggerAsync(string triggerLink, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> DeleteTriggerAsync(string triggerLink, RequestOptions options = null);
 
         /// <summary>
         /// Delete a trigger as an asynchronous operation in the Azure Cosmos DB service.
@@ -815,12 +816,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="triggerUri">The URI of the trigger to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosTriggerSettings>> DeleteTriggerAsync(Uri triggerUri, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> DeleteTriggerAsync(Uri triggerUri, RequestOptions options = null);
 
         /// <summary>
-        /// Delete a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="UserDefinedFunction"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="functionLink">The link of the <see cref="CosmosUserDefinedFunctionSettings"/> to delete. E.g. dbs/db_rid/colls/col_rid/udfs/udf_rid/ </param>
+        /// <param name="functionLink">The link of the <see cref="UserDefinedFunction"/> to delete. E.g. dbs/db_rid/colls/col_rid/udfs/udf_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionLink"/> is not set.</exception>
@@ -843,11 +844,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> DeleteUserDefinedFunctionAsync(string functionLink, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(string functionLink, RequestOptions options = null);
 
         /// <summary>
         /// Delete a user defined function as an asynchronous operation in the Azure Cosmos DB service.
@@ -855,7 +856,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="functionUri">The URI of the user defined function to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> DeleteUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null);
 
         /// <summary>
         /// Delete a <see cref="Microsoft.Azure.Cosmos.Internal.Conflict"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1032,12 +1033,12 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Replaces a <see cref="CosmosStoredProcedureSettings"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// Replaces a <see cref="StoredProcedure"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="storedProcedure">The updated <see cref="CosmosStoredProcedureSettings"/> to replace the existing resource with.</param>
+        /// <param name="storedProcedure">The updated <see cref="StoredProcedure"/> to replace the existing resource with.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="StoredProcedure"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedure"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1067,11 +1068,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> ReplaceStoredProcedureAsync(CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(StoredProcedure storedProcedure, RequestOptions options = null);
 
         /// <summary>
         /// Replace the specified stored procedure in the Azure Cosmos DB service.
@@ -1080,18 +1081,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedure">The updated stored procedure.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> ReplaceStoredProcedureAsync(
+        Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(
             Uri storedProcedureUri,
-            CosmosStoredProcedureSettings storedProcedure,
+            StoredProcedure storedProcedure,
             RequestOptions options = null);
 
         /// <summary>
-        /// Replaces a <see cref="CosmosTriggerSettings"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// Replaces a <see cref="Trigger"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="trigger">The updated <see cref="CosmosTriggerSettings"/> to replace the existing resource with.</param>
+        /// <param name="trigger">The updated <see cref="Trigger"/> to replace the existing resource with.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Trigger"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="trigger"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1121,11 +1122,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosTriggerSettings>> ReplaceTriggerAsync(CosmosTriggerSettings trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Trigger trigger, RequestOptions options = null);
 
         /// <summary>
         /// Replaces a trigger as an asynchronous operation in the Azure Cosmos DB service.
@@ -1134,15 +1135,15 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="trigger">The updated trigger.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosTriggerSettings>> ReplaceTriggerAsync(Uri triggerUri, CosmosTriggerSettings trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Uri triggerUri, Trigger trigger, RequestOptions options = null);
 
         /// <summary>
-        /// Replaces a <see cref="CosmosUserDefinedFunctionSettings"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// Replaces a <see cref="UserDefinedFunction"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="function">The updated <see cref="CosmosUserDefinedFunctionSettings"/> to replace the existing resource with.</param>
+        /// <param name="function">The updated <see cref="UserDefinedFunction"/> to replace the existing resource with.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="UserDefinedFunction"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="function"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1172,11 +1173,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReplaceUserDefinedFunctionAsync(CosmosUserDefinedFunctionSettings function, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(UserDefinedFunction function, RequestOptions options = null);
 
         /// <summary>
         /// Replaces a user defined function as an asynchronous operation in the Azure Cosmos DB service.
@@ -1185,9 +1186,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="function">The updated user defined function.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReplaceUserDefinedFunctionAsync(
+        Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(
             Uri userDefinedFunctionUri,
-            CosmosUserDefinedFunctionSettings function,
+            UserDefinedFunction function,
             RequestOptions options = null);
 
         /// <summary>
@@ -1626,12 +1627,12 @@ namespace Microsoft.Azure.Cosmos
         Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Reads a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="storedProcedureLink">The link of the stored procedure to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="StoredProcedure"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1671,20 +1672,20 @@ namespace Microsoft.Azure.Cosmos
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosStoredProcedureSettings"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// Reads a <see cref="StoredProcedure"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
         /// <param name="storedProcedureUri">A URI to the StoredProcedure resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="StoredProcedure"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1717,19 +1718,19 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosStoredProcedureSettings"/> 
+        /// <seealso cref="StoredProcedure"/> 
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Trigger"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="triggerLink">The link to the Trigger to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Trigger"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1769,20 +1770,20 @@ namespace Microsoft.Azure.Cosmos
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<CosmosTriggerSettings>> ReadTriggerAsync(string triggerLink, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReadTriggerAsync(string triggerLink, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosTriggerSettings"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// Reads a <see cref="Trigger"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
         /// <param name="triggerUri">A URI to the Trigger resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Trigger"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1815,19 +1816,19 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosTriggerSettings"/> 
+        /// <seealso cref="Trigger"/> 
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosTriggerSettings>> ReadTriggerAsync(Uri triggerUri, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReadTriggerAsync(Uri triggerUri, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="UserDefinedFunction"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="functionLink">The link to the User Defined Function to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="UserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1867,20 +1868,20 @@ namespace Microsoft.Azure.Cosmos
         /// only the values within the {...} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionAsync(string functionLink, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(string functionLink, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosUserDefinedFunctionSettings"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// Reads a <see cref="UserDefinedFunction"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
         /// <param name="functionUri">A URI to the User Defined Function resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="UserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1913,11 +1914,11 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/> 
+        /// <seealso cref="UserDefinedFunction"/> 
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Cosmos.Internal.Conflict"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -2317,12 +2318,12 @@ namespace Microsoft.Azure.Cosmos
         Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentCollectionUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="CosmosStoredProcedureSettings"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="StoredProcedure"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="storedProceduresLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/col_rid/sprocs/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="StoredProcedure"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProceduresLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -2362,11 +2363,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null);
+        Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of stored procedures for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2374,15 +2375,15 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="CosmosTriggerSettings"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Trigger"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="triggersLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/col_rid/triggers/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Trigger"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggersLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -2422,11 +2423,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<CosmosTriggerSettings>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null);
+        Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of triggers for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2434,15 +2435,15 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<CosmosTriggerSettings>> ReadTriggerFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="CosmosUserDefinedFunctionSettings"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="UserDefinedFunction"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="userDefinedFunctionsLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/col_rid/udfs/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="UserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionsLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -2482,11 +2483,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null);
+        Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of user defined functions for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2494,7 +2495,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.Internal.Conflict"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2629,7 +2630,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, params dynamic[] procedureParams);
@@ -2667,7 +2668,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
@@ -2711,7 +2712,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
@@ -2855,9 +2856,9 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts a stored procedure as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the collection to upsert the stored procedure in. E.g. dbs/db_rid/colls/col_rid/</param>
-        /// <param name="storedProcedure">The <see cref="CosmosStoredProcedureSettings"/> object to upsert.</param>
+        /// <param name="storedProcedure">The <see cref="StoredProcedure"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
-        /// <returns>The <see cref="CosmosStoredProcedureSettings"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="StoredProcedure"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="storedProcedure"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -2872,10 +2873,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of stored procedures for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosStoredProcedureSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="StoredProcedure"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosStoredProcedureSettings"/> you tried to upsert was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="StoredProcedure"/> you tried to upsert was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -2895,29 +2896,29 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> UpsertStoredProcedureAsync(string collectionLink, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null);
 
         /// <summary>
         /// Upserts a stored procedure as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentCollectionUri">The URI of the document collection to upsert the stored procedure in.</param>
-        /// <param name="storedProcedure">The <see cref="CosmosStoredProcedureSettings"/> object.</param>
+        /// <param name="storedProcedure">The <see cref="StoredProcedure"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosStoredProcedureSettings>> UpsertStoredProcedureAsync(
+        Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(
             Uri documentCollectionUri,
-            CosmosStoredProcedureSettings storedProcedure,
+            StoredProcedure storedProcedure,
             RequestOptions options = null);
 
         /// <summary>
         /// Upserts a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to upsert the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="trigger">The <see cref="CosmosTriggerSettings"/> object to upsert.</param>
+        /// <param name="trigger">The <see cref="Trigger"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="trigger"/> is not set.</exception>
@@ -2934,10 +2935,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of triggers for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosTriggerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Trigger"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosTriggerSettings"/> you tried to upsert was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="Trigger"/> you tried to upsert was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -2969,26 +2970,26 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosTriggerSettings>> UpsertTriggerAsync(string collectionLink, CosmosTriggerSettings trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> UpsertTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null);
 
         /// <summary>
         /// Upserts a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentCollectionUri">The URI of the document collection to upsert the trigger in.</param>
-        /// <param name="trigger">The <see cref="CosmosTriggerSettings"/> object.</param>
+        /// <param name="trigger">The <see cref="Trigger"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosTriggerSettings>> UpsertTriggerAsync(Uri documentCollectionUri, CosmosTriggerSettings trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> UpsertTriggerAsync(Uri documentCollectionUri, Trigger trigger, RequestOptions options = null);
 
         /// <summary>
         /// Upserts a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to upsert the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
-        /// <param name="function">The <see cref="CosmosUserDefinedFunctionSettings"/> object to upsert.</param>
+        /// <param name="function">The <see cref="UserDefinedFunction"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="collectionLink"/> or <paramref name="function"/> is not set.</exception>
@@ -3005,10 +3006,10 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - You have reached your quota of user defined functions for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosUserDefinedFunctionSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="UserDefinedFunction"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosUserDefinedFunctionSettings"/> you tried to upsert was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="UserDefinedFunction"/> you tried to upsert was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -3027,22 +3028,22 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> UpsertUserDefinedFunctionAsync(string collectionLink, CosmosUserDefinedFunctionSettings function, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null);
 
         /// <summary>
         /// Upserts a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentCollectionUri">The URI of the document collection to upsert the user defined function in.</param>
-        /// <param name="function">The <see cref="CosmosUserDefinedFunctionSettings"/> object.</param>
+        /// <param name="function">The <see cref="UserDefinedFunction"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> UpsertUserDefinedFunctionAsync(
+        Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(
             Uri documentCollectionUri,
-            CosmosUserDefinedFunctionSettings function,
+            UserDefinedFunction function,
             RequestOptions options = null);
 
         #endregion
@@ -3081,7 +3082,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="feedOptions">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for processing the query results feed.</param>
         /// <returns>The query result set.</returns>
-        IOrderedQueryable<CosmosStoredProcedureSettings> CreateStoredProcedureQuery(Uri documentCollectionUri, FeedOptions feedOptions = null);
+        IOrderedQueryable<StoredProcedure> CreateStoredProcedureQuery(Uri documentCollectionUri, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Method to create query for stored procedures in the Azure Cosmos DB service.
@@ -3107,7 +3108,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="feedOptions">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for processing the query results feed.</param>
         /// <returns>The query result set.</returns>
-        IOrderedQueryable<CosmosTriggerSettings> CreateTriggerQuery(Uri documentCollectionUri, FeedOptions feedOptions = null);
+        IOrderedQueryable<Trigger> CreateTriggerQuery(Uri documentCollectionUri, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Method to create query for triggers in the Azure Cosmos DB service.
@@ -3133,7 +3134,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="feedOptions">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for processing the query results feed.</param>
         /// <returns>The query result set.</returns>
-        IOrderedQueryable<CosmosUserDefinedFunctionSettings> CreateUserDefinedFunctionQuery(Uri documentCollectionUri, FeedOptions feedOptions = null);
+        IOrderedQueryable<UserDefinedFunction> CreateUserDefinedFunctionQuery(Uri documentCollectionUri, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Method to create a query for user-defined functions in the Azure Cosmos DB service.
@@ -3391,9 +3392,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        IOrderedQueryable<CosmosStoredProcedureSettings> CreateStoredProcedureQuery(string collectionLink, FeedOptions feedOptions = null);
+        IOrderedQueryable<StoredProcedure> CreateStoredProcedureQuery(string collectionLink, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Overloaded. This method creates a query for stored procedures under a collection in an Azure Cosmos DB database using a SQL statement. It returns an IQueryable{dynamic}.
@@ -3411,7 +3412,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         IQueryable<dynamic> CreateStoredProcedureQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
 
         /// <summary>
@@ -3432,7 +3433,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosStoredProcedureSettings"/>
+        /// <seealso cref="StoredProcedure"/>
         IQueryable<dynamic> CreateStoredProcedureQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
 
         /// <summary>
@@ -3449,9 +3450,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        IOrderedQueryable<CosmosTriggerSettings> CreateTriggerQuery(string collectionLink, FeedOptions feedOptions = null);
+        IOrderedQueryable<Trigger> CreateTriggerQuery(string collectionLink, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Overloaded. This method creates a query for triggers under a collection in an Azure Cosmos DB service. It returns an IQueryable{dynamic}.
@@ -3469,7 +3470,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosTriggerSettings"/>
+        /// <seealso cref="Trigger"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateTriggerQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
 
@@ -3497,9 +3498,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        IOrderedQueryable<CosmosUserDefinedFunctionSettings> CreateUserDefinedFunctionQuery(string collectionLink, FeedOptions feedOptions = null);
+        IOrderedQueryable<UserDefinedFunction> CreateUserDefinedFunctionQuery(string collectionLink, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Overloaded. This method creates a query for udfs under a collection in an Azure Cosmos DB database using a SQL statement. It returns an IQueryable{dynamic}.
@@ -3517,7 +3518,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateUserDefinedFunctionQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null);
 
@@ -3539,7 +3540,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosUserDefinedFunctionSettings"/>
+        /// <seealso cref="UserDefinedFunction"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateUserDefinedFunctionQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
 

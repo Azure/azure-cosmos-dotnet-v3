@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using System;
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Can be used to serve spatial queries.
     /// </remarks>
-    public sealed class SpatialIndex : Index, ICloneable
+    public sealed class SpatialIndex : Index
     {
         internal SpatialIndex()
             : base(IndexKind.Spatial)
@@ -50,31 +51,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for valid ranges of values.</remarks>
         [JsonProperty(PropertyName = Constants.Properties.DataType)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public DataType DataType
-        {
-            get
-            {
-                DataType result = default(DataType);
-                string strValue = base.GetValue<string>(Constants.Properties.DataType);
-                if (!string.IsNullOrEmpty(strValue))
-                {
-                    result = (DataType)Enum.Parse(typeof(DataType), strValue, true);
-                }
-                return result;
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.DataType, value.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Creates a copy of the spatial index for the Azure Cosmos DB service.
-        /// </summary>
-        /// <returns>A clone of the spatial index.</returns>
-        public object Clone()
-        {
-            return new SpatialIndex(this.DataType);
-        }
+        public DataType DataType { get; set; }
     }
 }

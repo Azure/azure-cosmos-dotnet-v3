@@ -5,86 +5,27 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal sealed class Address : CosmosResource
     {
         [JsonProperty(PropertyName = Constants.Properties.IsPrimary)]
-        public bool IsPrimary
-        {
-            get
-            {
-                return base.GetValue<bool>(Constants.Properties.IsPrimary);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.IsPrimary, value);
-            }
-        }
+        public bool IsPrimary { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.Protocol)]
-        public string Protocol
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Protocol);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.Protocol, value);
-            }
-        }
+        public string Protocol { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.LogicalUri)]
-        public string LogicalUri
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.LogicalUri);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.LogicalUri, value);
-            }
-        }
+        public string LogicalUri { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.PhysicalUri)]
-        public string PhysicalUri
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.PhysicalUri);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.PhysicalUri, value);
-            }
-        }
+        public string PhysicalUri { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.PartitionIndex)]
-        public string PartitionIndex
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.PartitionIndex);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.PartitionIndex, value);
-            }
-        }
+        public string PartitionIndex { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.PartitionKeyRangeId)]
-        public string PartitionKeyRangeId
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.PartitionKeyRangeId);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.PartitionKeyRangeId, value);
-            }
-        }
+        public string PartitionKeyRangeId { get; set; }
     }
 }

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics.Tracing;
     using System.Net.Http.Headers;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     [EventSource(Name = "DocumentDBClient", Guid = "f832a342-0a53-5bab-b57b-d5bc65319768")]
     // Marking it as non-sealed in order to unit test it using Moq framework

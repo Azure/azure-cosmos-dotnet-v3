@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Azure Cosmos DB ResourceFeedReader class can be used to iterate through the resources of the specified type under a 

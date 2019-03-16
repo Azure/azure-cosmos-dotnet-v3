@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents the template class used by methods returning single objects in the Azure Cosmos DB service.

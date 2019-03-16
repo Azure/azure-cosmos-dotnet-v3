@@ -8,13 +8,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
     /// <summary> 
     /// Specifies a path within a JSON document to be included in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class IncludedPath : JsonSerializable, ICloneable
+    public sealed class IncludedPath
     {
         private Collection<Index> indexes;
 
@@ -36,17 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// Some valid examples: /"prop"/?, /"prop"/**, /"prop"/"subprop"/?, /"prop"/[]/?
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Path)]
-        public string Path
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Path);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Path, value);
-            }
-        }
+        public string Path { get; set; }
 
         /// <summary>
         /// Gets or sets the collection of <see cref="Index"/> objects to be applied for this included path in the Azure Cosmos DB service.
@@ -61,12 +52,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.indexes == null)
                 {
-                    this.indexes = base.GetValue<Collection<Index>>(Constants.Properties.Indexes);
-
-                    if (this.indexes == null)
-                    {
-                        this.indexes = new Collection<Index>();
-                    }
+                    this.indexes = new Collection<Index>();
                 }
 
                 return this.indexes;
@@ -79,40 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.indexes = value;
-                base.SetValue(Constants.Properties.Indexes, value);
             }
-        }
-
-        internal override void OnSave()
-        {
-            if (this.indexes != null)
-            {
-                foreach (Index index in this.indexes)
-                {
-                    index.OnSave();
-                }
-
-                base.SetValue(Constants.Properties.Indexes, this.indexes);
-            }
-        }
-
-        /// <summary>
-        /// Creates a copy of the included path in the Azure Cosmos DB service. 
-        /// </summary>
-        /// <returns>A clone of the included path.</returns>
-        public object Clone()
-        {
-            IncludedPath cloned = new IncludedPath()
-            {
-                Path = this.Path
-            };
-
-            foreach (Index item in this.Indexes)
-            {
-                cloned.Indexes.Add(item);
-            }
-
-            return cloned;
         }
     }
 }

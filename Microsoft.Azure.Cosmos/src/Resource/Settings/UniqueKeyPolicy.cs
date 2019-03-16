@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using System;
     using System.Collections.ObjectModel;
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-    public sealed class UniqueKeyPolicy : JsonSerializable
+    public sealed class UniqueKeyPolicy 
     {
         private Collection<UniqueKey> uniqueKeys;
 
@@ -81,11 +82,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.uniqueKeys == null)
                 {
-                    this.uniqueKeys = base.GetValue<Collection<UniqueKey>>(Constants.Properties.UniqueKeys);
-                    if (this.uniqueKeys == null)
-                    {
-                        this.uniqueKeys = new Collection<UniqueKey>();
-                    }
+                    this.uniqueKeys = new Collection<UniqueKey>();
                 }
 
                 return this.uniqueKeys;
@@ -99,20 +96,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.uniqueKeys = value;
-                base.SetValue(Constants.Properties.UniqueKeys, this.uniqueKeys);
-            }
-        }
-
-        internal override void OnSave()
-        {
-            if (this.uniqueKeys != null)
-            {
-                foreach (UniqueKey uniqueKey in this.uniqueKeys)
-                {
-                    uniqueKey.OnSave();
-                }
-
-                base.SetValue(Constants.Properties.UniqueKeys, this.uniqueKeys);
             }
         }
     }

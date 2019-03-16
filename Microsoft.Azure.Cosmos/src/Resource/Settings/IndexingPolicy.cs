@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using System;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     /// </remarks>
     /// <seealso cref="CosmosContainerSettings"/>
-    public sealed class IndexingPolicy : JsonSerializable, ICloneable
+    public sealed class IndexingPolicy 
     {
         private static readonly string DefaultPath = "/*";
 
@@ -105,17 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// True, if automatic indexing is enabled; otherwise, false.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.Automatic)]
-        public bool Automatic
-        {
-            get
-            {
-                return base.GetValue<bool>(Constants.Properties.Automatic);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Automatic, value);
-            }
-        }
+        public bool Automatic { get; set; }
 
         /// <summary>
         /// Gets or sets the indexing mode (consistent or lazy) in the Azure Cosmos DB service.
@@ -156,11 +147,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.includedPaths == null)
                 {
-                    this.includedPaths = base.GetValue<Collection<IncludedPath>>(Constants.Properties.IncludedPaths);
-                    if (this.includedPaths == null)
-                    {
-                        this.includedPaths = new Collection<IncludedPath>();
-                    }
+                    this.includedPaths = new Collection<IncludedPath>();
                 }
 
                 return this.includedPaths;
@@ -173,7 +160,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.includedPaths = value;
-                base.SetValue(Constants.Properties.IncludedPaths, this.includedPaths);
             }
         }
 
@@ -190,11 +176,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.excludedPaths == null)
                 {
-                    this.excludedPaths = base.GetValue<Collection<ExcludedPath>>(Constants.Properties.ExcludedPaths);
-                    if (this.excludedPaths == null)
-                    {
-                        this.excludedPaths = new Collection<ExcludedPath>();
-                    }
+                    this.excludedPaths = new Collection<ExcludedPath>();
                 }
 
                 return this.excludedPaths;
@@ -207,7 +189,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.excludedPaths = value;
-                base.SetValue(Constants.Properties.ExcludedPaths, this.excludedPaths);
             }
         }
 
@@ -245,11 +226,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.compositeIndexes == null)
                 {
-                    this.compositeIndexes = this.GetValue<Collection<Collection<CompositePath>>>(Constants.Properties.CompositeIndexes);
-                    if (this.compositeIndexes == null)
-                    {
-                        this.compositeIndexes = new Collection<Collection<CompositePath>>();
-                    }
+                    this.compositeIndexes = new Collection<Collection<CompositePath>>();
                 }
 
                 return this.compositeIndexes;
@@ -263,7 +240,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.compositeIndexes = value;
-                this.SetValue(Constants.Properties.CompositeIndexes, this.compositeIndexes);
             }
         }
 
@@ -274,11 +250,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.spatialIndexes == null)
                 {
-                    this.spatialIndexes = this.GetValue<Collection<SpatialSpec>>(Constants.Properties.SpatialIndexes);
-                    if (this.spatialIndexes == null)
-                    {
-                        this.spatialIndexes = new Collection<SpatialSpec>();
-                    }
+                    this.spatialIndexes = new Collection<SpatialSpec>();
                 }
 
                 return this.spatialIndexes;
@@ -292,96 +264,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.spatialIndexes = value;
-                this.SetValue(Constants.Properties.SpatialIndexes, this.spatialIndexes);
             }
-        }
-
-        internal override void OnSave()
-        {
-            // If indexing mode is not 'none' and not paths are set, set them to the defaults
-            if (this.IndexingMode != IndexingMode.None && this.IncludedPaths.Count == 0 && this.ExcludedPaths.Count == 0)
-            {
-                this.IncludedPaths.Add(new IncludedPath() { Path = DefaultPath });
-            }
-
-            foreach (IncludedPath includedPath in this.IncludedPaths)
-            {
-                includedPath.OnSave();
-            }
-
-            base.SetValue(Constants.Properties.IncludedPaths, this.IncludedPaths);
-
-            foreach (ExcludedPath excludedPath in this.ExcludedPaths)
-            {
-                excludedPath.OnSave();
-            }
-
-            base.SetValue(Constants.Properties.ExcludedPaths, this.ExcludedPaths);
-
-            foreach (Collection<CompositePath> compositePaths in this.CompositeIndexes)
-            {
-                foreach (CompositePath compositePath in compositePaths)
-                {
-                    compositePath.OnSave();
-                }
-            }
-
-            this.SetValue(Constants.Properties.CompositeIndexes, this.CompositeIndexes);
-
-            foreach (SpatialSpec spatialSpec in this.SpatialIndexes)
-            {
-                spatialSpec.OnSave();
-            }
-
-            this.SetValue(Constants.Properties.SpatialIndexes, this.spatialIndexes);
-        }
-
-        /// <summary>
-        /// Performs a deep copy of the indexing policy for the Azure Cosmos DB service.
-        /// </summary>
-        /// <returns>
-        /// A clone of the indexing policy.
-        /// </returns>
-        public object Clone()
-        {
-            IndexingPolicy cloned = new IndexingPolicy()
-            {
-                Automatic = this.Automatic,
-                IndexingMode = this.IndexingMode
-            };
-
-            foreach (IncludedPath item in this.IncludedPaths)
-            {
-                cloned.IncludedPaths.Add((IncludedPath)item.Clone());
-            }
-
-            foreach (ExcludedPath item in this.ExcludedPaths)
-            {
-                cloned.ExcludedPaths.Add((ExcludedPath)item.Clone());
-            }
-
-            foreach (Collection<CompositePath> compositeIndex in this.CompositeIndexes)
-            {
-                Collection<CompositePath> clonedCompositeIndex = new Collection<CompositePath>();
-                foreach (CompositePath compositePath in compositeIndex)
-                {
-                    CompositePath clonedCompositePath = (CompositePath)compositePath.Clone();
-                    clonedCompositeIndex.Add(clonedCompositePath);
-                }
-
-                cloned.CompositeIndexes.Add(clonedCompositeIndex);
-            }
-
-            Collection<SpatialSpec> clonedSpatialIndexes = new Collection<SpatialSpec>();
-            foreach (SpatialSpec spatialSpec in this.SpatialIndexes)
-            {
-                SpatialSpec clonedSpatialSpec = (SpatialSpec)spatialSpec.Clone();
-                clonedSpatialIndexes.Add(clonedSpatialSpec);
-            }
-
-            cloned.SpatialIndexes = clonedSpatialIndexes;
-
-            return cloned;
         }
 
         # region EqualityComparers

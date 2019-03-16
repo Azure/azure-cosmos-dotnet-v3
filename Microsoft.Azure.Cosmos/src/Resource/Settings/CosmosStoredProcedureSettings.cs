@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -29,16 +30,6 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The body of the stored procedure.</value>
         /// <remarks>Must be a valid JavaScript function. For e.g. "function () { getContext().getResponse().setBody('Hello World!'); }"</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public string Body
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Body);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Body, value);
-            }
-        }
+        public string Body { get; set; }
     }
 }

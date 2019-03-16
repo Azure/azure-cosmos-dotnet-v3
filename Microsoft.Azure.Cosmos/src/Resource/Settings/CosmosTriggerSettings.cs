@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -29,17 +30,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The body of the trigger.</value>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public string Body
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Body);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Body, value);
-            }
-        }
+        public string Body { get; set; }
 
         /// <summary>
         /// Get or set the type of the trigger for the Azure Cosmos DB service.
@@ -48,17 +39,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="TriggerType"/>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.TriggerType)]
-        public TriggerType TriggerType
-        {
-            get
-            {
-                return base.GetValue<TriggerType>(Constants.Properties.TriggerType, TriggerType.Pre);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.TriggerType, value.ToString());
-            }
-        }
+        public TriggerType TriggerType { get; set; }
 
         /// <summary>
         /// Gets or sets the operation the trigger is associated with for the Azure Cosmos DB service.
@@ -67,16 +48,6 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="TriggerOperation"/>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.TriggerOperation)]
-        public TriggerOperation TriggerOperation
-        {
-            get
-            {
-                return base.GetValue<TriggerOperation>(Constants.Properties.TriggerOperation, TriggerOperation.All);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.TriggerOperation, value.ToString());
-            }
-        }
+        public TriggerOperation TriggerOperation { get; set; }
     }
 }

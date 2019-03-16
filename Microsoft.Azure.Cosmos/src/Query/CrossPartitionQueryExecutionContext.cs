@@ -19,6 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
     using ParallelQuery;
     using Routing;

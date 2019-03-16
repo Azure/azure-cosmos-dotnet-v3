@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary> 
@@ -37,17 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// The self-link for Databases in the databaseAccount.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.DatabasesLink)]
-        internal virtual string DatabasesLink
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.DatabasesLink);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.DatabasesLink, value);
-            }
-        }
+        internal virtual string DatabasesLink { get; set; }
 
         /// <summary>
         /// Gets the self-link for Media in the databaseAccount from the Azure Cosmos DB service.
@@ -56,17 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// The self-link for Media in the databaseAccount.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.MediaLink)]
-        internal virtual string MediaLink
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.MediaLink);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.MediaLink, value);
-            }
-        }
+        internal virtual string MediaLink { get; set; }
 
         /// <summary>
         /// Gets the list of locations representing the writable regions of
@@ -227,74 +208,19 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the self-link for Address Routing Table in the databaseAccount
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.AddressesLink)]
-        internal string AddressesLink
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.AddressesLink);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.AddressesLink, value.ToString());
-            }
-        }
+        internal string AddressesLink { get; set; }
 
         /// <summary>
         /// Gets the ReplicationPolicy settings
         /// </summary>
-        internal ReplicationPolicy ReplicationPolicy
-        {
-            get
-            {
-                if (this.replicationPolicy == null)
-                {
-                    this.replicationPolicy = base.GetObject<ReplicationPolicy>(Constants.Properties.UserReplicationPolicy);
-
-                    if (this.replicationPolicy == null)
-                    {
-                        this.replicationPolicy = new ReplicationPolicy();
-                    }
-                }
-                return this.replicationPolicy;
-            }
-        }
+        internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
         /// Gets the SystemReplicationPolicy settings
         /// </summary>
-        internal ReplicationPolicy SystemReplicationPolicy
-        {
-            get
-            {
-                if (this.systemReplicationPolicy == null)
-                {
-                    this.systemReplicationPolicy = base.GetObject<ReplicationPolicy>(Constants.Properties.SystemReplicationPolicy);
+        internal ReplicationPolicy SystemReplicationPolicy { get; set; }
 
-                    if (this.systemReplicationPolicy == null)
-                    {
-                        this.systemReplicationPolicy = new ReplicationPolicy();
-                    }
-                }
-                return this.systemReplicationPolicy;
-            }
-        }
-
-        internal ReadPolicy ReadPolicy
-        {
-            get
-            {
-                if (this.readPolicy == null)
-                {
-                    this.readPolicy = base.GetObject<ReadPolicy>(Constants.Properties.ReadPolicy);
-
-                    if (this.readPolicy == null)
-                    {
-                        this.readPolicy = new ReadPolicy();
-                    }
-                }
-                return this.readPolicy;
-            }
-        }
+        internal ReadPolicy ReadPolicy { get; set; }
 
         internal IDictionary<string, object> QueryEngineConfiuration
         {
@@ -318,53 +244,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal bool EnableMultipleWriteLocations
-        {
-            get { return this.GetValue<bool>(Constants.Properties.EnableMultipleWriteLocations); }
-            set { this.SetValue(Constants.Properties.EnableMultipleWriteLocations, value); }
-        }
-
-        internal override void OnSave()
-        {
-            if (this.replicationPolicy != null)
-            {
-                this.replicationPolicy.OnSave();
-                base.SetObject(Constants.Properties.UserReplicationPolicy, this.replicationPolicy);
-            }
-
-            if (this.consistencyPolicy != null)
-            {
-                this.consistencyPolicy.OnSave();
-                base.SetObject(Constants.Properties.UserConsistencyPolicy, this.consistencyPolicy);
-            }
-
-            if (this.systemReplicationPolicy != null)
-            {
-                this.systemReplicationPolicy.OnSave();
-                base.SetObject(Constants.Properties.SystemReplicationPolicy, this.systemReplicationPolicy);
-            }
-
-            if (this.readPolicy != null)
-            {
-                this.readPolicy.OnSave();
-                base.SetObject(Constants.Properties.ReadPolicy, this.readPolicy);
-            }
-
-            if (this.readLocations != null)
-            {
-                base.SetObjectCollection(Constants.Properties.ReadableLocations, this.readLocations);
-            }
-
-            if (this.writeLocations != null)
-            {
-                base.SetObjectCollection(Constants.Properties.WritableLocations, this.writeLocations);
-            }
-
-            if (this.queryEngineConfiguration != null)
-            {
-                base.SetValue(Constants.Properties.QueryEngineConfiguration, JsonConvert.SerializeObject(this.queryEngineConfiguration));
-            }
-        }
+        internal bool EnableMultipleWriteLocations { get; set; }
 
         internal static CosmosAccountSettings CreateNewInstance()
         {
