@@ -163,6 +163,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
+                Properties = this.Properties,
             };
         }
 
