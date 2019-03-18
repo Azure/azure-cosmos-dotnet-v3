@@ -6,12 +6,16 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Json;
+    using Newtonsoft.Json;
+    using JsonWriter = Json.JsonWriter;
 
     internal static class FeedResponseBinder
     {
+        private static JsonSerializer _serializer = new JsonSerializer();
         /// <summary>
         /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
         /// </summary>
@@ -28,15 +32,8 @@ namespace Microsoft.Azure.Cosmos
 
             jsonWriter.WriteArrayEnd();
 
-            List<T> typedResults;
-            using (MemoryStream memoryStream = new MemoryStream(jsonWriter.GetResult()))
-            {
-                using (JsonCosmosDBReader reader = new JsonCosmosDBReader(memoryStream))
-                {
-                    Newtonsoft.Json.JsonSerializer serializer = Newtonsoft.Json.JsonSerializer.Create();
-                    typedResults = serializer.Deserialize<List<T>>(reader);
-                }
-            }
+            List<T> typedResults = JsonConvert.DeserializeObject<List<T>>(
+                Encoding.UTF8.GetString(jsonWriter.GetResult()));
 
             return new FeedResponse<T>(
                 typedResults,
