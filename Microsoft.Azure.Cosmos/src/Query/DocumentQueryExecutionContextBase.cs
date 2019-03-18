@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
             PopulatePartitionKeyInfo(request, partitionKey);
-
+            request.Properties = this.feedOptions.Properties;
             return request;
         }
 
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
 
             PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
-
+            request.Properties = this.feedOptions.Properties;
             return request;
         }
 
