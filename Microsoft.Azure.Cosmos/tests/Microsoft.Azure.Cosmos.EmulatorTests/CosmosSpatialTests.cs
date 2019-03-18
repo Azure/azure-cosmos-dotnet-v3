@@ -6,6 +6,7 @@
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
 
@@ -58,10 +59,13 @@
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.IsNotNull(readResponse.Resource.multiPolygon);
 
-            IDocumentQuery<SpatialItem> spatialQuery = this.client.CreateDocumentQuery<SpatialItem>(this.Container.Link, "select * from root", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery(); ;
-            FeedResponse<SpatialItem> queryResponse = spatialQuery.ExecuteNextAsync<SpatialItem>().GetAwaiter().GetResult();
-            Assert.IsTrue(queryResponse.Count == 1);
-            foreach (var item in queryResponse)
+            IOrderedQueryable<SpatialItem> multipolygonQuery =
+              this.client.CreateDocumentQuery<SpatialItem>(this.Container.Link, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
+            SpatialItem[] withinQuery = multipolygonQuery
+              .Where(f =>  f.multiPolygon.Within(GetMultiPoygon()) && f.multiPolygon.IsValid())
+              .ToArray();
+            Assert.IsTrue(withinQuery.Length == 1);
+            foreach (var item in withinQuery)
             {
                 Assert.IsTrue(item.multiPolygon.Equals(GetMultiPoygon()));
             }
@@ -103,7 +107,7 @@
                 Name = spatialName,
                 partitionKey = Guid.NewGuid().ToString(),
                 id = Guid.NewGuid().ToString(),
-                lineString = getLineString(),
+                lineString = GetLineString(),
             };
             CosmosItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
             Assert.IsNotNull(createResponse);
@@ -181,16 +185,10 @@
                                             new[]
                                                 {
                                                     new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(22, 20)
+                                                    new Position(21, 20), new Position(20, 20)
                                                 })
                                     })
-               },
-                           new GeometryParams
-                           {
-                               AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                               BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                               Crs = Crs.Named("SomeCrs")
-                           });
+               });
 
             return multiPolygon;
         }
@@ -219,7 +217,7 @@
             return polygon;
         }
 
-        private LineString getLineString()
+        private LineString GetLineString()
         {
             var lineString = new LineString(
                              new[] {
