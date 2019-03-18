@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal class ChangeFeedResultSetStreamIterator : CosmosDefaultResultSetFeedIterator
+    internal class ChangeFeedResultSetStreamIterator : CosmosFeedResultSetIteratorCore
     {
         internal ChangeFeedResultSetStreamIterator(
             int? maxItemCount,

@@ -692,32 +692,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/key");
         }
 
-        private Task TestQueryAndReadFeedWithPartitionKey(
+        private async Task TestQueryAndReadFeedWithPartitionKey(
             DocumentClient documentClient, 
             CosmosContainerSettings collection, 
             IEnumerable<Document> documents)
         {
             // DEVNOTE: Needs to be refactored to use v3 SDK model
             // Read feed 1
-            //ResourceFeedReader<Document> feedReader = documentClient.CreateDocumentFeedReader(collection, new FeedOptions { MaxItemCount = 1 });
-            //var enumerable1 = feedReader.Select(doc => doc.Id).OrderBy(id => id).ToArray();
-            //var enumerable2 = documents.Select(doc => doc.Id).OrderBy(id => id).ToArray();
-            //Assert.IsTrue(enumerable1.SequenceEqual(enumerable2));
+            ResourceFeedReader<Document> feedReader = documentClient.CreateDocumentFeedReader(collection, new FeedOptions { MaxItemCount = 1 });
+            var enumerable1 = feedReader.Select(doc => doc.Id).OrderBy(id => id).ToArray();
+            var enumerable2 = documents.Select(doc => doc.Id).OrderBy(id => id).ToArray();
+            Assert.IsTrue(enumerable1.SequenceEqual(enumerable2));
 
-            //// Read feed 2
-            //FeedOptions options = new FeedOptions { MaxItemCount = 1 };
-            //FeedResponse<dynamic> response = null;
-            //List<dynamic> result = new List<dynamic>();
-            //do
-            //{
-            //    response = await documentClient.ReadDocumentFeedAsync(collection, options);
-            //    result.AddRange(response);
-            //    options.RequestContinuation = response.ResponseContinuation;
-            //} while (!string.IsNullOrEmpty(options.RequestContinuation));
+            // Read feed 2
+            FeedOptions options = new FeedOptions { MaxItemCount = 1 };
+            FeedResponse<dynamic> response = null;
+            List<dynamic> result = new List<dynamic>();
+            do
+            {
+                response = await documentClient.ReadDocumentFeedAsync(collection, options);
+                result.AddRange(response);
+                options.RequestContinuation = response.ResponseContinuation;
+            } while (!string.IsNullOrEmpty(options.RequestContinuation));
 
-            //var enumerable3 = result.Select<dynamic, string>(doc => doc.id.ToString()).OrderBy(id => id).ToArray();
-            //var enumerable4 = documents.Select<Document, string>(doc => doc.Id.ToString()).OrderBy(id => id).ToArray();
-            //Assert.IsTrue(enumerable3.SequenceEqual(enumerable4));
+            var enumerable3 = result.Select<dynamic, string>(doc => doc.id.ToString()).OrderBy(id => id).ToArray();
+            var enumerable4 = documents.Select<Document, string>(doc => doc.Id.ToString()).OrderBy(id => id).ToArray();
+            Assert.IsTrue(enumerable3.SequenceEqual(enumerable4));
 
             Assert.AreEqual(0, documentClient.CreateDocumentQuery<Document>(
                 collection.AltLink,
@@ -735,17 +735,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string expectedResult = string.Join(",", expected);
 
                 // DEVNOTE: Update to use v3 SDK
-                //FeedResponse<dynamic> feed = await documentClient.ReadDocumentFeedAsync(
-                //    collection.AltLink,
-                //    new FeedOptions { PartitionKey = new PartitionKey(keys[i]), MaxItemCount = 3 });
-                //Assert.AreEqual(expectedResult, string.Join(",", feed.ToList().Select(doc => doc.Id)));
+                FeedResponse<dynamic> feed = await documentClient.ReadDocumentFeedAsync(
+                    collection.AltLink,
+                    new FeedOptions { PartitionKey = new PartitionKey(keys[i]), MaxItemCount = 3 });
 
-                //IQueryable<Document> query = documentClient.CreateDocumentQuery<Document>(
-                //    collection.AltLink,
-                //    new FeedOptions { PartitionKey = new PartitionKey(keys[i]), MaxItemCount = 1 });
-                //Assert.AreEqual(expectedResult, string.Join(",", query.ToList().Select(doc => doc.Id)));
+                Assert.AreEqual(expectedResult, string.Join(",", feed.ToList().Select(doc => doc.Id)));
 
                 IQueryable<Document> query = documentClient.CreateDocumentQuery<Document>(
+                    collection.AltLink,
+                    new FeedOptions { PartitionKey = new PartitionKey(keys[i]), MaxItemCount = 1 });
+                Assert.AreEqual(expectedResult, string.Join(",", query.ToList().Select(doc => doc.Id)));
+
+                query = documentClient.CreateDocumentQuery<Document>(
                     collection.AltLink,
                     $@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")",
                     new FeedOptions { PartitionKey = new PartitionKey(keys[i]), MaxItemCount = 1 });
@@ -831,8 +832,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // $TODO-elasticcollection-felixfan-2016-01-08: Cannot route implicit undefined key now
                 }
             }
-
-            return Task.CompletedTask;
         }
 
         [TestMethod]
@@ -1680,7 +1679,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<string> documents = new List<string>();
             Random random = new Random(1234);
-            for (int i = 0; i < 20; ++i)
+            for (int i = 0; i < 1; ++i)
             {
                 Document doubleDoc = new Document();
                 doubleDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
@@ -3086,7 +3085,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await Client.CreateDocumentQuery<Document>(
                     collection,
-                    "SELECT * FROM t",
                     new FeedOptions
                     {
                         EnableCrossPartitionQuery = true,
@@ -3177,6 +3175,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string[] queries = new[]
             {
+                null,
                 $"SELECT * FROM r",
                 $"SELECT * FROM r WHERE r.{partitionKey} BETWEEN 0 AND {documentCount}",
                 $"SELECT r.{partitionKey} FROM r JOIN c in r.{children}",
@@ -3194,10 +3193,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (var query in queries)
             {
-                List<Document> expectedValues = Client.CreateDocumentQuery<Document>(
+                List<Document> expectedValues;
+                if (string.IsNullOrEmpty(query))
+                {
+                    expectedValues = Client.CreateDocumentQuery<Document>(
+                        collection,
+                        new FeedOptions { MaxDegreeOfParallelism = 0, EnableCrossPartitionQuery = true }).ToList();
+                }
+                else
+                {
+                    expectedValues = Client.CreateDocumentQuery<Document>(
                         collection,
                         query,
                         new FeedOptions { MaxDegreeOfParallelism = 0, EnableCrossPartitionQuery = true }).ToList();
+                }
 
                 foreach (int pageSize in new int[] { 1, documentCount / 2, documentCount })
                 {

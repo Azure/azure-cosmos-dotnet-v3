@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 deleteList = await CreateRandomItems(3, randomPartitionKey: true);
                 itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
-                CosmosResultSetFeedIterator setIterator =
+                CosmosFeedResultSetIterator setIterator =
                     this.Container.Items.GetItemStreamIterator();
                 while (setIterator.HasMoreResults)
                 {

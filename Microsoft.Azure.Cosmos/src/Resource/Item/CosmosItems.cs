@@ -695,12 +695,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosResultSetFeedIterator GetItemStreamIterator(
+        public virtual CosmosFeedResultSetIterator GetItemStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosItemRequestOptions requestOptions = null)
         {
-            return new CosmosDefaultResultSetFeedIterator(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
+            return new CosmosFeedResultSetIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
         }
 
         /// <summary>
@@ -771,7 +771,7 @@ namespace Microsoft.Azure.Cosmos
                 feedOptions: feedOptions,
                 querySpec: sqlQueryDefinition.ToSqlQuerySpec());
 
-            return new CosmosDefaultResultSetIterator(
+            return new CosmosResultSetIteratorCore(
                 maxItemCount,
                 continuationToken,
                 requestOptions,

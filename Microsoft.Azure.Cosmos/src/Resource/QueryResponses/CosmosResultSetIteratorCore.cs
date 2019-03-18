@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
-    internal class CosmosDefaultResultSetIterator : CosmosResultSetIterator
+    internal class CosmosResultSetIteratorCore : CosmosResultSetIterator
     {
         internal delegate Task<CosmosQueryResponse> NextResultSetDelegate(
             string continuationToken,
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
-        internal CosmosDefaultResultSetIterator(
+        internal CosmosResultSetIteratorCore(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -163,8 +163,8 @@ namespace Microsoft.Azure.Cosmos
                 // Throw the exception if the query failed.
                 cosmosResponseMessage.EnsureSuccessStatusCode();
 
-                string continuationToken = CosmosDefaultResultSetFeedIterator.GetContinuationToken(cosmosResponseMessage);
-                bool hasMoreResults = CosmosDefaultResultSetFeedIterator.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
+                string continuationToken = CosmosFeedResultSetIteratorCore.GetContinuationToken(cosmosResponseMessage);
+                bool hasMoreResults = CosmosFeedResultSetIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
                 return CosmosQueryResponse<T>.CreateResponse<T>(
                     stream: cosmosResponseMessage.Content,

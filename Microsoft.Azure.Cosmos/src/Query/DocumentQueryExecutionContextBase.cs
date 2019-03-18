@@ -333,67 +333,17 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceResponse documentServiceResponse = await ExecuteQueryRequestInternalAsync(
                 request,
                 cancellationToken);
-            // Execute the callback an each element of the page
-            // For example just could get a response like this
-            // {
-            //    "_rid": "qHVdAImeKAQ=",
-            //    "Documents": [{
-            //        "id": "03230",
-            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
-            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
-            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
-            //        "_attachments": "attachments\/",
-            //        "_ts": 1501107886
-            //    }],
-            //    "_count": 1
-            // }
-            // And you should execute the callback on each document in "Documents".
-            MemoryStream memoryStream = new MemoryStream();
-            documentServiceResponse.ResponseBody.CopyTo(memoryStream);
-            long responseLengthBytes = memoryStream.Length;
-            byte[] content = memoryStream.ToArray();
-            IJsonNavigator jsonNavigator = null;
 
-            // Use the users custom navigator first. If it returns null back try the
-            // internal navigator.
-            if (this.feedOptions.CosmosSerializationOptions != null)
-            {
-                jsonNavigator = this.feedOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
-                if (jsonNavigator == null)
-                {
-                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
-                }
-            }
-            else
-            {
-                jsonNavigator = JsonNavigator.Create(content);
-            }
+            return this.GetFeedResponse(request, documentServiceResponse);
+        }
 
-            string resourceName = request.ResourceType.ToResourceTypeString() + "s";
-
-            if (!jsonNavigator.TryGetObjectProperty(
-                jsonNavigator.GetRootNode(),
-                resourceName,
-                out ObjectProperty objectProperty))
-            {
-                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-            }
-
-            IJsonNavigatorNode cosmosElements = objectProperty.ValueNode;
-            if (!(CosmosElement.Dispatch(
-                jsonNavigator,
-                cosmosElements) is CosmosArray cosmosArray))
-            {
-                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-            }
-
-            int itemCount = cosmosArray.Count;
-            return new FeedResponse<CosmosElement>(
-                cosmosArray,
-                itemCount,
-                documentServiceResponse.Headers,
-                documentServiceResponse.RequestStats,
-                responseLengthBytes);
+        public async Task<FeedResponse<CosmosElement>> ExecuteRequestAsync(
+           DocumentServiceRequest request,
+           CancellationToken cancellationToken)
+        {
+            return await (this.ShouldExecuteQueryRequest ?
+                this.ExecuteQueryRequestAsync(request, cancellationToken) :
+                this.ExecuteReadFeedRequestAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
@@ -405,11 +355,25 @@ namespace Microsoft.Azure.Cosmos.Query
                 ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
         }
 
+        public async Task<FeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
+            DocumentServiceRequest request,
+            CancellationToken cancellationToken)
+        {
+            return this.GetFeedResponse(request, await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
+        }
+
         public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
             return GetFeedResponse<T>(await ExecuteQueryRequestInternalAsync(request, cancellationToken));
+        }
+
+        public async Task<FeedResponse<CosmosElement>> ExecuteReadFeedRequestAsync(
+            DocumentServiceRequest request,
+            CancellationToken cancellationToken)
+        {
+            return GetFeedResponse(request, await this.client.ReadFeedAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
@@ -630,10 +594,76 @@ namespace Microsoft.Azure.Cosmos.Query
         {
 
             long responseLengthBytes = response.ResponseBody.CanSeek ? response.ResponseBody.Length : 0;
-
             IEnumerable<T> responseFeed = response.GetQueryResponse<T>(this.resourceType, this.getLazyFeedResponse, out int itemCount);
 
             return new FeedResponse<T>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
+        }
+
+        private FeedResponse<CosmosElement> GetFeedResponse(
+            DocumentServiceRequest documentServiceRequest, 
+            DocumentServiceResponse documentServiceResponse)
+        {
+            // Execute the callback an each element of the page
+            // For example just could get a response like this
+            // {
+            //    "_rid": "qHVdAImeKAQ=",
+            //    "Documents": [{
+            //        "id": "03230",
+            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
+            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
+            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
+            //        "_attachments": "attachments\/",
+            //        "_ts": 1501107886
+            //    }],
+            //    "_count": 1
+            // }
+            // And you should execute the callback on each document in "Documents".
+            MemoryStream memoryStream = new MemoryStream();
+            documentServiceResponse.ResponseBody.CopyTo(memoryStream);
+            long responseLengthBytes = memoryStream.Length;
+            byte[] content = memoryStream.ToArray();
+            IJsonNavigator jsonNavigator = null;
+
+            // Use the users custom navigator first. If it returns null back try the
+            // internal navigator.
+            if (this.feedOptions.CosmosSerializationOptions != null)
+            {
+                jsonNavigator = this.feedOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
+                if (jsonNavigator == null)
+                {
+                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
+                }
+            }
+            else
+            {
+                jsonNavigator = JsonNavigator.Create(content);
+            }
+
+            string resourceName = documentServiceRequest.ResourceType.ToResourceTypeString() + "s";
+
+            if (!jsonNavigator.TryGetObjectProperty(
+                jsonNavigator.GetRootNode(),
+                resourceName,
+                out ObjectProperty objectProperty))
+            {
+                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+            }
+
+            IJsonNavigatorNode cosmosElements = objectProperty.ValueNode;
+            if (!(CosmosElement.Dispatch(
+                jsonNavigator,
+                cosmosElements) is CosmosArray cosmosArray))
+            {
+                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+            }
+
+            int itemCount = cosmosArray.Count;
+            return new FeedResponse<CosmosElement>(
+                cosmosArray,
+                itemCount,
+                documentServiceResponse.Headers,
+                documentServiceResponse.RequestStats,
+                responseLengthBytes);
         }
     }
 }
