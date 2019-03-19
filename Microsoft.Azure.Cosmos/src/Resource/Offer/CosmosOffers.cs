@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Linq;
+    using Newtonsoft.Json.Linq;
 
     internal class CosmosOffers
     {
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
         }
 
-        internal async Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
+        internal CosmosOfferResult ReadProvisionedThroughputIfExistsAsync(
             string targetRID,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
+                Offer offer = this.ReadOfferAsync(targetRID, cancellationToken);
                 return this.GetThroughputIfExists(offer);
             }
             catch (DocumentClientException dce)
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
+                Offer offer = this.ReadOfferAsync(targetRID, cancellationToken);
                 if (offer == null)
                 {
                     throw new ArgumentOutOfRangeException("Throughput is not configured");
@@ -145,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosOfferResult(offerV2.Content.OfferThroughput);
         }
 
-        private Task<Offer> ReadOfferAsync(string targetRID,
+        private Offer ReadOfferAsync(string targetRID,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
@@ -153,11 +154,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(targetRID));
             }
 
-            IDocumentQuery<Offer> offerQuery = this.documentClient.CreateOfferQuery()
-                                            .Where(offer => offer.OfferResourceId == targetRID)
-                                            .AsDocumentQuery();
+            SqlQuerySpec spec = new SqlQuerySpec("SELECT * FROM offers o WHERE o.offerResourceId = @targetRID ",
+                new SqlParameterCollection(new SqlParameter[] { new SqlParameter { Name = "@targetRID", Value = targetRID } }));
 
-            return this.SingleOrDefaultAsync<Offer>(offerQuery, cancellationToken);
+            JObject offer = this.documentClient.CreateOfferQuery(spec).AsEnumerable().FirstOrDefault();
+            if(offer != null)
+            {
+                return offer.ToObject<OfferV2>();
+            }
+
+            return null;
         }
 
         private Task<T> SingleOrDefaultAsync<T>(
