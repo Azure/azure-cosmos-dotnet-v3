@@ -1679,7 +1679,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<string> documents = new List<string>();
             Random random = new Random(1234);
-            for (int i = 0; i < 1; ++i)
+            for (int i = 0; i < 20; ++i)
             {
                 Document doubleDoc = new Document();
                 doubleDoc.SetPropertyValue(args.PartitionKey, Guid.NewGuid());
