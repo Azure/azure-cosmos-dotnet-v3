@@ -8,21 +8,33 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
 
     [TestClass]
-    public class CosmosSpatialTests : BaseCosmosClientHelper
+    public class CosmosSpatialTests
     {
         private CosmosContainer Container = null;
-        private DocumentClient client;
+        private DocumentClient documentClient;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
         private readonly string spatialName = "spatialName";
+        protected CancellationTokenSource cancellationTokenSource = null;
+        protected CancellationToken cancellationToken;
+        protected CosmosClient cosmosClient = null;
+        protected CosmosDatabase database = null;
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
-            this.client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
+            this.cancellationTokenSource = new CancellationTokenSource();
+            this.cancellationToken = this.cancellationTokenSource.Token;
+
+            this.cosmosClient = TestCommon.CreateCosmosClient();
+            this.database = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+                cancellationToken: this.cancellationToken);
+
+            this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
+
             string PartitionKey = "/partitionKey";
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
@@ -37,7 +49,26 @@
         [TestCleanup]
         public async Task Cleanup()
         {
-            await base.TestCleanup();
+            if(this.documentClient != null)
+            {
+                documentClient.Dispose();
+            }
+
+            if (this.cosmosClient == null)
+            {
+                return;
+            }
+
+            if (this.database != null)
+            {
+                await this.database.DeleteAsync(
+                    requestOptions: null,
+                    cancellationToken: this.cancellationToken);
+            }
+
+            this.cancellationTokenSource?.Cancel();
+
+            this.cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -50,6 +81,7 @@
                 id = Guid.NewGuid().ToString(),
                 multiPolygon = GetMultiPoygon(),
             };
+
             CosmosItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
             Assert.IsNotNull(createResponse);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
@@ -60,7 +92,7 @@
             Assert.IsNotNull(readResponse.Resource.multiPolygon);
 
             IOrderedQueryable<SpatialItem> multipolygonQuery =
-              this.client.CreateDocumentQuery<SpatialItem>(this.Container.Link, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
+              this.documentClient.CreateDocumentQuery<SpatialItem>(this.Container.Link, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
             SpatialItem[] withinQuery = multipolygonQuery
               .Where(f =>  f.multiPolygon.Within(GetMultiPoygon()) && f.multiPolygon.IsValid())
               .ToArray();
@@ -85,6 +117,7 @@
                 id = Guid.NewGuid().ToString(),
                 polygon = GetPolygon(),
             };
+
             CosmosItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
             Assert.IsNotNull(createResponse);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
@@ -109,6 +142,7 @@
                 id = Guid.NewGuid().ToString(),
                 lineString = GetLineString(),
             };
+
             CosmosItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
             Assert.IsNotNull(createResponse);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
@@ -178,16 +212,16 @@
            new MultiPolygon(
            new[]
                {
-                            new PolygonCoordinates(
-                                new[]
-                                    {
-                                        new LinearRing(
-                                            new[]
-                                                {
-                                                    new Position(20, 20), new Position(20, 21), new Position(21, 21),
-                                                    new Position(21, 20), new Position(20, 20)
-                                                })
-                                    })
+                    new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(20, 20)
+                                            })
+                                })
                });
 
             return multiPolygon;
