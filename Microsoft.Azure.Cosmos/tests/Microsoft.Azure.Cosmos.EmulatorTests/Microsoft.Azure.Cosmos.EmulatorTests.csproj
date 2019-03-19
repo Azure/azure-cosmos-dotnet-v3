@@ -1,10 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DirectVersion>3.0.0.9-preview</DirectVersion>
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <Platform>AnyCPU</Platform>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -33,11 +31,11 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[3.0.0.6-preview,)" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[3.0.0.6-preview,)" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
   </ItemGroup>
   
   <ItemGroup>
