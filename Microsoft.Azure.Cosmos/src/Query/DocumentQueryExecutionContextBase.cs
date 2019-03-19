@@ -639,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 jsonNavigator = JsonNavigator.Create(content);
             }
 
-            string resourceName = documentServiceRequest.ResourceType.ToResourceTypeString() + "s";
+            string resourceName = GetRootNodeName(documentServiceRequest.ResourceType);
 
             if (!jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
@@ -664,6 +664,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 documentServiceResponse.Headers,
                 documentServiceResponse.RequestStats,
                 responseLengthBytes);
+        }
+
+        private string GetRootNodeName(ResourceType resourceType)
+        {
+            switch (resourceType)
+            {
+                case Internal.ResourceType.Collection:
+                    return "DocumentCollections";
+                default:
+                    return resourceType.ToResourceTypeString() + "s";
+            }
         }
     }
 }

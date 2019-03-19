@@ -232,7 +232,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetRID(cancellationToken)
-                .ContinueWith(task => this.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken);
+                .ContinueWith(task => this.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
+                .Unwrap();
         }
 
         internal virtual Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(

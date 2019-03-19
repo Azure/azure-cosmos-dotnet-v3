@@ -370,16 +370,17 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.GetRID(cancellationToken)
                 .ContinueWith(task => task.Result == null ?
-                   new CosmosOfferResult(
+                    Task.FromResult(new CosmosOfferResult(
                         statusCode: HttpStatusCode.Found,
                         cosmosRequestException: new CosmosException(
                             message: RMResources.NotFound,
                             statusCode: HttpStatusCode.Found,
                             subStatusCode: (int)SubStatusCodes.Unknown,
                             activityId: null,
-                            requestCharge: 0)) :
+                            requestCharge: 0))) :
                     this.Database.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken),
-                    cancellationToken);
+                    cancellationToken)
+                .Unwrap();
         }
 
         internal virtual Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
