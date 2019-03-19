@@ -1170,7 +1170,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 return new CosmosQueryResponse(
                         errorMessage: exception.Message,
-                        httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError);
+                        httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
+                        retryAfter: exception.RetryAfter);
             }
         }
 

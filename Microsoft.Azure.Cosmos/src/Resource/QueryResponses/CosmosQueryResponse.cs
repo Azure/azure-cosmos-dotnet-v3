@@ -51,12 +51,14 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQueryResponse(
             string errorMessage,
             HttpStatusCode httpStatusCode,
+            TimeSpan retryAfter,
             INameValueCollection responseHeaders = null)
         {
             this.ContinuationToken = null;
             this.Content = null;
             this._responseHeaders = responseHeaders;
             this.StatusCode = httpStatusCode;
+            this.RetryAfter = retryAfter;
             this.ErrorMessage = errorMessage;
         }
 
@@ -84,6 +86,8 @@ namespace Microsoft.Azure.Cosmos
         /// The number of items in the query response
         /// </summary>
         public virtual int Count { get; }
+
+        internal TimeSpan? RetryAfter { get; }
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
