@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         if (r.Count == 1)
                         {
                             bFound = true;
-                            Assert.AreEqual(r.First().id, collectionId);
+                            Assert.AreEqual(r.First()["id"].ToString(), collectionId);
                         }
                     }
                     Assert.AreEqual(bFound, true);
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             if (r.Count == 1)
                             {
                                 bFound = true;
-                                Assert.AreEqual(r.First().id, doc1Id);
+                                Assert.AreEqual(r.First()["id"].ToString(), doc1Id);
                             }
                         }
                         Assert.AreEqual(bFound, true);
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             if (r.Count == 1)
                             {
                                 bFound = true;
-                                Assert.AreEqual(r.First().id, doc1Id);
+                                Assert.AreEqual(r.First()["id"].ToString(), doc1Id);
                             }
                         }
                         Assert.AreEqual(bFound, true);
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         if (r.Count == 1)
                         {
                             bFound = true;
-                            Assert.AreEqual(r.First().id, trigger1Id);
+                            Assert.AreEqual(r.First()["id"].ToString(), trigger1Id);
                         }
                     }
                     Assert.AreEqual(bFound, true);
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         if (r.Count == 1)
                         {
                             bFound = true;
-                            Assert.AreEqual(r.First().id, storedProcedure1Id);
+                            Assert.AreEqual(r.First()["id"].ToString(), storedProcedure1Id);
                         }
                     }
                     Assert.AreEqual(bFound, true);
@@ -364,7 +364,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         if (r.Count == 1)
                         {
                             bFound = true;
-                            Assert.AreEqual(r.First().id, udf1Id);
+                            Assert.AreEqual(r.First()["id"].ToString(), udf1Id);
                         }
                     }
                     Assert.AreEqual(bFound, true);
