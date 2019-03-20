@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             pkRange,
                             collectionRid);
                     },
-                    this.ExecuteLazyRequestAsync,
+                    this.ExecuteRequestLazyAsync,
                     //// Retry policy callback
                     () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.Client.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
                     this.OnDocumentProducerTreeCompleteFetching,

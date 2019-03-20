@@ -131,17 +131,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Get <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> for each individual partition in the Azure Cosmos DB service
-        /// </summary>
-        internal IReadOnlyDictionary<string, QueryMetrics> QueryMetrics
-        {
-            get
-            {
-                return this._queryMetrics;
-            }
-        }
-
-        /// <summary>
         /// Returns true if the operation succeeded
         /// </summary>
         public virtual bool IsSuccess => this.StatusCode == HttpStatusCode.OK;

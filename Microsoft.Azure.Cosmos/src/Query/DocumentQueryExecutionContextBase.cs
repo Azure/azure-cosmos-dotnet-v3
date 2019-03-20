@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return request;
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteLazyRequestAsync(
+        public async Task<FeedResponse<CosmosElement>> ExecuteRequestLazyAsync(
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {

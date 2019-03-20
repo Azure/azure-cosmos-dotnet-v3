@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, queryRoutingInfo.Item1.ResolvedRange.Id));
 
-                FeedResponse<CosmosElement> response = await this.ExecuteLazyRequestAsync(request, cancellationToken);
+                FeedResponse<CosmosElement> response = await this.ExecuteRequestLazyAsync(request, cancellationToken);
 
                 if (!await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                     response.Headers,
