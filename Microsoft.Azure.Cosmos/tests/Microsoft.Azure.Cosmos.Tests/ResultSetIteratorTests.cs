@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            CosmosResultSetIterator resultSetIterator = new CosmosDefaultResultSetStreamIterator(
+            CosmosFeedResultSetIterator resultSetIterator = new CosmosFeedResultSetIteratorCore(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,
@@ -75,6 +75,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             options.Verify(m => m.FillRequestOptions(It.Is<CosmosRequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
         }
 
+        // DEVNOTE: Query is not wired into the handler pipeline yet.
+        [Ignore]
         [TestMethod]
         public async Task VerifyCosmosDefaultResultSetStreamIteratorOperationType()
         {
@@ -85,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
             CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql, 
+                maxConcurrency: 1,
                 partitionKey: "pk", 
                 requestOptions: new CosmosQueryRequestOptions());
 
@@ -97,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosResponseMessage response = await setIterator.FetchNextSetAsync();
+            CosmosQueryResponse response = await setIterator.FetchNextSetAsync();
 
             //Test gateway mode
             mockClient = MockDocumentClient.CreateMockCosmosClient(
@@ -105,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             container = mockClient.Databases["database"].Containers["container"];
             setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql,
+                maxConcurrency: 1,
                 partitionKey: "pk",
                 requestOptions: new CosmosQueryRequestOptions());
             testHandler = new TestHandler((request, cancellationToken) => {

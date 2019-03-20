@@ -5,10 +5,15 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using JsonWriter = Json.JsonWriter;
 
     internal static class FeedResponseBinder
     {
@@ -18,68 +23,73 @@ namespace Microsoft.Azure.Cosmos
         //This method is invoked via expression as part of dynamic binding of cast operator.
         public static FeedResponse<T> Convert<T>(FeedResponse<dynamic> dynamicFeed)
         {
-            List<T> typedResults = new List<T>(dynamicFeed.Count);
-            if (dynamicFeed.Count > 0 && IsCosmosElement(dynamicFeed.First().GetType()))
+            if (typeof(T) == typeof(object))
             {
-                // We know all the items are LazyCosmosElements
-                foreach (CosmosElement cosmosElement in dynamicFeed)
-                {
-                    // For now we will just to string the whole thing and have newtonsoft do the deserializaiton
-                    // TODO: in the future we should deserialize using the LazyCosmosElement.
-                    // this is temporary. Once we finished stream api we will get rid of this typed api and have the stream call into that.
-                    T typedValue;
-                    switch (cosmosElement.Type)
-                    {
-                        case CosmosElementType.String:
-                            typedValue = JToken.FromObject((cosmosElement as CosmosString).Value)
-                                .ToObject<T>();
-                            break;
+                return (FeedResponse<T>)(object)dynamicFeed;
+            }
+            IList<T> result = new List<T>();
 
-                        case CosmosElementType.Number:
-                            CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                            if (cosmosNumber.IsFloatingPoint)
-                            {
-                                typedValue = JToken.FromObject(cosmosNumber.AsFloatingPoint().Value)
-                               .ToObject<T>();
-                            }
-                            else
-                            {
-                                typedValue = JToken.FromObject(cosmosNumber.AsInteger().Value)
-                               .ToObject<T>();
-                            }
-                            break;
+            foreach (T item in dynamicFeed)
+            {
+                result.Add(item);
+            }
 
-                        case CosmosElementType.Object:
-                            typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosObject).ToString());
-                            break;
+            return new FeedResponse<T>(
+                result,
+                dynamicFeed.Count,
+                dynamicFeed.Headers,
+                dynamicFeed.UseETagAsContinuation,
+                dynamicFeed.QueryMetrics,
+                dynamicFeed.RequestStatistics,
+                responseLengthBytes: dynamicFeed.ResponseLengthBytes);
+        }
 
-                        case CosmosElementType.Array:
-                            typedValue = JsonConvert.DeserializeObject<T>((cosmosElement as CosmosArray).ToString());
-                            break;
+        /// <summary>
+        /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
+        /// </summary>
+        public static FeedResponse<T> ConvertCosmosElementFeed<T>(
+            FeedResponse<CosmosElement> dynamicFeed, 
+            ResourceType resourceType,
+            JsonSerializerSettings settings)
+        {
+            if(dynamicFeed.Count == 0)
+            {
+                return new FeedResponse<T>(
+                new List<T>(),
+                dynamicFeed.Count,
+                dynamicFeed.Headers,
+                dynamicFeed.UseETagAsContinuation,
+                dynamicFeed.QueryMetrics,
+                dynamicFeed.RequestStatistics,
+                dynamicFeed.DisallowContinuationTokenMessage,
+                dynamicFeed.ResponseLengthBytes);
+            }
 
-                        case CosmosElementType.Boolean:
-                            typedValue = JToken.FromObject((cosmosElement as CosmosBoolean).Value)
-                               .ToObject<T>();
-                            break;
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
 
-                        case CosmosElementType.Null:
-                            typedValue = JValue.CreateNull().ToObject<T>();
-                            break;
+            jsonWriter.WriteArrayStart();
 
-                        default:
-                            throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElement.Type}");
-                    }
+            foreach (CosmosElement cosmosElement in dynamicFeed)
+            {
+                cosmosElement.WriteTo(jsonWriter);
+            }
 
-                    typedResults.Add(typedValue);
-                }
+            jsonWriter.WriteArrayEnd();
+            string jsonText = Encoding.UTF8.GetString(jsonWriter.GetResult());
+            IEnumerable<T> typedResults;
+
+            // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic
+            // create a OfferV2 object and cast it to T. This is a temporary fix until offers is moved to v3 API. 
+            if (resourceType == ResourceType.Offer && 
+                (typeof(T).IsSubclassOf(typeof(CosmosResource)) || typeof(T) == typeof(object)))
+            {
+                typedResults = JsonConvert.DeserializeObject<List<OfferV2>>(jsonText, settings).Cast<T>();
             }
             else
             {
-                foreach (T item in dynamicFeed)
-                {
-                    typedResults.Add(item);
-                }
+                typedResults = JsonConvert.DeserializeObject<List<T>>(jsonText, settings);
             }
+             
 
             return new FeedResponse<T>(
                 typedResults,
@@ -92,23 +102,36 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.ResponseLengthBytes);
         }
 
-        public static IQueryable<T> AsQueryable<T>(FeedResponse<dynamic> dynamicFeed)
+        public static CosmosQueryResponse ConvertToCosmosQueryResponse(
+            FeedResponse<CosmosElement> dynamicFeed,
+            CosmosSerializationOptions cosmosSerializationOptions)
         {
-            FeedResponse<T> response = FeedResponseBinder.Convert<T>(dynamicFeed);
-            return response.AsQueryable<T>();
-        }
+            IJsonWriter jsonWriter;
+            if (cosmosSerializationOptions != null)
+            {
+                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
+            }
+            else
+            {
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            }
 
-        private static bool IsCosmosElement(Type type)
-        {
-            return (
-                (type == typeof(CosmosElement))
-                || type.BaseType == typeof(CosmosElement)
-                || type == typeof(CosmosNull)
-                || type == typeof(CosmosBoolean)
-                || type.BaseType == typeof(CosmosArray)
-                || type.BaseType == typeof(CosmosObject)
-                || type.BaseType == typeof(CosmosString)
-                || type.BaseType == typeof(CosmosNumber));
+            jsonWriter.WriteArrayStart();
+
+            foreach (CosmosElement cosmosElement in dynamicFeed)
+            {
+                cosmosElement.WriteTo(jsonWriter);
+            }
+
+            jsonWriter.WriteArrayEnd();
+
+            MemoryStream memoryStream = new MemoryStream(jsonWriter.GetResult());
+            return new CosmosQueryResponse(
+                dynamicFeed.Headers,
+                memoryStream,
+                dynamicFeed.Count,
+                dynamicFeed.ResponseContinuation,
+                dynamicFeed.QueryMetrics);
         }
     }
 }

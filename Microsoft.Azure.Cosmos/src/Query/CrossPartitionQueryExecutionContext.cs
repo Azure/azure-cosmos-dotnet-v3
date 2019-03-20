@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             pkRange,
                             collectionRid);
                     },
-                    this.ExecuteLazyRequestAsync,
+                    this.ExecuteRequestLazyAsync,
                     //// Retry policy callback
                     () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.Client.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
                     this.OnDocumentProducerTreeCompleteFetching,
@@ -639,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token that doesn't get used.</param>
         /// <returns>A dummy task to await on.</returns>
-        protected override Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken token)
+        protected override Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             throw new NotImplementedException();
         }
