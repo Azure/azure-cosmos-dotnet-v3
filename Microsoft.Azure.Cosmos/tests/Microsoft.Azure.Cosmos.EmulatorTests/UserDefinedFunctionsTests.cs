@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(response.cost > 9000);
                     Assert.AreEqual(response.cost * .05, response.total);
-                    iterIds.Add(response.id);
+                    iterIds.Add(response.id.Value);
                 }
             }
 

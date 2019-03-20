@@ -124,8 +124,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (var index in Enumerable.Range(1, 3))
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index);
-                        IEnumerable<dynamic> queriedDatabases = documentClient.CreateDatabaseQuery(@"select * from root r where r.id = """ + name + @"""").AsEnumerable();
-                        Assert.AreEqual(databases[index - 1].ResourceId, ((CosmosDatabaseSettings)queriedDatabases.Single()).ResourceId, "Expect queried id to match the id with the same name in the created database");
+                        CosmosDatabaseSettings queriedDatabases = documentClient.CreateDatabaseQuery(@"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<CosmosDatabaseSettings>();
+                        Assert.AreEqual(databases[index - 1].ResourceId, queriedDatabases.ResourceId, "Expect queried id to match the id with the same name in the created database");
                     }
                 };
 

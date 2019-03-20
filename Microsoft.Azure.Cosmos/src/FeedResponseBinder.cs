@@ -17,11 +17,37 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class FeedResponseBinder
     {
-        private static JsonSerializer _serializer = new JsonSerializer();
+        //Helper to materialize Any IResourceFeed<T> from IResourceFeed<dynamic> as long as source
+        //conversion from dynamic to T.
+
+        //This method is invoked via expression as part of dynamic binding of cast operator.
+        public static FeedResponse<T> Convert<T>(FeedResponse<dynamic> dynamicFeed)
+        {
+            if (typeof(T) == typeof(object))
+            {
+                return (FeedResponse<T>)(object)dynamicFeed;
+            }
+            IList<T> result = new List<T>();
+
+            foreach (T item in dynamicFeed)
+            {
+                result.Add(item);
+            }
+
+            return new FeedResponse<T>(
+                result,
+                dynamicFeed.Count,
+                dynamicFeed.Headers,
+                dynamicFeed.UseETagAsContinuation,
+                dynamicFeed.QueryMetrics,
+                dynamicFeed.RequestStatistics,
+                responseLengthBytes: dynamicFeed.ResponseLengthBytes);
+        }
+
         /// <summary>
         /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
         /// </summary>
-        public static FeedResponse<T> Convert<T>(
+        public static FeedResponse<T> ConvertCosmosElementFeed<T>(
             FeedResponse<CosmosElement> dynamicFeed, 
             ResourceType resourceType)
         {
@@ -50,6 +76,9 @@ namespace Microsoft.Azure.Cosmos
             jsonWriter.WriteArrayEnd();
             string jsonText = Encoding.UTF8.GetString(jsonWriter.GetResult());
             IEnumerable<T> typedResults;
+
+            // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic
+            // create a OfferV2 object and cast it to T. This is a temporary fix until offers is moved to v3 API. 
             if (resourceType == ResourceType.Offer && 
                 (typeof(T).IsSubclassOf(typeof(CosmosResource)) || typeof(T) == typeof(object)))
             {
