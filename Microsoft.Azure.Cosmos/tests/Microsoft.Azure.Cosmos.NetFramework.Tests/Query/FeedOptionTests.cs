@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq.Expressions;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class FeedOptionTests
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new NotImplementedException();
             }
 
-            protected override Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken token)
+            protected override Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
             {
                 throw new NotImplementedException();
             }

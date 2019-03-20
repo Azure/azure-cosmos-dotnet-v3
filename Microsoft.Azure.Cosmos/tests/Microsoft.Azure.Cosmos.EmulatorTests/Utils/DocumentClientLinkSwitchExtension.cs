@@ -795,18 +795,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <param name="client">the DocumentClient to use.</param>
         /// <param name="owner"></param>
-        /// <param name="feedOptions">the options for processing the query results feed.</param>
-        /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<Document> CreateDocumentQuery(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
-        {
-            return client.CreateDocumentQuery(owner.GetLink(), feedOptions);
-        }
-
-        /// <summary>
-        /// Extension method to create a query for documents.
-        /// </summary>
-        /// <param name="client">the DocumentClient to use.</param>
-        /// <param name="owner"></param>
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
