@@ -31,7 +31,7 @@
     <ShippingScope>External</ShippingScope>
     <SigningType>Product</SigningType>
     <DebugType>portable</DebugType>
-    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSymbols>false</IncludeSymbols>
     <IncludeSource>false</IncludeSource>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
