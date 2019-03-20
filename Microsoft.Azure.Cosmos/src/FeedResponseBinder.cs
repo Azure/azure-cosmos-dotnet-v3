@@ -49,7 +49,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public static FeedResponse<T> ConvertCosmosElementFeed<T>(
             FeedResponse<CosmosElement> dynamicFeed, 
-            ResourceType resourceType)
+            ResourceType resourceType,
+            JsonSerializerSettings settings)
         {
             if(dynamicFeed.Count == 0)
             {
@@ -82,11 +83,11 @@ namespace Microsoft.Azure.Cosmos
             if (resourceType == ResourceType.Offer && 
                 (typeof(T).IsSubclassOf(typeof(CosmosResource)) || typeof(T) == typeof(object)))
             {
-                typedResults = JsonConvert.DeserializeObject<List<OfferV2>>(jsonText).Cast<T>();
+                typedResults = JsonConvert.DeserializeObject<List<OfferV2>>(jsonText, settings).Cast<T>();
             }
             else
             {
-                typedResults = JsonConvert.DeserializeObject<List<T>>(jsonText);
+                typedResults = JsonConvert.DeserializeObject<List<T>>(jsonText, settings);
             }
              
 

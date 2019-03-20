@@ -971,14 +971,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
-            returnedDoc = Client.CreateDocumentQuery<Document>(collection, "SELECT * FROM t", new FeedOptions { PartitionKey = key }).AsEnumerable().Single();
-            Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
+            returnedDoc = Client.CreateDocumentQuery<SpecialPropertyDocument>(collection, "SELECT * FROM t", new FeedOptions { PartitionKey = key }).AsEnumerable().Single();
+            Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));
 
-            returnedDoc = Client.CreateDocumentQuery<Document>(
+            returnedDoc = Client.CreateDocumentQuery<SpecialPropertyDocument>(
                 collection,
                 $"SELECT * FROM r WHERE r.{args.Name} = {JsonConvert.SerializeObject(args.ValueToPartitionKey(args.Value), settings)}"
                 ).AsEnumerable().Single();
-            Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
+            Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));
 
             switch (args.Name)
             {
