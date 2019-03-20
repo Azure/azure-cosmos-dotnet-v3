@@ -2300,7 +2300,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 foreach (dynamic queryDocument in docCollection)
                 {
-                    Assert.AreEqual("Romulan", ((Document)queryDocument).Id, "Document Name dont match");
+                    Assert.AreEqual("Romulan", queryDocument["id"].Value, "Document Name dont match");
                 }
             });
 
