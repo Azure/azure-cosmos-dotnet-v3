@@ -1,7 +1,7 @@
 ﻿namespace Cosmos.Samples.Shared
 {
     using System;
-    using Microsoft.Azure.Cosmos;
+    //using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
     public class SalesOrder
@@ -57,7 +57,7 @@
         public DateTime OrderDate { get; set; }
         public DateTime ShippedDate { get; set; }
 
-        [JsonProperty(PropertyName = PartitionKey.SystemPartitionKeyName)]
+        [JsonProperty(PropertyName = "_partitionkey"/*PartitionKey.SystemPartitionKeyName*/)] //will uncomment once next cosmosclient higher than 3.0.0.1-preview become available into nuget.
         public string partitionKey { get; set; }
 
         public string AccountNumber { get; set; }

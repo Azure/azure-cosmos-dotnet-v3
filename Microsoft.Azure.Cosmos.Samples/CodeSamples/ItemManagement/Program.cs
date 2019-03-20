@@ -397,7 +397,7 @@
         {
             Console.WriteLine("\n1.8 - Reading writing non partitioned container item");
             CosmosItemResponse<SalesOrder> response = await fixedContainer.Items.ReadItemAsync<SalesOrder>(
-                partitionKey: PartitionKey.Empty,
+                partitionKey: null/* PartitionKey.Empty*/, //will uncomment once next cosmosclient higher than 3.0.0.1-preview become available into nuget.
                 id: nonPartitionItemId);
 
             Console.WriteLine("Request charge of read operation: {0}", response.RequestCharge);
