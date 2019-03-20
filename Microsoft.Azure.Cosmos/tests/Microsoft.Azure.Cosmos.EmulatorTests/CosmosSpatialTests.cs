@@ -17,7 +17,7 @@
         private CosmosContainer Container = null;
         private DocumentClient documentClient;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
-        private readonly string spatialName = "spatialName";
+        private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
         protected CosmosClient cosmosClient = null;
