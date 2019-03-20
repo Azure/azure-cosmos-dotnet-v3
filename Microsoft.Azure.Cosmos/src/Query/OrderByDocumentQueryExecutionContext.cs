@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Newtonsoft.Json;
     using ParallelQuery;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// OrderByDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This way we can generate a single continuation token for all n partitions.
     /// This class is able to stop and resume execution by generating continuation tokens and reconstructing an execution context from said token.
     /// </summary>
-    internal sealed class OrderByDocumentQueryExecutionContext : CrossPartitionQueryExecutionContext<OrderByQueryResult>
+    internal sealed class OrderByDocumentQueryExecutionContext : CrossPartitionQueryExecutionContext
     {
         /// <summary>
         /// Order by queries are rewritten to allow us to inject a filter.
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Function to determine the priority of fetches.
         /// Basically we are fetching from the partition with the least number of buffered documents first.
         /// </summary>
-        private static readonly Func<DocumentProducerTree<OrderByQueryResult>, int> FetchPriorityFunction = documentProducerTree => documentProducerTree.BufferedItemCount;
+        private static readonly Func<DocumentProducerTree, int> FetchPriorityFunction = documentProducerTree => documentProducerTree.BufferedItemCount;
 
         /// <summary>
         /// Skip count used for JOIN queries.
@@ -107,12 +108,12 @@ namespace Microsoft.Azure.Cosmos.Query
                     return null;
                 }
 
-                IEnumerable<DocumentProducer<OrderByQueryResult>> activeDocumentProducers = this.GetActiveDocumentProducers();
+                IEnumerable<DocumentProducer> activeDocumentProducers = this.GetActiveDocumentProducers();
                 return activeDocumentProducers.Count() > 0 ? JsonConvert.SerializeObject(
                     activeDocumentProducers.Select(
                         (documentProducer) =>
                 {
-                    OrderByQueryResult orderByQueryResult = documentProducer.Current;
+                    OrderByQueryResult orderByQueryResult = new OrderByQueryResult(documentProducer.Current);
                     string filter = documentProducer.Filter;
                     return new OrderByContinuationToken(
                         new CompositeContinuationToken
@@ -138,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>A task to await on, which in turn creates an OrderByDocumentQueryExecutionContext.</returns>
         public static async Task<OrderByDocumentQueryExecutionContext> CreateAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
-            CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams initParams,
+            CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             CancellationToken token)
         {
             Debug.Assert(
@@ -168,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation toke for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -195,13 +196,13 @@ namespace Microsoft.Azure.Cosmos.Query
             ////  1) <x, y> always comes before <z, y> where x < z
             ////  2) <i, j> always come before <i, k> where j < k
 
-            List<object> results = new List<object>();
+            List<CosmosElement> results = new List<CosmosElement>();
             while (!this.IsDone && results.Count < maxElements)
             {
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
-                DocumentProducerTree<OrderByQueryResult> currentDocumentProducerTree = this.PopCurrentDocumentProducerTree();
-                OrderByQueryResult orderByQueryResult = currentDocumentProducerTree.Current;
+                DocumentProducerTree currentDocumentProducerTree = this.PopCurrentDocumentProducerTree();
+                OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentDocumentProducerTree.Current);
 
                 // Only add the payload, since other stuff is garbage from the caller's perspective.
                 results.Add(orderByQueryResult.Payload);
@@ -228,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return new FeedResponse<object>(
+            return new FeedResponse<CosmosElement>(
                 results,
                 results.Count,
                 this.GetResponseHeaders(),
@@ -244,10 +245,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="currentDocumentProducer">The current document producer.</param>
         /// <returns>Whether or not we should increment the skip count.</returns>
-        private bool ShouldIncrementSkipCount(DocumentProducer<OrderByQueryResult> currentDocumentProducer)
+        private bool ShouldIncrementSkipCount(DocumentProducer currentDocumentProducer)
         {
             // If we are not at the begining of the page and we saw the same rid again.
-            return !currentDocumentProducer.IsAtBeginningOfPage && string.Equals(this.previousRid, currentDocumentProducer.Current.Rid, StringComparison.Ordinal);
+            return !currentDocumentProducer.IsAtBeginningOfPage &&
+                string.Equals(
+                    this.previousRid,
+                    new OrderByQueryResult(currentDocumentProducer.Current).Rid,
+                    StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -384,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
                 {
-                    if (suppliedOrderByContinuationToken.OrderByItems.Length != sortOrders.Length)
+                    if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
                         this.TraceWarning($"Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
                         throw new BadRequestException(RMResources.InvalidContinuationToken);
@@ -410,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         private async Task FilterAsync(
-            DocumentProducerTree<OrderByQueryResult> producer,
+            DocumentProducerTree producer,
             SortOrder[] sortOrders,
             OrderByContinuationToken continuationToken,
             CancellationToken cancellationToken)
@@ -422,10 +427,9 @@ namespace Microsoft.Azure.Cosmos.Query
             // Once we do that we need to seek to the correct _rid within the term,
             // since there might be many documents with the same order by value we left off on.
 
-            foreach (DocumentProducerTree<OrderByQueryResult> tree in producer)
+            foreach (DocumentProducerTree tree in producer)
             {
-                ResourceId continuationRid;
-                if (!ResourceId.TryParse(continuationToken.Rid, out continuationRid))
+                if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
                     this.TraceWarning(string.Format(
                         CultureInfo.InvariantCulture,
@@ -440,14 +444,14 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 while (true)
                 {
-                    OrderByQueryResult orderByResult = (OrderByQueryResult)tree.Current;
+                    OrderByQueryResult orderByResult = new OrderByQueryResult(tree.Current);
                     // Throw away documents until it matches the item from the continuation token.
                     int cmp = 0;
                     for (int i = 0; i < sortOrders.Length; ++i)
                     {
                         cmp = ItemComparer.Instance.Compare(
-                            continuationToken.OrderByItems[i].GetItem(),
-                            orderByResult.OrderByItems[i].GetItem());
+                            continuationToken.OrderByItems[i].Item,
+                            orderByResult.OrderByItems[i].Item);
 
                         if (cmp != 0)
                         {
@@ -570,13 +574,13 @@ namespace Microsoft.Azure.Cosmos.Query
             // Validate the inputs
             for (int index = 0; index < continuationTokens.Length; index++)
             {
-                Debug.Assert(continuationTokens[index].OrderByItems.Length == sortOrders.Length, "Expect values and orders are the same size.");
+                Debug.Assert(continuationTokens[index].OrderByItems.Count == sortOrders.Length, "Expect values and orders are the same size.");
                 Debug.Assert(expressions.Length == sortOrders.Length, "Expect expressions and orders are the same size.");
             }
 
             Tuple<string, string, string> filters = this.GetFormattedFilters(
                 expressions,
-                continuationTokens[0].OrderByItems.Select(queryItem => queryItem.GetItem()).ToArray(),
+                continuationTokens[0].OrderByItems.Select(orderByItem => orderByItem.Item).ToArray(),
                 sortOrders);
 
             return new FormattedFilterInfo(filters.Item1, filters.Item2, filters.Item3);
@@ -596,7 +600,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private Tuple<string, string, string> GetFormattedFilters(
             string[] expressions,
-            object[] orderByItems,
+            CosmosElement[] orderByItems,
             SortOrder[] sortOrders)
         {
             // When we run cross partition queries, 
@@ -639,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 //            <= for the partitions to the right
                 string expression = expressions.First();
                 SortOrder sortOrder = sortOrders.First();
-                object orderByItem = orderByItems.First();
+                CosmosElement orderByItem = orderByItems.First();
                 string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
                 left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
                 target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
@@ -680,7 +684,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     ArraySegment<string> expressionPrefix = new ArraySegment<string>(expressions, 0, prefixLength);
                     ArraySegment<SortOrder> sortOrderPrefix = new ArraySegment<SortOrder>(sortOrders, 0, prefixLength);
-                    ArraySegment<object> orderByItemsPrefix = new ArraySegment<object>(orderByItems, 0, prefixLength);
+                    ArraySegment<CosmosElement> orderByItemsPrefix = new ArraySegment<CosmosElement>(orderByItems, 0, prefixLength);
 
                     bool lastPrefix = prefixLength == numOrderByItems;
                     bool firstPrefix = prefixLength == 1;
@@ -691,7 +695,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         string expression = expressionPrefix.ElementAt(index);
                         SortOrder sortOrder = sortOrderPrefix.ElementAt(index);
-                        object orderByItem = orderByItemsPrefix.ElementAt(index);
+                        CosmosElement orderByItem = orderByItemsPrefix.ElementAt(index);
                         bool lastItem = (index == prefixLength - 1);
 
                         // Append Expression
@@ -774,7 +778,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Equality comparer used to determine if a document producer needs it's continuation token returned.
         /// Basically just says that the continuation token can be flushed once you stop seeing duplicates.
         /// </summary>
-        private sealed class OrderByEqualityComparer : IEqualityComparer<OrderByQueryResult>
+        private sealed class OrderByEqualityComparer : IEqualityComparer<CosmosElement>
         {
             /// <summary>
             /// The order by comparer.
@@ -801,9 +805,13 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="x">The first.</param>
             /// <param name="y">The second.</param>
             /// <returns>Whether two OrderByQueryResult instances are equal.</returns>
-            public bool Equals(OrderByQueryResult x, OrderByQueryResult y)
+            public bool Equals(CosmosElement x, CosmosElement y)
             {
-                return this.orderByConsumeComparer.CompareOrderByItems(x.OrderByItems, y.OrderByItems) == 0;
+                OrderByQueryResult orderByQueryResultX = new OrderByQueryResult(x);
+                OrderByQueryResult orderByQueryResultY = new OrderByQueryResult(y);
+                return this.orderByConsumeComparer.CompareOrderByItems(
+                    orderByQueryResultX.OrderByItems,
+                    orderByQueryResultY.OrderByItems) == 0;
             }
 
             /// <summary>
@@ -811,7 +819,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// </summary>
             /// <param name="obj">The object to hash.</param>
             /// <returns>The hash code for the OrderByQueryResult object.</returns>
-            public int GetHashCode(OrderByQueryResult obj)
+            public int GetHashCode(CosmosElement obj)
             {
                 return 0;
             }
