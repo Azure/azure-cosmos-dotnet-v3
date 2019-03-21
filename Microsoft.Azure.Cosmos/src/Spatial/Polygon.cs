@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// ]]>        
     /// </code>
     /// </example>
-    internal sealed class Polygon : Geometry, IEquatable<Polygon>
+    public sealed class Polygon : Geometry, IEquatable<Polygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Polygon"/> class,
