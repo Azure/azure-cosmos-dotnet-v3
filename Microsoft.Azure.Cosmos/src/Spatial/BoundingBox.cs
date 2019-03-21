@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Represents a coordinate range for geometries in the Azure Cosmos DB service.
     /// </summary>
     [JsonConverter(typeof(BoundingBoxJsonConverter))]
-    internal sealed class BoundingBox : IEquatable<BoundingBox>
+    public sealed class BoundingBox : IEquatable<BoundingBox>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="BoundingBox" /> class in the Azure Cosmos DB service.
