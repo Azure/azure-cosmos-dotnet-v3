@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <Company>Microsoft Corporation</Company>
     <Product>Microsoft(R) Azure Cosmos</Product>
