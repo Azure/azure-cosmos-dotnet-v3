@@ -30,13 +30,18 @@
     <PackageReference Include="System.Reflection" Version="4.3.0" />
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
-  </ItemGroup>
+  <Choose>
+      <When Condition=" '$(SignAssembly)' == 'true' ">
+	      <ItemGroup>
+              <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
+		  </ItemGroup>
+	  </When>
+      <When Condition=" '$(SignAssembly)' != 'true' ">
+	      <ItemGroup>
+              <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
+		  </ItemGroup>
+	  </When>
+  </Choose>
   
   <ItemGroup>
     <None Include="GlobalDatabaseAccountTests.cs" />

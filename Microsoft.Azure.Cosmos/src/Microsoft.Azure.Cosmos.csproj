@@ -40,13 +40,18 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
-  </ItemGroup>
+  <Choose>
+      <When Condition=" '$(SignAssembly)' == 'true' ">
+	      <ItemGroup>
+              <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
+		  </ItemGroup>
+	  </When>
+      <When Condition=" '$(SignAssembly)' != 'true' ">
+	      <ItemGroup>
+              <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
+		  </ItemGroup>
+	  </When>
+  </Choose>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <Compile Remove="RuntimePerfCounters.cs" />
