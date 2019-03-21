@@ -89,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // If isContinuationExpected is false, we want to check if there are aggregates.
             if (
-                resourceTypeEnum.IsCollectionChild() 
-                && resourceTypeEnum.IsPartitioned() 
+                resourceTypeEnum.IsCollectionChild()
+                && resourceTypeEnum.IsPartitioned()
                 && (feedOptions.EnableCrossPartitionQuery || !isContinuationExpected))
             {
                 //todo:elasticcollections this may rely on information from collection cache which is outdated
@@ -130,6 +130,13 @@ namespace Microsoft.Azure.Cosmos.Query
                                 Range<string>.GetPointRange(
                                     feedOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(
                                         collection.PartitionKey))
+                            };
+                        }
+                        else if (TryGetEpkProperty(feedOptions, out string effectivePartitionKeyString))
+                        {
+                            queryRanges = new List<Range<string>>
+                            {
+                                Range<string>.GetPointRange(effectivePartitionKeyString)
                             };
                         }
 
@@ -197,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (initialPageSize < 0)
                     {
                         // Max of what the user is willing to buffer and the default (note this is broken if MaxBufferedItemCount = -1)
-                        initialPageSize = (long)Math.Max(constructorParams.FeedOptions.MaxBufferedItemCount, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
+                        initialPageSize = Math.Max(constructorParams.FeedOptions.MaxBufferedItemCount, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
                     }
 
                     initialPageSize = (long)Math.Min(
@@ -229,9 +236,9 @@ namespace Microsoft.Azure.Cosmos.Query
             // We need to aggregate the total results with Pipelined~Context if isContinuationExpected is false.
             return
                 (DocumentQueryExecutionContextFactory.IsCrossPartitionQuery(
-                    resourceTypeEnum, 
-                    feedOptions, 
-                    partitionKeyDefinition, 
+                    resourceTypeEnum,
+                    feedOptions,
+                    partitionKeyDefinition,
                     partitionedQueryExecutionInfo) &&
                  (DocumentQueryExecutionContextFactory.IsTopOrderByQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsAggregateQuery(partitionedQueryExecutionInfo) ||
@@ -287,6 +294,24 @@ namespace Microsoft.Azure.Cosmos.Query
         private static bool IsOffsetLimitQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
+        }
+
+        private static bool TryGetEpkProperty(FeedOptions feedOptions, out string effectivePartitionKeyString)
+        {
+            if (feedOptions?.Properties == null && feedOptions.Properties.TryGetValue(
+                   WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyStringObject))
+            {
+                effectivePartitionKeyString = effectivePartitionKeyStringObject as string;
+                if (string.IsNullOrEmpty(effectivePartitionKeyString))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(effectivePartitionKeyString));
+                }
+
+                return true;
+            }
+
+            effectivePartitionKeyString = null;
+            return false;
         }
     }
 }
