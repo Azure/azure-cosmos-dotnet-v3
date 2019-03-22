@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// of the application which enables efficient connection management and performance.
     /// </summary>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabaseCore"/>, and a <see cref="CosmosContainerCore"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient uses the <see cref="CosmosClientConfiguration"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabaseCore"/>, and a <see cref="CosmosContainerCore"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient is created with the AccountEndpoint and AccountKey.
     /// <code language="c#">
     /// <![CDATA[
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabaseCore"/>, and a <see cref="CosmosContainerCore"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient is created with the connection string.
     /// <code language="c#">
     /// <![CDATA[

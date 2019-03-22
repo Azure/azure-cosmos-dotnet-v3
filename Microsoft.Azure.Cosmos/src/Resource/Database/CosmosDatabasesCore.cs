@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for creating new databases, and reading/querying all databases
     ///
-    /// <see cref="CosmosDatabaseCore"/>for reading, replacing, or deleting an existing container;
+    /// <see cref="CosmosDatabase"/>for reading, replacing, or deleting an existing container;
     /// </summary>
     /// <remarks>
     /// All these operations make calls against a fixed budget.

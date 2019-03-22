@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosContainer Container { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosContainerCore"/> implicitly from <see cref="CosmosContainerResponse"/>
+        /// Get <see cref="CosmosContainer"/> implicitly from <see cref="CosmosContainerResponse"/>
         /// </summary>
         /// <param name="response">CosmosContainerResponse</param>
         public static implicit operator CosmosContainer(CosmosContainerResponse response)

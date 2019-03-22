@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosStoredProcedure StoredProcedure { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosDatabaseCore"/> implicitly from <see cref="CosmosStoredProcedureResponse"/>
+        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="CosmosStoredProcedureResponse"/>
         /// </summary>
         /// <param name="response">CosmosStoredProcedureResponse</param>
         public static implicit operator CosmosStoredProcedure(CosmosStoredProcedureResponse response)

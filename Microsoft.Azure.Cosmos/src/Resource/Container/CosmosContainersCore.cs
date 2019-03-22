@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
     ///
-    /// <see cref="CosmosContainerCore"/> for reading, replacing, or deleting an existing container.
+    /// <see cref="CosmosContainer"/> for reading, replacing, or deleting an existing container.
     ///
     /// Note: all these operations make calls against a fixed budget.
     /// You should design your system such that these calls scale sub-linearly with your application.

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunctions"/>
         /// </summary>
-        /// <param name="container">The <see cref="CosmosContainerCore"/> the user defined function set is related to.</param>
+        /// <param name="container">The <see cref="CosmosContainer"/> the user defined function set is related to.</param>
         protected internal CosmosUserDefinedFunctions(CosmosContainerCore container)
         {
             this.container = container;
