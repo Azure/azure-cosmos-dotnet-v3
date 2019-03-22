@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
     /// 
-    /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="CosmosContainersCore"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     /// <remarks>
     ///  Note: all these operations make calls against a fixed budget.
@@ -22,27 +22,27 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public class CosmosContainer : CosmosIdentifier
+    public class CosmosContainerCore : CosmosIdentifier
     {
         /// <summary>
-        /// Create a <see cref="CosmosContainer"/>
+        /// Create a <see cref="CosmosContainerCore"/>
         /// </summary>
-        /// <param name="database">The <see cref="CosmosDatabase"/></param>
+        /// <param name="database">The <see cref="CosmosDatabaseCore"/></param>
         /// <param name="containerId">The cosmos container id.</param>
         /// <remarks>
         /// Note that the container must be explicitly created, if it does not already exist, before
         /// you can read from it or write to it.
         /// </remarks>
-        protected internal CosmosContainer(
-            CosmosDatabase database,
+        protected internal CosmosContainerCore(
+            CosmosDatabaseCore database,
             string containerId) :
             base(database.Client,
                 database.Link,
                 containerId)
         {
             this.Database = database;
-            this.Items = new CosmosItems(this);
-            this.StoredProcedures = new CosmosStoredProcedures(this);
+            this.Items = new CosmosItemsCore(this);
+            this.StoredProcedures = new CosmosStoredProceduresCore(this);
             this.DocumentClient = this.Database.Client.DocumentClient;
             this.Triggers = new CosmosTriggers(this);
             this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this);
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns the parent database reference
         /// </summary>
-        public virtual CosmosDatabase Database { get; private set; }
+        public virtual CosmosDatabaseCore Database { get; private set; }
 
         /// <summary>
         /// Operations for creating new items, and reading/querying all items
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosItems Items { get; }
+        public virtual CosmosItemsCore Items { get; }
 
         /// <summary>
         /// Operations for creating, reading/querying all stored procedures
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosStoredProcedures StoredProcedures { get; }
+        public virtual CosmosStoredProceduresCore StoredProcedures { get; }
 
 
         /// <summary>

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
     {
-        private CosmosContainer container = null;
+        private CosmosContainerCore container = null;
 
         [TestInitialize]
         public async Task TestInitialize()

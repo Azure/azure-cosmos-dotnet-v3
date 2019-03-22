@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<CosmosContainerResponse> CreateContainerResponse(
-            CosmosContainer container,
+            CosmosContainerCore container,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<CosmosDatabaseResponse> CreateDatabaseResponse(
-            CosmosDatabase database,
+            CosmosDatabaseCore database,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<CosmosStoredProcedureResponse> CreateStoredProcedureResponse(
-            CosmosStoredProcedure storedProcedure,
+            CosmosStoredProcedureCore storedProcedure,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>

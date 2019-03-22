@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosContainerTests
     {
         private CosmosClient cosmosClient = null;
-        private CosmosDatabase cosmosDatabase = null;
+        private CosmosDatabaseCore cosmosDatabase = null;
 
         [TestInitialize]
         public async Task TestInit()
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            CosmosContainer cosmosContainer = containerResponse;
+            CosmosContainerCore cosmosContainer = containerResponse;
             containerResponse = await cosmosContainer.ReplaceAsync(settings);
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task DeleteNonExistingContainer()
         {
             string containerName = Guid.NewGuid().ToString();
-            CosmosContainer cosmosContainer = this.cosmosDatabase.Containers[containerName];
+            CosmosContainerCore cosmosContainer = this.cosmosDatabase.Containers[containerName];
 
             CosmosContainerResponse containerResponse = await cosmosContainer.DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            CosmosContainer cosmosContainer = this.cosmosDatabase.Containers[containerName];
+            CosmosContainerCore cosmosContainer = this.cosmosDatabase.Containers[containerName];
 
             int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
             Assert.IsNotNull(readThroughput);
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            CosmosContainer cosmosContainer = containerResponse;
+            CosmosContainerCore cosmosContainer = containerResponse;
             CosmosContainerSettings responseSettings = containerResponse;
 
             Assert.AreEqual(timeToLive.TotalSeconds, responseSettings.DefaultTimeToLive.Value.TotalSeconds);
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            CosmosContainer cosmosContainer = this.cosmosDatabase.Containers[containerName];
+            CosmosContainerCore cosmosContainer = this.cosmosDatabase.Containers[containerName];
 
             int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
             Assert.IsNotNull(readThroughput);
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ThroughputNonExistingTest()
         {
             string containerName = Guid.NewGuid().ToString();
-            CosmosContainer cosmosContainer = this.cosmosDatabase.Containers[containerName];
+            CosmosContainerCore cosmosContainer = this.cosmosDatabase.Containers[containerName];
 
             await cosmosContainer.ReadProvisionedThroughputAsync();
 
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/users";
 
             CosmosContainerResponse containerResponse = await this.cosmosDatabase.Containers[containerName].ReadAsync();
-            CosmosContainer cosmosContainer = containerResponse;
+            CosmosContainerCore cosmosContainer = containerResponse;
             CosmosContainerSettings cosmosContainerSettings = containerResponse;
 
             Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);

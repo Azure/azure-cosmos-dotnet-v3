@@ -12,18 +12,18 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for creating new stored procedures, and reading/querying all stored procedures
     ///
-    /// <see cref="CosmosStoredProcedure"/> for reading, replacing, or deleting an existing stored procedures.
+    /// <see cref="CosmosStoredProcedureCore"/> for reading, replacing, or deleting an existing stored procedures.
     /// </summary>
-    public class CosmosStoredProcedures
+    public class CosmosStoredProceduresCore
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly CosmosClient client;
 
         /// <summary>
-        /// Create a <see cref="CosmosStoredProcedures"/>
+        /// Create a <see cref="CosmosStoredProceduresCore"/>
         /// </summary>
-        /// <param name="container">The <see cref="CosmosContainer"/> the stored procedures set is related to.</param>
-        protected internal CosmosStoredProcedures(CosmosContainer container)
+        /// <param name="container">The <see cref="CosmosContainerCore"/> the stored procedures set is related to.</param>
+        protected internal CosmosStoredProceduresCore(CosmosContainerCore container)
         {
             this.container = container;
             this.client = container.Client;
@@ -173,11 +173,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosStoredProcedure this[string id]
+        public virtual CosmosStoredProcedureCore this[string id]
         {
             get
             {
-                return new CosmosStoredProcedure(this.container, id);
+                return new CosmosStoredProcedureCore(this.container, id);
             }
         }
 

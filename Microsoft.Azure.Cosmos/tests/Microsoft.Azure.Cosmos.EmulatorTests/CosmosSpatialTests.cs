@@ -14,14 +14,14 @@
     [TestClass]
     public class CosmosSpatialTests
     {
-        private CosmosContainer Container = null;
+        private CosmosContainerCore Container = null;
         private DocumentClient documentClient;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
         protected CosmosClient cosmosClient = null;
-        protected CosmosDatabase database = null;
+        protected CosmosDatabaseCore database = null;
 
         [TestInitialize]
         public async Task TestInitialize()

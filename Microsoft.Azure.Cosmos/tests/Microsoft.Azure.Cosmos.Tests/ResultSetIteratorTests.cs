@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
-            CosmosContainer container = mockClient.Databases["database"].Containers["container"];
+            CosmosContainerCore container = mockClient.Databases["database"].Containers["container"];
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
             CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql, 

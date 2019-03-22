@@ -20,14 +20,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosTrigger"/>
         /// </summary>
-        /// <param name="container">The <see cref="CosmosContainer"/></param>
+        /// <param name="container">The <see cref="CosmosContainerCore"/></param>
         /// <param name="triggerId">The cosmos trigger id.</param>
         /// <remarks>
         /// Note that the trigger must be explicitly created, if it does not already exist, before
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosTrigger(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string triggerId)
             : base(container.Client,
                 container.Link,

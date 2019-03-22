@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
     {
-        private CosmosContainer container = null;
+        private CosmosContainerCore container = null;
         private CosmosStoredProcedureRequestOptions requestOptions = new CosmosStoredProcedureRequestOptions();
 
         [TestInitialize]
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosItemResponse<dynamic> createItemResponse = await this.container.Items.CreateItemAsync<dynamic>(testPartitionId, payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            CosmosStoredProcedure storedProcedure = storedProcedureResponse;
+            CosmosStoredProcedureCore storedProcedure = storedProcedureResponse;
             CosmosItemResponse<JArray> sprocResponse = await storedProcedure.ExecuteAsync<object, JArray>(testPartitionId, null);
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string sprocId = Guid.NewGuid().ToString();
 
-            CosmosStoredProcedure storedProcedure = this.container.StoredProcedures[sprocId];
+            CosmosStoredProcedureCore storedProcedure = this.container.StoredProcedures[sprocId];
             CosmosStoredProcedureResponse storedProcedureResponse = storedProcedureResponse = await storedProcedure.DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NotFound, storedProcedureResponse.StatusCode);
         }
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosStoredProcedureResponse storedProcedureResponse =
                 await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
-            CosmosStoredProcedure cosmosStoredProcedure = storedProcedureResponse;
+            CosmosStoredProcedureCore cosmosStoredProcedure = storedProcedureResponse;
             CosmosStoredProcedureSettings cosmosStoredProcedureSettings = storedProcedureResponse;
 
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosItemResponse<dynamic> createItemResponse = await this.container.Items.CreateItemAsync<dynamic>(testPartitionId, payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            CosmosStoredProcedure storedProcedure = storedProcedureResponse.StoredProcedure;
+            CosmosStoredProcedureCore storedProcedure = storedProcedureResponse.StoredProcedure;
             CosmosItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string[], string>(testPartitionId, new string[] { "one" });
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// <see cref="CosmosDatabases"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// <see cref="CosmosDatabasesCore"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
     /// <remarks>
     /// Note: all these operations make calls against a fixed budget.
@@ -20,10 +20,10 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
-    public class CosmosDatabase : CosmosIdentifier
+    public class CosmosDatabaseCore : CosmosIdentifier
     {
         /// <summary>
-        /// Create a <see cref="CosmosDatabase"/>
+        /// Create a <see cref="CosmosDatabaseCore"/>
         /// </summary>
         /// <param name="client">The <see cref="CosmosClient"/></param>
         /// <param name="databaseId">The database id.</param>
@@ -31,23 +31,23 @@ namespace Microsoft.Azure.Cosmos
         /// Note that the database must be explicitly created, if it does not already exist, before
         /// you can read from it or write to it.
         /// </remarks>
-        protected internal CosmosDatabase(
+        protected internal CosmosDatabaseCore(
             CosmosClient client,
             string databaseId) :
             base(client,
                 null,
                 databaseId)
         {
-            this.Containers = new CosmosContainers(this);
+            this.Containers = new CosmosContainersCore(this);
         }
 
         /// <summary>
         /// An object to create a Cosmos Container or to iterate over all containers
         /// </summary>
         /// <remarks>
-        /// Use Containers to access a <see cref="CosmosContainer"/>
+        /// Use Containers to access a <see cref="CosmosContainerCore"/>
         /// </remarks>
-        public virtual CosmosContainers Containers { get; private set; }
+        public virtual CosmosContainersCore Containers { get; private set; }
 
         internal override string UriPathSegment => Paths.DatabasesPathSegment;
 

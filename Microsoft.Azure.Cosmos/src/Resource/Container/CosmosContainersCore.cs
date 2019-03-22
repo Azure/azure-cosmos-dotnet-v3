@@ -16,28 +16,28 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
     ///
-    /// <see cref="CosmosContainer"/> for reading, replacing, or deleting an existing container.
+    /// <see cref="CosmosContainerCore"/> for reading, replacing, or deleting an existing container.
     ///
     /// Note: all these operations make calls against a fixed budget.
     /// You should design your system such that these calls scale sub-linearly with your application.
     /// For instance, do not call `containers.GetContainerIterator()` before every single `item.read()` call, to ensure the container exists;
     /// do this once on application start up.
     /// </summary>
-    public class CosmosContainers
+    public class CosmosContainersCore
     {
-        private readonly CosmosDatabase database;
+        private readonly CosmosDatabaseCore database;
         private readonly CosmosClient client;
-        private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
+        private readonly ConcurrentDictionary<string, CosmosContainerCore> containerCache;
 
         /// <summary>
-        /// Create a <see cref="CosmosContainers"/>
+        /// Create a <see cref="CosmosContainersCore"/>
         /// </summary>
-        /// <param name="database">The <see cref="CosmosDatabase"/> the container set is related to.</param>
-        protected internal CosmosContainers(CosmosDatabase database)
+        /// <param name="database">The <see cref="CosmosDatabaseCore"/> the container set is related to.</param>
+        protected internal CosmosContainersCore(CosmosDatabaseCore database)
         {
             this.database = database;
             this.client = database.Client;
-            this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
+            this.containerCache = new ConcurrentDictionary<string, CosmosContainerCore>();
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            CosmosContainer cosmosContainer = this[containerSettings.Id];
+            CosmosContainerCore cosmosContainer = this[containerSettings.Id];
             CosmosContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
@@ -327,10 +327,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosContainer this[string id] =>
+        public virtual CosmosContainerCore this[string id] =>
                 this.containerCache.GetOrAdd(
                     id,
-                    keyName => new CosmosContainer(this.database, keyName));
+                    keyName => new CosmosContainerCore(this.database, keyName));
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.

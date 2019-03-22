@@ -19,14 +19,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunction"/>
         /// </summary>
-        /// <param name="container">The <see cref="CosmosContainer"/></param>
+        /// <param name="container">The <see cref="CosmosContainerCore"/></param>
         /// <param name="userDefinedFunctionId">The cosmos user defined function id.</param>
         /// <remarks>
         /// Note that the user defined function must be explicitly created, if it does not already exist, before
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosUserDefinedFunction(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string userDefinedFunctionId)
             : base(container.Client,
                 container.Link,

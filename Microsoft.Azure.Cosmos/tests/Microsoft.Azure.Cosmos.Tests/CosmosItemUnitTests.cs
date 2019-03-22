@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockDocumentClient.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
-            CosmosContainer container = client.Databases["testdb"]
+            CosmosContainerCore container = client.Databases["testdb"]
                                         .Containers["testcontainer"];
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockDocumentClient.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
-            CosmosContainer container = client.Databases["testdb"]
+            CosmosContainerCore container = client.Databases["testdb"]
                                         .Containers["testcontainer"];
 
             CosmosItemResponse<dynamic> itemResponse = await container.Items.CreateItemAsync<dynamic>(

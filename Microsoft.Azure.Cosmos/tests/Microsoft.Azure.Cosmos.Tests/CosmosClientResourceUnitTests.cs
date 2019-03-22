@@ -27,13 +27,13 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string udfId = "udf9003";
 
             CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient();
-            CosmosDatabase db = new CosmosDatabase(mockClient, databaseId);
+            CosmosDatabaseCore db = new CosmosDatabaseCore(mockClient, databaseId);
             Assert.AreEqual(db.Link, "/dbs/" + databaseId);
 
-            CosmosContainer container = new CosmosContainer(db, crId);
+            CosmosContainerCore container = new CosmosContainerCore(db, crId);
             Assert.AreEqual(container.Link, "/dbs/" + databaseId + "/colls/" + crId);
 
-            CosmosStoredProcedure sp = new CosmosStoredProcedure(container, spId);
+            CosmosStoredProcedureCore sp = new CosmosStoredProcedureCore(container, spId);
             Assert.AreEqual(sp.Link, "/dbs/" + databaseId + "/colls/" + crId + "/sprocs/" + spId);
 
             CosmosTrigger tr = new CosmosTrigger(container, trId);

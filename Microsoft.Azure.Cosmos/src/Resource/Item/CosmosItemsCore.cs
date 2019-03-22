@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
     /// </summary>
-    public class CosmosItems
+    public class CosmosItemsCore
     {
         /// <summary>
         /// Cache the full URI segment without the last resource id.
@@ -30,10 +30,10 @@ namespace Microsoft.Azure.Cosmos
         private CosmosClient client { get; }
 
         /// <summary>
-        /// Create a <see cref="CosmosItems"/>
+        /// Create a <see cref="CosmosItemsCore"/>
         /// </summary>
         /// <param name="container">The cosmos container</param>
-        protected internal CosmosItems(CosmosContainer container)
+        protected internal CosmosItemsCore(CosmosContainerCore container)
         {
             this.client = container.Client;
             this.container = container;
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
         }
 
-        internal readonly CosmosContainer container;
+        internal readonly CosmosContainerCore container;
 
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
@@ -1090,7 +1090,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            CosmosItems.ValidatePartitionKey(partitionKey, requestOptions);
+            CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             return ExecUtils.ProcessResourceOperationStreamAsync(

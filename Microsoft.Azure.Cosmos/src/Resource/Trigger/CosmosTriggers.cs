@@ -17,14 +17,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosTriggers
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly CosmosClient client;
 
         /// <summary>
         /// Create a <see cref="CosmosTriggers"/>
         /// </summary>
-        /// <param name="container">The <see cref="CosmosContainer"/> the triggers set is related to.</param>
-        protected internal CosmosTriggers(CosmosContainer container)
+        /// <param name="container">The <see cref="CosmosContainerCore"/> the triggers set is related to.</param>
+        protected internal CosmosTriggers(CosmosContainerCore container)
         {
             this.container = container;
             this.client = container.Client;

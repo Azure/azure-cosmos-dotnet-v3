@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// of the application which enables efficient connection management and performance.
     /// </summary>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabaseCore"/>, and a <see cref="CosmosContainerCore"/>.
     /// The CosmosClient uses the <see cref="CosmosClientConfiguration"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabaseCore"/>, and a <see cref="CosmosContainerCore"/>.
     /// The CosmosClient is created with the AccountEndpoint and AccountKey.
     /// <code language="c#">
     /// <![CDATA[
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabaseCore"/>, and a <see cref="CosmosContainerCore"/>.
     /// The CosmosClient is created with the connection string.
     /// <code language="c#">
     /// <![CDATA[
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
         ///]]>
         /// </code>
         /// </example>
-        public virtual CosmosDatabases Databases { get; private set; }
+        public virtual CosmosDatabasesCore Databases { get; private set; }
 
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientConfiguration"/> used initialize CosmosClient
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
             this.AccountConsistencyLevel = this.DocumentClient.ConsistencyLevel;
 
             this.RequestHandler = clientPipelineBuilder.Build();
-            this.Databases = new CosmosDatabases(this);
+            this.Databases = new CosmosDatabasesCore(this);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 

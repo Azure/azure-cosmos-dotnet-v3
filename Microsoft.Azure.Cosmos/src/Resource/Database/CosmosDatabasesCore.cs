@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for creating new databases, and reading/querying all databases
     ///
-    /// <see cref="CosmosDatabase"/>for reading, replacing, or deleting an existing container;
+    /// <see cref="CosmosDatabaseCore"/>for reading, replacing, or deleting an existing container;
     /// </summary>
     /// <remarks>
     /// All these operations make calls against a fixed budget.
@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    public class CosmosDatabases
+    public class CosmosDatabasesCore
     {
         private readonly CosmosClient client;
-        private readonly ConcurrentDictionary<string, CosmosDatabase> databasesCache;
+        private readonly ConcurrentDictionary<string, CosmosDatabaseCore> databasesCache;
 
         /// <summary>
-        /// Use the Cosmos client reference to create <see cref="CosmosDatabases"/>
+        /// Use the Cosmos client reference to create <see cref="CosmosDatabasesCore"/>
         /// </summary>
         /// <param name="client">The <see cref="CosmosClient"/></param>
         /// <example>
@@ -55,10 +55,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        protected internal CosmosDatabases(CosmosClient client)
+        protected internal CosmosDatabasesCore(CosmosClient client)
         {
             this.client = client;
-            this.databasesCache = new ConcurrentDictionary<string, CosmosDatabase>();
+            this.databasesCache = new ConcurrentDictionary<string, CosmosDatabaseCore>();
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             // Doing a Read before Create will give us better latency for existing databases
-            CosmosDatabase database = this[id];
+            CosmosDatabaseCore database = this[id];
             CosmosDatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.NotFound)
             {
@@ -179,11 +179,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosDatabase this[string id] =>
+        public virtual CosmosDatabaseCore this[string id] =>
                 // TODO: Argument check and singleton database
                 this.databasesCache.GetOrAdd(
                     id,
-                    keyName => new CosmosDatabase(this.client, keyName));
+                    keyName => new CosmosDatabaseCore(this.client, keyName));
 
         /// <summary>
         /// Send a request for creating a database.

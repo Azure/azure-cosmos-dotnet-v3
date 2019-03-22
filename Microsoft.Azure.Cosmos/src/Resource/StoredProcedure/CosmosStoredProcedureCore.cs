@@ -13,21 +13,21 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing stored procedures by id.
     /// 
-    /// <see cref="CosmosStoredProcedures"/> for creating new stored procedures, and reading/querying all stored procedures;
+    /// <see cref="CosmosStoredProceduresCore"/> for creating new stored procedures, and reading/querying all stored procedures;
     /// </summary>
-    public class CosmosStoredProcedure : CosmosIdentifier
+    public class CosmosStoredProcedureCore : CosmosIdentifier
     {
         /// <summary>
-        /// Create a <see cref="CosmosStoredProcedure"/>
+        /// Create a <see cref="CosmosStoredProcedureCore"/>
         /// </summary>
-        /// <param name="container">The <see cref="CosmosContainer"/></param>
+        /// <param name="container">The <see cref="CosmosContainerCore"/></param>
         /// <param name="storedProcedureId">The cosmos stored procedure id.</param>
         /// <remarks>
         /// Note that the stored procedure must be explicitly created, if it does not already exist, before
         /// you can read from it or write to it.
         /// </remarks>
-        protected internal CosmosStoredProcedure(
-            CosmosContainer container,
+        protected internal CosmosStoredProcedureCore(
+            CosmosContainerCore container,
             string storedProcedureId)
             : base(container.Client,
                 container.Link,
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosStoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosItems.ValidatePartitionKey(partitionKey, requestOptions);
+            CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
 
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)

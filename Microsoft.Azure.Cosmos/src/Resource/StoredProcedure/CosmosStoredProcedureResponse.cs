@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
            CosmosStoredProcedureSettings cosmosStoredProcedureSettings,
-           CosmosStoredProcedure storedProcedure) : base(
+           CosmosStoredProcedureCore storedProcedure) : base(
                httpStatusCode,
                headers,
                cosmosStoredProcedureSettings)
@@ -43,13 +43,13 @@ namespace Microsoft.Azure.Cosmos
         /// The reference to the cosmos stored procedure.
         /// This allows additional operations for the stored procedure
         /// </summary>
-        public virtual CosmosStoredProcedure StoredProcedure { get; private set; }
+        public virtual CosmosStoredProcedureCore StoredProcedure { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="CosmosStoredProcedureResponse"/>
+        /// Get <see cref="CosmosDatabaseCore"/> implicitly from <see cref="CosmosStoredProcedureResponse"/>
         /// </summary>
         /// <param name="response">CosmosStoredProcedureResponse</param>
-        public static implicit operator CosmosStoredProcedure(CosmosStoredProcedureResponse response)
+        public static implicit operator CosmosStoredProcedureCore(CosmosStoredProcedureResponse response)
         {
             return response.StoredProcedure;
         }
