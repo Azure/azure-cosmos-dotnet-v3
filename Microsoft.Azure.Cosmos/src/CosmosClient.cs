@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
         ///]]>
         /// </code>
         /// </example>
-        public virtual CosmosDatabasesCore Databases { get; private set; }
+        public virtual CosmosDatabases Databases { get; private set; }
 
         /// <summary>
         /// The <see cref="Cosmos.CosmosClientConfiguration"/> used initialize CosmosClient

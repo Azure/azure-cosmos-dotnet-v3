@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     public class ItemBenchmark
     {
         private readonly CosmosClient clientForTests;
-        private readonly CosmosContainerCore container;
+        private readonly CosmosContainer container;
         private JObject baseItem;
         private Stream baseStream;
 

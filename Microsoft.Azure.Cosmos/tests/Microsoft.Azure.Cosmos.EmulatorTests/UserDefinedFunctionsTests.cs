@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.container = response;
+            this.container = (CosmosContainerCore)response;
         }
 
         [TestCleanup]

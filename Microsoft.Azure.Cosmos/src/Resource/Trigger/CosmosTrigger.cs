@@ -20,22 +20,24 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosTrigger"/>
         /// </summary>
-        /// <param name="container">The <see cref="CosmosContainerCore"/></param>
+        /// <param name="container">The <see cref="CosmosContainer"/></param>
         /// <param name="triggerId">The cosmos trigger id.</param>
         /// <remarks>
         /// Note that the trigger must be explicitly created, if it does not already exist, before
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosTrigger(
-            CosmosContainerCore container,
+            CosmosContainer container,
             string triggerId)
-            : base(container.Client,
-                container.Link,
-                triggerId)
         {
+            this.Id = triggerId;
+            base.Initialize(
+                client: container.Client,
+                parentLink: container.LinkUri.OriginalString,
+                uriPathSegment: Paths.TriggersPathSegment);
         }
 
-        internal override string UriPathSegment => Paths.TriggersPathSegment;
+        public override string Id { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
     {
-        private CosmosContainerCore Container = null;
+        private CosmosContainer Container = null;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
 
         [TestInitialize]

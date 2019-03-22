@@ -22,138 +22,41 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public class CosmosContainerCore : CosmosIdentifier
+    internal class CosmosContainerCore : CosmosContainer
     {
-        /// <summary>
-        /// Create a <see cref="CosmosContainerCore"/>
-        /// </summary>
-        /// <param name="database">The <see cref="CosmosDatabaseCore"/></param>
-        /// <param name="containerId">The cosmos container id.</param>
-        /// <remarks>
-        /// Note that the container must be explicitly created, if it does not already exist, before
-        /// you can read from it or write to it.
-        /// </remarks>
-        protected internal CosmosContainerCore(
-            CosmosDatabaseCore database,
-            string containerId) :
-            base(database.Client,
-                database.Link,
-                containerId)
+        internal CosmosContainerCore(
+            CosmosDatabase database,
+            string containerId)
         {
+            this.Id = containerId;
+            base.Initialize(
+                client: database.Client,
+                parentLink: database.LinkUri.OriginalString,
+                uriPathSegment: Paths.CollectionsPathSegment);
+
             this.Database = database;
             this.Items = new CosmosItemsCore(this);
             this.StoredProcedures = new CosmosStoredProceduresCore(this);
-            this.DocumentClient = this.Database.Client.DocumentClient;
+            this.DocumentClient = this.Client.DocumentClient;
             this.Triggers = new CosmosTriggers(this);
             this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this);
         }
 
-        /// <summary>
-        /// Returns the parent database reference
-        /// </summary>
-        public virtual CosmosDatabaseCore Database { get; private set; }
+        public override string Id { get; }
 
-        /// <summary>
-        /// Operations for creating new items, and reading/querying all items
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosItemResponse<MyCustomObject> response = await this.container.Items.CreateItemAsync<MyCustomObject>(user1);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual CosmosItemsCore Items { get; }
+        public override CosmosDatabase Database { get; }
 
-        /// <summary>
-        /// Operations for creating, reading/querying all stored procedures
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosStoredProcedureSettings settings = new CosmosStoredProcedureSettings
-        ///{
-        ///    Id = "testSProcId",
-        ///    Body = "function() { { var x = 42; } }"
-        ///};
-        ///
-        /// CosmosStoredProcedureResponse response = await cosmosContainer.StoredProcedures.CreateStoredProcedureAsync(settings);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual CosmosStoredProceduresCore StoredProcedures { get; }
+        public override CosmosItems Items { get; }
 
+        public override CosmosStoredProcedures StoredProcedures { get; }
 
-        /// <summary>
-        /// Operations for creating, reading/querying all triggers
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosTriggerSettings settings = new CosmosTriggerSettings
-        ///{
-        ///    Id = "testSProcId",
-        ///    Body = "function() { { var x = 42; } }"
-        ///};
-        ///
-        /// CosmosTriggerResponse response = await cosmosContainer.Triggers.CreateTriggerAsync(settings);
-        /// ]]>
-        /// </code>
-        /// </example>
         internal CosmosTriggers Triggers { get; }
 
-        /// <summary>
-        /// Operations for creating, reading/querying all user defined functions
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        ///  CosmosUserDefinedFunctionSettings settings = new CosmosUserDefinedFunctionSettings
-        ///  {
-        ///      Id = "testUserDefinedFunId",
-        ///      Body = "function() { { var x = 42; } }",
-        ///  };
-        ///
-        /// CosmosUserDefinedFunctionsResponse response = await cosmosContainer.UserDefinedFunctions.CreateUserDefinedFunctionAsync(settings);
-        /// ]]>
-        /// </code>
-        /// </example>
         internal CosmosUserDefinedFunctions UserDefinedFunctions { get; }
 
         internal DocumentClient DocumentClient { get; private set; }
 
-        internal override string UriPathSegment => Paths.CollectionsPathSegment;
-
-        /// <summary>
-        /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.
-        /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosContainer cosmosContainer = this.database.Containers["containerId"];
-        /// CosmosContainerSettings settings = cosmosContainer.ReadAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual Task<CosmosContainerResponse> ReadAsync(
+        public override Task<CosmosContainerResponse> ReadAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -164,40 +67,7 @@ namespace Microsoft.Azure.Cosmos
             return this.Client.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        /// <summary>
-        /// Replace a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the replace resource record.
-        /// </returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
-        /// <example>
-        /// Update the cosmosContainer to disable automatic indexing
-        /// <code language="c#">
-        /// <![CDATA[
-        /// ContainerSettings setting = containerReadResponse;
-        /// setting.IndexingPolicy.Automatic = false;
-        /// CosmosContainerResponse response = cosmosContainer.ReplaceAsync(setting);
-        /// ContainerSettings settings = response;
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual Task<CosmosContainerResponse> ReplaceAsync(
+        public override Task<CosmosContainerResponse> ReplaceAsync(
             CosmosContainerSettings containerSettings,
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -212,31 +82,7 @@ namespace Microsoft.Azure.Cosmos
             return this.Client.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        /// <summary>
-        /// Delete a <see cref="CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which will contain information about the request issued.</returns>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to delete did not exist.</description>
-        ///     </item>
-        /// </list>
-        /// </exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosContainer cosmosContainer = this.database.Containers["containerId"];
-        /// CosmosContainerResponse response = cosmosContainer.DeleteAsync();
-        ///]]>
-        /// </code>
-        /// </example>
-        public virtual Task<CosmosContainerResponse> DeleteAsync(
+        public override Task<CosmosContainerResponse> DeleteAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -247,27 +93,7 @@ namespace Microsoft.Azure.Cosmos
             return this.Client.ResponseFactory.CreateContainerResponse(this, response);
         }
 
-        /// <summary>
-        /// Gets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <value>
-        /// The provisioned throughput for this database.
-        /// </value>
-        /// <remarks>
-        /// <para>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
-        /// </para>
-        /// </remarks>
-        /// <example>
-        /// The following example shows how to get the throughput.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// int? throughput = await this.cosmosContainer.ReadProvisionedThroughputAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual async Task<int?> ReadProvisionedThroughputAsync(
+        public override async Task<int?> ReadProvisionedThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
@@ -279,28 +105,7 @@ namespace Microsoft.Azure.Cosmos
             throw offerResult.CosmosException;
         }
 
-        /// <summary>
-        /// Sets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
-        /// </summary>
-        /// <param name="throughput">The cosmos container throughput</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <value>
-        /// The provisioned throughput for this database.
-        /// </value>
-        /// <remarks>
-        /// <para>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
-        /// </para>
-        /// </remarks>
-        /// <example>
-        /// The following example shows how to get the throughput.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// int? throughput = await this.cosmosContainer.ReplaceProvisionedThroughputAsync(400);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual async Task ReplaceProvisionedThroughputAsync(
+        public override async Task ReplaceProvisionedThroughputAsync(
             int throughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -311,13 +116,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        /// <summary>
-        /// Delete a <see cref="CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
-        internal virtual Task<CosmosResponseMessage> DeleteStreamAsync(
+        public override Task<CosmosResponseMessage> DeleteStreamAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -328,13 +127,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        /// <summary>
-        /// Replace a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="streamPayload">The <see cref="CosmosContainerSettings"/> stream.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        internal virtual Task<CosmosResponseMessage> ReplaceStreamAsync(
+        public override Task<CosmosResponseMessage> ReplaceStreamAsync(
             Stream streamPayload,
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -346,15 +139,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        /// <summary>
-        /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.
-        /// </returns>
-        internal virtual Task<CosmosResponseMessage> ReadStreamAsync(
+        public override Task<CosmosResponseMessage> ReadStreamAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -365,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal virtual Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
+        internal Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetRID(cancellationToken)
@@ -383,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
                 .Unwrap();
         }
 
-        internal virtual Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
+        internal Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
             int targetThroughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -401,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken)
         {
             return this.DocumentClient.GetCollectionCacheAsync()
-                .ContinueWith(collectionCacheTask => collectionCacheTask.Result.ResolveByNameAsync(this.Link, cancellationToken), cancellationToken)
+                .ContinueWith(collectionCacheTask => collectionCacheTask.Result.ResolveByNameAsync(this.LinkUri.OriginalString, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 

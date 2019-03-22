@@ -14,14 +14,14 @@
     [TestClass]
     public class CosmosSpatialTests
     {
-        private CosmosContainerCore Container = null;
+        private CosmosContainer Container = null;
         private DocumentClient documentClient;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
         protected CosmosClient cosmosClient = null;
-        protected CosmosDatabaseCore database = null;
+        protected CosmosDatabase database = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -92,7 +92,7 @@
             Assert.IsNotNull(readResponse.Resource.multiPolygon);
 
             IOrderedQueryable<SpatialItem> multipolygonQuery =
-              this.documentClient.CreateDocumentQuery<SpatialItem>(this.Container.Link, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
+              this.documentClient.CreateDocumentQuery<SpatialItem>(this.Container.LinkUri.OriginalString, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
             SpatialItem[] withinQuery = multipolygonQuery
               .Where(f =>  f.multiPolygon.Within(GetMultiPoygon()) && f.multiPolygon.IsValid())
               .ToArray();
