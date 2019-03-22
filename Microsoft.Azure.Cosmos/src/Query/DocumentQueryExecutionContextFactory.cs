@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static bool TryGetEpkProperty(FeedOptions feedOptions, out string effectivePartitionKeyString)
         {
-            if (feedOptions?.Properties == null && feedOptions.Properties.TryGetValue(
+            if (feedOptions?.Properties != null && feedOptions.Properties.TryGetValue(
                    WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyStringObject))
             {
                 effectivePartitionKeyString = effectivePartitionKeyStringObject as string;
