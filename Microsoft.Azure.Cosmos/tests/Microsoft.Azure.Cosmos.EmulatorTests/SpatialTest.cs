@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SpatialTest
     {
+        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+
         private class SpatialSampleClass
         {
             [JsonProperty(PropertyName = "id")]
@@ -31,9 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public SpatialTest()
         {
-            //Lowering client version to support document client non partition collection creation for v2 test cases.
-            //Eventaully we will move to cosmos client for all the test cases.
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
             this.client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
             this.CleanUp();
         }
@@ -52,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabaseSettings database = await this.client.CreateDatabaseAsync(
                 new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") });
 
-            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N") };
+            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N"),PartitionKey = defaultPartitionKeyDefinition };
             collectionDefinition.IndexingPolicy = new IndexingPolicy()
             {
                 IncludedPaths = new Collection<IncludedPath>()
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.client.CreateDocumentAsync(collection.SelfLink, validGeometry);
 
             IOrderedQueryable<SpatialSampleClass> sampleClasses =
-                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { });
+                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableCrossPartitionQuery = true});
 
             SpatialSampleClass[] distanceQuery = sampleClasses
                 .Where(f => f.Location.Distance(new Point(20, 180)) < 20000)
@@ -107,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(invalidGeometry.Location, isNotValidQuery[0].Location);
 
             IOrderedQueryable<SpatialSampleClass> invalidDetailed =
-                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { });
+                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableCrossPartitionQuery = true});
 
             var query = invalidDetailed
                 .Where(f => !f.Location.IsValid()).Select(f => f.Location.IsValidDetailed());
@@ -135,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosDatabaseSettings database = await this.client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") });
 
-            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N") };
+            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N"), PartitionKey = defaultPartitionKeyDefinition };
 
             CosmosContainerSettings collection;
             if(allowScan)
@@ -181,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.client.CreateDocumentAsync(collection.SelfLink, class2);
 
             IOrderedQueryable<SpatialSampleClass> sampleClasses =
-                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableScanInQuery = allowScan });
+                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableScanInQuery = allowScan, EnableCrossPartitionQuery = true });
 
             SpatialSampleClass[] distanceQuery = sampleClasses
                 .Where(f => f.Location.Distance(new Point(20.1, 20)) < 20000)

@@ -32,14 +32,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal readonly string masterKey;
         internal readonly Random random;
 
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            //Lowering client version to support document client non partition collection creation for v2 test cases.
-            //Eventaully we will move to cosmos client for all the test cases.
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
-        }
-
         public DirectRESTTests()
         {
             this.baseUri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
@@ -360,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
+                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.v2018_09_17))
                 {
                     client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.ConsistencyLevel, "Session");
                     INameValueCollection headers;
@@ -708,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
+                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.v2018_09_17))
                 {
                     Document retrievedDocument = null;
                     CreateItemsForContentType(client, out retrievedDocument);
@@ -745,7 +737,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "ValidateUpdateCollectionIndexingPolicy_COLL_" + Guid.NewGuid().ToString("N");
-                CosmosContainerSettings collection = await client.CreateDocumentCollectionAsync(database, new CosmosContainerSettings { Id = uniqCollectionName });
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+                CosmosContainerSettings collection = await client.CreateDocumentCollectionAsync(database, new CosmosContainerSettings { Id = uniqCollectionName , PartitionKey = partitionKeyDefinition });
 
                 Logger.LogLine("Replace the collection with an invalid json object.");
                 HttpResponseMessage response = await ReplaceDocumentCollectionAsync(collection, "I am not a valid json object");
@@ -998,17 +991,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new RequestOptions { OfferThroughput = 10000 });
 
                 string uniqSinglePartitionCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
-                CosmosContainerSettings singlePartitionCollection = await client.CreateDocumentCollectionAsync(
-                    database.SelfLink,
-                    new CosmosContainerSettings
-                    {
-                        Id = uniqSinglePartitionCollectionName,
-                    },
-                    new RequestOptions { OfferThroughput = 10000 });
-
                 var partitionedCollectionUri = new Uri(this.baseUri, new Uri(collection.SelfLink + "docs", UriKind.Relative));
 
-                var singlePartitionCollectionUri = new Uri(this.baseUri, new Uri(singlePartitionCollection.SelfLink + "docs", UriKind.Relative));
 
                 SqlQuerySpec querySpec = new SqlQuerySpec
                 {
@@ -1059,8 +1043,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     foreach (var collectionTuple in new[] {
                         Tuple.Create(collection, partitionedCollectionUri, true),
-                        Tuple.Create(singlePartitionCollection, singlePartitionCollectionUri, false),
-                    })
+                     })
                     {
                         foreach (var versionTuple in new[] {
                             Tuple.Create(HttpConstants.Versions.v2016_07_11, false),
@@ -1090,7 +1073,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
                                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery, bool.FalseString);
                                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsContinuationExpected, isContinuationExpected.ToString());
-
                                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, uri);
                                     var stringContent = new StringContent(JsonConvert.SerializeObject(query), Encoding.UTF8, "application/query+json");
                                     stringContent.Headers.ContentType.CharSet = null;

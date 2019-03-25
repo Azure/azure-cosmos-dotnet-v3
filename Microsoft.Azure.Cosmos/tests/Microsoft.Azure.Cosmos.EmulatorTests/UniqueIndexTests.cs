@@ -19,13 +19,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private DocumentClient client;  // This is only used for housekeeping this.database.
         private CosmosDatabaseSettings database;
+        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         [TestInitialize]
         public void TestInitialize()
         {
-            //Lowering client version to support document client non partition collection creation for v2 test cases.
-            //Eventaully we will move to cosmos client for all the test cases.
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
             this.client = TestCommon.CreateClient(true);
             this.database = TestCommon.CreateOrGetDatabase(this.client);
         }
@@ -41,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             var collectionSpec = new CosmosContainerSettings {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
+                PartitionKey = defaultPartitionKeyDefinition,
                 UniqueKeyPolicy = new UniqueKeyPolicy {
                     UniqueKeys = new Collection<UniqueKey> {
                         new UniqueKey {
@@ -102,21 +101,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var collectionSpec = new CosmosContainerSettings
             {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
+                PartitionKey = defaultPartitionKeyDefinition,
                 UniqueKeyPolicy = new UniqueKeyPolicy
                 {
                     UniqueKeys = new Collection<UniqueKey> { new UniqueKey { Paths = new Collection<string> { "/name", "/address" } } }
                 }
             };
-
+            RequestOptions requestOptions = new RequestOptions();
+            requestOptions.PartitionKey = new PartitionKey("test");
             Func<DocumentClient, CosmosContainerSettings, Task> testFunction = async (DocumentClient client, CosmosContainerSettings collection) =>
             {
-                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
-                var doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"address\":\"Russia 630090\"}");
-                var doc3 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 640000\"}");
+                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
+                var doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
+                var doc3 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 640000\"}");
 
                 Document doc1Inserted = await client.CreateDocumentAsync(collection, doc1);
 
-                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc1Inserted);     // Replace with same values -- OK.
+                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc1Inserted, requestOptions);     // Replace with same values -- OK.
 
                 Document doc2Inserted = await client.CreateDocumentAsync(collection, doc2);
                 var doc2Replacement = JObject.Parse(JsonConvert.SerializeObject(doc1Inserted));
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 try
                 {
-                    await client.ReplaceDocumentAsync(doc2Inserted.SelfLink, doc2Replacement); // Replace doc2 with values from doc1 -- Conflict.
+                    await client.ReplaceDocumentAsync(doc2Inserted.SelfLink, doc2Replacement, requestOptions); // Replace doc2 with values from doc1 -- Conflict.
                     Assert.Fail("Did not throw due to unique constraint");
                 }
                 catch (DocumentClientException ex)
@@ -133,9 +134,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 doc3["id"] = doc1Inserted.Id;
-                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc3);             // Replace with values from doc3 -- OK.
+                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc3, requestOptions);             // Replace with values from doc3 -- OK.
 
-                await client.DeleteDocumentAsync(doc1Inserted.SelfLink);
+                await client.DeleteDocumentAsync(doc1Inserted.SelfLink, requestOptions);
                 await client.CreateDocumentAsync(collection, doc1);
             };
 

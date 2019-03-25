@@ -28,9 +28,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void Startup()
         {
-            //Lowering client version to support document client non partition collection creation for v2 test cases.
-            //Eventaully we will move to cosmos client for all the test cases.
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
             var client = TestCommon.CreateClient(true);
             TestCommon.DeleteAllDatabasesAsync(client).Wait();
@@ -452,7 +449,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DocumentClient client = TestCommon.CreateClient(true);
                 var db = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(),PartitionKey = partitionKeyDefinition }).Result.Resource;
                 var doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
                 client = TestCommon.CreateClient(true);
                 doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
@@ -487,11 +485,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(false);
             CosmosDatabaseSettings db = null;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             try
             {
                 var dbResource = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result;
                 db = dbResource.Resource;
-                var coll = client.CreateDocumentCollectionAsync(db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                var coll = client.CreateDocumentCollectionAsync(db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result.Resource;
                 var docResult = client.CreateDocumentAsync(coll, new Document() { Id = Guid.NewGuid().ToString() }).Result;
                 Assert.IsTrue(int.Parse(docResult.ResponseHeaders[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
                 Assert.IsTrue(int.Parse(docResult.ResponseHeaders[WFConstants.BackendHeaders.CurrentReplicaSetSize], CultureInfo.InvariantCulture) > 0);
@@ -503,6 +502,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ValidateCollectionIndexProgressHeadersGateway()
         {
             var client = TestCommon.CreateClient(true);
@@ -510,6 +510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ValidateCollectionIndexProgressHeadersHttps()
         {
             var client = TestCommon.CreateClient(false, Protocol.Https);
@@ -517,6 +518,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ValidateCollectionIndexProgressHeadersRntbd()
         {
             var client = TestCommon.CreateClient(false, Protocol.Tcp);
@@ -526,18 +528,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateCollectionIndexProgressHeaders(DocumentClient client)
         {
             CosmosDatabaseSettings db = (await client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() })).Resource;
-
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             try
             {
-                var lazyCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+                var lazyCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 lazyCollection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
                 lazyCollection = (await client.CreateDocumentCollectionAsync(db, lazyCollection)).Resource;
 
-                var consistentCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+                var consistentCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 consistentCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 consistentCollection = (await client.CreateDocumentCollectionAsync(db, consistentCollection)).Resource;
 
-                var noneIndexCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+                var noneIndexCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 noneIndexCollection.IndexingPolicy.Automatic = false;
                 noneIndexCollection.IndexingPolicy.IndexingMode = IndexingMode.None;
                 noneIndexCollection = (await client.CreateDocumentCollectionAsync(db, noneIndexCollection)).Resource;
@@ -663,7 +665,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var collection = TestCommon.CreateOrGetDocumentCollection(client);
             var sproc = new CosmosStoredProcedureSettings() { Id = Guid.NewGuid().ToString(), Body = script };
             var createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
-            var result = client.ExecuteStoredProcedureAsync<string>(createdSproc).Result;
+            RequestOptions requestOptions = new RequestOptions();
+            requestOptions.PartitionKey = new PartitionKey("test");
+            var result = client.ExecuteStoredProcedureAsync<string>(createdSproc, requestOptions).Result;
             return result;
         }
 
@@ -671,8 +675,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             var collection = TestCommon.CreateOrGetDocumentCollection(client);
             var document = new Document() { Id = Guid.NewGuid().ToString() };
+            document.SetPropertyValue("pk", "test");
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Create, collection.SelfLink, document, ResourceType.Document, AuthorizationTokenType.Invalid, headers, SerializationFormattingPolicy.None);
-            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
+            PartitionKey partitionKey = new PartitionKey("test");
+            request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey,partitionKey.InternalKey.ToJsonString());
             var response = client.CreateAsync(request).Result;
             return response;
         }
@@ -698,7 +704,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             var script = @" function() {
                 var client = getContext().getCollection();                
-                client.createDocument(client.getSelfLink(), { id: Math.random() + """" }," + scriptOptions + @", function(err, docCreated, options) { 
+                client.createDocument(client.getSelfLink(), { id: Math.random() + """" ,pk: ""test""}," + scriptOptions + @", function(err, docCreated, options) {
                    if(err) throw new Error('Error while creating document: ' + err.message); 
                    else {
                      getContext().getResponse().setBody(JSON.stringify(docCreated));  
@@ -708,14 +714,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var collection = TestCommon.CreateOrGetDocumentCollection(client);
             var sproc = new CosmosStoredProcedureSettings() { Id = Guid.NewGuid().ToString(), Body = script };
             var createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
-            var result = client.ExecuteStoredProcedureAsync<string>(createdSproc).Result;
+            RequestOptions requestOptions = new RequestOptions();
+            requestOptions.PartitionKey = new PartitionKey("test");
+            var result = client.ExecuteStoredProcedureAsync<string>(createdSproc, requestOptions).Result;
             return result;
         }
 
         private DocumentServiceResponse ReadDocumentRequest(DocumentClient client, Document doc, INameValueCollection headers)
         {
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, doc.SelfLink, AuthorizationTokenType.PrimaryMasterKey, headers);
-            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
+            request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey,(new PartitionKey("test")).InternalKey.ToJsonString());
             var retrievedDocResponse = client.ReadAsync(request).Result;
             return retrievedDocResponse;
         }

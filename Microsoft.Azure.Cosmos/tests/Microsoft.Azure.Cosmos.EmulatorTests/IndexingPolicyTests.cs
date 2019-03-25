@@ -97,9 +97,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
-            //Lowering client version to support document client non partition collection creation for older test cases.
-            //Eventaully we will move to cosmos client for all the test cases.
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
             // Put test init code
             IndexingPolicyTests.Cleanup().Wait();
         }
@@ -367,10 +364,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task RoundTripWithLocal(IndexingPolicy indexingPolicy)
         {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             CosmosContainerSettings documentCollection = new CosmosContainerSettings()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
+                PartitionKey = partitionKeyDefinition
             };
 
             await IndexingPolicyTests.documentClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database);

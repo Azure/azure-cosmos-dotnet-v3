@@ -16,22 +16,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class ClientTests
     {
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            //Lowering client version to support document client non partition collection creation for v2 test cases.
-            //Eventaully we will move to cosmos client for all the test cases.
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_06_18;
-        }
 
         [TestMethod]
         public void ResourceResponseStreamingTest()
         {
             using (DocumentClient client = TestCommon.CreateClient(true))
             {
-
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
                 CosmosDatabaseSettings db = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-                CosmosContainerSettings coll = TestCommon.CreateCollectionAsync(client, db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result;
+                CosmosContainerSettings coll = TestCommon.CreateCollectionAsync(client, db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() , PartitionKey = partitionKeyDefinition }).Result;
                 ResourceResponse<Document> doc = client.CreateDocumentAsync(coll.SelfLink, new Document() { Id = Guid.NewGuid().ToString() }).Result;
 
                 Assert.AreEqual(doc.ResponseStream.Position, 0);
@@ -82,8 +75,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal void TestEtagOnUpsertOperation(DocumentClient client)
         {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { PartitionKey.SystemPartitionKeyPath }), Kind = PartitionKind.Hash };
             CosmosDatabaseSettings db = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-            CosmosContainerSettings coll = TestCommon.CreateCollectionAsync(client, db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result;
+            CosmosContainerSettings coll = TestCommon.CreateCollectionAsync(client, db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() , PartitionKey = partitionKeyDefinition}).Result;
 
             LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
             myBook.Id = Guid.NewGuid().ToString();

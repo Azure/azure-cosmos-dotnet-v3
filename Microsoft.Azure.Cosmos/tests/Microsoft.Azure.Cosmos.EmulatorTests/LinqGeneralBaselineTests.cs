@@ -1664,6 +1664,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             //Verify that we can override the propertyName but still can query them using .NET Property names.
             [JsonProperty(PropertyName = "title")]
             public string Title { get; set; }
+            [JsonProperty(PropertyName = "pk")]
+            public string Pk { get; set; }
             [JsonProperty(PropertyName = "name")]
             public string Name { get; set; }
             public Language[] Languages { get; set; }
