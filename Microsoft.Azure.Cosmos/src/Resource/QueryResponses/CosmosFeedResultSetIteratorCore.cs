@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos result set stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class CosmosDefaultResultSetStreamIterator : CosmosResultSetIterator
+    internal class CosmosFeedResultSetIteratorCore : CosmosFeedResultSetIterator
     {
         internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
-        internal CosmosDefaultResultSetStreamIterator(
+        internal CosmosFeedResultSetIteratorCore(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,

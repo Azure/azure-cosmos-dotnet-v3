@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Geometry which is comprised of multiple polygons.
     /// </summary>
     /// <seealso cref="Polygon"/>
-    internal sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
+    public sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPolygon"/> class.

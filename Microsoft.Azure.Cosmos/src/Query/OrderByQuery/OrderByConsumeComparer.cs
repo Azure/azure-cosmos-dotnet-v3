@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 {
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -15,13 +16,12 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
     /// that has the next document in the sort order of the query.
     /// If there is a tie, then we break the tie by picking the leftmost partition.
     /// </summary>
-    internal sealed class OrderByConsumeComparer : IComparer<DocumentProducerTree<OrderByQueryResult>>
+    internal sealed class OrderByConsumeComparer : IComparer<DocumentProducerTree>
     {
         /// <summary>
         /// This flag used to determine whether we should support mixed type order by.
         /// For testing purposes we might turn it on to test mixed type order by on index v2.
         /// </summary>
-        [ThreadStatic]
         public static bool AllowMixedTypeOrderByTestFlag;
 
         /// <summary>
@@ -59,15 +59,15 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// Zero if the documents are equivalent.
         /// Greater than zero if the document in the second document producer comes first.
         /// </returns>
-        public int Compare(DocumentProducerTree<OrderByQueryResult> producer1, DocumentProducerTree<OrderByQueryResult> producer2)
+        public int Compare(DocumentProducerTree producer1, DocumentProducerTree producer2)
         {
             if (object.ReferenceEquals(producer1, producer2))
             {
                 return 0;
             }
 
-            OrderByQueryResult result1 = producer1.Current;
-            OrderByQueryResult result2 = producer2.Current;
+            OrderByQueryResult result1 = new OrderByQueryResult(producer1.Current);
+            OrderByQueryResult result2 = new OrderByQueryResult(producer2.Current);
 
             // First compare the documents based on the sort order of the query.
             int cmp = this.CompareOrderByItems(result1.OrderByItems, result2.OrderByItems);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// If items1 was ["Brandon", 22] and items2 was ["Brandon", 23] then we would say have to look at the age to break the tie and in this case 23 comes first in a descending order.
         /// Some examples of composite order by: http://www.dofactory.com/sql/order-by
         /// </example>
-        public int CompareOrderByItems(QueryItem[] items1, QueryItem[] items2)
+        public int CompareOrderByItems(IList<OrderByItem> items1, IList<OrderByItem> items2)
         {
             if (object.ReferenceEquals(items1, items2))
             {
@@ -106,15 +106,15 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                 "Order-by items must be present.");
 
             Debug.Assert(
-                items1.Length == items2.Length,
+                items1.Count == items2.Count,
                 "OrderByResult instances should have the same number of order-by items.");
 
             Debug.Assert(
-                items1.Length > 0,
+                items1.Count > 0,
                 "OrderByResult instances should have at least 1 order-by item.");
 
             Debug.Assert(
-                this.sortOrders.Count == items1.Length,
+                this.sortOrders.Count == items1.Count,
                 "SortOrders must match size of order-by items.");
 
             if (!AllowMixedTypeOrderByTestFlag)
@@ -125,8 +125,8 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             for (int i = 0; i < this.sortOrders.Count; ++i)
             {
                 int cmp = ItemComparer.Instance.Compare(
-                    items1[i].GetItem(),
-                    items2[i].GetItem());
+                    items1[i].Item,
+                    items2[i].Item);
 
                 if (cmp != 0)
                 {
@@ -151,12 +151,13 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// </summary>
         /// <param name="items1">The items relevant to the sort for the first partition.</param>
         /// <param name="items2">The items relevant to the sort for the second partition.</param>
-        private void CheckTypeMatching(QueryItem[] items1, QueryItem[] items2)
+        private void CheckTypeMatching(IList<OrderByItem> items1, IList<OrderByItem> items2)
         {
-            for (int i = 0; i < items1.Length; ++i)
+            for (int i = 0; i < items1.Count; ++i)
             {
-                ItemType itemType1 = ItemTypeHelper.GetItemType(items1[i].GetItem());
-                ItemType itemType2 = ItemTypeHelper.GetItemType(items1[i].GetItem());
+                CosmosElementType itemType1 = items1[i].Item.Type;
+                CosmosElementType itemType2 = items2[i].Item.Type;
+
                 if (itemType1 != itemType2)
                 {
                     throw new NotSupportedException(
@@ -164,8 +165,8 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                             CultureInfo.InvariantCulture,
                             RMResources.UnsupportedCrossPartitionOrderByQueryOnMixedTypes,
                             itemType1,
-                            ItemTypeHelper.GetItemType(items1[i].GetItem()),
-                            items1[i].GetItem()));
+                            itemType2,
+                            items1[i]));
                 }
             }
         }
