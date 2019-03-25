@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Handler which selects the piepline for the requested resource operation

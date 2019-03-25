@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations supported on <see cref="Geometry" /> type in the Azure Cosmos DB service. These operations are to be used in LINQ expressions only

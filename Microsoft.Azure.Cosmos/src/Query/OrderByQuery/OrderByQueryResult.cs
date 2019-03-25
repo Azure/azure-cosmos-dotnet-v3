@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// <para>

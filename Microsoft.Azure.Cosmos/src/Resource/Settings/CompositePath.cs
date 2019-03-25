@@ -52,24 +52,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.Order)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public CompositePathSortOrder Order
-        {
-            get
-            {
-                CompositePathSortOrder result = default(CompositePathSortOrder);
-                string sortOrder = this.GetValue<string>(Constants.Properties.Order);
-                if (!string.IsNullOrEmpty(sortOrder))
-                {
-                    result = (CompositePathSortOrder)Enum.Parse(typeof(CompositePathSortOrder), sortOrder, true);
-                }
-
-                return result;
-            }
-
-            set
-            {
-                this.SetValue(Constants.Properties.Order, value);
-            }
-        }
+        public CompositePathSortOrder Order { get; set; }
     }
 }

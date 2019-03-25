@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global weighted average from the local weighted average of multiple partitions and continuations.

@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 

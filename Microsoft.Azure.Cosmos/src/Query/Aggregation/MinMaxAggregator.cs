@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
     /// <summary>

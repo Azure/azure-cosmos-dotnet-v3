@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Utility class for item types.

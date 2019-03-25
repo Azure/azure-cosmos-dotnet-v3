@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     internal sealed class GatewayAccountReader 
     {
@@ -79,9 +80,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
-                    CosmosAccountSettings databaseAccount = documentServiceResponse.GetInternalResource<CosmosAccountSettings>(CosmosAccountSettings.CreateNewInstance);
-
-                    return databaseAccount;
+                    return CosmosResource.FromStream<CosmosAccountSettings>(documentServiceResponse);
                 }
             }
         }
