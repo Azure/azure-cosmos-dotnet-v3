@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -713,16 +714,16 @@ namespace Microsoft.Azure.Cosmos
         private async Task OpenPrivateAsync(CancellationToken cancellationToken)
         {
             // Initialize caches for all databases and collections
-            ResourceFeedReader<CosmosDatabaseSettings> databaseFeedReader = this.CreateDatabaseFeedReader(
+            ResourceFeedReader<Database> databaseFeedReader = this.CreateDatabaseFeedReader(
                 new FeedOptions { MaxItemCount = -1 });
 
             try
             {
                 while (databaseFeedReader.HasMoreResults)
                 {
-                    foreach (CosmosDatabaseSettings database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
+                    foreach (Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
                     {
-                        ResourceFeedReader<CosmosContainerSettings> collectionFeedReader = this.CreateDocumentCollectionFeedReader(
+                        ResourceFeedReader<DocumentCollection> collectionFeedReader = this.CreateDocumentCollectionFeedReader(
                             database.SelfLink,
                             new FeedOptions { MaxItemCount = -1 });
                         List<Task> tasks = new List<Task>();
@@ -967,7 +968,7 @@ namespace Microsoft.Azure.Cosmos
                     this.globalEndpointManager,
                     this.sessionContainer,
                     this.connectionPolicy.RequestTimeout,
-                    this.accountServiceConfiguration.DefaultConsistencyLevel,
+                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.connectionPolicy.UserAgentContainer,
                     this.ApiType,
@@ -989,7 +990,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task InitializeCachesAsync(CosmosContainerSettings collection, CancellationToken cancellationToken)
+        private async Task InitializeCachesAsync(DocumentCollection collection, CancellationToken cancellationToken)
         {
             if (collection == null)
             {
@@ -1004,9 +1005,9 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                CosmosContainerSettings resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                collection.ResourceId,
+                resolvedCollection.ResourceId,
                 new Range<string>(
                     PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                     PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -1016,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos
                 // In Gateway mode, AddressCache is null
                 if (this.AddressResolver != null)
                 {
-                    await this.AddressResolver.OpenAsync(collection, cancellationToken);
+                    await this.AddressResolver.OpenAsync(resolvedCollection, cancellationToken);
                 }
             }
         }
@@ -1191,7 +1192,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 TaskHelper.InlineIfPossible(() => this.EnsureValidClientAsync(), null).Wait();
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
-                    this.accountServiceConfiguration.DefaultConsistencyLevel;
+                    (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
             }
         }
 
@@ -1315,7 +1316,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             await this.EnsureValidClientAsync();
-            return this.accountServiceConfiguration.DefaultConsistencyLevel;
+            return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
         }
         
         internal Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
@@ -1383,9 +1384,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="database">The specification for the <see cref="CosmosDatabaseSettings"/> to create.</param>
+        /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
         /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
-        /// <returns>The <see cref="CosmosDatabaseSettings"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Database are:
@@ -1397,12 +1398,12 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>400</term><description>BadRequest - This means something was wrong with the database object supplied. It is likely that an id was not supplied for the new Database.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosDatabaseSettings"/> with an id matching the id field of <paramref name="database"/> already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Database"/> with an id matching the id field of <paramref name="database"/> already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
         /// <example>
-        /// The example below creates a new <see cref="CosmosDatabaseSettings"/> with an Id property of 'MyDatabase'
+        /// The example below creates a new <see cref="Database"/> with an Id property of 'MyDatabase'
         /// This code snippet is intended to be used from within an asynchronous method as it uses the await keyword
         /// <code language="c#">
         /// <![CDATA[
@@ -1414,7 +1415,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// If you would like to construct a <see cref="CosmosDatabaseSettings"/> from within a synchronous method then you need to use the following code
+        /// If you would like to construct a <see cref="Database"/> from within a synchronous method then you need to use the following code
         /// <code language="c#">
         /// <![CDATA[
         /// using (IDocumentClient client = new DocumentClient(new Uri("service endpoint"), "auth key"))
@@ -1424,17 +1425,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosDatabaseSettings>> CreateDatabaseAsync(CosmosDatabaseSettings database, RequestOptions options = null)
+        public Task<ResourceResponse<Database>> CreateDatabaseAsync(Database database, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosDatabaseSettings>> CreateDatabasePrivateAsync(CosmosDatabaseSettings database, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Database>> CreateDatabasePrivateAsync(Database database, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -1461,7 +1462,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosDatabaseSettings>(await this.CreateAsync(request));
+                return new ResourceResponse<Database>(await this.CreateAsync(request));
             }
         }
 
@@ -1469,14 +1470,14 @@ namespace Microsoft.Azure.Cosmos
         /// Creates(if doesn't exist) or gets(if already exists) a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// You can check the status code from the response to determine whether the database was newly created(201) or existing database was returned(200)
         /// </summary>
-        /// <param name="database">The specification for the <see cref="CosmosDatabaseSettings"/> to create.</param>
+        /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
         /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
-        /// <returns>The <see cref="CosmosDatabaseSettings"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property.</exception>
         /// <example>
-        /// The example below creates a new <see cref="CosmosDatabaseSettings"/> with an Id property of 'MyDatabase'
+        /// The example below creates a new <see cref="Database"/> with an Id property of 'MyDatabase'
         /// This code snippet is intended to be used from within an asynchronous method as it uses the await keyword
         /// <code language="c#">
         /// <![CDATA[
@@ -1488,7 +1489,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// If you would like to construct a <see cref="CosmosDatabaseSettings"/> from within a synchronous method then you need to use the following code
+        /// If you would like to construct a <see cref="Database"/> from within a synchronous method then you need to use the following code
         /// <code language="c#">
         /// <![CDATA[
         /// using (IDocumentClient client = new DocumentClient(new Uri("service endpoint"), "auth key"))
@@ -1498,16 +1499,16 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosDatabaseSettings>> CreateDatabaseIfNotExistsAsync(CosmosDatabaseSettings database, RequestOptions options = null)
+        public Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDatabaseIfNotExistsPrivateAsync(database, options), null);
         }
 
-        private async Task<ResourceResponse<CosmosDatabaseSettings>> CreateDatabaseIfNotExistsPrivateAsync(CosmosDatabaseSettings database,
+        private async Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsPrivateAsync(Database database,
             RequestOptions options)
         {
             if (database == null)
@@ -1548,7 +1549,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a Document as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="documentsFeedOrDatabaseLink">The link of the <see cref="CosmosContainerSettings"/> to create the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
+        /// <param name="documentsFeedOrDatabaseLink">The link of the <see cref="DocumentCollection"/> to create the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to create.</param>
         /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
@@ -1722,9 +1723,9 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="databaseLink">The link of the database to create the collection in. E.g. dbs/db_rid/.</param>
-        /// <param name="documentCollection">The <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> object.</param>
+        /// <param name="documentCollection">The <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
-        /// <returns>The <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="databaseLink"/> or <paramref name="documentCollection"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a collection are:
@@ -1739,7 +1740,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for collections. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -1758,20 +1759,20 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.OfferV2"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionAsync(string databaseLink, CosmosContainerSettings documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateDocumentCollectionPrivateAsync(databaseLink, documentCollection, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionPrivateAsync(
+        private async Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionPrivateAsync(
             string databaseLink,
-            CosmosContainerSettings documentCollection,
+            DocumentCollection documentCollection,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
@@ -1803,7 +1804,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                ResourceResponse<CosmosContainerSettings> collection = new ResourceResponse<CosmosContainerSettings>(await this.CreateAsync(request));
+                ResourceResponse<DocumentCollection> collection = new ResourceResponse<DocumentCollection>(await this.CreateAsync(request));
                 // set the session token
                 this.sessionContainer.SetSessionToken(collection.Resource.ResourceId, collection.Resource.AltLink, collection.Headers);
                 return collection;
@@ -1815,12 +1816,12 @@ namespace Microsoft.Azure.Cosmos
         /// You can check the status code from the response to determine whether the collection was newly created (201) or existing collection was returned (200).
         /// </summary>
         /// <param name="databaseLink">The link of the database to create the collection in. E.g. dbs/db_rid/.</param>
-        /// <param name="documentCollection">The <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> object.</param>
+        /// <param name="documentCollection">The <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
-        /// <returns>The <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="databaseLink"/> or <paramref name="documentCollection"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
-        /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a CosmosContainerSettings are:
+        /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a DocumentCollection are:
         /// <list type="table">
         ///     <listheader>
         ///         <term>StatusCode</term><description>Reason for exception</description>
@@ -1848,18 +1849,18 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.OfferV2"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, CosmosContainerSettings documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDocumentCollectionIfNotExistsPrivateAsync(databaseLink, documentCollection, options), null);
         }
 
-        private async Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionIfNotExistsPrivateAsync(
-            string databaseLink, CosmosContainerSettings documentCollection, RequestOptions options)
+        private async Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsPrivateAsync(
+            string databaseLink, DocumentCollection documentCollection, RequestOptions options)
         {
             if (string.IsNullOrEmpty(databaseLink))
             {
@@ -1873,7 +1874,7 @@ namespace Microsoft.Azure.Cosmos
 
             // ReadDatabaseAsync call is needed to support this API that takes databaseLink as a parameter, to be consistent with CreateDocumentCollectionAsync. We need to construct the collectionLink to make
             // ReadDocumentCollectionAsync call, in case database selfLink got passed to this API. We cannot simply concat the database selfLink with /colls/{collectionId} to get the collectionLink.
-            CosmosDatabaseSettings database = await this.ReadDatabaseAsync(databaseLink);
+            Database database = await this.ReadDatabaseAsync(databaseLink);
 
             // Doing a Read before Create will give us better latency for existing collections.
             // Also, in emulator case when you hit the max allowed partition count and you use this API for a collection that already exists,
@@ -1910,18 +1911,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Restores a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="sourceDocumentCollectionLink">The link to the source <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="targetDocumentCollection">The target <see cref="CosmosContainerSettings"/> object.</param>
+        /// <param name="sourceDocumentCollectionLink">The link to the source <see cref="DocumentCollection"/> object.</param>
+        /// <param name="targetDocumentCollection">The target <see cref="DocumentCollection"/> object.</param>
         /// <param name="restoreTime">(optional)The point in time to restore. If null, use the latest restorable time. </param>
         /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal Task<ResourceResponse<CosmosContainerSettings>> RestoreDocumentCollectionAsync(string sourceDocumentCollectionLink, CosmosContainerSettings targetDocumentCollection, DateTimeOffset? restoreTime = null, RequestOptions options = null)
+        internal Task<ResourceResponse<DocumentCollection>> RestoreDocumentCollectionAsync(string sourceDocumentCollectionLink, DocumentCollection targetDocumentCollection, DateTimeOffset? restoreTime = null, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.RestoreDocumentCollectionPrivateAsync(sourceDocumentCollectionLink, targetDocumentCollection, restoreTime, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosContainerSettings>> RestoreDocumentCollectionPrivateAsync(string sourceDocumentCollectionLink, CosmosContainerSettings targetDocumentCollection, DateTimeOffset? restoreTime, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<DocumentCollection>> RestoreDocumentCollectionPrivateAsync(string sourceDocumentCollectionLink, DocumentCollection targetDocumentCollection, DateTimeOffset? restoreTime, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -1991,7 +1992,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                ResourceResponse<CosmosContainerSettings> collection = new ResourceResponse<CosmosContainerSettings>(await this.CreateAsync(request));
+                ResourceResponse<DocumentCollection> collection = new ResourceResponse<DocumentCollection>(await this.CreateAsync(request));
                 // set the session token
                 this.sessionContainer.SetSessionToken(collection.Resource.ResourceId, collection.Resource.AltLink, collection.Headers);
                 return collection;
@@ -2018,7 +2019,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("targetDocumentCollectionLink");
             }
 
-            ResourceResponse<CosmosContainerSettings> response = await this.ReadDocumentCollectionPrivateAsync(
+            ResourceResponse<DocumentCollection> response = await this.ReadDocumentCollectionPrivateAsync(
                 targetDocumentCollectionLink,
                 new RequestOptions { PopulateRestoreStatus = true },
                 retryPolicyInstance);
@@ -2132,7 +2133,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to create the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> to create the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="trigger">The <see cref="Microsoft.Azure.Cosmos.Trigger"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -2232,7 +2233,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to create the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> to create the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="function">The <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -2403,9 +2404,9 @@ namespace Microsoft.Azure.Cosmos
         #region Delete Impl
 
         /// <summary>
-        /// Delete a <see cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="Microsoft.Azure.Cosmos.Database"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="databaseLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/> to delete. E.g. dbs/db_rid/ </param>
+        /// <param name="databaseLink">The link of the <see cref="Microsoft.Azure.Cosmos.Database"/> to delete. E.g. dbs/db_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="databaseLink"/> is not set.</exception>
@@ -2428,17 +2429,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosDatabaseSettings>> DeleteDatabaseAsync(string databaseLink, RequestOptions options = null)
+        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(string databaseLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosDatabaseSettings>> DeleteDatabasePrivateAsync(string databaseLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Database>> DeleteDatabasePrivateAsync(string databaseLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2460,7 +2461,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosDatabaseSettings>(await this.DeleteAsync(request));
+                return new ResourceResponse<Database>(await this.DeleteAsync(request));
             }
         }
 
@@ -2491,7 +2492,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
@@ -2530,7 +2531,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Delete a <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="documentCollectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> to delete. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
@@ -2555,17 +2556,17 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<CosmosContainerSettings>> DeleteDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDocumentCollectionPrivateAsync(documentCollectionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosContainerSettings>> DeleteDocumentCollectionPrivateAsync(string documentCollectionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionPrivateAsync(string documentCollectionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2587,7 +2588,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosContainerSettings>(await this.DeleteAsync(request));
+                return new ResourceResponse<DocumentCollection>(await this.DeleteAsync(request));
             }
         }
 
@@ -2849,16 +2850,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollection">the updated document collection.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> containing the updated resource record.
         /// </returns>
-        public Task<ResourceResponse<CosmosContainerSettings>> ReplaceDocumentCollectionAsync(CosmosContainerSettings documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(DocumentCollection documentCollection, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceDocumentCollectionPrivateAsync(documentCollection, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosContainerSettings>> ReplaceDocumentCollectionPrivateAsync(
-            CosmosContainerSettings documentCollection,
+        private async Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionPrivateAsync(
+            DocumentCollection documentCollection,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
@@ -2886,7 +2887,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                ResourceResponse<CosmosContainerSettings> collection = new ResourceResponse<CosmosContainerSettings>(await this.UpdateAsync(request));
+                ResourceResponse<DocumentCollection> collection = new ResourceResponse<DocumentCollection>(await this.UpdateAsync(request));
                 // set the session token
                 if (collection.Resource != null)
                 {
@@ -3442,7 +3443,7 @@ namespace Microsoft.Azure.Cosmos
 
         #region Read Impl
         /// <summary>
-        /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Database"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="databaseLink">The link of the Database resource to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
@@ -3485,18 +3486,18 @@ namespace Microsoft.Azure.Cosmos
         /// the values within the {} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<CosmosDatabaseSettings>> ReadDatabaseAsync(string databaseLink, RequestOptions options = null)
+        public Task<ResourceResponse<Database>> ReadDatabaseAsync(string databaseLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReadDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosDatabaseSettings>> ReadDatabasePrivateAsync(string databaseLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Database>> ReadDatabasePrivateAsync(string databaseLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3518,7 +3519,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosDatabaseSettings>(await this.ReadAsync(request));
+                return new ResourceResponse<Database>(await this.ReadAsync(request));
             }
         }
 
@@ -3697,12 +3698,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="documentCollectionLink">The link for the CosmosContainerSettings to be read.</param>
+        /// <param name="documentCollectionLink">The link for the DocumentCollection to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="documentCollectionLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -3741,19 +3742,19 @@ namespace Microsoft.Azure.Cosmos
         /// the values within the {} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<CosmosContainerSettings>> ReadDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentCollectionPrivateAsync(documentCollectionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosContainerSettings>> ReadDocumentCollectionPrivateAsync(
+        private async Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionPrivateAsync(
             string documentCollectionLink,
             RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
@@ -3778,7 +3779,7 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosContainerSettings>(await this.ReadAsync(request));
+                return new ResourceResponse<DocumentCollection>(await this.ReadAsync(request));
             }
         }
 
@@ -4372,11 +4373,11 @@ namespace Microsoft.Azure.Cosmos
         #region ReadFeed Impl
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="CosmosDatabaseSettings"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Database"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Database"/> containing the read resource record.
         /// </returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -4411,18 +4412,18 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<CosmosDatabaseSettings>> ReadDatabaseFeedAsync(FeedOptions options = null)
+        public Task<FeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDatabaseFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<CosmosDatabaseSettings>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<FeedResponse<Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4435,7 +4436,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <param name="partitionKeyRangesOrCollectionLink">The link of the resources to be read, or owner collection link, SelfLink or AltLink. E.g. /dbs/db_rid/colls/coll_rid/pkranges</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Database"/> containing the read resource record.
         /// </returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -4488,12 +4489,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> for a database from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> for a database from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="collectionsLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="collectionsLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -4533,18 +4534,18 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<CosmosContainerSettings>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null)
+        public Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentCollectionFeedPrivateAsync(collectionsLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<CosmosContainerSettings>> ReadDocumentCollectionFeedPrivateAsync(string collectionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedPrivateAsync(string collectionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5251,9 +5252,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="database">The specification for the <see cref="CosmosDatabaseSettings"/> to upsert.</param>
+        /// <param name="database">The specification for the <see cref="Database"/> to upsert.</param>
         /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
-        /// <returns>The <see cref="CosmosDatabaseSettings"/> that was upserted within a task object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Database"/> that was upserted within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Database are:
@@ -5265,12 +5266,12 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>400</term><description>BadRequest - This means something was wrong with the database object supplied. It is likely that an id was not supplied for the new Database.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosDatabaseSettings"/> with an id matching the id field of <paramref name="database"/> already existed</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Database"/> with an id matching the id field of <paramref name="database"/> already existed</description>
         ///     </item>
         /// </list>
         /// </exception>
         /// <example>
-        /// The example below upserts a new <see cref="CosmosDatabaseSettings"/> with an Id property of 'MyDatabase'
+        /// The example below upserts a new <see cref="Database"/> with an Id property of 'MyDatabase'
         /// This code snippet is intended to be used from within an Asynchronous method as it uses the await keyword
         /// <code language="c#">
         /// <![CDATA[
@@ -5282,17 +5283,17 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         ///
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosDatabaseSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<CosmosDatabaseSettings>> UpsertDatabaseAsync(CosmosDatabaseSettings database, RequestOptions options = null)
+        internal Task<ResourceResponse<Database>> UpsertDatabaseAsync(Database database, RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<CosmosDatabaseSettings>> UpsertDatabasePrivateAsync(CosmosDatabaseSettings database, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Database>> UpsertDatabasePrivateAsync(Database database, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5319,14 +5320,14 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicyInstance.OnBeforeSendRequest(request);
                 }
 
-                return new ResourceResponse<CosmosDatabaseSettings>(await this.UpsertAsync(request));
+                return new ResourceResponse<Database>(await this.UpsertAsync(request));
             }
         }
 
         /// <summary>
         /// Upserts a Document as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="documentsFeedOrDatabaseLink">The link of the <see cref="CosmosContainerSettings"/> to upsert the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
+        /// <param name="documentsFeedOrDatabaseLink">The link of the <see cref="DocumentCollection"/> to upsert the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to upsert.</param>
         /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
@@ -5498,9 +5499,9 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="databaseLink">The link of the database to upsert the collection in. E.g. dbs/db_rid/</param>
-        /// <param name="documentCollection">The <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> object.</param>
+        /// <param name="documentCollection">The <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
-        /// <returns>The <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="databaseLink"/> or <paramref name="documentCollection"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -5515,7 +5516,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for collections. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -5534,12 +5535,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<CosmosContainerSettings>> UpsertDocumentCollectionAsync(string databaseLink, CosmosContainerSettings documentCollection, RequestOptions options = null)
+        internal Task<ResourceResponse<DocumentCollection>> UpsertDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null)
         {
             // To be implemented.
             throw new NotImplementedException();
@@ -5641,7 +5642,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to upsert the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> to upsert the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="trigger">The <see cref="Microsoft.Azure.Cosmos.Trigger"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -5741,7 +5742,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.CosmosContainerSettings"/> to upsert the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.DocumentCollection"/> to upsert the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="function">The <see cref="Microsoft.Azure.Cosmos.UserDefinedFunction"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -6441,7 +6442,7 @@ namespace Microsoft.Azure.Cosmos
         /// The preferred link used in replace operation in SDK.
         /// </summary>
         /// <returns></returns>
-        private string GetLinkForRouting(CosmosResource resource)
+        private string GetLinkForRouting(Resource resource)
         {
             // we currently prefer the selflink
             return resource.SelfLink ?? resource.AltLink;
@@ -6449,7 +6450,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal void EnsureValidOverwrite(ConsistencyLevel desiredConsistencyLevel)
         {
-            ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
+            ConsistencyLevel defaultConsistencyLevel = (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
             if (!this.IsValidConsistency(defaultConsistencyLevel, desiredConsistencyLevel))
             {
                 throw new ArgumentException(string.Format(
@@ -6474,7 +6475,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.storeClientFactory = new StoreClientFactory(
                 this.connectionPolicy.ConnectionProtocol,
-                (int) this.connectionPolicy.RequestTimeout.TotalSeconds,
+                (int)this.connectionPolicy.RequestTimeout.TotalSeconds,
                 this.maxConcurrentConnectionOpenRequests,
                 this.connectionPolicy.UserAgentContainer,
                 this.eventSource,
@@ -6487,7 +6488,8 @@ namespace Microsoft.Azure.Cosmos
                 this.maxRequestsPerRntbdChannel,
                 this.rntbdReceiveHangDetectionTimeSeconds,
                 this.rntbdSendHangDetectionTimeSeconds,
-                this.transportClientHandlerFactory);
+                false); // TBD: Enable CPU monitor
+                //this.transportClientHandlerFactory);
 
             this.AddressResolver = new GlobalAddressResolver(
                 this.globalEndpointManager,
@@ -6516,10 +6518,10 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 true,
                 this.connectionPolicy.EnableReadRequestsFallback ??
-                    (this.accountServiceConfiguration.DefaultConsistencyLevel !=
+                    ((ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel !=
                      ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
-                this.useMultipleWriteLocations && this.accountServiceConfiguration.DefaultConsistencyLevel != ConsistencyLevel.Strong);
+                this.useMultipleWriteLocations && (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel != ConsistencyLevel.Strong);
 
             if (subscribeRntbdStatus)
             {
@@ -6589,21 +6591,26 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void ValidateResource(CosmosResource resource)
+        internal void ValidateResource(Resource resource)
         {
-            if (!string.IsNullOrEmpty(resource.Id))
+            this.ValidateResource(resource.Id);
+        }
+
+        internal void ValidateResource(string resourceId)
+        {
+                if (!string.IsNullOrEmpty(resourceId))
             {
-                int match = resource.Id.IndexOfAny(new char[] { '/', '\\', '?', '#' });
+                int match = resourceId.IndexOfAny(new char[] { '/', '\\', '?', '#' });
                 if (match != -1)
                 {
                     throw new ArgumentException(string.Format(
                                 CultureInfo.CurrentUICulture,
                                 RMResources.InvalidCharacterInResourceName,
-                                resource.Id[match]
+                                resourceId[match]
                                 ));
                 }
 
-                if (resource.Id[resource.Id.Length - 1] == ' ')
+                if (resourceId[resourceId.Length - 1] == ' ')
                 {
                     throw new ArgumentException(
                                 RMResources.InvalidSpaceEndingInResourceName
@@ -6680,7 +6687,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.desiredConsistencyLevel.HasValue)
             {
                 // check anyways since default consistency level might have been refreshed.
-                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, this.desiredConsistencyLevel.Value))
+                if (!this.IsValidConsistency((ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel, this.desiredConsistencyLevel.Value))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,
@@ -6711,7 +6718,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (options.ConsistencyLevel.HasValue)
             {
-                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, options.ConsistencyLevel.Value))
+                if (!this.IsValidConsistency((ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel, options.ConsistencyLevel.Value))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,

@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
 
     /// <summary>
     /// The IDocumentClient interface captures the API signatures of the Azure Cosmos DB service .NET SDK.
@@ -97,9 +97,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="database">The specification for the <see cref="CosmosDatabaseSettings"/> to create.</param>
+        /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
         /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
-        /// <returns>The <see cref="CosmosDatabaseSettings"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Database are:
@@ -111,12 +111,12 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>400</term><description>BadRequest - This means something was wrong with the database object supplied. It is likely that an id was not supplied for the new Database.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosDatabaseSettings"/> with an id matching the id field of <paramref name="database"/> already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="Database"/> with an id matching the id field of <paramref name="database"/> already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
         /// <example>
-        /// The example below creates a new <see cref="CosmosDatabaseSettings"/> with an Id property of 'MyDatabase'
+        /// The example below creates a new <see cref="Database"/> with an Id property of 'MyDatabase'
         /// This code snippet is intended to be used from within an asynchronous method as it uses the await keyword
         /// <code language="c#">
         /// <![CDATA[
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// If you would like to construct a <see cref="CosmosDatabaseSettings"/> from within a synchronous method then you need to use the following code
+        /// If you would like to construct a <see cref="Database"/> from within a synchronous method then you need to use the following code
         /// <code language="c#">
         /// <![CDATA[
         /// using (IDocumentClient client = new DocumentClient(new Uri("service endpoint"), "auth key"))
@@ -138,24 +138,24 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosDatabaseSettings>> CreateDatabaseAsync(CosmosDatabaseSettings database, RequestOptions options = null);
+        Task<ResourceResponse<Database>> CreateDatabaseAsync(Database database, RequestOptions options = null);
 
         /// <summary>
         /// Creates(if doesn't exist) or gets(if already exists) a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// You can check the status code from the response to determine whether the database was newly created(201) or existing database was returned(200)
         /// </summary>
-        /// <param name="database">The specification for the <see cref="CosmosDatabaseSettings"/> to create.</param>
+        /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
         /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
-        /// <returns>The <see cref="CosmosDatabaseSettings"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property.</exception>
         /// <example>
-        /// The example below creates a new <see cref="CosmosDatabaseSettings"/> with an Id property of 'MyDatabase'
+        /// The example below creates a new <see cref="Database"/> with an Id property of 'MyDatabase'
         /// This code snippet is intended to be used from within an asynchronous method as it uses the await keyword
         /// <code language="c#">
         /// <![CDATA[
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// If you would like to construct a <see cref="CosmosDatabaseSettings"/> from within a synchronous method then you need to use the following code
+        /// If you would like to construct a <see cref="Database"/> from within a synchronous method then you need to use the following code
         /// <code language="c#">
         /// <![CDATA[
         /// using (IDocumentClient client = new DocumentClient(new Uri("service endpoint"), "auth key"))
@@ -177,20 +177,20 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosDatabaseSettings>> CreateDatabaseIfNotExistsAsync(CosmosDatabaseSettings database, RequestOptions options = null);
+        Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, RequestOptions options = null);
 
 
         /// <summary>
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="databaseLink">The link of the database to create the collection in. E.g. dbs/db_rid/.</param>
-        /// <param name="documentCollection">The <see cref="CosmosContainerSettings"/> object.</param>
+        /// <param name="documentCollection">The <see cref="DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
-        /// <returns>The <see cref="CosmosContainerSettings"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="DocumentCollection"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="databaseLink"/> or <paramref name="documentCollection"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a collection are:
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for collections. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosContainerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="DocumentCollection"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -224,21 +224,21 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionAsync(string databaseLink, CosmosContainerSettings documentCollection, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null);
 
         /// <summary>
         /// Creates (if doesn't exist) or gets (if already exists) a collection as an asychronous operation in the Azure Cosmos DB service.
         /// You can check the status code from the response to determine whether the collection was newly created (201) or existing collection was returned (200).
         /// </summary>
         /// <param name="databaseLink">The link of the database to create the collection in. E.g. dbs/db_rid/.</param>
-        /// <param name="documentCollection">The <see cref="CosmosContainerSettings"/> object.</param>
+        /// <param name="documentCollection">The <see cref="DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
-        /// <returns>The <see cref="CosmosContainerSettings"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="DocumentCollection"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="databaseLink"/> or <paramref name="documentCollection"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a DocumentCollection are:
@@ -269,42 +269,42 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, CosmosContainerSettings documentCollection, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null);
 
         /// <summary>
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="databaseUri">The URI of the database to create the collection in.</param>
-        /// <param name="documentCollection">The <see cref="CosmosContainerSettings"/> object.</param>
+        /// <param name="documentCollection">The <see cref="DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionAsync(
+        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(
             Uri databaseUri,
-            CosmosContainerSettings documentCollection,
+            DocumentCollection documentCollection,
             RequestOptions options = null);
 
         /// <summary>
         /// Creates (if doesn't exist) or gets (if already exists) a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="databaseUri">the URI of the database to create the collection in.</param>
-        /// <param name="documentCollection">The <see cref="CosmosContainerSettings"/> object.</param>
+        /// <param name="documentCollection">The <see cref="DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
-        /// <returns>The <see cref="CosmosContainerSettings"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionIfNotExistsAsync(
+        /// <returns>The <see cref="DocumentCollection"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
+        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(
             Uri databaseUri,
-            CosmosContainerSettings documentCollection,
+            DocumentCollection documentCollection,
             RequestOptions options = null);
 
 
         /// <summary>
         /// Creates a Document as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to create the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to create the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to create.</param>
         /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to create the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to create the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="trigger">The <see cref="Trigger"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to create the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to create the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="function">The <see cref="UserDefinedFunction"/> object to create.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -617,9 +617,9 @@ namespace Microsoft.Azure.Cosmos
 
         #region Delete 
         /// <summary>
-        /// Delete a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="Database"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="databaseLink">The link of the <see cref="CosmosDatabaseSettings"/> to delete. E.g. dbs/db_rid/ </param>
+        /// <param name="databaseLink">The link of the <see cref="Database"/> to delete. E.g. dbs/db_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which will contain information about the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="databaseLink"/> is not set.</exception>
@@ -642,11 +642,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosDatabaseSettings>> DeleteDatabaseAsync(string databaseLink, RequestOptions options = null);
+        Task<ResourceResponse<Database>> DeleteDatabaseAsync(string databaseLink, RequestOptions options = null);
 
         /// <summary>
         /// Delete a database as an asynchronous operation in the Azure Cosmos DB service.
@@ -654,10 +654,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">The URI of the database to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosDatabaseSettings>> DeleteDatabaseAsync(Uri databaseUri, RequestOptions options = null);
+        Task<ResourceResponse<Database>> DeleteDatabaseAsync(Uri databaseUri, RequestOptions options = null);
 
         /// <summary>
-        /// Delete a <see cref="CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="DocumentCollection"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="documentCollectionLink">The link of the <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> to delete. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
@@ -682,11 +682,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosContainerSettings>> DeleteDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null);
 
         /// <summary>
         /// Delete a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -694,7 +694,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the document collection to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosContainerSettings>> DeleteDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null);
 
         /// <summary>
         /// Delete a <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -723,7 +723,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
@@ -908,9 +908,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollection">the updated document collection.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosContainerSettings"/> containing the updated resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="DocumentCollection"/> containing the updated resource record.
         /// </returns>
-        Task<ResourceResponse<CosmosContainerSettings>> ReplaceDocumentCollectionAsync(CosmosContainerSettings documentCollection, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(DocumentCollection documentCollection, RequestOptions options = null);
 
         /// <summary>
         /// Replaces a document collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -919,9 +919,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollection">The updated document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<CosmosContainerSettings>> ReplaceDocumentCollectionAsync(
+        Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(
             Uri documentCollectionUri,
-            CosmosContainerSettings documentCollection,
+            DocumentCollection documentCollection,
             RequestOptions options = null);
 
         /// <summary>
@@ -1237,12 +1237,12 @@ namespace Microsoft.Azure.Cosmos
         #region Read 
 
         /// <summary>
-        /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Database"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="databaseLink">The link of the Database resource to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="databaseLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1280,20 +1280,20 @@ namespace Microsoft.Azure.Cosmos
         /// the values within the {} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<CosmosDatabaseSettings>> ReadDatabaseAsync(string databaseLink, RequestOptions options = null);
+        Task<ResourceResponse<Database>> ReadDatabaseAsync(string databaseLink, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosDatabaseSettings"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// Reads a <see cref="Database"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
         /// <param name="databaseUri">A URI to the Database resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="databaseUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1324,19 +1324,19 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosDatabaseSettings"/> 
+        /// <seealso cref="Database"/> 
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosDatabaseSettings>> ReadDatabaseAsync(Uri databaseUri, RequestOptions options = null);
+        Task<ResourceResponse<Database>> ReadDatabaseAsync(Uri databaseUri, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="DocumentCollection"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="documentCollectionLink">The link for the DocumentCollection to be read.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="DocumentCollection"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="documentCollectionLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1375,20 +1375,20 @@ namespace Microsoft.Azure.Cosmos
         /// the values within the {} change depending on which method you wish to use to address the resource.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<CosmosContainerSettings>> ReadDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosContainerSettings"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// Reads a <see cref="DocumentCollection"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentCollectionUri">A URI to the DocumentCollection resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="DocumentCollection"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="documentCollectionUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -1420,11 +1420,11 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="CosmosContainerSettings"/> 
+        /// <seealso cref="DocumentCollection"/> 
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<CosmosContainerSettings>> ReadDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -2072,11 +2072,11 @@ namespace Microsoft.Azure.Cosmos
         #region ReadFeed 
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="CosmosDatabaseSettings"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Database"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
         /// </returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -2111,11 +2111,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<CosmosDatabaseSettings>> ReadDatabaseFeedAsync(FeedOptions options = null);
+        Task<FeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
@@ -2123,7 +2123,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <param name="partitionKeyRangesOrCollectionLink">The link of the resources to be read, or owner collection link, SelfLink or AltLink. E.g. /dbs/db_rid/colls/coll_rid/pkranges</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
         /// </returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -2192,12 +2192,12 @@ namespace Microsoft.Azure.Cosmos
         Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(Uri partitionKeyRangesOrCollectionUri, FeedOptions options = null);
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="CosmosContainerSettings"/> for a database from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="DocumentCollection"/> for a database from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="collectionsLink">The SelfLink of the resources to be read. E.g. /dbs/db_rid/colls/ </param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="DocumentCollection"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="collectionsLink"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -2237,11 +2237,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<CosmosContainerSettings>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null);
+        Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of collections for a database as an asynchronous operation in the Azure Cosmos DB service.
@@ -2249,7 +2249,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">The URI of the parent Database.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<CosmosContainerSettings>> ReadDocumentCollectionFeedAsync(Uri databaseUri, FeedOptions options = null);
+        Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(Uri databaseUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of documents for a specified collection from the Azure Cosmos DB service.
@@ -2739,7 +2739,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts a Document as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to upsert the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to upsert the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to upsert.</param>
         /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
@@ -2917,7 +2917,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts a trigger as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to upsert the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to upsert the trigger in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="trigger">The <see cref="Trigger"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -2988,7 +2988,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts a user defined function as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="collectionLink">The link of the <see cref="CosmosContainerSettings"/> to upsert the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
+        /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to upsert the user defined function in. E.g. dbs/db_rid/colls/col_rid/ </param>
         /// <param name="function">The <see cref="UserDefinedFunction"/> object to upsert.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>for this request.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -3056,7 +3056,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">The URI of the parent database.</param>
         /// <param name="feedOptions">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for processing the query results feed.</param>
         /// <returns>The query result set.</returns>
-        IOrderedQueryable<CosmosContainerSettings> CreateDocumentCollectionQuery(Uri databaseUri, FeedOptions feedOptions = null);
+        IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(Uri databaseUri, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Method to create a query for document collections in the Azure Cosmos DB service.
@@ -3273,9 +3273,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        IOrderedQueryable<CosmosDatabaseSettings> CreateDatabaseQuery(FeedOptions feedOptions = null);
+        IOrderedQueryable<Database> CreateDatabaseQuery(FeedOptions feedOptions = null);
 
         /// <summary>
         /// Overloaded. This method creates a query for database resources under an Azure Cosmos DB database account by using a SQL statement. It returns an IQueryable{dynamic}.
@@ -3292,7 +3292,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDatabaseQuery(string sqlExpression, FeedOptions feedOptions = null);
 
@@ -3314,7 +3314,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDatabaseQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null);
 
@@ -3332,9 +3332,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        IOrderedQueryable<CosmosContainerSettings> CreateDocumentCollectionQuery(string databaseLink, FeedOptions feedOptions = null);
+        IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(string databaseLink, FeedOptions feedOptions = null);
 
         /// <summary>
         /// Overloaded. This method creates a query for collections under an Azure Cosmos DB database using a SQL statement.   It returns an IQueryable{DocumentCollection}.
@@ -3352,7 +3352,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, string sqlExpression, FeedOptions feedOptions = null);
 
@@ -3374,7 +3374,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null);
 

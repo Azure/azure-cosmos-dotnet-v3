@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Internal
 
         public ReplicationPolicy SystemReplicationPolicy => this.AccountSettings.SystemReplicationPolicy;
 
-        public ConsistencyLevel DefaultConsistencyLevel => this.AccountSettings.ConsistencySetting.DefaultConsistencyLevel;
+        public ConsistencyLevel DefaultConsistencyLevel => (ConsistencyLevel)this.AccountSettings.ConsistencySetting.DefaultConsistencyLevel;
 
         public ReadPolicy ReadPolicy => this.AccountSettings.ReadPolicy;
 

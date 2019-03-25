@@ -26,11 +26,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        public IOrderedQueryable<CosmosDatabaseSettings> CreateDatabaseQuery(FeedOptions feedOptions = null)
+        public IOrderedQueryable<Database> CreateDatabaseQuery(FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosDatabaseSettings>(this, ResourceType.Database, typeof(CosmosDatabaseSettings), Paths.Databases_Root, feedOptions);
+            return new DocumentQuery<Database>(this, ResourceType.Database, typeof(Database), Paths.Databases_Root, feedOptions);
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDatabaseQuery(string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -73,11 +73,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosDatabaseSettings"/>
+        /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDatabaseQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosDatabaseSettings>(this, ResourceType.Database, typeof(CosmosDatabaseSettings), Paths.Databases_Root, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<Database>(this, ResourceType.Database, typeof(Database), Paths.Databases_Root, feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -86,10 +86,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="feedOptions">The options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        internal IDocumentQuery<CosmosDatabaseSettings> CreateDatabaseChangeFeedQuery(ChangeFeedOptions feedOptions)
+        internal IDocumentQuery<Database> CreateDatabaseChangeFeedQuery(ChangeFeedOptions feedOptions)
         {
-            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            return new ChangeFeedQuery<CosmosDatabaseSettings>(this, ResourceType.Database, null, feedOptions);
+            throw new NotImplementedException();
+            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            ////return new Document.ChangeFeedQuery<Database>(this, ResourceType.Database, null, feedOptions);
         }
 
         /// <summary>
@@ -106,11 +107,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        public IOrderedQueryable<CosmosContainerSettings> CreateDocumentCollectionQuery(string databaseLink, FeedOptions feedOptions = null)
+        public IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(string databaseLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosContainerSettings>(this, ResourceType.Collection, typeof(CosmosContainerSettings), databaseLink, feedOptions);
+            return new DocumentQuery<DocumentCollection>(this, ResourceType.Collection, typeof(DocumentCollection), databaseLink, feedOptions);
         }
 
         /// <summary>
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -154,11 +155,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="CosmosContainerSettings"/>
+        /// <seealso cref="DocumentCollection"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosContainerSettings>(this, ResourceType.Collection, typeof(CosmosContainerSettings), databaseLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<DocumentCollection>(this, ResourceType.Collection, typeof(DocumentCollection), databaseLink, feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -168,15 +169,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseLink">Specifies the database to read collections from.</param>
         /// <param name="feedOptions">Specifies the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        internal IDocumentQuery<CosmosContainerSettings> CreateDocumentCollectionChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
+        internal IDocumentQuery<DocumentCollection> CreateDocumentCollectionChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
         {
-            if(string.IsNullOrEmpty(databaseLink))
-            {
-                throw new ArgumentException(nameof(databaseLink));
-            }
+            throw new NotImplementedException();
+            ////if(string.IsNullOrEmpty(databaseLink))
+            ////{
+            ////    throw new ArgumentException(nameof(databaseLink));
+            ////}
 
-            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            return new ChangeFeedQuery<CosmosContainerSettings>(this, ResourceType.Collection, databaseLink, feedOptions);
+            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            ////return new ChangeFeedQuery<DocumentCollection>(this, ResourceType.Collection, databaseLink, feedOptions);
         }
 
         /// <summary>
@@ -924,12 +926,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange"/>
         public IDocumentQuery<Document> CreateDocumentChangeFeedQuery(string collectionLink, ChangeFeedOptions feedOptions)
         {
-            if (collectionLink == null)
-            {
-                throw new ArgumentNullException("collectionLink");
-            }
+            throw new NotImplementedException();
+            ////if (collectionLink == null)
+            ////{
+            ////    throw new ArgumentNullException("collectionLink");
+            ////}
 
-            return new ChangeFeedQuery<Document>(this, ResourceType.Document, collectionLink, feedOptions);
+            ////return new ChangeFeedQuery<Document>(this, ResourceType.Document, collectionLink, feedOptions);
         }
 
         /// <summary>
@@ -1092,13 +1095,14 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<UserDefinedType> CreateUserDefinedTypeChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
         {
-            if (string.IsNullOrEmpty(databaseLink))
-            {
-                throw new ArgumentException(nameof(databaseLink));
-            }
+            throw new NotImplementedException();
+            ////if (string.IsNullOrEmpty(databaseLink))
+            ////{
+            ////    throw new ArgumentException(nameof(databaseLink));
+            ////}
 
-            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink, feedOptions);
+            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            ////return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink, feedOptions);
         }
         #endregion Query Methods
 

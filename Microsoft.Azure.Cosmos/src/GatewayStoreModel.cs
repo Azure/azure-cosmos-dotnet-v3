@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
-                    databaseAccount = documentServiceResponse.GetInternalResource<CosmosAccountSettings>(CosmosAccountSettings.CreateNewInstance);
+                    databaseAccount = CosmosResource.FromStream<CosmosAccountSettings>(documentServiceResponse);
                 }
 
                 long longValue;

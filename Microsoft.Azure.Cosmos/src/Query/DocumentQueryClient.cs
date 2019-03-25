@@ -122,17 +122,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            return await this.innerClient.GetDefaultConsistencyLevelAsync();
+            return (ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
         }
 
         public async Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
-            return await this.innerClient.GetDesiredConsistencyLevelAsync();
+            return (ConsistencyLevel)await this.innerClient.GetDesiredConsistencyLevelAsync();
         }
 
         public Task EnsureValidOverwrite(ConsistencyLevel requestedConsistencyLevel)
         {
-            this.innerClient.EnsureValidOverwrite(requestedConsistencyLevel);
+            this.innerClient.EnsureValidOverwrite((Cosmos.ConsistencyLevel)requestedConsistencyLevel);
             return CompletedTask.Instance;
         }
 

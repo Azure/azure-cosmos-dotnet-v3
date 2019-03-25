@@ -53,5 +53,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.MaxStalenessIntervalInSeconds)]
         public int MaxStalenessIntervalInSeconds { get; set; }
+
+        internal Documents.ConsistencyLevel ToDirectConsistencyLevel()
+        {
+            return (Documents.ConsistencyLevel)this.DefaultConsistencyLevel;
+        }
     }
 }
