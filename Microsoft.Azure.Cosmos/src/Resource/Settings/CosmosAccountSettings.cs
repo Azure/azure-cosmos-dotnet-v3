@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Cosmos.Internal;
@@ -15,11 +16,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class CosmosAccountSettings : CosmosResource
     {
-        private ReplicationPolicy replicationPolicy;
-        private CosmosConsistencySettings consistencyPolicy;
-        private ReplicationPolicy systemReplicationPolicy;
-        private ReadPolicy readPolicy;
-        private Dictionary<string, object> queryEngineConfiguration;
         private Collection<CosmosAccountLocation> readLocations;
         private Collection<CosmosAccountLocation> writeLocations;
 
@@ -59,30 +55,6 @@ namespace Microsoft.Azure.Cosmos
             get { return this.WriteLocationsInternal; }
         }
 
-        [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
-        internal Collection<CosmosAccountLocation> WriteLocationsInternal
-        {
-            get
-            {
-                if (this.writeLocations == null)
-                {
-                    this.writeLocations = this.GetObjectCollection<CosmosAccountLocation>(Constants.Properties.WritableLocations);
-
-                    if (this.writeLocations == null)
-                    {
-                        this.writeLocations = new Collection<CosmosAccountLocation>();
-                        base.SetObjectCollection(Constants.Properties.WritableLocations, this.writeLocations);
-                    }
-                }
-                return this.writeLocations;
-            }
-            set
-            {
-                this.writeLocations = value;
-                base.SetObjectCollection(Constants.Properties.WritableLocations, value);
-            }
-        }
-
         /// <summary>
         /// Gets the list of locations representing the readable regions of
         /// this database account from the Azure Cosmos DB service.
@@ -93,6 +65,23 @@ namespace Microsoft.Azure.Cosmos
             get { return this.ReadLocationsInternal; }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
+        internal Collection<CosmosAccountLocation> WriteLocationsInternal
+        {
+            get
+            {
+                if (this.writeLocations == null)
+                {
+                    this.writeLocations = new Collection<CosmosAccountLocation>();
+                }
+                return this.writeLocations;
+            }
+            set
+            {
+                this.writeLocations = value;
+            }
+        }
+
         [JsonProperty(PropertyName = Constants.Properties.ReadableLocations)]
         internal Collection<CosmosAccountLocation> ReadLocationsInternal
         {
@@ -100,20 +89,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.readLocations == null)
                 {
-                    this.readLocations = this.GetObjectCollection<CosmosAccountLocation>(Constants.Properties.ReadableLocations);
-
-                    if (this.readLocations == null)
-                    {
-                        this.readLocations = new Collection<CosmosAccountLocation>();
-                        base.SetObjectCollection(Constants.Properties.ReadableLocations, this.readLocations);
-                    }
+                    this.readLocations = new Collection<CosmosAccountLocation>();
                 }
                 return this.readLocations;
             }
             set
             {
                 this.readLocations = value;
-                base.SetObjectCollection(Constants.Properties.ReadableLocations, value);
             }
         }
 
@@ -187,22 +169,8 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The ConsistencySetting.
         /// </value>
-        public virtual CosmosConsistencySettings ConsistencySetting
-        {
-            get
-            {
-                if (this.consistencyPolicy == null)
-                {
-                    this.consistencyPolicy = base.GetObject<CosmosConsistencySettings>(Constants.Properties.UserConsistencyPolicy);
-
-                    if (this.consistencyPolicy == null)
-                    {
-                        this.consistencyPolicy = new CosmosConsistencySettings();
-                    }
-                }
-                return this.consistencyPolicy;
-            }
-        }
+        [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
+        public virtual CosmosConsistencySettings ConsistencySetting { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
@@ -222,33 +190,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal ReadPolicy ReadPolicy { get; set; }
 
-        internal IDictionary<string, object> QueryEngineConfiuration
-        {
-            get
-            {
-                if (this.queryEngineConfiguration == null)
-                {
-                    string queryEngineConfigurationJsonString = base.GetValue<string>(Constants.Properties.QueryEngineConfiguration);
-                    if (!string.IsNullOrEmpty(queryEngineConfigurationJsonString))
-                    {
-                        this.queryEngineConfiguration = JsonConvert.DeserializeObject<Dictionary<string, object>>(queryEngineConfigurationJsonString);
-                    }
-
-                    if (this.queryEngineConfiguration == null)
-                    {
-                        this.queryEngineConfiguration = new Dictionary<string, object>();
-                    }
-                }
-
-                return this.queryEngineConfiguration;
-            }
-        }
+        [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
+        internal IDictionary<string, object> QueryEngineConfiuration { get; set; }
 
         internal bool EnableMultipleWriteLocations { get; set; }
-
-        internal static CosmosAccountSettings CreateNewInstance()
-        {
-            return new CosmosAccountSettings();
-        }
     }
 }

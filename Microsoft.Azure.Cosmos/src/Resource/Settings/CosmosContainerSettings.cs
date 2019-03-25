@@ -2,6 +2,15 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Linq;
+using Microsoft.Azure.Documents;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -95,13 +104,6 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="CosmosDatabaseSettings"/>
     public class CosmosContainerSettings : CosmosResource
     {
-        private IndexingPolicy indexingPolicy;
-        private PartitionKeyDefinition partitionKey;
-        private SchemaDiscoveryPolicy schemaDiscoveryPolicy;
-        private UniqueKeyPolicy uniqueKeyPolicy;
-        private ConflictResolutionPolicy conflictResolutionPolicy;
-        private ChangeFeedPolicy changeFeedPolicy;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -131,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
-        public CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
+        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
         {
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
@@ -145,117 +147,23 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The indexing policy associated with the collection.
         /// </value>
-        public IndexingPolicy IndexingPolicy
+        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
+        public IndexingPolicy IndexingPolicy { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [JsonIgnore]
+        public string PartitionKeyPath
         {
             get
             {
-                if (this.indexingPolicy == null)
+                if (this.PartitionKey != null)
                 {
-                    this.indexingPolicy = base.GetObject<IndexingPolicy>(Constants.Properties.IndexingPolicy) ?? new IndexingPolicy();
+                    return null;
                 }
 
-                return this.indexingPolicy;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "IndexingPolicy"));
-                }
-
-                this.indexingPolicy = value;
-                base.SetObject<IndexingPolicy>(Constants.Properties.IndexingPolicy, value);
-            }
-        }
-
-        /// <summary>
-        /// Gets the self-link for documents in a collection from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for documents in a collection.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.DocumentsLink)]
-        internal string DocumentsLink
-        {
-            get
-            {
-                return this.SelfLink.TrimEnd('/') + "/" + base.GetValue<string>(Constants.Properties.DocumentsLink);
-            }
-        }
-
-        /// <summary>
-        /// Gets the self-link for stored procedures in a collection from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for stored procedures in a collection.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.StoredProceduresLink)]
-        internal string StoredProceduresLink
-        {
-            get
-            {
-                return this.SelfLink.TrimEnd('/') + "/" + base.GetValue<string>(Constants.Properties.StoredProceduresLink);
-            }
-        }
-
-        /// <summary>
-        /// Gets the self-link for triggers in a collection from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for triggers in a collection.
-        /// </value>
-        internal string TriggersLink
-        {
-            get
-            {
-                return this.SelfLink.TrimEnd('/') + "/" + base.GetValue<string>(Constants.Properties.TriggersLink);
-            }
-        }
-
-        /// <summary>
-        /// Gets the self-link for user defined functions in a collection from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for user defined functions in a collection.
-        /// </value>
-        internal string UserDefinedFunctionsLink
-        {
-            get
-            {
-                return this.SelfLink.TrimEnd('/') + "/" + base.GetValue<string>(Constants.Properties.UserDefinedFunctionsLink);
-            }
-        }
-
-        /// <summary>
-        /// Gets the self-link for conflicts in a collection from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for conflicts in a collection.
-        /// </value>
-        internal string ConflictsLink
-        {
-            get
-            {
-                return this.SelfLink.TrimEnd('/') + "/" + base.GetValue<string>(Constants.Properties.ConflictsLink);
-            }
-        }
-
-        /// <summary>
-        /// Gets the self-link for the effective offer resource for the collection from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for the effective offer resource for the collection.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.OfferResourceLink)]
-        internal string OfferResourceLink
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.OfferResourceLink);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.OfferResourceLink, value);
+                return this.PartitionKey.Paths[0];
             }
         }
 
@@ -266,29 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="PartitionKeyDefinition"/> object.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
-        public PartitionKeyDefinition PartitionKey
-        {
-            get
-            {
-                // Thread safe lazy initialization for case when collection is cached (and is basically readonly).
-                if (this.partitionKey == null)
-                {
-                    this.partitionKey = base.GetValue<PartitionKeyDefinition>(Constants.Properties.PartitionKey) ?? new PartitionKeyDefinition();
-                }
-
-                return this.partitionKey;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "PartitionKey"));
-                }
-
-                this.partitionKey = value;
-                base.SetValue(Constants.Properties.PartitionKey, this.partitionKey);
-            }
-        }
+        internal PartitionKeyDefinition PartitionKey { get; set; }
 
         /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
@@ -362,17 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// Internal property used as a helper to convert to the back-end type int?
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
-        internal int? InternalTimeToLive
-        {
-            get
-            {
-                return base.GetValue<int?>(Constants.Properties.DefaultTimeToLive);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.DefaultTimeToLive, value);
-            }
-        }
+        internal int? InternalTimeToLive { get; set; }
 
         /// <summary>
         /// Gets the <see cref="SchemaDiscoveryPolicy"/> associated with the collection. 
@@ -380,57 +256,14 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The schema discovery policy associated with the collection.
         /// </value>
-        internal SchemaDiscoveryPolicy SchemaDiscoveryPolicy
-        {
-            get
-            {
-                // Thread safe lazy initialization for case when collection is cached (and is basically read only).
-                if (this.schemaDiscoveryPolicy == null)
-                {
-                    this.schemaDiscoveryPolicy = base.GetObject<SchemaDiscoveryPolicy>(Constants.Properties.SchemaDiscoveryPolicy) ?? new SchemaDiscoveryPolicy();
-                }
-
-                return this.schemaDiscoveryPolicy;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "SchemaDiscoveryPolicy"));
-                }
-
-                this.schemaDiscoveryPolicy = value;
-                base.SetObject<SchemaDiscoveryPolicy>(Constants.Properties.SchemaDiscoveryPolicy, value);
-            }
-        }
+        [JsonProperty(PropertyName = Constants.Properties.SchemaDiscoveryPolicy)]
+        internal SchemaDiscoveryPolicy SchemaDiscoveryPolicy { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
-        public UniqueKeyPolicy UniqueKeyPolicy
-        {
-            get
-            {
-                // Thread safe lazy initialization for case when collection is cached (and is basically read only).
-                if (this.uniqueKeyPolicy == null)
-                {
-                    this.uniqueKeyPolicy = base.GetObject<UniqueKeyPolicy>(Constants.Properties.UniqueKeyPolicy) ?? new UniqueKeyPolicy();
-                }
-
-                return this.uniqueKeyPolicy;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueKeyPolicy"));
-                }
-
-                this.uniqueKeyPolicy = value;
-                base.SetObject<UniqueKeyPolicy>(Constants.Properties.UniqueKeyPolicy, value);
-            }
-        }
+        public UniqueKeyPolicy UniqueKeyPolicy { get; set; }
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.
@@ -442,44 +275,17 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(Id));
             }
 
-            if (this.partitionKey == null)
+            if (this.PartitionKey == null)
             {
-                throw new ArgumentNullException(nameof(partitionKey));
+                throw new ArgumentNullException(nameof(PartitionKey));
             }
-        }
-
-        internal static CosmosContainerSettings CreateContainerSettings(string id, string partitionKeyPath)
-        {
-            return new CosmosContainerSettings(id, partitionKeyPath: partitionKeyPath);
         }
 
         /// <summary>
         /// Gets or sets the <see cref="ConflictResolutionPolicy"/> that is used for resolving conflicting writes on documents in different regions, in a collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
-        internal ConflictResolutionPolicy ConflictResolutionPolicy
-        {
-            get
-            {
-                // Thread safe lazy initialization for case when collection is cached (and is basically read only).
-                if (this.conflictResolutionPolicy == null)
-                {
-                    this.conflictResolutionPolicy = base.GetObject<ConflictResolutionPolicy>(Constants.Properties.ConflictResolutionPolicy) ?? new ConflictResolutionPolicy();
-                }
-
-                return this.conflictResolutionPolicy;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "ConflictResolutionPolicy"));
-                }
-
-                this.conflictResolutionPolicy = value;
-                base.SetObject<ConflictResolutionPolicy>(Constants.Properties.ConflictResolutionPolicy, value);
-            }
-        }
+        internal ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
 
         /// <summary>
         /// Gets a collection of <see cref="PartitionKeyRangeStatistics"/> object in the Azure Cosmos DB service.
@@ -535,11 +341,11 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions.PopulatePartitionKeyRangeStatistics"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.PartitionKeyStatistics"/>
         [JsonIgnore]
-        public IReadOnlyList<PartitionKeyRangeStatistics> PartitionKeyRangeStatistics
+        internal IReadOnlyList<PartitionKeyRangeStatistics> PartitionKeyRangeStatistics
         {
             get
             {
-                var list = this.StatisticsJRaw
+                var list = (this.StatisticsJRaw ?? new Collection<JRaw>())
                     .Where(jraw => jraw != null)
                     .Select(jraw => JsonConvert.DeserializeObject<PartitionKeyRangeStatistics>((string)jraw.Value))
                     .ToList();
@@ -549,30 +355,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [JsonProperty(PropertyName = Constants.Properties.Statistics)]
-        internal IReadOnlyList<JRaw> StatisticsJRaw
-        {
-            get
-            {
-                return base.GetValue<IReadOnlyList<JRaw>>(Constants.Properties.Statistics) ?? new Collection<JRaw>();
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Statistics, value);
-            }
-        }
-
-        internal bool HasPartitionKey
-        {
-            get
-            {
-                if (this.partitionKey != null)
-                {
-                    return true;
-                }
-
-                return base.GetValue<object>(Constants.Properties.PartitionKey) != null;
-            }
-        }
+        internal IReadOnlyList<JRaw> StatisticsJRaw { get; set; }
 
         /// <summary>
         /// Gets the <see cref="ChangeFeedPolicy"/> associated with the collection from the Azure Cosmos DB service. 
@@ -581,63 +364,6 @@ namespace Microsoft.Azure.Cosmos
         /// The change feed policy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.ChangeFeedPolicy)]
-        internal ChangeFeedPolicy ChangeFeedPolicy
-        {
-            get
-            {
-                if (this.changeFeedPolicy == null)
-                {
-                    this.changeFeedPolicy = base.GetObject<ChangeFeedPolicy>(Constants.Properties.ChangeFeedPolicy) ?? new ChangeFeedPolicy();
-                }
-
-                return this.changeFeedPolicy;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "ChangeFeedPolicy"));
-                }
-
-                this.changeFeedPolicy = value;
-                base.SetObject<ChangeFeedPolicy>(Constants.Properties.ChangeFeedPolicy, value);
-            }
-        }
-
-        internal override void OnSave()
-        {
-            if (this.indexingPolicy != null)
-            {
-                this.indexingPolicy.OnSave();
-                base.SetObject(Constants.Properties.IndexingPolicy, this.indexingPolicy);
-            }
-
-            if (this.partitionKey != null)
-            {
-                base.SetValue(Constants.Properties.PartitionKey, this.partitionKey);
-            }
-
-            if (this.uniqueKeyPolicy != null)
-            {
-                this.uniqueKeyPolicy.OnSave();
-                base.SetObject(Constants.Properties.UniqueKeyPolicy, this.uniqueKeyPolicy);
-            }
-
-            if (this.conflictResolutionPolicy != null)
-            {
-                this.conflictResolutionPolicy.OnSave();
-                base.SetObject(Constants.Properties.ConflictResolutionPolicy, this.conflictResolutionPolicy);
-            }
-
-            if (this.schemaDiscoveryPolicy != null)
-            {
-                base.SetObject(Constants.Properties.SchemaDiscoveryPolicy, this.schemaDiscoveryPolicy);
-            }
-
-            if (this.changeFeedPolicy != null)
-            {
-                base.SetObject(Constants.Properties.ChangeFeedPolicy, this.changeFeedPolicy);
-            }
-        }
+        internal ChangeFeedPolicy ChangeFeedPolicy { get; set; }
     }
 }
