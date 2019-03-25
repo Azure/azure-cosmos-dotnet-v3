@@ -20,6 +20,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Specialized;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Tests for <see cref="StoreReader"/>

@@ -15,6 +15,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Query;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Tests for <see cref="PartitionRoutingHelper"/> class.

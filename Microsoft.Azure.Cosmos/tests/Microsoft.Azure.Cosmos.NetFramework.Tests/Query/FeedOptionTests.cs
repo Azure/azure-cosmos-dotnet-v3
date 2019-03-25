@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq.Expressions;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     [TestClass]
     public class FeedOptionTests

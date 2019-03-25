@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     using Moq;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="GatewayStoreModel"/>.
@@ -153,8 +154,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
-                    Cosmos.Internal.OperationType.Query,
-                    Cosmos.Internal.ResourceType.Document,
+                    Documents.OperationType.Query,
+                    Documents.ResourceType.Document,
                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                     new MemoryStream(Encoding.UTF8.GetBytes("document")),
                     AuthorizationTokenType.PrimaryMasterKey,

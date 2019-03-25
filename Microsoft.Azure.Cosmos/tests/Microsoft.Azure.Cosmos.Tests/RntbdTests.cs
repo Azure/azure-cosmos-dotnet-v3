@@ -14,9 +14,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Rntbd;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Guid activityId = Guid.NewGuid();
             Trace.CorrelationManager.ActivityId = activityId;
             // Assuming that this machine isn't running SMTP.
-            using (Rntbd.Channel channel = new Rntbd.Channel(
+            using (Documents.Rntbd.Channel channel = new Documents.Rntbd.Channel(
                 new Uri("rntbd://localhost:25"),
                 RntbdTests.GetChannelProperties()))
             {
