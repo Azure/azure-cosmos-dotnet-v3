@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// Azure Cosmos DB supports pre and post triggers written in JavaScript to be executed on creates, updates and deletes. 
     /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
-    public class CosmosTriggerSettings : CosmosResource
+    internal class CosmosTriggerSettings : CosmosResource
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosTriggerSettings"/> class for the Azure Cosmos DB service.

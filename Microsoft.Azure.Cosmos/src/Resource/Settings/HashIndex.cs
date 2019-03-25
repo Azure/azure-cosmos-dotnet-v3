@@ -72,23 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>Refer to <a href="http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy">Customizing the indexing policy of a collection</a> for valid ranges of values.</remarks>
         [JsonProperty(PropertyName = Constants.Properties.DataType)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public DataType DataType
-        {
-            get
-            {
-                DataType result = Cosmos.DataType.Number;
-                string strValue = base.GetValue<string>(Constants.Properties.DataType);
-                if (!string.IsNullOrEmpty(strValue))
-                {
-                    result = (DataType)Enum.Parse(typeof(DataType), strValue, true);
-                }
-                return result;
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.DataType, value.ToString());
-            }
-        }
+        public DataType DataType { get; set; }
 
         /// <summary>
         /// Gets or sets the precision for this particular index in the Azure Cosmos DB service.
@@ -99,23 +83,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>Refer to <a href="http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy">Customizing the indexing policy of a collection</a> for valid ranges of values.</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Precision,
             NullValueHandling = NullValueHandling.Ignore)]
-        public short? Precision
-        {
-            get
-            {
-                short? result = null;
-                string strValue = base.GetValue<string>(Constants.Properties.Precision);
-                if (!string.IsNullOrEmpty(strValue))
-                {
-                    result = Convert.ToInt16(strValue, CultureInfo.InvariantCulture);
-                }
-                return result;
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Precision, value);
-            }
-        }
+        public short? Precision { get; set; }
 
         /// <summary>
         /// Creates a copy of the hash index for the Azure Cosmos DB service.

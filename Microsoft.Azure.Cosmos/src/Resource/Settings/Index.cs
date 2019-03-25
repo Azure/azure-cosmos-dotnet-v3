@@ -32,23 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexKind)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public IndexKind Kind
-        {
-            get
-            {
-                IndexKind result = default(IndexKind);
-                string strValue = base.GetValue<string>(Constants.Properties.IndexKind);
-                if (!string.IsNullOrEmpty(strValue))
-                {
-                    result = (IndexKind)Enum.Parse(typeof(IndexKind), strValue, true);
-                }
-                return result;
-            }
-            private set
-            {
-                base.SetValue(Constants.Properties.IndexKind, value.ToString());
-            }
-        }
+        public IndexKind Kind { get; set; }
 
         /// <summary>
         /// Returns an instance of the <see cref="RangeIndex"/> class with specified DataType for the Azure Cosmos DB service.

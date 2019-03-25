@@ -116,23 +116,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexingMode)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public IndexingMode IndexingMode
-        {
-            get
-            {
-                IndexingMode result = IndexingMode.Lazy;
-                string strValue = base.GetValue<string>(Constants.Properties.IndexingMode);
-                if (!string.IsNullOrEmpty(strValue))
-                {
-                    result = (IndexingMode)Enum.Parse(typeof(IndexingMode), strValue, true);
-                }
-                return result;
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.IndexingMode, value.ToString());
-            }
-        }
+        public IndexingMode IndexingMode { get; set; }
 
         /// <summary>
         /// Gets or sets the collection containing <see cref="IncludedPath"/> objects in the Azure Cosmos DB service.
