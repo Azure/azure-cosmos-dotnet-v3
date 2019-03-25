@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 request,
                 cancellationToken);
 
-            return this.GetFeedResponse(request, documentServiceResponse);
+            return GetFeedResponse(request, documentServiceResponse);
         }
 
         public async Task<FeedResponse<CosmosElement>> ExecuteRequestAsync(
@@ -342,8 +342,8 @@ namespace Microsoft.Azure.Cosmos.Query
            CancellationToken cancellationToken)
         {
             return await (this.ShouldExecuteQueryRequest ?
-                this.ExecuteQueryRequestAsync(request, cancellationToken) :
-                this.ExecuteReadFeedRequestAsync(request, cancellationToken));
+                ExecuteQueryRequestAsync(request, cancellationToken) :
+                ExecuteReadFeedRequestAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            return this.GetFeedResponse(request, await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
+            return GetFeedResponse(request, await ExecuteQueryRequestInternalAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(
@@ -423,6 +423,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             return range;
+        }
+
+        public Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(string collectionResourceId, string effectivePartitionKeyString)
+        {
+            return GetTargetPartitionKeyRanges(collectionResourceId,
+                new List<Range<string>>
+                {
+                    Range<string>.GetPointRange(effectivePartitionKeyString)
+                });
         }
 
         public async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(string collectionResourceId, List<Range<string>> providedRanges)
@@ -600,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private FeedResponse<CosmosElement> GetFeedResponse(
-            DocumentServiceRequest documentServiceRequest, 
+            DocumentServiceRequest documentServiceRequest,
             DocumentServiceResponse documentServiceResponse)
         {
             // Execute the callback an each element of the page

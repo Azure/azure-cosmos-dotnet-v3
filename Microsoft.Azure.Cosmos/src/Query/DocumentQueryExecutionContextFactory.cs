@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
@@ -109,42 +108,12 @@ namespace Microsoft.Azure.Cosmos.Query
                         collection.PartitionKey,
                         isContinuationExpected))
                 {
-                    List<PartitionKeyRange> targetRanges;
-                    if (!string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
-                    {
-                        targetRanges =
-                            new List<PartitionKeyRange>
-                            {
-                                await queryExecutionContext.GetTargetPartitionKeyRangeById(
-                                    collection.ResourceId,
-                                    feedOptions.PartitionKeyRangeId)
-                            };
-                    }
-                    else
-                    {
-                        List<Range<string>> queryRanges = partitionedQueryExecutionInfo.QueryRanges;
-                        if (feedOptions.PartitionKey != null)
-                        {
-                            queryRanges = new List<Range<string>>
-                            {
-                                Range<string>.GetPointRange(
-                                    feedOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(
-                                        collection.PartitionKey))
-                            };
-                        }
-                        else if (TryGetEpkProperty(feedOptions, out string effectivePartitionKeyString))
-                        {
-                            queryRanges = new List<Range<string>>
-                            {
-                                Range<string>.GetPointRange(effectivePartitionKeyString)
-                            };
-                        }
 
-                        targetRanges =
-                            await queryExecutionContext.GetTargetPartitionKeyRanges(collection.ResourceId, queryRanges);
-                    }
-
-
+                    List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
+                        queryExecutionContext,
+                        partitionedQueryExecutionInfo,
+                        collection,
+                        feedOptions);
 
                     return await CreateSpecializedDocumentQueryExecutionContext(
                         constructorParams,
@@ -226,6 +195,44 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
+        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+            DefaultDocumentQueryExecutionContext queryExecutionContext,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            CosmosContainerSettings collection,
+            FeedOptions feedOptions)
+        {
+            List<PartitionKeyRange> targetRanges = null;
+            if (!string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
+            {
+                targetRanges = new List<PartitionKeyRange>()
+                {
+                    await queryExecutionContext.GetTargetPartitionKeyRangeById(
+                                    collection.ResourceId,
+                                    feedOptions.PartitionKeyRangeId)
+                };
+            }
+            else if (feedOptions.PartitionKey != null)
+            {
+                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkString(
+                    collection.ResourceId,
+                    feedOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
+            }
+            else if (TryGetEpkProperty(feedOptions, out string effectivePartitionKeyString))
+            {
+                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkString(
+                    collection.ResourceId,
+                    effectivePartitionKeyString);
+            }
+            else
+            {
+                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRanges(
+                    collection.ResourceId,
+                    partitionedQueryExecutionInfo.QueryRanges);
+            }
+
+            return targetRanges;
+        }
+
         private static bool ShouldCreateSpecializedDocumentQueryExecutionContext(
             ResourceType resourceTypeEnum,
             FeedOptions feedOptions,
@@ -296,10 +303,14 @@ namespace Microsoft.Azure.Cosmos.Query
             return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
         }
 
-        private static bool TryGetEpkProperty(FeedOptions feedOptions, out string effectivePartitionKeyString)
+        private static bool TryGetEpkProperty(
+            FeedOptions feedOptions,
+            out string effectivePartitionKeyString)
         {
-            if (feedOptions?.Properties != null && feedOptions.Properties.TryGetValue(
-                   WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyStringObject))
+            if (feedOptions?.Properties != null
+                && feedOptions.Properties.TryGetValue(
+                   WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                   out object effectivePartitionKeyStringObject))
             {
                 effectivePartitionKeyString = effectivePartitionKeyStringObject as string;
                 if (string.IsNullOrEmpty(effectivePartitionKeyString))
