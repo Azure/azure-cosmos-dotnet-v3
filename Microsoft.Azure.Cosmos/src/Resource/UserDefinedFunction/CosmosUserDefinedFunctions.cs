@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 partitionKey: null,
-                streamPayload: userDefinedFunctionSettings.GetResourceStream(),
+                streamPayload: userDefinedFunctionSettings.ToStream(),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

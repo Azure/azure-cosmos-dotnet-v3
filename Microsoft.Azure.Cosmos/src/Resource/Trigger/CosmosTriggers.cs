@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 partitionKey: null,
-                streamPayload: triggerSettings.GetResourceStream(),
+                streamPayload: triggerSettings.ToStream(),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

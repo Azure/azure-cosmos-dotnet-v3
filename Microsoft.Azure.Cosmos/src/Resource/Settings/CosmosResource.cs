@@ -13,9 +13,10 @@ namespace Microsoft.Azure.Cosmos
     ///  Represents an abstract resource type in the Azure Cosmos DB service.
     ///  All Azure Cosmos DB resources, such as <see cref="CosmosDatabase"/>, <see cref="DocumentCollection"/>, and <see cref="Document"/> extend this abstract type.
     /// </summary>
-    public abstract class CosmosResource 
+    public abstract class CosmosResource
     {
         private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private static CosmosDefaultJsonSerializer cosmosDefaultJsonSerializer = new CosmosDefaultJsonSerializer();
 
         protected CosmosResource()
         {
@@ -110,5 +111,35 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
         public string ETag { get; set; }
+
+        internal Stream ToStream()
+        {
+            return CosmosResource.ToStream(this);
+        }
+
+        internal static T FromStream<T>(DocumentServiceResponse response)
+        {
+            if (response == null)
+            {
+                throw new ArgumentNullException(nameof(response));
+            }
+
+            if (response.ResponseBody != null && (!response.ResponseBody.CanSeek || response.ResponseBody.Length > 0))
+            {
+                return CosmosResource.FromStream<T>(response.ResponseBody);
+            }
+
+            return default(T);
+        }
+
+        internal static Stream ToStream<T>(T input)
+        {
+            return CosmosResource.cosmosDefaultJsonSerializer.ToStream(input);
+        }
+
+        internal static T FromStream<T>(Stream stream)
+        {
+            return CosmosResource.cosmosDefaultJsonSerializer.FromStream<T>(stream);
+        }
     }
 }

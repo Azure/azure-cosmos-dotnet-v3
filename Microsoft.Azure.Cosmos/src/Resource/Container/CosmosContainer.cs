@@ -203,10 +203,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.Database.Client.DocumentClient.ValidateResource(containerSettings);
+            this.Database.Client.DocumentClient.ValidateResource(containerSettings.Id);
 
             Task<CosmosResponseMessage> response = this.ReplaceStreamAsync(
-                streamPayload: containerSettings.GetResourceStream(),
+                streamPayload: containerSettings.ToStream(),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
