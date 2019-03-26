@@ -47,16 +47,16 @@
             }
 
             // Connecting to Emulator. Change if you want a live account
-            CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(endpoint,
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(endpoint,
                 authKey);
 
-            cosmosConfiguration.AddCustomHandlers(
+            cosmosClientBuilder.AddCustomHandlers(
                 new LoggingHandler(),
                 new ConcurrencyHandler(),
                 new ThrottlingHandler()
                 );
 
-            CosmosClient client = new CosmosClient(cosmosConfiguration);
+            CosmosClient client = cosmosClientBuilder.Build();
 
             CosmosDatabaseResponse databaseResponse = await client.Databases.CreateDatabaseIfNotExistsAsync("mydb");
             CosmosDatabase database = databaseResponse.Database;

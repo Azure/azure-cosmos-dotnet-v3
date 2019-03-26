@@ -53,11 +53,11 @@ namespace AzureFunctions
                 throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
             }
 
-            var cosmosConfiguration = new CosmosConfiguration(endpoint,
+            var cosmosClientBuilder = new CosmosClientBuilder(endpoint,
                 authKey);
             // Customize client configuration
 
-            var cosmosClient = new CosmosClient(cosmosConfiguration);
+            var cosmosClient = cosmosClientBuilder.Build();
 
             // Optional. Initialize container
             CosmosDatabaseResponse databaseResponse = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("mydb").Result;
