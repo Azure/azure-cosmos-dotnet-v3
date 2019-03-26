@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// <see cref="CosmosDatabasesCore"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// <see cref="CosmosDatabases"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
     /// <remarks>
     /// Note: all these operations make calls against a fixed budget.

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for creating new stored procedures, and reading/querying all stored procedures
     ///
-    /// <see cref="CosmosStoredProcedureCore"/> for reading, replacing, or deleting an existing stored procedures.
+    /// <see cref="CosmosStoredProcedure"/> for reading, replacing, or deleting an existing stored procedures.
     /// </summary>
     internal class CosmosStoredProceduresCore : CosmosStoredProcedures
     {
