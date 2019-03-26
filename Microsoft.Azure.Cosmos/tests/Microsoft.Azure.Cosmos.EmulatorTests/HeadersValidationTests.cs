@@ -502,7 +502,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task ValidateCollectionIndexProgressHeadersGateway()
         {
             var client = TestCommon.CreateClient(true);
@@ -510,7 +509,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task ValidateCollectionIndexProgressHeadersHttps()
         {
             var client = TestCommon.CreateClient(false, Protocol.Https);
@@ -518,7 +516,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task ValidateCollectionIndexProgressHeadersRntbd()
         {
             var client = TestCommon.CreateClient(false, Protocol.Tcp);
@@ -548,11 +545,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.CreateDocumentAsync(lazyCollection, doc);
                 await client.CreateDocumentAsync(consistentCollection, doc);
                 await client.CreateDocumentAsync(noneIndexCollection, doc);
-
+                RequestOptions requestOptions = new RequestOptions { PopulateQuotaInfo  = true };
 
                 // Lazy-indexing collection.
                 {
-                    var collectionResponse = await client.ReadDocumentCollectionAsync(lazyCollection);
+                    var collectionResponse = await client.ReadDocumentCollectionAsync(lazyCollection, requestOptions);
                     Assert.IsTrue(int.Parse(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionLazyIndexingProgress], CultureInfo.InvariantCulture) >= 0,
                         "Expect lazy indexer progress when reading lazy collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -563,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Consistent-indexing collection.
                 {
-                    var collectionResponse = await client.ReadDocumentCollectionAsync(consistentCollection);
+                    var collectionResponse = await client.ReadDocumentCollectionAsync(consistentCollection, requestOptions);
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading consistent collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -574,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // None-indexing collection.
                 {
-                    var collectionResponse = await client.ReadDocumentCollectionAsync(noneIndexCollection);
+                    var collectionResponse = await client.ReadDocumentCollectionAsync(noneIndexCollection, requestOptions);
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading none-index collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.ResponseHeaders[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),

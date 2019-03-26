@@ -1754,8 +1754,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Read the new collection.
                 // The gateway's cache is stale at this point. This test verifies that the gateway should be able to refresh the cache and returns the response.
-                response = await client.ReadDocumentCollectionAsync(collectionUri);
-                //Assert.AreEqual(100, response.IndexTransformationProgress);
+                response = await client.ReadDocumentCollectionAsync(collectionUri, new RequestOptions { PopulateQuotaInfo = true});
+                Assert.AreEqual(100, response.IndexTransformationProgress);
 
                 // Scenario 2: name based collection put.
 
