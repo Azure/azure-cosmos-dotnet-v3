@@ -150,9 +150,13 @@
             int count = 0;
             while (setIterator.HasMoreResults)
             {
-                using(CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
+                using(CosmosQueryResponse response = await setIterator.FetchNextSetAsync())
                 {
-                    response.EnsureSuccessStatusCode();
+                    if (!response.IsSuccess)
+                    {
+                        throw new Exception($"Query as stream fetch failed with HttpStatusCode {response.StatusCode}");
+                    }
+
                     count++;
                     using (StreamReader sr = new StreamReader(response.Content))
                     using(JsonTextReader jtr = new JsonTextReader(sr))

@@ -260,10 +260,10 @@
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
             {
-                using (CosmosResponseMessage responseMessage = await streamResultSet.FetchNextSetAsync())
+                using (CosmosQueryResponse responseMessage = await streamResultSet.FetchNextSetAsync())
                 {
                     // Item stream operations do not throw exceptions for better performance
-                    if (responseMessage.IsSuccessStatusCode)
+                    if (responseMessage.IsSuccess)
                     {
                         dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
                         List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
