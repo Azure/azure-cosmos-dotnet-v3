@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             this.Database.Client.DocumentClient.ValidateResource(containerSettings.Id);
 
             Task<CosmosResponseMessage> response = this.ReplaceStreamAsync(
-                streamPayload: containerSettings.ToStream(),
+                streamPayload: CosmosResource.ToStream(containerSettings),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 

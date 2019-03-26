@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 // Here we will issue backend call only if cache wasn't already refreshed (if whatever is there corresponds to presiously resolved collection rid).
                 await this.collectionInfoByNameCache.GetAsync(
                     resourceFullName,
-                    new CosmosContainerSettings { ResourceId = request.RequestContext.ResolvedCollectionRid },
+                    CosmosContainerSettings.CreateWithResourceId(request.RequestContext.ResolvedCollectionRid),
                     async () =>
                     {
                         CosmosContainerSettings collection = await this.GetByNameAsync(resourceFullName, cancellationToken);

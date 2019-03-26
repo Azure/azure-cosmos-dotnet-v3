@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public async Task OpenAsync(
+            string databaseName,
             CosmosContainerSettings collection,
             CancellationToken cancellationToken)
         {
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
             {
-                tasks.Add(endpointCache.AddressCache.OpenAsync(collection, ranges, cancellationToken));
+                tasks.Add(endpointCache.AddressCache.OpenAsync(databaseName, collection, ranges, cancellationToken));
             }
 
             await Task.WhenAll(tasks);

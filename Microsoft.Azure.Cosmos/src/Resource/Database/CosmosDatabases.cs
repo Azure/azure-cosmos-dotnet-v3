@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateDatabaseStreamAsync(
-                streamPayload: databaseSettings.ToStream(),
+                streamPayload: CosmosResource.ToStream(databaseSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

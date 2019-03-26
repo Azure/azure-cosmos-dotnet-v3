@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso cref="CosmosResource"/>
+    /// <seealso cref="Resource"/>
     /// <seealso cref="DocumentClient"/>
     /// <seealso cref="ResourceFeedReaderClientExtensions"/>
     internal sealed class ResourceFeedReader<T> : IEnumerable<T> where T : JsonSerializable, new()

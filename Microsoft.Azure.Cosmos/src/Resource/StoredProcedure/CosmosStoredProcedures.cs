@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 partitionKey: null,
-                streamPayload: storedProcedureSettings.ToStream(),
+                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

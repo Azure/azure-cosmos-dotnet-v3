@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: triggerSettings.ToStream(),
+                streamPayload: CosmosResource.ToStream(triggerSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

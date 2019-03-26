@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: storedProcedureSettings.ToStream(),
+                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

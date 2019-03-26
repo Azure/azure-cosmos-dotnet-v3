@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// For additional details and examples, please refer to <see cref="ResourceFeedReader{T}"/>.
     /// </remarks>
     /// <seealso cref="ResourceFeedReader{T}"/>
-    /// <seealso cref="CosmosResource"/>
+    /// <seealso cref="Resource"/>
     /// <seealso cref="DocumentClient"/>
     internal static class ResourceFeedReaderClientExtensions
     {

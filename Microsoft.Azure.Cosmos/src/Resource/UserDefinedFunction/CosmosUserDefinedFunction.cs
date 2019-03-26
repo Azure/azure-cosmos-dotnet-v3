@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: userDefinedFunctionSettings.ToStream(),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
