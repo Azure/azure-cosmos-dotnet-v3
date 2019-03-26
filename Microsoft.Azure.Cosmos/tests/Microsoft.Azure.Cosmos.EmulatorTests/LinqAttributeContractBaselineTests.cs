@@ -13,10 +13,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Newtonsoft.Json.Linq;
     using VisualStudio.TestTools.UnitTesting;
     using BaselineTest;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
@@ -27,15 +26,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     {
         private static Func<bool, IQueryable<Datum>> getQuery;
         private static DocumentClient client;
-        private static CosmosDatabaseSettings testDb;
-        private static CosmosContainerSettings testCollection;
+        private static Database testDb;
+        private static DocumentCollection testCollection;
 
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
         {
             client = TestCommon.CreateClient(true);
 
-            var db = new CosmosDatabaseSettings() { Id = nameof(LinqTranslationBaselineTests) };
+            var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
             try
             {
                 var response = client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id)).Result;
@@ -58,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             // The test collection should have range index on string properties
             // for the orderby tests
-            var newCol = new CosmosContainerSettings()
+            var newCol = new DocumentCollection()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = new IndexingPolicy()

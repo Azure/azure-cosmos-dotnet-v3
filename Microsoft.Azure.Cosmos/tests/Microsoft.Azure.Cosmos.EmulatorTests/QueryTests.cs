@@ -17,9 +17,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
@@ -31,6 +28,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     [TestClass]
     public class QueryTests
@@ -72,14 +73,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestQueryWithPageSize()
         {
             // Create collection and insert 200 small documents
-            CosmosDatabaseSettings database = TestCommon.RetryRateLimiting<CosmosDatabaseSettings>(() =>
+            Database database = TestCommon.RetryRateLimiting<Database>(() =>
             {
-                return this.client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
-            CosmosContainerSettings collection = TestCommon.RetryRateLimiting<CosmosContainerSettings>(() =>
+            DocumentCollection collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result;
+                return TestCommon.CreateCollectionAsync(this.client, database, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
             });
 
             for (int i = 0; i < 200; i++)
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10 }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.AreEqual(10, result.Count);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<CosmosDatabaseSettings>>(() =>
+            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
                 return this.client.DeleteDatabaseAsync(database).Result;
             });
@@ -115,8 +116,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string dbprefix = Guid.NewGuid().ToString("N");
 
-                CosmosDatabaseSettings[] databases = (from index in Enumerable.Range(1, 3)
-                                        select this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index) })).ToArray();
+                Database[] databases = (from index in Enumerable.Range(1, 3)
+                                        select this.client.Create<Database>(null, new Database { Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index) })).ToArray();
 
                 Action<DocumentClient> queryAction = (documentClient) =>
                 {
@@ -125,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index);
                         IEnumerable<dynamic> queriedDatabases = documentClient.CreateDatabaseQuery(@"select * from root r where r.id = """ + name + @"""").AsEnumerable();
-                        Assert.AreEqual(databases[index - 1].ResourceId, ((CosmosDatabaseSettings)queriedDatabases.Single()).ResourceId, "Expect queried id to match the id with the same name in the created database");
+                        Assert.AreEqual(databases[index - 1].ResourceId, ((Database)queriedDatabases.Single()).ResourceId, "Expect queried id to match the id with the same name in the created database");
                     }
                 };
 
@@ -153,10 +154,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string collprefix = Guid.NewGuid().ToString("N");
 
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryCollection" + Guid.NewGuid().ToString() });
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryCollection" + Guid.NewGuid().ToString() });
 
-                CosmosContainerSettings[] collections = (from index in Enumerable.Range(1, 3)
-                                                    select this.client.Create<CosmosContainerSettings>(database.GetIdOrFullName(), new CosmosContainerSettings { Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index) })).ToArray();
+                DocumentCollection[] collections = (from index in Enumerable.Range(1, 3)
+                                                    select this.client.Create<DocumentCollection>(database.GetIdOrFullName(), new DocumentCollection { Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index) })).ToArray();
                 Action<DocumentClient> queryAction = (documentClient) =>
                 {
                     // query by  name
@@ -164,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index);
                         IEnumerable<dynamic> queriedCollections = documentClient.CreateDocumentCollectionQuery(database, @"select * from root r where r.id = """ + name + @"""").AsEnumerable();
-                        Assert.AreEqual(collections[index - 1].ResourceId, ((CosmosContainerSettings)queriedCollections.Single()).ResourceId, "Expect queried id to match the id with the same name in the created documents");
+                        Assert.AreEqual(collections[index - 1].ResourceId, ((DocumentCollection)queriedCollections.Single()).ResourceId, "Expect queried id to match the id with the same name in the created documents");
                     }
                 };
 
@@ -190,8 +191,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentSecondaryIndexDatabase" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentSecondaryIndexDatabase" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString() };
                 collectionDefinition.IndexingPolicy.Automatic = true;
 
                 IndexingPath includedPath = new IndexingPath();
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 collectionDefinition.IndexingPolicy = IndexingPolicyTranslator.TranslateIndexingPolicyV1ToV2(indexingPolicyOld);
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
 
                 Assert.IsTrue(IsValidIndexingPath(collection.IndexingPolicy.IncludedPaths, @"/""NumericField""/?", IndexKind.Hash), "Invalid precision for NumericField");
                 Assert.IsTrue(IsValidIndexingPath(collection.IndexingPolicy.IncludedPaths, @"/""A""/""C""/?", IndexKind.Range), "Invalid Precision for /A/C/?");
@@ -231,8 +232,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
 
                 IndexingPath includedPath = new IndexingPath();
                 includedPath.IndexType = IndexType.Hash;
@@ -247,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 collectionDefinition.IndexingPolicy = IndexingPolicyTranslator.TranslateIndexingPolicyV1ToV2(indexingPolicyOld);
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
 
                 //includes /ts as well
                 Assert.IsTrue(IsValidIndexingPath(collection.IndexingPolicy.IncludedPaths, @"/""NumericField""/?", IndexKind.Hash), "Invalid precision for NumericField");
@@ -267,8 +268,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
                 indexingPolicyOld.IncludedPaths.Add(new IndexingPath { IndexType = IndexType.Range, Path = @"/""NumericField""/?" });
@@ -281,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 collectionDefinition.IndexingPolicy = IndexingPolicyTranslator.TranslateIndexingPolicyV1ToV2(indexingPolicyOld);
 
                 Console.WriteLine("Count = {0}", collectionDefinition.IndexingPolicy.IncludedPaths.Count);
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
 
                 Assert.IsTrue(collection.IndexingPolicy.IncludedPaths.Count == 2, "Unexpected included path count");
 
@@ -298,8 +299,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
 
@@ -314,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 bool bException = false;
                 try
                 {
-                    CosmosContainerSettings collection = this.client.Create<CosmosContainerSettings>(database.GetIdOrFullName(), collectionDefinition);
+                    DocumentCollection collection = this.client.Create<DocumentCollection>(database.GetIdOrFullName(), collectionDefinition);
                 }
                 catch (DocumentClientException e)
                 {
@@ -327,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 bException = false;
                 try
                 {
-                    CosmosContainerSettings collection = this.client.Create<CosmosContainerSettings>(database.GetIdOrFullName(), collectionDefinition);
+                    DocumentCollection collection = this.client.Create<DocumentCollection>(database.GetIdOrFullName(), collectionDefinition);
                 }
                 catch (DocumentClientException e)
                 {
@@ -347,8 +348,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
 
@@ -359,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 collectionDefinition.IndexingPolicy = IndexingPolicyTranslator.TranslateIndexingPolicyV1ToV2(indexingPolicyOld);
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
                 Assert.AreEqual(1, collection.IndexingPolicy.IncludedPaths.Count, "Unexpected included path count");
                 Assert.AreEqual(1, collection.IndexingPolicy.ExcludedPaths.Count, "Unexpected included path count");
             }
@@ -374,8 +375,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
 
@@ -387,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 collectionDefinition.IndexingPolicy = IndexingPolicyTranslator.TranslateIndexingPolicyV1ToV2(indexingPolicyOld);
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
                 Assert.IsTrue(IsValidIndexingPath(collection.IndexingPolicy.IncludedPaths, @"/""NumericField""/?", IndexKind.Range), "Invalid Precision for NumericField");
                 Assert.AreEqual(2, collection.IndexingPolicy.IncludedPaths.Count, "Unexpected included path count");
                 Assert.AreEqual(1, collection.IndexingPolicy.ExcludedPaths.Count, "Unexpected included path count");
@@ -405,10 +406,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
                 Assert.IsTrue(collection.IndexingPolicy.IncludedPaths.Count == 1, "Unexpected included path count");
                 Assert.IsTrue(collection.IndexingPolicy.ExcludedPaths.Count == 0, "Unexpected included path count");
             }
@@ -426,8 +427,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
 
                 IndexingPath includedPath = new IndexingPath();
                 includedPath.IndexType = IndexType.Hash;
@@ -450,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 collectionDefinition.IndexingPolicy = IndexingPolicyTranslator.TranslateIndexingPolicyV1ToV2(indexingPolicyOld);
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
 
                 //path count includes /ts
                 Assert.IsTrue(collection.IndexingPolicy.IncludedPaths.Count == 2, "Unexpected included path count");
@@ -542,12 +543,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentSecondaryIndexDatabase" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings collectionDefinition = new CosmosContainerSettings { Id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentSecondaryIndexDatabase" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString() };
                 collectionDefinition.IndexingPolicy.Automatic = true;
                 collectionDefinition.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
 
                 TestQueryDocuments(collection);
             }
@@ -562,10 +563,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentsDatabase" + Guid.NewGuid().ToString() });
-                CosmosContainerSettings documentCollection = new CosmosContainerSettings { Id = "TestQueryDocumentsCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentsDatabase" + Guid.NewGuid().ToString() });
+                DocumentCollection documentCollection = new DocumentCollection { Id = "TestQueryDocumentsCollection" + Guid.NewGuid().ToString() };
                 documentCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, documentCollection).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, documentCollection).Result;
 
                 TestQueryDocuments(collection);
             }
@@ -580,14 +581,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentManualRemoveIndex" + Guid.NewGuid().ToString() });
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentManualRemoveIndex" + Guid.NewGuid().ToString() });
 
-                CosmosContainerSettings sourceCollection = new CosmosContainerSettings
+                DocumentCollection sourceCollection = new DocumentCollection
                 {
                     Id = "TestQueryDocumentManualRemoveIndex" + Guid.NewGuid().ToString(),
                 };
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
 
                 dynamic doc = new Document()
                 {
@@ -615,14 +616,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentManualAddRemoveIndex" + Guid.NewGuid().ToString() });
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentManualAddRemoveIndex" + Guid.NewGuid().ToString() });
 
-                CosmosContainerSettings sourceCollection = new CosmosContainerSettings
+                DocumentCollection sourceCollection = new DocumentCollection
                 {
                     Id = "TestQueryDocumentManualAddRemoveIndex" + Guid.NewGuid().ToString(),
                 };
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
 
                 QueryDocument doc = new QueryDocument()
                 {
@@ -671,16 +672,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryDocumentsDatabaseManualIndex" + Guid.NewGuid().ToString() });
+                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentsDatabaseManualIndex" + Guid.NewGuid().ToString() });
 
-                CosmosContainerSettings sourceCollection = new CosmosContainerSettings
+                DocumentCollection sourceCollection = new DocumentCollection
                 {
                     Id = "TestQueryDocumentsCollectionNoIndex" + Guid.NewGuid().ToString(),
                 };
                 sourceCollection.IndexingPolicy.Automatic = false;
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-                CosmosContainerSettings collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
+                DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
 
                 TestQueryDocuments(collection, true);
             }
@@ -693,9 +694,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void TestSessionTokenControlThroughFeedOptions()
         {
-            CosmosDatabaseSettings database = this.client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestSessionTokenControlThroughFeedOptions" + Guid.NewGuid().ToString() });
+            Database database = this.client.Create<Database>(null, new Database { Id = "TestSessionTokenControlThroughFeedOptions" + Guid.NewGuid().ToString() });
 
-            CosmosContainerSettings collection = new CosmosContainerSettings
+            DocumentCollection collection = new DocumentCollection
             {
                 Id = "SessionTokenControlThroughFeedOptionsCollection",
             };
@@ -769,17 +770,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                using (var testClient = TestCommon.CreateClient(useGateway, protocol: protocol, defaultConsistencyLevel: ConsistencyLevel.Session))
+                using (var testClient = TestCommon.CreateClient(useGateway, protocol: protocol, defaultConsistencyLevel: Documents.ConsistencyLevel.Session))
                 {
-                    CosmosDatabaseSettings database = testClient.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings { Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString() });
+                    Database database = testClient.Create<Database>(null, new Database { Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString() });
 
-                    CosmosContainerSettings sourceCollection = new CosmosContainerSettings
+                    DocumentCollection sourceCollection = new DocumentCollection
                     {
                         Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString(),
                     };
                     sourceCollection.IndexingPolicy.Automatic = true;
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-                    CosmosContainerSettings collection = testClient.Create<CosmosContainerSettings>(database.GetIdOrFullName(), sourceCollection);
+                    DocumentCollection collection = testClient.Create<DocumentCollection>(database.GetIdOrFullName(), sourceCollection);
 
                     INameValueCollection requestHeaders = new StringKeyValueCollection();
                     requestHeaders.Add("x-ms-indexing-directive", "include");
@@ -850,12 +851,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Let the lazy indexer do force checkpointing frequently as possible.
                 TestCommon.SetFederationWideConfigurationProperty("lazyIndexForceCheckpointIntervalInSeconds", 1);
 
-                CosmosDatabaseSettings db = client.CreateDatabaseAsync(new CosmosDatabaseSettings
+                Database db = client.CreateDatabaseAsync(new Database
                 {
                     Id = System.Reflection.MethodBase.GetCurrentMethod().Name + Guid.NewGuid().ToString("N")
                 }).Result.Resource;
 
-                CosmosContainerSettings coll = new CosmosContainerSettings { Id = db.Id };
+                DocumentCollection coll = new DocumentCollection { Id = db.Id };
                 coll.IndexingPolicy.Automatic = true;
                 coll.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
@@ -898,11 +899,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestCommon.DeleteAllDatabasesAsync(client);
             string guid = Guid.NewGuid().ToString();
 
-            CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
+            Database database = await client.CreateDatabaseAsync(new Database { Id = "db" + guid });
 
-            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
+            DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
                 database,
-                new CosmosContainerSettings
+                new DocumentCollection
                 {
                     Id = "coll" + guid,
                     PartitionKey = new PartitionKeyDefinition
@@ -962,11 +963,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string guid = Guid.NewGuid().ToString();
 
             await TestCommon.DeleteAllDatabasesAsync(client);
-            CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = guid + "db" });
+            Database database = await client.CreateDatabaseAsync(new Database { Id = guid + "db" });
 
-            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
+            DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
                 database,
-                new CosmosContainerSettings
+                new DocumentCollection
                 {
                     Id = guid + "coll",
                     PartitionKey = new PartitionKeyDefinition
@@ -1027,8 +1028,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
 
             DocumentClient client = TestCommon.CreateClient(useGateway);
-            CosmosDatabaseSettings database = await client.ReadDatabaseAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}", inputDatabaseId));
-            CosmosContainerSettings coll = await client.ReadDocumentCollectionAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}/colls/{1}", inputDatabaseId, inputCollectionId));
+            Database database = await client.ReadDatabaseAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}", inputDatabaseId));
+            DocumentCollection coll = await client.ReadDocumentCollectionAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}/colls/{1}", inputDatabaseId, inputCollectionId));
 
             Range<string> fullRange = new Range<string>(
                         PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -1138,11 +1139,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestCommon.DeleteAllDatabasesAsync(client);
             Random random = new Random();
 
-            CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = dbName });
+            Database database = await client.CreateDatabaseAsync(new Database { Id = dbName });
 
-            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
+            DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
                 database,
-                new CosmosContainerSettings
+                new DocumentCollection
                 {
                     Id = collName,
                     PartitionKey = new PartitionKeyDefinition
@@ -1205,8 +1206,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 seed);
 
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            CosmosDatabaseSettings database = await client.ReadDatabaseAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}", inputDatabaseId));
-            CosmosContainerSettings coll = await client.ReadDocumentCollectionAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}/colls/{1}", inputDatabaseId, inputCollectionId));
+            Database database = await client.ReadDatabaseAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}", inputDatabaseId));
+            DocumentCollection coll = await client.ReadDocumentCollectionAsync(string.Format(CultureInfo.InvariantCulture, "dbs/{0}/colls/{1}", inputDatabaseId, inputCollectionId));
 
             Range<string> fullRange = new Range<string>(
                         PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -1364,8 +1365,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 seed);
 
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            CosmosDatabaseSettings database = await client.ReadDatabaseAsync(string.Format("dbs/{0}", inputDatabaseId));
-            CosmosContainerSettings coll = await client.ReadDocumentCollectionAsync(string.Format("dbs/{0}/colls/{1}", inputDatabaseId, inputCollectionId));
+            Database database = await client.ReadDatabaseAsync(string.Format("dbs/{0}", inputDatabaseId));
+            DocumentCollection coll = await client.ReadDocumentCollectionAsync(string.Format("dbs/{0}/colls/{1}", inputDatabaseId, inputCollectionId));
 
             Range<string> fullRange = new Range<string>(
                         PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -1458,11 +1459,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await TestCommon.DeleteAllDatabasesAsync(originalClient);
             string guid = Guid.NewGuid().ToString();
-            CosmosDatabaseSettings database = await originalClient.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
+            Database database = await originalClient.CreateDatabaseAsync(new Database { Id = "db" + guid });
 
-            CosmosContainerSettings coll = await originalClient.CreateDocumentCollectionAsync(
+            DocumentCollection coll = await originalClient.CreateDocumentCollectionAsync(
                 database,
-                new CosmosContainerSettings
+                new DocumentCollection
                 {
                     Id = "coll" + guid,
                     PartitionKey = new PartitionKeyDefinition
@@ -1577,11 +1578,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await TestCommon.DeleteAllDatabasesAsync(originalClient);
             string guid = Guid.NewGuid().ToString();
-            CosmosDatabaseSettings database = await originalClient.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
+            Database database = await originalClient.CreateDatabaseAsync(new Database { Id = "db" + guid });
 
-            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(originalClient,
+            DocumentCollection coll = await TestCommon.CreateCollectionAsync(originalClient,
                 database,
-                new CosmosContainerSettings
+                new DocumentCollection
                 {
                     Id = "coll" + guid,
                     PartitionKey = new PartitionKeyDefinition
@@ -1672,7 +1673,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
-                    httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version, Microsoft.Azure.Cosmos.Internal.HttpConstants.Versions.v2017_01_19);
+                    httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version, HttpConstants.Versions.v2017_01_19);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
 
                     var stringContent = new StringContent(JsonConvert.SerializeObject(querySpec), Encoding.UTF8, "application/query+json");
@@ -1702,12 +1703,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await TestCommon.DeleteAllDatabasesAsync(primaryClient);
 
                 string uniqDatabaseName = "ValidateUpdateCollectionIndexingPolicy_DB_" + Guid.NewGuid().ToString("N");
-                CosmosDatabaseSettings database = await primaryClient.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = uniqDatabaseName });
+                Database database = await primaryClient.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "ValidateUpdateCollectionIndexingPolicy_COLL_" + Guid.NewGuid().ToString("N");
-                CosmosContainerSettings collection = await primaryClient.CreateDocumentCollectionAsync(
+                DocumentCollection collection = await primaryClient.CreateDocumentCollectionAsync(
                     database.SelfLink,
-                    new CosmosContainerSettings { Id = uniqCollectionName },
+                    new DocumentCollection { Id = uniqCollectionName },
                     new RequestOptions { OfferThroughput = 10000 });
 
                 var loadDocsTask = Task.Run(async () =>
@@ -1734,7 +1735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(loadDocsTask, updateIndexingPolicyTask, recycleReplicaTask);
 
                 Logger.LogLine("Final iteration: updating collection indexing policy to consistent.");
-                collection = new CosmosContainerSettings { Id = collection.Id, SelfLink = collection.SelfLink };
+                collection = new DocumentCollection { Id = collection.Id, SelfLink = collection.SelfLink };
                 await TestCommon.AsyncRetryRateLimiting(() => primaryClient.ReplaceDocumentCollectionAsync(collection));
 
                 Logger.LogLine("Waiting for reindexing to finish on all the replicas.");
@@ -1771,14 +1772,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (await TestCommon.OverrideFederationWideConfigurationsAsync(
                     Tuple.Create<string, object>("lazyIndexForceCheckpointIntervalInSeconds", 1)))
                 {
-                    CosmosDatabaseSettings database = (await this.client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db01" })).Resource;
+                    Database database = (await this.client.CreateDatabaseAsync(new Database { Id = "db01" })).Resource;
 
-                    CosmosContainerSettings collection = new CosmosContainerSettings { Id = "coll01" };
+                    DocumentCollection collection = new DocumentCollection { Id = "coll01" };
                     collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                     collection = (await this.client.CreateDocumentCollectionAsync(database, collection)).Resource;
                     await TestQueryWithTimestampOnCollectionAsync(collection);
 
-                    collection = new CosmosContainerSettings { Id = "coll02" };
+                    collection = new DocumentCollection { Id = "coll02" };
                     collection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
                     collection = (await this.client.CreateDocumentCollectionAsync(database, collection)).Resource;
                     await TestQueryWithTimestampOnCollectionAsync(collection);
@@ -1951,15 +1952,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestQueryMetricsHeaders()
         {
 
-            CosmosDatabaseSettings database = TestCommon.RetryRateLimiting<CosmosDatabaseSettings>(() =>
+            Database database = TestCommon.RetryRateLimiting<Database>(() =>
             {
-                return this.client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
             TestQueryMetricsHeaders(database, false);
             TestQueryMetricsHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<CosmosDatabaseSettings>>(() =>
+            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
                 return this.client.DeleteDatabaseAsync(database).Result;
             });
@@ -1977,11 +1978,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await TestCommon.DeleteAllDatabasesAsync(client);
             string guid = Guid.NewGuid().ToString();
-            CosmosDatabaseSettings database = await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = "db" + guid });
+            Database database = await client.CreateDatabaseAsync(new Database { Id = "db" + guid });
 
-            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
+            DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
                 database,
-                new CosmosContainerSettings
+                new DocumentCollection
                 {
                     Id = "coll" + guid,
                 },
@@ -2018,27 +2019,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void TestForceQueryScanHeaders()
         {
-            CosmosDatabaseSettings database = TestCommon.RetryRateLimiting<CosmosDatabaseSettings>(() =>
+            Database database = TestCommon.RetryRateLimiting<Database>(() =>
             {
-                return this.client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
             TestForceQueryScanHeaders(database, false);
             TestForceQueryScanHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<CosmosDatabaseSettings>>(() =>
+            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
                 return this.client.DeleteDatabaseAsync(database).Result;
             });
         }
 
-        private void TestForceQueryScanHeaders(CosmosDatabaseSettings database, bool partitionedCollection)
+        private void TestForceQueryScanHeaders(Database database, bool partitionedCollection)
         {
-            CosmosContainerSettings collection;
+            DocumentCollection collection;
             RequestOptions options = new RequestOptions();
             if (!partitionedCollection)
             {
-                collection = new CosmosContainerSettings()
+                collection = new DocumentCollection()
                 {
                     Id = Guid.NewGuid().ToString()
                 };
@@ -2047,7 +2048,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                collection = new CosmosContainerSettings()
+                collection = new DocumentCollection()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = new PartitionKeyDefinition
@@ -2060,7 +2061,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<CosmosContainerSettings>(() =>
+            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
             {
                 return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
             });
@@ -2181,18 +2182,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string componentPropertyName,
             List<Tuple<int?, int>> inputOutputs)
         {
-            CosmosDatabaseSettings database = TestCommon.RetryRateLimiting<CosmosDatabaseSettings>(() =>
+            Database database = TestCommon.RetryRateLimiting<Database>(() =>
             {
                 return this.client.CreateDatabaseAsync(
-                    new CosmosDatabaseSettings()
+                    new Database()
                     {
                         Id = Guid.NewGuid().ToString()
                     }).Result.Resource;
             });
 
-            CosmosContainerSettings documentCollection = this.client.CreateDocumentCollectionAsync(
+            DocumentCollection documentCollection = this.client.CreateDocumentCollectionAsync(
                 database.SelfLink,
-                new CosmosContainerSettings()
+                new DocumentCollection()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = new PartitionKeyDefinition()
@@ -2262,27 +2263,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestContinuationLimitHeaders()
         {
 
-            CosmosDatabaseSettings database = TestCommon.RetryRateLimiting<CosmosDatabaseSettings>(() =>
+            Database database = TestCommon.RetryRateLimiting<Database>(() =>
             {
-                return this.client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
             TestContinuationLimitHeaders(database, false);
             TestContinuationLimitHeaders(database, true);
 
-            TestCommon.RetryRateLimiting<ResourceResponse<CosmosDatabaseSettings>>(() =>
+            TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
                 return this.client.DeleteDatabaseAsync(database).Result;
             });
         }
 
-        private void TestContinuationLimitHeaders(CosmosDatabaseSettings database, bool partitionedCollection)
+        private void TestContinuationLimitHeaders(Database database, bool partitionedCollection)
         {
-            CosmosContainerSettings collection;
+            DocumentCollection collection;
             RequestOptions options = new RequestOptions();
             if (!partitionedCollection)
             {
-                collection = new CosmosContainerSettings()
+                collection = new DocumentCollection()
                 {
                     Id = Guid.NewGuid().ToString()
                 };
@@ -2291,7 +2292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                collection = new CosmosContainerSettings()
+                collection = new DocumentCollection()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = new PartitionKeyDefinition
@@ -2304,7 +2305,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<CosmosContainerSettings>(() =>
+            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
             {
                 return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
             });
@@ -2383,13 +2384,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(continuation.Contains("#FPC") || continuation.Contains("#FPP"));
         }
 
-        private void TestQueryMetricsHeaders(CosmosDatabaseSettings database, bool partitionedCollection)
+        private void TestQueryMetricsHeaders(Database database, bool partitionedCollection)
         {
-            CosmosContainerSettings collection;
+            DocumentCollection collection;
             RequestOptions options = new RequestOptions();
             if (!partitionedCollection)
             {
-                collection = new CosmosContainerSettings()
+                collection = new DocumentCollection()
                 {
                     Id = Guid.NewGuid().ToString()
                 };
@@ -2398,7 +2399,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                collection = new CosmosContainerSettings()
+                collection = new DocumentCollection()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = new PartitionKeyDefinition
@@ -2411,7 +2412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput = 20000;
             }
 
-            collection = TestCommon.RetryRateLimiting<CosmosContainerSettings>(() =>
+            collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
             {
                 return TestCommon.CreateCollectionAsync(this.client, database, collection, options).Result;
             });
@@ -2443,7 +2444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task ValidateQueryMetricsHeadersOverContinuations(
-            CosmosContainerSettings coll,
+            DocumentCollection coll,
             int documentCount)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -2523,12 +2524,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //    "Expected Query VM Execution Time to be > {0}, metrics = {1}", metrics.QueryEngineTimes.RuntimeExecutionTimes.TotalTime, metrics);
         }
 
-        private async Task UpdateCollectionIndexingPolicyRandomlyAsync(DocumentClient client, CosmosContainerSettings collection, Random random)
+        private async Task UpdateCollectionIndexingPolicyRandomlyAsync(DocumentClient client, DocumentCollection collection, Random random)
         {
             Logger.LogLine("Start to update indexing policy.");
 
             // Compute the new index policy based on the random number generator.
-            collection = new CosmosContainerSettings { Id = collection.Id, SelfLink = collection.SelfLink };
+            collection = new DocumentCollection { Id = collection.Id, SelfLink = collection.SelfLink };
 
             // Higher probability to get consistent indexing mode.
             switch (random.Next(4))
@@ -2645,15 +2646,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             } while (true);
         }
 
-        private async Task LoadDocuments(CosmosContainerSettings coll)
+        private async Task LoadDocuments(DocumentCollection coll)
         {
             await LoadDocuments(coll, File.ReadAllLines(@"Documents\MillionSong1KDocuments.json"));
         }
 
-        private async Task LoadDocuments(CosmosContainerSettings coll, IEnumerable<string> serializedDocuments)
+        private async Task LoadDocuments(DocumentCollection coll, IEnumerable<string> serializedDocuments)
         {
             var script = MakeCreateDocumentsScript();
-            var sproc = await Util.GetOrCreateStoredProcedureAsync(client, coll, new CosmosStoredProcedureSettings { Id = "bulkInsert", Body = script });
+            var sproc = await Util.GetOrCreateStoredProcedureAsync(client, coll, new StoredProcedure { Id = "bulkInsert", Body = script });
 
             List<string> documents = new List<string>();
             foreach (string line in serializedDocuments)
@@ -2728,7 +2729,7 @@ function sproc(feed) {
             return scriptTemplate;
         }
 
-        internal void TestQueryDocuments(CosmosContainerSettings collection, bool manualIndex = false)
+        internal void TestQueryDocuments(DocumentCollection collection, bool manualIndex = false)
         {
             List<QueryDocument> listQueryDocuments = new List<QueryDocument>();
             foreach (var index in Enumerable.Range(1, 3))
@@ -2755,7 +2756,7 @@ function sproc(feed) {
 
         }
 
-        private void TestSQLQuery(CosmosContainerSettings collection, QueryDocument[] documents)
+        private void TestSQLQuery(DocumentCollection collection, QueryDocument[] documents)
         {
             Action<DocumentClient> queryAction = (documentClient) =>
             {
@@ -2786,17 +2787,17 @@ function sproc(feed) {
 
         private void CleanUp()
         {
-            IEnumerable<CosmosDatabaseSettings> allDatabases = from database in this.client.CreateDatabaseQuery()
+            IEnumerable<Database> allDatabases = from database in this.client.CreateDatabaseQuery()
                                                  select database;
 
-            foreach (CosmosDatabaseSettings database in allDatabases)
+            foreach (Database database in allDatabases)
             {
                 this.client.DeleteDatabaseAsync(database.SelfLink).Wait();
             }
         }
 
         internal void TestQueryDocumentsWithIndexPaths(
-            CosmosContainerSettings collection,
+            DocumentCollection collection,
             bool manualIndex = false,
             bool bExpectExcludedPathError = true,
             bool bExpectRangePathError = true)
@@ -2894,7 +2895,7 @@ function sproc(feed) {
             return bFound;
         }
 
-        private async Task TestQueryWithTimestampOnCollectionAsync(CosmosContainerSettings collection)
+        private async Task TestQueryWithTimestampOnCollectionAsync(DocumentCollection collection)
         {
             // Basic CRUD
             Document document = (await this.client.CreateDocumentAsync(collection, new Document { Id = "doc01" })).Resource;
@@ -2923,7 +2924,7 @@ function sproc(feed) {
 
             // Bulk insert
             var script = MakeCreateDocumentsScript();
-            var sproc = await Util.GetOrCreateStoredProcedureAsync(client, collection, new CosmosStoredProcedureSettings { Id = "bulkInsert", Body = script });
+            var sproc = await Util.GetOrCreateStoredProcedureAsync(client, collection, new StoredProcedure { Id = "bulkInsert", Body = script });
 
             Document[] documents = Enumerable.Repeat(new Document(), 10).ToArray();
             await this.client.ExecuteStoredProcedureAsync<dynamic>(sproc, new[] { documents });
@@ -2943,7 +2944,7 @@ function sproc(feed) {
             }
         }
 
-        private void VerifyQueryWithTimestampShouldReturnDocument(CosmosContainerSettings collection, long timestamp, string expectedDocumentId)
+        private void VerifyQueryWithTimestampShouldReturnDocument(DocumentCollection collection, long timestamp, string expectedDocumentId)
         {
             foreach (DocumentClient lockedClient in ReplicationTests.GetClientsLocked())
             {
@@ -2954,7 +2955,7 @@ function sproc(feed) {
             }
         }
 
-        private void VerifyQueryWithTimestampShouldReturnNothing(CosmosContainerSettings collection, long timestamp)
+        private void VerifyQueryWithTimestampShouldReturnNothing(DocumentCollection collection, long timestamp)
         {
             foreach (DocumentClient lockedClient in ReplicationTests.GetClientsLocked())
             {

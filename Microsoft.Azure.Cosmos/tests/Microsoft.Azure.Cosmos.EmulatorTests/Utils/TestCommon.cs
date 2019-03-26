@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 authKey,
                 null,
                 connectionPolicy,
-                (Cosmos.ConsistencyLevel)defaultConsistencyLevel,
+                defaultConsistencyLevel,
                 new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
@@ -982,7 +982,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                String link = resource.GetLink();
+                String link = resource.SelfLink;
                 DocumentServiceRequest request;
 
                 if (link != null)
@@ -1594,7 +1594,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             RequestOptions requestOptions = null)
         {
             return await client.CreateDocumentCollectionAsync(
-                db,
+                db.SelfLink,
                 col,
                 requestOptions);
         }
@@ -1606,7 +1606,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             RequestOptions requestOptions = null)
         {
             return await client.CreateDocumentCollectionAsync(
-                db,
+                db.SelfLink,
                 col,
                 requestOptions);
         }

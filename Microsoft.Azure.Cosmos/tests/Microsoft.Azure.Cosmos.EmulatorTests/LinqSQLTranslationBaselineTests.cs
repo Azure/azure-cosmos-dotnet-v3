@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Linq;
     using System.Linq.Expressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
     using BaselineTest;
     using System.Collections.Generic;
@@ -19,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Text.RegularExpressions;
     using System.Text;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     [TestCategory("Quarantine")]
@@ -30,8 +29,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         private static DocumentClient client;
-        private static CosmosDatabaseSettings testDb;
-        private static CosmosContainerSettings testCollection;
+        private static Database testDb;
+        private static DocumentCollection testCollection;
 
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
@@ -55,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 },
                 connectionPolicy,
                 defaultConsistencyLevel);
-            var db = new CosmosDatabaseSettings() { Id = nameof(LinqTranslationBaselineTests) };
+            var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
             try
             {
                 var response = client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id)).Result;
@@ -67,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         [TestInitialize]
         public void TestInitialize()
         {
-            testCollection = client.CreateDocumentCollectionAsync(testDb, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result;
+            testCollection = client.CreateDocumentCollectionAsync(testDb, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
         }
 
         [TestCleanup]

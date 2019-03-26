@@ -5,9 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.SystemFunctions;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -23,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Text;
     using System.Configuration;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     [TestCategory("Quarantine")]
@@ -30,8 +29,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     {
         private static IQueryable<DataObject> query;
         private static DocumentClient client;
-        private static CosmosDatabaseSettings testDb;
-        private static CosmosContainerSettings testCollection;
+        private static Database testDb;
+        private static DocumentCollection testCollection;
 
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
@@ -55,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 },
                 connectionPolicy,
                 defaultConsistencyLevel);
-            var db = new CosmosDatabaseSettings() { Id = nameof(LinqTranslationBaselineTests) };
+            var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
             try
             {
                 var response = client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id)).Result;
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public void TestInitialize()
         {
-            testCollection = client.CreateDocumentCollectionAsync(testDb, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result;
+            testCollection = client.CreateDocumentCollectionAsync(testDb, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
         }
 
         [TestCleanup]

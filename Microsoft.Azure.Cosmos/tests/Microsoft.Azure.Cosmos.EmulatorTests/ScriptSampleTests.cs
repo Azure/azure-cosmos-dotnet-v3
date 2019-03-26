@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.IO;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                this.collection = this.client.CreateDocumentCollectionAsync(this.database, this.collection).Result;
+                this.collection = this.client.CreateDocumentCollectionAsync(this.database.SelfLink, this.collection).Result;
             }
             catch (DocumentClientException exception)
             {
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public void TestCleanup()
         {
-            this.client.DeleteDatabaseAsync(this.database).Wait();
+            this.client.DeleteDatabaseAsync(this.database.SelfLink).Wait();
         }
 
         [TestMethod]
@@ -102,14 +103,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // 9. Delete 1st doc (uid = cam).
             doc.Id = "TestUniqueConstraintSample_2";
-            this.client.DeleteDocumentAsync(doc, triggerRequestOptions).Wait();
+            this.client.DeleteDocumentAsync(doc.SelfLink, triggerRequestOptions).Wait();
 
             ValidateReadMetadoc("lion");
         }
 
         private void ValidateReadMetadoc(string expectedUid)
         {
-            var query = this.client.CreateDocumentQuery<Document>(this.collection, "SELECT * FROM root r WHERE r.isMetadata = true");
+            var query = this.client.CreateDocumentQuery<Document>(this.collection.SelfLink, "SELECT * FROM root r WHERE r.isMetadata = true");
             foreach (var metaDoc in query)
             {
                 string id = metaDoc.GetPropertyValue<string>("id");

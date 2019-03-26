@@ -14,34 +14,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ClientTests.cs" />
     <Compile Remove="ClientTestsUtils.cs" />
     <Compile Remove="CrossPartitionQueryTests.cs" />
     <Compile Remove="CustomSerializationTests.cs" />
     <Compile Remove="DirectRESTTests.cs" />
-    <Compile Remove="DocumentClientExtensions.cs" />
-    <Compile Remove="DocumentClientLinkSwitchExtension.cs" />
     <Compile Remove="DocumentClientUnitTests.cs" />
-    <Compile Remove="DynamicQueryable.cs" />
-    <Compile Remove="GatewayTests.cs" />
     <Compile Remove="GlobalDatabaseAccountTests.cs" />
     <Compile Remove="HeadersValidationTests.cs" />
     <Compile Remove="IndexingPolicyTests.cs" />
-    <Compile Remove="LinqAggregateFunctionsBaselineTests.cs" />
-    <Compile Remove="LinqAttributeContractBaselineTests.cs" />
-    <Compile Remove="LinqConstantFoldingBaselineTests.cs" />
-    <Compile Remove="LinqGeneralBaselineTests.cs" />
-    <Compile Remove="LinqSQLTranslationBaselineTests.cs" />
-    <Compile Remove="LinqTestData.cs" />
-    <Compile Remove="LinqTestsCommon.cs" />
-    <Compile Remove="LinqTranslationBaselineTests.cs" />
     <Compile Remove="ModuleCommand.cs" />
     <Compile Remove="ModuleEvent.cs" />
     <Compile Remove="MultiRegionStrongTests.cs" />
-    <Compile Remove="NameRoutingTests.cs" />
-    <Compile Remove="OfferTests.cs" />
-    <Compile Remove="QueryTests.cs" />
-    <Compile Remove="SmokeTests.cs" />
     <Compile Remove="SpatialTest.cs" />
     <Compile Remove="StoredProcedureTests.cs" />
     <Compile Remove="TriggersTests.cs" />
@@ -67,14 +50,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.0.8.11" />
     <PackageReference Include="System.Reflection" Version="4.3.0" />
-  </ItemGroup>
-  
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[3.0.0.5-preview,)" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[3.0.0.5-preview,)" />
   </ItemGroup>
   
   <ItemGroup>

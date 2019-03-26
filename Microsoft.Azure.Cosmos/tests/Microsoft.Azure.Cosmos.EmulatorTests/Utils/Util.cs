@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         var options = new RequestOptions
                                         {
                                             AccessCondition = accessCondition,
-                                            ConsistencyLevel = (Cosmos.ConsistencyLevel)level,
+                                            ConsistencyLevel = level,
                                             IndexingDirective = policy,
                                             SessionToken = sessionToken,
                                             OfferType = offerType,
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 while (true)
                 {
-                    long lazyIndexingProgress = (await lockedClients[index].ReadDocumentCollectionAsync(collection, new RequestOptions { PopulateQuotaInfo = true })).LazyIndexingProgress;
+                    long lazyIndexingProgress = (await lockedClients[index].ReadDocumentCollectionAsync(collection.SelfLink, new RequestOptions { PopulateQuotaInfo = true })).LazyIndexingProgress;
                     if (lazyIndexingProgress == -1)
                     {
                         throw new Exception("Failed to obtain the lazy indexing progress.");
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection collection,
             StoredProcedure newStoredProcedure)
         {
-            var result = (from proc in client.CreateStoredProcedureQuery(collection)
+            var result = (from proc in client.CreateStoredProcedureQuery(collection.SelfLink)
                           where proc.Id == newStoredProcedure.Id
                           select proc).AsEnumerable().FirstOrDefault();
             if (result != null)
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return result;
             }
 
-            return await client.CreateStoredProcedureAsync(collection, newStoredProcedure);
+            return await client.CreateStoredProcedureAsync(collection.SelfLink, newStoredProcedure);
         }
 
         internal static void ValidateInvalidOfferThroughputException(DocumentClientException ex, HttpStatusCode expectedStatusCode)

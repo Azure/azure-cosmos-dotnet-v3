@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         public QueryOracle(Uri gatewayUri, string masterKey, string collectionLink, bool enableRetries,
                            int targetNumberOfQueriesToValidate = Int32.MaxValue)
             : this(
-                new DocumentClient(gatewayUri, masterKey, desiredConsistencyLevel: ConsistencyLevel.Session),
+                new DocumentClient(gatewayUri, masterKey, desiredConsistencyLevel: Documents.ConsistencyLevel.Session),
                 collectionLink, enableRetries, targetNumberOfQueriesToValidate)
         {
         }

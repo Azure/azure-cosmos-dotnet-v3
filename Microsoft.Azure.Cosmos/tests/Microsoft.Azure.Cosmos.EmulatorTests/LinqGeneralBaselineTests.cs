@@ -11,21 +11,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Linq.Dynamic;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using BaselineTest;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     [TestCategory("Quarantine")]
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static DocumentClient client;
-        private static CosmosDatabaseSettings testDb;
-        private static CosmosContainerSettings testCollection;
+        private static Database testDb;
+        private static DocumentCollection testCollection;
         private static Func<bool, IQueryable<Family>> getQuery;
 
         [ClassInitialize]
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             var query = new DocumentQuery<Family>(client, ResourceType.Document, typeof(Document), null, null);
             CleanUp();
 
-            testDb = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result;
+            testDb = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result;
             getQuery = LinqTestsCommon.GenerateFamilyData(client, testDb, out testCollection);
         }
 
@@ -1129,8 +1128,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateLinqQueries()
         {
-            CosmosContainerSettings collection = client.CreateDocumentCollectionAsync(
-                testDb.SelfLink, new CosmosContainerSettings { Id = Guid.NewGuid().ToString("N") }).Result.Resource;
+            DocumentCollection collection = client.CreateDocumentCollectionAsync(
+                testDb.SelfLink, new DocumentCollection { Id = Guid.NewGuid().ToString("N") }).Result.Resource;
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -1343,23 +1342,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         internal static TValue CreateExecuteAndDeleteProcedure<TValue>(DocumentClient client,
-            CosmosContainerSettings collection,
+            DocumentCollection collection,
             string transientProcedure,
             out StoredProcedureResponse<TValue> response)
         {
             // create
-            CosmosStoredProcedureSettings storedProcedure = new CosmosStoredProcedureSettings
+            StoredProcedure storedProcedure = new StoredProcedure
             {
                 Id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = transientProcedure
             };
-            CosmosStoredProcedureSettings retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedure).Result;
+            StoredProcedure retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedure).Result;
 
             // execute
             response = client.ExecuteStoredProcedureAsync<TValue>(retrievedStoredProcedure).Result;
 
             // delete
-            client.Delete<CosmosStoredProcedureSettings>(retrievedStoredProcedure.GetIdOrFullName());
+            client.Delete<StoredProcedure>(retrievedStoredProcedure.GetIdOrFullName());
 
             return response.Response;
         }
@@ -1376,16 +1375,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             string databaseName = testDb.Id;
 
-            List<CosmosDatabaseSettings> queryResults = new List<CosmosDatabaseSettings>();
+            List<Database> queryResults = new List<Database>();
             //Simple Equality
-            IQueryable<CosmosDatabaseSettings> dbQuery = from db in client.CreateDatabaseQuery()
+            IQueryable<Database> dbQuery = from db in client.CreateDatabaseQuery()
                                            where db.Id == databaseName
                                            select db;
-            IDocumentQuery<CosmosDatabaseSettings> documentQuery = dbQuery.AsDocumentQuery();
+            IDocumentQuery<Database> documentQuery = dbQuery.AsDocumentQuery();
 
             while (documentQuery.HasMoreResults)
             {
-                FeedResponse<CosmosDatabaseSettings> pagedResponse = await documentQuery.ExecuteNextAsync<CosmosDatabaseSettings>();
+                FeedResponse<Database> pagedResponse = await documentQuery.ExecuteNextAsync<Database>();
                 Assert.IsNotNull(pagedResponse.ResponseHeaders, "ResponseHeaders is null");
                 Assert.IsNotNull(pagedResponse.ActivityId, "Query ActivityId is null");
                 queryResults.AddRange(pagedResponse);
@@ -1402,7 +1401,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             while (documentQuery.HasMoreResults)
             {
-                queryResults.AddRange(await documentQuery.ExecuteNextAsync<CosmosDatabaseSettings>());
+                queryResults.AddRange(await documentQuery.ExecuteNextAsync<Database>());
             }
 
             Assert.AreEqual(2, queryResults.Count);
@@ -1427,13 +1426,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateTransformQuery()
         {
-            CosmosContainerSettings collection = new CosmosContainerSettings
+            DocumentCollection collection = new DocumentCollection
             {
                 Id = Guid.NewGuid().ToString("N")
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-            collection = client.Create<CosmosContainerSettings>(testDb.ResourceId, collection);
+            collection = client.Create<DocumentCollection>(testDb.ResourceId, collection);
             int documentsToCreate = 100;
             for (int i = 0; i < documentsToCreate; i++)
             {
@@ -1594,9 +1593,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private class QueryHelper
         {
             private readonly DocumentClient client;
-            private readonly CosmosContainerSettings docCollection;
+            private readonly DocumentCollection docCollection;
 
-            public QueryHelper(DocumentClient client, CosmosContainerSettings docCollection)
+            public QueryHelper(DocumentClient client, DocumentCollection docCollection)
             {
                 this.client = client;
                 this.docCollection = docCollection;
@@ -1614,8 +1613,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateLinqOnDataDocumentType()
         {
-            CosmosContainerSettings collection = client.CreateDocumentCollectionAsync(
-                testDb.SelfLink, new CosmosContainerSettings { Id = nameof(ValidateLinqOnDataDocumentType) }).Result.Resource;
+            DocumentCollection collection = client.CreateDocumentCollectionAsync(
+                testDb.SelfLink, new DocumentCollection { Id = nameof(ValidateLinqOnDataDocumentType) }).Result.Resource;
 
             DataDocument doc = new DataDocument() { Id = Guid.NewGuid().ToString("N"), Number = 0, TypeName = "Hello" };
             client.CreateDocumentAsync(collection, doc).Wait();
@@ -1682,13 +1681,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         private async Task ValidateServerSideQueryEvalWithPaginationScenario()
         {
-            CosmosContainerSettings collection = new CosmosContainerSettings
+            DocumentCollection collection = new DocumentCollection
             {
                 Id = Guid.NewGuid().ToString()
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-            collection = client.Create<CosmosContainerSettings>(
+            collection = client.Create<DocumentCollection>(
                 testDb.ResourceId,
                 collection);
 
