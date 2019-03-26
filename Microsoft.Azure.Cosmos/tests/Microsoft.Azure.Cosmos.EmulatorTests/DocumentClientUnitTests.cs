@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Utils;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             bool throttled = false;
             try
             {
-                CosmosDatabaseSettings db = new CosmosDatabaseSettings { Id = "test db 1" };
+                Database db = new Database { Id = "test db 1" };
                 client.CreateDatabaseAsync(db).Wait();
             }
             catch (Exception exp)
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             bool throttled = false;
             try
             {
-                CosmosDatabaseSettings db = new CosmosDatabaseSettings { Id = "test db 1" };
+                Database db = new Database { Id = "test db 1" };
                 client.CreateDatabaseAsync(db).Wait();
             }
             catch (Exception exp)

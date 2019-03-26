@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json.Linq;
     using VisualStudio.TestTools.UnitTesting;
 
@@ -457,6 +457,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.DeleteDocumentCollectionAsync(collection.SelfLink);
             }
             await client.DeleteDatabaseAsync(database.SelfLink);
+        }
+
+        private class QueryResult : Resource
+        {
         }
     }
 }

@@ -14,23 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ClientTestsUtils.cs" />
-    <Compile Remove="CrossPartitionQueryTests.cs" />
-    <Compile Remove="CustomSerializationTests.cs" />
-    <Compile Remove="DirectRESTTests.cs" />
-    <Compile Remove="DocumentClientUnitTests.cs" />
     <Compile Remove="GlobalDatabaseAccountTests.cs" />
-    <Compile Remove="HeadersValidationTests.cs" />
-    <Compile Remove="IndexingPolicyTests.cs" />
-    <Compile Remove="ModuleCommand.cs" />
-    <Compile Remove="ModuleEvent.cs" />
-    <Compile Remove="MultiRegionStrongTests.cs" />
-    <Compile Remove="SpatialTest.cs" />
-    <Compile Remove="StoredProcedureTests.cs" />
-    <Compile Remove="TriggersTests.cs" />
-    <Compile Remove="UniqueIndexTests.cs" />
-    <Compile Remove="UserDefinedFunctionsTests.cs" />
-    <Compile Remove="Utils\DocumentClientLinkSwitchExtension.cs" />
   </ItemGroup>
 
   <ItemGroup>
