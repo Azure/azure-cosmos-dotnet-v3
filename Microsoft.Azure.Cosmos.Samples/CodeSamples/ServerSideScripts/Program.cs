@@ -109,7 +109,7 @@
 
             await TryDeleteStoredProcedure(container, scriptId);
 
-            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProceducreAsync(scriptId, File.ReadAllText(scriptFileName));
+            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProcedureAsync(scriptId, File.ReadAllText(scriptFileName));
 
             // 2. Create a document.
             SampleDocument doc = new SampleDocument
@@ -156,7 +156,7 @@
             string body = File.ReadAllText(@".\JS\BulkImport.js");
 
             await TryDeleteStoredProcedure(container, scriptId);
-            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProceducreAsync(scriptId, body);
+            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProcedureAsync(scriptId, body);
 
             // 4. Create a batch of docs (MAX is limited by request size (2M) and to script for execution.
             // We send batches of documents to create to script.
@@ -205,7 +205,7 @@
             string scriptId = "OrderBy";
 
             await TryDeleteStoredProcedure(container, scriptId);
-            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProceducreAsync(scriptId, body);
+            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProcedureAsync(scriptId, body);
 
             // 2. Prepare to run stored procedure. 
             string orderByFieldName = "FamilyId";
