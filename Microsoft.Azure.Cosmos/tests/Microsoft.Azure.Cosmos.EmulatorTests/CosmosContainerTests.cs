@@ -71,14 +71,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-            Assert.AreEqual(IndexingMode.None, containerResponse.Resource.IndexingPolicy.IndexingMode);
+            Assert.AreEqual(Cosmos.IndexingMode.None, containerResponse.Resource.IndexingPolicy.IndexingMode);
             Assert.IsFalse(containerResponse.Resource.IndexingPolicy.Automatic);
 
             containerResponse = await cosmosContainer.ReadAsync();
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-            Assert.AreEqual(IndexingMode.None, containerResponse.Resource.IndexingPolicy.IndexingMode);
+            Assert.AreEqual(Cosmos.IndexingMode.None, containerResponse.Resource.IndexingPolicy.IndexingMode);
             Assert.IsFalse(containerResponse.Resource.IndexingPolicy.Automatic);
 
             containerResponse = await containerResponse.Container.DeleteAsync();

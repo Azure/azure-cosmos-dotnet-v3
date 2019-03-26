@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="PartitionKeyDefinition"/> object.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
-        internal PartitionKeyDefinition PartitionKey { get; set; }
+        internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
         /// Internal property used as a helper to convert to the back-end type int?

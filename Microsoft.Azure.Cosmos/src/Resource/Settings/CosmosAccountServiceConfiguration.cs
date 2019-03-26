@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Internal
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Internal
 
         public ReplicationPolicy SystemReplicationPolicy => this.AccountSettings.SystemReplicationPolicy;
 
-        public ConsistencyLevel DefaultConsistencyLevel => (ConsistencyLevel)this.AccountSettings.ConsistencySetting.DefaultConsistencyLevel;
+        public Documents.ConsistencyLevel DefaultConsistencyLevel => (Documents.ConsistencyLevel)this.AccountSettings.ConsistencySetting.DefaultConsistencyLevel;
 
         public ReadPolicy ReadPolicy => this.AccountSettings.ReadPolicy;
 

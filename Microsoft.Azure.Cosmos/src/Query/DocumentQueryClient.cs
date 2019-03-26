@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using System.Linq;
     using Microsoft.Azure.Documents;
@@ -120,17 +118,17 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.innerClient.ReadFeedAsync(request, cancellationToken);
         }
 
-        public async Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        public async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            return (Documents.ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
+            return (ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
         }
 
-        public async Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
+        public async Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
-            return (Documents.ConsistencyLevel)await this.innerClient.GetDesiredConsistencyLevelAsync();
+            return await this.innerClient.GetDesiredConsistencyLevelAsync();
         }
 
-        public Task EnsureValidOverwrite(Documents.ConsistencyLevel requestedConsistencyLevel)
+        public Task EnsureValidOverwrite(ConsistencyLevel requestedConsistencyLevel)
         {
             this.innerClient.EnsureValidOverwrite(requestedConsistencyLevel);
             return CompletedTask.Instance;

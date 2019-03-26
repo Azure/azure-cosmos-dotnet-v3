@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Net.Http;
     using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         }
 
         public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
-            : base(serviceEndpoint, authKeyOrResourceToken, connectionPolicy, desiredConsistencyLevel)
+            : base(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
@@ -99,6 +100,8 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                   apitype, 
                   receivedResponseEventArgs, 
                   null,
+                  null,
+                  true,
                   transportClientHandlerFactory)
         {
             this.Init();

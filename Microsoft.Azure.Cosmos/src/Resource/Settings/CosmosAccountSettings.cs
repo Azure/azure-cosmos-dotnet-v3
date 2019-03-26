@@ -19,31 +19,15 @@ namespace Microsoft.Azure.Cosmos
         private Collection<CosmosAccountLocation> readLocations;
         private Collection<CosmosAccountLocation> writeLocations;
 
+        internal readonly Lazy<IDictionary<string, object>> QueryEngineConfiurationInternal;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosAccountSettings"/> class.
         /// </summary>
         internal CosmosAccountSettings()
         {
-            this.SelfLink = string.Empty;
+            this.QueryEngineConfiurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
-
-        /// <summary>
-        /// Gets the self-link for Databases in the databaseAccount from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for Databases in the databaseAccount.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.DatabasesLink)]
-        internal virtual string DatabasesLink { get; set; }
-
-        /// <summary>
-        /// Gets the self-link for Media in the databaseAccount from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link for Media in the databaseAccount.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.MediaLink)]
-        internal virtual string MediaLink { get; set; }
 
         /// <summary>
         /// Gets the list of locations representing the writable regions of
@@ -102,17 +86,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
         public virtual string ResourceId { get; protected internal set; }
-
-        /// <summary>
-        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>The self-link associated with the resource.</value> 
-        /// <remarks>
-        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
-        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
-        /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.SelfLink)]
-        internal string SelfLink { get; set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -242,18 +215,41 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the ReplicationPolicy settings
         /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.UserReplicationPolicy)]
         internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
         /// Gets the SystemReplicationPolicy settings
         /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.SystemReplicationPolicy)]
         internal ReplicationPolicy SystemReplicationPolicy { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.ReadPolicy)]
         internal ReadPolicy ReadPolicy { get; set; }
 
+        internal IDictionary<string, object> QueryEngineConfiuration
+        {
+            get
+            {
+                return this.QueryEngineConfiurationInternal.Value;
+            }
+        }
+
         [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
-        internal IDictionary<string, object> QueryEngineConfiuration { get; set; }
+        internal string QueryEngineConfiurationString { get; set; }
 
         internal bool EnableMultipleWriteLocations { get; set; }
+
+        private IDictionary<string, object> QueryStringToDictConverter()
+        {
+            if (!string.IsNullOrEmpty(this.QueryEngineConfiurationString))
+            {
+                return JsonConvert.DeserializeObject<Dictionary<string, object>>(this.QueryEngineConfiurationString);
+            }
+            else
+            {
+                return new Dictionary<string, object>();
+            }
+        }
     }
 }
