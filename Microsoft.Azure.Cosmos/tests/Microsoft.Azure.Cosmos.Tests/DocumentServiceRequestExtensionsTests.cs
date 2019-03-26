@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>

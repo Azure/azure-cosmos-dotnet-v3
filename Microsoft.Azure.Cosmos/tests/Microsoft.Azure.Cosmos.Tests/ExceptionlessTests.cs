@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 mockStoreResponse404.Status = (int)HttpStatusCode.NotFound;
 
 
-                TransportClient.ThrowIfFailed(
+                TransportClient.ThrowServerException(
                     string.Empty,
                     mockStoreResponse404,
                     ExceptionlessTests.resourceUri,
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 mockStoreResponse4XX.Status = statusCode;
 
 
-                TransportClient.ThrowIfFailed(
+                TransportClient.ThrowServerException(
                     string.Empty,
                     mockStoreResponse4XX,
                     ExceptionlessTests.resourceUri,
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreResponse mockStoreResponse429 = new StoreResponse();
                 mockStoreResponse429.Status = (int)StatusCodes.TooManyRequests;
 
-                TransportClient.ThrowIfFailed(
+                TransportClient.ThrowServerException(
                     string.Empty,
                     mockStoreResponse429,
                     ExceptionlessTests.resourceUri,

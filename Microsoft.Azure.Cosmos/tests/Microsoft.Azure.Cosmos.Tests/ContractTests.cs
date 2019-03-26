@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Moq;
     using System.Reflection;
     using System.Diagnostics;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class ContractTests

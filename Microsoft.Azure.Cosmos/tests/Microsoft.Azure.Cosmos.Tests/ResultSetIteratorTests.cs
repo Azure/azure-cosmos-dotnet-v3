@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using System;
@@ -57,21 +58,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosQueryRequestOptions> options = new Mock<CosmosQueryRequestOptions>() { CallBase = true };
 
             CosmosRequestMessage request = new CosmosRequestMessage {
-                OperationType = Internal.OperationType.SqlQuery
+                OperationType = OperationType.SqlQuery
             };
 
             options.Object.EnableCrossPartitionQuery = true;
             options.Object.EnableScanInQuery = true;
             options.Object.SessionToken = "SessionToken";
-            options.Object.ConsistencyLevel = ConsistencyLevel.BoundedStaleness;
+            options.Object.ConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.BoundedStaleness;
             options.Object.FillRequestOptions(request);
 
-            Assert.AreEqual(bool.TrueString, request.Headers[Internal.HttpConstants.HttpHeaders.IsQuery]);
-            Assert.AreEqual(bool.TrueString, request.Headers[Internal.HttpConstants.HttpHeaders.EnableCrossPartitionQuery]);
-            Assert.AreEqual(Internal.RuntimeConstants.MediaTypes.QueryJson, request.Headers[Internal.HttpConstants.HttpHeaders.ContentType]);
-            Assert.AreEqual(bool.TrueString, request.Headers[Internal.HttpConstants.HttpHeaders.EnableScanInQuery]);
-            Assert.AreEqual(options.Object.SessionToken, request.Headers[Internal.HttpConstants.HttpHeaders.SessionToken]);
-            Assert.AreEqual(options.Object.ConsistencyLevel.ToString(), request.Headers[Internal.HttpConstants.HttpHeaders.ConsistencyLevel]);
+            Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsQuery]);
+            Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.EnableCrossPartitionQuery]);
+            Assert.AreEqual(RuntimeConstants.MediaTypes.QueryJson, request.Headers[HttpConstants.HttpHeaders.ContentType]);
+            Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.EnableScanInQuery]);
+            Assert.AreEqual(options.Object.SessionToken, request.Headers[HttpConstants.HttpHeaders.SessionToken]);
+            Assert.AreEqual(options.Object.ConsistencyLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
             options.Verify(m => m.FillRequestOptions(It.Is<CosmosRequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
         }
 

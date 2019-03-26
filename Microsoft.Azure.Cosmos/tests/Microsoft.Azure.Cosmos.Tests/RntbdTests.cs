@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Guid activityId = Guid.NewGuid();
                 Trace.CorrelationManager.ActivityId = activityId;
                 // Assuming that this machine isn't running SMTP.
-                using (Rntbd.Channel channel = new Rntbd.Channel(
+                using (Documents.Rntbd.Channel channel = new Documents.Rntbd.Channel(
                     new Uri("rntbd://localhost:25"),
                     RntbdTests.GetChannelProperties()))
                 {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Guid activityId = Guid.NewGuid();
                 Trace.CorrelationManager.ActivityId = activityId;
                 // Assuming that this machine isn't running SMTP.
-                using (Rntbd.Channel channel = new Rntbd.Channel(
+                using (Documents.Rntbd.Channel channel = new Documents.Rntbd.Channel(
                     new Uri("rntbd://localhost:25"),
                     RntbdTests.GetChannelProperties()))
                 {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Guid activityId = Guid.NewGuid();
                 Trace.CorrelationManager.ActivityId = activityId;
-                using (Rntbd.Channel channel = new Rntbd.Channel(
+                using (Documents.Rntbd.Channel channel = new Documents.Rntbd.Channel(
                     new Uri("rntbd://localhost:25"),
                     RntbdTests.GetChannelProperties()))
                 {
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             Guid activityId = Guid.NewGuid();
                             Trace.CorrelationManager.ActivityId = activityId;
 
-                            using (Rntbd.Channel channel = new Rntbd.Channel(
+                            using (Documents.Rntbd.Channel channel = new Documents.Rntbd.Channel(
                                 server.Uri,
                                 RntbdTests.GetChannelProperties()))
                             {
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             Guid activityId = Guid.NewGuid();
                             Trace.CorrelationManager.ActivityId = activityId;
 
-                            using (Rntbd.Channel channel = new Rntbd.Channel(
+                            using (Documents.Rntbd.Channel channel = new Documents.Rntbd.Channel(
                                 server.Uri,
                                 RntbdTests.GetChannelProperties()))
                             {
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static ChannelProperties GetChannelProperties()
         {
-            return new Rntbd.ChannelProperties(
+            return new Documents.Rntbd.ChannelProperties(
                 new UserAgentContainer(),
                 certificateHostNameOverride: "localhost",
                 requestTimerPool: new TimerPool(1),
