@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
@@ -88,12 +87,14 @@ namespace Microsoft.Azure.Cosmos
         private const string MaxChannelsPerHostConfig = "CosmosDbMaxTcpChannelsPerHost";
         private const string RntbdReceiveHangDetectionTimeConfig = "CosmosDbTcpReceiveHangDetectionTimeSeconds";
         private const string RntbdSendHangDetectionTimeConfig = "CosmosDbTcpSendHangDetectionTimeSeconds";
+        private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
         private const int MaxConcurrentConnectionOpenRequestsPerProcessor = 25;
         private const int DefaultMaxRequestsPerRntbdChannel = 30;
         private const int DefaultRntbdPartitionCount = 1;
         private const int DefaultMaxRntbdChannelsPerHost = ushort.MaxValue;
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
+        private const bool DefaultEnableCpuMonitor = true;
 
         private ConnectionPolicy connectionPolicy;
         private RetryPolicy retryPolicy;
@@ -108,6 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
+        private bool enableCpuMonitor = DefaultEnableCpuMonitor;
 
         //Auth
         private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
@@ -309,6 +311,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
         /// <param name="authKeyOrResourceToken">The authorization key or resource token to use to create the client.</param>
+        /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler).</param>
         /// <param name="connectionPolicy">(Optional) The connection policy for the client.</param>
         /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
         /// <remarks>
@@ -324,9 +327,10 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ConsistencyLevel"/>
         public DocumentClient(Uri serviceEndpoint,
                               string authKeyOrResourceToken,
+                              HttpMessageHandler handler,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null)
-            : this(serviceEndpoint, authKeyOrResourceToken, sendingRequestEventArgs: null, connectionPolicy: connectionPolicy, desiredConsistencyLevel: desiredConsistencyLevel)
+            : this(serviceEndpoint, authKeyOrResourceToken, sendingRequestEventArgs: null, connectionPolicy: connectionPolicy, desiredConsistencyLevel: desiredConsistencyLevel, handler: handler)
         {
         }
 
@@ -344,7 +348,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="transportClientHandlerFactory">(Optional) transport interceptor factory</param>
         /// <param name="serializerSettings">The custom JsonSerializer settings to be used for serialization/derialization.</param>
         /// <param name="apitype">Api type for the account</param>
+        /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler).</param>
         /// <param name="sessionContainer">The default session container with which DocumentClient is created</param>
+        /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal. 
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -364,7 +370,9 @@ namespace Microsoft.Azure.Cosmos
                               JsonSerializerSettings serializerSettings = null,
                               ApiType apitype = ApiType.None,
                               EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
+                              HttpMessageHandler handler = null,
                               ISessionContainer sessionContainer = null,
+                              bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null)
         {
             if (authKeyOrResourceToken == null)
@@ -400,7 +408,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.transportClientHandlerFactory = transportClientHandlerFactory;
-            this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel, sessionContainer);
+
+            this.Initialize(
+                serviceEndpoint: serviceEndpoint,
+                connectionPolicy: connectionPolicy,
+                desiredConsistencyLevel: desiredConsistencyLevel,
+                handler: handler,
+                sessionContainer: sessionContainer,
+                enableCpuMonitor: enableCpuMonitor);
         }
 
         /// <summary>
@@ -431,7 +446,7 @@ namespace Microsoft.Azure.Cosmos
                               ConnectionPolicy connectionPolicy,
                               Documents.ConsistencyLevel? desiredConsistencyLevel,
                               JsonSerializerSettings serializerSettings)
-            : this(serviceEndpoint, authKeyOrResourceToken, connectionPolicy, desiredConsistencyLevel)
+            : this(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
         {
             this.serializerSettings = serializerSettings;
         }
@@ -464,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
                               JsonSerializerSettings serializerSettings,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null)
-            : this(serviceEndpoint, authKeyOrResourceToken, connectionPolicy, desiredConsistencyLevel)
+            : this(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
         {
             this.serializerSettings = serializerSettings;
         }
@@ -749,7 +764,9 @@ namespace Microsoft.Azure.Cosmos
         internal virtual void Initialize(Uri serviceEndpoint,
             ConnectionPolicy connectionPolicy = null,
             Documents.ConsistencyLevel? desiredConsistencyLevel = null,
-            ISessionContainer sessionContainer = null)
+            HttpMessageHandler handler = null,
+            ISessionContainer sessionContainer = null,
+            bool? enableCpuMonitor = null)
         {
             if (serviceEndpoint == null)
             {
@@ -873,6 +890,23 @@ namespace Microsoft.Azure.Cosmos
                     this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
                 }
             }
+
+            if (enableCpuMonitor.HasValue)
+            {
+                this.enableCpuMonitor = enableCpuMonitor.Value;
+            }
+            else
+            {
+                string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
+                if (!string.IsNullOrEmpty(enableCpuMonitorString))
+                {
+                    bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
+                    if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                    {
+                        this.enableCpuMonitor = enableCpuMonitorFlag;
+                    }
+                }
+            }
 #endif
             this.ServiceEndpoint = serviceEndpoint.OriginalString.EndsWith("/", StringComparison.Ordinal) ? serviceEndpoint : new Uri(serviceEndpoint.OriginalString + "/");
 
@@ -885,7 +919,7 @@ namespace Microsoft.Azure.Cosmos
            
             this.globalEndpointManager = new GlobalEndpointManager(this, this.connectionPolicy);
 
-            this.httpMessageHandler = new HttpRequestMessageHandler(this.sendingRequest, this.receivedResponse);
+            this.httpMessageHandler = new HttpRequestMessageHandler(this.sendingRequest, this.receivedResponse, handler);
 
             this.mediaClient = new HttpClient(this.httpMessageHandler);
 
@@ -6493,8 +6527,11 @@ namespace Microsoft.Azure.Cosmos
                 this.maxRequestsPerRntbdChannel,
                 this.rntbdReceiveHangDetectionTimeSeconds,
                 this.rntbdSendHangDetectionTimeSeconds,
-                false); // TBD: Enable CPU monitor
-                //this.transportClientHandlerFactory);
+                this.enableCpuMonitor);
+            if (this.transportClientHandlerFactory != null)
+            {
+                this.storeClientFactory.WithTransportInterceptor(this.transportClientHandlerFactory);
+            }
 
             this.AddressResolver = new GlobalAddressResolver(
                 this.globalEndpointManager,
@@ -6851,11 +6888,12 @@ namespace Microsoft.Azure.Cosmos
             private readonly EventHandler<SendingRequestEventArgs> sendingRequest;
             private readonly EventHandler<ReceivedResponseEventArgs> receivedResponse;
 
-            public HttpRequestMessageHandler(EventHandler<SendingRequestEventArgs> sendingRequest, EventHandler<ReceivedResponseEventArgs> receivedResponse)
+            public HttpRequestMessageHandler(EventHandler<SendingRequestEventArgs> sendingRequest, EventHandler<ReceivedResponseEventArgs> receivedResponse, HttpMessageHandler innerHandler)
             {
                 this.sendingRequest = sendingRequest;
                 this.receivedResponse = receivedResponse;
-                InnerHandler = new HttpClientHandler();
+
+                InnerHandler = innerHandler ?? new HttpClientHandler();
             }
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         public QueryOracle(Uri gatewayUri, string masterKey, string collectionLink, bool enableRetries,
                            int targetNumberOfQueriesToValidate = Int32.MaxValue)
             : this(
-                new DocumentClient(gatewayUri, masterKey, desiredConsistencyLevel: Documents.ConsistencyLevel.Session),
+                new DocumentClient(gatewayUri, masterKey, desiredConsistencyLevel: Documents.ConsistencyLevel.Session, handler: null),
                 collectionLink, enableRetries, targetNumberOfQueriesToValidate)
         {
         }

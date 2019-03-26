@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.Http;
     using Linq;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
@@ -328,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy() { ConnectionMode = connectionMode, ConnectionProtocol = protocol };
 
-            return new DocumentClient(new Uri(Host), MasterKey, connectionPolicy);
+            return new DocumentClient(new Uri(Host), MasterKey, (HttpMessageHandler)null, connectionPolicy);
         }
 
         private void CreatePartitionedCollectionIfNotExists(string databaseName, string collectionName)

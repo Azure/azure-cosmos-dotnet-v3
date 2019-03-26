@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using System.Net.Http;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
@@ -625,6 +626,7 @@ function bulkImport(docs) {
                 return new DocumentClient(
                     hostUri,
                     key,
+                    (HttpMessageHandler)null,
                     connectionPolicy,
                     consistencyLevel);
             }

@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
+                (HttpMessageHandler)null,
                 connectionPolicy);
 
             client.GetDatabaseAccountAsync().Wait();
@@ -97,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
+                (HttpMessageHandler)null,
                 connectionPolicy);
 
             client.GetDatabaseAccountAsync().Wait();

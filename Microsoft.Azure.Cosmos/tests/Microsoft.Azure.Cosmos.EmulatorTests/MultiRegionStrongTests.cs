@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents;
+    using System.Net.Http;
 
     [TestClass]
     public sealed class MultiRegionStrongTests
@@ -81,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
+                (HttpMessageHandler)null,
                 connectionPolicy);
         }
 

@@ -171,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 key,
+                (HttpMessageHandler)null,
                 new ConnectionPolicy
                 {
                     ConnectionMode = ConnectionMode.Direct,
