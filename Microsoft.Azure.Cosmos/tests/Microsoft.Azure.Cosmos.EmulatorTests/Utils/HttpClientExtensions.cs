@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     internal static class HttpClientExtensions
     {
@@ -33,13 +35,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         throw readStreamTask.Exception.InnerException;
                     }
-                    return CosmosResource.LoadFrom<T>(readStreamTask.Result);
+                    return Resource.LoadFrom<T>(readStreamTask.Result);
                 }
             });
         }
 
         public static HttpContent AsHttpContent<T>(this T resource, NameValueCollection requestHeaders = null)
-            where T : CosmosResource, new()
+            where T : Resource, new()
         {
             Stream requestStream = null;
 
@@ -65,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static async Task<ICollection<T>> ListAllAsync<T>(this HttpClient client,
             Uri collectionUri,
-            INameValueCollection headers = null) where T : CosmosResource, new()
+            INameValueCollection headers = null) where T : Resource, new()
         {            
             Collection<T> responseCollection = new Collection<T>();
             string responseContinuation = null;
@@ -112,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         #region HttpResponseMessage
         public static Task<T> ToResourceAsync<T>(this HttpResponseMessage responseMessage)
-            where T : CosmosResource, new()
+            where T : Resource, new()
         {
             if (responseMessage.StatusCode == HttpStatusCode.NoContent ||
                 responseMessage.StatusCode == HttpStatusCode.NotModified)

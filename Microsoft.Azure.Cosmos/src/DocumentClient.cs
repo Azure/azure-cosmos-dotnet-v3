@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         private IComputeHash authKeyHashFunction;
 
         //Consistency
-        private ConsistencyLevel? desiredConsistencyLevel;
+        private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
         private CosmosAccountServiceConfiguration accountServiceConfiguration;
 
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
         public DocumentClient(Uri serviceEndpoint,
                               SecureString authKey,
                               ConnectionPolicy connectionPolicy = null,
-                              ConsistencyLevel? desiredConsistencyLevel = null)
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
         {
             if (authKey == null)
             {
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
         public DocumentClient(Uri serviceEndpoint,
                               SecureString authKey,
                               ConnectionPolicy connectionPolicy,
-                              ConsistencyLevel? desiredConsistencyLevel,
+                              Documents.ConsistencyLevel? desiredConsistencyLevel,
                               JsonSerializerSettings serializerSettings)
             : this(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
         {
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
                               SecureString authKey,
                               JsonSerializerSettings serializerSettings,
                               ConnectionPolicy connectionPolicy = null,
-                              ConsistencyLevel? desiredConsistencyLevel = null)
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : this(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
         {
             this.serializerSettings = serializerSettings;
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
         public DocumentClient(Uri serviceEndpoint,
                               string authKeyOrResourceToken,
                               ConnectionPolicy connectionPolicy = null,
-                              ConsistencyLevel? desiredConsistencyLevel = null)
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : this(serviceEndpoint, authKeyOrResourceToken, sendingRequestEventArgs: null, connectionPolicy: connectionPolicy, desiredConsistencyLevel: desiredConsistencyLevel)
         {
         }
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos
                               string authKeyOrResourceToken,
                               EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
                               ConnectionPolicy connectionPolicy = null,
-                              ConsistencyLevel? desiredConsistencyLevel = null,
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null,
                               JsonSerializerSettings serializerSettings = null,
                               ApiType apitype = ApiType.None,
                               EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos
         public DocumentClient(Uri serviceEndpoint,
                               string authKeyOrResourceToken,
                               ConnectionPolicy connectionPolicy,
-                              ConsistencyLevel? desiredConsistencyLevel,
+                              Documents.ConsistencyLevel? desiredConsistencyLevel,
                               JsonSerializerSettings serializerSettings)
             : this(serviceEndpoint, authKeyOrResourceToken, connectionPolicy, desiredConsistencyLevel)
         {
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos
                               string authKeyOrResourceToken,
                               JsonSerializerSettings serializerSettings,
                               ConnectionPolicy connectionPolicy = null,
-                              ConsistencyLevel? desiredConsistencyLevel = null)
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : this(serviceEndpoint, authKeyOrResourceToken, connectionPolicy, desiredConsistencyLevel)
         {
             this.serializerSettings = serializerSettings;
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos
             Uri serviceEndpoint,
             IList<Permission> permissionFeed,
             ConnectionPolicy connectionPolicy = null,
-            ConsistencyLevel? desiredConsistencyLevel = null)
+            Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : this(serviceEndpoint,
                     GetResourceTokens(permissionFeed),
                     connectionPolicy,
@@ -535,7 +535,7 @@ namespace Microsoft.Azure.Cosmos
         internal DocumentClient(Uri serviceEndpoint,
                               IList<ResourceToken> resourceTokens,
                               ConnectionPolicy connectionPolicy = null,
-                              ConsistencyLevel? desiredConsistencyLevel = null)
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
         {
             if (resourceTokens == null)
             {
@@ -603,7 +603,7 @@ namespace Microsoft.Azure.Cosmos
         public DocumentClient(Uri serviceEndpoint,
             IDictionary<string, string> resourceTokens,
             ConnectionPolicy connectionPolicy = null,
-            ConsistencyLevel? desiredConsistencyLevel = null)
+            Documents.ConsistencyLevel? desiredConsistencyLevel = null)
         {
             if (resourceTokens == null)
             {
@@ -748,7 +748,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual void Initialize(Uri serviceEndpoint,
             ConnectionPolicy connectionPolicy = null,
-            ConsistencyLevel? desiredConsistencyLevel = null,
+            Documents.ConsistencyLevel? desiredConsistencyLevel = null,
             ISessionContainer sessionContainer = null)
         {
             if (serviceEndpoint == null)
@@ -1191,13 +1191,13 @@ namespace Microsoft.Azure.Cosmos
         /// The configured <see cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/> of the client.
         /// </value>
         /// <seealso cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/>
-        public virtual ConsistencyLevel ConsistencyLevel
+        public virtual Documents.ConsistencyLevel ConsistencyLevel
         {
             get
             {
                 TaskHelper.InlineIfPossible(() => this.EnsureValidClientAsync(), null).Wait();
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
-                    (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
+                    this.accountServiceConfiguration.DefaultConsistencyLevel;
             }
         }
 
@@ -1324,9 +1324,9 @@ namespace Microsoft.Azure.Cosmos
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
         }
         
-        internal Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
+        internal Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
-            return Task.FromResult<ConsistencyLevel?>(this.desiredConsistencyLevel);
+            return Task.FromResult<Documents.ConsistencyLevel?>(this.desiredConsistencyLevel);
         }
 
         private void ThrowIfDisposed()
@@ -6453,9 +6453,9 @@ namespace Microsoft.Azure.Cosmos
             return resource.SelfLink ?? resource.AltLink;
         }
 
-        internal void EnsureValidOverwrite(ConsistencyLevel desiredConsistencyLevel)
+        internal void EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
         {
-            ConsistencyLevel defaultConsistencyLevel = (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
+            Documents.ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
             if (!this.IsValidConsistency(defaultConsistencyLevel, desiredConsistencyLevel))
             {
                 throw new ArgumentException(string.Format(
@@ -6466,7 +6466,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private bool IsValidConsistency(ConsistencyLevel backendConsistency, ConsistencyLevel desiredConsistency)
+        private bool IsValidConsistency(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
         {
             if (this.allowOverrideStrongerConsistency)
             {
@@ -6523,10 +6523,10 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 true,
                 this.connectionPolicy.EnableReadRequestsFallback ??
-                    ((ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel !=
-                     ConsistencyLevel.BoundedStaleness),
+                    (this.accountServiceConfiguration.DefaultConsistencyLevel !=
+                     Documents.ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
-                this.useMultipleWriteLocations && (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel != ConsistencyLevel.Strong);
+                this.useMultipleWriteLocations && this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong);
 
             if (subscribeRntbdStatus)
             {
@@ -6692,7 +6692,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.desiredConsistencyLevel.HasValue)
             {
                 // check anyways since default consistency level might have been refreshed.
-                if (!this.IsValidConsistency((ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel, this.desiredConsistencyLevel.Value))
+                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, this.desiredConsistencyLevel.Value))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,
@@ -6711,7 +6711,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (options.AccessCondition != null)
             {
-                if (options.AccessCondition.Type == AccessConditionType.IfMatch)
+                if (options.AccessCondition.Type == Documents.Client.AccessConditionType.IfMatch)
                 {
                     headers.Set(HttpConstants.HttpHeaders.IfMatch, options.AccessCondition.Condition);
                 }
@@ -6723,7 +6723,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (options.ConsistencyLevel.HasValue)
             {
-                if (!this.IsValidConsistency((ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel, options.ConsistencyLevel.Value))
+                if (!this.IsValidConsistency(this.accountServiceConfiguration.DefaultConsistencyLevel, options.ConsistencyLevel.Value))
                 {
                     throw new ArgumentException(string.Format(
                             CultureInfo.CurrentUICulture,

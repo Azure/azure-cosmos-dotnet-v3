@@ -9,29 +9,34 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class ValidationHelpers
     {
-        public static bool ValidateConsistencyLevel(ConsistencyLevel backendConsistency, ConsistencyLevel desiredConsistency)
+        public static bool ValidateConsistencyLevel(Cosmos.ConsistencyLevel backendConsistency, Cosmos.ConsistencyLevel desiredConsistency)
+        {
+            return ValidationHelpers.ValidateConsistencyLevel((Documents.ConsistencyLevel)backendConsistency, (Documents.ConsistencyLevel)desiredConsistency);
+        }
+
+        public static bool ValidateConsistencyLevel(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
         {
             switch (backendConsistency)
             {
-                case ConsistencyLevel.Strong:
-                    return desiredConsistency == ConsistencyLevel.Strong ||
-                        desiredConsistency == ConsistencyLevel.BoundedStaleness ||
-                        desiredConsistency == ConsistencyLevel.Session ||
-                        desiredConsistency == ConsistencyLevel.Eventual ||
-                        desiredConsistency == ConsistencyLevel.ConsistentPrefix;
+                case Documents.ConsistencyLevel.Strong:
+                    return desiredConsistency == Documents.ConsistencyLevel.Strong ||
+                        desiredConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
+                        desiredConsistency == Documents.ConsistencyLevel.Session ||
+                        desiredConsistency == Documents.ConsistencyLevel.Eventual ||
+                        desiredConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
-                case ConsistencyLevel.BoundedStaleness:
-                    return desiredConsistency == ConsistencyLevel.BoundedStaleness ||
-                        desiredConsistency == ConsistencyLevel.Session ||
-                        desiredConsistency == ConsistencyLevel.Eventual ||
-                        desiredConsistency == ConsistencyLevel.ConsistentPrefix;
+                case Documents.ConsistencyLevel.BoundedStaleness:
+                    return desiredConsistency == Documents.ConsistencyLevel.BoundedStaleness ||
+                        desiredConsistency == Documents.ConsistencyLevel.Session ||
+                        desiredConsistency == Documents.ConsistencyLevel.Eventual ||
+                        desiredConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
-                case ConsistencyLevel.Session:
-                case ConsistencyLevel.Eventual:
-                case ConsistencyLevel.ConsistentPrefix:
-                    return desiredConsistency == ConsistencyLevel.Session ||
-                        desiredConsistency == ConsistencyLevel.Eventual ||
-                        desiredConsistency == ConsistencyLevel.ConsistentPrefix;
+                case Documents.ConsistencyLevel.Session:
+                case Documents.ConsistencyLevel.Eventual:
+                case Documents.ConsistencyLevel.ConsistentPrefix:
+                    return desiredConsistency == Documents.ConsistencyLevel.Session ||
+                        desiredConsistency == Documents.ConsistencyLevel.Eventual ||
+                        desiredConsistency == Documents.ConsistencyLevel.ConsistentPrefix;
 
                 default:
                     throw new ArgumentException("backendConsistency");

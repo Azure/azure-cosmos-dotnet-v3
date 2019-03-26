@@ -14,7 +14,44 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ClientTests.cs" />
+    <Compile Remove="ClientTestsUtils.cs" />
+    <Compile Remove="CrossPartitionQueryTests.cs" />
+    <Compile Remove="CustomSerializationTests.cs" />
+    <Compile Remove="DirectRESTTests.cs" />
+    <Compile Remove="DocumentClientExtensions.cs" />
+    <Compile Remove="DocumentClientLinkSwitchExtension.cs" />
+    <Compile Remove="DocumentClientUnitTests.cs" />
+    <Compile Remove="DynamicQueryable.cs" />
+    <Compile Remove="GatewayTests.cs" />
     <Compile Remove="GlobalDatabaseAccountTests.cs" />
+    <Compile Remove="HeadersValidationTests.cs" />
+    <Compile Remove="IndexingPolicyTests.cs" />
+    <Compile Remove="LinqAggregateFunctionsBaselineTests.cs" />
+    <Compile Remove="LinqAttributeContractBaselineTests.cs" />
+    <Compile Remove="LinqConstantFoldingBaselineTests.cs" />
+    <Compile Remove="LinqGeneralBaselineTests.cs" />
+    <Compile Remove="LinqSQLTranslationBaselineTests.cs" />
+    <Compile Remove="LinqTestData.cs" />
+    <Compile Remove="LinqTestsCommon.cs" />
+    <Compile Remove="LinqTranslationBaselineTests.cs" />
+    <Compile Remove="ModuleCommand.cs" />
+    <Compile Remove="ModuleEvent.cs" />
+    <Compile Remove="MultiRegionStrongTests.cs" />
+    <Compile Remove="NameRoutingTests.cs" />
+    <Compile Remove="OfferTests.cs" />
+    <Compile Remove="QueryTests.cs" />
+    <Compile Remove="SmokeTests.cs" />
+    <Compile Remove="SpatialTest.cs" />
+    <Compile Remove="StoredProcedureTests.cs" />
+    <Compile Remove="TriggersTests.cs" />
+    <Compile Remove="UniqueIndexTests.cs" />
+    <Compile Remove="UserDefinedFunctionsTests.cs" />
+    <Compile Remove="Utils\DocumentClientLinkSwitchExtension.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,7 +78,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <None Include="GlobalDatabaseAccountTests.cs" />
     <None Include="settings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -203,9 +239,6 @@
     <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="ScriptSampleTests_UniqueConstraint.js">
@@ -237,7 +270,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\m1\CosmosDB\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\Microsoft.Azure.Cosmos.Direct.csproj" />
+    <ProjectReference Include="..\..\..\..\m1\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 

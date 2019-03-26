@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static DocumentClient GatewayClient = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
         private static DocumentClient DirectClient = TestCommon.CreateClient(false, defaultConsistencyLevel: ConsistencyLevel.Session);
         private static DocumentClient Client = DirectClient;
-        private static CosmosDatabaseSettings database;
+        private static Database database;
         private static AsyncLocal<LocalCounter> responseLengthBytes = new AsyncLocal<LocalCounter>();
         private static AsyncLocal<Guid> outerFeedResponseActivityId = new AsyncLocal<Guid>();
 
@@ -78,19 +79,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static string GetApiVersion()
         {
-            return Microsoft.Azure.Cosmos.Internal.HttpConstants.Versions.CurrentVersion;
+            return HttpConstants.Versions.CurrentVersion;
         }
 
         private static void SetApiVersion(string apiVersion)
         {
-            Microsoft.Azure.Cosmos.Internal.HttpConstants.Versions.CurrentVersion = apiVersion;
-            Microsoft.Azure.Cosmos.Internal.HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(apiVersion);
+            HttpConstants.Versions.CurrentVersion = apiVersion;
+            HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(apiVersion);
         }
 
-        private static CosmosDatabaseSettings CreateDatabase()
+        private static Database CreateDatabase()
         {
             return CrossPartitionQueryTests.Client.CreateDatabaseAsync(
-                new CosmosDatabaseSettings
+                new Database
                 {
                     Id = Guid.NewGuid().ToString() + "db"
                 }).Result;
@@ -198,10 +199,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static void CleanUp()
         {
-            IEnumerable<CosmosDatabaseSettings> allDatabases = from database in CrossPartitionQueryTests.Client.CreateDatabaseQuery()
+            IEnumerable<Database> allDatabases = from database in CrossPartitionQueryTests.Client.CreateDatabaseQuery()
                                                  select database;
 
-            foreach (CosmosDatabaseSettings database in allDatabases)
+            foreach (Database database in allDatabases)
             {
                 CrossPartitionQueryTests.Client.DeleteDatabaseAsync(database.SelfLink).Wait();
             }

@@ -44,37 +44,37 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, ConnectionPolicy connectionPolicy = null, Cosmos.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
             : base(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, ConnectionPolicy connectionPolicy = null, Cosmos.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
             : base(serviceEndpoint, authKeyOrResourceToken, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Cosmos.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
             : base(serviceEndpoint, permissionFeed, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Cosmos.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
             : base(serviceEndpoint, authKey, serializerSettings, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Cosmos.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
             : base(serviceEndpoint, authKeyOrResourceToken, serializerSettings, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        internal MockDocumentClient(Uri serviceEndpoint, IList<ResourceToken> resourceTokens, ConnectionPolicy connectionPolicy = null, Cosmos.ConsistencyLevel? desiredConsistencyLevel = null) 
+        internal MockDocumentClient(Uri serviceEndpoint, IList<ResourceToken> resourceTokens, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
             : base(serviceEndpoint, resourceTokens, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             string authKeyOrResourceToken, 
             EventHandler<SendingRequestEventArgs> sendingRequestEventArgs, 
             ConnectionPolicy connectionPolicy = null, 
-            Cosmos.ConsistencyLevel? desiredConsistencyLevel = null,
+            Documents.ConsistencyLevel? desiredConsistencyLevel = null,
             JsonSerializerSettings serializerSettings = null,
             ApiType apitype = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             await Task.Yield();
         }
 
-        public override Cosmos.ConsistencyLevel ConsistencyLevel => Cosmos.ConsistencyLevel.Session;
+        public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 

@@ -120,19 +120,19 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.innerClient.ReadFeedAsync(request, cancellationToken);
         }
 
-        public async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        public async Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            return (ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
+            return (Documents.ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
         }
 
-        public async Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
+        public async Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
-            return (ConsistencyLevel)await this.innerClient.GetDesiredConsistencyLevelAsync();
+            return (Documents.ConsistencyLevel)await this.innerClient.GetDesiredConsistencyLevelAsync();
         }
 
-        public Task EnsureValidOverwrite(ConsistencyLevel requestedConsistencyLevel)
+        public Task EnsureValidOverwrite(Documents.ConsistencyLevel requestedConsistencyLevel)
         {
-            this.innerClient.EnsureValidOverwrite((Cosmos.ConsistencyLevel)requestedConsistencyLevel);
+            this.innerClient.EnsureValidOverwrite(requestedConsistencyLevel);
             return CompletedTask.Instance;
         }
 

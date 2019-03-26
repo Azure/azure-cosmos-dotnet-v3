@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class ScriptSampleTests
     {
         private DocumentClient client;
-        private CosmosDatabaseSettings database;
-        private CosmosContainerSettings collection;
+        private Database database;
+        private DocumentCollection collection;
         private string triggerName;
 
         [TestInitialize]
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.client = TestCommon.CreateClient(true);
             this.database = TestCommon.CreateOrGetDatabase(this.client);
-            this.collection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+            this.collection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
             this.collection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
             try
@@ -38,14 +38,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.triggerName = "uniqueConstraint_" + Guid.NewGuid().ToString("N");
             string triggerContent = File.ReadAllText("ScriptSampleTests_UniqueConstraint.js");
-            CosmosTriggerSettings triggerResource = new CosmosTriggerSettings
+            Trigger triggerResource = new Trigger
             {
                 Id = this.triggerName,
                 Body = triggerContent,
                 TriggerOperation = TriggerOperation.All,
                 TriggerType = TriggerType.Pre
             };
-            CosmosTriggerSettings trigger = this.client.CreateTriggerAsync(this.collection.SelfLink, triggerResource).Result;
+            Trigger trigger = this.client.CreateTriggerAsync(this.collection.SelfLink, triggerResource).Result;
         }
 
         [TestCleanup]

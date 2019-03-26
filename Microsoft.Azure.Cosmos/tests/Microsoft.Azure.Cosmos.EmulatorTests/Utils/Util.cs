@@ -13,6 +13,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     internal enum DocumentClientType
@@ -267,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         var options = new RequestOptions
                                         {
                                             AccessCondition = accessCondition,
-                                            ConsistencyLevel = level,
+                                            ConsistencyLevel = (Cosmos.ConsistencyLevel)level,
                                             IndexingDirective = policy,
                                             SessionToken = sessionToken,
                                             OfferType = offerType,
@@ -320,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(ex.Error.Message, "Error message should not be null (ActivityId: {0})", ex.ActivityId);
         }
 
-        internal static void ValidateResource(CosmosResource resource)
+        internal static void ValidateResource(Resource resource)
         {
             Assert.IsFalse(string.IsNullOrWhiteSpace(resource.AltLink), "AltLink for a resource cannot be null or whitespace");
             Assert.IsFalse(string.IsNullOrWhiteSpace(resource.ETag), "Etag for a resource cannot be null or whitespace");
@@ -347,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static async Task WaitForReIndexingToFinish(
             int maxWaitDurationInSeconds,
-            CosmosContainerSettings collection)
+            DocumentCollection collection)
         {
             await Task.Delay(TimeSpan.FromSeconds(5));
 
@@ -385,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static async Task WaitForLazyIndexingToCompleteAsync(CosmosContainerSettings collection)
+        internal static async Task WaitForLazyIndexingToCompleteAsync(DocumentCollection collection)
         {
             TimeSpan maxWaitTime = TimeSpan.FromMinutes(10);
             TimeSpan sleepTimeBetweenReads = TimeSpan.FromSeconds(1);
@@ -424,10 +427,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static async Task<CosmosStoredProcedureSettings> GetOrCreateStoredProcedureAsync(
+        internal static async Task<StoredProcedure> GetOrCreateStoredProcedureAsync(
             DocumentClient client,
-            CosmosContainerSettings collection,
-            CosmosStoredProcedureSettings newStoredProcedure)
+            DocumentCollection collection,
+            StoredProcedure newStoredProcedure)
         {
             var result = (from proc in client.CreateStoredProcedureQuery(collection)
                           where proc.Id == newStoredProcedure.Id

@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         /// The configured <see cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/> of the client.
         /// </value>
         /// <seealso cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/>
-        ConsistencyLevel ConsistencyLevel { get; }
+        Documents.ConsistencyLevel ConsistencyLevel { get; }
 
         #endregion
 
