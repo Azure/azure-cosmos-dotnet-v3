@@ -195,6 +195,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Gets the list of partition key ranges. 
+        /// 1. Check partition key range id
+        /// 2. Check Partition key
+        /// 3. Check the effective partition key
+        /// 4. Get the range from the PartitionedQueryExecutionInfo
+        /// </summary>
         internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
             DefaultDocumentQueryExecutionContext queryExecutionContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
