@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="UniqueKeyPolicy"/>
     public sealed class UniqueKey 
     {
-        private Collection<string> paths;
-
         /// <summary>
         /// Gets or sets the paths, a set of which must be unique for each document in the Azure Cosmos DB service.
         /// </summary>
@@ -33,21 +31,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
-        public Collection<string> Paths 
-        {
-            get
-            {
-                if (this.paths == null)
-                {
-                    this.paths = new Collection<string>();
-                }
-
-                return this.paths;
-            }
-            set
-            {
-                this.paths = value;
-            }
-        }
+        public Collection<string> Paths { get; set; } = new Collection<string>();
     }
 }

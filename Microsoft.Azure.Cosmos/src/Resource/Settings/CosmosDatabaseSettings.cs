@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
-        public virtual string ResourceId { get; set; }
+        public virtual string ResourceId { get; private set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -114,6 +114,6 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; private set; }
     }
 }

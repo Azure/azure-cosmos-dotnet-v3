@@ -17,15 +17,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public sealed class IncludedPath
     {
-        private Collection<Index> indexes;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="IncludedPath"/> class for the Azure Cosmos DB service.
-        /// </summary>
-        public IncludedPath()
-        {
-        }
-
         /// <summary>
         /// Gets or sets the path to be indexed in the Azure Cosmos DB service.
         /// </summary>
@@ -46,26 +37,6 @@ namespace Microsoft.Azure.Cosmos
         /// The collection of the <see cref="Index"/> objects to be applied for this included path.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.Indexes)]
-        public Collection<Index> Indexes
-        {
-            get
-            {
-                if (this.indexes == null)
-                {
-                    this.indexes = new Collection<Index>();
-                }
-
-                return this.indexes;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, RMResources.PropertyCannotBeNull, "Indexes"));
-                }
-
-                this.indexes = value;
-            }
-        }
+        public Collection<Index> Indexes { get; set; } = new Collection<Index>();
     }
 }

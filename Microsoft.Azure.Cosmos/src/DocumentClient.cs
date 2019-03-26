@@ -6787,11 +6787,6 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.PopulateRestoreStatus, bool.TrueString);
             }
 
-            if (options.PopulatePartitionKeyRangeStatistics)
-            {
-                headers.Set(HttpConstants.HttpHeaders.PopulatePartitionStatistics, bool.TrueString);
-            }
-
             if (options.PartitionKeyRangeId != null)
             {
                 headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, options.PartitionKeyRangeId);

@@ -14,8 +14,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDefaultJsonSerializer : CosmosJsonSerializer
     {
-        private static readonly JsonSerializer Serializer = new JsonSerializer();
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+        private static readonly JsonSerializer Serializer = new JsonSerializer()
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+        };
 
         public override T FromStream<T>(Stream stream)
         {

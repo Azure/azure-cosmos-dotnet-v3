@@ -16,13 +16,6 @@ namespace Microsoft.Azure.Cosmos
     public sealed class ExcludedPath 
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ExcludedPath"/> class for the Azure Cosmos DB service.
-        /// </summary>
-        public ExcludedPath()
-        {
-        }
-
-        /// <summary>
         /// Gets or sets the path to be excluded from indexing in the Azure Cosmos DB service.
         /// </summary>
         /// <value>

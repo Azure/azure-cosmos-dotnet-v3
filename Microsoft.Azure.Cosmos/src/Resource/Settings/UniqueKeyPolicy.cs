@@ -63,40 +63,10 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     public sealed class UniqueKeyPolicy 
     {
-        private Collection<UniqueKey> uniqueKeys;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UniqueKeyPolicy"/> class for the Azure Cosmos DB service.
-        /// </summary>
-        public UniqueKeyPolicy()
-        {
-        }
-
         /// <summary>
         /// Gets or sets collection of <see cref="UniqueKey"/> that guarantee uniqueness of documents in collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeys)]
-        public Collection<UniqueKey> UniqueKeys
-        {
-            get
-            {
-                if (this.uniqueKeys == null)
-                {
-                    this.uniqueKeys = new Collection<UniqueKey>();
-                }
-
-                return this.uniqueKeys;
-            }
-
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueKeys"));
-                }
-
-                this.uniqueKeys = value;
-            }
-        }
+        public Collection<UniqueKey> UniqueKeys { get; set; } = new Collection<UniqueKey>();
     }
 }

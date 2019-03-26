@@ -353,19 +353,6 @@ namespace Microsoft.Azure.Cosmos
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
 
         /// <summary>
-        ///  Gets or sets the <see cref="PopulatePartitionKeyRangeStatistics"/> for document collection read requests in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// <see cref="PopulatePartitionKeyRangeStatistics"/> is used to enable/disable getting partition key range statistics.
-        /// </para>
-        /// </remarks>
-        /// <example>
-        /// For usage, please refer to the example in <see cref="CosmosContainerSettings.PartitionKeyRangeStatistics"/>.
-        /// </example>
-        public bool PopulatePartitionKeyRangeStatistics { get; set; }
-
-        /// <summary>
         /// Gets or sets the partition key range id for the current request.
         /// </summary>
         /// <remarks>

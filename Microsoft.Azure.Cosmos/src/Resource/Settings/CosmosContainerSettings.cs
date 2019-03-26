@@ -158,39 +158,67 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in collection in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
+        public UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
+
+        /// <summary>
+        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The Id associated with the resource.</value>
+        /// <remarks>
+        /// <para>
+        /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
+        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
+        /// </para>
+        /// <para>
+        /// When working with document resources, they too have this settable Id property. 
+        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
+        /// persisting the document in the database. 
+        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> instance to true.
+        /// This will prevent the SDK from generating new Ids. 
+        /// </para>
+        /// <para>
+        /// The following characters are restricted and cannot be used in the Id property:
+        ///  '/', '\\', '?', '#'
+        /// </para>
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.Id)]
+        public virtual string Id { get; set; }
+
+        /// <summary>
+        /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The entity tag associated with the resource.
+        /// </value>
+        /// <remarks>
+        /// ETags are used for concurrency checking when updating resources. 
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        public virtual string ETag { get; protected internal set; }
+
+        /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
         /// The indexing policy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
-        public IndexingPolicy IndexingPolicy { get; set; }
+        public IndexingPolicy IndexingPolicy { get; set; } = new IndexingPolicy();
 
         /// <summary>
-        /// 
+        /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
         public string PartitionKeyPath
         {
             get
             {
-                if (this.PartitionKey != null)
-                {
-                    return null;
-                }
-
-                return this.PartitionKey.Paths[0];
+                return this.PartitionKey?.Paths[0];
             }
         }
-
-        /// <summary>
-        /// Gets or sets <see cref="PartitionKeyDefinition"/> object in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// <see cref="PartitionKeyDefinition"/> object.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
-        internal PartitionKeyDefinition PartitionKey { get; set; }
 
         /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
@@ -261,61 +289,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets <see cref="PartitionKeyDefinition"/> object in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// <see cref="PartitionKeyDefinition"/> object.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
+        internal PartitionKeyDefinition PartitionKey { get; set; }
+
+        /// <summary>
         /// Internal property used as a helper to convert to the back-end type int?
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
         internal int? InternalTimeToLive { get; set; }
-
-        /// <summary>
-        /// Gets the <see cref="SchemaDiscoveryPolicy"/> associated with the collection. 
-        /// </summary>
-        /// <value>
-        /// The schema discovery policy associated with the collection.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.SchemaDiscoveryPolicy)]
-        internal SchemaDiscoveryPolicy SchemaDiscoveryPolicy { get; set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in collection in the Azure Cosmos DB service.
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
-        public UniqueKeyPolicy UniqueKeyPolicy { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>The Id associated with the resource.</value>
-        /// <remarks>
-        /// <para>
-        /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
-        /// </para>
-        /// <para>
-        /// When working with document resources, they too have this settable Id property. 
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> instance to true.
-        /// This will prevent the SDK from generating new Ids. 
-        /// </para>
-        /// <para>
-        /// The following characters are restricted and cannot be used in the Id property:
-        ///  '/', '\\', '?', '#'
-        /// </para>
-        /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; set; }
-
-        /// <summary>
-        /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The entity tag associated with the resource.
-        /// </value>
-        /// <remarks>
-        /// ETags are used for concurrency checking when updating resources. 
-        /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -346,90 +332,5 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(PartitionKey));
             }
         }
-
-        /// <summary>
-        /// Gets or sets the <see cref="ConflictResolutionPolicy"/> that is used for resolving conflicting writes on documents in different regions, in a collection in the Azure Cosmos DB service.
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
-        internal ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
-
-        /// <summary>
-        /// Gets a collection of <see cref="PartitionKeyRangeStatistics"/> object in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// <see cref="PartitionKeyRangeStatistics"/> object.
-        /// </value>
-        /// <remarks>
-        /// This is reported based on a sub-sampling of partition keys within the collection and hence these are approximate. 
-        /// If your partition keys are below 1GB of storage, they may not show up in the reported statistics.
-        /// </remarks>
-        /// <example>
-        /// The following code shows how to log statistics for all partition key ranges as a string:
-        /// <code language="c#">
-        /// <![CDATA[
-        /// var collection = await client.ReadDocumentCollectionAsync(
-        ///     collectionUri,
-        ///     new RequestOptions { PopulatePartitionKeyRangeStatistics = true } );
-        /// 
-        /// Console.WriteLine(collection.PartitionKeyRangeStatistics.ToString());
-        /// ]]>
-        /// </code>
-        /// To log individual partition key range statistics, use the following code:
-        /// <code language="c#">
-        /// <![CDATA[
-        /// var collection = await client.ReadDocumentCollectionAsync(
-        ///     collectionUri,
-        ///     new RequestOptions { PopulatePartitionKeyRangeStatistics = true } );
-        ///     
-        /// foreach(var partitionKeyRangeStatistics in collection.PartitionKeyRangeStatistics)
-        /// {
-        ///     Console.WriteLine(partitionKeyRangeStatistics.PartitionKeyRangeId);
-        ///     Console.WriteLine(partitionKeyRangeStatistics.DocumentCount);
-        ///     Console.WriteLine(partitionKeyRangeStatistics.SizeInKB);
-        ///     
-        ///     foreach(var partitionKeyStatistics in partitionKeyRangeStatistics.PartitionKeyStatistics)
-        ///     {
-        ///         Console.WriteLine(partitionKeyStatistics.PartitionKey);
-        ///         Console.WriteLine(partitionKeyStatistics.SizeInKB);
-        ///     }
-        ///  }
-        /// ]]>
-        /// </code>
-        /// The output will look something like that:
-        /// "statistics": [
-        /// {"id":"0","sizeInKB":1410184,"documentCount":42807,"partitionKeys":[]},
-        /// {"id":"1","sizeInKB":3803113,"documentCount":150530,"partitionKeys":[{"partitionKey":["4009696"],"sizeInKB":3731654}]},
-        /// {"id":"2","sizeInKB":1447855,"documentCount":59056,"partitionKeys":[{"partitionKey":["4009633"],"sizeInKB":2861210},{"partitionKey":["4004207"],"sizeInKB":2293163}]},
-        /// {"id":"3","sizeInKB":1026254,"documentCount":44241,"partitionKeys":[]},
-        /// {"id":"4","sizeInKB":3250973,"documentCount":124959,"partitionKeys":[]}
-        /// ]
-        /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions.PopulatePartitionKeyRangeStatistics"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.PartitionKeyStatistics"/>
-        [JsonIgnore]
-        internal IReadOnlyList<PartitionKeyRangeStatistics> PartitionKeyRangeStatistics
-        {
-            get
-            {
-                var list = (this.StatisticsJRaw ?? new Collection<JRaw>())
-                    .Where(jraw => jraw != null)
-                    .Select(jraw => JsonConvert.DeserializeObject<PartitionKeyRangeStatistics>((string)jraw.Value))
-                    .ToList();
-
-                return new JsonSerializableList<PartitionKeyRangeStatistics>(list);
-            }
-        }
-
-        [JsonProperty(PropertyName = Constants.Properties.Statistics)]
-        internal IReadOnlyList<JRaw> StatisticsJRaw { get; set; }
-
-        /// <summary>
-        /// Gets the <see cref="ChangeFeedPolicy"/> associated with the collection from the Azure Cosmos DB service. 
-        /// </summary>
-        /// <value>
-        /// The change feed policy associated with the collection.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.ChangeFeedPolicy)]
-        internal ChangeFeedPolicy ChangeFeedPolicy { get; set; }
     }
 }

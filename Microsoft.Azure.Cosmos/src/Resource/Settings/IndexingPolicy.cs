@@ -4,14 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.
@@ -28,14 +26,6 @@ namespace Microsoft.Azure.Cosmos
     public sealed class IndexingPolicy 
     {
         private static readonly string DefaultPath = "/*";
-
-        private Collection<IncludedPath> includedPaths;
-
-        private Collection<ExcludedPath> excludedPaths;
-
-        private Collection<Collection<CompositePath>> compositeIndexes;
-
-        private Collection<SpatialSpec> spatialIndexes;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexingPolicy"/> class for the Azure Cosmos DB service.
@@ -125,27 +115,7 @@ namespace Microsoft.Azure.Cosmos
         /// The collection containing <see cref="IncludedPath"/> objects.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IncludedPaths)]
-        public Collection<IncludedPath> IncludedPaths
-        {
-            get
-            {
-                if (this.includedPaths == null)
-                {
-                    this.includedPaths = new Collection<IncludedPath>();
-                }
-
-                return this.includedPaths;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "IncludedPaths"));
-                }
-
-                this.includedPaths = value;
-            }
-        }
+        public Collection<IncludedPath> IncludedPaths { get; set; } = new Collection<IncludedPath>();
 
         /// <summary>
         /// Gets or sets the collection containing <see cref="ExcludedPath"/> objects in the Azure Cosmos DB service.
@@ -154,27 +124,7 @@ namespace Microsoft.Azure.Cosmos
         /// The collection containing <see cref="ExcludedPath"/> objects.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.ExcludedPaths)]
-        public Collection<ExcludedPath> ExcludedPaths
-        {
-            get
-            {
-                if (this.excludedPaths == null)
-                {
-                    this.excludedPaths = new Collection<ExcludedPath>();
-                }
-
-                return this.excludedPaths;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "ExcludedPaths"));
-                }
-
-                this.excludedPaths = value;
-            }
-        }
+        public Collection<ExcludedPath> ExcludedPaths { get; set; } = new Collection<ExcludedPath>();
 
         /// <summary>
         /// Gets or sets the composite indexes for additional indexes
@@ -204,52 +154,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
-        internal Collection<Collection<CompositePath>> CompositeIndexes
-        {
-            get
-            {
-                if (this.compositeIndexes == null)
-                {
-                    this.compositeIndexes = new Collection<Collection<CompositePath>>();
-                }
-
-                return this.compositeIndexes;
-            }
-
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(this.CompositeIndexes)));
-                }
-
-                this.compositeIndexes = value;
-            }
-        }
+        internal Collection<Collection<CompositePath>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePath>>();
 
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        internal Collection<SpatialSpec> SpatialIndexes
-        {
-            get
-            {
-                if (this.spatialIndexes == null)
-                {
-                    this.spatialIndexes = new Collection<SpatialSpec>();
-                }
-
-                return this.spatialIndexes;
-            }
-
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(this.spatialIndexes)));
-                }
-
-                this.spatialIndexes = value;
-            }
-        }
+        internal Collection<SpatialSpec> SpatialIndexes { get; set; } = new Collection<SpatialSpec>();
 
         # region EqualityComparers
         internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
