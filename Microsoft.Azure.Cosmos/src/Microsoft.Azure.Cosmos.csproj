@@ -51,7 +51,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\..\msdata1\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\Microsoft.Azure.Cosmos.Direct.csproj" />
+    <ProjectReference Include="..\..\..\m1\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
