@@ -441,11 +441,11 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
             if (ranges == null && PathsHelper.IsNameBased(this.resourceLink))
             {
-                // Refresh the cache and don't try to reresolve collection as it is not clear what already
+                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
                 // happened based on previously resolved collection rid.
                 // Return NotFoundException this time. Next query will succeed.
                 // This can only happen if collection is deleted/created with same name and client was not restarted
-                // inbetween.
+                // in between.
                 CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
                 collectionCache.Refresh(this.resourceLink);
             }
