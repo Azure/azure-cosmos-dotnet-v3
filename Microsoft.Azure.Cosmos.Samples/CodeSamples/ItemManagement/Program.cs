@@ -253,6 +253,7 @@
             // Use the same query as before but get the cosmos response message to access the stream directly
             CosmosResultSetIterator streamResultSet = container.Items.CreateItemQueryAsStream(
                 query,
+                maxConcurrency: 1,
                 partitionKey: "Account1",
                 maxItemCount: 10);
 

@@ -141,7 +141,11 @@
         private static async Task QueryItemsInPartitionAsStreams(CosmosContainer container)
         {
             // SQL
-            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream("SELECT F.id, F.LastName, F.IsRegistered FROM Families F", partitionKey: "Anderson", maxItemCount: 1);
+            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
+                "SELECT F.id, F.LastName, F.IsRegistered FROM Families F",
+                maxConcurrency: 1,
+                partitionKey: "Anderson",
+                maxItemCount: 1);
 
             int count = 0;
             while (setIterator.HasMoreResults)
