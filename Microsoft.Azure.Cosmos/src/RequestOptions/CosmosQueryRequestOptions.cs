@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (feedOptions != null)
             {
-                this.RequestContinuation = this.RequestContinuation;
+                this.RequestContinuation = feedOptions.RequestContinuation;
                 this.MaxItemCount = feedOptions.MaxItemCount;
                 this.ResponseContinuationTokenLimitInKb = feedOptions.ResponseContinuationTokenLimitInKb;
                 this.EnableScanInQuery = feedOptions.EnableScanInQuery;
