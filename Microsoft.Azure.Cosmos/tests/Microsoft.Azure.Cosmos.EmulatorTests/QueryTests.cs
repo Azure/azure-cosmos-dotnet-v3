@@ -843,6 +843,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore]
         [TestMethod]
         public void TestLazyIndexAllTerms()
         {
