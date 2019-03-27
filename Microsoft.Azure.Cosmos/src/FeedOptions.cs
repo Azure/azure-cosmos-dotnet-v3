@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public static explicit operator CosmosQueryRequestOptions(FeedOptions feedOptions)
         {
-            return new CosmosQueryRequestOptions(feedOptions);
+            return feedOptions == null ? new CosmosQueryRequestOptions() : new CosmosQueryRequestOptions(feedOptions);
         }
     }
 }

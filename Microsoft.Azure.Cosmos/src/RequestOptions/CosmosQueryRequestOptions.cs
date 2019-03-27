@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
@@ -28,23 +29,25 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal CosmosQueryRequestOptions(FeedOptions feedOptions)
         {
-            if (feedOptions != null)
+            if(feedOptions == null)
             {
-                this.RequestContinuation = feedOptions.RequestContinuation;
-                this.MaxItemCount = feedOptions.MaxItemCount;
-                this.ResponseContinuationTokenLimitInKb = feedOptions.ResponseContinuationTokenLimitInKb;
-                this.EnableScanInQuery = feedOptions.EnableScanInQuery;
-                this.EnableLowPrecisionOrderBy = feedOptions.EnableLowPrecisionOrderBy;
-                this.MaxBufferedItemCount = feedOptions.MaxBufferedItemCount;
-                this.SessionToken = feedOptions.SessionToken;
-                this.ConsistencyLevel = feedOptions.ConsistencyLevel;
-                this.MaxConcurrency = feedOptions.MaxDegreeOfParallelism;
-                this.PartitionKey = feedOptions.PartitionKey;
-                this.EnableCrossPartitionQuery = feedOptions.EnableCrossPartitionQuery;
-                this.CosmosSerializationOptions = feedOptions.CosmosSerializationOptions;
-                this.Properties = feedOptions.Properties;
-                this.feedOptions = new FeedOptions(feedOptions);
+                throw new ArgumentNullException(nameof(feedOptions));
             }
+
+            this.RequestContinuation = feedOptions.RequestContinuation;
+            this.MaxItemCount = feedOptions.MaxItemCount;
+            this.ResponseContinuationTokenLimitInKb = feedOptions.ResponseContinuationTokenLimitInKb;
+            this.EnableScanInQuery = feedOptions.EnableScanInQuery;
+            this.EnableLowPrecisionOrderBy = feedOptions.EnableLowPrecisionOrderBy;
+            this.MaxBufferedItemCount = feedOptions.MaxBufferedItemCount;
+            this.SessionToken = feedOptions.SessionToken;
+            this.ConsistencyLevel = feedOptions.ConsistencyLevel;
+            this.MaxConcurrency = feedOptions.MaxDegreeOfParallelism;
+            this.PartitionKey = feedOptions.PartitionKey;
+            this.EnableCrossPartitionQuery = feedOptions.EnableCrossPartitionQuery;
+            this.CosmosSerializationOptions = feedOptions.CosmosSerializationOptions;
+            this.Properties = feedOptions.Properties;
+            this.feedOptions = new FeedOptions(feedOptions);
         }
 
         /// <summary>
@@ -379,23 +382,24 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosQueryRequestOptions Clone()
         {
-            return new CosmosQueryRequestOptions(this.feedOptions)
-            {
-                AccessCondition = this.AccessCondition,
-                RequestContinuation = this.RequestContinuation,
-                MaxItemCount = this.MaxItemCount,
-                ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
-                EnableScanInQuery = this.EnableScanInQuery,
-                EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
-                MaxBufferedItemCount = this.MaxBufferedItemCount,
-                SessionToken = this.SessionToken,
-                ConsistencyLevel = this.ConsistencyLevel,
-                MaxConcurrency = this.MaxConcurrency,
-                PartitionKey = this.PartitionKey,
-                EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
-                CosmosSerializationOptions = this.CosmosSerializationOptions,
-                Properties = this.Properties,
-            };
+            CosmosQueryRequestOptions queryRequestOptions = this.feedOptions == null ?
+                new CosmosQueryRequestOptions() : new CosmosQueryRequestOptions(this.feedOptions);
+
+            queryRequestOptions.AccessCondition = this.AccessCondition;
+            queryRequestOptions.RequestContinuation = this.RequestContinuation;
+            queryRequestOptions.MaxItemCount = this.MaxItemCount;
+            queryRequestOptions.ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb;
+            queryRequestOptions.EnableScanInQuery = this.EnableScanInQuery;
+            queryRequestOptions.EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy;
+            queryRequestOptions.MaxBufferedItemCount = this.MaxBufferedItemCount;
+            queryRequestOptions.SessionToken = this.SessionToken;
+            queryRequestOptions.ConsistencyLevel = this.ConsistencyLevel;
+            queryRequestOptions.MaxConcurrency = this.MaxConcurrency;
+            queryRequestOptions.PartitionKey = this.PartitionKey;
+            queryRequestOptions.EnableCrossPartitionQuery = this.EnableCrossPartitionQuery;
+            queryRequestOptions.CosmosSerializationOptions = this.CosmosSerializationOptions;
+            queryRequestOptions.Properties = this.Properties;
+            return queryRequestOptions;
         }
 
         /// <summary>
@@ -404,15 +408,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns></returns>
         internal FeedOptions ToFeedOptions()
         {
-            FeedOptions feedOptions = null;
-            if (this.feedOptions != null)
-            {
-                feedOptions = new FeedOptions(this.feedOptions);
-            }
-            else
-            {
-                feedOptions = new FeedOptions();
-            }
+            FeedOptions feedOptions = this.feedOptions != null ?
+                new FeedOptions(this.feedOptions) : new FeedOptions();
 
             feedOptions.MaxItemCount = this.MaxItemCount;
             feedOptions.EnableCrossPartitionQuery = this.EnableCrossPartitionQuery;
