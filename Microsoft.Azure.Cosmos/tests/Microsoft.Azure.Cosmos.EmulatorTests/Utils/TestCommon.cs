@@ -1509,11 +1509,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Conflict;
             }
-            else if (type == typeof(Database))
+            else if (type == typeof(Database) || type == typeof(CosmosDatabaseSettings))
             {
                 return ResourceType.Database;
             }
-            else if (type == typeof(DocumentCollection))
+            else if (type == typeof(DocumentCollection) || type == typeof(CosmosContainerSettings))
             {
                 return ResourceType.Collection;
             }
@@ -1525,15 +1525,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Permission;
             }
-            else if (type == typeof(CosmosStoredProcedureSettings))
+            else if (type == typeof(StoredProcedure) || type == typeof(CosmosStoredProcedureSettings))
             {
                 return ResourceType.StoredProcedure;
             }
-            else if (type == typeof(CosmosTriggerSettings))
+            else if (type == typeof(Trigger) || type == typeof(CosmosTriggerSettings))
             {
                 return ResourceType.Trigger;
             }
-            else if (type == typeof(CosmosUserDefinedFunctionSettings))
+            else if (type == typeof(UserDefinedFunction) || type == typeof(CosmosUserDefinedFunctionSettings))
             {
                 return ResourceType.UserDefinedFunction;
             }

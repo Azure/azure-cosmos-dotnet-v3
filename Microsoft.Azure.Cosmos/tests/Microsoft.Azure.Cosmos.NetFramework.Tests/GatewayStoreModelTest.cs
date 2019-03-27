@@ -12,15 +12,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Tests for <see cref="GatewayStoreModel"/>.
@@ -44,6 +42,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 DocumentClient myclient = new DocumentClient(new Uri(accountEndpoint), "base64encodedurl",
+                    (HttpMessageHandler)null,
                     new ConnectionPolicy
                     {
                     });
@@ -107,8 +106,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
-                    Cosmos.Internal.OperationType.Query,
-                    Cosmos.Internal.ResourceType.Document,
+                    OperationType.Query,
+                    ResourceType.Document,
                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                     new MemoryStream(Encoding.UTF8.GetBytes("content1")),
                     AuthorizationTokenType.PrimaryMasterKey,
@@ -132,8 +131,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
-                    Cosmos.Internal.OperationType.Read,
-                    Cosmos.Internal.ResourceType.Collection,
+                    OperationType.Read,
+                    ResourceType.Collection,
                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                     new MemoryStream(Encoding.UTF8.GetBytes("collection")),
                     AuthorizationTokenType.PrimaryMasterKey,
@@ -176,8 +175,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
-                    Cosmos.Internal.OperationType.Read,
-                    Cosmos.Internal.ResourceType.Collection,
+                    Documents.OperationType.Read,
+                    Documents.ResourceType.Collection,
                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                     new MemoryStream(Encoding.UTF8.GetBytes("collection")),
                     AuthorizationTokenType.PrimaryMasterKey,
@@ -188,8 +187,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
-                    Cosmos.Internal.OperationType.Query,
-                    Cosmos.Internal.ResourceType.Document,
+                    Documents.OperationType.Query,
+                    Documents.ResourceType.Document,
                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                     new MemoryStream(Encoding.UTF8.GetBytes("document")),
                     AuthorizationTokenType.PrimaryMasterKey,
@@ -241,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
-            mockDocumentClient.Setup(client => client.ConsistencyLevel).Returns(ConsistencyLevel.Session);
+            mockDocumentClient.Setup(client => client.ConsistencyLevel).Returns(Documents.ConsistencyLevel.Session);
 
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
 

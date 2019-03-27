@@ -17,9 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Moq;
     using Moq.Protected;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -788,7 +786,7 @@ namespace Microsoft.Azure.Cosmos
                 QuorumReader reader =
                     new QuorumReader(mockTransportClient, addressSelector, storeReader, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object);
 
-                entity.RequestContext.OriginalRequestConsistencyLevel = ConsistencyLevel.Strong;
+                entity.RequestContext.OriginalRequestConsistencyLevel = Documents.ConsistencyLevel.Strong;
                 entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
 
                 StoreResponse result = reader.ReadStrongAsync(entity, 2, ReadMode.Strong).Result;
@@ -829,7 +827,7 @@ namespace Microsoft.Azure.Cosmos
                 QuorumReader reader =
                     new QuorumReader(mockTransportClient, addressSelector, storeReader, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object);
 
-                entity.RequestContext.OriginalRequestConsistencyLevel = ConsistencyLevel.Strong;
+                entity.RequestContext.OriginalRequestConsistencyLevel = Documents.ConsistencyLevel.Strong;
                 entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
                 entity.RequestContext.QuorumSelectedLSN = -1;
                 entity.RequestContext.GlobalCommittedSelectedLSN = -1;
@@ -879,7 +877,7 @@ namespace Microsoft.Azure.Cosmos
                     new QuorumReader(mockTransportClient, addressSelector, storeReader, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object);
 
                 entity.RequestContext.PerformLocalRefreshOnGoneException = true;
-                entity.RequestContext.OriginalRequestConsistencyLevel = ConsistencyLevel.Strong;
+                entity.RequestContext.OriginalRequestConsistencyLevel = Documents.ConsistencyLevel.Strong;
                 entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
 
                 StoreResponse result = reader.ReadStrongAsync(entity, 2, ReadMode.Strong).Result;

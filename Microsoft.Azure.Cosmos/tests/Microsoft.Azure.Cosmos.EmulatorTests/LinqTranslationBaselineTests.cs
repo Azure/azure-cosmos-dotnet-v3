@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Documents;
 
     [TestClass]
+    [Ignore]
     [TestCategory("Quarantine")]
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {

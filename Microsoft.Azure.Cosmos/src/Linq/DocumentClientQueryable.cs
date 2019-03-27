@@ -926,13 +926,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange"/>
         public IDocumentQuery<Document> CreateDocumentChangeFeedQuery(string collectionLink, ChangeFeedOptions feedOptions)
         {
-            throw new NotImplementedException();
-            ////if (collectionLink == null)
-            ////{
-            ////    throw new ArgumentNullException("collectionLink");
-            ////}
+            if (collectionLink == null)
+            {
+                throw new ArgumentNullException("collectionLink");
+            }
 
-            ////return new ChangeFeedQuery<Document>(this, ResourceType.Document, collectionLink, feedOptions);
+            return new ChangeFeedQuery<Document>(this, ResourceType.Document, collectionLink, feedOptions);
         }
 
         /// <summary>

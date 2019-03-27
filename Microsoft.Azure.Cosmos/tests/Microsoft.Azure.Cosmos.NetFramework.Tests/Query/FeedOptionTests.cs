@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query
             INameValueCollection headers = await cxt.CreateCommonHeadersAsync(fo);
             Assert.AreEqual(null, headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
 
-            fo.ConsistencyLevel = ConsistencyLevel.Eventual;
+            fo.ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual;
             headers = await cxt.CreateCommonHeadersAsync(fo);
             Assert.AreEqual(ConsistencyLevel.Eventual.ToString(), headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
         }
