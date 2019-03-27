@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <returns>the query result set.</returns>
         public static IOrderedQueryable<CosmosContainerSettings> CreateDocumentCollectionQuery(this DocumentClient client, CosmosDatabaseSettings owner,  FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosContainerSettings>(client, ResourceType.Collection, typeof(CosmosDatabaseSettings), owner.GetLink(), feedOptions);
+            return new DocumentQuery<CosmosContainerSettings>(client, ResourceType.Collection, typeof(CosmosDatabaseSettings), owner.GetLink(), (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -606,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <returns>the query result set.</returns>
         public static IOrderedQueryable<CosmosStoredProcedureSettings> CreateStoredProcedureQuery(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosStoredProcedureSettings>(client, ResourceType.StoredProcedure, typeof(CosmosContainerSettings), owner.GetLink(), feedOptions);
+            return new DocumentQuery<CosmosStoredProcedureSettings>(client, ResourceType.StoredProcedure, typeof(CosmosContainerSettings), owner.GetLink(), (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -787,7 +787,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <returns>the query result set.</returns>
         public static IQueryable<T> CreateDocumentQuery<T>(this DocumentClient client, CosmosContainerSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return client.CreateDocumentQuery<T>(owner.GetLink(), querySpec, feedOptions);
+            return client.CreateDocumentQuery<T>(owner.GetLink(), querySpec, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>

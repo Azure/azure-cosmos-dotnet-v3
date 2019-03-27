@@ -1580,7 +1580,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentCollectionOrDatabaseUri");
             }
 
-            return this.CreateDocumentQuery<T>(documentCollectionOrDatabaseUri.OriginalString, querySpec, feedOptions);
+            return this.CreateDocumentQuery<T>(documentCollectionOrDatabaseUri.OriginalString, querySpec, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>

@@ -2864,7 +2864,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                             IDocumentQuery<Document> query = Client.CreateDocumentQuery<Document>(
                                                 collection.AltLink,
                                                 querySpec,
-                                                feedOptions).AsDocumentQuery();
+                                                (CosmosQueryRequestOptions)feedOptions).AsDocumentQuery();
 
                                             while (query.HasMoreResults)
                                             {
@@ -2880,7 +2880,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                             IQueryable<Document> query = Client.CreateDocumentQuery<Document>(
                                                 collection.AltLink,
                                                 querySpec,
-                                                feedOptions);
+                                                (CosmosQueryRequestOptions)feedOptions);
 
                                             actualDocuments = query.ToList();
                                         }

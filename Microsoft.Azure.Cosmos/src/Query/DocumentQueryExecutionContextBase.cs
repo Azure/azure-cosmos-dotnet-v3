@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ConsistencyLevel defaultConsistencyLevel = await this.client.GetDefaultConsistencyLevelAsync();
             ConsistencyLevel? desiredConsistencyLevel = await this.client.GetDesiredConsistencyLevelAsync();
 
-            return queryRequestOptions.CreateCommonHeadersAsync(
+            return this.queryRequestOptions.CreateCommonHeadersAsync(
                 queryRequestOptions,
                 defaultConsistencyLevel,
                 desiredConsistencyLevel,

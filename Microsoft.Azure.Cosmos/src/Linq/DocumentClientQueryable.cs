@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<CosmosDatabaseSettings> CreateDatabaseQuery(FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosDatabaseSettings>(this, ResourceType.Database, typeof(CosmosDatabaseSettings), Paths.Databases_Root, feedOptions);
+            return new DocumentQuery<CosmosDatabaseSettings>(this, ResourceType.Database, typeof(CosmosDatabaseSettings), Paths.Databases_Root, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDatabaseQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosDatabaseSettings>(this, ResourceType.Database, typeof(CosmosDatabaseSettings), Paths.Databases_Root, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<CosmosDatabaseSettings>(this, ResourceType.Database, typeof(CosmosDatabaseSettings), Paths.Databases_Root, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<CosmosContainerSettings> CreateDocumentCollectionQuery(string databaseLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosContainerSettings>(this, ResourceType.Collection, typeof(CosmosContainerSettings), databaseLink, feedOptions);
+            return new DocumentQuery<CosmosContainerSettings>(this, ResourceType.Collection, typeof(CosmosContainerSettings), databaseLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentCollectionQuery(string databaseLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosContainerSettings>(this, ResourceType.Collection, typeof(CosmosContainerSettings), databaseLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<CosmosContainerSettings>(this, ResourceType.Collection, typeof(CosmosContainerSettings), databaseLink, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<CosmosStoredProcedureSettings> CreateStoredProcedureQuery(string collectionLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosStoredProcedureSettings>(this, ResourceType.StoredProcedure, typeof(CosmosStoredProcedureSettings), collectionLink, feedOptions);
+            return new DocumentQuery<CosmosStoredProcedureSettings>(this, ResourceType.StoredProcedure, typeof(CosmosStoredProcedureSettings), collectionLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="CosmosStoredProcedureSettings"/>
         public IQueryable<dynamic> CreateStoredProcedureQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosStoredProcedureSettings>(this, ResourceType.StoredProcedure, typeof(CosmosStoredProcedureSettings), collectionLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<CosmosStoredProcedureSettings>(this, ResourceType.StoredProcedure, typeof(CosmosStoredProcedureSettings), collectionLink, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<CosmosTriggerSettings> CreateTriggerQuery(string collectionLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosTriggerSettings>(this, ResourceType.Trigger, typeof(CosmosTriggerSettings), collectionLink, feedOptions);
+            return new DocumentQuery<CosmosTriggerSettings>(this, ResourceType.Trigger, typeof(CosmosTriggerSettings), collectionLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateTriggerQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosTriggerSettings>(this, ResourceType.Trigger, typeof(CosmosTriggerSettings), collectionLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<CosmosTriggerSettings>(this, ResourceType.Trigger, typeof(CosmosTriggerSettings), collectionLink, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<CosmosUserDefinedFunctionSettings> CreateUserDefinedFunctionQuery(string collectionLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosUserDefinedFunctionSettings>(this, ResourceType.UserDefinedFunction, typeof(CosmosUserDefinedFunctionSettings), collectionLink, feedOptions);
+            return new DocumentQuery<CosmosUserDefinedFunctionSettings>(this, ResourceType.UserDefinedFunction, typeof(CosmosUserDefinedFunctionSettings), collectionLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateUserDefinedFunctionQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosUserDefinedFunctionSettings>(this, ResourceType.UserDefinedFunction, typeof(CosmosUserDefinedFunctionSettings), collectionLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<CosmosUserDefinedFunctionSettings>(this, ResourceType.UserDefinedFunction, typeof(CosmosUserDefinedFunctionSettings), collectionLink, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<Conflict> CreateConflictQuery(string collectionLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<Conflict>(this, ResourceType.Conflict, typeof(Conflict), collectionLink, feedOptions);
+            return new DocumentQuery<Conflict>(this, ResourceType.Conflict, typeof(Conflict), collectionLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateConflictQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<Conflict>(this, ResourceType.Conflict, typeof(Conflict), collectionLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<Conflict>(this, ResourceType.Conflict, typeof(Conflict), collectionLink, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<T> CreateDocumentQuery<T>(string collectionLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), collectionLink, feedOptions);
+            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), collectionLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos
                   " Please use the override that does not take a partitionKey parameter.")]
         public IOrderedQueryable<T> CreateDocumentQuery<T>(string documentsFeedOrDatabaseLink, FeedOptions feedOptions, object partitionKey)
         {
-            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), documentsFeedOrDatabaseLink, feedOptions, partitionKey);
+            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), documentsFeedOrDatabaseLink, (CosmosQueryRequestOptions)feedOptions, partitionKey);
         }
 
         /// <summary>
@@ -605,7 +605,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
         {
-            return this.CreateDocumentQuery<T>(collectionLink, new SqlQuerySpec(sqlExpression), feedOptions);
+            return this.CreateDocumentQuery<T>(collectionLink, new SqlQuerySpec(sqlExpression), (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos
                   " Please use the override that does not take a partitionKey parameter.")]
         public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions, object partitionKey)
         {
-            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), collectionLink, feedOptions, partitionKey).AsSQL<T, T>(querySpec);
+            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), collectionLink, (CosmosQueryRequestOptions)feedOptions, partitionKey).AsSQL<T, T>(querySpec);
         }
 
         /// <summary>
@@ -758,7 +758,7 @@ namespace Microsoft.Azure.Cosmos
         public IOrderedQueryable<Document> CreateDocumentQuery(string collectionLink, FeedOptions feedOptions = null)
 
         {
-            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, feedOptions);
+            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -778,7 +778,7 @@ namespace Microsoft.Azure.Cosmos
                   " Please use the override that does not take a partitionKey parameter.")]
         public IOrderedQueryable<Document> CreateDocumentQuery(string collectionLink, FeedOptions feedOptions, object partitionKey)
         {
-            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, feedOptions, partitionKey);
+            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, (CosmosQueryRequestOptions)feedOptions, partitionKey);
         }
 
         /// <summary>
@@ -853,7 +853,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -875,7 +875,7 @@ namespace Microsoft.Azure.Cosmos
                   " Please use the override that does not take a partitionKey parameter.")]
         public IQueryable<dynamic> CreateDocumentQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions, object partitionKey)
         {
-            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, feedOptions, partitionKey).AsSQL(querySpec);
+            return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, (CosmosQueryRequestOptions)feedOptions, partitionKey).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -953,7 +953,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<Offer> CreateOfferQuery(FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<Offer>(this, ResourceType.Offer, typeof(Offer), Paths.Offers_Root, feedOptions);
+            return new DocumentQuery<Offer>(this, ResourceType.Offer, typeof(Offer), Paths.Offers_Root, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -980,7 +980,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateOfferQuery(string sqlExpression, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<Offer>(this, ResourceType.Offer, typeof(Offer), Paths.Offers_Root, feedOptions).AsSQL(new SqlQuerySpec(sqlExpression));
+            return new DocumentQuery<Offer>(this, ResourceType.Offer, typeof(Offer), Paths.Offers_Root, (CosmosQueryRequestOptions)feedOptions).AsSQL(new SqlQuerySpec(sqlExpression));
         }
 
         /// <summary>
@@ -1007,7 +1007,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateOfferQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<Offer>(this, ResourceType.Offer, typeof(Offer), Paths.Offers_Root, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<Offer>(this, ResourceType.Offer, typeof(Offer), Paths.Offers_Root, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -1028,7 +1028,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="IDocumentQuery"/>
         internal IOrderedQueryable<UserDefinedType> CreateUserDefinedTypeQuery(string userDefinedTypesLink, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<UserDefinedType>(this, ResourceType.UserDefinedType, typeof(UserDefinedType), userDefinedTypesLink, feedOptions);
+            return new DocumentQuery<UserDefinedType>(this, ResourceType.UserDefinedType, typeof(UserDefinedType), userDefinedTypesLink, (CosmosQueryRequestOptions)feedOptions);
         }
 
         /// <summary>
@@ -1079,7 +1079,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="IDocumentQuery"/>
         internal IQueryable<dynamic> CreateUserDefinedTypeQuery(string userDefinedTypesLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<UserDefinedType>(this, ResourceType.UserDefinedType, typeof(UserDefinedType), userDefinedTypesLink, feedOptions).AsSQL(querySpec);
+            return new DocumentQuery<UserDefinedType>(this, ResourceType.UserDefinedType, typeof(UserDefinedType), userDefinedTypesLink, (CosmosQueryRequestOptions)feedOptions).AsSQL(querySpec);
         }
 
         /// <summary>
@@ -1097,7 +1097,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink, feedOptions);
+            return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink,  feedOptions);
         }
         #endregion Query Methods
 

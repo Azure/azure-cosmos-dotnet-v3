@@ -525,12 +525,12 @@
 
         internal static IOrderedQueryable<Document> CreateDocumentQuery(this IDocumentQueryClient client, string collectionLink, FeedOptions feedOptions = null, object partitionKey = null)
         {
-            return new DocumentQuery<Document>(client, ResourceType.Document, typeof (Document), collectionLink, feedOptions, partitionKey);
+            return new DocumentQuery<Document>(client, ResourceType.Document, typeof (Document), collectionLink, (CosmosQueryRequestOptions)feedOptions, partitionKey);
         }
 
         internal static IQueryable<dynamic> CreateDocumentQuery(this IDocumentQueryClient client, string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null, object partitionKey = null)
         {
-            return new DocumentQuery<Document>(client, ResourceType.Document, typeof (Document), collectionLink, feedOptions, partitionKey).AsSQL(querySpec);
+            return new DocumentQuery<Document>(client, ResourceType.Document, typeof (Document), collectionLink, (CosmosQueryRequestOptions)feedOptions, partitionKey).AsSQL(querySpec);
         }
 
         private static MethodInfo GetMethodInfoOf<T>(Expression<Func<T>> expression)

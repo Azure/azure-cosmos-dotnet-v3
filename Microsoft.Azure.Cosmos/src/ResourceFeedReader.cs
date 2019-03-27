@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ResourceFeedReader(DocumentClient client, ResourceType resourceType, FeedOptions options, string resourceLink, object partitionKey = null)
         {
-            this.documentQuery = new DocumentQuery<T>(client, resourceType, typeof(T), resourceLink, options, partitionKey);
+            this.documentQuery = new DocumentQuery<T>(client, resourceType, typeof(T), resourceLink, (CosmosQueryRequestOptions)options, partitionKey);
         }
 
         /// <summary>

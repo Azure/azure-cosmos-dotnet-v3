@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class CosmosQueryRequestOptions : CosmosRequestOptions
     {
-        private readonly FeedOptions feedOptions = null;
+        private readonly FeedOptions feedOptions;
 
         /// <summary>
         /// The default empty constructor
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
         internal string PartitionKeyRangeId => this.feedOptions == null ? null : this.feedOptions.PartitionKeyRangeId;
 
         /// <summary>
-        /// DEVNOTE: This exists to keep compatability with FeedOptions. Support for JsonSerializerSettings is now obsolete. Please use CosmosJsonSerializer.
+        /// DEVNOTE: This exists to keep compatibility with FeedOptions. Support for JsonSerializerSettings is now obsolete. Please use CosmosJsonSerializer.
         /// Gets the <see cref="JsonSerializerSettings"/> for the current request used to deserialize the document.
         /// If null, uses the default serializer settings set up in the DocumentClient.
         /// </summary>
@@ -292,19 +292,9 @@ namespace Microsoft.Azure.Cosmos
                 requestHeaders[HttpConstants.HttpHeaders.EnableScanInQuery] = this.EnableScanInQuery.ToString();
             }
 
-            if (this.feedOptions.EmitVerboseTracesInQuery != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.EmitVerboseTracesInQuery] = this.feedOptions.EmitVerboseTracesInQuery.ToString();
-            }
-
             if (this.EnableLowPrecisionOrderBy != null)
             {
                 requestHeaders[HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy] = this.EnableLowPrecisionOrderBy.ToString();
-            }
-
-            if (!string.IsNullOrEmpty(this.feedOptions.FilterBySchemaResourceId))
-            {
-                requestHeaders[HttpConstants.HttpHeaders.FilterBySchemaResourceId] = this.feedOptions.FilterBySchemaResourceId;
             }
 
             if (this.ResponseContinuationTokenLimitInKb != null)
@@ -321,53 +311,67 @@ namespace Microsoft.Azure.Cosmos
                 requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, desiredConsistencyLevel.Value.ToString());
             }
 
-            if (this.feedOptions.EnumerationDirection.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.feedOptions.EnumerationDirection.Value.ToString());
-            }
-
-            if (this.feedOptions.ReadFeedKeyType.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, this.feedOptions.ReadFeedKeyType.Value.ToString());
-            }
-
-            if (this.feedOptions.StartId != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.StartId, this.feedOptions.StartId);
-            }
-
-            if (this.feedOptions.EndId != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EndId, this.feedOptions.EndId);
-            }
-
-            if (this.feedOptions.StartEpk != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.StartEpk, this.feedOptions.StartEpk);
-            }
-
-            if (this.feedOptions.EndEpk != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EndEpk, this.feedOptions.EndEpk);
-            }
-
-            if (this.feedOptions.PopulateQueryMetrics)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.PopulateQueryMetrics] = bool.TrueString;
-            }
-
-            if (this.feedOptions.ForceQueryScan)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
-            }
-
             if (this.CosmosSerializationOptions != null)
             {
                 requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.CosmosSerializationOptions.ContentSerializationFormat;
             }
-            else if (this.feedOptions.ContentSerializationFormat.HasValue)
+            else if (this.feedOptions != null && this.feedOptions.ContentSerializationFormat.HasValue)
             {
                 requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
+            }
+
+            if (this.feedOptions != null)
+            {
+
+                if (!string.IsNullOrEmpty(this.feedOptions.FilterBySchemaResourceId))
+                {
+                    requestHeaders[HttpConstants.HttpHeaders.FilterBySchemaResourceId] = this.feedOptions.FilterBySchemaResourceId;
+                }
+
+                if (this.feedOptions.EmitVerboseTracesInQuery != null)
+                {
+                    requestHeaders[HttpConstants.HttpHeaders.EmitVerboseTracesInQuery] = this.feedOptions.EmitVerboseTracesInQuery.ToString();
+                }
+
+                if (this.feedOptions.EnumerationDirection.HasValue)
+                {
+                    requestHeaders.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.feedOptions.EnumerationDirection.Value.ToString());
+                }
+
+                if (this.feedOptions.ReadFeedKeyType.HasValue)
+                {
+                    requestHeaders.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, this.feedOptions.ReadFeedKeyType.Value.ToString());
+                }
+
+                if (this.feedOptions.StartId != null)
+                {
+                    requestHeaders.Set(HttpConstants.HttpHeaders.StartId, this.feedOptions.StartId);
+                }
+
+                if (this.feedOptions.EndId != null)
+                {
+                    requestHeaders.Set(HttpConstants.HttpHeaders.EndId, this.feedOptions.EndId);
+                }
+
+                if (this.feedOptions.StartEpk != null)
+                {
+                    requestHeaders.Set(HttpConstants.HttpHeaders.StartEpk, this.feedOptions.StartEpk);
+                }
+
+                if (this.feedOptions.EndEpk != null)
+                {
+                    requestHeaders.Set(HttpConstants.HttpHeaders.EndEpk, this.feedOptions.EndEpk);
+                }
+
+                if (this.feedOptions.PopulateQueryMetrics)
+                {
+                    requestHeaders[HttpConstants.HttpHeaders.PopulateQueryMetrics] = bool.TrueString;
+                }
+
+                if (this.feedOptions.ForceQueryScan)
+                {
+                    requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
+                }
             }
 
             return requestHeaders;

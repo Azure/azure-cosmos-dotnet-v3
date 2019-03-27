@@ -39,11 +39,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             dcClient.Setup(e => e.GetDefaultConsistencyLevelAsync()).Returns(Task.FromResult(ConsistencyLevel.BoundedStaleness));
 
-            INameValueCollection headers = await cxt.CreateCommonHeadersAsync(fo);
+            INameValueCollection headers = await cxt.CreateCommonHeadersAsync((CosmosQueryRequestOptions)fo);
             Assert.AreEqual(null, headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
 
             fo.ConsistencyLevel = ConsistencyLevel.Eventual;
-            headers = await cxt.CreateCommonHeadersAsync(fo);
+            headers = await cxt.CreateCommonHeadersAsync((CosmosQueryRequestOptions)fo);
             Assert.AreEqual(ConsistencyLevel.Eventual.ToString(), headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
         }
 
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     resourceTypeEnum,
                     resourceType,
                     expression,
-                    feedOptions,
+                    (CosmosQueryRequestOptions)feedOptions,
                     resourceLink,
                     getLazyFeedResponse,
                     correlatedActivityId))
