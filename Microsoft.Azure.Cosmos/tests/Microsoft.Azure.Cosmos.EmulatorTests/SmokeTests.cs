@@ -7,8 +7,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.Http;
     using Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -89,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
         private void DocumentInsertsTest()
         {   
-            this.client.CreateDatabaseIfNotExistsAsync(new CosmosDatabaseSettings() { Id = DatabaseName }).Wait();
+            this.client.CreateDatabaseIfNotExistsAsync(new Database() { Id = DatabaseName }).Wait();
             this.CreatePartitionedCollectionIfNotExists(DatabaseName, PartitionedCollectionName);
 
             Uri documentCollectionUri = UriFactory.CreateDocumentCollectionUri(DatabaseName, PartitionedCollectionName);
@@ -134,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
         private async void QueryWithPagination()
         {
-            this.client.CreateDatabaseIfNotExistsAsync(new CosmosDatabaseSettings() { Id = DatabaseName }).Wait();
+            this.client.CreateDatabaseIfNotExistsAsync(new Database() { Id = DatabaseName }).Wait();
             this.CreatePartitionedCollectionIfNotExists(DatabaseName, PartitionedCollectionName);
 
             Uri documentCollectionUri = UriFactory.CreateDocumentCollectionUri(DatabaseName, PartitionedCollectionName);
@@ -200,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
         private void CrossPartitionQueries()
         {
-            this.client.CreateDatabaseIfNotExistsAsync(new CosmosDatabaseSettings() { Id = DatabaseName }).Wait();
+            this.client.CreateDatabaseIfNotExistsAsync(new Database() { Id = DatabaseName }).Wait();
             this.CreatePartitionedCollectionIfNotExists(DatabaseName, PartitionedCollectionName);
 
             Uri documentCollectionUri = UriFactory.CreateDocumentCollectionUri(DatabaseName, PartitionedCollectionName);
@@ -246,21 +249,21 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         private void CreateDatabaseIfNotExists()
         {
             string databaseId = Guid.NewGuid().ToString();
-            CosmosDatabaseSettings db = new CosmosDatabaseSettings { Id = databaseId };
+            Database db = new Database { Id = databaseId };
 
             // Create the database with this unique id
-            CosmosDatabaseSettings createdDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
+            Database createdDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
 
             // CreateDatabaseIfNotExistsAsync should create the new database
             Assert.AreEqual(databaseId, createdDatabase.Id);
 
             string databaseId2 = Guid.NewGuid().ToString();
-            db = new CosmosDatabaseSettings { Id = databaseId2 };
+            db = new Database { Id = databaseId2 };
 
             // Pre-create the database with this unique id
             createdDatabase = this.client.CreateDatabaseAsync(db).Result;
 
-            CosmosDatabaseSettings readDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
+            Database readDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
 
             // CreateDatabaseIfNotExistsAsync should return the same database
             Assert.AreEqual(createdDatabase.SelfLink, readDatabase.SelfLink);
@@ -294,26 +297,26 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         private void CreateDocumentCollectionIfNotExists()
         {
             string databaseId = Guid.NewGuid().ToString();
-            CosmosDatabaseSettings db = new CosmosDatabaseSettings { Id = databaseId };
+            Database db = new Database { Id = databaseId };
 
             // Create the database with this unique id
-            CosmosDatabaseSettings createdDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
+            Database createdDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
 
             string collectionId = Guid.NewGuid().ToString();
-            CosmosContainerSettings collection = new CosmosContainerSettings { Id = collectionId};
+            DocumentCollection collection = new DocumentCollection { Id = collectionId};
 
-            CosmosContainerSettings createdCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(createdDatabase.Id), collection).Result;
+            DocumentCollection createdCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(createdDatabase.Id), collection).Result;
 
             // CreateDocumentCollectionIfNotExistsAsync should create the new collection
             Assert.AreEqual(collectionId, createdCollection.Id);
 
             string collectionId2 = Guid.NewGuid().ToString();
-            collection = new CosmosContainerSettings { Id = collectionId2 };
+            collection = new DocumentCollection { Id = collectionId2 };
 
             // Pre-create the collection with this unique id
             createdCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(createdDatabase.SelfLink, collection).Result;
 
-            CosmosContainerSettings readCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(createdDatabase.SelfLink, collection).Result;
+            DocumentCollection readCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(createdDatabase.SelfLink, collection).Result;
 
             // CreateDocumentCollectionIfNotExistsAsync should return the same collection
             Assert.AreEqual(createdCollection.SelfLink, readCollection.SelfLink);
@@ -326,12 +329,12 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy() { ConnectionMode = connectionMode, ConnectionProtocol = protocol };
 
-            return new DocumentClient(new Uri(Host), MasterKey, connectionPolicy);
+            return new DocumentClient(new Uri(Host), MasterKey, (HttpMessageHandler)null, connectionPolicy);
         }
 
         private void CreatePartitionedCollectionIfNotExists(string databaseName, string collectionName)
         {
-            CosmosContainerSettings coll = new CosmosContainerSettings { Id = collectionName };
+            DocumentCollection coll = new DocumentCollection { Id = collectionName };
             coll.PartitionKey.Paths.Add("/id");
             this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(databaseName), coll, new RequestOptions() { OfferThroughput = 10200 }).Wait();
         }

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Routing;
 
     /// <summary>

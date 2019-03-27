@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     internal sealed class IndexingPolicyBuilder
     {

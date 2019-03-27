@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on 
@@ -76,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public async Task OpenAsync(
+            string databaseName,
             CosmosContainerSettings collection,
             CancellationToken cancellationToken)
         {
@@ -94,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
             {
-                tasks.Add(endpointCache.AddressCache.OpenAsync(collection, ranges, cancellationToken));
+                tasks.Add(endpointCache.AddressCache.OpenAsync(databaseName, collection, ranges, cancellationToken));
             }
 
             await Task.WhenAll(tasks);

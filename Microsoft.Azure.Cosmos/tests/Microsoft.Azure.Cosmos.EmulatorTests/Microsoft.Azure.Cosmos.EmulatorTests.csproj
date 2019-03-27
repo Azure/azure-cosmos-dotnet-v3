@@ -30,16 +30,7 @@
     <PackageReference Include="System.Reflection" Version="4.3.0" />
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
-  </ItemGroup>
-  
   <ItemGroup>
-    <None Include="GlobalDatabaseAccountTests.cs" />
     <None Include="settings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -236,6 +227,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <PropertyGroup>

@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Documents.Collections;
     using System;
     using System.IO;
     using System.Threading.Tasks;

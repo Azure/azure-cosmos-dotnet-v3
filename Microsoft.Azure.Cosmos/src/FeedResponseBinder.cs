@@ -9,10 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using JsonWriter = Json.JsonWriter;
 
     internal static class FeedResponseBinder
@@ -80,8 +79,8 @@ namespace Microsoft.Azure.Cosmos
 
             // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic
             // create a OfferV2 object and cast it to T. This is a temporary fix until offers is moved to v3 API. 
-            if (resourceType == ResourceType.Offer && 
-                (typeof(T).IsSubclassOf(typeof(CosmosResource)) || typeof(T) == typeof(object)))
+            if (resourceType == ResourceType.Offer &&
+                (typeof(T).IsSubclassOf(typeof(Resource)) || typeof(T) == typeof(object)))
             {
                 typedResults = JsonConvert.DeserializeObject<List<OfferV2>>(jsonText, settings).Cast<T>();
             }

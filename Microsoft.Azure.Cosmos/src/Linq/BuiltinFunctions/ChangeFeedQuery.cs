@@ -15,12 +15,15 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Linq;
     using System.Globalization;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Provides interface for historical change feed.
     /// </summary>
     /// <typeparam name="TResource">Source Resource Type (e.g. Document)</typeparam>
-    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource> where TResource : CosmosResource, new()
+    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource> where TResource : new()
     {
         #region Fields
         private const string IfNoneMatchAllHeaderValue = "*";   // This means start from current.

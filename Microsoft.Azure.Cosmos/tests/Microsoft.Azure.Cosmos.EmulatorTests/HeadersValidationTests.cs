@@ -11,9 +11,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -164,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void ValidateCosistencyLevel(DocumentClient client)
         {
-            CosmosContainerSettings collection = TestCommon.CreateOrGetDocumentCollection(client);
+            DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
 
             // Value not supported
             INameValueCollection headers = new StringKeyValueCollection();
@@ -448,8 +450,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 DocumentClient client = TestCommon.CreateClient(true);
-                var db = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result.Resource;
                 var doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
                 client = TestCommon.CreateClient(true);
                 doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
@@ -483,12 +485,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ValidateCurrentWriteQuorumAndReplicaSetHeader()
         {
             DocumentClient client = TestCommon.CreateClient(false);
-            CosmosDatabaseSettings db = null;
+            Database db = null;
             try
             {
-                var dbResource = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() }).Result;
+                var dbResource = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result;
                 db = dbResource.Resource;
-                var coll = client.CreateDocumentCollectionAsync(db, new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                var coll = client.CreateDocumentCollectionAsync(db, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result.Resource;
                 var docResult = client.CreateDocumentAsync(coll, new Document() { Id = Guid.NewGuid().ToString() }).Result;
                 Assert.IsTrue(int.Parse(docResult.ResponseHeaders[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
                 Assert.IsTrue(int.Parse(docResult.ResponseHeaders[WFConstants.BackendHeaders.CurrentReplicaSetSize], CultureInfo.InvariantCulture) > 0);
@@ -522,19 +524,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task ValidateCollectionIndexProgressHeaders(DocumentClient client)
         {
-            CosmosDatabaseSettings db = (await client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = Guid.NewGuid().ToString() })).Resource;
+            Database db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
 
             try
             {
-                var lazyCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+                var lazyCollection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
                 lazyCollection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
                 lazyCollection = (await client.CreateDocumentCollectionAsync(db, lazyCollection)).Resource;
 
-                var consistentCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+                var consistentCollection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
                 consistentCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 consistentCollection = (await client.CreateDocumentCollectionAsync(db, consistentCollection)).Resource;
 
-                var noneIndexCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+                var noneIndexCollection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
                 noneIndexCollection.IndexingPolicy.Automatic = false;
                 noneIndexCollection.IndexingPolicy.IndexingMode = IndexingMode.None;
                 noneIndexCollection = (await client.CreateDocumentCollectionAsync(db, noneIndexCollection)).Resource;
@@ -658,7 +660,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 client.readDocuments(client.getSelfLink()," + scriptOptions + @", callback);}";
 
             var collection = TestCommon.CreateOrGetDocumentCollection(client);
-            var sproc = new CosmosStoredProcedureSettings() { Id = Guid.NewGuid().ToString(), Body = script };
+            var sproc = new StoredProcedure() { Id = Guid.NewGuid().ToString(), Body = script };
             var createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
             var result = client.ExecuteStoredProcedureAsync<string>(createdSproc).Result;
             return result;
@@ -703,7 +705,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });}";
 
             var collection = TestCommon.CreateOrGetDocumentCollection(client);
-            var sproc = new CosmosStoredProcedureSettings() { Id = Guid.NewGuid().ToString(), Body = script };
+            var sproc = new StoredProcedure() { Id = Guid.NewGuid().ToString(), Body = script };
             var createdSproc = client.CreateStoredProcedureAsync(collection, sproc).Result.Resource;
             var result = client.ExecuteStoredProcedureAsync<string>(createdSproc).Result;
             return result;

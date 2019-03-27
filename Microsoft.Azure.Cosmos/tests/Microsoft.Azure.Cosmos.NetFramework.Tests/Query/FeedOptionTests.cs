@@ -5,17 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
     using VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Collections;
-    using System.Collections.Specialized;
     using System.Linq.Expressions;
     using System.Threading;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
@@ -42,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query
             INameValueCollection headers = await cxt.CreateCommonHeadersAsync(fo);
             Assert.AreEqual(null, headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
 
-            fo.ConsistencyLevel = ConsistencyLevel.Eventual;
+            fo.ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual;
             headers = await cxt.CreateCommonHeadersAsync(fo);
             Assert.AreEqual(ConsistencyLevel.Eventual.ToString(), headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
         }

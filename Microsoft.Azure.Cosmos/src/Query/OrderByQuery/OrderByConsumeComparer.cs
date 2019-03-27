@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// For cross partition order by queries we serve documents from the partition

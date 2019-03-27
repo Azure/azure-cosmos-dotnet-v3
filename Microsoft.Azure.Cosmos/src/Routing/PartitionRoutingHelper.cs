@@ -16,9 +16,12 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using static Microsoft.Azure.Cosmos.Internal.RntbdConstants;
+    using static Microsoft.Azure.Documents.RntbdConstants;
 
     internal class PartitionRoutingHelper
     {

@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos
 
 #if !NETSTANDARD16
     using System.Diagnostics;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents;
 #endif
 
     internal static class ClientExtensions
@@ -112,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, ClientExtensions.MediaTypeJson, StringComparison.OrdinalIgnoreCase))
             {
                 Stream readStream = await responseMessage.Content.ReadAsStreamAsync();
-                Error error = CosmosResource.LoadFrom<Error>(readStream);
+                Error error = Resource.LoadFrom<Error>(readStream);
                 return new DocumentClientException(
                     error,
                     responseMessage.Headers,

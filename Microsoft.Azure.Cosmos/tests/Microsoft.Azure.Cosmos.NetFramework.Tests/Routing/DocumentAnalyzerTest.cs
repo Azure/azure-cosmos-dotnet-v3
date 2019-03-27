@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Globalization;
     using System.IO;
     using System.Net;
-    using System.Text;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;

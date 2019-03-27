@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -67,8 +67,8 @@ namespace Microsoft.Azure.Cosmos
 
                 using (DocumentServiceRequest request =
                     DocumentServiceRequest.Create(
-                        Cosmos.Internal.OperationType.Query,
-                        Cosmos.Internal.ResourceType.Document,
+                        Documents.OperationType.Query,
+                        Documents.ResourceType.Document,
                         new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                         new MemoryStream(Encoding.UTF8.GetBytes("content1")),
                         AuthorizationTokenType.PrimaryMasterKey,
@@ -121,8 +121,8 @@ namespace Microsoft.Azure.Cosmos
 
                 using (DocumentServiceRequest request =
                     DocumentServiceRequest.Create(
-                        Cosmos.Internal.OperationType.Query,
-                        Cosmos.Internal.ResourceType.Document,
+                        Documents.OperationType.Query,
+                        Documents.ResourceType.Document,
                         new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                         new MemoryStream(Encoding.UTF8.GetBytes("content1")),
                         AuthorizationTokenType.PrimaryMasterKey,

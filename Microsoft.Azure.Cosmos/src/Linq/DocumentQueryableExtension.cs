@@ -9,6 +9,7 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// This class provides extension methods for converting a <see cref="System.Linq.IQueryable{T}"/> object to a <see cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery{T}"/> object.

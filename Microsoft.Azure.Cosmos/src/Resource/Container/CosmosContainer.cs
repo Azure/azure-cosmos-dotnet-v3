@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
@@ -202,10 +203,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.Database.Client.DocumentClient.ValidateResource(containerSettings);
+            this.Database.Client.DocumentClient.ValidateResource(containerSettings.Id);
 
             Task<CosmosResponseMessage> response = this.ReplaceStreamAsync(
-                streamPayload: containerSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(containerSettings),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
