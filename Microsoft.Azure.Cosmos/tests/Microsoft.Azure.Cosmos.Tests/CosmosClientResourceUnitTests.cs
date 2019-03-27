@@ -6,13 +6,13 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
+    using System.Linq;
     using System.Net.Http;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class CosmosClientResourceUnitTests
@@ -119,5 +119,66 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
         }
 
+        [TestMethod]
+        public void ValidateCosmosRequestOptionsClone()
+        {
+            CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Strong,
+                AccessCondition = new AccessCondition() { Type = AccessConditionType.IfMatch },
+                EnableCrossPartitionQuery = true,
+                EnableLowPrecisionOrderBy = true,
+                EnableScanInQuery = true,
+                ResponseContinuationTokenLimitInKb = 9001,
+                PartitionKey = new PartitionKey("/test"),
+                Properties = new Dictionary<string, object>() { { "test", "answer" } },
+                RequestContinuation = "TestContinuationToken",
+                MaxBufferedItemCount = 9002,
+                MaxConcurrency = 9,
+                MaxItemCount = 9003,
+                SessionToken = "sessionTokenTest",
+                CosmosSerializationOptions = new CosmosSerializationOptions(
+                    ContentSerializationFormat.JsonText.ToString(),
+                    (content) => JsonNavigator.Create(content),
+                    () => JsonWriter.Create(JsonSerializationFormat.Binary))
+            };
+
+            // Verify that all the properties are cloned and the values match
+            CosmosQueryRequestOptions clone = requestOptions.Clone();
+            List<PropertyInfo> properties = requestOptions.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).OrderBy(x => x.Name).ToList();
+            List<PropertyInfo> cloneProperties = clone.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).OrderBy(x => x.Name).ToList();
+            Assert.AreEqual(properties.Count, cloneProperties.Count);
+
+            for (int i = 0; i < properties.Count; i++)
+            {
+                Assert.AreEqual(properties[i].Name, cloneProperties[i].Name);
+                Assert.AreEqual(properties[i].GetValue(requestOptions, null), cloneProperties[i].GetValue(clone, null));
+            }
+
+            // Verify that updating the original request option does not update the clone
+            requestOptions.ConsistencyLevel = ConsistencyLevel.Eventual;
+            requestOptions.AccessCondition = new AccessCondition() { Type = AccessConditionType.IfNoneMatch };
+            requestOptions.EnableCrossPartitionQuery = false;
+            requestOptions.EnableLowPrecisionOrderBy = false;
+            requestOptions.EnableScanInQuery = false;
+            requestOptions.ResponseContinuationTokenLimitInKb = 4200;
+            requestOptions.PartitionKey = new PartitionKey("/updatedTest");
+            requestOptions.Properties = new Dictionary<string, object>() { { "UpdatedTest", "UpdateAnswer" } };
+            requestOptions.RequestContinuation = "UpdatedContinuationToken";
+            requestOptions.MaxBufferedItemCount = 42001;
+            requestOptions.MaxConcurrency = 42;
+            requestOptions.MaxItemCount = 42003;
+            requestOptions.SessionToken = "UpdatedSessionTokenTest";
+            requestOptions.CosmosSerializationOptions = new CosmosSerializationOptions(
+                ContentSerializationFormat.CosmosBinary.ToString(),
+                (content) => JsonNavigator.Create(content),
+                () => JsonWriter.Create(JsonSerializationFormat.Binary));
+
+            for (int i = 0; i < properties.Count; i++)
+            {
+                Assert.AreEqual(properties[i].Name, cloneProperties[i].Name);
+                Assert.AreNotEqual(properties[i].GetValue(requestOptions, null), cloneProperties[i].GetValue(clone, null), $"Property {properties[i].Name} not updated.");
+            }
+        }
     }
 }

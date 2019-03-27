@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             Type resourceType,
             Expression expression,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             string resourceLink,
             bool isContinuationExpected,
             CancellationToken token,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceTypeEnum,
                 resourceType,
                 expression,
-                feedOptions,
+                requestOptions,
                 resourceLink,
                 false,
                 correlatedActivityId);
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         resourceTypeEnum,
                         resourceType,
                         expression,
-                        feedOptions,
+                        requestOptions,
                         resourceLink,
                         token,
                         collection,
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query
             if (
                 resourceTypeEnum.IsCollectionChild()
                 && resourceTypeEnum.IsPartitioned()
-                && (feedOptions.EnableCrossPartitionQuery || !isContinuationExpected))
+                && (requestOptions.EnableCrossPartitionQuery || !isContinuationExpected))
             {
                 //todo:elasticcollections this may rely on information from collection cache which is outdated
                 //if collection is deleted/created with same name.
@@ -104,35 +104,35 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(
                         resourceTypeEnum,
-                        feedOptions,
+                        requestOptions,
                         partitionedQueryExecutionInfo,
                         collection.PartitionKey,
                         isContinuationExpected))
                 {
                     List<PartitionKeyRange> targetRanges;
-                    if (!string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
+                    if (!string.IsNullOrEmpty(requestOptions.PartitionKeyRangeId))
                     {
                         targetRanges =
                             new List<PartitionKeyRange>
                             {
                                 await queryExecutionContext.GetTargetPartitionKeyRangeById(
                                     collection.ResourceId,
-                                    feedOptions.PartitionKeyRangeId)
+                                    requestOptions.PartitionKeyRangeId)
                             };
                     }
                     else
                     {
                         List<Range<string>> queryRanges = partitionedQueryExecutionInfo.QueryRanges;
-                        if (feedOptions.PartitionKey != null)
+                        if (requestOptions.PartitionKey != null)
                         {
                             queryRanges = new List<Range<string>>
                             {
                                 Range<string>.GetPointRange(
-                                    feedOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(
+                                    requestOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(
                                         collection.PartitionKey))
                             };
                         }
-                        else if (TryGetEpkProperty(feedOptions, out string effectivePartitionKeyString))
+                        else if (TryGetEpkProperty(requestOptions, out string effectivePartitionKeyString))
                         {
                             queryRanges = new List<Range<string>>
                             {
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             // Figure out the optimal page size.
-            long initialPageSize = constructorParams.FeedOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
+            long initialPageSize = constructorParams.RequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
 
             if (initialPageSize < -1 || initialPageSize == 0)
             {
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (initialPageSize < 0)
                     {
                         // Max of what the user is willing to buffer and the default (note this is broken if MaxBufferedItemCount = -1)
-                        initialPageSize = Math.Max(constructorParams.FeedOptions.MaxBufferedItemCount, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
+                        initialPageSize = Math.Max(constructorParams.RequestOptions.MaxBufferedItemCount, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
                     }
 
                     initialPageSize = (long)Math.Min(
@@ -222,13 +222,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 (int)initialPageSize,
-                constructorParams.FeedOptions.RequestContinuation,
+                constructorParams.RequestOptions.RequestContinuation,
                 cancellationToken);
         }
 
         private static bool ShouldCreateSpecializedDocumentQueryExecutionContext(
             ResourceType resourceTypeEnum,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             PartitionKeyDefinition partitionKeyDefinition,
             bool isContinuationExpected)
@@ -237,14 +237,14 @@ namespace Microsoft.Azure.Cosmos.Query
             return
                 (DocumentQueryExecutionContextFactory.IsCrossPartitionQuery(
                     resourceTypeEnum,
-                    feedOptions,
+                    requestOptions,
                     partitionKeyDefinition,
                     partitionedQueryExecutionInfo) &&
                  (DocumentQueryExecutionContextFactory.IsTopOrderByQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsAggregateQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsOffsetLimitQuery(partitionedQueryExecutionInfo) ||
-                  DocumentQueryExecutionContextFactory.IsParallelQuery(feedOptions)) ||
-                  !string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId)) ||
+                  DocumentQueryExecutionContextFactory.IsParallelQuery(requestOptions)) ||
+                  !string.IsNullOrEmpty(requestOptions.PartitionKeyRangeId)) ||
                   // Even if it's single partition query we create a specialized context to aggregate the aggregates and distinct of distinct.
                   DocumentQueryExecutionContextFactory.IsAggregateQueryWithoutContinuation(
                       partitionedQueryExecutionInfo,
@@ -254,12 +254,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static bool IsCrossPartitionQuery(
             ResourceType resourceTypeEnum,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             PartitionKeyDefinition partitionKeyDefinition,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             return resourceTypeEnum.IsPartitioned()
-                && (feedOptions.PartitionKey == null && feedOptions.EnableCrossPartitionQuery)
+                && (requestOptions.PartitionKey == null && requestOptions.EnableCrossPartitionQuery)
                 && (partitionKeyDefinition.Paths.Count > 0)
                 && !(partitionedQueryExecutionInfo.QueryRanges.Count == 1 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
         }
@@ -286,9 +286,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return partitionedQueryExecutionInfo.QueryInfo.HasDistinct;
         }
 
-        private static bool IsParallelQuery(FeedOptions feedOptions)
+        private static bool IsParallelQuery(CosmosQueryRequestOptions requestOptions)
         {
-            return (feedOptions.MaxDegreeOfParallelism != 0);
+            return (requestOptions.MaxConcurrency != 0);
         }
 
         private static bool IsOffsetLimitQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
@@ -296,9 +296,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
         }
 
-        private static bool TryGetEpkProperty(FeedOptions feedOptions, out string effectivePartitionKeyString)
+        private static bool TryGetEpkProperty(CosmosQueryRequestOptions requestOptions, out string effectivePartitionKeyString)
         {
-            if (feedOptions?.Properties != null && feedOptions.Properties.TryGetValue(
+            if (requestOptions?.Properties != null && requestOptions.Properties.TryGetValue(
                    WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyStringObject))
             {
                 effectivePartitionKeyString = effectivePartitionKeyStringObject as string;

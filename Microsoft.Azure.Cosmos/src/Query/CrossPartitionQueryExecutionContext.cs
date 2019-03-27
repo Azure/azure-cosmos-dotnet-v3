@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.documentProducerForest = new PriorityQueue<DocumentProducerTree>(moveNextComparer, isSynchronized: true);
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;
-            this.comparableTaskScheduler = new ComparableTaskScheduler(initParams.FeedOptions.MaxDegreeOfParallelism);
+            this.comparableTaskScheduler = new ComparableTaskScheduler(initParams.RequestOptions.MaxConcurrency);
             this.equalityComparer = equalityComparer;
             this.requestChargeTracker = new RequestChargeTracker();
             this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken token)
         {
             CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-            INameValueCollection requestHeaders = await this.CreateCommonHeadersAsync(this.GetFeedOptions(null));
+            INameValueCollection requestHeaders = await this.CreateCommonHeadersAsync(this.GetRequestOptions(null));
 
             this.TraceInformation(string.Format(
                 CultureInfo.InvariantCulture,

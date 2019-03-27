@@ -754,21 +754,19 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
-            requestOptions.maxConcurrency = maxConcurrency;
+            requestOptions.MaxConcurrency = maxConcurrency;
             requestOptions.EnableCrossPartitionQuery = true;
-
-            FeedOptions feedOptions = requestOptions.ToFeedOptions();
-            feedOptions.RequestContinuation = continuationToken;
-            feedOptions.MaxItemCount = maxItemCount;
+            requestOptions.MaxItemCount = maxItemCount;
+            requestOptions.RequestContinuation = continuationToken;
             if (partitionKey != null)
             {
                 PartitionKey pk = new PartitionKey(partitionKey);
-                feedOptions.PartitionKey = pk;
+                requestOptions.PartitionKey = pk;
             }
 
             DocumentQuery<CosmosQueryResponse> documentQuery = (DocumentQuery<CosmosQueryResponse>)this.client.DocumentClient.CreateDocumentQuery<CosmosQueryResponse>(
                 collectionLink: this.container.Link,
-                feedOptions: feedOptions,
+                requestOptions: requestOptions,
                 querySpec: sqlQueryDefinition.ToSqlQuerySpec());
 
             return new CosmosResultSetIteratorCore(
@@ -987,7 +985,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosQueryRequestOptions options = requestOptions ?? new CosmosQueryRequestOptions();
-            options.maxConcurrency = maxConcurrency;
+            options.MaxConcurrency = maxConcurrency;
             options.EnableCrossPartitionQuery = true;
 
             return new CosmosDefaultResultSetIterator<T>(
@@ -1057,13 +1055,12 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosQueryRequestOptions cosmosQueryRequestOptions = options as CosmosQueryRequestOptions ?? new CosmosQueryRequestOptions();
-            FeedOptions feedOptions = cosmosQueryRequestOptions.ToFeedOptions();
-            feedOptions.RequestContinuation = continuationToken;
-            feedOptions.MaxItemCount = maxItemCount;
+            cosmosQueryRequestOptions.RequestContinuation = continuationToken;
+            cosmosQueryRequestOptions.MaxItemCount = maxItemCount;
 
             IDocumentQuery<T> documentClientResult = this.client.DocumentClient.CreateDocumentQuery<T>(
                 collectionLink: this.container.Link,
-                feedOptions: feedOptions,
+                requestOptions: cosmosQueryRequestOptions,
                 querySpec: state as SqlQuerySpec).AsDocumentQuery();
 
             try

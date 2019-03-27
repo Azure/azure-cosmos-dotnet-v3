@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private async Task<DocumentServiceRequest> CreateRequestAsync()
         {
             INameValueCollection requestHeaders = await this.CreateCommonHeadersAsync(
-                    this.GetFeedOptions(this.ContinuationToken));
+                    this.GetRequestOptions(this.ContinuationToken));
 
             requestHeaders[HttpConstants.HttpHeaders.IsContinuationExpected] = isContinuationExpected.ToString();
 

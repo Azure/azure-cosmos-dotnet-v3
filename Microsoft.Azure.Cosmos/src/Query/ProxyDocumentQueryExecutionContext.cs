@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
         private readonly Expression expression;
-        private readonly FeedOptions feedOptions;
+        private readonly CosmosQueryRequestOptions requestOptions;
         private readonly string resourceLink;
 
         private readonly CosmosContainerSettings collection;
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             Type resourceType,
             Expression expression,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             string resourceLink,
             CosmosContainerSettings collection,
             bool isContinuationExpected,
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.resourceTypeEnum = resourceTypeEnum;
             this.resourceType = resourceType;
             this.expression = expression;
-            this.feedOptions = feedOptions;
+            this.requestOptions = requestOptions;
             this.resourceLink = resourceLink;
 
             this.collection = collection;
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             Type resourceType,
             Expression expression,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions feedOptions,
             string resourceLink,
             CancellationToken token,
             CosmosContainerSettings collection,
@@ -83,15 +83,17 @@ namespace Microsoft.Azure.Cosmos.Query
             IDocumentQueryExecutionContext innerExecutionContext =
              new DefaultDocumentQueryExecutionContext(constructorParams, isContinuationExpected);
 
-            return new ProxyDocumentQueryExecutionContext(innerExecutionContext, client,
-                resourceTypeEnum,
-                resourceType,
-                expression,
-                feedOptions,
-                resourceLink,
-                collection, 
-                isContinuationExpected,
-                correlatedActivityId);
+            return new ProxyDocumentQueryExecutionContext(
+                innerExecutionContext: innerExecutionContext,
+                client: client,
+                resourceTypeEnum: resourceTypeEnum,
+                resourceType: resourceType,
+                expression: expression,
+                requestOptions: feedOptions,
+                resourceLink: resourceLink,
+                collection: collection,
+                isContinuationExpected: isContinuationExpected,
+                correlatedActivityId: correlatedActivityId);
         }
 
         public bool IsDone
@@ -138,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     queryExecutionContext.GetTargetPartitionKeyRanges(collection.ResourceId,
                         partitionedQueryExecutionInfo.QueryRanges);
 
-            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.requestOptions, this.resourceLink, false, correlatedActivityId);
             this.innerExecutionContext = await DocumentQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContext(
                 constructorParams,
                 partitionedQueryExecutionInfo,

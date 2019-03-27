@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
         private readonly string documentsFeedOrDatabaseLink;
-        private readonly FeedOptions feedOptions;
+        private readonly CosmosQueryRequestOptions requestOptions;
         private readonly object partitionKey;
 
         private readonly Expression expression;
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Type resourceType,
             string documentsFeedOrDatabaseLink,
             Expression expression,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             object partitionKey = null)
         {
             if (client == null)
@@ -60,22 +60,22 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.resourceTypeEnum = resourceTypeEnum;
             this.resourceType = resourceType;
             this.documentsFeedOrDatabaseLink = documentsFeedOrDatabaseLink;
-            this.feedOptions = feedOptions == null ? new FeedOptions() : new FeedOptions(feedOptions);
+            this.requestOptions = requestOptions == null ? new CosmosQueryRequestOptions() : requestOptions.Clone();
 
-            // Swapping out negative values in feedOptions for int.MaxValue
-            if (this.feedOptions.MaxBufferedItemCount < 0)
+            // Swapping out negative values in requestOptions for int.MaxValue
+            if (this.requestOptions.MaxBufferedItemCount < 0)
             {
-                this.feedOptions.MaxBufferedItemCount = int.MaxValue;
+                this.requestOptions.MaxBufferedItemCount = int.MaxValue;
             }
 
-            if (this.feedOptions.MaxDegreeOfParallelism < 0)
+            if (this.requestOptions.MaxConcurrency < 0)
             {
-                this.feedOptions.MaxDegreeOfParallelism = int.MaxValue;
+                this.requestOptions.MaxConcurrency = int.MaxValue;
             }
 
-            if (this.feedOptions.MaxItemCount < 0)
+            if (this.requestOptions.MaxItemCount < 0)
             {
-                this.feedOptions.MaxItemCount = int.MaxValue;
+                this.requestOptions.MaxItemCount = int.MaxValue;
             }
 
             this.partitionKey = partitionKey;
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 resourceTypeEnum,
                 resourceType,
                 documentsFeedOrDatabaseLink,
-                feedOptions,
+                requestOptions,
                 partitionKey,
                 this.client.OnExecuteScalarQueryCallback);
             this.executeNextAysncMetrics = new SchedulingStopwatch();
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Type resourceType,
             string documentsFeedOrDatabaseLink,
             Expression expression,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             object partitionKey = null) :
             this(
                 new DocumentQueryClient(client),
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 resourceType,
                 documentsFeedOrDatabaseLink,
                 expression,
-                feedOptions,
+                requestOptions,
                 partitionKey)
         {
         }
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             ResourceType resourceTypeEnum,
             Type resourceType,
             string documentsFeedOrDatabaseLink,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             object partitionKey = null) :
             this(
                 client,
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 resourceType,
                 documentsFeedOrDatabaseLink,
                 null,
-                feedOptions,
+                requestOptions,
                 partitionKey)
         {
         }
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             ResourceType resourceTypeEnum,
             Type resourceType,
             string documentsFeedOrDatabaseLink,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions requestOptions,
             object partitionKey = null) :
             this(
                 new DocumentQueryClient(client),
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 resourceType,
                 documentsFeedOrDatabaseLink,
                 null,
-                feedOptions,
+                requestOptions,
                 partitionKey)
         {
         }
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     FeedResponse<T> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<T>(
                         feedResponse, 
                         this.resourceTypeEnum,
-                        this.feedOptions.JsonSerializerSettings);
+                        this.requestOptions.JsonSerializerSettings);
                     foreach (T item in typedFeedResponse)
                     {
                         yield return item;
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.resourceTypeEnum,
                 this.resourceType,
                 this.expression,
-                this.feedOptions,
+                this.requestOptions,
                 this.documentsFeedOrDatabaseLink,
                 isContinuationExpected,
                 cancellationToken,
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
             CosmosQueryResponse typedFeedResponse = FeedResponseBinder.ConvertToCosmosQueryResponse(
                        response,
-                       this.feedOptions.CosmosSerializationOptions);
+                       this.requestOptions.CosmosSerializationOptions);
 
             if (!this.HasMoreResults && !tracedLastExecution)
             {
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
                 response, 
                 this.resourceTypeEnum,
-                this.feedOptions.JsonSerializerSettings);
+                this.requestOptions.JsonSerializerSettings);
 
             if (!this.HasMoreResults && !tracedLastExecution)
             {

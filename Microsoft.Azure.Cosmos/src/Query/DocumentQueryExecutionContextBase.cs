@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
             public ResourceType ResourceTypeEnum { get; }
             public Type ResourceType { get; }
             public Expression Expression { get; }
-            public FeedOptions FeedOptions { get; }
+            public CosmosQueryRequestOptions RequestOptions { get; }
             public string ResourceLink { get; }
             public bool GetLazyFeedResponse { get; }
             public Guid CorrelatedActivityId { get; }
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 ResourceType resourceTypeEnum,
                 Type resourceType,
                 Expression expression,
-                FeedOptions feedOptions,
+                CosmosQueryRequestOptions requestOptions,
                 string resourceLink,
                 bool getLazyFeedResponse,
                 Guid correlatedActivityId)
@@ -62,9 +62,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new ArgumentNullException($"{nameof(expression)} can not be null.");
                 }
 
-                if (feedOptions == null)
+                if (requestOptions == null)
                 {
-                    throw new ArgumentNullException($"{nameof(feedOptions)} can not be null.");
+                    throw new ArgumentNullException($"{nameof(requestOptions)} can not be null.");
                 }
 
                 if (correlatedActivityId == Guid.Empty)
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.ResourceTypeEnum = resourceTypeEnum;
                 this.ResourceType = resourceType;
                 this.Expression = expression;
-                this.FeedOptions = feedOptions;
+                this.RequestOptions = requestOptions;
                 this.ResourceLink = resourceLink;
                 this.GetLazyFeedResponse = getLazyFeedResponse;
                 this.CorrelatedActivityId = correlatedActivityId;
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
         private readonly Expression expression;
-        private readonly FeedOptions feedOptions;
+        private readonly CosmosQueryRequestOptions requestOptions;
         private readonly string resourceLink;
         private readonly bool getLazyFeedResponse;
         private bool isExpressionEvaluated;
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.resourceTypeEnum = initParams.ResourceTypeEnum;
             this.resourceType = initParams.ResourceType;
             this.expression = initParams.Expression;
-            this.feedOptions = initParams.FeedOptions;
+            this.requestOptions = initParams.RequestOptions;
             this.resourceLink = initParams.ResourceLink;
             this.getLazyFeedResponse = initParams.GetLazyFeedResponse;
             this.correlatedActivityId = initParams.CorrelatedActivityId;
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public string ResourceLink => this.resourceLink;
 
-        public int? MaxItemCount => this.feedOptions.MaxItemCount;
+        public int? MaxItemCount => this.requestOptions.MaxItemCount;
 
         protected SqlQuerySpec QuerySpec
         {
@@ -139,15 +139,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        protected PartitionKeyInternal PartitionKeyInternal => this.feedOptions.PartitionKey == null ? null : this.feedOptions.PartitionKey.InternalKey;
+        protected PartitionKeyInternal PartitionKeyInternal => this.requestOptions.PartitionKey == null ? null : this.requestOptions.PartitionKey.InternalKey;
 
-        protected int MaxBufferedItemCount => this.feedOptions.MaxBufferedItemCount;
+        protected int MaxBufferedItemCount => this.requestOptions.MaxBufferedItemCount;
 
-        protected int MaxDegreeOfParallelism => this.feedOptions.MaxDegreeOfParallelism;
+        protected int MaxDegreeOfParallelism => this.requestOptions.MaxConcurrency;
 
-        protected string PartitionKeyRangeId => this.feedOptions.PartitionKeyRangeId;
+        protected string PartitionKeyRangeId => this.requestOptions.PartitionKeyRangeId;
 
-        protected virtual string ContinuationToken => this.lastPage == null ? this.feedOptions.RequestContinuation : this.lastPage.ResponseContinuation;
+        protected virtual string ContinuationToken => this.lastPage == null ? this.requestOptions.RequestContinuation : this.lastPage.ResponseContinuation;
 
         public virtual bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
@@ -176,144 +176,35 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.lastPage;
         }
 
-        public FeedOptions GetFeedOptions(string continuationToken)
+        public CosmosQueryRequestOptions GetRequestOptions(string continuationToken)
         {
-            FeedOptions options = new FeedOptions(this.feedOptions);
+            CosmosQueryRequestOptions options = this.requestOptions.Clone();
             options.RequestContinuation = continuationToken;
             return options;
         }
 
-        public async Task<INameValueCollection> CreateCommonHeadersAsync(FeedOptions feedOptions)
+        public async Task<INameValueCollection> CreateCommonHeadersAsync(CosmosQueryRequestOptions requestOptions)
         {
-            INameValueCollection requestHeaders = new StringKeyValueCollection();
-
+            if (requestOptions.ConsistencyLevel.HasValue)
+            {
+                await this.client.EnsureValidOverwrite(requestOptions.ConsistencyLevel.Value);
+            }
+            
             ConsistencyLevel defaultConsistencyLevel = await this.client.GetDefaultConsistencyLevelAsync();
             ConsistencyLevel? desiredConsistencyLevel = await this.client.GetDesiredConsistencyLevelAsync();
-            if (!string.IsNullOrEmpty(feedOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(this.resourceTypeEnum, OperationType.ReadFeed))
-            {
-                if (defaultConsistencyLevel == ConsistencyLevel.Session || (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == ConsistencyLevel.Session))
-                {
-                    // Query across partitions is not supported today. Master resources (for e.g., database) 
-                    // can span across partitions, whereas server resources (viz: collection, document and attachment)
-                    // don't span across partitions. Hence, session token returned by one partition should not be used 
-                    // when quering resources from another partition. 
-                    // Since master resources can span across partitions, don't send session token to the backend.
-                    // As master resources are sync replicated, we should always get consistent query result for master resources,
-                    // irrespective of the chosen replica.
-                    // For server resources, which don't span partitions, specify the session token 
-                    // for correct replica to be chosen for servicing the query result.
-                    requestHeaders[HttpConstants.HttpHeaders.SessionToken] = feedOptions.SessionToken;
-                }
-            }
 
-            requestHeaders[HttpConstants.HttpHeaders.Continuation] = feedOptions.RequestContinuation;
-            requestHeaders[HttpConstants.HttpHeaders.IsQuery] = bool.TrueString;
-
-            // Flow the pageSize only when we are not doing client eval
-            if (feedOptions.MaxItemCount.HasValue)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.PageSize] = feedOptions.MaxItemCount.ToString();
-            }
-
-            requestHeaders[HttpConstants.HttpHeaders.EnableCrossPartitionQuery] = feedOptions.EnableCrossPartitionQuery.ToString();
-
-            if (feedOptions.MaxDegreeOfParallelism != 0)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery] = bool.TrueString;
-            }
-
-            if (this.feedOptions.EnableScanInQuery != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.EnableScanInQuery] = this.feedOptions.EnableScanInQuery.ToString();
-            }
-
-            if (this.feedOptions.EmitVerboseTracesInQuery != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.EmitVerboseTracesInQuery] = this.feedOptions.EmitVerboseTracesInQuery.ToString();
-            }
-
-            if (this.feedOptions.EnableLowPrecisionOrderBy != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy] = this.feedOptions.EnableLowPrecisionOrderBy.ToString();
-            }
-
-            if (!string.IsNullOrEmpty(this.feedOptions.FilterBySchemaResourceId))
-            {
-                requestHeaders[HttpConstants.HttpHeaders.FilterBySchemaResourceId] = this.feedOptions.FilterBySchemaResourceId;
-            }
-
-            if (this.feedOptions.ResponseContinuationTokenLimitInKb != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB] = this.feedOptions.ResponseContinuationTokenLimitInKb.ToString();
-            }
-
-            if (this.feedOptions.ConsistencyLevel.HasValue)
-            {
-                await this.client.EnsureValidOverwrite(feedOptions.ConsistencyLevel.Value);
-                requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.feedOptions.ConsistencyLevel.Value.ToString());
-            }
-            else if (desiredConsistencyLevel.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, desiredConsistencyLevel.Value.ToString());
-            }
-
-            if (this.feedOptions.EnumerationDirection.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.feedOptions.EnumerationDirection.Value.ToString());
-            }
-
-            if (this.feedOptions.ReadFeedKeyType.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, this.feedOptions.ReadFeedKeyType.Value.ToString());
-            }
-
-            if (this.feedOptions.StartId != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.StartId, this.feedOptions.StartId);
-            }
-
-            if (this.feedOptions.EndId != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EndId, this.feedOptions.EndId);
-            }
-
-            if (this.feedOptions.StartEpk != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.StartEpk, this.feedOptions.StartEpk);
-            }
-
-            if (this.feedOptions.EndEpk != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EndEpk, this.feedOptions.EndEpk);
-            }
-
-            if (this.feedOptions.PopulateQueryMetrics)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.PopulateQueryMetrics] = bool.TrueString;
-            }
-
-            if (this.feedOptions.ForceQueryScan)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
-            }
-
-            if (this.feedOptions.CosmosSerializationOptions != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationOptions.ContentSerializationFormat;
-            }
-            else if (this.feedOptions.ContentSerializationFormat.HasValue)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
-            }
-
-            return requestHeaders;
+            return requestOptions.CreateCommonHeadersAsync(
+                requestOptions,
+                defaultConsistencyLevel,
+                desiredConsistencyLevel,
+                this.resourceTypeEnum);
         }
 
         public DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec, PartitionKeyInternal partitionKey)
         {
             DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
             PopulatePartitionKeyInfo(request, partitionKey);
-            request.Properties = this.feedOptions.Properties;
+            request.Properties = this.requestOptions.Properties;
             return request;
         }
 
@@ -322,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
 
             PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
-            request.Properties = this.feedOptions.Properties;
+            request.Properties = this.requestOptions.Properties;
             return request;
         }
 
@@ -498,9 +389,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 CreateQueryDocumentServiceRequest(requestHeaders, querySpec) :
                 CreateReadFeedDocumentServiceRequest(requestHeaders);
 
-            if (this.feedOptions.JsonSerializerSettings != null)
+            if (this.requestOptions != null)
             {
-                request.SerializerSettings = this.feedOptions.JsonSerializerSettings;
+                request.SerializerSettings = this.requestOptions.JsonSerializerSettings;
             }
 
             return request;
@@ -626,9 +517,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Use the users custom navigator first. If it returns null back try the
             // internal navigator.
-            if (this.feedOptions.CosmosSerializationOptions != null)
+            if (this.requestOptions.CosmosSerializationOptions != null)
             {
-                jsonNavigator = this.feedOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
+                jsonNavigator = this.requestOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
                 if (jsonNavigator == null)
                 {
                     throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
