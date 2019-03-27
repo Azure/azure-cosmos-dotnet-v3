@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Represents the response returned from a database stored procedure in the Azure Cosmos DB service. Wraps the response body and headers.
@@ -47,11 +49,11 @@ namespace Microsoft.Azure.Cosmos
                 // load resource
                 if (typeof(TValue) == typeof(Document) || typeof(Document).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = CosmosResource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
+                    this.responseBody = Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Document(), this.serializerSettings);
                 }
                 else if (typeof(TValue) == typeof(Attachment) || typeof(Attachment).IsAssignableFrom(typeof(TValue)))
                 {
-                    this.responseBody = CosmosResource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
+                    this.responseBody = Resource.LoadFromWithConstructor<TValue>(response.ResponseBody, () => (TValue)(object)new Attachment(), this.serializerSettings);
                 }
                 else
                 {

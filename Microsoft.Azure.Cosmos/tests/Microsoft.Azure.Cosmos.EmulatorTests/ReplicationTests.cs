@@ -14,6 +14,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Utils;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -50,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #region Replication Validation Helpers
         internal static bool ResourceDoesnotExists<T>(string resourceId,
             DocumentClient client,
-            string ownerId = null) where T : CosmosResource, new()
+            string ownerId = null) where T : Resource, new()
         {
             T nonExistingResource;
             try
@@ -76,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static void ValidateCollection<T>(DocumentClient[] replicaClients,
             string collectionId,
             INameValueCollection headers = null,
-            bool verifyAddress = true) where T : CosmosResource, new()
+            bool verifyAddress = true) where T : Resource, new()
         {
             Assert.IsTrue(replicaClients != null && replicaClients.Length > 1, "Must pass in at least two replica clients");
 
@@ -85,9 +88,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (DocumentClient client in replicaClients)
             {
                 client.ForceAddressRefresh(true);
-                if (typeof(T) == typeof(CosmosStoredProcedureSettings) ||
-                    typeof(T) == typeof(CosmosUserDefinedFunctionSettings) ||
-                    typeof(T) == typeof(CosmosTriggerSettings))
+                if (typeof(T) == typeof(StoredProcedure) ||
+                    typeof(T) == typeof(UserDefinedFunction) ||
+                    typeof(T) == typeof(Trigger))
                 {
                     TestCommon.ListAllScriptDirect<T>(client, collectionId, headers ?? new StringKeyValueCollection());
                 }
@@ -179,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static void ValidateCollection<T>(FeedResponse<T>[] collectionResponses) where T : CosmosResource, new()
+        private static void ValidateCollection<T>(FeedResponse<T>[] collectionResponses) where T : Resource, new()
         {
             for (int i = 0; i < collectionResponses.Length - 1; i++)
             {
@@ -197,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static void ValidateResourceProperties<T>(List<T> resources) where T : CosmosResource, new()
+        internal static void ValidateResourceProperties<T>(List<T> resources) where T : Resource, new()
         {
             for (int i = 0; i < resources.Count - 1; i++)
             {
@@ -212,9 +215,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            if (typeof(T) == typeof(CosmosDatabaseSettings))
+            if (typeof(T) == typeof(Database))
             {
-                var databases = resources.Cast<CosmosDatabaseSettings>().ToArray();
+                var databases = resources.Cast<Database>().ToArray();
 
                 for (int i = 0; i < resources.Count - 1; i++)
                 {
@@ -225,9 +228,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-            else if (typeof(T) == typeof(CosmosContainerSettings))
+            else if (typeof(T) == typeof(DocumentCollection))
             {
-                var documentCollections = resources.Cast<CosmosContainerSettings>().ToArray();
+                var documentCollections = resources.Cast<DocumentCollection>().ToArray();
 
                 for (int i = 0; i < documentCollections.Length - 1; i++)
                 {
@@ -304,9 +307,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-            else if (typeof(T) == typeof(CosmosStoredProcedureSettings))
+            else if (typeof(T) == typeof(StoredProcedure))
             {
-                var storedProcedures = resources.Cast<CosmosStoredProcedureSettings>().ToArray();
+                var storedProcedures = resources.Cast<StoredProcedure>().ToArray();
 
                 for (int i = 0; i < storedProcedures.Length - 1; i++)
                 {
@@ -317,9 +320,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-            else if (typeof(T) == typeof(CosmosTriggerSettings))
+            else if (typeof(T) == typeof(Trigger))
             {
-                var triggers = resources.Cast<CosmosTriggerSettings>().ToArray();
+                var triggers = resources.Cast<Trigger>().ToArray();
 
                 for (int i = 0; i < triggers.Length - 1; i++)
                 {
@@ -329,9 +332,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-            else if (typeof(T) == typeof(CosmosUserDefinedFunctionSettings))
+            else if (typeof(T) == typeof(UserDefinedFunction))
             {
-                var userDefinedFunctions = resources.Cast<CosmosUserDefinedFunctionSettings>().ToArray();
+                var userDefinedFunctions = resources.Cast<UserDefinedFunction>().ToArray();
 
                 for (int i = 0; i < userDefinedFunctions.Length - 1; i++)
                 {
@@ -359,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.AreEqual(conflicts[i].OperationKind, conflicts[j].OperationKind,
                             "Conflict OperationKind mismatch");
 
-                        if (conflicts[i].OperationKind == OperationKind.Delete)
+                        if (conflicts[i].OperationKind == Documents.OperationKind.Delete)
                         {
                             continue;
                         }
@@ -374,20 +377,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             ReplicationTests.ValidateResourceProperties<Document>(
                                 conflicts.Select(x => x.GetResource<Document>()).ToList());
                         }
-                        else if (conflicts[i].ResourceType == typeof(CosmosStoredProcedureSettings))
+                        else if (conflicts[i].ResourceType == typeof(StoredProcedure))
                         {
-                            ReplicationTests.ValidateResourceProperties<CosmosStoredProcedureSettings>(
-                                conflicts.Select(x => x.GetResource<CosmosStoredProcedureSettings>()).ToList());
+                            ReplicationTests.ValidateResourceProperties<StoredProcedure>(
+                                conflicts.Select(x => x.GetResource<StoredProcedure>()).ToList());
                         }
-                        else if (conflicts[i].ResourceType == typeof(CosmosTriggerSettings))
+                        else if (conflicts[i].ResourceType == typeof(Trigger))
                         {
-                            ReplicationTests.ValidateResourceProperties<CosmosTriggerSettings>(
-                                conflicts.Select(x => x.GetResource<CosmosTriggerSettings>()).ToList());
+                            ReplicationTests.ValidateResourceProperties<Trigger>(
+                                conflicts.Select(x => x.GetResource<Trigger>()).ToList());
                         }
-                        else if (conflicts[i].ResourceType == typeof(CosmosUserDefinedFunctionSettings))
+                        else if (conflicts[i].ResourceType == typeof(UserDefinedFunction))
                         {
-                            ReplicationTests.ValidateResourceProperties<CosmosUserDefinedFunctionSettings>(
-                                conflicts.Select(x => x.GetResource<CosmosUserDefinedFunctionSettings>()).ToList());
+                            ReplicationTests.ValidateResourceProperties<UserDefinedFunction>(
+                                conflicts.Select(x => x.GetResource<UserDefinedFunction>()).ToList());
                         }
                         else
                         {
@@ -399,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static void ValidateQuery<T>(DocumentClient client, string collectionLink, string queryProperty, string queryPropertyValue, int expectedCount, INameValueCollection headers = null)
-            where T : CosmosResource, new()
+            where T : Resource, new()
         {
             if (headers != null)
                 headers = new StringKeyValueCollection(headers); // dont mess with the input headers
@@ -413,11 +416,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<dynamic> resourceFeed = null;
                 IDocumentQuery<dynamic> queryService = null;
                 string queryString = @"select * from root r where r." + queryProperty + @"=""" + queryPropertyValue + @"""";
-                if (typeof(T) == typeof(CosmosDatabaseSettings))
+                if (typeof(T) == typeof(Database))
                 {
                     queryService = client.CreateDatabaseQuery(queryString).AsDocumentQuery();
                 }
-                else if (typeof(T) == typeof(CosmosContainerSettings))
+                else if (typeof(T) == typeof(DocumentCollection))
                 {
                     queryService = client.CreateDocumentCollectionQuery(collectionLink, queryString).AsDocumentQuery();
                 }

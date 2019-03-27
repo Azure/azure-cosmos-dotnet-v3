@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Documents;
 
     internal interface IDocumentQueryProvider : IQueryProvider
     {

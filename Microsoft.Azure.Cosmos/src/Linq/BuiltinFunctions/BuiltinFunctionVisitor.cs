@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using Microsoft.Azure.Cosmos;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
+    using Microsoft.Azure.Documents;
 
     internal abstract class BuiltinFunctionVisitor
     {

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for creating new databases, and reading/querying all databases
@@ -232,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
                 Id = id
             };
 
-            this.client.DocumentClient.ValidateResource(databaseSettings);
+            this.client.DocumentClient.ValidateResource(databaseSettings.Id);
             return databaseSettings;
         }
 
@@ -243,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateDatabaseStreamAsync(
-                streamPayload: databaseSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(databaseSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

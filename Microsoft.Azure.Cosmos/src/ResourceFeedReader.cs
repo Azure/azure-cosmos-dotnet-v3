@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Azure Cosmos DB ResourceFeedReader class can be used to iterate through the resources of the specified type under a 
@@ -58,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso cref="CosmosResource"/>
+    /// <seealso cref="Resource"/>
     /// <seealso cref="DocumentClient"/>
     /// <seealso cref="ResourceFeedReaderClientExtensions"/>
     internal sealed class ResourceFeedReader<T> : IEnumerable<T> where T : JsonSerializable, new()

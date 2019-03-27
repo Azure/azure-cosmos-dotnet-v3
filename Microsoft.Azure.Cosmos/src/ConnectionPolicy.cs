@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
 
     /// <summary>
     /// Represents the connection policy associated with a DocumentClient to connect to the Azure Cosmos DB service.

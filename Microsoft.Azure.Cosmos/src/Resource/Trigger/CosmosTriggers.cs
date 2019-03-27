@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for creating new trigger, and reading/querying all triggers
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 partitionKey: null,
-                streamPayload: triggerSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(triggerSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

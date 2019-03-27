@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Routing map provider provides list of effective partition key ranges for a collection.

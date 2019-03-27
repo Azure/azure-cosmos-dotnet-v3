@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Cosmos Client exception

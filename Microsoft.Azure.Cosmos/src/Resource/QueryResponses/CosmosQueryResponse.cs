@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Linq;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// The cosmos query response

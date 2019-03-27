@@ -9,16 +9,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Admin;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     //Internal Test hooks.
     internal static class DocumentClientExtensions
     {
         private static readonly TransportClient transportClient =
-            new Rntbd.TransportClient(
-                new Rntbd.TransportClient.Options(TimeSpan.FromSeconds(5.0)));
+            new Documents.Rntbd.TransportClient(
+                new Documents.Rntbd.TransportClient.Options(TimeSpan.FromSeconds(5.0)));
 
         //This will lock the client instance to a particular replica Index.
         public static void LockClient(this DocumentClient client, uint replicaIndex)

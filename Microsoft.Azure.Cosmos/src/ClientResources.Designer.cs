@@ -10,6 +10,7 @@
 
 namespace Microsoft.Azure.Cosmos {
     using System;
+    using System.Reflection;
 
 
     /// <summary>
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.ClientResources", typeof(ClientResources).GetAssembly());
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.ClientResources", typeof(ClientResources).GetTypeInfo().Assembly);
                     
                     resourceMan = temp;
                 }

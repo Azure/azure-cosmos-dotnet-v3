@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+
     /// <summary>
     /// Client policy is combination of endpoint change retry + throttling retry.
     /// </summary>

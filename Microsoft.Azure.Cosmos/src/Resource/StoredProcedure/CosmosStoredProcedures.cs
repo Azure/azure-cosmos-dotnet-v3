@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for creating new stored procedures, and reading/querying all stored procedures
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 partitionKey: null,
-                streamPayload: storedProcedureSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

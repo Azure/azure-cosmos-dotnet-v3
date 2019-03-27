@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Json;
-    using static Microsoft.Azure.Cosmos.Internal.RuntimeConstants;
-    
+    using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Documents.RuntimeConstants;
+
     /// <summary>
     /// The Cosmos query request options
     /// </summary>

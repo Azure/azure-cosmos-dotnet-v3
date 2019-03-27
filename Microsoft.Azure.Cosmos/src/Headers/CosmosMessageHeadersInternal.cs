@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Internal header class with priority access for known headers and support for dictionary-based access to other headers.
