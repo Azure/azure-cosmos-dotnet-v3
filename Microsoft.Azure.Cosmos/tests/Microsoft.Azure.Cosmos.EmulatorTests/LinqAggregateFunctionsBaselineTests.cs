@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Documents;
 
+    [Ignore]
     [TestClass]
     [TestCategory("Quarantine")]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>

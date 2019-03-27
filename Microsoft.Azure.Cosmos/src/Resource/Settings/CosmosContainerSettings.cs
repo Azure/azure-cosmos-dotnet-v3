@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(Id));
             }
 
-            if (this.PartitionKey == null)
+            if (this.PartitionKey == null || this.PartitionKey.Paths.Count == 0)
             {
                 throw new ArgumentNullException(nameof(PartitionKey));
             }
