@@ -43,9 +43,9 @@ if "%TEST_BASELINE_PATH%"=="" (
 
 if "%TEST_OUTPUT_PATH%"=="" (
   if EXIST "bin\Debug\netcoreapp2.0\DotNetSDKAPIChanges.json" (
-    set TEST_OUTPUT_PATH=bin\Debug\netcoreapp2.0\
+    set TEST_OUTPUT_PATH=bin\Debug\netcoreapp2.0
   ) else (
-    set TEST_OUTPUT_PATH=bin\Release\netcoreapp2.0\
+    set TEST_OUTPUT_PATH=bin\Release\netcoreapp2.0
   )
 )
 
