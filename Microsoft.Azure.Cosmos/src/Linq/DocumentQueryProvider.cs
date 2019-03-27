@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
         private readonly string documentsFeedOrDatabaseLink;
-        private readonly FeedOptions feedOptions;
+        private readonly CosmosQueryRequestOptions queryRequestOptions;
         private readonly object partitionKey;
         private readonly Action<IQueryable> onExecuteScalarQueryCallback;
 
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             ResourceType resourceTypeEnum,
             Type resourceType,
             string documentsFeedOrDatabaseLink,
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions queryRequestOptions,
             object partitionKey = null,
             Action<IQueryable> onExecuteScalarQueryCallback = null)
         {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.resourceTypeEnum = resourceTypeEnum;
             this.resourceType = resourceType;
             this.documentsFeedOrDatabaseLink = documentsFeedOrDatabaseLink;
-            this.feedOptions = feedOptions;
+            this.queryRequestOptions = queryRequestOptions;
             this.partitionKey = partitionKey;
             this.onExecuteScalarQueryCallback = onExecuteScalarQueryCallback;
         }
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.resourceType,
                 this.documentsFeedOrDatabaseLink,
                 expression,
-                this.feedOptions,
+                this.queryRequestOptions,
                 this.partitionKey);
         }
 
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.resourceType,
                 this.documentsFeedOrDatabaseLink,
                 expression,
-                this.feedOptions,
+                this.queryRequestOptions,
                 this.partitionKey);
         }
 
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.resourceType,
                 this.documentsFeedOrDatabaseLink,
                 expression,
-                this.feedOptions,
+                this.queryRequestOptions,
                 this.partitionKey);
             this.onExecuteScalarQueryCallback?.Invoke(documentQuery);
 
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.resourceType,
                 this.documentsFeedOrDatabaseLink,
                 expression,
-                this.feedOptions,
+                this.queryRequestOptions,
                 this.partitionKey);
             this.onExecuteScalarQueryCallback?.Invoke(documentQuery);
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.resourceType,
                 this.documentsFeedOrDatabaseLink,
                 expression,
-                this.feedOptions,
+                this.queryRequestOptions,
                 this.partitionKey);
             this.onExecuteScalarQueryCallback?.Invoke(documentQuery);
 

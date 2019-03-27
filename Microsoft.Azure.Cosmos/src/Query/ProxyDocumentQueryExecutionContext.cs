@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
         private readonly Expression expression;
-        private readonly CosmosQueryRequestOptions requestOptions;
+        private readonly CosmosQueryRequestOptions queryRequestOptions;
         private readonly string resourceLink;
 
         private readonly CosmosContainerSettings collection;
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             Type resourceType,
             Expression expression,
-            CosmosQueryRequestOptions requestOptions,
+            CosmosQueryRequestOptions queryRequestOptions,
             string resourceLink,
             CosmosContainerSettings collection,
             bool isContinuationExpected,
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.resourceTypeEnum = resourceTypeEnum;
             this.resourceType = resourceType;
             this.expression = expression;
-            this.requestOptions = requestOptions;
+            this.queryRequestOptions = queryRequestOptions;
             this.resourceLink = resourceLink;
 
             this.collection = collection;
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             Type resourceType,
             Expression expression,
-            CosmosQueryRequestOptions feedOptions,
+            CosmosQueryRequestOptions queryRequestOptions,
             string resourceLink,
             CancellationToken token,
             CosmosContainerSettings collection,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId)
         {
             token.ThrowIfCancellationRequested();
-            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(client, resourceTypeEnum, resourceType, expression, feedOptions, resourceLink, false, correlatedActivityId);
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(client, resourceTypeEnum, resourceType, expression, queryRequestOptions, resourceLink, false, correlatedActivityId);
             IDocumentQueryExecutionContext innerExecutionContext =
              new DefaultDocumentQueryExecutionContext(constructorParams, isContinuationExpected);
 
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceTypeEnum: resourceTypeEnum,
                 resourceType: resourceType,
                 expression: expression,
-                requestOptions: feedOptions,
+                queryRequestOptions: queryRequestOptions,
                 resourceLink: resourceLink,
                 collection: collection,
                 isContinuationExpected: isContinuationExpected,
@@ -140,7 +140,16 @@ namespace Microsoft.Azure.Cosmos.Query
                     queryExecutionContext.GetTargetPartitionKeyRanges(collection.ResourceId,
                         partitionedQueryExecutionInfo.QueryRanges);
 
-            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.requestOptions, this.resourceLink, false, correlatedActivityId);
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(
+                client: this.client,
+                resourceTypeEnum: this.resourceTypeEnum,
+                resourceType: this.resourceType,
+                expression: this.expression,
+                queryRequestOptions: this.queryRequestOptions,
+                resourceLink: this.resourceLink,
+                getLazyFeedResponse: false,
+                correlatedActivityId: correlatedActivityId);
+
             this.innerExecutionContext = await DocumentQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContext(
                 constructorParams,
                 partitionedQueryExecutionInfo,

@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 ResourceType resourceTypeEnum,
                 Type resourceType,
                 Expression expression,
-                CosmosQueryRequestOptions requestOptions,
+                CosmosQueryRequestOptions queryRequestOptions,
                 string resourceLink,
                 bool getLazyFeedResponse,
                 Guid correlatedActivityId)
@@ -62,9 +62,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new ArgumentNullException($"{nameof(expression)} can not be null.");
                 }
 
-                if (requestOptions == null)
+                if (queryRequestOptions == null)
                 {
-                    throw new ArgumentNullException($"{nameof(requestOptions)} can not be null.");
+                    throw new ArgumentNullException($"{nameof(queryRequestOptions)} can not be null.");
                 }
 
                 if (correlatedActivityId == Guid.Empty)
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.ResourceTypeEnum = resourceTypeEnum;
                 this.ResourceType = resourceType;
                 this.Expression = expression;
-                this.RequestOptions = requestOptions;
+                this.RequestOptions = queryRequestOptions;
                 this.ResourceLink = resourceLink;
                 this.GetLazyFeedResponse = getLazyFeedResponse;
                 this.CorrelatedActivityId = correlatedActivityId;
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
         private readonly Expression expression;
-        private readonly CosmosQueryRequestOptions requestOptions;
+        private readonly CosmosQueryRequestOptions queryRequestOptions;
         private readonly string resourceLink;
         private readonly bool getLazyFeedResponse;
         private bool isExpressionEvaluated;
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.resourceTypeEnum = initParams.ResourceTypeEnum;
             this.resourceType = initParams.ResourceType;
             this.expression = initParams.Expression;
-            this.requestOptions = initParams.RequestOptions;
+            this.queryRequestOptions = initParams.RequestOptions;
             this.resourceLink = initParams.ResourceLink;
             this.getLazyFeedResponse = initParams.GetLazyFeedResponse;
             this.correlatedActivityId = initParams.CorrelatedActivityId;
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public string ResourceLink => this.resourceLink;
 
-        public int? MaxItemCount => this.requestOptions.MaxItemCount;
+        public int? MaxItemCount => this.queryRequestOptions.MaxItemCount;
 
         protected SqlQuerySpec QuerySpec
         {
@@ -139,15 +139,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        protected PartitionKeyInternal PartitionKeyInternal => this.requestOptions.PartitionKey == null ? null : this.requestOptions.PartitionKey.InternalKey;
+        protected PartitionKeyInternal PartitionKeyInternal => this.queryRequestOptions.PartitionKey == null ? null : this.queryRequestOptions.PartitionKey.InternalKey;
 
-        protected int MaxBufferedItemCount => this.requestOptions.MaxBufferedItemCount;
+        protected int MaxBufferedItemCount => this.queryRequestOptions.MaxBufferedItemCount;
 
-        protected int MaxDegreeOfParallelism => this.requestOptions.MaxConcurrency;
+        protected int MaxDegreeOfParallelism => this.queryRequestOptions.MaxConcurrency;
 
-        protected string PartitionKeyRangeId => this.requestOptions.PartitionKeyRangeId;
+        protected string PartitionKeyRangeId => this.queryRequestOptions.PartitionKeyRangeId;
 
-        protected virtual string ContinuationToken => this.lastPage == null ? this.requestOptions.RequestContinuation : this.lastPage.ResponseContinuation;
+        protected virtual string ContinuationToken => this.lastPage == null ? this.queryRequestOptions.RequestContinuation : this.lastPage.ResponseContinuation;
 
         public virtual bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
@@ -178,23 +178,23 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public CosmosQueryRequestOptions GetRequestOptions(string continuationToken)
         {
-            CosmosQueryRequestOptions options = this.requestOptions.Clone();
+            CosmosQueryRequestOptions options = this.queryRequestOptions.Clone();
             options.RequestContinuation = continuationToken;
             return options;
         }
 
-        public async Task<INameValueCollection> CreateCommonHeadersAsync(CosmosQueryRequestOptions requestOptions)
+        public async Task<INameValueCollection> CreateCommonHeadersAsync(CosmosQueryRequestOptions queryRequestOptions)
         {
-            if (requestOptions.ConsistencyLevel.HasValue)
+            if (queryRequestOptions.ConsistencyLevel.HasValue)
             {
-                await this.client.EnsureValidOverwrite(requestOptions.ConsistencyLevel.Value);
+                await this.client.EnsureValidOverwrite(queryRequestOptions.ConsistencyLevel.Value);
             }
             
             ConsistencyLevel defaultConsistencyLevel = await this.client.GetDefaultConsistencyLevelAsync();
             ConsistencyLevel? desiredConsistencyLevel = await this.client.GetDesiredConsistencyLevelAsync();
 
-            return requestOptions.CreateCommonHeadersAsync(
-                requestOptions,
+            return queryRequestOptions.CreateCommonHeadersAsync(
+                queryRequestOptions,
                 defaultConsistencyLevel,
                 desiredConsistencyLevel,
                 this.resourceTypeEnum);
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
             PopulatePartitionKeyInfo(request, partitionKey);
-            request.Properties = this.requestOptions.Properties;
+            request.Properties = this.queryRequestOptions.Properties;
             return request;
         }
 
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
 
             PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
-            request.Properties = this.requestOptions.Properties;
+            request.Properties = this.queryRequestOptions.Properties;
             return request;
         }
 
@@ -389,9 +389,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 CreateQueryDocumentServiceRequest(requestHeaders, querySpec) :
                 CreateReadFeedDocumentServiceRequest(requestHeaders);
 
-            if (this.requestOptions != null)
+            if (this.queryRequestOptions != null)
             {
-                request.SerializerSettings = this.requestOptions.JsonSerializerSettings;
+                request.SerializerSettings = this.queryRequestOptions.JsonSerializerSettings;
             }
 
             return request;
@@ -517,9 +517,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Use the users custom navigator first. If it returns null back try the
             // internal navigator.
-            if (this.requestOptions.CosmosSerializationOptions != null)
+            if (this.queryRequestOptions.CosmosSerializationOptions != null)
             {
-                jsonNavigator = this.requestOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
+                jsonNavigator = this.queryRequestOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
                 if (jsonNavigator == null)
                 {
                     throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");

@@ -405,14 +405,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Helper function to convert back to older type
         /// </summary>
-        public static implicit operator FeedOptions(CosmosQueryRequestOptions requestOptions)
-        {
-            return requestOptions.ToFeedOptions();
-        }
-
-        /// <summary>
-        /// Helper function to convert back to older type
-        /// </summary>
         public static implicit operator CosmosQueryRequestOptions(FeedOptions feedOptions)
         {
             return new CosmosQueryRequestOptions(feedOptions);

@@ -246,14 +246,14 @@ namespace Microsoft.Azure.Cosmos
         /// DEVNOTE: This will be converted to use CosmosRequestMessage in next PR
         /// </summary>
         internal INameValueCollection CreateCommonHeadersAsync(
-            FeedOptions feedOptions,
+            CosmosQueryRequestOptions queryRequestOptions,
             ConsistencyLevel defaultConsistencyLevel,
             ConsistencyLevel? desiredConsistencyLevel,
             ResourceType resourceType)
         {
             INameValueCollection requestHeaders = new StringKeyValueCollection();
 
-            if (!string.IsNullOrEmpty(feedOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(resourceType, OperationType.ReadFeed))
+            if (!string.IsNullOrEmpty(queryRequestOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(resourceType, OperationType.ReadFeed))
             {
                 if (defaultConsistencyLevel == Microsoft.Azure.Cosmos.ConsistencyLevel.Session ||
                     (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == Microsoft.Azure.Cosmos.ConsistencyLevel.Session))
@@ -267,22 +267,22 @@ namespace Microsoft.Azure.Cosmos
                     // irrespective of the chosen replica.
                     // For server resources, which don't span partitions, specify the session token 
                     // for correct replica to be chosen for servicing the query result.
-                    requestHeaders[HttpConstants.HttpHeaders.SessionToken] = feedOptions.SessionToken;
+                    requestHeaders[HttpConstants.HttpHeaders.SessionToken] = queryRequestOptions.SessionToken;
                 }
             }
 
-            requestHeaders[HttpConstants.HttpHeaders.Continuation] = feedOptions.RequestContinuation;
+            requestHeaders[HttpConstants.HttpHeaders.Continuation] = queryRequestOptions.RequestContinuation;
             requestHeaders[HttpConstants.HttpHeaders.IsQuery] = bool.TrueString;
 
             // Flow the pageSize only when we are not doing client eval
-            if (feedOptions.MaxItemCount.HasValue)
+            if (queryRequestOptions.MaxItemCount.HasValue)
             {
-                requestHeaders[HttpConstants.HttpHeaders.PageSize] = feedOptions.MaxItemCount.ToString();
+                requestHeaders[HttpConstants.HttpHeaders.PageSize] = queryRequestOptions.MaxItemCount.ToString();
             }
 
-            requestHeaders[HttpConstants.HttpHeaders.EnableCrossPartitionQuery] = feedOptions.EnableCrossPartitionQuery.ToString();
+            requestHeaders[HttpConstants.HttpHeaders.EnableCrossPartitionQuery] = queryRequestOptions.EnableCrossPartitionQuery.ToString();
 
-            if (feedOptions.MaxDegreeOfParallelism != 0)
+            if (queryRequestOptions.MaxConcurrency != 0)
             {
                 requestHeaders[HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery] = bool.TrueString;
             }

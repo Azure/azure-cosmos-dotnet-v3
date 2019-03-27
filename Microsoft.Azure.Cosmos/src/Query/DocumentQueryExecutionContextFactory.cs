@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             Type resourceType,
             Expression expression,
-            CosmosQueryRequestOptions requestOptions,
+            CosmosQueryRequestOptions queryRequestOptions,
             string resourceLink,
             bool isContinuationExpected,
             CancellationToken token,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceTypeEnum,
                 resourceType,
                 expression,
-                requestOptions,
+                queryRequestOptions,
                 resourceLink,
                 false,
                 correlatedActivityId);
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         resourceTypeEnum,
                         resourceType,
                         expression,
-                        requestOptions,
+                        queryRequestOptions,
                         resourceLink,
                         token,
                         collection,
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query
             if (
                 resourceTypeEnum.IsCollectionChild()
                 && resourceTypeEnum.IsPartitioned()
-                && (requestOptions.EnableCrossPartitionQuery || !isContinuationExpected))
+                && (queryRequestOptions.EnableCrossPartitionQuery || !isContinuationExpected))
             {
                 //todo:elasticcollections this may rely on information from collection cache which is outdated
                 //if collection is deleted/created with same name.
@@ -104,35 +104,35 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(
                         resourceTypeEnum,
-                        requestOptions,
+                        queryRequestOptions,
                         partitionedQueryExecutionInfo,
                         collection.PartitionKey,
                         isContinuationExpected))
                 {
                     List<PartitionKeyRange> targetRanges;
-                    if (!string.IsNullOrEmpty(requestOptions.PartitionKeyRangeId))
+                    if (!string.IsNullOrEmpty(queryRequestOptions.PartitionKeyRangeId))
                     {
                         targetRanges =
                             new List<PartitionKeyRange>
                             {
                                 await queryExecutionContext.GetTargetPartitionKeyRangeById(
                                     collection.ResourceId,
-                                    requestOptions.PartitionKeyRangeId)
+                                    queryRequestOptions.PartitionKeyRangeId)
                             };
                     }
                     else
                     {
                         List<Range<string>> queryRanges = partitionedQueryExecutionInfo.QueryRanges;
-                        if (requestOptions.PartitionKey != null)
+                        if (queryRequestOptions.PartitionKey != null)
                         {
                             queryRanges = new List<Range<string>>
                             {
                                 Range<string>.GetPointRange(
-                                    requestOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(
+                                    queryRequestOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(
                                         collection.PartitionKey))
                             };
                         }
-                        else if (TryGetEpkProperty(requestOptions, out string effectivePartitionKeyString))
+                        else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
                         {
                             queryRanges = new List<Range<string>>
                             {
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static bool ShouldCreateSpecializedDocumentQueryExecutionContext(
             ResourceType resourceTypeEnum,
-            CosmosQueryRequestOptions requestOptions,
+            CosmosQueryRequestOptions queryRequestOptions,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             PartitionKeyDefinition partitionKeyDefinition,
             bool isContinuationExpected)
@@ -237,14 +237,14 @@ namespace Microsoft.Azure.Cosmos.Query
             return
                 (DocumentQueryExecutionContextFactory.IsCrossPartitionQuery(
                     resourceTypeEnum,
-                    requestOptions,
+                    queryRequestOptions,
                     partitionKeyDefinition,
                     partitionedQueryExecutionInfo) &&
                  (DocumentQueryExecutionContextFactory.IsTopOrderByQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsAggregateQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsOffsetLimitQuery(partitionedQueryExecutionInfo) ||
-                  DocumentQueryExecutionContextFactory.IsParallelQuery(requestOptions)) ||
-                  !string.IsNullOrEmpty(requestOptions.PartitionKeyRangeId)) ||
+                  DocumentQueryExecutionContextFactory.IsParallelQuery(queryRequestOptions)) ||
+                  !string.IsNullOrEmpty(queryRequestOptions.PartitionKeyRangeId)) ||
                   // Even if it's single partition query we create a specialized context to aggregate the aggregates and distinct of distinct.
                   DocumentQueryExecutionContextFactory.IsAggregateQueryWithoutContinuation(
                       partitionedQueryExecutionInfo,
@@ -254,12 +254,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private static bool IsCrossPartitionQuery(
             ResourceType resourceTypeEnum,
-            CosmosQueryRequestOptions requestOptions,
+            CosmosQueryRequestOptions queryRequestOptions,
             PartitionKeyDefinition partitionKeyDefinition,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             return resourceTypeEnum.IsPartitioned()
-                && (requestOptions.PartitionKey == null && requestOptions.EnableCrossPartitionQuery)
+                && (queryRequestOptions.PartitionKey == null && queryRequestOptions.EnableCrossPartitionQuery)
                 && (partitionKeyDefinition.Paths.Count > 0)
                 && !(partitionedQueryExecutionInfo.QueryRanges.Count == 1 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
         }
@@ -286,9 +286,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return partitionedQueryExecutionInfo.QueryInfo.HasDistinct;
         }
 
-        private static bool IsParallelQuery(CosmosQueryRequestOptions requestOptions)
+        private static bool IsParallelQuery(CosmosQueryRequestOptions queryRequestOptions)
         {
-            return (requestOptions.MaxConcurrency != 0);
+            return (queryRequestOptions.MaxConcurrency != 0);
         }
 
         private static bool IsOffsetLimitQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
@@ -296,9 +296,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
         }
 
-        private static bool TryGetEpkProperty(CosmosQueryRequestOptions requestOptions, out string effectivePartitionKeyString)
+        private static bool TryGetEpkProperty(CosmosQueryRequestOptions queryRequestOptions, out string effectivePartitionKeyString)
         {
-            if (requestOptions?.Properties != null && requestOptions.Properties.TryGetValue(
+            if (queryRequestOptions?.Properties != null && queryRequestOptions.Properties.TryGetValue(
                    WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyStringObject))
             {
                 effectivePartitionKeyString = effectivePartitionKeyStringObject as string;

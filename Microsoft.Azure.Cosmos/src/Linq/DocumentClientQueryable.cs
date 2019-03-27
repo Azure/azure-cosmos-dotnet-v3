@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="T">The type of object to query.</typeparam>
         /// <param name="collectionLink">The link to the parent document collection.</param>
         /// <param name="querySpec">The SqlQuerySpec instance containing the SQL expression.</param>
-        /// <param name="requestOptions">The options for processing the query result feed.</param>
+        /// <param name="queryRequestOptions">The options for processing the query result feed.</param>
         /// <returns>An IQueryable{T} that can evaluate the query.</returns>
         /// <example>
         /// This example below queries for some book documents.
@@ -705,9 +705,9 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
         /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, SqlQuerySpec querySpec, CosmosQueryRequestOptions requestOptions = null)
+        public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, SqlQuerySpec querySpec, CosmosQueryRequestOptions queryRequestOptions = null)
         {
-            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), collectionLink, requestOptions).AsSQL<T, T>(querySpec);
+            return new DocumentQuery<T>(this, ResourceType.Document, typeof(Document), collectionLink, queryRequestOptions).AsSQL<T, T>(querySpec);
         }
 
         /// <summary>

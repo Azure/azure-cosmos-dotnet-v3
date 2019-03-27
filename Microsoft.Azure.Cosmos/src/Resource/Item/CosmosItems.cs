@@ -766,7 +766,7 @@ namespace Microsoft.Azure.Cosmos
 
             DocumentQuery<CosmosQueryResponse> documentQuery = (DocumentQuery<CosmosQueryResponse>)this.client.DocumentClient.CreateDocumentQuery<CosmosQueryResponse>(
                 collectionLink: this.container.Link,
-                requestOptions: requestOptions,
+                queryRequestOptions: requestOptions,
                 querySpec: sqlQueryDefinition.ToSqlQuerySpec());
 
             return new CosmosResultSetIteratorCore(
@@ -1060,7 +1060,7 @@ namespace Microsoft.Azure.Cosmos
 
             IDocumentQuery<T> documentClientResult = this.client.DocumentClient.CreateDocumentQuery<T>(
                 collectionLink: this.container.Link,
-                requestOptions: cosmosQueryRequestOptions,
+                queryRequestOptions: cosmosQueryRequestOptions,
                 querySpec: state as SqlQuerySpec).AsDocumentQuery();
 
             try
