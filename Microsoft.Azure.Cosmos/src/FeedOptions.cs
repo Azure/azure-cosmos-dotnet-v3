@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Specifies the options associated with feed methods (enumeration operations) in the Azure Cosmos DB service.

@@ -673,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             switch (resourceType)
             {
-                case Internal.ResourceType.Collection:
+                case Documents.ResourceType.Collection:
                     return "DocumentCollections";
                 default:
                     return resourceType.ToResourceTypeString() + "s";

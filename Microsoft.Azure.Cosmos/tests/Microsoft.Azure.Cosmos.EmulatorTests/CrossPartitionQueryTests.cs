@@ -697,7 +697,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryAndReadFeedWithPartitionKey(
             DocumentClient documentClient, 
-            CosmosContainerSettings collection, 
+            DocumentCollection collection, 
             IEnumerable<Document> documents)
         {
             // DEVNOTE: Needs to be refactored to use v3 SDK model
@@ -1314,7 +1314,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestBasicCrossPartitionQuery(
             DocumentClient documentClient,
-            CosmosContainerSettings documentCollection,
+            DocumentCollection documentCollection,
             IEnumerable<Document> documents)
         {
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
@@ -3946,7 +3946,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task AssertResponseLength(
             DocumentClient client,
-            CosmosContainerSettings coll,
+            DocumentCollection coll,
             string query,
             bool isTopQuery = false,
             int maxItemCount = 1,

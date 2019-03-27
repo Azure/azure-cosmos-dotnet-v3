@@ -9,10 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using JsonWriter = Json.JsonWriter;
 
     internal static class FeedResponseBinder

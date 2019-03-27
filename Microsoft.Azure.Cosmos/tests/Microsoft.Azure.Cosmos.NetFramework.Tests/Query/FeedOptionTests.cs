@@ -5,18 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
     using VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Collections;
-    using System.Collections.Specialized;
     using System.Linq.Expressions;
     using System.Threading;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class FeedOptionTests

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;

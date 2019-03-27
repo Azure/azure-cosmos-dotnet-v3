@@ -6533,7 +6533,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.storeClientFactory = new StoreClientFactory(
+                StoreClientFactory newClientFactory = new StoreClientFactory(
                     this.connectionPolicy.ConnectionProtocol,
                     (int)this.connectionPolicy.RequestTimeout.TotalSeconds,
                     this.maxConcurrentConnectionOpenRequests,
@@ -6548,12 +6548,14 @@ namespace Microsoft.Azure.Cosmos
                     this.maxRequestsPerRntbdChannel,
                     this.rntbdReceiveHangDetectionTimeSeconds,
                     this.rntbdSendHangDetectionTimeSeconds,
-                    this.transportClientHandlerFactory,
                     this.enableCpuMonitor);
-                    
-            if (this.transportClientHandlerFactory != null)
-            {
-                this.storeClientFactory.WithTransportInterceptor(this.transportClientHandlerFactory);
+
+                if (this.transportClientHandlerFactory != null)
+                {
+                    newClientFactory.WithTransportInterceptor(this.transportClientHandlerFactory);
+                }
+
+                this.storeClientFactory = newClientFactory;
             }
 
             this.AddressResolver = new GlobalAddressResolver(
