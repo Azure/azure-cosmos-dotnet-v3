@@ -69,6 +69,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return cosmosClientBuilder.Build();
         }
 
+        internal static CosmosClient CreateCosmosClient(
+            bool useGateway)
+        {
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            if (useGateway)
+            {
+                cosmosClientBuilder.UseConnectionModeGateway();
+            }
+            
+            return cosmosClientBuilder.Build();
+        }
+
         internal static DocumentClient CreateClient(bool useGateway, Protocol protocol = Protocol.Tcp,
             int timeoutInSeconds = 60,
             ConsistencyLevel? defaultConsistencyLevel = null,

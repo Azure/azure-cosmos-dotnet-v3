@@ -5,10 +5,9 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using System;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -27,109 +26,86 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This struct is used to strongly bind the results of that rewritten query.
     /// </para>
     /// </summary>
-    internal sealed class OrderByQueryResult
+    internal struct OrderByQueryResult
     {
-        /// <summary>
-        /// Initializes a new instance of the OrderByQueryResult class.
-        /// </summary>
-        /// <param name="rid">The rid.</param>
-        /// <param name="orderByItems">The order by items.</param>
-        /// <param name="payload">The payload.</param>
-        public OrderByQueryResult(string rid, QueryItem[] orderByItems, object payload)
+        private readonly CosmosObject cosmosObject;
+
+        public OrderByQueryResult(CosmosElement cosmosElement)
         {
-            if (string.IsNullOrEmpty(rid))
+            if (cosmosElement == null)
             {
-                throw new ArgumentNullException($"{nameof(rid)} can not be null or empty.");
+                throw new ArgumentNullException($"{nameof(cosmosElement)} must not be null.");
             }
 
-            if (orderByItems == null)
+            if (!(cosmosElement is CosmosObject cosmosObject))
             {
-                throw new ArgumentNullException($"{nameof(orderByItems)} can not be null.");
+                throw new ArgumentException($"{nameof(cosmosElement)} must not be an object.");
             }
 
-            if (orderByItems.Length == 0)
-            {
-                throw new ArgumentException($"{nameof(orderByItems)} can not be empty.");
-            }
-
-            this.Rid = rid;
-            this.OrderByItems = orderByItems;
-            this.Payload = payload;
+            this.cosmosObject = cosmosObject;
         }
 
         /// <summary>
         /// Gets the rid of the document.
         /// </summary>
-        [JsonProperty("_rid")]
         public string Rid
         {
-            get;
+            get
+            {
+                if (!this.cosmosObject.TryGetValue("_rid", out CosmosElement cosmosElement))
+                {
+                    throw new InvalidOperationException($"Underlying object does not have an '_rid' field.");
+                }
+
+                if (!(cosmosElement is CosmosString cosmosString))
+                {
+                    throw new InvalidOperationException($"'_rid' field was not a string.");
+                }
+
+                return cosmosString.Value;
+            }
         }
 
         /// <summary>
         /// Gets the order by items from the document.
         /// </summary>
-        [JsonProperty("orderByItems")]
-        public QueryItem[] OrderByItems
+        public IList<OrderByItem> OrderByItems
         {
-            get;
+            get
+            {
+                if (!this.cosmosObject.TryGetValue("orderByItems", out CosmosElement cosmosElement))
+                {
+                    throw new InvalidOperationException($"Underlying object does not have an 'orderByItems' field.");
+                }
+
+                if (!(cosmosElement is CosmosArray cosmosArray))
+                {
+                    throw new InvalidOperationException($"orderByItems field was not an array.");
+                }
+
+                List<OrderByItem> orderByItems = new List<OrderByItem>(cosmosArray.Count);
+                foreach(CosmosElement orderByItem in cosmosArray)
+                {
+                    orderByItems.Add(new OrderByItem(orderByItem));
+                }
+
+                return orderByItems;
+            }
         }
 
         /// <summary>
         /// Gets the actual document.
         /// </summary>
-        [JsonProperty("payload")]
-        [JsonConverter(typeof(PayloadConverter))]
-        public object Payload
+        public CosmosElement Payload
         {
-            get;
-        }
-
-        /// <summary>
-        /// Custom converter to serialize and deserialize the payload.
-        /// </summary>
-        private sealed class PayloadConverter : JsonConverter
-        {
-            /// <summary>
-            /// Gets whether or not the object can be converted.
-            /// </summary>
-            /// <param name="objectType">The type of the object.</param>
-            /// <returns>Whether or not the object can be converted.</returns>
-            public override bool CanConvert(Type objectType)
+            get
             {
-                return objectType == typeof(object);
-            }
-
-            /// <summary>
-            /// Reads a payload from a json reader.
-            /// </summary>
-            /// <param name="reader">The reader.</param>
-            /// <param name="objectType">The object type.</param>
-            /// <param name="existingValue">The existing value.</param>
-            /// <param name="serializer">The serialized</param>
-            /// <returns>The deserialized JSON.</returns>
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-            {
-                JToken jToken = JToken.Load(reader);
-                if (jToken.Type == JTokenType.Object || jToken.Type == JTokenType.Array)
+                if (!this.cosmosObject.TryGetValue("payload", out CosmosElement cosmosElement))
                 {
-                    return new QueryResult((JContainer)jToken, null, serializer);
+                    throw new InvalidOperationException($"Underlying object does not have an 'payload' field.");
                 }
-                else
-                {
-                    return jToken;
-                }
-            }
 
-            /// <summary>
-            /// Writes the json to a writer.
-            /// </summary>
-            /// <param name="writer">The writer to write to.</param>
-            /// <param name="value">The value to serialize.</param>
-            /// <param name="serializer">The serializer to use.</param>
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-            {
-                serializer.Serialize(writer, value);
+                return cosmosElement;
             }
         }
     }

@@ -110,7 +110,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestCommon.DeleteAllDatabasesAsync(documentClient).Wait();
         }
 
+        // Need to convert to use v3 API
         [TestMethod]
+        [Ignore]
         public void TestOrderByQuery()
         {
             TestOrderyByQueryAsync().GetAwaiter().GetResult();
@@ -256,7 +258,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        // Need to convert to use v3 API
         [TestMethod]
+        [Ignore]
         public void TestJsonSerializerSettings()
         {
             ConnectionMode connectionMode = ConnectionMode.Gateway;
@@ -295,9 +299,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     EnableCrossPartitionQuery = true,
                     MaxDegreeOfParallelism = -1,
-                    MaxBufferedItemCount = -1
+                    MaxBufferedItemCount = -1,
                 }).ToList()[0];
             AssertEqual(testDocument, readDocument);
+
+            FeedOptions options = new FeedOptions()
+            {
+                JsonSerializerSettings = CustomSerializationTests.GetSerializerWithCustomConverterAndBinder(),
+            };
 
             // LINQ Lambda
             var query1 = client.CreateDocumentQuery<TestDocument>(collectionUri)
@@ -702,7 +711,17 @@ function bulkImport(docs) {
             {
                 if (assemblyName == null)
                 {
-                    var type = this._nameToTypeMapping[typeName];
+                    Type type = null;
+                    try
+                    {
+                        type = this._nameToTypeMapping[typeName];
+                    }catch(Exception e)
+                    {
+                        if(e != null)
+                        {
+                            throw;
+                        }
+                    }
                     if (type != null)
                     {
                         return type;

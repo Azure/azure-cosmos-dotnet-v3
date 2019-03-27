@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Common;
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -27,15 +28,14 @@ namespace Microsoft.Azure.Cosmos.Query
     using Routing;
 
     /// <summary>
-    /// This class is responsible for maintaining a forest of <see cref="DocumentProducerTree{T}"/>.
+    /// This class is responsible for maintaining a forest of <see cref="DocumentProducerTree"/>.
     /// The trees in this forest are ordered using a priority queue and the nodes within the forest are internally ordered using a comparator.
     /// The ordering is determine by the concrete derived class.
     /// This class allows derived classes to iterate through the documents in the forest using Current and MoveNext semantics.
     /// This class is also responsible for prefetching documents if necessary using <see cref="ComparableTaskScheduler"/> whose ordering is also determined by the derived classes.
     /// This class also aggregated all metrics from sending queries to individual partitions.
     /// </summary>
-    /// <typeparam name="T">The type of the documents being retrieved.</typeparam>
-    internal abstract class CrossPartitionQueryExecutionContext<T> : DocumentQueryExecutionContextBase, IDocumentQueryExecutionComponent
+    internal abstract class CrossPartitionQueryExecutionContext : DocumentQueryExecutionContextBase, IDocumentQueryExecutionComponent
     {
         /// <summary>
         /// When a document producer tree successfully fetches a page we increase the page size by this factor so that any particular document producer will only ever make O(log(n)) roundtrips, while also only ever grabbing at most twice the number of documents needed.
@@ -45,12 +45,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Priority Queue of DocumentProducerTrees that make a forest that can be iterated on.
         /// </summary>
-        private readonly PriorityQueue<DocumentProducerTree<T>> documentProducerForest;
+        private readonly PriorityQueue<DocumentProducerTree> documentProducerForest;
 
         /// <summary>
         /// Function used to determine which document producer to fetch from first
         /// </summary>
-        private readonly Func<DocumentProducerTree<T>, int> fetchPrioirtyFunction;
+        private readonly Func<DocumentProducerTree, int> fetchPrioirtyFunction;
 
         /// <summary>
         /// The task scheduler that kicks off all the prefetches behind the scenes.
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// The equality comparer used to determine whether a document producer needs it's continuation token to be part of the composite continuation token.
         /// </summary>
-        private readonly IEqualityComparer<T> equalityComparer;
+        private readonly IEqualityComparer<CosmosElement> equalityComparer;
 
         /// <summary>
         /// Request Charge Tracker used to atomically add request charges (doubles).
@@ -124,9 +124,9 @@ namespace Microsoft.Azure.Cosmos.Query
         protected CrossPartitionQueryExecutionContext(
             DocumentQueryExecutionContextBase.InitParams initParams,
             string rewrittenQuery,
-            IComparer<DocumentProducerTree<T>> moveNextComparer,
-            Func<DocumentProducerTree<T>, int> fetchPrioirtyFunction,
-            IEqualityComparer<T> equalityComparer) :
+            IComparer<DocumentProducerTree> moveNextComparer,
+            Func<DocumentProducerTree, int> fetchPrioirtyFunction,
+            IEqualityComparer<CosmosElement> equalityComparer) :
             base(initParams)
         {
             if (!string.IsNullOrWhiteSpace(rewrittenQuery))
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException($"{nameof(equalityComparer)} can not be null");
             }
 
-            this.documentProducerForest = new PriorityQueue<DocumentProducerTree<T>>(moveNextComparer, isSynchronized: true);
+            this.documentProducerForest = new PriorityQueue<DocumentProducerTree>(moveNextComparer, isSynchronized: true);
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;
             this.comparableTaskScheduler = new ComparableTaskScheduler(initParams.FeedOptions.MaxDegreeOfParallelism);
             this.equalityComparer = equalityComparer;
@@ -318,11 +318,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Returns all document producers whose continuation token you have to return.
         /// Only during a split will this list contain more than 1 item.
         /// </returns>
-        public IEnumerable<DocumentProducer<T>> GetActiveDocumentProducers()
+        public IEnumerable<DocumentProducer> GetActiveDocumentProducers()
         {
             lock (this.documentProducerForest)
             {
-                DocumentProducerTree<T> current = this.documentProducerForest.Peek().CurrentDocumentProducerTree;
+                DocumentProducerTree current = this.documentProducerForest.Peek().CurrentDocumentProducerTree;
                 if (current.HasMoreResults && !current.IsActive)
                 {
                     // If the current document producer tree has more results, but isn't active.
@@ -330,9 +330,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     yield return current.Root;
                 }
 
-                foreach (DocumentProducerTree<T> documentProducerTree in this.documentProducerForest)
+                foreach (DocumentProducerTree documentProducerTree in this.documentProducerForest)
                 {
-                    foreach (DocumentProducer<T> documentProducer in documentProducerTree.GetActiveDocumentProducers())
+                    foreach (DocumentProducer documentProducer in documentProducerTree.GetActiveDocumentProducers())
                     {
                         yield return documentProducer;
                     }
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the current document producer tree that should be drained from.
         /// </summary>
         /// <returns>The current document producer tree that should be drained from.</returns>
-        public DocumentProducerTree<T> CurrentDocumentProducerTree()
+        public DocumentProducerTree CurrentDocumentProducerTree()
         {
             return this.documentProducerForest.Peek();
         }
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Pushes a document producer back to the queue.
         /// </summary>
         /// <returns>The current document producer tree that should be drained from.</returns>
-        public void PushCurrentDocumentProducerTree(DocumentProducerTree<T> documentProducerTree)
+        public void PushCurrentDocumentProducerTree(DocumentProducerTree documentProducerTree)
         {
             this.documentProducerForest.Enqueue(documentProducerTree);
         }
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Pops the current document producer tree that should be drained from.
         /// </summary>
         /// <returns>The current document producer tree that should be drained from.</returns>
-        public DocumentProducerTree<T> PopCurrentDocumentProducerTree()
+        public DocumentProducerTree PopCurrentDocumentProducerTree()
         {
             return this.documentProducerForest.Dequeue();
         }
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements to drain (you might get less).</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task that when awaited on will return a feed response.</returns>
-        public abstract Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token);
+        public abstract Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Dictionary<string, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
-            Func<DocumentProducerTree<T>, Task> filterCallback,
+            Func<DocumentProducerTree, Task> filterCallback,
             CancellationToken token)
         {
             CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
@@ -428,12 +428,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.comparableTaskScheduler.MaximumConcurrencyLevel,
                 initialPageSize));
 
-            List<DocumentProducerTree<T>> documentProducerTrees = new List<DocumentProducerTree<T>>();
+            List<DocumentProducerTree> documentProducerTrees = new List<DocumentProducerTree>();
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
                 string initialContinuationToken = (targetRangeToContinuationMap != null && targetRangeToContinuationMap.ContainsKey(partitionKeyRange.Id)) ? targetRangeToContinuationMap[partitionKeyRange.Id] : null;
 
-                DocumentProducerTree<T> documentProducerTree = new DocumentProducerTree<T>(
+                DocumentProducerTree documentProducerTree = new DocumentProducerTree(
                     partitionKeyRange,
                     //// Create Document Service Request callback
                     (pkRange, continuationToken, pageSize) =>
@@ -447,11 +447,11 @@ namespace Microsoft.Azure.Cosmos.Query
                             pkRange,
                             collectionRid);
                     },
-                    this.ExecuteRequestAsync<T>,
+                    this.ExecuteRequestLazyAsync,
                     //// Retry policy callback
                     () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.Client.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
                     this.OnDocumentProducerTreeCompleteFetching,
-                    this.documentProducerForest.Comparer as IComparer<DocumentProducerTree<T>>,
+                    this.documentProducerForest.Comparer as IComparer<DocumentProducerTree>,
                     this.equalityComparer,
                     this.Client,
                     deferFirstPage,
@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             // Using loop fisson so that we can load the document producers in parallel
-            foreach (DocumentProducerTree<T> documentProducerTree in documentProducerTrees)
+            foreach (DocumentProducerTree documentProducerTree in documentProducerTrees)
             {
                 if (!deferFirstPage)
                 {
@@ -642,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token that doesn't get used.</param>
         /// <returns>A dummy task to await on.</returns>
-        protected override Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken token)
+        protected override Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             throw new NotImplementedException();
         }
@@ -690,7 +690,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="documentProducerTree">The document producer tree to schedule a fetch for.</param>
         /// <returns>Whether or not the fetch was successfully scheduled.</returns>
-        private bool TryScheduleFetch(DocumentProducerTree<T> documentProducerTree)
+        private bool TryScheduleFetch(DocumentProducerTree documentProducerTree)
         {
             return this.comparableTaskScheduler.TryQueueTask(
                 new DocumentProducerTreeComparableTask(
@@ -714,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// A query might be fully drained but a background task is still fetching documents so this will get called after the context is done.
         /// </remarks>
         private void OnDocumentProducerTreeCompleteFetching(
-            DocumentProducerTree<T> producer,
+            DocumentProducerTree producer,
             int itemsBuffered,
             double resourceUnitUsage,
             QueryMetrics queryMetrics,
@@ -871,7 +871,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// The producer to fetch from.
             /// </summary>
-            private readonly DocumentProducerTree<T> producer;
+            private readonly DocumentProducerTree producer;
 
             /// <summary>
             /// Initializes a new instance of the DocumentProducerTreeComparableTask class.
@@ -879,8 +879,8 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="producer">The producer to fetch from.</param>
             /// <param name="taskPriorityFunction">The callback to determine the fetch priority of the document producer.</param>
             public DocumentProducerTreeComparableTask(
-                DocumentProducerTree<T> producer,
-                Func<DocumentProducerTree<T>, int> taskPriorityFunction)
+                DocumentProducerTree producer,
+                Func<DocumentProducerTree, int> taskPriorityFunction)
                 : base(taskPriorityFunction(producer))
             {
                 this.producer = producer;

@@ -360,12 +360,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosQueryRequestOptions"/></param>
-        internal virtual CosmosResultSetIterator GetContainerStreamIterator(
+        internal virtual CosmosFeedResultSetIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
-            return new CosmosDefaultResultSetStreamIterator(
+            return new CosmosFeedResultSetIteratorCore(
                 maxItemCount,
                 continuationToken,
                 requestOptions,

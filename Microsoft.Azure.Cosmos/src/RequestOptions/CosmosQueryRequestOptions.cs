@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.IO;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
@@ -124,6 +125,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool EnableCrossPartitionQuery {get; set;}
 
+        internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -159,6 +162,8 @@ namespace Microsoft.Azure.Cosmos
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount,
+                CosmosSerializationOptions = this.CosmosSerializationOptions,
+                Properties = this.Properties,
             };
         }
 

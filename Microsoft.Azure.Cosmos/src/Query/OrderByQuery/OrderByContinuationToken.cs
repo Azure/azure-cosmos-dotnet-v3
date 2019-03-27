@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="filter">The filter (refer to property documentation).</param>
         public OrderByContinuationToken(
             CompositeContinuationToken compositeContinuationToken,
-            QueryItem[] orderByItems,
+            IList<OrderByItem> orderByItems,
             string rid,
             int skipCount,
             string filter)
@@ -78,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException($"{nameof(orderByItems)} can not be null.");
             }
 
-            if (orderByItems.Length == 0)
+            if (orderByItems.Count == 0)
             {
                 throw new ArgumentException($"{nameof(orderByItems)} can not be empty.");
             }
@@ -99,7 +100,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.OrderByItems = orderByItems;
             this.Rid = rid;
             this.SkipCount = skipCount;
-            this.Filter = filter;
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Right now, we don't support orderBy by multiple fields, so orderByItems is an array of one element. 
         /// </remarks>>
         [JsonProperty("orderByItems")]
-        public QueryItem[] OrderByItems
+        public IList<OrderByItem> OrderByItems
         {
             get;
         }
@@ -179,29 +179,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary> 
         [JsonProperty("skipCount")]
         public int SkipCount
-        {
-            get;
-        }
-
-        /// <summary>
-        /// Gets: We use the filter to rewrite the OrderBy query when resuming from a continuation token. 
-        /// </summary>
-        /// <example>
-        /// <para>
-        /// In this example snippet below the filter string indicates that the query was an OrderBy query 
-        /// and when the query was paused it had already output all the values value greater than 1. 
-        /// And when the query resumes it only needs to fetch value greater than 1. 
-        /// </para>
-        /// <para>
-        /// Note that, if any value less than 1 that was inserted after the query started won't be delivered as a 
-        /// part of the result. 
-        /// <![CDATA[
-        ///  "filter":"r.key > 1"
-        /// ]]>
-        /// </para>
-        /// </example>
-        [JsonProperty("filter")]
-        public string Filter
         {
             get;
         }

@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new NotImplementedException();
             }
 
-            protected override Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken token)
+            protected override Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
             {
                 throw new NotImplementedException();
             }

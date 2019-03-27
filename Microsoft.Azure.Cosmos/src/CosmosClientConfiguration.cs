@@ -277,6 +277,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal ApiType ApiType { get; set; }
 
+        /// <summary>
+        /// Optional store client factory instance to use for all transport requests.
+        /// </summary>
+        internal IStoreClientFactory StoreClientFactory { get; set; }
+
+        /// <summary>
+        /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
+        /// </summary>
+        internal bool? EnableCpuMonitor { get; set; }
+
         internal CosmosClientConfiguration Clone()
         {
             CosmosClientConfiguration cloneConfiguration = (CosmosClientConfiguration)MemberwiseClone();

@@ -130,8 +130,13 @@ namespace Microsoft.Azure.Cosmos
         private object initializationSyncLock;  /* guards initializeTask */
 
         // creator of TransportClient is responsible for disposing it.
-        private StoreClientFactory storeClientFactory;
+        private IStoreClientFactory storeClientFactory;
         private HttpClient mediaClient;
+
+        // Flag that indicates whether store client factory must be disposed whenever client is disposed.
+        // Setting this flag to false will result in store client factory not being disposed when client is disposed.
+        // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
+        private bool isStoreClientFactoryCreatedInternally;
 
         //Based on connectivity mode we will either have ServerStoreModel / GatewayStoreModel here.
         private IStoreModel storeModel;
@@ -349,6 +354,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler).</param>
         /// <param name="sessionContainer">The default session container with which DocumentClient is created</param>
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
+        /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal. 
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -371,7 +377,8 @@ namespace Microsoft.Azure.Cosmos
                               HttpMessageHandler handler = null,
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
-                              Func<TransportClient, TransportClient> transportClientHandlerFactory = null)
+                              Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
+                              IStoreClientFactory storeClientFactory = null)
         {
             if (authKeyOrResourceToken == null)
             {
@@ -413,7 +420,8 @@ namespace Microsoft.Azure.Cosmos
                 desiredConsistencyLevel: desiredConsistencyLevel,
                 handler: handler,
                 sessionContainer: sessionContainer,
-                enableCpuMonitor: enableCpuMonitor);
+                enableCpuMonitor: enableCpuMonitor,
+                storeClientFactory: storeClientFactory);
         }
 
         /// <summary>
@@ -764,7 +772,8 @@ namespace Microsoft.Azure.Cosmos
             Documents.ConsistencyLevel? desiredConsistencyLevel = null,
             HttpMessageHandler handler = null,
             ISessionContainer sessionContainer = null,
-            bool? enableCpuMonitor = null)
+            bool? enableCpuMonitor = null,
+            IStoreClientFactory storeClientFactory = null)
         {
             if (serviceEndpoint == null)
             {
@@ -957,7 +966,7 @@ namespace Microsoft.Azure.Cosmos
             this.eventSource = new DocumentClientEventSource();
 
             this.initializeTask = TaskHelper.InlineIfPossible(
-                () => this.GetInitializationTask(),
+                () => this.GetInitializationTask(storeClientFactory: storeClientFactory),
                 new ResourceThrottleRetryPolicy(
                     this.connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                     this.connectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
@@ -987,7 +996,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always called from under the lock except when called from Initialize method during construction.
-        private async Task GetInitializationTask()
+        private async Task GetInitializationTask(IStoreClientFactory storeClientFactory)
         {
             await this.InitializeGatewayConfigurationReader();
 
@@ -1018,7 +1027,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.InitializeDirectConnectivity();
+                this.InitializeDirectConnectivity(storeClientFactory);
             }
         }
 
@@ -1259,7 +1268,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.storeClientFactory != null)
             {
-                this.storeClientFactory.Dispose();
+                // Dispose only if this store client factory was created and is owned by this instance of document client, otherwise just release the reference
+                if (isStoreClientFactoryCreatedInternally)
+                {
+                    this.storeClientFactory.Dispose();
+                }
+
                 this.storeClientFactory = null;
             }
 
@@ -1406,7 +1420,7 @@ namespace Microsoft.Azure.Cosmos
                 // if the task has not been updated by another caller, update it
                 if (object.ReferenceEquals(this.initializeTask, initTask))
                 {
-                    this.initializeTask = this.GetInitializationTask();
+                    this.initializeTask = this.GetInitializationTask(storeClientFactory: null);
                 }
 
                 initTask = this.initializeTask;
@@ -6508,24 +6522,35 @@ namespace Microsoft.Azure.Cosmos
             return ValidationHelpers.ValidateConsistencyLevel(backendConsistency, desiredConsistency);
         }
 
-        private void InitializeDirectConnectivity()
+        private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
         {
-            this.storeClientFactory = new StoreClientFactory(
-                this.connectionPolicy.ConnectionProtocol,
-                (int)this.connectionPolicy.RequestTimeout.TotalSeconds,
-                this.maxConcurrentConnectionOpenRequests,
-                this.connectionPolicy.UserAgentContainer,
-                this.eventSource,
-                null,
-                this.openConnectionTimeoutInSeconds,
-                this.idleConnectionTimeoutInSeconds,
-                this.timerPoolGranularityInSeconds,
-                this.maxRntbdChannels,
-                this.rntbdPartitionCount,
-                this.maxRequestsPerRntbdChannel,
-                this.rntbdReceiveHangDetectionTimeSeconds,
-                this.rntbdSendHangDetectionTimeSeconds,
-                this.enableCpuMonitor);
+            // Check if we have a store client factory in input and if we do, do not initialize another store client
+            // The purpose is to reuse store client factory across all document clients inside compute gateway
+            if (storeClientFactory != null)
+            {
+                this.storeClientFactory = storeClientFactory;
+                this.isStoreClientFactoryCreatedInternally = false;
+            }
+            else
+            {
+                this.storeClientFactory = new StoreClientFactory(
+                    this.connectionPolicy.ConnectionProtocol,
+                    (int)this.connectionPolicy.RequestTimeout.TotalSeconds,
+                    this.maxConcurrentConnectionOpenRequests,
+                    this.connectionPolicy.UserAgentContainer,
+                    this.eventSource,
+                    null,
+                    this.openConnectionTimeoutInSeconds,
+                    this.idleConnectionTimeoutInSeconds,
+                    this.timerPoolGranularityInSeconds,
+                    this.maxRntbdChannels,
+                    this.rntbdPartitionCount,
+                    this.maxRequestsPerRntbdChannel,
+                    this.rntbdReceiveHangDetectionTimeSeconds,
+                    this.rntbdSendHangDetectionTimeSeconds,
+                    this.transportClientHandlerFactory,
+                    this.enableCpuMonitor);
+                    
             if (this.transportClientHandlerFactory != null)
             {
                 this.storeClientFactory.WithTransportInterceptor(this.transportClientHandlerFactory);

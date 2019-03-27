@@ -5,62 +5,46 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
-    internal sealed class AggregateItem
+    internal struct AggregateItem
     {
-        private static readonly JsonSerializerSettings NoDateParseHandlingJsonSerializerSettings = new JsonSerializerSettings { DateParseHandling = DateParseHandling.None };
+        private const string ItemName1 = "item";
+        private const string ItemName2 = "item2";
 
-        private readonly Lazy<object> item;
+        private readonly CosmosObject cosmosObject;
 
-        [JsonProperty("item")]
-        private JRaw RawItem
+        public AggregateItem(CosmosElement cosmosElement)
         {
-            get;
-            set;
-        }
-
-        [JsonProperty("item2")]
-        private JRaw RawItem2
-        {
-            get;
-            set;
-        }
-
-        public AggregateItem(JRaw rawItem, JRaw rawItem2)
-        {
-            this.RawItem = rawItem;
-            this.RawItem2 = rawItem2;
-            this.item = new Lazy<object>(this.InitLazy);
-        }
-
-        private object InitLazy()
-        {
-            object item;
-            if (this.RawItem == null)
+            if (cosmosElement == null)
             {
-                item = Undefined.Value;
-            }
-            else
-            {
-                item = JsonConvert.DeserializeObject((string)this.RawItem.Value, NoDateParseHandlingJsonSerializerSettings);
+                throw new ArgumentNullException($"{nameof(cosmosElement)} must not be null.");
             }
 
-            // If there is an item2, then take that over item1 (since it's more precise).
-            if (this.RawItem2 != null)
+            if (!(cosmosElement is CosmosObject cosmosObject))
             {
-                item = JsonConvert.DeserializeObject((string)this.RawItem2.Value, NoDateParseHandlingJsonSerializerSettings);
+                throw new ArgumentException($"{nameof(cosmosElement)} must not be an object.");
             }
 
-            return item;
+            this.cosmosObject = cosmosObject;
         }
 
-        public object GetItem()
+        public CosmosElement Item
         {
-            return this.item.Value;
+            get
+            {
+                if (!this.cosmosObject.TryGetValue(ItemName2, out CosmosElement cosmosElement))
+                {
+                    if (!this.cosmosObject.TryGetValue(ItemName1, out cosmosElement))
+                    {
+                        // Undefined
+                        cosmosElement = null;
+                    }
+                }
+
+                return cosmosElement;
+            }
         }
     }
 }

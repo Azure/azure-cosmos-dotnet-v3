@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -49,19 +50,19 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Adds a JToken to this DistinctMap.
         /// </summary>
-        /// <param name="jToken">The token to add.</param>
+        /// <param name="cosmosElement">The element to add.</param>
         /// <param name="hash">The hash of the token.</param>
         /// <returns>Whether or not the token was successfully added.</returns>
-        public abstract bool Add(JToken jToken, out UInt192? hash);
+        public abstract bool Add(CosmosElement cosmosElement, out UInt192? hash);
 
         /// <summary>
         /// Gets the hash of a JToken.
         /// </summary>
-        /// <param name="jToken">The token to hash.</param>
+        /// <param name="cosmosElement">The token to hash.</param>
         /// <returns>The hash of the JToken.</returns>
-        protected static UInt192 GetHash(JToken jToken)
+        protected static UInt192 GetHash(CosmosElement cosmosElement)
         {
-            return DistinctHash.Value.GetHashToken(jToken);
+            return DistinctHash.Value.GetHashToken(cosmosElement);
         }
 
         /// <summary>
@@ -146,52 +147,70 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Gets the hash of a JToken value.
             /// </summary>
-            /// <param name="value">The JToken to hash.</param>
+            /// <param name="cosmosElement">The element to load.</param>
             /// <returns>The hash of the JToken.</returns>
-            public UInt192 GetHashToken(JToken value)
+            public UInt192 GetHashToken(CosmosElement cosmosElement)
             {
-                return this.GetHashToken(value, this.HashSeedValues.Root);
+                return this.GetHashToken(cosmosElement, this.HashSeedValues.Root);
             }
 
             /// <summary>
             /// Gets the hash of a JToken given a seed.
             /// </summary>
-            /// <param name="value">The JToken to hash.</param>
+            /// <param name="cosmosElement">The cosmos element to hash.</param>
             /// <param name="seed">The seed to use.</param>
             /// <returns>The hash of the JToken.</returns>
-            private UInt192 GetHashToken(JToken value, UInt192 seed)
+            private UInt192 GetHashToken(CosmosElement cosmosElement, UInt192 seed)
             {
-                JTokenType jTokenType = value.Type;
-                switch (jTokenType)
+                if (cosmosElement == null)
                 {
-                    case JTokenType.Object:
-                        return this.GetObjectHash((JObject)value, seed);
-                    case JTokenType.Array:
-                        return this.GetArrayHash((JArray)value, seed);
-                    case JTokenType.Integer:
-                    case JTokenType.Float:
-                        return this.GetNumberHash((double)value, seed);
-                    case JTokenType.Guid:
-                    case JTokenType.TimeSpan:
-                    case JTokenType.Uri:
-                    case JTokenType.Date:
-                    case JTokenType.String:
-                        return this.GetStringHash(value.ToString(), seed);
-                    case JTokenType.Boolean:
-                        return this.GetBooleanHash((bool)value, seed);
-                    case JTokenType.Null:
-                        return this.GetNullHash(seed);
-                    case JTokenType.None:
-                    case JTokenType.Undefined:
-                        return this.GetUndefinedHash(seed);
-                    case JTokenType.Constructor:
-                    case JTokenType.Property:
-                    case JTokenType.Comment:
-                    case JTokenType.Raw:
-                    case JTokenType.Bytes:
-                    default:
-                        throw new ArgumentException($"Unexpected JTokenType of: {jTokenType}");
+                    return this.GetUndefinedHash(seed);
                 }
+
+                CosmosElementType cosmosElementType = cosmosElement.Type;
+                UInt192 hash;
+                switch (cosmosElementType)
+                {
+                    case CosmosElementType.Array:
+                        hash = this.GetArrayHash(cosmosElement as CosmosArray, seed);
+                        break;
+
+                    case CosmosElementType.Boolean:
+                        hash = this.GetBooleanHash((cosmosElement as CosmosBoolean).Value, seed);
+                        break;
+
+                    case CosmosElementType.Null:
+                        hash = this.GetNullHash(seed);
+                        break;
+
+                    case CosmosElementType.Number:
+                        CosmosNumber cosmosNumber = (cosmosElement as CosmosNumber);
+                        double number;
+                        if (cosmosNumber.IsFloatingPoint)
+                        {
+                            number = cosmosNumber.AsFloatingPoint().Value;
+                        }
+                        else
+                        {
+                            number = cosmosNumber.AsInteger().Value;
+                        }
+
+                        hash = this.GetNumberHash(number, seed);
+                        break;
+
+                    case CosmosElementType.Object:
+                        hash = this.GetObjectHash(cosmosElement as CosmosObject, seed);
+                        break;
+
+                    case CosmosElementType.String:
+                        hash = this.GetStringHash((cosmosElement as CosmosString).Value, seed);
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Unexpected {nameof(CosmosElementType)} : {cosmosElementType}");
+                }
+
+                return hash;
             }
 
             /// <summary>
@@ -254,18 +273,18 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Gets the hash of a JSON array.
             /// </summary>
-            /// <param name="array">The array to hash.</param>
+            /// <param name="cosmosArray">The array to hash.</param>
             /// <param name="seed">The seed to use.</param>
             /// <returns>The hash of a JSON array.</returns>
-            private UInt192 GetArrayHash(JArray array, UInt192 seed)
+            private UInt192 GetArrayHash(CosmosArray cosmosArray, UInt192 seed)
             {
                 // Start the array with a distinct hash, so that empty array doesn't hash to another value.
                 UInt192 hash = this.GetHash(this.HashSeedValues.Array, seed);
 
                 // Incorporate all the array items into the hash.
-                for (int index = 0; index < array.Count; index++)
+                for (int index = 0; index < cosmosArray.Count; index++)
                 {
-                    JToken arrayItem = array[index];
+                    CosmosElement arrayItem = cosmosArray[index];
 
                     // Order of array items matter in equality check, so we add the index just to be safe.
                     // For now we know that murmurhash will correctly give a different hash for 
@@ -282,10 +301,10 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Gets the hash of a JSON object.
             /// </summary>
-            /// <param name="jObject">The object to hash.</param>
+            /// <param name="cosmosObject">The object to hash.</param>
             /// <param name="seed">The seed to use.</param>
             /// <returns>The hash of a JSON object.</returns>
-            private UInt192 GetObjectHash(JObject jObject, UInt192 seed)
+            private UInt192 GetObjectHash(CosmosObject cosmosObject, UInt192 seed)
             {
                 // Start the object with a distinct hash, so that empty object doesn't hash to another value.
                 UInt192 hash = this.GetHash(this.HashSeedValues.Object, seed);
@@ -320,9 +339,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 // Property order should not result in a different hash.
                 // This is consistent with equality comparison.
-                foreach (KeyValuePair<string, JToken> kvp in jObject)
+                foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
-                    UInt192 nameHash = this.GetHashToken(kvp.Key, this.HashSeedValues.PropertyName);
+                    UInt192 nameHash = this.GetHashToken(
+                        CosmosString.Create(kvp.Key), 
+                        this.HashSeedValues.PropertyName);
                     UInt192 propertyHash = this.GetHashToken(kvp.Value, nameHash);
 
                     //// xor is symmetric meaning that a ^ b = b ^ a

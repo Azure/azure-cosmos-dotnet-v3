@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
@@ -23,13 +24,12 @@ namespace Microsoft.Azure.Cosmos.Query
     ///         yield document
     ///     update_state()
     /// </summary>
-    /// <typeparam name="T">The type of document buffered.</typeparam>
-    internal sealed class DocumentProducer<T>
+    internal sealed class DocumentProducer
     {
         /// <summary>
         /// The buffered pages that is thread safe, since the producer and consumer of the queue can be on different threads.
         /// </summary>
-        private readonly AsyncCollection<FeedResponse<T>> bufferedPages;
+        private readonly AsyncCollection<FeedResponse<CosmosElement>> bufferedPages;
 
         /// <summary>
         /// The document producer can only be fetching one page at a time.
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// The callback used to take a <see cref="DocumentServiceRequest"/> and retrieve a page of documents as a <see cref="FeedResponse{T}"/>
         /// </summary>
-        private readonly Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc;
+        private readonly Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc;
 
         /// <summary>
         /// Callback used to create a retry policy that will be used to determine when and how to retry fetches.
@@ -70,12 +70,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Equality comparer to determine if you have come across a distinct document according to the sort order.
         /// </summary>
-        private readonly IEqualityComparer<T> equalityComparer;
+        private readonly IEqualityComparer<CosmosElement> equalityComparer;
 
         /// <summary>
         /// The current element in the iteration.
         /// </summary>
-        private T current;
+        private CosmosElement current;
 
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// The current page that is being enumerated.
         /// </summary>
-        private IEnumerator<T> currentPage;
+        private IEnumerator<CosmosElement> currentPage;
 
         /// <summary>
         /// The last activity id seen from the backend.
@@ -164,14 +164,14 @@ namespace Microsoft.Azure.Cosmos.Query
         public DocumentProducer(
             PartitionKeyRange partitionKeyRange,
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<T>>> executeRequestFunc,
+            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
-            IEqualityComparer<T> equalityComparer,
+            IEqualityComparer<CosmosElement> equalityComparer,
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            this.bufferedPages = new AsyncCollection<FeedResponse<T>>();
+            this.bufferedPages = new AsyncCollection<FeedResponse<CosmosElement>>();
             this.fetchSemaphore = new SemaphoreSlim(1, 1);
             if (partitionKeyRange == null)
             {
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public delegate void ProduceAsyncCompleteDelegate(
-            DocumentProducer<T> producer,
+            DocumentProducer producer,
             int numberOfDocuments,
             double requestCharge,
             QueryMetrics queryMetrics,
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the current document in this producer.
         /// </summary>
-        public T Current
+        public CosmosElement Current
         {
             get
             {
@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             token.ThrowIfCancellationRequested();
 
-            T originalCurrent = this.current;
+            CosmosElement originalCurrent = this.current;
             bool movedNext = await this.MoveNextAsyncImplementation(token);
             if (!movedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.current)))
             {
@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         int retries = 0;
                         try
                         {
-                            FeedResponse<T> feedResponse = await this.executeRequestFunc(request, token);
+                            FeedResponse<CosmosElement> feedResponse = await this.executeRequestFunc(request, token);
                             this.fetchExecutionRangeAccumulator.EndFetchRange(
                                 feedResponse.ActivityId,
                                 feedResponse.Count,
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
-            FeedResponse<T> feedResponse = await this.bufferedPages.TakeAsync(token);
+            FeedResponse<CosmosElement> feedResponse = await this.bufferedPages.TakeAsync(token);
             this.previousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = feedResponse.ResponseContinuation;
             this.currentPage = feedResponse.GetEnumerator();

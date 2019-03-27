@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
     [JsonConverter(typeof(GeometryJsonConverter))]
-    internal abstract class Geometry
+    public abstract class Geometry
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Geometry" /> class in the Azure Cosmos DB service.

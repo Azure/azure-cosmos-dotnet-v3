@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.correlatedActivityId = correlatedActivityId;
         }
 
-        public static Task<ProxyDocumentQueryExecutionContext> CreateAsync(
+        public static ProxyDocumentQueryExecutionContext CreateAsync(
             IDocumentQueryClient client,
             ResourceType resourceTypeEnum,
             Type resourceType,
@@ -83,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query
             IDocumentQueryExecutionContext innerExecutionContext =
              new DefaultDocumentQueryExecutionContext(constructorParams, isContinuationExpected);
 
-            return Task.FromResult(new ProxyDocumentQueryExecutionContext(innerExecutionContext, client,
+            return new ProxyDocumentQueryExecutionContext(innerExecutionContext, client,
                 resourceTypeEnum,
                 resourceType,
                 expression,
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceLink,
                 collection, 
                 isContinuationExpected,
-                correlatedActivityId));
+                correlatedActivityId);
         }
 
         public bool IsDone
@@ -104,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.innerExecutionContext.Dispose();
         }
 
-        public async Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token)
+        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
         {
             if (this.IsDone)
             {

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
@@ -15,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.Aggregation;
     using Microsoft.Azure.Documents;
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
         /// This means that if you have a long running query this function will take a very long time to return.
         /// </remarks>
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
         {
             // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
             double requestCharge = 0;
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             while (!this.IsDone)
             {
-                FeedResponse<object> result = await base.DrainAsync(int.MaxValue, token);
+                FeedResponse<CosmosElement> result = await base.DrainAsync(int.MaxValue, token);
                 requestCharge += result.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
                 partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
@@ -118,27 +118,37 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     replicaUris.AddRange(result.RequestStatistics.ContactedReplicas);
                 }
 
-                foreach (dynamic item in result)
+                foreach (CosmosElement item in result)
                 {
-                    AggregateItem[] values = (AggregateItem[])item;
+                    if (!(item is CosmosArray comosArray))
+                    {
+                        throw new InvalidOperationException("Expected an array of aggregate results from the execution context.");
+                    }
+
+                    List<AggregateItem> aggregateItems = new List<AggregateItem>();
+                    foreach(CosmosElement arrayItem in comosArray)
+                    {
+                        aggregateItems.Add(new AggregateItem(arrayItem));
+                    }
+
                     Debug.Assert(
-                        values.Length == this.aggregators.Length,
-                        $"Expect {this.aggregators.Length} values, but received {values.Length}.");
+                        aggregateItems.Count == this.aggregators.Length,
+                        $"Expected {this.aggregators.Length} values, but received {aggregateItems.Count}.");
 
                     for (int i = 0; i < this.aggregators.Length; ++i)
                     {
-                        this.aggregators[i].Aggregate(values[i].GetItem());
+                        this.aggregators[i].Aggregate(aggregateItems[i].Item);
                     }
                 }
             }
 
-            List<object> finalResult = this.BindAggregateResults(
-                this.aggregators.Select(aggregator => aggregator.GetResult()).ToArray());
+            List<CosmosElement> finalResult = this.BindAggregateResults(
+                this.aggregators.Select(aggregator => aggregator.GetResult()));
 
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
-            return new FeedResponse<object>(
+            return new FeedResponse<CosmosElement>(
                 finalResult,
                 finalResult.Count,
                 new StringKeyValueCollection()
@@ -160,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </summary>
         /// <param name="aggregateResults">The result for each aggregator.</param>
         /// <returns>The aggregate results that are not Undefined.</returns>
-        private List<object> BindAggregateResults(object[] aggregateResults)
+        private List<CosmosElement> BindAggregateResults(IEnumerable<CosmosElement> aggregateResults)
         {
             // Note-2016-11-08-felixfan: Given what we support now, we should expect aggregateResults.Length == 1.
             // Note-2018-03-07-brchon: This is because we only support aggregate queries like "SELECT VALUE max(c.blah) from c"
@@ -173,12 +183,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 throw new NotSupportedException(assertMessage);
             }
 
-            List<object> result = new List<object>();
-            for (int i = 0; i < aggregateResults.Length; i++)
+            List<CosmosElement> result = new List<CosmosElement>();
+            foreach(CosmosElement aggregateResult in aggregateResults)
             {
-                if (!Undefined.Value.Equals(aggregateResults[i]))
+                if (aggregateResult != null)
                 {
-                    result.Add(aggregateResults[i]);
+                    result.Add(aggregateResult);
                 }
             }
 

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -99,14 +100,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of items to drain.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A page of distinct results.</returns>
-        public override async Task<FeedResponse<object>> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
-            List<object> distinctResults = new List<object>();
-            FeedResponse<object> feedResponse = await base.DrainAsync(maxElements, cancellationToken);
-            foreach (object document in feedResponse)
+            List<CosmosElement> distinctResults = new List<CosmosElement>();
+            FeedResponse<CosmosElement> feedResponse = await base.DrainAsync(maxElements, cancellationToken);
+            foreach (CosmosElement document in feedResponse)
             {
-                JToken jToken = DistinctDocumentQueryExecutionComponent.GetJTokenFromObject(document);
-                if (this.distinctMap.Add(jToken, out this.lastHash))
+                if (this.distinctMap.Add(document, out this.lastHash))
                 {
                     distinctResults.Add(document);
                 }
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 feedResponse.ResponseContinuation = null;
             }
 
-            return new FeedResponse<object>(
+            return new FeedResponse<CosmosElement>(
                 distinctResults,
                 distinctResults.Count,
                 feedResponse.Headers,

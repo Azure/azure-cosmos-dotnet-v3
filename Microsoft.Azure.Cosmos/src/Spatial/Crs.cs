@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Represents Coordinate Reference System in the Azure Cosmos DB service.
     /// </summary>
     [JsonConverter(typeof(CrsJsonConverter))]
-    internal abstract class Crs
+    public abstract class Crs
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Crs" /> class in the Azure Cosmos DB service.

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
@@ -26,16 +27,28 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// Adds a local sum to the global sum.
         /// </summary>
         /// <param name="localSum">The local sum.</param>
-        public void Aggregate(object localSum)
+        public void Aggregate(CosmosElement localSum)
         {
             // If someone tried to add an undefined just set the globalSum to NaN and it will stay that way for the duration of the aggregation.
-            if (Undefined.Value.Equals(localSum))
+            if (localSum == null)
             {
                 this.globalSum = double.NaN;
             }
             else
             {
-                this.globalSum += Convert.ToDouble(localSum, CultureInfo.InvariantCulture);
+                if (!(localSum is CosmosNumber cosmosNumber))
+                {
+                    throw new ArgumentException("localSum must be a number.");
+                }
+
+                if (cosmosNumber.IsFloatingPoint)
+                {
+                    this.globalSum += cosmosNumber.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    this.globalSum += cosmosNumber.AsInteger().Value;
+                }
             }
         }
 
@@ -43,14 +56,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// Gets the current sum.
         /// </summary>
         /// <returns>The current sum.</returns>
-        public object GetResult()
+        public CosmosElement GetResult()
         {   
             if (double.IsNaN(this.globalSum))
             {
-                return Undefined.Value;
+                return null;
             }
 
-            return this.globalSum;
+            return CosmosNumber.Create(this.globalSum);
         }
     }
 }

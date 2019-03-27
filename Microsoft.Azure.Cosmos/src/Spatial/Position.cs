@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </para>
     /// </summary>
     [JsonConverter(typeof(PositionJsonConverter))]
-    internal sealed class Position : IEquatable<Position>
+    public sealed class Position : IEquatable<Position>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Position"/> class in the Azure Cosmos DB service.

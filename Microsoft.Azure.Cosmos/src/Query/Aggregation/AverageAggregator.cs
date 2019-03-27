@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
+    using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Internal;
@@ -28,10 +29,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// Averages the supplied item with the previously supplied items.
         /// </summary>
         /// <param name="localAverage">The local average to add to the global average.</param>
-        public void Aggregate(dynamic localAverage)
+        public void Aggregate(CosmosElement localAverage)
         {
             // item is a JObject of the form : { "sum": <number>, "count": <number> } 
-            AverageInfo newInfo = ((JObject)localAverage).ToObject<AverageInfo>();
+            AverageInfo newInfo = AverageInfo.Create(localAverage);
             this.globalAverage += newInfo;
         }
 
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// Returns the current running average or undefined if any of the intermediate averages resulted in an undefined value.
         /// </summary>
         /// <returns>The current running average or undefined if any of the intermediate averages resulted in an undefined value.</returns>
-        public object GetResult()
+        public CosmosElement GetResult()
         {
             return this.globalAverage.GetAverage();
         }
@@ -47,8 +48,11 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// <summary>
         /// Struct that stores a weighted average as a sum and count so they that average across different partitions with different numbers of documents can be taken.
         /// </summary>
-        private sealed class AverageInfo
+        private struct AverageInfo
         {
+            private const string SumName = "sum";
+            private const string CountName = "count";
+
             /// <summary>
             /// Initializes a new instance of the AverageInfo class.
             /// </summary>
@@ -61,9 +65,68 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
 
             /// <summary>
+            /// Initializes a new instance of the AverageInfo class.
+            /// </summary>
+            public static AverageInfo Create(CosmosElement cosmosElement)
+            {
+                if (cosmosElement == null)
+                {
+                    throw new ArgumentNullException($"{nameof(cosmosElement)} must not be null.");
+                }
+
+                if (!(cosmosElement is CosmosObject cosmosObject))
+                {
+                    throw new ArgumentException($"{nameof(cosmosElement)} must not be an object.");
+                }
+
+                double? sum;
+                if (cosmosObject.TryGetValue(SumName, out CosmosElement sumPropertyValue))
+                {
+                    if (!(sumPropertyValue is CosmosNumber cosmosSum))
+                    {
+                        throw new ArgumentException($"value for the {SumName} field was not a number");
+                    }
+
+                    if (cosmosSum.IsFloatingPoint)
+                    {
+                        sum = cosmosSum.AsFloatingPoint().Value;
+                    }
+                    else
+                    {
+                        sum = cosmosSum.AsInteger().Value;
+                    }
+                }
+                else
+                {
+                    sum = null;
+                }
+
+                long count;
+                if (!cosmosObject.TryGetValue(CountName, out CosmosElement countPropertyValue))
+                {
+                    throw new ArgumentException($"object did not have property name {CountName}");
+                }
+
+                if (!(countPropertyValue is CosmosNumber cosmosCount))
+                {
+                    throw new ArgumentException($"value for the {CountName} field was not a number");
+                }
+
+                if (cosmosCount.IsFloatingPoint)
+                {
+                    count = (long)cosmosCount.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    count = cosmosCount.AsInteger().Value;
+                }
+
+                return new AverageInfo(sum, count);
+            }
+
+            /// <summary>
             /// Gets the some component of the weighted average (or null of the result is undefined).
             /// </summary>
-            [JsonProperty("sum")]
             public double? Sum
             {
                 get;
@@ -72,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             /// <summary>
             /// Gets the count component of the weighted average.
             /// </summary>
-            [JsonProperty("count")]
             public long Count
             {
                 get;
@@ -86,11 +148,6 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             /// <returns>The sum of two AverageInfo structs</returns>
             public static AverageInfo operator +(AverageInfo info1, AverageInfo info2)
             {
-                if (info1 == null || info2 == null)
-                {
-                    return null;
-                }
-
                 // For a query taking the average of a items where any of the items is not a number results in Undefined / 0 documents.
                 // We replicated that here by checking if the sum has a value.
                 if (!info1.Sum.HasValue || !info2.Sum.HasValue)
@@ -105,14 +162,14 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             /// Returns the average or undefined if any of the intermediate averages resulted in an undefined value.
             /// </summary>
             /// <returns>The average or undefined if any of the intermediate averages resulted in an undefined value.</returns>
-            public object GetAverage()
+            public CosmosNumber GetAverage()
             {
                 if (!this.Sum.HasValue || this.Count <= 0)
                 {
-                    return Undefined.Value;
+                    return null;
                 }
 
-                return this.Sum / this.Count;
+                return CosmosNumber.Create(this.Sum.Value / this.Count);
             }
         }
     }

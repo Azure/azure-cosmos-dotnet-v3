@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
         }
 
-        protected override async Task<FeedResponse<dynamic>> ExecuteInternalAsync(CancellationToken token)
+        protected override async Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
             PartitionKeyRangeCache partitionKeyRangeCache = await this.Client.GetPartitionKeyRangeCache();
@@ -83,19 +84,19 @@ namespace Microsoft.Azure.Cosmos.Query
                     retryPolicyInstance);
             }
 
-            return await BackoffRetryUtility<FeedResponse<dynamic>>.ExecuteAsync(
+            return await BackoffRetryUtility<FeedResponse<CosmosElement>>.ExecuteAsync(
                 async () =>
                 {
                     this.fetchExecutionRangeAccumulator.BeginFetchRange();
                     ++this.retries;
-                    FeedResponse<dynamic> response = await this.ExecuteOnceAsync(retryPolicyInstance, token);
+                    FeedResponse<CosmosElement> response = await this.ExecuteOnceAsync(retryPolicyInstance, token);
                     if (!string.IsNullOrEmpty(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
                             response.ActivityId, 
                             response.Count, 
                             this.retries);
-                        response = new FeedResponse<dynamic>(
+                        response = new FeedResponse<CosmosElement>(
                             response,
                             response.Count,
                             response.Headers,
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 token);
         }
 
-        private async Task<FeedResponse<dynamic>> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<FeedResponse<CosmosElement>> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             // Don't reuse request, as the rest of client SDK doesn't reuse requests between retries.
             // The code leaves some temporary garbage in request (in RequestContext etc.),
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, queryRoutingInfo.Item1.ResolvedRange.Id));
 
-                FeedResponse<dynamic> response = await this.ExecuteRequestAsync(request, cancellationToken);
+                FeedResponse<CosmosElement> response = await this.ExecuteRequestLazyAsync(request, cancellationToken);
 
                 if (!await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                     response.Headers,

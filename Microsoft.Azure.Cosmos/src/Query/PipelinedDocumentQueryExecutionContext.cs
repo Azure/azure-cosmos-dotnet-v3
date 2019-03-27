@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
@@ -64,8 +65,8 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <para>
     /// This class is responsible for constructing the pipelined described.
     /// Note that the pipeline will always have one of <see cref="OrderByDocumentQueryExecutionContext"/> or <see cref="ParallelDocumentQueryExecutionContext"/>,
-    /// which both derive from <see cref="CrossPartitionQueryExecutionContext{T}"/> as these are top level execution contexts.
-    /// These top level execution contexts have <see cref="DocumentProducerTree{T}"/> that are responsible for hitting the backend
+    /// which both derive from <see cref="CrossPartitionQueryExecutionContext"/> as these are top level execution contexts.
+    /// These top level execution contexts have <see cref="DocumentProducerTree"/> that are responsible for hitting the backend
     /// and will optionally feed into <see cref="AggregateDocumentQueryExecutionComponent"/> and <see cref="TakeDocumentQueryExecutionComponent"/>.
     /// How these components are picked is based on <see cref="PartitionedQueryExecutionInfo"/>,
     /// which is a serialized form of this class and serves as a blueprint for construction.
@@ -155,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 createComponentFunc = async (continuationToken) =>
                 {
-                    CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams(
+                    CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                         collectionRid,
                         partitionedQueryExecutionInfo,
                         partitionKeyRanges,
@@ -172,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 createComponentFunc = async (continuationToken) =>
                 {
-                    CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext<dynamic>.CrossPartitionInitParams(
+                    CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                         collectionRid,
                         partitionedQueryExecutionInfo,
                         partitionKeyRanges,
@@ -263,11 +264,26 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
-        public async Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken token)
+        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
         {
             try
             {
-                return await this.component.DrainAsync(this.actualPageSize, token);
+                List<CosmosElement> dynamics = new List<CosmosElement>();
+                FeedResponse<CosmosElement> feedResponse = await this.component.DrainAsync(this.actualPageSize, token);
+                foreach (CosmosElement element in feedResponse)
+                {
+                    dynamics.Add(element);
+                }
+
+                return new FeedResponse<CosmosElement>(
+                    dynamics,
+                    feedResponse.Count,
+                    feedResponse.Headers,
+                    feedResponse.UseETagAsContinuation,
+                    feedResponse.QueryMetrics,
+                    feedResponse.RequestStatistics,
+                    feedResponse.DisallowContinuationTokenMessage,
+                    feedResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {
