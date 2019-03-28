@@ -33,7 +33,7 @@
             this.database = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
 
-            this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
+            this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: Documents.ConsistencyLevel.Session);
 
             string PartitionKey = "/partitionKey";
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(

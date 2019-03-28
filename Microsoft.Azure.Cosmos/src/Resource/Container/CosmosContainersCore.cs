@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerSettings(containerSettings);
 
             Task<CosmosResponseMessage> response = this.CreateContainerStreamAsync(
-                streamPayload: containerSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(containerSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -160,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         internal void ValidateContainerSettings(CosmosContainerSettings containerSettings)
         {
             containerSettings.ValidateRequiredProperties();
-            this.database.Client.DocumentClient.ValidateResource(containerSettings);
+            this.client.DocumentClient.ValidateResource(containerSettings.Id);
         }
 
         internal Task<CosmosResponseMessage> ProcessCollectionCreateAsync(

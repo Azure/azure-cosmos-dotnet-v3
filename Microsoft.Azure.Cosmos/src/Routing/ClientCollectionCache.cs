@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Caches collection information.
@@ -86,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     using (DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request))
                     {
-                        return new ResourceResponse<CosmosContainerSettings>(response).Resource;
+                        return CosmosResource.FromStream<CosmosContainerSettings>(response);
                     }
                 }
             }

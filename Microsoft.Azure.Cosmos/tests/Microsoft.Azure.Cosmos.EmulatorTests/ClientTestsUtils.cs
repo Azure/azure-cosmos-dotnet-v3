@@ -9,10 +9,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json.Linq;
     using VisualStudio.TestTools.UnitTesting;
 
@@ -79,18 +80,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Console.WriteLine("QueryTriggers {0}", query);
             return QueryAllRetry(queryFn, trys);
         }
-        internal static Task<List<CosmosDatabaseSettings>> ReadFeedDatabases(DocumentClient client, int trys = 1)
+        internal static Task<List<Database>> ReadFeedDatabases(DocumentClient client, int trys = 1)
         {
-            Func<string, Task<FeedResponse<CosmosDatabaseSettings>>> listFn = (continuation) =>
+            Func<string, Task<FeedResponse<Database>>> listFn = (continuation) =>
                 client.ReadDatabaseFeedAsync(new FeedOptions { RequestContinuation = continuation });
 
             Console.WriteLine("ReadFeedDatabases");
-            return ReadFeedAllRetry<CosmosDatabaseSettings>(listFn, trys);
+            return ReadFeedAllRetry<Database>(listFn, trys);
         }
 
-        internal static Task<List<CosmosContainerSettings>> ReadFeedCollections(DocumentClient client, string databaseLink, int trys = 1)
+        internal static Task<List<DocumentCollection>> ReadFeedCollections(DocumentClient client, string databaseLink, int trys = 1)
         {
-            Func<string, Task<FeedResponse<CosmosContainerSettings>>> listFn = (continuation) =>
+            Func<string, Task<FeedResponse<DocumentCollection>>> listFn = (continuation) =>
                 client.ReadDocumentCollectionFeedAsync(databaseLink, new FeedOptions { RequestContinuation = continuation });
 
             Console.WriteLine("ReadFeedCollections");
@@ -107,9 +108,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return ReadFeedAllRetry<dynamic>(listFn, trys);
         }
 
-        internal static Task<List<CosmosStoredProcedureSettings>> ReadFeedStoredProcedures(DocumentClient client, string collectionLink, int trys = 1)
+        internal static Task<List<StoredProcedure>> ReadFeedStoredProcedures(DocumentClient client, string collectionLink, int trys = 1)
         {
-            Func<string, Task<FeedResponse<CosmosStoredProcedureSettings>>> listFn =
+            Func<string, Task<FeedResponse<StoredProcedure>>> listFn =
                 continuation =>
                     client.ReadStoredProcedureFeedAsync(collectionLink,
                         new FeedOptions { RequestContinuation = continuation });
@@ -118,9 +119,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return ReadFeedAllRetry(listFn, trys);
         }
 
-        internal static Task<List<CosmosUserDefinedFunctionSettings>> ReadFeedUserDefinedFunctions(DocumentClient client, string collectionLink, int trys = 1)
+        internal static Task<List<UserDefinedFunction>> ReadFeedUserDefinedFunctions(DocumentClient client, string collectionLink, int trys = 1)
         {
-            Func<string, Task<FeedResponse<CosmosUserDefinedFunctionSettings>>> listFn =
+            Func<string, Task<FeedResponse<UserDefinedFunction>>> listFn =
                 continuation =>
                     client.ReadUserDefinedFunctionFeedAsync(collectionLink,
                         new FeedOptions { RequestContinuation = continuation });
@@ -129,9 +130,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return ReadFeedAllRetry(listFn, trys);
         }
 
-        internal static Task<List<CosmosTriggerSettings>> ReadFeedTriggers(DocumentClient client, string collectionLink, int trys = 1)
+        internal static Task<List<Trigger>> ReadFeedTriggers(DocumentClient client, string collectionLink, int trys = 1)
         {
-            Func<string, Task<FeedResponse<CosmosTriggerSettings>>> listFn =
+            Func<string, Task<FeedResponse<Trigger>>> listFn =
                 continuation =>
                     client.ReadTriggerFeedAsync(collectionLink, new FeedOptions { RequestContinuation = continuation });
 
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static string GenerateAltLink(string dbName, string collOrUserName, Type resourceType)
         {
-            if (resourceType == typeof(CosmosContainerSettings))
+            if (resourceType == typeof(DocumentCollection))
             {
                 return Paths.DatabasesPathSegment + "/" + dbName + "/" + Paths.CollectionsPathSegment + "/" + collOrUserName;
             }
@@ -170,17 +171,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return Paths.DatabasesPathSegment + "/" + dbName + "/" + Paths.CollectionsPathSegment + "/" + collOrUserName + "/" +
                             Paths.DocumentsPathSegment + "/" + resourceName;
             }
-            else if (resourceType == typeof(CosmosUserDefinedFunctionSettings))
+            else if (resourceType == typeof(UserDefinedFunction))
             {
                 return Paths.DatabasesPathSegment + "/" + dbName + "/" + Paths.CollectionsPathSegment + "/" + collOrUserName + "/" +
                             Paths.UserDefinedFunctionsPathSegment + "/" + resourceName;
             }
-            else if (resourceType == typeof(CosmosTriggerSettings))
+            else if (resourceType == typeof(Trigger))
             {
                 return Paths.DatabasesPathSegment + "/" + dbName + "/" + Paths.CollectionsPathSegment + "/" + collOrUserName + "/" +
                             Paths.TriggersPathSegment + "/" + resourceName;
             }
-            else if (resourceType == typeof(CosmosStoredProcedureSettings))
+            else if (resourceType == typeof(StoredProcedure))
             {
                 return Paths.DatabasesPathSegment + "/" + dbName + "/" + Paths.CollectionsPathSegment + "/" + collOrUserName + "/" +
                             Paths.StoredProceduresPathSegment + "/" + resourceName;
@@ -268,9 +269,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string uniqDatabaseName = string.Format("SmokeTest_{0}", Guid.NewGuid().ToString("N"));
             RequestOptions options = new RequestOptions { OfferThroughput = 50000 };
-            CosmosDatabaseSettings  database = sharedOffer ? await client.CreateDatabaseAsync(new CosmosDatabaseSettings  { Id = uniqDatabaseName }, options) : await client.CreateDatabaseAsync(new CosmosDatabaseSettings  { Id = uniqDatabaseName });
+            Database  database = sharedOffer ? await client.CreateDatabaseAsync(new Database  { Id = uniqDatabaseName }, options) : await client.CreateDatabaseAsync(new Database  { Id = uniqDatabaseName });
             Assert.AreEqual(database.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName));
-            CosmosDatabaseSettings  readbackdatabase = await client.ReadDatabaseAsync(database.SelfLink);
+            Database  readbackdatabase = await client.ReadDatabaseAsync(database.SelfLink);
             List<dynamic> results = await ClientTestsUtils.SqlQueryDatabases(client, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqDatabaseName), 10);
             Assert.AreEqual(1, results.Count, "Should have queried and found 1 document");
             Assert.AreEqual(database.ResourceId, ((QueryResult)results[0]).ResourceId);
@@ -279,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, results.Count, "Should have queried and found 1 database");
             Assert.AreEqual(database.ResourceId, ((QueryResult)results[0]).ResourceId);
             Assert.AreEqual(database.ResourceId, (await client.ReadDatabaseAsync(database.SelfLink)).Resource.ResourceId);
-            Assert.AreEqual(((CosmosDatabaseSettings)results[0]).AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName));
+            Assert.AreEqual(((Database)results[0]).AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName));
 
             ArrayList testCollections = new ArrayList();
             for (int i = 0; i < numberOfCollections; i++)
@@ -291,17 +292,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Kind = PartitionKind.Hash
                 };
 
-                CosmosContainerSettings collection;
+                DocumentCollection collection;
                 if (sharedThroughputCollections)
                 {
-                    collection = await TestCommon.CreateCollectionAsync(client, database.SelfLink, new CosmosContainerSettings { Id = uniqCollectionName, PartitionKey = partitionKeyDefinition });
+                    collection = await TestCommon.CreateCollectionAsync(client, database.SelfLink, new DocumentCollection { Id = uniqCollectionName, PartitionKey = partitionKeyDefinition });
                 }
                 else
                 {
-                    collection = await TestCommon.CreateCollectionAsync(client, database.SelfLink, new CosmosContainerSettings { Id = uniqCollectionName, PartitionKey = partitionKeyDefinition }, options);
+                    collection = await TestCommon.CreateCollectionAsync(client, database.SelfLink, new DocumentCollection { Id = uniqCollectionName, PartitionKey = partitionKeyDefinition }, options);
                 }
 
-                Assert.AreEqual(collection.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName, uniqCollectionName, typeof(CosmosContainerSettings)));
+                Assert.AreEqual(collection.AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName, uniqCollectionName, typeof(DocumentCollection)));
                 results = await SqlQueryCollections(client, database.SelfLink, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqCollectionName), 10);  // query through database link
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 collection");
                 Assert.AreEqual(collection.ResourceId, ((QueryResult)results[0]).ResourceId);
@@ -311,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, (await ReadFeedCollections(client, database.SelfLink)).Count(item => item.Id == uniqCollectionName));  // read through database link
                 Assert.AreEqual(1, (await ReadFeedCollections(client, database.CollectionsLink)).Count(item => item.Id == uniqCollectionName));  // read through CollectionsLink
                 Assert.AreEqual(collection.ResourceId, (await client.ReadDocumentCollectionAsync(collection.SelfLink)).Resource.ResourceId);
-                Assert.AreEqual(((CosmosContainerSettings)results[0]).AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName, uniqCollectionName, typeof(CosmosContainerSettings)));
+                Assert.AreEqual(((DocumentCollection)results[0]).AltLink, ClientTestsUtils.GenerateAltLink(uniqDatabaseName, uniqCollectionName, typeof(DocumentCollection)));
                 testCollections.Add(collection);
 
                 string uniqDocumentName = "SmokeTestDocument" + Guid.NewGuid().ToString("N");
@@ -376,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 document");
 
                 string uniqStoredProcedureName = "SmokeTestStoredProcedure" + Guid.NewGuid().ToString();
-                CosmosStoredProcedureSettings storedProcedure = await client.CreateStoredProcedureAsync(collection.SelfLink, new CosmosStoredProcedureSettings { Id = uniqStoredProcedureName, Body = "function f() {var x = 10;}" });
+                StoredProcedure storedProcedure = await client.CreateStoredProcedureAsync(collection.SelfLink, new StoredProcedure { Id = uniqStoredProcedureName, Body = "function f() {var x = 10;}" });
                 results = await SqlQueryStoredProcedures(client, collection.SelfLink, string.Format(@"SELECT r.id, r._rid FROM root r WHERE r.id = ""{0}""", uniqStoredProcedureName), 10);  // query through collection link
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 storedProcedure");
                 Assert.AreEqual(storedProcedure.ResourceId, ((QueryResult)results[0]).ResourceId);
@@ -396,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 storedProcedure");
 
                 string uniqTriggerName = "SmokeTestTrigger" + Guid.NewGuid().ToString("N");
-                CosmosTriggerSettings trigger = await client.CreateTriggerAsync(collection.SelfLink, new CosmosTriggerSettings { Id = uniqTriggerName, Body = "function f() {var x = 10;}", TriggerOperation = TriggerOperation.All, TriggerType = TriggerType.Pre });
+                Trigger trigger = await client.CreateTriggerAsync(collection.SelfLink, new Trigger { Id = uniqTriggerName, Body = "function f() {var x = 10;}", TriggerOperation = TriggerOperation.All, TriggerType = TriggerType.Pre });
                 results = await SqlQueryTriggers(client, collection.SelfLink, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqTriggerName), 10);  // query through collection link
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 trigger");
                 Assert.AreEqual(trigger.ResourceId, ((QueryResult)results[0]).ResourceId);
@@ -418,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 trigger");
 
                 string uniqUserDefinedFunctionName = "SmokeTestUserDefinedFunction" + Guid.NewGuid().ToString("N");
-                CosmosUserDefinedFunctionSettings userDefinedFunction = await client.CreateUserDefinedFunctionAsync(collection.SelfLink, new CosmosUserDefinedFunctionSettings { Id = uniqUserDefinedFunctionName, Body = "function (){ var x = 10;}" });
+                UserDefinedFunction userDefinedFunction = await client.CreateUserDefinedFunctionAsync(collection.SelfLink, new UserDefinedFunction { Id = uniqUserDefinedFunctionName, Body = "function (){ var x = 10;}" });
                 results = await SqlQueryUserDefinedFunctions(client, collection.SelfLink, string.Format(@"select r._rid from root r where r.id = ""{0}""", uniqUserDefinedFunctionName), 10);  // query through collection link
                 Assert.AreEqual(1, results.Count, "Should have queried and found 1 userDefinedFunction");
                 Assert.AreEqual(userDefinedFunction.ResourceId, ((QueryResult)results[0]).ResourceId);
@@ -451,14 +452,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.DeleteDocumentAsync(document.SelfLink, requestOptions);
             }
 
-            foreach (CosmosContainerSettings collection in testCollections)
+            foreach (DocumentCollection collection in testCollections)
             {
                 await client.DeleteDocumentCollectionAsync(collection.SelfLink);
             }
             await client.DeleteDatabaseAsync(database.SelfLink);
         }
 
-        private class QueryResult : CosmosResource
+        private class QueryResult : Resource
         {
         }
     }

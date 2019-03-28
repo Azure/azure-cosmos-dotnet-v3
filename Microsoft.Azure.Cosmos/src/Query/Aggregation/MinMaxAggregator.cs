@@ -5,8 +5,8 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using System;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global min/max from the local min/max of multiple partitions and continuations.

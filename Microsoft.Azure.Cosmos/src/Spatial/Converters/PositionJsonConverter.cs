@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters
 {
     using System;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>

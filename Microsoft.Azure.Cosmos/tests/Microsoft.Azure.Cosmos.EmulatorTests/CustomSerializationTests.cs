@@ -9,11 +9,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using System.Net.Http;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Utils;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
@@ -61,9 +63,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             collectionUri = UriFactory.CreateDocumentCollectionUri(databaseName, collectionName);
             partitionedCollectionUri = UriFactory.CreateDocumentCollectionUri(databaseName, partitionedCollectionName);
 
-            CosmosDatabaseSettings database = documentClient.CreateDatabaseIfNotExistsAsync(new CosmosDatabaseSettings() { Id = databaseName }).Result.Resource;
+            Database database = documentClient.CreateDatabaseIfNotExistsAsync(new Database() { Id = databaseName }).Result.Resource;
 
-            CosmosContainerSettings newCollection = new CosmosContainerSettings() { Id = collectionName };
+            DocumentCollection newCollection = new DocumentCollection() { Id = collectionName };
             try
             {
                 documentClient.CreateDocumentCollectionAsync(databaseUri, newCollection, new RequestOptions { OfferThroughput = 400 }).Wait();
@@ -78,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            CosmosContainerSettings partitionedCollection = new CosmosContainerSettings()
+            DocumentCollection partitionedCollection = new DocumentCollection()
             {
                 Id = partitionedCollectionName,
                 PartitionKey = new PartitionKeyDefinition()
@@ -191,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
 
             // Verify with stored procedure
-            CosmosStoredProcedureSettings storedProcedure = new CosmosStoredProcedureSettings();
+            StoredProcedure storedProcedure = new StoredProcedure();
             storedProcedure.Id = "storeProcedure1";
             storedProcedure.Body = @"function ReadAll(prefix) {
             var collection = getContext().getCollection();
@@ -231,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MissingMemberHandling = MissingMemberHandling.Error,
             };
 
-            CosmosStoredProcedureSettings storedProcedureDef = new CosmosStoredProcedureSettings();
+            StoredProcedure storedProcedureDef = new StoredProcedure();
             storedProcedureDef.Id = "testStoredProcJsonSerializerSettings" + Guid.NewGuid().ToString("N");
             storedProcedureDef.Body = @"function() {
                     var docToReturn = {
@@ -243,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             DocumentClient client = new DocumentClient(this.hostUri, this.masterKey, serializerSettings);
 
-            CosmosStoredProcedureSettings sproc = await client.CreateStoredProcedureAsync(this.collectionUri, storedProcedureDef);
+            StoredProcedure sproc = await client.CreateStoredProcedureAsync(this.collectionUri, storedProcedureDef);
 
             try
             {
@@ -343,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Create a simple stored procedure
             var scriptId = "bulkImportScript";
-            var sproc = new CosmosStoredProcedureSettings
+            var sproc = new StoredProcedure
             {
                 Id = scriptId,
                 Body = @"
@@ -508,14 +510,14 @@ function bulkImport(docs) {
         private void AssertPropertyOnStoredProc(
             DocumentClient client,
             Uri targetCollectionUri,
-            CosmosStoredProcedureSettings storedProcedure,
+            StoredProcedure storedProcedure,
             RequestOptions requestOptions,
             Document originalDocument,
             string jsonProperty)
         {
             requestOptions.PartitionKey = targetCollectionUri == this.partitionedCollectionUri ? new PartitionKey(originalDocument.GetPropertyValue<string>(CustomSerializationTests.PartitionKeyProperty)) : null;
 
-            CosmosStoredProcedureSettings sproc = client.CreateStoredProcedureAsync(targetCollectionUri, storedProcedure).Result;
+            StoredProcedure sproc = client.CreateStoredProcedureAsync(targetCollectionUri, storedProcedure).Result;
 
             var spResult = client.ExecuteStoredProcedureAsync<Document>(sproc.SelfLink, requestOptions)
                 .Result.Response.GetPropertyValue<IEnumerable<Document>>("createdDocuments");
@@ -633,6 +635,7 @@ function bulkImport(docs) {
                 return new DocumentClient(
                     hostUri,
                     key,
+                    (HttpMessageHandler)null,
                     connectionPolicy,
                     consistencyLevel);
             }

@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Common
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using System.Threading;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     internal sealed class SessionContainer : ISessionContainer
     {

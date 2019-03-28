@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Specifies the options associated with change feed methods (enumeration operations) in the Azure Cosmos DB service.

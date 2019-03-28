@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary> 
     /// Represents an exception from the Azure Cosmos DB service queries.

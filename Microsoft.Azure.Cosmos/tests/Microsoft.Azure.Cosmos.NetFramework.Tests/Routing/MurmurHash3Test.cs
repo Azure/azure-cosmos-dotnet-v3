@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Routing
 {
-    using System;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>

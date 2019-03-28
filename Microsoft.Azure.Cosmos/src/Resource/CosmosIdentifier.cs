@@ -74,26 +74,5 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append(idUriEscaped);
             return new Uri(stringBuilder.ToString(), UriKind.Relative);
         }
-
-        internal static void ValidateResource(CosmosResource resource)
-        {
-            if (!string.IsNullOrEmpty(resource.Id))
-            {
-                int match = resource.Id.IndexOfAny(CosmosIdentifier.InvalidCharacters);
-                if (match != -1)
-                {
-                    throw new ArgumentException(string.Format(
-                                CultureInfo.CurrentUICulture,
-                                RMResources.InvalidCharacterInResourceName,
-                                resource.Id[match]
-                                ));
-                }
-
-                if (resource.Id[resource.Id.Length - 1] == ' ')
-                {
-                    throw new ArgumentException(RMResources.InvalidSpaceEndingInResourceName);
-                }
-            }
-        }
     }
 }

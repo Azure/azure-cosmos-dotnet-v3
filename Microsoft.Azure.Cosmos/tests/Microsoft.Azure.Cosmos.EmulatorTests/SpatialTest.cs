@@ -9,10 +9,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -44,10 +42,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestIsValid()
         {
-            CosmosDatabaseSettings database = await this.client.CreateDatabaseAsync(
-                new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") });
+            Database database = await this.client.CreateDatabaseAsync(
+                new Database { Id = Guid.NewGuid().ToString("N") });
 
-            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N") };
+            DocumentCollection collectionDefinition = new DocumentCollection() { Id = Guid.NewGuid().ToString("N") };
             collectionDefinition.IndexingPolicy = new IndexingPolicy()
             {
                 IncludedPaths = new Collection<IncludedPath>()
@@ -67,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
             };
 
-            CosmosContainerSettings collection = await this.client.CreateDocumentCollectionAsync(
+            DocumentCollection collection = await this.client.CreateDocumentCollectionAsync(
                 database.SelfLink,
                 collectionDefinition);
 
@@ -128,11 +126,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private  async Task TestDistanceAndWithin(bool allowScan)
         {
-            CosmosDatabaseSettings database = await this.client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") });
+            Database database = await this.client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString("N") });
 
-            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N") };
+            DocumentCollection collectionDefinition = new DocumentCollection() { Id = Guid.NewGuid().ToString("N") };
 
-            CosmosContainerSettings collection;
+            DocumentCollection collection;
             if(allowScan)
             {
                 collection = await this.client.CreateDocumentCollectionAsync(database.SelfLink, collectionDefinition);
@@ -202,9 +200,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void CleanUp()
         {
-            IEnumerable<CosmosDatabaseSettings> allDatabases = from database in this.client.CreateDatabaseQuery() select database;
+            IEnumerable<Database> allDatabases = from database in this.client.CreateDatabaseQuery() select database;
 
-            foreach (CosmosDatabaseSettings database in allDatabases)
+            foreach (Database database in allDatabases)
             {
                 this.client.DeleteDatabaseAsync(database.SelfLink).Wait();
             }
