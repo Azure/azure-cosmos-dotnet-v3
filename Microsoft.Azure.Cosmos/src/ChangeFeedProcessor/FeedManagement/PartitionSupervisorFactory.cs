@@ -4,7 +4,7 @@
 
 using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
 {
     internal abstract class PartitionSupervisorFactory
     {

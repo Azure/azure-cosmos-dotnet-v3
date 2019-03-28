@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     /// <summary>
     /// Represents a lease that is persisted as a document in the lease collection.

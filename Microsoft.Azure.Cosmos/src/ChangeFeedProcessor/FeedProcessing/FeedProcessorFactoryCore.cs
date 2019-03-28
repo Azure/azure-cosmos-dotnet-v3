@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
     {

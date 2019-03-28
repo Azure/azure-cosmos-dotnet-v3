@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     /// <summary>
     /// Provides a flexible way to to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
@@ -215,11 +215,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="LoadBalancingStrategy"/> to be used for partition load balancing
+        /// Sets the <see cref="LoadBalancingStrategy"/> to be used for load balancing
         /// </summary>
         /// <param name="strategy">The instance of <see cref="LoadBalancingStrategy"/> to use.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithPartitionLoadBalancingStrategy(LoadBalancingStrategy strategy)
+        public ChangeFeedProcessorBuilder<T> WithLoadBalancingStrategy(LoadBalancingStrategy strategy)
         {
             if (strategy == null) throw new ArgumentNullException(nameof(strategy));
             this.changeFeedProcessorBuilderInstance.loadBalancingStrategy = strategy;
@@ -227,11 +227,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="FeedProcessorFactory{T}"/> to be used to create <see cref="FeedProcessor"/> for partition processing.
+        /// Sets the <see cref="FeedProcessorFactory{T}"/> to be used to create <see cref="FeedProcessor"/> for feed processing.
         /// </summary>
         /// <param name="partitionProcessorFactory">The instance of <see cref="FeedProcessorFactory{T}"/> to use.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithPartitionProcessorFactory(FeedProcessorFactory<T> partitionProcessorFactory)
+        public ChangeFeedProcessorBuilder<T> WithFeedProcessorFactory(FeedProcessorFactory<T> partitionProcessorFactory)
         {
             if (partitionProcessorFactory == null) throw new ArgumentNullException(nameof(partitionProcessorFactory));
             this.changeFeedProcessorBuilderInstance.partitionProcessorFactory = partitionProcessorFactory;

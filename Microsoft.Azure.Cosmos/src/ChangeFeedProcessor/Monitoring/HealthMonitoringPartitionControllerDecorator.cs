@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Documents;
 

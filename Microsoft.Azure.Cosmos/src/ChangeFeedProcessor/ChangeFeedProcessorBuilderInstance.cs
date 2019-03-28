@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     internal sealed class ChangeFeedProcessorBuilderInstance<T>
     {

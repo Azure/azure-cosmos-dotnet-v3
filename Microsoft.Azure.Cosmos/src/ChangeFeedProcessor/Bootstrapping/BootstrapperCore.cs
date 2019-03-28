@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Bootstrapping
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     internal sealed class BootstrapperCore : Bootstrapper
     {

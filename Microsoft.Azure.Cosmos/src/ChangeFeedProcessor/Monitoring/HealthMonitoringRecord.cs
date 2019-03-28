@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring
 {
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     /// <summary>
     /// A record used in the health monitoring.

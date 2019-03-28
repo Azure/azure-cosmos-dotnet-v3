@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
     using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
 {
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
