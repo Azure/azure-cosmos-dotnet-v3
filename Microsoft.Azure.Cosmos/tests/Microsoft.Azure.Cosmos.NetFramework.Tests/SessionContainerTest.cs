@@ -12,9 +12,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Collections;
     using Client;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Tests for <see cref="SessionContainer"/> class.

@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Collections
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using VisualStudio.TestTools.UnitTesting;
 
     /// <summary>

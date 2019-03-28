@@ -9,7 +9,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class UniqueIndexTests
     {
         private DocumentClient client;  // This is only used for housekeeping this.database.
-        private CosmosDatabaseSettings database;
+        private Database database;
 
         [TestInitialize]
         public void TestInitialize()
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void InsertWithUniqueIndex()
         {
-            var collectionSpec = new CosmosContainerSettings {
+            var collectionSpec = new DocumentCollection {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
                 UniqueKeyPolicy = new UniqueKeyPolicy {
                     UniqueKeys = new Collection<UniqueKey> {
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            Func<DocumentClient, CosmosContainerSettings, Task> testFunction = async (DocumentClient client, CosmosContainerSettings collection) =>
+            Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
             {
                 var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
                 var doc2 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 640000\"}");
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ReplaceAndDeleteWithUniqueIndex()
         {
-            var collectionSpec = new CosmosContainerSettings
+            var collectionSpec = new DocumentCollection
             {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
                 UniqueKeyPolicy = new UniqueKeyPolicy
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            Func<DocumentClient, CosmosContainerSettings, Task> testFunction = async (DocumentClient client, CosmosContainerSettings collection) =>
+            Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
             {
                 var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
                 var doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"address\":\"Russia 630090\"}");
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(DocumentClient client)
         {
-            var collectionSpec = new CosmosContainerSettings
+            var collectionSpec = new DocumentCollection
             {
                 Id = "TestGloballyUniqueFieldForPartitionedCollection_" + Guid.NewGuid(),
                 PartitionKey = new PartitionKeyDefinition
@@ -208,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private void TestForEachClient(CosmosContainerSettings collectionSpec, Func<DocumentClient, CosmosContainerSettings, Task> testFunction, string scenarioName)
+        private void TestForEachClient(DocumentCollection collectionSpec, Func<DocumentClient, DocumentCollection, Task> testFunction, string scenarioName)
         {
             Func<DocumentClient, DocumentClientType, Task<int>> wrapperFunction = async (DocumentClient client, DocumentClientType clientType) =>
             {

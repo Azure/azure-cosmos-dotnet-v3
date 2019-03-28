@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using Microsoft.Azure.Cosmos.Internal;
+using Microsoft.Azure.Documents;
 
 namespace Microsoft.Azure.Cosmos.Utils
 {

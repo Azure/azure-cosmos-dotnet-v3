@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Helper class to assist in creating the various Uris needed for use with the DocumentClient instance in the Azure Cosmos DB service.

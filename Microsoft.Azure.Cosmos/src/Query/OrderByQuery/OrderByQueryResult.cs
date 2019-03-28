@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// <para>

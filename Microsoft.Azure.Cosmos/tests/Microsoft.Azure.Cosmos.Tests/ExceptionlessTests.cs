@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -46,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 mockStoreResponse404.Status = (int)HttpStatusCode.NotFound;
 
 
-                TransportClient.ThrowIfFailed(
+                TransportClient.ThrowServerException(
                     string.Empty,
                     mockStoreResponse404,
                     ExceptionlessTests.resourceUri,
@@ -75,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 mockStoreResponse4XX.Status = statusCode;
 
 
-                TransportClient.ThrowIfFailed(
+                TransportClient.ThrowServerException(
                     string.Empty,
                     mockStoreResponse4XX,
                     ExceptionlessTests.resourceUri,
@@ -100,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreResponse mockStoreResponse429 = new StoreResponse();
                 mockStoreResponse429.Status = (int)StatusCodes.TooManyRequests;
 
-                TransportClient.ThrowIfFailed(
+                TransportClient.ThrowServerException(
                     string.Empty,
                     mockStoreResponse429,
                     ExceptionlessTests.resourceUri,

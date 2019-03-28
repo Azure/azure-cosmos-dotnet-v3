@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.Aggregation;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Execution component that is able to aggregate local aggregates from multiple continuations and partitions.

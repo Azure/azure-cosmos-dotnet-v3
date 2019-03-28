@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
@@ -187,11 +190,11 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             INameValueCollection requestHeaders = new StringKeyValueCollection();
 
-            ConsistencyLevel defaultConsistencyLevel = await this.client.GetDefaultConsistencyLevelAsync();
-            ConsistencyLevel? desiredConsistencyLevel = await this.client.GetDesiredConsistencyLevelAsync();
+            Cosmos.ConsistencyLevel defaultConsistencyLevel = (Cosmos.ConsistencyLevel)(await this.client.GetDefaultConsistencyLevelAsync());
+            Cosmos.ConsistencyLevel? desiredConsistencyLevel = (Cosmos.ConsistencyLevel?)await this.client.GetDesiredConsistencyLevelAsync();
             if (!string.IsNullOrEmpty(feedOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(this.resourceTypeEnum, OperationType.ReadFeed))
             {
-                if (defaultConsistencyLevel == ConsistencyLevel.Session || (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == ConsistencyLevel.Session))
+                if (defaultConsistencyLevel == Cosmos.ConsistencyLevel.Session || (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == Cosmos.ConsistencyLevel.Session))
                 {
                     // Query across partitions is not supported today. Master resources (for e.g., database) 
                     // can span across partitions, whereas server resources (viz: collection, document and attachment)
@@ -249,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.feedOptions.ConsistencyLevel.HasValue)
             {
-                await this.client.EnsureValidOverwrite(feedOptions.ConsistencyLevel.Value);
+                await this.client.EnsureValidOverwrite((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);
                 requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.feedOptions.ConsistencyLevel.Value.ToString());
             }
             else if (desiredConsistencyLevel.HasValue)
@@ -562,8 +565,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private DocumentServiceRequest CreateReadFeedDocumentServiceRequest(INameValueCollection requestHeaders)
         {
-            if (this.resourceTypeEnum == Microsoft.Azure.Cosmos.Internal.ResourceType.Database
-                || this.resourceTypeEnum == Microsoft.Azure.Cosmos.Internal.ResourceType.Offer)
+            if (this.resourceTypeEnum == Documents.ResourceType.Database
+                || this.resourceTypeEnum == Documents.ResourceType.Offer)
             {
                 return DocumentServiceRequest.Create(
                     OperationType.ReadFeed,
@@ -679,7 +682,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             switch (resourceType)
             {
-                case Internal.ResourceType.Collection:
+                case Documents.ResourceType.Collection:
                     return "DocumentCollections";
                 default:
                     return resourceType.ToResourceTypeString() + "s";

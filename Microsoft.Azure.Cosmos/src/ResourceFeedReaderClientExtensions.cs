@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Client extensions for creating <see cref="ResourceFeedReader{T}"/> objects in the Azure Cosmos DB service.
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// For additional details and examples, please refer to <see cref="ResourceFeedReader{T}"/>.
     /// </remarks>
     /// <seealso cref="ResourceFeedReader{T}"/>
-    /// <seealso cref="CosmosResource"/>
+    /// <seealso cref="Resource"/>
     /// <seealso cref="DocumentClient"/>
     internal static class ResourceFeedReaderClientExtensions
     {
@@ -25,9 +26,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="ResourceFeedReader{Database}"/> instance.</returns>
         /// <remarks>
         /// </remarks>
-        public static ResourceFeedReader<CosmosDatabaseSettings> CreateDatabaseFeedReader(this DocumentClient client, FeedOptions options = null)
+        public static ResourceFeedReader<Database> CreateDatabaseFeedReader(this DocumentClient client, FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosDatabaseSettings>(client, ResourceType.Database, options, null);
+            return new ResourceFeedReader<Database>(client, ResourceType.Database, options, null);
         }
 
         /// <summary>
@@ -64,10 +65,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="collectionsLink">The link for collections</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{DocumentCollection}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosContainerSettings> CreateDocumentCollectionFeedReader(this DocumentClient client, string collectionsLink,
+        public static ResourceFeedReader<DocumentCollection> CreateDocumentCollectionFeedReader(this DocumentClient client, string collectionsLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosContainerSettings>(client, ResourceType.Collection, options, collectionsLink);
+            return new ResourceFeedReader<DocumentCollection>(client, ResourceType.Collection, options, collectionsLink);
         }
 
         /// <summary>
@@ -116,10 +117,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProceduresLink">The link for stored procedures</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{StoredProcedure}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosStoredProcedureSettings> CreateStoredProcedureFeedReader(this DocumentClient client, string storedProceduresLink,
+        public static ResourceFeedReader<StoredProcedure> CreateStoredProcedureFeedReader(this DocumentClient client, string storedProceduresLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosStoredProcedureSettings>(client, ResourceType.StoredProcedure, options, storedProceduresLink);
+            return new ResourceFeedReader<StoredProcedure>(client, ResourceType.StoredProcedure, options, storedProceduresLink);
         }
 
         /// <summary>
@@ -129,10 +130,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="triggersLink">The link for triggers</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Trigger}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosTriggerSettings> CreateTriggerFeedReader(this DocumentClient client, string triggersLink,
+        public static ResourceFeedReader<Trigger> CreateTriggerFeedReader(this DocumentClient client, string triggersLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosTriggerSettings>(client, ResourceType.Trigger, options, triggersLink);
+            return new ResourceFeedReader<Trigger>(client, ResourceType.Trigger, options, triggersLink);
         }
 
         /// <summary>
@@ -142,10 +143,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="userDefinedFunctionsLink">The link for userDefinedFunctions</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{UserDefinedFunctions}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosUserDefinedFunctionSettings> CreateUserDefinedFunctionFeedReader(this DocumentClient client, string userDefinedFunctionsLink,
+        public static ResourceFeedReader<UserDefinedFunction> CreateUserDefinedFunctionFeedReader(this DocumentClient client, string userDefinedFunctionsLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosUserDefinedFunctionSettings>(client, ResourceType.UserDefinedFunction, options, userDefinedFunctionsLink);
+            return new ResourceFeedReader<UserDefinedFunction>(client, ResourceType.UserDefinedFunction, options, userDefinedFunctionsLink);
         }
 
         /// <summary>

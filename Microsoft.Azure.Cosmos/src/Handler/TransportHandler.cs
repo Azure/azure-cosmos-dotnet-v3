@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
     internal class TransportHandler : CosmosRequestHandler

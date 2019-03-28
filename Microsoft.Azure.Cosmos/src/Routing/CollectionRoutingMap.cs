@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Stored partition key ranges in an efficient way with some additional information and provides

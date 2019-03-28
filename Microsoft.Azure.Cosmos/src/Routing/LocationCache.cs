@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
 
     /// <summary>
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.CanUseMultipleWriteLocations() &&
                 (request.ResourceType == ResourceType.Document ||
-                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == Cosmos.Internal.OperationType.ExecuteJavaScript));
+                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == Documents.OperationType.ExecuteJavaScript));
         }
 
         private void ClearStaleEndpointUnavailabilityInfo()

@@ -20,6 +20,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Utils;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -179,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 key,
+                (HttpMessageHandler)null,
                 new ConnectionPolicy
                 {
                     ConnectionMode = ConnectionMode.Direct,
@@ -213,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static IList<T> ListAll<T>(DocumentClient client,
             string resourceIdOrFullName,
             INameValueCollection headers = null,
-            bool readWithRetry = false) where T : CosmosResource, new()
+            bool readWithRetry = false) where T : Resource, new()
         {
             List<T> result = new List<T>();
 
@@ -305,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static ResourceResponse<T> CreateScriptDirect<T>(DocumentClient client, string collectionLink, T resource) where T : CosmosResource, new()
+        internal static ResourceResponse<T> CreateScriptDirect<T>(DocumentClient client, string collectionLink, T resource) where T : Resource, new()
         {
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                  OperationType.Create,
@@ -332,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static ResourceResponse<T> UpdateScriptDirect<T>(DocumentClient client, T resource) where T : CosmosResource, new()
+        internal static ResourceResponse<T> UpdateScriptDirect<T>(DocumentClient client, T resource) where T : Resource, new()
         {
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                  OperationType.Replace,
@@ -358,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        internal static ResourceResponse<T> DeleteScriptDirect<T>(DocumentClient client, string resourceIdOrFullName) where T : CosmosResource, new()
+        internal static ResourceResponse<T> DeleteScriptDirect<T>(DocumentClient client, string resourceIdOrFullName) where T : Resource, new()
         {
             using (DocumentServiceRequest request = CreateRequest(
                            OperationType.Delete,
@@ -385,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         // For now we need it for some low level tests which need direct access.
         internal static IList<T> ListAllScriptDirect<T>(DocumentClient client,
                 string resourceIdOrFullName,
-                INameValueCollection headers = null) where T : CosmosResource, new()
+                INameValueCollection headers = null) where T : Resource, new()
         {
             List<T> result = new List<T>();
 
@@ -454,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static FeedResponse<T> ReadScriptFeedDirect<T>(
             DocumentClient client,
             string resourceIdOrFullName,
-            INameValueCollection localHeaders) where T : CosmosResource, new()
+            INameValueCollection localHeaders) where T : Resource, new()
         {
             try
             {
@@ -491,9 +496,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static CosmosDatabaseSettings CreateOrGetDatabase(DocumentClient client)
+        internal static Database CreateOrGetDatabase(DocumentClient client)
         {
-            IList<CosmosDatabaseSettings> databases = TestCommon.ListAll<CosmosDatabaseSettings>(
+            IList<Database> databases = TestCommon.ListAll<Database>(
                 client,
                 null);
 
@@ -504,27 +509,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return databases[0];
         }
 
-        internal static CosmosDatabaseSettings CreateDatabase(DocumentClient client, string databaseName = null)
+        internal static Database CreateDatabase(DocumentClient client, string databaseName = null)
         {
             string name = databaseName;
             if (string.IsNullOrWhiteSpace(name))
             {
                 name = Guid.NewGuid().ToString("N");
             }
-            CosmosDatabaseSettings database = new CosmosDatabaseSettings
+            Database database = new Database
             {
                 Id = name,
             };
-            return client.Create<CosmosDatabaseSettings>(null, database);
+            return client.Create<Database>(null, database);
         }
 
         internal static User CreateOrGetUser(DocumentClient client)
         {
-            CosmosDatabaseSettings ignored = null;
+            Database ignored = null;
             return TestCommon.CreateOrGetUser(client, out ignored);
         }
 
-        internal static User CreateOrGetUser(DocumentClient client, out CosmosDatabaseSettings database)
+        internal static User CreateOrGetUser(DocumentClient client, out Database database)
         {
             database = TestCommon.CreateOrGetDatabase(client);
 
@@ -543,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return client.Read<User>(users[0].ResourceId);
         }
 
-        internal static User UpsertUser(DocumentClient client, out CosmosDatabaseSettings database)
+        internal static User UpsertUser(DocumentClient client, out Database database)
         {
             database = TestCommon.CreateOrGetDatabase(client);
 
@@ -554,23 +559,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return client.Upsert<User>(database.GetIdOrFullName(), user);
         }
 
-        internal static CosmosContainerSettings CreateOrGetDocumentCollection(DocumentClient client)
+        internal static DocumentCollection CreateOrGetDocumentCollection(DocumentClient client)
         {
-            CosmosDatabaseSettings ignored = null;
+            Database ignored = null;
             return TestCommon.CreateOrGetDocumentCollection(client, out ignored);
         }
 
-        internal static CosmosContainerSettings CreateOrGetDocumentCollection(DocumentClient client, out CosmosDatabaseSettings database)
+        internal static DocumentCollection CreateOrGetDocumentCollection(DocumentClient client, out Database database)
         {
             database = TestCommon.CreateOrGetDatabase(client);
 
-            IList<CosmosContainerSettings> documentCollections = TestCommon.ListAll<CosmosContainerSettings>(
+            IList<DocumentCollection> documentCollections = TestCommon.ListAll<DocumentCollection>(
                 client,
                 database.ResourceId);
 
             if (documentCollections.Count == 0)
             {
-                CosmosContainerSettings documentCollection1 = new CosmosContainerSettings
+                DocumentCollection documentCollection1 = new DocumentCollection
                 {
                     Id = Guid.NewGuid().ToString("N")
                 };
@@ -579,18 +584,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new RequestOptions() { OfferThroughput = 10000 }).Result;
             }
 
-            return client.Read<CosmosContainerSettings>(documentCollections[0].ResourceId);
+            return client.Read<DocumentCollection>(documentCollections[0].ResourceId);
         }
 
         internal static Document CreateOrGetDocument(DocumentClient client)
         {
-            CosmosContainerSettings ignored1 = null;
-            CosmosDatabaseSettings ignored2 = null;
+            DocumentCollection ignored1 = null;
+            Database ignored2 = null;
 
             return TestCommon.CreateOrGetDocument(client, out ignored1, out ignored2);
         }
 
-        internal static Document CreateOrGetDocument(DocumentClient client, out CosmosContainerSettings documentCollection, out CosmosDatabaseSettings database)
+        internal static Document CreateOrGetDocument(DocumentClient client, out DocumentCollection documentCollection, out Database database)
         {
             documentCollection = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
@@ -614,7 +619,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static Document UpsertDocument(DocumentClient client, out CosmosContainerSettings documentCollection, out CosmosDatabaseSettings database)
+        internal static Document UpsertDocument(DocumentClient client, out DocumentCollection documentCollection, out Database database)
         {
             documentCollection = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
@@ -629,10 +634,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static async Task CreateDataSet(DocumentClient client, string dbName, string collName, int numberOfDocuments, int inputThroughputOffer)
         {
             Random random = new Random();
-            CosmosDatabaseSettings database = TestCommon.CreateDatabase(client, dbName);
-            CosmosContainerSettings coll = await TestCommon.CreateCollectionAsync(client,
+            Database database = TestCommon.CreateDatabase(client, dbName);
+            DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
                 database,
-                new CosmosContainerSettings
+                new DocumentCollection
                 {
                     Id = collName,
                     PartitionKey = new PartitionKeyDefinition
@@ -687,13 +692,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task.Delay(TestCommon.serverStalenessIntervalInSeconds * 1000);
             }
         }
-        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
         {
             INameValueCollection ignored;
             return client.ReadFeedWithRetry<T>(resourceIdOrFullName, out ignored, headers);
         }
 
-        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
         {
             int nMaxRetry = 5;
 
@@ -751,13 +756,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         //Sync helpers for DocumentStoreClient
-        public static T Read<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static T Read<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
         {
             INameValueCollection ignored;
             return client.Read<T>(resourceIdOrFullName, out ignored, headers);
         }
 
-        public static T Read<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static T Read<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
         {
             try
             {
@@ -796,7 +801,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public static T Read<T>(this DocumentClient client, T resource, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static T Read<T>(this DocumentClient client, T resource, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
         {
             try
             {
@@ -835,7 +840,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public static T ReadWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static T ReadWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
         {
             int nMaxRetry = 5;
 
@@ -870,7 +875,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             } while (true);
         }
 
-        public static T ReadWithRetry<T>(this DocumentClient client, T resource, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static T ReadWithRetry<T>(this DocumentClient client, T resource, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
         {
             int nMaxRetry = 5;
 
@@ -905,7 +910,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             } while (true);
         }
 
-        public static T Create<T>(this DocumentClient client, string resourceIdOrFullName, T resource, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static T Create<T>(this DocumentClient client, string resourceIdOrFullName, T resource, INameValueCollection headers = null) where T : Resource, new()
         {
             try
             {
@@ -945,7 +950,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public static T Upsert<T>(this DocumentClient client, string resourceIdOrFullName, T resource, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static T Upsert<T>(this DocumentClient client, string resourceIdOrFullName, T resource, INameValueCollection headers = null) where T : Resource, new()
         {
             try
             {
@@ -986,11 +991,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
 
-        public static T Update<T>(this DocumentClient client, T resource, INameValueCollection requestHeaders = null) where T : CosmosResource, new()
+        public static T Update<T>(this DocumentClient client, T resource, INameValueCollection requestHeaders = null) where T : Resource, new()
         {
             try
             {
-                String link = resource.GetLink();
+                String link = resource.SelfLink;
                 DocumentServiceRequest request;
 
                 if (link != null)
@@ -1027,12 +1032,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public static T Replace<T>(this DocumentClient client, T resource) where T : CosmosResource, new()
+        public static T Replace<T>(this DocumentClient client, T resource) where T : Resource, new()
         {
             return client.Update(resource);
         }
 
-        public static DocumentServiceResponse Delete<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : CosmosResource, new()
+        public static DocumentServiceResponse Delete<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
         {
             try
             {
@@ -1079,7 +1084,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static FeedResponse<T> ReadFeed<T>(
             this DocumentClient client,
             string resourceIdOrFullName,
-            INameValueCollection headers = null) where T : CosmosResource, new()
+            INameValueCollection headers = null) where T : Resource, new()
         {
             INameValueCollection ignored;
             return client.ReadFeed<T>(resourceIdOrFullName, out ignored, headers);
@@ -1089,7 +1094,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this DocumentClient client,
             string resourceIdOrFullName,
             out INameValueCollection responseHeaders,
-            INameValueCollection headers = null) where T : CosmosResource, new()
+            INameValueCollection headers = null) where T : Resource, new()
         {
             try
             {
@@ -1219,7 +1224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosConsistencySettings consistencyPolicy = new CosmosConsistencySettings
             {
-                DefaultConsistencyLevel = ConsistencyLevel.Strong
+                DefaultConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.Strong
             };
 
             return consistencyPolicy;
@@ -1379,8 +1384,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             do
             {
-                IList<CosmosDatabaseSettings> databases = TestCommon.RetryRateLimiting(
-                    () => TestCommon.ListAll<CosmosDatabaseSettings>(client, null));
+                IList<Database> databases = TestCommon.RetryRateLimiting(
+                    () => TestCommon.ListAll<Database>(client, null));
 
                 Logger.LogLine("Number of database to delete {0}", databases.Count);
 
@@ -1388,7 +1393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
 
-                foreach (CosmosDatabaseSettings database in databases)
+                foreach (Database database in databases)
                 {
                     if (deleteTasks.Count == 10) break;
                     deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, database));
@@ -1398,19 +1403,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             } while (true);
         }
 
-        public static async Task DeleteDatabaseAsync(DocumentClient client, CosmosDatabaseSettings database)
+        public static async Task DeleteDatabaseAsync(DocumentClient client, Database database)
         {
             await TestCommon.DeleteDatabaseCollectionAsync(client, database);
 
             await TestCommon.AsyncRetryRateLimiting(() => client.DeleteDatabaseAsync(database.SelfLink));
         }
 
-        public static async Task DeleteDatabaseCollectionAsync(DocumentClient client, CosmosDatabaseSettings database)
+        public static async Task DeleteDatabaseCollectionAsync(DocumentClient client, Database database)
         {
             do //Delete them in chunks of 10.
             {
-                IList<CosmosContainerSettings> collections = TestCommon.RetryRateLimiting(
-                    () => TestCommon.ListAll<CosmosContainerSettings>(client, database.ResourceId));
+                IList<DocumentCollection> collections = TestCommon.RetryRateLimiting(
+                    () => TestCommon.ListAll<DocumentCollection>(client, database.ResourceId));
 
                 Logger.LogLine("Number of Collections {1}  to delete in database {0}", database.ResourceId, collections.Count);
 
@@ -1418,7 +1423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     List<Task> deleteCollectionTasks = new List<Task>(10);
 
-                    foreach (CosmosContainerSettings collection in collections)
+                    foreach (DocumentCollection collection in collections)
                     {
                         if (deleteCollectionTasks.Count == 10) break;
                         Logger.LogLine("Deleting Collection with following info Id:{0},SelfLink:{1}", collection.ResourceId, collection.SelfLink);
@@ -1516,11 +1521,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Conflict;
             }
-            else if (type == typeof(CosmosDatabaseSettings))
+            else if (type == typeof(Database) || type == typeof(CosmosDatabaseSettings))
             {
                 return ResourceType.Database;
             }
-            else if (type == typeof(CosmosContainerSettings))
+            else if (type == typeof(DocumentCollection) || type == typeof(CosmosContainerSettings))
             {
                 return ResourceType.Collection;
             }
@@ -1532,15 +1537,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Permission;
             }
-            else if (type == typeof(CosmosStoredProcedureSettings))
+            else if (type == typeof(StoredProcedure) || type == typeof(CosmosStoredProcedureSettings))
             {
                 return ResourceType.StoredProcedure;
             }
-            else if (type == typeof(CosmosTriggerSettings))
+            else if (type == typeof(Trigger) || type == typeof(CosmosTriggerSettings))
             {
                 return ResourceType.Trigger;
             }
-            else if (type == typeof(CosmosUserDefinedFunctionSettings))
+            else if (type == typeof(UserDefinedFunction) || type == typeof(CosmosUserDefinedFunctionSettings))
             {
                 return ResourceType.UserDefinedFunction;
             }
@@ -1571,10 +1576,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public static async Task<CosmosContainerSettings> CreateCollectionAsync(
+        public static async Task<DocumentCollection> CreateCollectionAsync(
             DocumentClient client,
             Uri dbUri,
-            CosmosContainerSettings col,
+            DocumentCollection col,
             RequestOptions requestOptions = null)
         {
             return await client.CreateDocumentCollectionAsync(
@@ -1583,10 +1588,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions);
         }
 
-        public static async Task<CosmosContainerSettings> CreateCollectionAsync(
+        public static async Task<DocumentCollection> CreateCollectionAsync(
             DocumentClient client,
             string databaseSelfLink,
-            CosmosContainerSettings col,
+            DocumentCollection col,
             RequestOptions requestOptions = null)
         {
             return await client.CreateDocumentCollectionAsync(
@@ -1595,34 +1600,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions);
         }
 
-        public static async Task<CosmosContainerSettings> CreateCollectionAsync(
+        public static async Task<DocumentCollection> CreateCollectionAsync(
             DocumentClient client,
-            CosmosDatabaseSettings db,
-            CosmosContainerSettings col,
+            Database db,
+            DocumentCollection col,
             RequestOptions requestOptions = null)
         {
             return await client.CreateDocumentCollectionAsync(
-                db,
+                db.SelfLink,
                 col,
                 requestOptions);
         }
 
-        public static async Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionResourceAsync(
+        public static async Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionResourceAsync(
             DocumentClient client,
-            CosmosDatabaseSettings db,
-            CosmosContainerSettings col,
+            Database db,
+            DocumentCollection col,
             RequestOptions requestOptions = null)
         {
             return await client.CreateDocumentCollectionAsync(
-                db,
+                db.SelfLink,
                 col,
                 requestOptions);
         }
 
-        public static async Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionResourceAsync(
+        public static async Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionResourceAsync(
             DocumentClient client,
             string dbSelflink,
-            CosmosContainerSettings col,
+            DocumentCollection col,
             RequestOptions requestOptions = null)
         {
             return await client.CreateDocumentCollectionAsync(

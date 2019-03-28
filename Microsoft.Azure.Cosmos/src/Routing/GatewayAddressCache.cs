@@ -17,6 +17,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     internal class GatewayAddressCache : IAddressCache, IDisposable
     {
@@ -88,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public async Task OpenAsync(
+            string databaseName,
             CosmosContainerSettings collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
             CancellationToken cancellationToken)
@@ -103,9 +108,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 #endif
 
+            string collectionAltLink = string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseName),
+                Paths.CollectionsPathSegment, Uri.EscapeUriString(collection.Id));
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
-                OperationType.Read, 
-                collection.AltLink, 
+                OperationType.Read,
+                collectionAltLink,
                 ResourceType.Collection, 
                 AuthorizationTokenType.PrimaryMasterKey))
             { 

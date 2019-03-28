@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
             );
 
             // DocumentClient is not initialized with any consistency overrides so default is backend consistency
-            this.AccountConsistencyLevel = this.DocumentClient.ConsistencyLevel;
+            this.AccountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
 
             this.RequestHandler = clientPipelineBuilder.Build();
             this.Databases = new CosmosDatabases(this);

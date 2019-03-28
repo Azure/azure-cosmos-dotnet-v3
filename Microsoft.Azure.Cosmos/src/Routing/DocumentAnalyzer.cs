@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.Azure.Documents;
 
     internal class DocumentAnalyzer
     {

@@ -14,9 +14,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Internal.RntbdConstants;
     using static Microsoft.Azure.Cosmos.Routing.PartitionRoutingHelper;
+    using static Microsoft.Azure.Documents.RntbdConstants;
 
     /// <summary>
     /// Handler which manages the continution token and partion-key-range-id selection depending on a provided start and end epk and direction. 
