@@ -16,12 +16,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
     {
         private readonly DocumentServiceLease lease;
         private readonly ChangeFeedObserver<T> observer;
-        private readonly PartitionProcessor processor;
+        private readonly FeedProcessor processor;
         private readonly LeaseRenewer renewer;
         private readonly CancellationTokenSource renewerCancellation = new CancellationTokenSource();
         private CancellationTokenSource processorCancellation;
 
-        public PartitionSupervisorCore(DocumentServiceLease lease, ChangeFeedObserver<T> observer, PartitionProcessor processor, LeaseRenewer renewer)
+        public PartitionSupervisorCore(DocumentServiceLease lease, ChangeFeedObserver<T> observer, FeedProcessor processor, LeaseRenewer renewer)
         {
             this.lease = lease;
             this.observer = observer;
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
                 closeReason = ChangeFeedObserverCloseReason.LeaseLost;
                 throw;
             }
-            catch (PartitionSplitException)
+            catch (FeedSplitException)
             {
                 closeReason = ChangeFeedObserverCloseReason.LeaseGone;
                 throw;

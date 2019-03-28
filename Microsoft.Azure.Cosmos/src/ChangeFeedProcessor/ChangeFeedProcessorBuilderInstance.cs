@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         internal ChangeFeedProcessorOptions changeFeedProcessorOptions;
         internal ChangeFeedLeaseOptions changeFeedLeaseOptions;
         internal ChangeFeedObserverFactory<T> observerFactory = null;
-        internal PartitionLoadBalancingStrategy loadBalancingStrategy;
-        internal PartitionProcessorFactory<T> partitionProcessorFactory = null;
+        internal LoadBalancingStrategy loadBalancingStrategy;
+        internal FeedProcessorFactory<T> partitionProcessorFactory = null;
         internal HealthMonitor healthMonitor;
         internal CosmosContainer monitoredContainer;
         internal CosmosContainer leaseContainer;
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             var partitionSuperviserFactory = new PartitionSupervisorFactoryCore<T>(
                 factory,
                 leaseStoreManager.LeaseManager,
-                this.partitionProcessorFactory ?? new PartitionProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, leaseStoreManager.LeaseCheckpointer),
+                this.partitionProcessorFactory ?? new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, leaseStoreManager.LeaseCheckpointer),
                 this.changeFeedLeaseOptions);
 
             if (this.loadBalancingStrategy == null)

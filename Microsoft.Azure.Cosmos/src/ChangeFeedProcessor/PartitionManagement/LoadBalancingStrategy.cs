@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
     /// <example>
     /// <code language="C#">
     /// <![CDATA[
-    /// public class CustomStrategy : PartitionLoadBalancingStrategy
+    /// public class CustomStrategy : LoadBalancingStrategy
     /// {
     ///     private string hostName;
     ///     private string hostVersion;
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
     ///
     ///     private const string VersionPropertyKey = "version";
     ///
-    ///     public IEnumerable<ILease> SelectLeasesToTake(IEnumerable<ILease> allLeases)
+    ///     public IEnumerable<DocumentServiceLease> SelectLeasesToTake(IEnumerable<DocumentServiceLease> allLeases)
     ///     {
     ///         var takenLeases = this.FindLeasesToTake(allLeases);
     ///         foreach (var lease in takenLeases)
@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
     ///         return takenLeases;
     ///     }
     ///
-    ///     private IEnumerable<ILease> FindLeasesToTake(IEnumerable<ILease> allLeases)
+    ///     private IEnumerable<ILease> FindLeasesToTake(IEnumerable<DocumentServiceLease> allLeases)
     ///     {
-    ///         List<ILease> takenLeases = new List<ILease>();
+    ///         List<DocumentServiceLease> takenLeases = new List<DocumentServiceLease>();
     ///         foreach (var lease in allLeases)
     ///         {
     ///             if (string.IsNullOrWhiteSpace(lease.Owner) || this.IsExpired(lease))
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
     ///         return takenLeases;
     ///     }
     ///
-    ///     private bool IsExpired(ILease lease)
+    ///     private bool IsExpired(DocumentServiceLease lease)
     ///     {
     ///         return lease.Timestamp.ToUniversalTime() + this.leaseExpirationInterval < DateTime.UtcNow;
     ///     }
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class PartitionLoadBalancingStrategy
+    public abstract class LoadBalancingStrategy
     {
         /// <summary>
         /// Select leases that should be taken for processing.

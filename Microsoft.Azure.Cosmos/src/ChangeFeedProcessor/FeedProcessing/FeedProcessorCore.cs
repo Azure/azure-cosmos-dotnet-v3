@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
     using Microsoft.Azure.Documents;
 
-    internal sealed class PartitionProcessorCore<T> : PartitionProcessor
+    internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
         private static readonly int DefaultMaxItemCount = 100;
         private readonly ILog logger = LogProvider.GetCurrentClassLogger();
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
         private readonly ChangeFeedObserver<T> observer;
         private readonly ChangeFeedOptions options;
 
-        public PartitionProcessorCore(ChangeFeedObserver<T> observer, CosmosContainer container, ProcessorSettings settings, PartitionCheckpointer checkpointer)
+        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosContainer container, ProcessorSettings settings, PartitionCheckpointer checkpointer)
         {
             this.observer = observer;
             this.settings = settings;
@@ -78,9 +78,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
                     switch (docDbError)
                     {
                         case DocDbError.PartitionNotFound:
-                            throw new PartitionNotFoundException("Partition not found.", lastContinuation);
+                            throw new FeedNotFoundException("Partition not found.", lastContinuation);
                         case DocDbError.PartitionSplit:
-                            throw new PartitionSplitException("Partition split.", lastContinuation);
+                            throw new FeedSplitException("Partition split.", lastContinuation);
                         case DocDbError.Undefined:
                             throw;
                         case DocDbError.TransientError:

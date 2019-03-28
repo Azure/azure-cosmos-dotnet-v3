@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement;
 
-    internal class PartitionProcessorFactoryCore<T> : PartitionProcessorFactory<T>
+    internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
     {
         private readonly CosmosContainer container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
 
-        public PartitionProcessorFactoryCore(
+        public FeedProcessorFactoryCore(
             CosmosContainer container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             DocumentServiceLeaseCheckpointer leaseCheckpointer)
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
             this.leaseCheckpointer = leaseCheckpointer;
         }
 
-        public override PartitionProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer)
+        public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer)
         {
             if (observer == null) throw new ArgumentNullException(nameof(observer));
             if (lease == null) throw new ArgumentNullException(nameof(lease));
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
             };
 
             var checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
-            return new PartitionProcessorCore<T>(observer, this.container, settings, checkpointer);
+            return new FeedProcessorCore<T>(observer, this.container, settings, checkpointer);
         }
     }
 }

@@ -14,12 +14,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
         private readonly ChangeFeedObserverFactory<T> observerFactory;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly ChangeFeedLeaseOptions changeFeedLeaseOptions;
-        private readonly PartitionProcessorFactory<T> partitionProcessorFactory;
+        private readonly FeedProcessorFactory<T> partitionProcessorFactory;
 
         public PartitionSupervisorFactoryCore(
             ChangeFeedObserverFactory<T> observerFactory,
             DocumentServiceLeaseManager leaseManager,
-            PartitionProcessorFactory<T> partitionProcessorFactory,
+            FeedProcessorFactory<T> partitionProcessorFactory,
             ChangeFeedLeaseOptions options)
         {
             if (observerFactory == null) throw new ArgumentNullException(nameof(observerFactory));

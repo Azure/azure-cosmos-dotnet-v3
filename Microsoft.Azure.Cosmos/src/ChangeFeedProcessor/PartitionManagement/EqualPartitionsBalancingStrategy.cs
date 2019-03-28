@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
 
-    internal sealed class EqualPartitionsBalancingStrategy : PartitionLoadBalancingStrategy
+    internal sealed class EqualPartitionsBalancingStrategy : LoadBalancingStrategy
     {
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly string hostName;

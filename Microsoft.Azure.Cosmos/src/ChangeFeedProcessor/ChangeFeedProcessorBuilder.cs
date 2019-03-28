@@ -215,11 +215,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="PartitionLoadBalancingStrategy"/> to be used for partition load balancing
+        /// Sets the <see cref="LoadBalancingStrategy"/> to be used for partition load balancing
         /// </summary>
-        /// <param name="strategy">The instance of <see cref="PartitionLoadBalancingStrategy"/> to use.</param>
+        /// <param name="strategy">The instance of <see cref="LoadBalancingStrategy"/> to use.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithPartitionLoadBalancingStrategy(PartitionLoadBalancingStrategy strategy)
+        public ChangeFeedProcessorBuilder<T> WithPartitionLoadBalancingStrategy(LoadBalancingStrategy strategy)
         {
             if (strategy == null) throw new ArgumentNullException(nameof(strategy));
             this.changeFeedProcessorBuilderInstance.loadBalancingStrategy = strategy;
@@ -227,11 +227,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="PartitionProcessorFactory{T}"/> to be used to create <see cref="PartitionProcessor"/> for partition processing.
+        /// Sets the <see cref="FeedProcessorFactory{T}"/> to be used to create <see cref="FeedProcessor"/> for partition processing.
         /// </summary>
-        /// <param name="partitionProcessorFactory">The instance of <see cref="PartitionProcessorFactory{T}"/> to use.</param>
+        /// <param name="partitionProcessorFactory">The instance of <see cref="FeedProcessorFactory{T}"/> to use.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithPartitionProcessorFactory(PartitionProcessorFactory<T> partitionProcessorFactory)
+        public ChangeFeedProcessorBuilder<T> WithPartitionProcessorFactory(FeedProcessorFactory<T> partitionProcessorFactory)
         {
             if (partitionProcessorFactory == null) throw new ArgumentNullException(nameof(partitionProcessorFactory));
             this.changeFeedProcessorBuilderInstance.partitionProcessorFactory = partitionProcessorFactory;

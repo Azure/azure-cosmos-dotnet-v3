@@ -8,40 +8,40 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
     using System.Runtime.Serialization;
 
     /// <summary>
-    /// General exception occurred during partition processing.
+    /// General exception occurred during feed processing.
     /// </summary>
     [Serializable]
-    public class PartitionException : Exception
+    public class FeedProcessingException : Exception
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PartitionException"/> class using error message and last continuation token.
+        /// Initializes a new instance of the <see cref="FeedProcessingException"/> class using error message and last continuation token.
         /// </summary>
         /// <param name="message">The exception error message.</param>
         /// <param name="lastContinuation">Request continuation token.</param>
-        protected PartitionException(string message, string lastContinuation)
+        protected FeedProcessingException(string message, string lastContinuation)
             : base(message)
         {
             this.LastContinuation = lastContinuation;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PartitionException" /> class using error message and inner exception.
+        /// Initializes a new instance of the <see cref="FeedProcessingException" /> class using error message and inner exception.
         /// </summary>
         /// <param name="message">The exception error message.</param>
         /// <param name="lastContinuation">Request continuation token.</param>
         /// <param name="innerException">The inner exception.</param>
-        protected PartitionException(string message, string lastContinuation, Exception innerException)
+        protected FeedProcessingException(string message, string lastContinuation, Exception innerException)
             : base(message, innerException)
         {
             this.LastContinuation = lastContinuation;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PartitionException" /> class using default values.
+        /// Initializes a new instance of the <see cref="FeedProcessingException" /> class using default values.
         /// </summary>
         /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
         /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
-        protected PartitionException(SerializationInfo info, StreamingContext context)
+        protected FeedProcessingException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             this.LastContinuation = (string)info.GetValue("LastContinuation", typeof(string));

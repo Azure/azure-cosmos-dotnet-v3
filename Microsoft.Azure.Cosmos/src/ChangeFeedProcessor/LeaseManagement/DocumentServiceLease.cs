@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
         public abstract string ConcurrencyToken { get; }
 
         /// <summary>
-        /// Gets or sets custom lease properties which can be managed from <see cref="PartitionLoadBalancingStrategy"/>.
+        /// Gets or sets custom lease properties which can be managed from <see cref="LoadBalancingStrategy"/>.
         /// </summary>
         public abstract Dictionary<string, string> Properties { get; set; }
     }

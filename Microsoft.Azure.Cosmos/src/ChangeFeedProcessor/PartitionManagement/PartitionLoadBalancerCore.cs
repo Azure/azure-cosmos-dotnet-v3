@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly PartitionController partitionController;
         private readonly DocumentServiceLeaseContainer leaseContainer;
-        private readonly PartitionLoadBalancingStrategy partitionLoadBalancingStrategy;
+        private readonly LoadBalancingStrategy partitionLoadBalancingStrategy;
         private readonly TimeSpan leaseAcquireInterval;
         private readonly CancellationTokenSource cancellationTokenSource;
         private Task runTask;
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
         public PartitionLoadBalancerCore(
             PartitionController partitionController,
             DocumentServiceLeaseContainer leaseContainer,
-            PartitionLoadBalancingStrategy partitionLoadBalancingStrategy,
+            LoadBalancingStrategy partitionLoadBalancingStrategy,
             TimeSpan leaseAcquireInterval)
         {
             if (partitionController == null) throw new ArgumentNullException(nameof(partitionController));

@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.PartitionManagement
             {
                 await partitionSupervisor.RunAsync(this.shutdownCts.Token).ConfigureAwait(false);
             }
-            catch (PartitionSplitException ex)
+            catch (FeedSplitException ex)
             {
                 await this.HandleSplitAsync(lease, ex.LastContinuation).ConfigureAwait(false);
             }
