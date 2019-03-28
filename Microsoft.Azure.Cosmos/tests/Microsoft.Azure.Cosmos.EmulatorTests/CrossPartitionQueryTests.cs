@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return ranges;
         }
 
-        private async Task<CosmosContainer> CreatePartitionCollection(string partitionKey = "/id", Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        private async Task<CosmosContainer> CreatePartitionContainer(string partitionKey = "/id", Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             CosmosContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings
@@ -123,9 +123,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return containerResponse;
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedCollectionAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null)
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedContainerAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            CosmosContainer partitionedCollection = await this.CreatePartitionCollection(partitionKey, indexingPolicy);
+            CosmosContainer partitionedCollection = await this.CreatePartitionContainer(partitionKey, indexingPolicy);
             List<Document> insertedDocuments = new List<Document>();
             foreach (string document in documents)
             {
@@ -229,10 +229,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Task that wraps boiler plate code for query tests (container create -> ingest documents -> query documents -> delete collections).
-        /// Note that this function will take the cross product connectionModes and collectionTypes.
+        /// Note that this function will take the cross product connectionModes
         /// </summary>
         /// <param name="connectionModes">The connection modes to use.</param>
-        /// <param name="collectionTypes">The type of collections to create.</param>
         /// <param name="documents">The documents to ingest</param>
         /// <param name="query">
         /// The callback for the queries.
@@ -261,9 +260,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<Task<Tuple<CosmosContainer, List<Document>>>> createDocumentCollectionTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>();
+                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>();
 
-                    Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createDocumentCollectionTasks);
+                    Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
 
                     List<CosmosClient> cosmosClients = new List<CosmosClient>();
                     foreach (ConnectionModes connectionMode in Enum.GetValues(connectionModes.GetType()).Cast<Enum>().Where(connectionModes.HasFlag))
@@ -304,13 +303,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
 
-                    List<Task<CosmosContainerResponse>> deleteCollectionTasks = new List<Task<CosmosContainerResponse>>();
+                    List<Task<CosmosContainerResponse>> deleteContainerTasks = new List<Task<CosmosContainerResponse>>();
                     foreach (CosmosContainer container in collectionsAndDocuments.Select(tuple => tuple.Item1))
                     {
-                        deleteCollectionTasks.Add(container.DeleteAsync());
+                        deleteContainerTasks.Add(container.DeleteAsync());
                     }
 
-                    await Task.WhenAll(deleteCollectionTasks);
+                    await Task.WhenAll(deleteContainerTasks);
 
                     // If you made it here then it's all good
                     break;
