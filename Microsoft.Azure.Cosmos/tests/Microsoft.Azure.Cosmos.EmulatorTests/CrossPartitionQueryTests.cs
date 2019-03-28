@@ -50,15 +50,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Gateway = 0x2,
         }
 
-        [ClassInitialize]
-        public async Task Initialize(TestContext textContext)
+        [TestInitialize]
+        public async Task Initialize()
         {
             await this.CleanUp();
-        }
-
-        [TestInitialize]
-        public async Task TestInitialize()
-        {
             this.database = await this.Client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
