@@ -21,11 +21,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
     public class ChangeFeedProcessorBuilder<T>
     {
         private const string InMemoryDefaultHostName = "InMemory";
+        private const string EstimatorDefaultHostName = "Estimator";
 
         private readonly CosmosContainer initialCosmosContainer;
         private readonly Func<IReadOnlyList<T>, CancellationToken, Task> initialChangesDelegate;
+        private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
 
         private ChangeFeedProcessorBuilderInstance<T> changeFeedProcessorBuilderInstance;
+
+        private bool IsBuildingEstimator => this.initialEstimateDelegate != null;
 
         internal string InstanceName
         {
@@ -54,6 +58,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         {
             this.initialChangesDelegate = onChangesDelegate;
             this.changeFeedProcessorBuilderInstance.observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+        }
+
+        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate)
+            : this(cosmosContainer)
+        {
+            this.initialEstimateDelegate = estimateDelegate;
+            this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher<T>(estimateDelegate);
         }
 
         /// <summary>
@@ -146,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="HealthMonitor"/> to be used to monitor unhealthiness situation.
+        /// Sets the <see cref="HealthMonitor"/> to be used to monitor lease unhealthiness situation.
         /// </summary>
         /// <param name="healthMonitor">The instance of <see cref="HealthMonitor"/> to use.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
@@ -163,20 +174,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>
         public async Task<ChangeFeedProcessor> BuildAsync()
         {
+            if (IsBuildingEstimator)
+            {
+                this.changeFeedProcessorBuilderInstance.InstanceName = ChangeFeedProcessorBuilder<T>.EstimatorDefaultHostName;
+            }
+
             ChangeFeedProcessor changeFeedProcessor =  await this.changeFeedProcessorBuilderInstance.BuildAsync().ConfigureAwait(false);
             this.Reset();
             return changeFeedProcessor;
-        }
-
-        /// <summary>
-        /// Builds a new instance of the <see cref="RemainingWorkEstimator"/> to estimate pending work with the specified configuration.
-        /// </summary>
-        /// <returns>An instance of <see cref="RemainingWorkEstimator"/>.</returns>
-        public async Task<RemainingWorkEstimator> BuildEstimatorAsync()
-        {
-            RemainingWorkEstimator remainingWorkEstimator = await this.changeFeedProcessorBuilderInstance.BuildEstimatorAsync().ConfigureAwait(false);
-            this.Reset();
-            return remainingWorkEstimator;
         }
 
         private void Reset()
@@ -186,6 +191,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             if (this.initialChangesDelegate != null)
             {
                 this.changeFeedProcessorBuilderInstance.observerFactory = new ChangeFeedObserverFactoryCore<T>(this.initialChangesDelegate);
+            }
+
+            if (this.initialEstimateDelegate != null)
+            {
+                this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher<T>(this.initialEstimateDelegate);
             }
         }
     }

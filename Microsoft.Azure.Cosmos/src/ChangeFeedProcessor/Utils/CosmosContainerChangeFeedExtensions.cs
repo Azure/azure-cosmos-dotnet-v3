@@ -28,14 +28,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed estimating.
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed monitoring.
         /// </summary>
         /// <param name="cosmosContainer">Cosmos Container that is being monitored for changes.</param>
+        /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <returns></returns>
-        public static ChangeFeedProcessorBuilder<dynamic> CreateChangeFeedEstimatorBuilder(this CosmosContainer cosmosContainer)
+        public static ChangeFeedProcessorBuilder<dynamic> CreateChangeFeedProcessorBuilder(this CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimationDelegate)
         {
             if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
-            return new ChangeFeedProcessorBuilder<dynamic>(cosmosContainer);
+            if (estimationDelegate == null) throw new ArgumentNullException(nameof(estimationDelegate));
+            return new ChangeFeedProcessorBuilder<dynamic>(cosmosContainer, estimationDelegate);
         }
     }
 }

@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         internal ChangeFeedProcessorOptions changeFeedProcessorOptions;
         internal ChangeFeedLeaseOptions changeFeedLeaseOptions;
         internal ChangeFeedObserverFactory<T> observerFactory = null;
+        internal ChangeFeedEstimatorDispatcher<T> estimatorDispatcher = null;
         internal LoadBalancingStrategy loadBalancingStrategy;
         internal FeedProcessorFactory<T> partitionProcessorFactory = null;
         internal HealthMonitor healthMonitor;
@@ -33,11 +34,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         public async Task<ChangeFeedProcessor> BuildAsync()
         {
-            if (this.InstanceName == null)
-            {
-                throw new InvalidOperationException("Instance name was not specified");
-            }
-
             if (this.monitoredContainer == null)
             {
                 throw new InvalidOperationException(nameof(this.monitoredContainer) + " was not specified");
@@ -48,45 +44,40 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                 throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer, WithInMemoryLeaseContainer, or WithLeaseStoreManager is required.");
             }
 
-            if (this.observerFactory == null)
+            if (this.observerFactory == null && this.estimatorDispatcher == null)
             {
-                throw new InvalidOperationException("Observer was not specified");
+                throw new InvalidOperationException("Observer or Dispatcher need to be specified.");
+            }
+
+            if (this.observerFactory != null && this.InstanceName == null)
+            {
+                // Processor requires Instace Name
+                throw new InvalidOperationException("Instance name was not specified");
             }
 
             this.InitializeDefaultOptions();
             this.InitializeCollectionPropertiesForBuild();
 
             DocumentServiceLeaseStoreManager leaseStoreManager = await this.GetLeaseStoreManagerAsync().ConfigureAwait(false);
-            PartitionManager partitionManager = this.BuildPartitionManager(leaseStoreManager);
-            return new ChangeFeedProcessorCore(partitionManager);
+
+            if (this.observerFactory != null)
+            {
+                PartitionManager partitionManager = this.BuildPartitionManager(leaseStoreManager);
+                return new ChangeFeedProcessorCore(partitionManager);
+            }
+
+            FeedEstimator remainingWorkEstimator = this.BuildFeedEstimator(leaseStoreManager);
+            return new ChangeFeedEstimatorCore(remainingWorkEstimator);
         }
 
-        /// <summary>
-        /// Builds a new instance of the <see cref="RemainingWorkEstimator"/> to estimate pending work with the specified configuration.
-        /// </summary>
-        /// <returns>An instance of <see cref="RemainingWorkEstimator"/>.</returns>
-        public async Task<RemainingWorkEstimator> BuildEstimatorAsync()
+        private FeedEstimator BuildFeedEstimator(DocumentServiceLeaseStoreManager leaseStoreManager)
         {
-            if (this.monitoredContainer == null)
-            {
-                throw new InvalidOperationException(nameof(this.monitoredContainer) + " was not specified");
-            }
+            RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
+               leaseStoreManager.LeaseContainer,
+               this.monitoredContainer,
+               this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
 
-            if (this.leaseContainer == null && this.LeaseStoreManager == null)
-            {
-                throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer, WithInMemoryLeaseContainer, or WithLeaseStoreManager is required.");
-            }
-
-            this.InitializeDefaultOptions();
-            this.InitializeCollectionPropertiesForBuild();
-
-            var leaseStoreManager = await this.GetLeaseStoreManagerAsync().ConfigureAwait(false);
-
-            RemainingWorkEstimator remainingWorkEstimator = new RemainingWorkEstimatorCore(
-                leaseStoreManager.LeaseContainer,
-                this.monitoredContainer,
-                this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
-            return remainingWorkEstimator;
+            return new FeedEstimatorCore<T>(this.estimatorDispatcher, remainingWorkEstimator, null);
         }
 
         private PartitionManager BuildPartitionManager(DocumentServiceLeaseStoreManager leaseStoreManager)

@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
                 }
                 catch (DocumentClientException clientException)
                 {
-                    this.logger.WarnException("exception: partition '{0}'", clientException, this.settings.LeaseToken);
+                    this.logger.WarnException("exception: lease token '{0}'", clientException, this.settings.LeaseToken);
                     DocDbError docDbError = ExceptionClassifier.ClassifyClientException(clientException);
                     switch (docDbError)
                     {
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
                     if (cancellationToken.IsCancellationRequested)
                         throw;
 
-                    this.logger.WarnException("exception: partition '{0}'", canceledException, this.settings.LeaseToken);
+                    this.logger.WarnException("exception: lease token '{0}'", canceledException, this.settings.LeaseToken);
 
                     // ignore as it is caused by DocumentDB client
                 }
