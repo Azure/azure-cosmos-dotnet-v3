@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     /// <summary>
     /// Factory class used to create instance(s) of <see cref="FeedProcessor"/>.
     /// </summary>
-    public abstract class FeedProcessorFactory<T>
+    internal abstract class FeedProcessorFactory<T>
     {
         /// <summary>
         /// Creates an instance of a <see cref="FeedProcessor"/>.

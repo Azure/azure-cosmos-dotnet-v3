@@ -13,97 +13,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     /// <summary>
     /// Provides a flexible way to to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
     /// </summary>
-    /// <example>
-    /// <code language="C#">
-    /// <![CDATA[
-    /// // Observer.cs
-    /// namespace Sample
-    /// {
-    ///     using System;
-    ///     using System.Collections.Generic;
-    ///     using System.Threading;
-    ///     using System.Threading.Tasks;
-    ///     using Microsoft.Azure.Documents;
-    ///     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
-    ///
-    ///     class SampleObserver : IChangeFeedObserver
-    ///     {
-    ///         public Task CloseAsync(IChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason)
-    ///         {
-    ///             return Task.CompletedTask;  // Note: requires targeting .Net 4.6+.
-    ///         }
-    ///
-    ///         public Task OpenAsync(IChangeFeedObserverContext context)
-    ///         {
-    ///             return Task.CompletedTask;
-    ///         }
-    ///
-    ///         public Task ProcessChangesAsync(IChangeFeedObserverContext context, IReadOnlyList<Document> docs, CancellationToken cancellationToken)
-    ///         {
-    ///             Console.WriteLine("ProcessChangesAsync: partition {0}, {1} docs", context.PartitionKeyRangeId, docs.Count);
-    ///             return Task.CompletedTask;
-    ///         }
-    ///     }
-    /// }
-    ///
-    /// // Main.cs
-    /// namespace Sample
-    /// {
-    ///     using System;
-    ///     using System.Threading.Tasks;
-    ///     using Microsoft.Azure.Cosmos.ChangeFeedProcessor;
-    ///     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
-    ///
-    ///     class ChangeFeedProcessorSample
-    ///     {
-    ///         public static void Run()
-    ///         {
-    ///             RunAsync().Wait();
-    ///         }
-    ///
-    ///         static async Task RunAsync()
-    ///         {
-    ///             DocumentCollectionInfo feedCollectionInfo = new DocumentCollectionInfo()
-    ///             {
-    ///                 DatabaseName = "DatabaseName",
-    ///                 CollectionName = "MonitoredCollectionName",
-    ///                 Uri = new Uri("https://sampleservice.documents.azure.com:443/"),
-    ///                 MasterKey = "-- the auth key"
-    ///             };
-    ///
-    ///             DocumentCollectionInfo leaseCollectionInfo = new DocumentCollectionInfo()
-    ///             {
-    ///                 DatabaseName = "DatabaseName",
-    ///                 CollectionName = "leases",
-    ///                 Uri = new Uri("https://sampleservice.documents.azure.com:443/"),
-    ///                 MasterKey = "-- the auth key"
-    ///             };
-    ///
-    ///             var builder = new ChangeFeedProcessorBuilder();
-    ///             var processor = await builder
-    ///                 .WithHostName("SampleHost")
-    ///                 .WithFeedCollection(feedCollectionInfo)
-    ///                 .WithLeaseCollection(leaseCollectionInfo)
-    ///                 .WithObserver<SampleObserver>()
-    ///                 .BuildAsync();
-    ///
-    ///             await processor.StartAsync();
-    ///
-    ///             Console.WriteLine("Change Feed Processor started. Press <Enter> key to stop...");
-    ///             Console.ReadLine();
-    ///
-    ///             await processor.StopAsync();
-    ///         }
-    ///     }
-    /// }
-    /// ]]>
-    /// </code>
-    /// </example>
+
     public class ChangeFeedProcessorBuilder<T>
     {
         private const string InMemoryDefaultHostName = "InMemory";
@@ -113,9 +27,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         private ChangeFeedProcessorBuilderInstance<T> changeFeedProcessorBuilderInstance;
 
-        internal string HostName
+        internal string InstanceName
         {
-            get => this.changeFeedProcessorBuilderInstance.HostName;
+            get => this.changeFeedProcessorBuilderInstance.InstanceName;
         }
 
         /// <summary>
@@ -145,26 +59,43 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <summary>
         /// Sets the Host name.
         /// </summary>
-        /// <param name="hostName">Name to be used for the host. When using multiple hosts, each host must have a unique name.</param>
+        /// <param name="instanceName">Name to be used for the processor instance. When using multiple processor hosts, each host must have a unique name.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithHostName(string hostName)
+        public ChangeFeedProcessorBuilder<T> WithInstanceName(string instanceName)
         {
-            this.changeFeedProcessorBuilderInstance.HostName = hostName;
+            this.changeFeedProcessorBuilderInstance.InstanceName = instanceName;
             return this;
         }
 
         /// <summary>
         /// Sets the <see cref="ChangeFeedLeaseOptions"/> to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container.
         /// </summary>
-        /// <remarks>
-        /// This does not apply when using <see cref="WithInMemoryLeaseContainer"/>.
-        /// </remarks>
-        /// <param name="changeFeedLeaseOptions">The instance of <see cref="ChangeFeedLeaseOptions"/> to use.</param>
+        /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
+        /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
+        /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithLeaseOptions(ChangeFeedLeaseOptions changeFeedLeaseOptions)
+        public ChangeFeedProcessorBuilder<T> WithCustomLeaseInternvals(TimeSpan? renewInterval, TimeSpan? acquireInterval, TimeSpan? expirationInterval)
         {
-            if (changeFeedLeaseOptions == null) throw new ArgumentNullException(nameof(changeFeedLeaseOptions));
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions = changeFeedLeaseOptions;
+            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions = this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;
+            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseAcquireInterval = acquireInterval ?? ChangeFeedLeaseOptions.DefaultAcquireInterval;
+            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseExpirationInterval = expirationInterval ?? ChangeFeedLeaseOptions.DefaultExpirationInterval;
+            return this;
+        }
+
+        /// <summary>
+        /// Required when using <see cref="WithCosmosLeaseContainer(CosmosContainer)"/> and the lease container is shared with other processors.
+        /// </summary>
+        /// <remarks>
+        /// When using multiple instances of the same processor, the same prefix should be used for all of them. This is particularly meant for scenarios when processors with different logic / delegate are sharing the same lease container.
+        /// </remarks>
+        /// <param name="leasePrefix">Prefix to use for the leases.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
+        public ChangeFeedProcessorBuilder<T> WithLeasePrefix(string leasePrefix)
+        {
+            if (string.IsNullOrEmpty(leasePrefix)) throw new ArgumentNullException(nameof(leasePrefix));
+            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions = this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeasePrefix = leasePrefix;
             return this;
         }
 
@@ -205,63 +136,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         {
             if (this.changeFeedProcessorBuilderInstance.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.changeFeedProcessorBuilderInstance.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container or a custom Lease Store Manager instance.");
-            if (string.IsNullOrEmpty(this.HostName))
+            if (string.IsNullOrEmpty(this.InstanceName))
             {
-                this.changeFeedProcessorBuilderInstance.HostName = ChangeFeedProcessorBuilder<T>.InMemoryDefaultHostName;
+                this.changeFeedProcessorBuilderInstance.InstanceName = ChangeFeedProcessorBuilder<T>.InMemoryDefaultHostName;
             }
 
             this.changeFeedProcessorBuilderInstance.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="LoadBalancingStrategy"/> to be used for load balancing
-        /// </summary>
-        /// <param name="strategy">The instance of <see cref="LoadBalancingStrategy"/> to use.</param>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithLoadBalancingStrategy(LoadBalancingStrategy strategy)
-        {
-            if (strategy == null) throw new ArgumentNullException(nameof(strategy));
-            this.changeFeedProcessorBuilderInstance.loadBalancingStrategy = strategy;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="FeedProcessorFactory{T}"/> to be used to create <see cref="FeedProcessor"/> for feed processing.
-        /// </summary>
-        /// <param name="partitionProcessorFactory">The instance of <see cref="FeedProcessorFactory{T}"/> to use.</param>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithFeedProcessorFactory(FeedProcessorFactory<T> partitionProcessorFactory)
-        {
-            if (partitionProcessorFactory == null) throw new ArgumentNullException(nameof(partitionProcessorFactory));
-            this.changeFeedProcessorBuilderInstance.partitionProcessorFactory = partitionProcessorFactory;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="FeedProcessing.ChangeFeedObserverFactory{T}"/> to be used to generate <see cref="FeedProcessing.ChangeFeedObserver{T}"/>
-        /// </summary>
-        /// <param name="observerFactory">The instance of <see cref="FeedProcessing.ChangeFeedObserverFactory{T}"/> to use.</param>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithObserverFactory(ChangeFeedObserverFactory<T> observerFactory)
-        {
-            if (observerFactory == null) throw new ArgumentNullException(nameof(observerFactory));
-            if (this.changeFeedProcessorBuilderInstance.observerFactory != null) throw new InvalidOperationException("A listening mechanism was already defined, either by a previous call to WIthObserverFactory or through the delegate in the constructor.");
-            this.changeFeedProcessorBuilderInstance.observerFactory = observerFactory;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="DocumentServiceLeaseStoreManager"/> to be used to manage leases.
-        /// </summary>
-        /// <param name="leaseStoreManager">The instance of <see cref="DocumentServiceLeaseStoreManager"/> to use.</param>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithLeaseStoreManager(DocumentServiceLeaseStoreManager leaseStoreManager)
-        {
-            if (leaseStoreManager == null) throw new ArgumentNullException(nameof(leaseStoreManager));
-            if (this.changeFeedProcessorBuilderInstance.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
-            if (this.changeFeedProcessorBuilderInstance.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container or a custom Lease Store Manager instance.");
-            this.changeFeedProcessorBuilderInstance.LeaseStoreManager = leaseStoreManager;
             return this;
         }
 

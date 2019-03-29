@@ -13,6 +13,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
 
     internal sealed class EqualPartitionsBalancingStrategy : LoadBalancingStrategy
     {
+        internal static int DefaultMinLeaseCount = 0;
+        internal static int DefaultMaxLeaseCount = 0;
+
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly string hostName;
         private readonly int minPartitionCount;

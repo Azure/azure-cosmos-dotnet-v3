@@ -17,10 +17,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
     internal sealed class ChangeFeedProcessorBuilderInstance<T>
     {
-        private static readonly long DefaultUnhealthinessDuration = TimeSpan.FromMinutes(15).Ticks;
-        private readonly TimeSpan sleepTime = TimeSpan.FromSeconds(15);
-        private readonly TimeSpan lockTime = TimeSpan.FromSeconds(30);
-
         internal ChangeFeedProcessorOptions changeFeedProcessorOptions;
         internal ChangeFeedLeaseOptions changeFeedLeaseOptions;
         internal ChangeFeedObserverFactory<T> observerFactory = null;
@@ -29,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         internal HealthMonitor healthMonitor;
         internal CosmosContainer monitoredContainer;
         internal CosmosContainer leaseContainer;
-        internal string HostName;
+        internal string InstanceName;
         internal DocumentServiceLeaseStoreManager LeaseStoreManager;
 
         private string databaseResourceId;
@@ -37,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         public async Task<ChangeFeedProcessor> BuildAsync()
         {
-            if (this.HostName == null)
+            if (this.InstanceName == null)
             {
-                throw new InvalidOperationException("Host name was not specified");
+                throw new InvalidOperationException("Instance name was not specified");
             }
 
             if (this.monitoredContainer == null)
@@ -100,9 +96,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                 this.monitoredContainer,
                 leaseStoreManager.LeaseContainer,
                 leaseStoreManager.LeaseManager,
-                this.changeFeedLeaseOptions.DegreeOfParallelism,
+                PartitionSynchronizerCore.DefaultDegreeOfParallelism,
                 this.changeFeedProcessorOptions.QueryFeedMaxBatchSize);
-            var bootstrapper = new BootstrapperCore(synchronizer, leaseStoreManager.LeaseStore, this.lockTime, this.sleepTime);
+            var bootstrapper = new BootstrapperCore(synchronizer, leaseStoreManager.LeaseStore, BootstrapperCore.DefaultLockTime, BootstrapperCore.DefaultSleepTime);
             var partitionSuperviserFactory = new PartitionSupervisorFactoryCore<T>(
                 factory,
                 leaseStoreManager.LeaseManager,
@@ -112,9 +108,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             if (this.loadBalancingStrategy == null)
             {
                 this.loadBalancingStrategy = new EqualPartitionsBalancingStrategy(
-                    this.HostName,
-                    this.changeFeedLeaseOptions.MinLeaseCount,
-                    this.changeFeedLeaseOptions.MaxLeaseCount,
+                    this.InstanceName,
+                    EqualPartitionsBalancingStrategy.DefaultMinLeaseCount,
+                    EqualPartitionsBalancingStrategy.DefaultMaxLeaseCount,
                     this.changeFeedLeaseOptions.LeaseExpirationInterval);
             }
 
@@ -160,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                     .WithLeasePrefix(leasePrefix)
                     .WithLeaseContainer(this.leaseContainer)
                     .WithRequestOptionsFactory(requestOptionsFactory)
-                    .WithHostName(this.HostName);
+                    .WithHostName(this.InstanceName);
 
                 this.LeaseStoreManager = await leaseStoreManagerBuilder.BuildAsync().ConfigureAwait(false);
             }

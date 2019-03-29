@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     /// <summary>
     /// This interface is used to deliver change events to document feed observers.
     /// </summary>
-    public abstract class ChangeFeedObserver<T>
+    internal abstract class ChangeFeedObserver<T>
     {
         /// <summary>
         /// This is called when change feed observer is opened.

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class LoadBalancingStrategy
+    internal abstract class LoadBalancingStrategy
     {
         /// <summary>
         /// Select leases that should be taken for processing.

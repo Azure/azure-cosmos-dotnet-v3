@@ -12,7 +12,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Bootstrapping
 
     internal sealed class BootstrapperCore : Bootstrapper
     {
+        internal static readonly TimeSpan DefaultSleepTime = TimeSpan.FromSeconds(15);
+        internal static readonly TimeSpan DefaultLockTime = TimeSpan.FromSeconds(30);
+
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
+
         private readonly PartitionSynchronizer synchronizer;
         private readonly DocumentServiceLeaseStore leaseStore;
         private readonly TimeSpan lockTime;

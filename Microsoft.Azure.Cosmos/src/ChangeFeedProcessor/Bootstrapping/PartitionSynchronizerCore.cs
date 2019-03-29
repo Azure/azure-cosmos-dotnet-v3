@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Bootstrapping
 
     internal sealed class PartitionSynchronizerCore : PartitionSynchronizer
     {
+        internal static int DefaultDegreeOfParallelism = 25;
+
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly CosmosContainer container;
         private readonly DocumentServiceLeaseContainer leaseContainer;

@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration
     /// <summary>
     /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore"/> instance.
     /// </summary>
-    public class ChangeFeedLeaseOptions
+    internal class ChangeFeedLeaseOptions
     {
-        private static readonly TimeSpan DefaultRenewInterval = TimeSpan.FromSeconds(17);
-        private static readonly TimeSpan DefaultAcquireInterval = TimeSpan.FromSeconds(13);
-        private static readonly TimeSpan DefaultExpirationInterval = TimeSpan.FromSeconds(60);
+        internal static readonly TimeSpan DefaultRenewInterval = TimeSpan.FromSeconds(17);
+        internal static readonly TimeSpan DefaultAcquireInterval = TimeSpan.FromSeconds(13);
+        internal static readonly TimeSpan DefaultExpirationInterval = TimeSpan.FromSeconds(60);
 
         /// <summary>Initializes a new instance of the <see cref="ChangeFeedLeaseOptions" /> class.</summary>
         public ChangeFeedLeaseOptions()
@@ -44,33 +44,5 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration
         /// instances pointing at the same feed while using the same auxiliary collection.
         /// </summary>
         public string LeasePrefix { get; set; }
-
-        /// <summary>
-        /// Gets or sets the minimum leases count for the host.
-        /// This can be used to increase the number of leases for the host and thus override equal distribution (which is the default) of leases between hosts.
-        /// </summary>
-        internal int MinLeaseCount { get; set; }
-
-        /// <summary>
-        /// Gets or sets the maximum number of leases the host can serve.
-        /// This can be used property to limit the number of leases for the host and thus override equal distribution (which is the default) of leases between hosts.
-        /// Default is 0 (unlimited).
-        /// </summary>
-        internal int MaxLeaseCount { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether on start of the host all existing leases should be deleted and the host should start from scratch.
-        /// </summary>
-        internal bool DiscardExistingLeases { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Batch size of query API.
-        /// </summary>
-        internal int QueryFeedMaxBatchSize { get; set; }
-
-        /// <summary>
-        /// Gets maximum number of tasks to use for auxiliary calls.
-        /// </summary>
-        internal int DegreeOfParallelism => this.MaxLeaseCount > 0 ? this.MaxLeaseCount : 25;
     }
 }
