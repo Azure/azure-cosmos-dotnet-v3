@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                TestCommon.DeleteAllDatabasesAsync().Wait();
             }
         }
 
@@ -613,12 +613,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task VerifyGatewayNameIdCacheRefreshPrivateAsync(DocumentClient client)
         {
-            await this.DeleteAllDatabaseAsync(client);
-
+            Database database = null;
             try
             {
                 // Create database and create collection
-                Database database = await client.CreateDatabaseAsync(new Database() { Id = "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString() });
+                database = await client.CreateDatabaseAsync(new Database() { Id = "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString() });
 
                 int collectionsCount = 10;
                 Logger.LogLine("Create {0} collections simultaneously.", collectionsCount);
@@ -635,7 +634,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if(database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
@@ -840,7 +842,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CrazyNameTestPrivateAsync(DocumentClient client, bool useGateway, bool useTcp = false)
         {
-            await TestCommon.DeleteAllDatabasesAsync(client);
+            await TestCommon.DeleteAllDatabasesAsync();
 
             // Try longest name, note if the name is unicode, the number of character available might become less.
             string longestName = "Try longest name 253. At general availability, DocumentDB will be available in three standard performance levels: S1, S2, and S3, Vibhor Kapoor, director of product marketing for Azure, wrote in a blog post today. Collections of data within a DocumentDB database can be assigned to different performance levels, allowing customers to purchase only the performance they need";
@@ -917,7 +919,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.DeleteDatabaseAsync(db.AltLink);
             }
 
-            await TestCommon.DeleteAllDatabasesAsync(client);
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
 
@@ -1001,7 +1003,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                await client.DeleteDatabaseAsync(database);
             }
         }
 
@@ -1196,7 +1198,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreate(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
@@ -1233,7 +1235,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1270,7 +1272,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1328,7 +1330,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForParallelQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1380,7 +1382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }) };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1429,7 +1431,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestRouteToNonExistentRangeAfterCollectionRecreate(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             DocumentCollection collection = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1495,7 +1497,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestRouteToExistentRangeAfterCollectionRecreate(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
 
@@ -1552,7 +1554,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitionedForQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1604,7 +1606,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
@@ -1635,7 +1637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1664,7 +1666,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1687,7 +1689,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
+                await TestCommon.DeleteAllDatabasesAsync();
 
                 // Scenario 1: name based collection read.
 
@@ -1739,7 +1741,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                TestCommon.DeleteAllDatabasesAsync().Wait();
             }
         }
 

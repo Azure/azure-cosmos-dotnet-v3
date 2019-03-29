@@ -83,68 +83,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly string DefaultPath = "/*";
 
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            if (IndexingPolicyTests
-                .documentClient
-                .CreateDatabaseQuery()
-                .Where(db => db.Id == IndexingPolicyTests.database.Id).AsEnumerable().FirstOrDefault() != null)
-            {
-                IndexingPolicyTests.documentClient.DeleteDatabaseAsync(IndexingPolicyTests.database);
-            }
-        }
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
             // Put test init code here
-            IndexingPolicyTests.Cleanup().Wait();
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
         [TestCleanup]
-        public void TestCleanup()
+        public async Task TestCleanup()
         {
-            IndexingPolicyTests.Cleanup().Wait();
-        }
-
-        public static async Task Cleanup(bool removeDatabase = false)
-        {
-            try
-            {
-                if (IndexingPolicyTests
-                        .documentClient
-                        .CreateDatabaseQuery()
-                        .Where(db => db.Id == IndexingPolicyTests.database.Id).AsEnumerable().FirstOrDefault() == null)
-                {
-                    return;
-                }
-
-                IEnumerable<DocumentCollection> collections = IndexingPolicyTests
-                    .documentClient
-                    .CreateDocumentCollectionQuery(UriFactory.CreateDatabaseUri(IndexingPolicyTests.database.Id))
-                    .AsEnumerable();
-
-                foreach (DocumentCollection documentCollection in collections)
-                {
-                    await IndexingPolicyTests.documentClient.DeleteDocumentCollectionAsync(documentCollection.SelfLink);
-                }
-
-                if (removeDatabase)
-                {
-                    await IndexingPolicyTests.documentClient.DeleteDatabaseAsync(IndexingPolicyTests.database);
-                }
-            }
-            catch (DocumentClientException ex)
-            {
-                if(ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    // Method might have not initialized the database or collections
-                    return;
-                }
-
-                throw;
-            }
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
         [TestMethod]

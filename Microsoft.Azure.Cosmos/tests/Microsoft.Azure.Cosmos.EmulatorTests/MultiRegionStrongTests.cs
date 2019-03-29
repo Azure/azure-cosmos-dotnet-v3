@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task<DocumentCollection> SetupSingleCollectionScenario()
         {
             DocumentClient client = TestCommon.CreateClient(true);
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            await TestCommon.DeleteAllDatabasesAsync();
 
             Database database = (await client.CreateDatabaseAsync(new Database { Id = this.DatabaseName })).Resource;
             DocumentCollection collection = (await client.CreateDocumentCollectionIfNotExistsAsync(database.SelfLink, new DocumentCollection { Id = this.CollectionName }, new RequestOptions { OfferThroughput = 10000 })).Resource;

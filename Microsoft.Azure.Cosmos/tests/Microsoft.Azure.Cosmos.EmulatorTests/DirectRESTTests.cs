@@ -61,12 +61,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [ClassCleanup]
-        public static void ClassCleanUp()
+        public static async Task ClassCleanUp()
         {
-            using (var client = TestCommon.CreateClient(true))
-            {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
-            }
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
         [TestMethod]
@@ -733,12 +730,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
+            Database database = null;
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
-
                 string uniqDatabaseName = "ValidateUpdateCollectionIndexingPolicy_DB_" + Guid.NewGuid().ToString("N");
-                Database database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "ValidateUpdateCollectionIndexingPolicy_COLL_" + Guid.NewGuid().ToString("N");
                 DocumentCollection collection = await client.CreateDocumentCollectionAsync(database, new DocumentCollection { Id = uniqCollectionName });
@@ -754,7 +750,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if(database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
@@ -914,12 +913,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
+            Database database = null;
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
-
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
-                Database database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
                 DocumentCollection collection = await client.CreateDocumentCollectionAsync(
@@ -964,7 +962,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if (database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
@@ -973,12 +974,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
+            Database database = null;
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
-
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
-                Database database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
                 DocumentCollection collection = await client.CreateDocumentCollectionAsync(
@@ -1133,7 +1133,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if (database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
@@ -1157,12 +1160,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
              */
             DocumentClient client = TestCommon.CreateClient(true);
 
+            Database database = null;
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
+                await TestCommon.DeleteAllDatabasesAsync();
 
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
-                Database database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
                 DocumentCollection collection = await client.CreateDocumentCollectionAsync(
@@ -1359,7 +1363,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if (database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
@@ -1368,12 +1375,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
+            Database database = null;
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
-
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
-                Database database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
                 DocumentCollection collection = await client.CreateDocumentCollectionAsync(
@@ -1411,7 +1417,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if (database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
@@ -1420,12 +1429,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
+            Database database = null;
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
-
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
-                Database database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
                 DocumentCollection collection = await client.CreateDocumentCollectionAsync(
@@ -1464,7 +1472,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if (database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
