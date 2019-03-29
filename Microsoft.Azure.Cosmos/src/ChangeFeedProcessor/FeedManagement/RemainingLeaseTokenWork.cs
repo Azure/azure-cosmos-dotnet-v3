@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
     /// <summary>
     /// Remaing estimated work on the lease token
     /// </summary>
-    public class RemainingLeaseTokenWork
+    internal class RemainingLeaseTokenWork
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RemainingLeaseTokenWork"/> class.

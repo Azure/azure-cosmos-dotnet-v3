@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     ///   2. Handle possible problems with the read.
     ///   3. Pass the obtained data to an observer by calling <see cref="ChangeFeedObserver{T}.ProcessChangesAsync"/> with the context <see cref="ChangeFeedObserverContext"/>.
     /// </summary>
-    public abstract class FeedProcessor
+    internal abstract class FeedProcessor
     {
         /// <summary>
         /// Perform feed processing.

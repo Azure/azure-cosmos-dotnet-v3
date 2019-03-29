@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
     /// Exception occurred when feed for a particular lease token wasn't found.
     /// </summary>
     [Serializable]
-    public class FeedNotFoundException : FeedProcessingException
+    internal class FeedNotFoundException : FeedProcessingException
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FeedNotFoundException"/> class using error message and last continuation token.

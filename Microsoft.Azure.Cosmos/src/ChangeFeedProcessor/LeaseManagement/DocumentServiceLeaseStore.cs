@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
     /// Represents the lease store container to deal with initialiation/cleanup of leases
     /// for particular monitoring collection and lease container prefix.
     /// </summary>
-    public abstract class DocumentServiceLeaseStore
+    internal abstract class DocumentServiceLeaseStore
     {
         /// <summary>
         /// Checks if the lease store is initialized.

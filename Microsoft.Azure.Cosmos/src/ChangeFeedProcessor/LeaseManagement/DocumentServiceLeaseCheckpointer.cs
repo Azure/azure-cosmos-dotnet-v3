@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
     /// <summary>
     /// Used to checkpoint leases.
     /// </summary>
-    public abstract class DocumentServiceLeaseCheckpointer
+    internal abstract class DocumentServiceLeaseCheckpointer
     {
         /// <summary>
         /// Checkpoint the lease.

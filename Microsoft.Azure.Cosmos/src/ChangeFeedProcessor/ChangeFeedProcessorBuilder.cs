@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
         /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithCustomLeaseInternvals(TimeSpan? renewInterval, TimeSpan? acquireInterval, TimeSpan? expirationInterval)
+        public ChangeFeedProcessorBuilder<T> WithCustomLeaseIntervals(TimeSpan? renewInterval, TimeSpan? acquireInterval, TimeSpan? expirationInterval)
         {
             this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions = this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
             this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;

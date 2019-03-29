@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
     /// <summary>
     /// The DocumentServiceLeaseManager defines a way to perform operations with <see cref="DocumentServiceLease"/>.
     /// </summary>
-    public abstract class DocumentServiceLeaseManager
+    internal abstract class DocumentServiceLeaseManager
     {
         /// <summary>
         /// Checks whether the lease exists and creates it if it does not exist.

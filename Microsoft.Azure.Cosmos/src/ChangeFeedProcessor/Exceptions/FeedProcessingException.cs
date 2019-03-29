@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
     /// General exception occurred during feed processing.
     /// </summary>
     [Serializable]
-    public class FeedProcessingException : Exception
+    internal class FeedProcessingException : Exception
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FeedProcessingException"/> class using error message and last continuation token.

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
     /// Exception occurred during feed processing because of a split.
     /// </summary>
     [Serializable]
-    public class FeedSplitException : FeedProcessingException
+    internal class FeedSplitException : FeedProcessingException
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FeedSplitException"/> class using error message and last continuation token.

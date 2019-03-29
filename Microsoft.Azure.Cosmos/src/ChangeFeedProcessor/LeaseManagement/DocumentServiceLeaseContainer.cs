@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
     /// <summary>
     /// Represents operations to get leases from lease store.
     /// </summary>
-    public abstract class DocumentServiceLeaseContainer
+    internal abstract class DocumentServiceLeaseContainer
     {
         /// <summary>
         /// Get all leases.

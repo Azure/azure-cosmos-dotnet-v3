@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
     /// Exception occurred when lease is lost, that would typically happen when it is taken by another host. Other cases: communication failure, number of retries reached, lease not found.
     /// </summary>
     [Serializable]
-    public class LeaseLostException : Exception
+    internal class LeaseLostException : Exception
     {
         private static readonly string DefaultMessage = "The lease was lost.";
 

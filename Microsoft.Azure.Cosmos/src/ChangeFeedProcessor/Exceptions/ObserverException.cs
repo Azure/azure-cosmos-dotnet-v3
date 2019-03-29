@@ -7,14 +7,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
     using System;
     using System.Runtime.Serialization;
 
-    ///// Exception occurred when an operation in an <see cref="IChangeFeedObserver"/> is running and throws by user code
-
-
     /// <summary>
     /// Exception occurred when an operation in an IChangeFeedObserver is running and throws by user code
     /// </summary>
     [Serializable]
-    public class ObserverException : Exception
+    internal class ObserverException : Exception
     {
         private static readonly string DefaultMessage = "Exception has been thrown by the Observer.";
 
