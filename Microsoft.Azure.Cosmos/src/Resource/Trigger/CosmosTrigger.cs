@@ -30,13 +30,15 @@ namespace Microsoft.Azure.Cosmos
         protected internal CosmosTrigger(
             CosmosContainer container,
             string triggerId)
-            : base(container.Client,
-                container.Link,
-                triggerId)
         {
+            this.Id = triggerId;
+            base.Initialize(
+                client: container.Client,
+                parentLink: container.LinkUri.OriginalString,
+                uriPathSegment: Paths.TriggersPathSegment);
         }
 
-        internal override string UriPathSegment => Paths.TriggersPathSegment;
+        public override string Id { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.
