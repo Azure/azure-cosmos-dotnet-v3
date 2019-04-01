@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return range;
         }
 
-        public Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(string collectionResourceId, string effectivePartitionKeyString)
+        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(string collectionResourceId, string effectivePartitionKeyString)
         {
             return this.GetTargetPartitionKeyRanges(collectionResourceId,
                 new List<Range<string>>
@@ -437,8 +437,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 });
         }
 
-        public async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(string collectionResourceId, List<Range<string>> providedRanges)
+        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(string collectionResourceId, List<Range<string>> providedRanges)
         {
+            if (string.IsNullOrEmpty(nameof(collectionResourceId)))
+            {
+                throw new ArgumentNullException();
+            }
+
+            if (providedRanges == null || !providedRanges.Any())
+            {
+                throw new ArgumentNullException(nameof(providedRanges));
+            }
+
             IRoutingMapProvider routingMapProvider = await this.client.GetRoutingMapProviderAsync();
 
             List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
