@@ -19,26 +19,6 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosDatabase"/>for reading, replacing, or deleting an existing container;
     /// </summary>
-    /// <remarks>
-    /// All these operations make calls against a fixed budget.
-    /// You should design your system such that these calls scale sub-linearly with your application.
-    /// For instance, do not call `databases.GetIterator` before every single `item.read` call, to ensure the database exists;
-    /// do this once on application start up.
-    /// </remarks>
-    /// <example>
-    /// <code language="c#">
-    /// <![CDATA[
-    /// CosmosDatabaseResponse response = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-    /// ]]>
-    /// </code>
-    /// </example>
-    /// <example>
-    /// This example shows how to access an existing database. This does not do a network call or verify that the database exists in Cosmos.
-    /// <code language="c#">
-    /// <![CDATA[
-    /// CosmosDatabase database = this.cosmosClient.Databases["MyDatabaseId"];
-    /// ]]>
-    /// </code>
     /// </example>
     internal class CosmosDatabasesCore : CosmosDatabases
     {

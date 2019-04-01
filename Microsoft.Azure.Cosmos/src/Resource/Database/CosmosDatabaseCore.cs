@@ -16,12 +16,6 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosDatabases"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
-    /// <remarks>
-    /// Note: all these operations make calls against a fixed budget.
-    /// You should design your system such that these calls scale sub-linearly with your application.
-    /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
-    /// do this once on application start up.
-    /// </remarks>
     internal class CosmosDatabaseCore : CosmosDatabase
     {
         internal CosmosDatabaseCore(

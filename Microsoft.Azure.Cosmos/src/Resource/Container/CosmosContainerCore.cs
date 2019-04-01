@@ -17,12 +17,6 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    /// <remarks>
-    ///  Note: all these operations make calls against a fixed budget.
-    ///  You should design your system such that these calls scale sub linearly with your application.
-    ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
-    ///  do this once on application start up.
-    /// </remarks>
     internal class CosmosContainerCore : CosmosContainer
     {
         internal CosmosContainerCore(
