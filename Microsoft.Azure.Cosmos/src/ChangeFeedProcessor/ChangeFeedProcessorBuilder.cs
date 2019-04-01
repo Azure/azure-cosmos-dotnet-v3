@@ -113,21 +113,74 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="ChangeFeedProcessorOptions"/> to be used by this instance of <see cref="ChangeFeedProcessor"/>.
+        /// Indicates whether change feed in the Azure Cosmos DB service should start from beginning.
+        /// By default it's start from current time.
         /// </summary>
-        /// <param name="changeFeedProcessorOptions">The instance of <see cref="ChangeFeedProcessorOptions"/> to use.</param>
+        /// <remarks>
+        /// This is only used when:
+        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// (2) StartContinuation is not specified.
+        /// (3) StartTime is not specified.
+        /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithProcessorOptions(ChangeFeedProcessorOptions changeFeedProcessorOptions)
+        public ChangeFeedProcessorBuilder<T> WithStartFromBeginning()
         {
-            if (changeFeedProcessorOptions == null) throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = changeFeedProcessorOptions;
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.StartFromBeginning = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the start request continuation token to start looking for changes after.
+        /// </summary>
+        /// <remarks>
+        /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// If this is specified, both StartTime and StartFromBeginning are ignored.
+        /// </remarks>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
+        public ChangeFeedProcessorBuilder<T> WithStartContinuation(string startContinuation)
+        {
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.StartContinuation = startContinuation;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the time (exclusive) to start looking for changes after.
+        /// </summary>
+        /// <remarks>
+        /// This is only used when:
+        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// (2) StartContinuation is not specified.
+        /// If this is specified, StartFromBeginning is ignored.
+        /// </remarks>
+        /// <param name="startTime">Date and time when to start looking for changes.</param>
+        /// <returns></returns>
+        public ChangeFeedProcessorBuilder<T> WithStartTime(DateTime startTime)
+        {
+            if (startTime == null) throw new ArgumentNullException(nameof(startTime));
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.StartTime = startTime;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="maxItemCount">Maximum amount of items to be returned in a Change Feed request.</param>
+        /// <returns></returns>
+        public ChangeFeedProcessorBuilder<T> WithMaxItems(int maxItemCount)
+        {
+            if (maxItemCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxItemCount));
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.MaxItemCount = maxItemCount;
             return this;
         }
 
         /// <summary>
         /// Sets the Cosmos Container to hold the leases state
         /// </summary>
-        /// <param name="leaseContainer"></param>
+        /// <param name="leaseContainer">Instance of a Cosmos Container to hold the leases.</param>
         /// <returns></returns>
         public ChangeFeedProcessorBuilder<T> WithCosmosLeaseContainer(CosmosContainer leaseContainer)
         {

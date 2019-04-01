@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration
     /// <summary>
     /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore"/> instance.
     /// </summary>
-    public class ChangeFeedProcessorOptions
+    internal class ChangeFeedProcessorOptions
     {
         private const int DefaultQueryPartitionsMaxBatchSize = 100;
         private static readonly TimeSpan DefaultFeedPollDelay = TimeSpan.FromSeconds(5);
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration
         /// <summary>
         /// Gets or sets the session token for use with session consistency in the Azure Cosmos DB service.
         /// </summary>
-        public string SessionToken { get; set; }
+        internal string SessionToken { get; set; }
 
         /// <summary>
         /// Gets or sets the Batch size of query API.
