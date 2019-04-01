@@ -5,9 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -839,5 +841,19 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed processing.
+        /// </summary>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns></returns>
+        public abstract ChangeFeedProcessorBuilder<T> CreateChangeFeedProcessorBuilder<T>(Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed monitoring.
+        /// </summary>
+        /// <param name="estimationDelegate">Delegate to receive estimation.</param>
+        /// <returns></returns>
+        public abstract ChangeFeedProcessorBuilder<dynamic> CreateChangeFeedProcessorBuilder(Func<long, CancellationToken, Task> estimationDelegate);
     }
 }
