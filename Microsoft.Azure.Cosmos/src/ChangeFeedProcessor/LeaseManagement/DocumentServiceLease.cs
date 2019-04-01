@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
     /// * Distribute load between different instances of <see cref="ChangeFeedProcessor"/>.
     /// * Ensure reliable recovery for cases when an instance of <see cref="ChangeFeedProcessor"/> gets disconnected, hangs or crashes.
     /// </summary>
-    public abstract class DocumentServiceLease
+    internal abstract class DocumentServiceLease
     {
         /// <summary>
         /// Gets the processing distribution unit identifier.

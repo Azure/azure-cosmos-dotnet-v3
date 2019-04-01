@@ -6,12 +6,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring
 {
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
 
     /// <summary>
     /// A record used in the health monitoring.
     /// </summary>
-    public class HealthMonitoringRecord
+    internal class HealthMonitoringRecord
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="HealthMonitoringRecord"/> class.

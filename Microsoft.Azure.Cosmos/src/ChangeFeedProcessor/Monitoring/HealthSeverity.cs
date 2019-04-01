@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring
     /// <summary>
     /// The health severity level
     /// </summary>
-    public enum HealthSeverity
+    internal enum HealthSeverity
     {
         /// <summary>
         /// Critical level.

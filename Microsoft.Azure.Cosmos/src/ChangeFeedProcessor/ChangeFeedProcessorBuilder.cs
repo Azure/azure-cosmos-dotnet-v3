@@ -157,18 +157,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="HealthMonitor"/> to be used to monitor lease unhealthiness situation.
-        /// </summary>
-        /// <param name="healthMonitor">The instance of <see cref="HealthMonitor"/> to use.</param>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithHealthMonitor(HealthMonitor healthMonitor)
-        {
-            if (healthMonitor == null) throw new ArgumentNullException(nameof(healthMonitor));
-            this.changeFeedProcessorBuilderInstance.healthMonitor = healthMonitor;
-            return this;
-        }
-
-        /// <summary>
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>
