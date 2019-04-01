@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly CancellationTokenSource shutdownCts = new CancellationTokenSource();
         private readonly FeedEstimator feedEstimator;
+        private Task runAsync;
 
         public ChangeFeedEstimatorCore(FeedEstimator feedEstimator)
         {
@@ -22,17 +23,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             this.feedEstimator = feedEstimator;
         }
 
-        public override async Task StartAsync()
+        public override Task StartAsync()
         {
             Logger.InfoFormat("Starting estimator...");
-            await this.feedEstimator.RunAsync(this.shutdownCts.Token);
+            this.runAsync = this.feedEstimator.RunAsync(this.shutdownCts.Token);
+            return Task.CompletedTask;
         }
 
-        public override Task StopAsync()
+        public override async Task StopAsync()
         {
             Logger.InfoFormat("Stopping estimator...");
             this.shutdownCts.Cancel();
-            return Task.CompletedTask;
+            try
+            {
+                await this.runAsync.ConfigureAwait(false);
+            }
+            catch (TaskCanceledException)
+            {
+                // Expected during shutdown
+            }
         }
     }
 }

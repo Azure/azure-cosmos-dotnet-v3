@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
 
         private string GetStoreMarkerName()
         {
-            return this.containerNamePrefix + ".info@me.com";
+            return this.containerNamePrefix + ".info";
         }
 
         private string GetStoreLockName()
