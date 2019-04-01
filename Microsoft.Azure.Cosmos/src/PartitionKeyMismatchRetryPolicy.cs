@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     internal sealed class PartitionKeyMismatchRetryPolicy : IDocumentClientRetryPolicy
     {

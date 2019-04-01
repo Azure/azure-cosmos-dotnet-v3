@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Client.Test
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

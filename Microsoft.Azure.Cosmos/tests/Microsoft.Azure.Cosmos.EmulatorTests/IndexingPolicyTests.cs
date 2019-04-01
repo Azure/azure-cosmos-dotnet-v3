@@ -11,8 +11,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Reflection;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Utils;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// The database used for all the tests.
         /// </summary>
-        private static readonly CosmosDatabaseSettings database = TestCommon.CreateDatabase(
+        private static readonly Database database = TestCommon.CreateDatabase(
             IndexingPolicyTests.documentClient,
             Guid.NewGuid().ToString());
 
@@ -119,12 +120,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return;
                 }
 
-                IEnumerable<CosmosContainerSettings> collections = IndexingPolicyTests
+                IEnumerable<DocumentCollection> collections = IndexingPolicyTests
                     .documentClient
                     .CreateDocumentCollectionQuery(UriFactory.CreateDatabaseUri(IndexingPolicyTests.database.Id))
                     .AsEnumerable();
 
-                foreach (CosmosContainerSettings documentCollection in collections)
+                foreach (DocumentCollection documentCollection in collections)
                 {
                     await IndexingPolicyTests.documentClient.DeleteDocumentCollectionAsync(documentCollection.SelfLink);
                 }
@@ -353,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await IndexingPolicyTests.documentClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database);
             IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            CosmosContainerSettings documentCollectionToCreate = new CosmosContainerSettings()
+            DocumentCollection documentCollectionToCreate = new DocumentCollection()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
@@ -364,14 +365,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task RoundTripWithLocal(IndexingPolicy indexingPolicy)
         {
-            CosmosContainerSettings documentCollection = new CosmosContainerSettings()
+            DocumentCollection documentCollection = new DocumentCollection()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
             };
 
             await IndexingPolicyTests.documentClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database);
-            ResourceResponse<CosmosContainerSettings> documentCollectionCreated = await IndexingPolicyTests.documentClient.CreateDocumentCollectionAsync(UriFactory.CreateDatabaseUri(IndexingPolicyTests.database.Id), documentCollection);
+            ResourceResponse<DocumentCollection> documentCollectionCreated = await IndexingPolicyTests.documentClient.CreateDocumentCollectionAsync(UriFactory.CreateDatabaseUri(IndexingPolicyTests.database.Id), documentCollection);
             Assert.IsTrue(IndexingPolicyTests.indexingPolicyEqualityComparer.Equals(indexingPolicy, documentCollection.IndexingPolicy));
         }
 

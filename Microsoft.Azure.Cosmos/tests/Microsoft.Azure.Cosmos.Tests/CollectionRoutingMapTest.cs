@@ -8,8 +8,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

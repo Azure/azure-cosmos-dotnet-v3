@@ -4,15 +4,14 @@
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
 
     /// <summary>
     /// Provides a document client extension to augment the named based routing API.
@@ -55,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// Only used in PCV and CTL test, configure to switch between selflink and altlink
         /// </summary>
         /// <returns></returns>
-        internal static string GetLink(this CosmosResource resource)
+        internal static string GetLink(this Resource resource)
         {
             // testing the altlink ending with "/"
             string altlink = resource.AltLink == null ? null : resource.AltLink + "/";
@@ -70,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
         }
 
-        internal static string GetIdOrFullName(this CosmosResource resource)
+        internal static string GetIdOrFullName(this Resource resource)
         {
             if (DocumentClientSwitchLinkExtension.configurationUsingSelfLink)
             {
@@ -85,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// For Replace operation, swap the link of selflink, 
         /// </summary>
         /// <param name="resource"></param>
-        private static void SwapLinkIfNeeded(CosmosResource resource)
+        private static void SwapLinkIfNeeded(Resource resource)
         {
             if (!DocumentClientSwitchLinkExtension.configurationUsingSelfLink)
             {
@@ -105,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="options">the request options for the request.</param>
         /// <param name="disableAutomaticIdGeneration">Disables the automatic id generation, will throw an exception if id is missing.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<Document>> CreateDocumentAsync(this DocumentClient client, CosmosContainerSettings owner, 
+        public static Task<ResourceResponse<Document>> CreateDocumentAsync(this DocumentClient client, DocumentCollection owner, 
                 object document, RequestOptions options = null, bool disableAutomaticIdGeneration = false)
         {
             return client.CreateDocumentAsync(owner.GetLink(), document, options, disableAutomaticIdGeneration);
@@ -117,10 +116,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// </summary>
         /// <param name="client">document client.</param>
         /// <param name="owner">the document collection owner.</param>
-        /// <param name="documentCollection">the Microsoft.Azure.Documents.CosmosContainerSettings.csobject.</param>
+        /// <param name="documentCollection">the Microsoft.Azure.Documents.DocumentCollection.csobject.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosContainerSettings>> CreateDocumentCollectionAsync(this DocumentClient client, CosmosDatabaseSettings owner, CosmosContainerSettings documentCollection, RequestOptions options = null)
+        public static Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(this DocumentClient client, Database owner, DocumentCollection documentCollection, RequestOptions options = null)
         {
             return client.CreateDocumentCollectionAsync(owner.GetLink(), documentCollection, options);
         }
@@ -133,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="storedProcedure">the Microsoft.Azure.Documents.StoredProcedure object.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosStoredProcedureSettings>> CreateStoredProcedureAsync(this DocumentClient client, CosmosContainerSettings owner, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
+        public static Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(this DocumentClient client, DocumentCollection owner, StoredProcedure storedProcedure, RequestOptions options = null)
         {
             return client.CreateStoredProcedureAsync(owner.GetLink(), storedProcedure, options);
         }
@@ -146,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="trigger">the Microsoft.Azure.Documents.Trigger object.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosTriggerSettings>> CreateTriggerAsync(this DocumentClient client, CosmosContainerSettings owner, CosmosTriggerSettings trigger, RequestOptions options = null)
+        public static Task<ResourceResponse<Trigger>> CreateTriggerAsync(this DocumentClient client, DocumentCollection owner, Trigger trigger, RequestOptions options = null)
         {
             return client.CreateTriggerAsync(owner.GetLink(), trigger, options);
         }
@@ -159,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="function">the Microsoft.Azure.Documents.UserDefinedFunction object.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> CreateUserDefinedFunctionAsync(this DocumentClient client, CosmosContainerSettings owner, CosmosUserDefinedFunctionSettings function, RequestOptions options = null)
+        public static Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(this DocumentClient client, DocumentCollection owner, UserDefinedFunction function, RequestOptions options = null)
         {
             return client.CreateUserDefinedFunctionAsync(owner.GetLink(), function, options);
         }
@@ -173,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="database">database.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosDatabaseSettings>> DeleteDatabaseAsync(this DocumentClient client, CosmosDatabaseSettings database, RequestOptions options = null)
+        public static Task<ResourceResponse<Database>> DeleteDatabaseAsync(this DocumentClient client, Database database, RequestOptions options = null)
         {
             return client.DeleteDatabaseAsync(database.GetLink(), options);
         }
@@ -197,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="documentCollection"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosContainerSettings>> DeleteDocumentCollectionAsync(this DocumentClient client, CosmosContainerSettings documentCollection, RequestOptions options = null)
+        public static Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(this DocumentClient client, DocumentCollection documentCollection, RequestOptions options = null)
         {
             return client.DeleteDocumentCollectionAsync(documentCollection.GetLink(), options);
         }
@@ -209,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="storedProcedure"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosStoredProcedureSettings>> DeleteStoredProcedureAsync(this DocumentClient client, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
+        public static Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(this DocumentClient client, StoredProcedure storedProcedure, RequestOptions options = null)
         {
             return client.DeleteStoredProcedureAsync(storedProcedure.GetLink(), options);
         }
@@ -222,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="trigger"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosTriggerSettings>> DeleteTriggerAsync(this DocumentClient client, CosmosTriggerSettings trigger, RequestOptions options = null)
+        public static Task<ResourceResponse<Trigger>> DeleteTriggerAsync(this DocumentClient client, Trigger trigger, RequestOptions options = null)
         {
             return client.DeleteTriggerAsync(trigger.GetLink(), options);
         }
@@ -234,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="function"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> DeleteUserDefinedFunctionAsync(this DocumentClient client, CosmosUserDefinedFunctionSettings udf, RequestOptions options = null)
+        public static Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(this DocumentClient client, UserDefinedFunction udf, RequestOptions options = null)
         {
             return client.DeleteUserDefinedFunctionAsync(udf.GetLink(), options);
         }
@@ -281,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="documentCollection"></param>
         /// <param name="options"></param>
         /// <returns></returns>
-        public static Task<ResourceResponse<CosmosContainerSettings>> ReplaceDocumentCollectionExAsync(this DocumentClient client, CosmosContainerSettings documentCollection, RequestOptions options = null)
+        public static Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionExAsync(this DocumentClient client, DocumentCollection documentCollection, RequestOptions options = null)
         {
             SwapLinkIfNeeded(documentCollection);
             return client.ReplaceDocumentCollectionAsync(documentCollection, options);
@@ -295,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="storedProcedure">the updated stored procedure.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosStoredProcedureSettings>> ReplaceStoredProcedureExAsync(this DocumentClient client, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
+        public static Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureExAsync(this DocumentClient client, StoredProcedure storedProcedure, RequestOptions options = null)
         {
             SwapLinkIfNeeded(storedProcedure);
             return client.ReplaceStoredProcedureAsync(storedProcedure, options);
@@ -309,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="trigger">the updated trigger.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosTriggerSettings>> ReplaceTriggerExAsync(this DocumentClient client, CosmosTriggerSettings trigger, RequestOptions options = null)
+        public static Task<ResourceResponse<Trigger>> ReplaceTriggerExAsync(this DocumentClient client, Trigger trigger, RequestOptions options = null)
         {
             SwapLinkIfNeeded(trigger);
             return client.ReplaceTriggerAsync(trigger, options);
@@ -323,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="function">the updated user defined function.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReplaceUserDefinedFunctionExAsync(this DocumentClient client, CosmosUserDefinedFunctionSettings function, RequestOptions options = null)
+        public static Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionExAsync(this DocumentClient client, UserDefinedFunction function, RequestOptions options = null)
         {
             SwapLinkIfNeeded(function);
             return client.ReplaceUserDefinedFunctionAsync(function, options);
@@ -336,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="database"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosDatabaseSettings>> ReadDatabaseAsync(this DocumentClient client, CosmosDatabaseSettings database, RequestOptions options = null)
+        public static Task<ResourceResponse<Database>> ReadDatabaseAsync(this DocumentClient client, Database database, RequestOptions options = null)
         {
             return client.ReadDatabaseAsync(database.GetLink(), options);
         }
@@ -360,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="documentCollection"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosContainerSettings>> ReadDocumentCollectionAsync(this DocumentClient client, CosmosContainerSettings documentCollection, RequestOptions options = null)
+        public static Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(this DocumentClient client, DocumentCollection documentCollection, RequestOptions options = null)
         {
             return client.ReadDocumentCollectionAsync(documentCollection.GetLink(), options);
         }
@@ -372,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="storedProcedure"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureAsync(this DocumentClient client, CosmosStoredProcedureSettings storedProcedure, RequestOptions options = null)
+        public static Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(this DocumentClient client, StoredProcedure storedProcedure, RequestOptions options = null)
         {
             return client.ReadStoredProcedureAsync(storedProcedure.GetLink(), options);
         }
@@ -384,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="trigger"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosTriggerSettings>> ReadTriggerAsync(this DocumentClient client, CosmosTriggerSettings trigger, RequestOptions options = null)
+        public static Task<ResourceResponse<Trigger>> ReadTriggerAsync(this DocumentClient client, Trigger trigger, RequestOptions options = null)
         {
             return client.ReadTriggerAsync(trigger.GetLink(), options);
         }
@@ -396,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="function"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionAsync(this DocumentClient client, CosmosUserDefinedFunctionSettings function, RequestOptions options = null)
+        public static Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(this DocumentClient client, UserDefinedFunction function, RequestOptions options = null)
         {
             return client.ReadUserDefinedFunctionAsync(function.GetLink(), options);
         }
@@ -434,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<CosmosContainerSettings>> ReadDocumentCollectionFeedAsync(this DocumentClient client, CosmosDatabaseSettings owner, FeedOptions options = null)
+        public static Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(this DocumentClient client, Database owner, FeedOptions options = null)
         {
             return client.ReadDocumentCollectionFeedAsync(owner.GetLink(), options);
         }
@@ -446,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<CosmosStoredProcedureSettings>> ReadStoredProcedureFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
+        public static Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadStoredProcedureFeedAsync(owner.GetLink(), options);
         }
@@ -458,7 +457,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<CosmosTriggerSettings>> ReadTriggerFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
+        public static Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadTriggerFeedAsync(owner.GetLink(), options);
         }
@@ -470,7 +469,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<CosmosUserDefinedFunctionSettings>> ReadUserDefinedFunctionFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
+        public static Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadUserDefinedFunctionFeedAsync(owner.GetLink(), options);
         }
@@ -482,7 +481,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
+        public static Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadDocumentFeedAsync(owner.GetLink(), options);
         }
@@ -494,7 +493,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<Conflict>> ReadConflictFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
+        public static Task<FeedResponse<Conflict>> ReadConflictFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadConflictFeedAsync(owner.GetLink(), options);
         }
@@ -512,7 +511,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <seealso cref="Microsoft.Azure.Documents.Client.FeedOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.FeedResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public static Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
+        public static Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             if (owner == null)
             {
@@ -529,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal static Task<FeedResponse<Schema>> ReadSchemaFeedAsync(this DocumentClient client, CosmosContainerSettings owner, FeedOptions options = null)
+        internal static Task<FeedResponse<Schema>> ReadSchemaFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadSchemaFeedAsync(owner.GetLink(), options);
         }
@@ -546,12 +545,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="storedProcedure">storedProcedure.</param>
         /// <param name="procedureParams">the parameters for the stored procedure execution.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(this DocumentClient client, CosmosStoredProcedureSettings storedProcedure, params dynamic[] procedureParams)
+        public static Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(this DocumentClient client, StoredProcedure storedProcedure, params dynamic[] procedureParams)
         {
             return client.ExecuteStoredProcedureAsync<TValue>(storedProcedure.GetLink(), procedureParams);
         }
 
-        public static Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(this DocumentClient client, CosmosStoredProcedureSettings storedProcedure, RequestOptions requestOptions, params dynamic[] procedureParams)
+        public static Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(this DocumentClient client, StoredProcedure storedProcedure, RequestOptions requestOptions, params dynamic[] procedureParams)
         {
             return client.ExecuteStoredProcedureAsync<TValue>(storedProcedure.GetLink(), requestOptions, procedureParams);
         }
@@ -566,9 +565,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<CosmosContainerSettings> CreateDocumentCollectionQuery(this DocumentClient client, CosmosDatabaseSettings owner,  FeedOptions feedOptions = null)
+        public static IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(this DocumentClient client, Database owner,  FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosContainerSettings>(client, ResourceType.Collection, typeof(CosmosDatabaseSettings), owner.GetLink(), feedOptions);
+            return new DocumentQuery<DocumentCollection>(client, ResourceType.Collection, typeof(Database), owner.GetLink(), feedOptions);
         }
 
         /// <summary>
@@ -579,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, CosmosDatabaseSettings owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, Database owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateDocumentCollectionQuery(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -592,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, CosmosDatabaseSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, Database owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateDocumentCollectionQuery(owner.GetLink(), querySpec, feedOptions);
         }
@@ -604,9 +603,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<CosmosStoredProcedureSettings> CreateStoredProcedureQuery(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
+        public static IOrderedQueryable<StoredProcedure> CreateStoredProcedureQuery(this DocumentClient client, DocumentCollection owner, FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<CosmosStoredProcedureSettings>(client, ResourceType.StoredProcedure, typeof(CosmosContainerSettings), owner.GetLink(), feedOptions);
+            return new DocumentQuery<StoredProcedure>(client, ResourceType.StoredProcedure, typeof(DocumentCollection), owner.GetLink(), feedOptions);
         }
 
         /// <summary>
@@ -617,7 +616,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateStoredProcedureQuery(this DocumentClient client, CosmosContainerSettings owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateStoredProcedureQuery(this DocumentClient client, DocumentCollection owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateStoredProcedureQuery(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -630,7 +629,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateStoredProcedureQuery(this DocumentClient client, CosmosContainerSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateStoredProcedureQuery(this DocumentClient client, DocumentCollection owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateStoredProcedureQuery(owner.GetLink(), querySpec, feedOptions);
         }
@@ -642,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<CosmosTriggerSettings> CreateTriggerQuery(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
+        public static IOrderedQueryable<Trigger> CreateTriggerQuery(this DocumentClient client, DocumentCollection owner, FeedOptions feedOptions = null)
         {
             return client.CreateTriggerQuery(owner.GetLink(), feedOptions);
         }
@@ -655,7 +654,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateTriggerQuery(this DocumentClient client, CosmosContainerSettings owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateTriggerQuery(this DocumentClient client, DocumentCollection owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateTriggerQuery(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -668,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateTriggerQuery(this DocumentClient client, CosmosContainerSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateTriggerQuery(this DocumentClient client, DocumentCollection owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateTriggerQuery(owner.GetLink(), querySpec, feedOptions);
         }
@@ -680,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<CosmosUserDefinedFunctionSettings> CreateUserDefinedFunctionQuery(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
+        public static IOrderedQueryable<UserDefinedFunction> CreateUserDefinedFunctionQuery(this DocumentClient client, DocumentCollection owner, FeedOptions feedOptions = null)
         {
             return client.CreateUserDefinedFunctionQuery(owner.GetLink(), feedOptions);
         }
@@ -693,7 +692,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateUserDefinedFunctionQuery(this DocumentClient client, CosmosContainerSettings owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateUserDefinedFunctionQuery(this DocumentClient client, DocumentCollection owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateUserDefinedFunctionQuery(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -706,7 +705,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateUserDefinedFunctionQuery(this DocumentClient client, CosmosContainerSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateUserDefinedFunctionQuery(this DocumentClient client, DocumentCollection owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateUserDefinedFunctionQuery(owner.GetLink(), querySpec, feedOptions);
         }
@@ -718,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<Conflict> CreateConflictQuery(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
+        public static IOrderedQueryable<Conflict> CreateConflictQuery(this DocumentClient client, DocumentCollection owner, FeedOptions feedOptions = null)
         {
             return client.CreateConflictQuery(owner.GetLink(), feedOptions);
         }
@@ -731,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateConflictQuery(this DocumentClient client, CosmosContainerSettings owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateConflictQuery(this DocumentClient client, DocumentCollection owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateConflictQuery(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -744,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateConflictQuery(this DocumentClient client, CosmosContainerSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateConflictQuery(this DocumentClient client, DocumentCollection owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateConflictQuery(owner.GetLink(), querySpec, feedOptions);
         }
@@ -757,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<T> CreateDocumentQuery<T>(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
+        public static IOrderedQueryable<T> CreateDocumentQuery<T>(this DocumentClient client, DocumentCollection owner, FeedOptions feedOptions = null)
         {
             return client.CreateDocumentQuery<T>(owner.GetLink(), feedOptions);
         }
@@ -771,7 +770,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<T> CreateDocumentQuery<T>(this DocumentClient client, CosmosContainerSettings owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<T> CreateDocumentQuery<T>(this DocumentClient client, DocumentCollection owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateDocumentQuery<T>(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -785,7 +784,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<T> CreateDocumentQuery<T>(this DocumentClient client, CosmosContainerSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<T> CreateDocumentQuery<T>(this DocumentClient client, DocumentCollection owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateDocumentQuery<T>(owner.GetLink(), querySpec, feedOptions);
         }
@@ -797,7 +796,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<Document> CreateDocumentQuery(this DocumentClient client, CosmosContainerSettings owner, FeedOptions feedOptions = null)
+        public static IOrderedQueryable<Document> CreateDocumentQuery(this DocumentClient client, DocumentCollection owner, FeedOptions feedOptions = null)
         {
             return client.CreateDocumentQuery(owner.GetLink(), feedOptions);
         }
@@ -810,7 +809,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateDocumentQuery(this DocumentClient client, CosmosContainerSettings owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateDocumentQuery(this DocumentClient client, DocumentCollection owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateDocumentQuery(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -823,7 +822,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateDocumentQuery(this DocumentClient client, CosmosContainerSettings owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateDocumentQuery(this DocumentClient client, DocumentCollection owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateDocumentQuery(owner.GetLink(), querySpec, feedOptions);
         }
@@ -835,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner">The collection to read documents from.</param>
         /// <param name="feedOptions">The options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IDocumentQuery<Document> CreateDocumentChangeFeedQuery(this DocumentClient client, CosmosContainerSettings owner, ChangeFeedOptions feedOptions)
+        public static IDocumentQuery<Document> CreateDocumentChangeFeedQuery(this DocumentClient client, DocumentCollection owner, ChangeFeedOptions feedOptions)
         {
             if (owner == null)
             {
@@ -855,7 +854,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <param name="partitionKey">The key used to determine the target collection</param>
         /// <returns>A <see cref="ResourceFeedReader{Document}"/> instance.</returns>
-        public static ResourceFeedReader<Document> CreateDocumentFeedReader(this DocumentClient client, CosmosContainerSettings owner,
+        public static ResourceFeedReader<Document> CreateDocumentFeedReader(this DocumentClient client, DocumentCollection owner,
             FeedOptions options = null, object partitionKey = null)
         {
             return new ResourceFeedReader<Document>(client, ResourceType.Document, options, owner.GetLink(), partitionKey);
@@ -868,10 +867,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="collectionsLink">The link for collections</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{DocumentCollection}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosContainerSettings> CreateDocumentCollectionFeedReader(this DocumentClient client, CosmosDatabaseSettings owner,
+        public static ResourceFeedReader<DocumentCollection> CreateDocumentCollectionFeedReader(this DocumentClient client, Database owner,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosContainerSettings>(client, ResourceType.Collection, options, owner.GetLink());
+            return new ResourceFeedReader<DocumentCollection>(client, ResourceType.Collection, options, owner.GetLink());
         }
 
         /// <summary>
@@ -881,7 +880,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="usersLink">The link for users</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{User}"/> instance.</returns>
-        public static ResourceFeedReader<User> CreateUserFeedReader(this DocumentClient client, CosmosDatabaseSettings owner,
+        public static ResourceFeedReader<User> CreateUserFeedReader(this DocumentClient client, Database owner,
             FeedOptions options = null)
         {
             return new ResourceFeedReader<User>(client, ResourceType.User, options, owner.GetLink());
@@ -907,10 +906,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="storedProceduresLink">The link for stored procedures</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{StoredProcedure}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosStoredProcedureSettings> CreateStoredProcedureFeedReader(this DocumentClient client, CosmosContainerSettings owner,
+        public static ResourceFeedReader<StoredProcedure> CreateStoredProcedureFeedReader(this DocumentClient client, DocumentCollection owner,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosStoredProcedureSettings>(client, ResourceType.StoredProcedure, options, owner.GetLink());
+            return new ResourceFeedReader<StoredProcedure>(client, ResourceType.StoredProcedure, options, owner.GetLink());
         }
 
         /// <summary>
@@ -920,10 +919,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="triggersLink">The link for triggers</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Trigger}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosTriggerSettings > CreateTriggerFeedReader(this DocumentClient client, CosmosContainerSettings owner,
+        public static ResourceFeedReader<Trigger > CreateTriggerFeedReader(this DocumentClient client, DocumentCollection owner,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosTriggerSettings >(client, ResourceType.Trigger, options, owner.GetLink());
+            return new ResourceFeedReader<Trigger >(client, ResourceType.Trigger, options, owner.GetLink());
         }
 
         /// <summary>
@@ -933,10 +932,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="userDefinedFunctionsLink">The link for userDefinedFunctions</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{UserDefinedFunctions}"/> instance.</returns>
-        public static ResourceFeedReader<CosmosUserDefinedFunctionSettings> CreateUserDefinedFunctionFeedReader(this DocumentClient client, CosmosContainerSettings owner,
+        public static ResourceFeedReader<UserDefinedFunction> CreateUserDefinedFunctionFeedReader(this DocumentClient client, DocumentCollection owner,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<CosmosUserDefinedFunctionSettings>(client, ResourceType.UserDefinedFunction, options, owner.GetLink());
+            return new ResourceFeedReader<UserDefinedFunction>(client, ResourceType.UserDefinedFunction, options, owner.GetLink());
         }
 
         /// <summary>
@@ -959,7 +958,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="conflictsLink">The link for conflicts</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Conflict}"/> instance.</returns>
-        public static ResourceFeedReader<Conflict> CreateConflictFeedReader(this DocumentClient client, CosmosContainerSettings owner,
+        public static ResourceFeedReader<Conflict> CreateConflictFeedReader(this DocumentClient client, DocumentCollection owner,
             FeedOptions options = null)
         {
             return new ResourceFeedReader<Conflict>(client, ResourceType.Conflict, options, owner.GetLink());

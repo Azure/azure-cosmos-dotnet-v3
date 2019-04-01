@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing stored procedures by id.
@@ -140,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: storedProcedureSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

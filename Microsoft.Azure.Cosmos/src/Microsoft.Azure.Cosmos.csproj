@@ -7,7 +7,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <ClientVersion>3.0.0.9-preview</ClientVersion>
-    <DirectVersion>3.0.0.9-preview</DirectVersion>	
+    <DirectVersion>3.0.0.20-preview</DirectVersion>	
     <Version Condition=" '$(IsNightly)' == '1' ">$(ClientVersion)-nightly$(CurrentDate)</Version>
     <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(ClientVersion)</Version>
     <FileVersion>$(VersionPrefix)</FileVersion>
@@ -26,7 +26,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ShippingScope>External</ShippingScope>
     <SigningType>Product</SigningType>
@@ -40,7 +40,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
-
+  
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
   </ItemGroup>
@@ -48,38 +48,18 @@
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+  
+  <ItemGroup>
     <Compile Remove="RuntimePerfCounters.cs" />
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <Reference Include="System" />
-    <Reference Include="System.configuration" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Numerics" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.XML" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-	  <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+  <ItemGroup>
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
   </ItemGroup>
 
   <PropertyGroup>
-    <DefineConstants>DOCDBCLIENT</DefineConstants>
+    <DefineConstants>$(DefineConstants);DOCDBCLIENT;NETSTANDARD20</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
-    <DefineConstants>$(DefineConstants);NETFX</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <DefineConstants>$(DefineConstants);NETSTANDARD20</DefineConstants>
   </PropertyGroup> 
 </Project>

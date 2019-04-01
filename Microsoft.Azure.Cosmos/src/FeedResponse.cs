@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.

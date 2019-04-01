@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = Guid.NewGuid().ToString(),
                 Body = TriggersTests.GetTriggerFunction(".05"),
                 TriggerOperation = TriggerOperation.Create,
-                TriggerType = TriggerType.Pre
+                TriggerType = Cosmos.TriggerType.Pre
             };
 
             CosmosTriggerResponse triggerResponse =
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = "addTax",
                     Body = TriggersTests.GetTriggerFunction(".20"),
                     TriggerOperation = TriggerOperation.All,
-                    TriggerType = TriggerType.Pre
+                    TriggerType = Cosmos.TriggerType.Pre
                 });
            
             CosmosItemRequestOptions options = new CosmosItemRequestOptions()
@@ -175,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = id,
                 Body = function,
                 TriggerOperation = TriggerOperation.Create,
-                TriggerType = TriggerType.Pre
+                TriggerType = Cosmos.TriggerType.Pre
             };
 
             //Create a user defined function 

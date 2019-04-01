@@ -1,0 +1,111 @@
+﻿//-----------------------------------------------------------------------
+// <copyright file="IJsonWriter.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.Json
+{
+    using System.Collections.Generic;
+
+    /// <summary>
+    /// Interface for all JsonWriters that know how to write jsons of a specific serialization format.
+    /// </summary>
+    internal interface IJsonWriter
+    {
+        /// <summary>
+        /// Gets the SerializationFormat of the JsonWriter.
+        /// </summary>
+        JsonSerializationFormat SerializationFormat { get; }
+
+        /// <summary>
+        /// Gets the current length of the internal buffer.
+        /// </summary>
+        long CurrentLength { get; }
+
+        /// <summary>
+        /// Writes the object start symbol to internal buffer.
+        /// </summary>
+        void WriteObjectStart();
+
+        /// <summary>
+        /// Writes the object end symbol to the internal buffer.
+        /// </summary>
+        void WriteObjectEnd();
+
+        /// <summary>
+        /// Writes the array start symbol to the internal buffer.
+        /// </summary>
+        void WriteArrayStart();
+
+        /// <summary>
+        /// Writes the array end symbol to the internal buffer.
+        /// </summary>
+        void WriteArrayEnd();
+
+        /// <summary>
+        /// Writes a field name to the the internal buffer.
+        /// </summary>
+        /// <param name="fieldName">The name of the field to write.</param>
+        void WriteFieldName(string fieldName);
+
+        /// <summary>
+        /// Writes a string to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the string to write.</param>
+        void WriteStringValue(string value);
+
+        /// <summary>
+        /// Writes an integer to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteIntValue(long value);
+
+        /// <summary>
+        /// Writes a number to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the number to write.</param>
+        void WriteNumberValue(double value);
+
+        /// <summary>
+        /// Writes a boolean to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the boolean to write.</param>
+        void WriteBoolValue(bool value);
+
+        /// <summary>
+        /// Writes a null to the internal buffer.
+        /// </summary>
+        void WriteNullValue();
+
+        /// <summary>
+        /// Writes current token from a json reader to the internal buffer.
+        /// </summary>
+        /// <param name="jsonReader">The JsonReader to the get the current token from.</param>
+        void WriteCurrentToken(IJsonReader jsonReader);
+        
+        /// <summary>
+        /// Writes every token from the JsonReader to the internal buffer.
+        /// </summary>
+        /// <param name="jsonReader">The JsonReader to get the tokens from.</param>
+        void WriteAll(IJsonReader jsonReader);
+
+        /// <summary>
+        /// Writes a fragment of a json to the internal buffer
+        /// </summary>
+        /// <param name="jsonFragment">A section of a valid json</param>
+        void WriteJsonFragment(IReadOnlyList<byte> jsonFragment);
+
+        /// <summary>
+        /// Writes a json node to the internal buffer.
+        /// </summary>
+        /// <param name="jsonNavigator">The navigator to use to navigate the node</param>
+        /// <param name="jsonNavigatorNode">The node to write.</param>
+        void WriteJsonNode(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode);
+
+        /// <summary>
+        /// Gets the result of the JsonWriter.
+        /// </summary>
+        /// <returns>The result of the JsonWriter as an array of bytes.</returns>
+        byte[] GetResult();
+    }
+}

@@ -9,8 +9,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using Microsoft.Azure.Documents.Routing;
 
     internal sealed class PartitionKeyAndResourceTokenPair
     {

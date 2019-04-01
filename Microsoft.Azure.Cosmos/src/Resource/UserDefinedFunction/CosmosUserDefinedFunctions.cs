@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for creating new user defined function, and reading/querying all user defined functions
@@ -101,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 partitionKey: null,
-                streamPayload: userDefinedFunctionSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

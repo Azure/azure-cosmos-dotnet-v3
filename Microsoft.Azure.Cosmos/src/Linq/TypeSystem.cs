@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal static class TypeSystem

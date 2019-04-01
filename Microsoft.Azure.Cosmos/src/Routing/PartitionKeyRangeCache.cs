@@ -16,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     internal class PartitionKeyRangeCache : IRoutingMapProvider, ICollectionRoutingMapCache
     {
@@ -229,33 +232,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                string authorizationToken = null;
-                try
-                {
-                    authorizationToken =
-                        this.authorizationTokenProvider.GetUserAuthorizationToken(
-                    request.ResourceAddress,
-                    PathsHelper.GetResourcePath(request.ResourceType),
-                    HttpConstants.HttpMethods.Get,
-                    request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
-                }
-                catch (UnauthorizedException)
-                {
-                }
-
-                if (authorizationToken == null)
-                {
-                    // User doesn't have rid based resource token. Maybe he has name based.
-                    CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                    authorizationToken =
-                        this.authorizationTokenProvider.GetUserAuthorizationToken(
-                            collection.AltLink,
+                string authorizationToken = this.authorizationTokenProvider.GetUserAuthorizationToken(
+                            request.ResourceAddress,
                             PathsHelper.GetResourcePath(request.ResourceType),
                             HttpConstants.HttpMethods.Get,
                             request.Headers,
                             AuthorizationTokenType.PrimaryMasterKey);
-                }
 
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 

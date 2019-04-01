@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     internal interface IDocumentQueryClient : IDisposable
     {
@@ -35,11 +36,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
         Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, CancellationToken cancellationToken);
 
-        Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync();
+        Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
 
-        Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
+        Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
 
-        Task EnsureValidOverwrite(ConsistencyLevel desiredConsistencyLevel);
+        Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel);
 
         Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache();
     }

@@ -12,15 +12,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Text;
     using System.Xml;
     using static LinqAggregateFunctionBaselineTests;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Documents;
 
+    [Ignore]
     [TestClass]
     [TestCategory("Quarantine")]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
@@ -43,9 +42,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             string databaseName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
             databaseUri = UriFactory.CreateDatabaseUri(databaseName);
-            CosmosDatabaseSettings testDb = client.CreateDatabaseAsync(new CosmosDatabaseSettings() { Id = databaseName }).Result;
+            Database testDb = client.CreateDatabaseAsync(new Database() { Id = databaseName }).Result;
 
-            CosmosContainerSettings collection;
+            DocumentCollection collection;
             getQuery = LinqTestsCommon.GenerateSimpleData(client, testDb, out collection);
             getQueryFamily = LinqTestsCommon.GenerateFamilyData(client, testDb, out collection);
         }

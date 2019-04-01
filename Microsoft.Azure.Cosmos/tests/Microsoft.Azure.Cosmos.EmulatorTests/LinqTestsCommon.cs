@@ -5,12 +5,6 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -20,6 +14,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Xml;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     public class LinqTestsCommon
     {
@@ -278,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="client">the DocumentClient that is used to create the data</param>
         /// <param name="collection">the target collection</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
-        internal static Func<bool, IQueryable<T>> GenerateTestData<T>(Func<Random, T> func, int count, DocumentClient client, CosmosContainerSettings collection)
+        internal static Func<bool, IQueryable<T>> GenerateTestData<T>(Func<Random, T> func, int count, DocumentClient client, DocumentCollection collection)
         {
             List<T> data = new List<T>();
             int seed = DateTime.Now.Millisecond;
@@ -309,12 +308,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         internal static Func<bool, IQueryable<Family>> GenerateFamilyData(
             DocumentClient client,
-            CosmosDatabaseSettings testDb,
-            out CosmosContainerSettings testCollection)
+            Database testDb,
+            out DocumentCollection testCollection)
         {
             // The test collection should have range index on string properties
             // for the orderby tests
-            var newCol = new CosmosContainerSettings()
+            var newCol = new DocumentCollection()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = new IndexingPolicy()
@@ -398,14 +397,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         internal static Func<bool, IQueryable<Data>> GenerateSimpleData(
             DocumentClient client,
-            CosmosDatabaseSettings testDb,
-            out CosmosContainerSettings testCollection)
+            Database testDb,
+            out DocumentCollection testCollection)
         {
             const int DocumentCount = 10;
 
             testCollection = client.CreateDocumentCollectionAsync(
                 testDb.GetLink(),
-                new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() }).Result;
+                new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
 
             Random random = new Random();
             List<Data> testData = new List<Data>();

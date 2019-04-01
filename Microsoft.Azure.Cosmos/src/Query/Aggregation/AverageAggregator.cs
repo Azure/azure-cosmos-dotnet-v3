@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     using System;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>

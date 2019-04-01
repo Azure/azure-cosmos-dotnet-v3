@@ -5,13 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using System.Linq;
+    using Microsoft.Azure.Documents;
 
     internal sealed class DocumentQueryClient : IDocumentQueryClient
     {
@@ -121,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            return await this.innerClient.GetDefaultConsistencyLevelAsync();
+            return (ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
         }
 
         public async Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
