@@ -9,14 +9,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
 
-    internal sealed class ChangeFeedEstimatorDispatcher<T>
+    internal sealed class ChangeFeedEstimatorDispatcher
     {
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
-        Func<long, CancellationToken, Task> dispatchEstimation;
+        private readonly Func<long, CancellationToken, Task> dispatchEstimation;
 
-        public ChangeFeedEstimatorDispatcher(Func<long, CancellationToken, Task> dispatchEstimation)
+        public TimeSpan? DispatchPeriod { get; private set; }
+
+        public ChangeFeedEstimatorDispatcher(Func<long, CancellationToken, Task> dispatchEstimation, TimeSpan? estimationPeriod = null)
         {
             this.dispatchEstimation = dispatchEstimation;
+            this.DispatchPeriod = estimationPeriod;
         }
 
         public async Task DispatchEstimation(long estimation, CancellationToken cancellationToken)

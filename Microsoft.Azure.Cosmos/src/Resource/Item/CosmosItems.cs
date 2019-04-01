@@ -853,7 +853,8 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed monitoring.
         /// </summary>
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
+        /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
         /// <returns></returns>
-        public abstract ChangeFeedProcessorBuilder<dynamic> CreateChangeFeedProcessorBuilder(Func<long, CancellationToken, Task> estimationDelegate);
+        public abstract ChangeFeedProcessorBuilder<dynamic> CreateChangeFeedProcessorBuilder(Func<long, CancellationToken, Task> estimationDelegate, TimeSpan? estimationPeriod = null);
     }
 }

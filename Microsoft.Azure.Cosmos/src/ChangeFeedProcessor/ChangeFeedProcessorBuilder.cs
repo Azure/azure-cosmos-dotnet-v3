@@ -60,11 +60,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             this.changeFeedProcessorBuilderInstance.observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
         }
 
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate)
+        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate, TimeSpan? estimationPeriod = null)
             : this(cosmosContainer)
         {
             this.initialEstimateDelegate = estimateDelegate;
-            this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher<T>(estimateDelegate);
+            this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher(estimateDelegate, estimationPeriod);
         }
 
         /// <summary>
@@ -79,15 +79,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the <see cref="ChangeFeedLeaseOptions"/> to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container.
+        /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithCosmosLeaseContainer(CosmosContainer)"/>.
         /// </summary>
+        /// <param name="leasePrefix">Prefix to use for the leases. Used for when the same lease container is shared across different processors.</param>
         /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
         /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithCustomLeaseIntervals(TimeSpan? renewInterval, TimeSpan? acquireInterval, TimeSpan? expirationInterval)
+        public ChangeFeedProcessorBuilder<T> WithCustomLeaseConfiguration(string leasePrefix, TimeSpan? acquireInterval = null, TimeSpan? expirationInterval = null, TimeSpan? renewInterval = null)
         {
             this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions = this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeasePrefix = leasePrefix;
             this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;
             this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseAcquireInterval = acquireInterval ?? ChangeFeedLeaseOptions.DefaultAcquireInterval;
             this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseExpirationInterval = expirationInterval ?? ChangeFeedLeaseOptions.DefaultExpirationInterval;
@@ -95,18 +97,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Required when using <see cref="WithCosmosLeaseContainer(CosmosContainer)"/> and the lease container is shared with other processors.
+        /// Gets or sets the delay in between polling the change feed for new changes, after all current changes are drained.
         /// </summary>
         /// <remarks>
-        /// When using multiple instances of the same processor, the same prefix should be used for all of them. This is particularly meant for scenarios when processors with different logic / delegate are sharing the same lease container.
+        /// Applies only after a read on the change feed yielded no results.
         /// </remarks>
-        /// <param name="leasePrefix">Prefix to use for the leases.</param>
+        /// <param name="feedPollDelay">Polling interval value.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithLeasePrefix(string leasePrefix)
+        public ChangeFeedProcessorBuilder<T> WithFeedPollDelay(TimeSpan feedPollDelay)
         {
-            if (string.IsNullOrEmpty(leasePrefix)) throw new ArgumentNullException(nameof(leasePrefix));
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions = this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeasePrefix = leasePrefix;
+            if (feedPollDelay == null) throw new ArgumentNullException(nameof(feedPollDelay));
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.FeedPollDelay = feedPollDelay;
             return this;
         }
 
@@ -183,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
             if (this.initialEstimateDelegate != null)
             {
-                this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher<T>(this.initialEstimateDelegate);
+                this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate);
             }
         }
     }

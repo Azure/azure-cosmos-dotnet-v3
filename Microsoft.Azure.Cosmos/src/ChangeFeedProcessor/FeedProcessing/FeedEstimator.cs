@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Process that frequently checks the estimated state of the processor and dispatches a calculation to a <see cref="ChangeFeedEstimatorDispatcher{T}"/>.
+    /// Process that frequently checks the estimated state of the processor and dispatches a calculation to a <see cref="ChangeFeedEstimatorDispatcher"/>.
     /// </summary>
     internal abstract class FeedEstimator
     {

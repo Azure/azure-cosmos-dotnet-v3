@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         internal ChangeFeedProcessorOptions changeFeedProcessorOptions;
         internal ChangeFeedLeaseOptions changeFeedLeaseOptions;
         internal ChangeFeedObserverFactory<T> observerFactory = null;
-        internal ChangeFeedEstimatorDispatcher<T> estimatorDispatcher = null;
+        internal ChangeFeedEstimatorDispatcher estimatorDispatcher = null;
         internal LoadBalancingStrategy loadBalancingStrategy;
         internal FeedProcessorFactory<T> partitionProcessorFactory = null;
         internal HealthMonitor healthMonitor;
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                this.monitoredContainer,
                this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
 
-            return new FeedEstimatorCore<T>(this.estimatorDispatcher, remainingWorkEstimator, null);
+            return new FeedEstimatorCore(this.estimatorDispatcher, remainingWorkEstimator);
         }
 
         private PartitionManager BuildPartitionManager(DocumentServiceLeaseStoreManager leaseStoreManager)

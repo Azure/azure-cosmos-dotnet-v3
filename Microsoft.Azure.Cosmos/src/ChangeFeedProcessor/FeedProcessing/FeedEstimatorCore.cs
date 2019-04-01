@@ -13,19 +13,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
     using Microsoft.Azure.Documents;
 
-    internal sealed class FeedEstimatorCore<T> : FeedEstimator
+    internal sealed class FeedEstimatorCore : FeedEstimator
     {
         private static TimeSpan DefaultMonitoringDelay = TimeSpan.FromSeconds(5);
         private readonly ILog logger = LogProvider.GetCurrentClassLogger();
-        private readonly ChangeFeedEstimatorDispatcher<T> dispatcher;
+        private readonly ChangeFeedEstimatorDispatcher dispatcher;
         private readonly RemainingWorkEstimator remainingWorkEstimator;
         private readonly TimeSpan monitoringDelay;
 
-        public FeedEstimatorCore(ChangeFeedEstimatorDispatcher<T> dispatcher, RemainingWorkEstimator remainingWorkEstimator, TimeSpan? monitoringDelay)
+        public FeedEstimatorCore(ChangeFeedEstimatorDispatcher dispatcher, RemainingWorkEstimator remainingWorkEstimator)
         {
             this.dispatcher = dispatcher;
             this.remainingWorkEstimator = remainingWorkEstimator;
-            this.monitoringDelay = monitoringDelay ?? FeedEstimatorCore<T>.DefaultMonitoringDelay;
+            this.monitoringDelay = dispatcher.DispatchPeriod ?? FeedEstimatorCore.DefaultMonitoringDelay;
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
