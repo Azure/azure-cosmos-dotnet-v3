@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateDatabaseCrud()
+        public async Task ValidateDatabaseCrud()
         {
             using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
             {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Logger.LogLine("Listing Databases");
                 Uri uri = new Uri(baseUri, "dbs");
                 client.AddMasterAuthorizationHeader("get", "", "dbs", headers, this.masterKey);
-                ICollection<Database> databaseCollection1 = client.ListAllAsync<Database>(uri).Result;
+                ICollection<Database> databaseCollection1 = await client.ListAllAsync<Database>(uri);
 
                 string databaseName = Guid.NewGuid().ToString("N");
                 Database database = new Database
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateNegativeTestsForErrorMessages()
+        public async Task ValidateNegativeTestsForErrorMessages()
         {
             using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
             {
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = databaseName,
                 };
 
-                Task<HttpResponseMessage> retrievedTask = null;
+                HttpResponseMessage retrievedTask = null;
                 Database retrieved = null;
 
                 Logger.LogLine("Reading Database");
@@ -216,19 +216,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Uri getUri = new Uri(baseUri, @"dbs/ZzJwAA==");
                     client.AddMasterAuthorizationHeader("get", "ZzJwAA==", "dbs", new StringKeyValueCollection(), masterKey);
-                    retrievedTask = client.GetAsync(getUri);
-                    retrieved = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                    retrievedTask = await client.GetAsync(getUri);
+                    retrieved = await retrievedTask.ToResourceAsync<Database>();
                     Assert.Fail("FAIL - Exception exception trying to retrieve ZzJwAA==");
                 }
-                catch (AggregateException agg)
+                catch (DocumentClientException e)
                 {
-                    Assert.IsNotNull(agg.InnerException);
-                    DocumentClientException e = agg.InnerException as DocumentClientException;
                     Assert.IsTrue(e.Error.Code == "NotFound");
                     Logger.LogLine("Expected exception trying to retrieve ZzJwAA");
                     Logger.LogLine("Message : " + e.Error.Message);
                 }
-
 
                 // Update bad ID
                 try
@@ -237,16 +234,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     using (var dbContent = database.AsHttpContent())
                     {
                         client.AddMasterAuthorizationHeader("put", "ZzJwAA==", "dbs", new StringKeyValueCollection(), masterKey);
-                        retrievedTask = client.PutAsync(new Uri(baseUri, @"dbs/ZzJwAA=="), dbContent);
-                        retrievedTask.Wait();
+                        retrievedTask = await client.PutAsync(new Uri(baseUri, @"dbs/ZzJwAA=="), dbContent);
                     }
-                    retrieved = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                    retrieved = await retrievedTask.ToResourceAsync<Database>();
                     Assert.Fail("FAIL - Exception exception trying to update ZzJwAA");
                 }
-                catch (AggregateException agg)
+                catch (DocumentClientException e)
                 {
-                    Assert.IsNotNull(agg.InnerException);
-                    DocumentClientException e = agg.InnerException as DocumentClientException;
                     Assert.IsTrue(e.Error.Code == "MethodNotAllowed");
                     Logger.LogLine("Expected exception trying to retrieve ZzJwAA");
                     Logger.LogLine("Message : " + e.Error.Message);
@@ -257,15 +251,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Logger.LogLine("Deleting Database");
                     client.AddMasterAuthorizationHeader("delete", "ZzJwAA==", "dbs", new StringKeyValueCollection(), masterKey);
-                    retrievedTask = client.DeleteAsync(new Uri(baseUri, @"dbs/ZzJwAA=="));
-                    retrievedTask.Wait();
-                    retrieved = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                    retrievedTask = await client.DeleteAsync(new Uri(baseUri, @"dbs/ZzJwAA=="));
+                    retrieved = await retrievedTask.ToResourceAsync<Database>();
                     Assert.Fail("FAIL - Exception exception trying to delete ZzJwAA");
                 }
-                catch (AggregateException agg)
+                catch (DocumentClientException e)
                 {
-                    Assert.IsNotNull(agg.InnerException);
-                    DocumentClientException e = agg.InnerException as DocumentClientException;
                     Assert.IsTrue(e.Error.Code == "NotFound");
                     Logger.LogLine("Expected exception trying to delete ZzJwAA");
                     Logger.LogLine("Message : " + e.Error.Message);
@@ -280,13 +271,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     INameValueCollection headers = new StringKeyValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
-                    retrievedTask = client.PostAsync(new Uri(baseUri, "dbs"), database.AsHttpContent());
-                    retrieved = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                    retrievedTask = await client.PostAsync(new Uri(baseUri, "dbs"), database.AsHttpContent());
+                    retrieved = await retrievedTask.ToResourceAsync<Database>();
                     Assert.Fail("FAIL - Exception exception trying to create DB with longer name");
                 }
-                catch (AggregateException ae)
+                catch (DocumentClientException e)
                 {
-                    DocumentClientException e = ae.InnerException as DocumentClientException;
                     Assert.IsNotNull(e);
                     Assert.IsTrue(e.Error.Code == HttpStatusCode.BadRequest.ToString(), "Wrong status code");
                     Logger.LogLine("Expected exception trying to create DB with negative maxsize");
@@ -304,15 +294,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         using (StreamContent emptyContent = new StreamContent(emptyContentStream))
                         {
-                            retrievedTask = client.PostAsync(new Uri(baseUri, "dbs"), emptyContent);
-                            retrieved = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                            retrievedTask = await client.PostAsync(new Uri(baseUri, "dbs"), emptyContent);
+                            retrieved = await retrievedTask.ToResourceAsync<Database>();
                             Assert.Fail("FAIL - Exception exception trying to create DB with empty content");
                         }
                     }
                 }
-                catch (AggregateException ae)
+                catch (DocumentClientException e)
                 {
-                    DocumentClientException e = ae.InnerException as DocumentClientException;
                     Assert.IsNotNull(e);
                     Assert.IsTrue(e.Error.Code == HttpStatusCode.BadRequest.ToString(), "Wrong status code: {0}", e.ToString());
                     Logger.LogLine("Expected exception trying to create DB with with empty content");
@@ -331,15 +320,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         using (StreamContent badContent = new StreamContent(badContentStream))
                         {
-                            retrievedTask = client.PostAsync(new Uri(baseUri, "dbs"), badContent);
-                            retrieved = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                            retrievedTask = await client.PostAsync(new Uri(baseUri, "dbs"), badContent);
+                            retrieved = await retrievedTask.ToResourceAsync<Database>();
                             Assert.Fail("FAIL - Exception exception trying to create DB with empty content");
                         }
                     }
                 }
-                catch (AggregateException ae)
+                catch (DocumentClientException e)
                 {
-                    DocumentClientException e = ae.InnerException as DocumentClientException;
                     Assert.IsNotNull(e);
                     Assert.IsTrue(e.Error.Code == HttpStatusCode.BadRequest.ToString(), "Wrong status code");
                     Logger.LogLine("Expected exception trying to create DB with with empty content");
@@ -365,8 +353,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Logger.LogLine("Creating Database #1");
                     headers = new StringKeyValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
-                    var retrievedTask = client.PostAsync(new Uri(this.baseUri, "dbs"), database1.AsHttpContent());
-                    Database retrievedDatabase1 = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                    var retrievedTask = await client.PostAsync(new Uri(this.baseUri, "dbs"), database1.AsHttpContent());
+                    Database retrievedDatabase1 = await retrievedTask.ToResourceAsync<Database>();
 
                     string databaseName2 = Guid.NewGuid().ToString("N");
                     Database database2 = new Database { Id = databaseName2, };
@@ -374,8 +362,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Logger.LogLine("Creating Database #2");
                     headers = new StringKeyValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
-                    retrievedTask = client.PostAsync(new Uri(this.baseUri, "dbs"), database2.AsHttpContent());
-                    Database retrievedDatabase2 = retrievedTask.Result.ToResourceAsync<Database>().Result;
+                    retrievedTask = await client.PostAsync(new Uri(this.baseUri, "dbs"), database2.AsHttpContent());
+                    Database retrievedDatabase2 = await retrievedTask.ToResourceAsync<Database>();
 
                     string collectionName1 = "coll1";
                     DocumentCollection collection1 = new DocumentCollection { Id = collectionName1 };
@@ -394,12 +382,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     DocumentCollection collection2 = null;
                     DocumentCollection retrievedCollection1 = null;
-                    using (message = client.PostAsync(uri, collection1.AsHttpContent()).Result)
+                    using (message = await client.PostAsync(uri, collection1.AsHttpContent()))
                     {
 
                         Assert.IsTrue(message.IsSuccessStatusCode, "Collection #1 create failed");
 
-                        retrievedCollection1 = message.ToResourceAsync<DocumentCollection>().Result;
+                        retrievedCollection1 = await message.ToResourceAsync<DocumentCollection>();
 
                         string collectionName2 = "coll2";
                         PartitionKeyDefinition partitionKey = new PartitionKeyDefinition
@@ -423,12 +411,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     DocumentCollection retrievedCollection2 = null;
                     Document retrievedDocument1 = null;
-                    using (message = client.PostAsync(uri, collection2.AsHttpContent()).Result)
+                    using (message = await client.PostAsync(uri, collection2.AsHttpContent()))
                     {
 
                         Assert.IsTrue(message.IsSuccessStatusCode, "Collection #2 create failed");
 
-                        retrievedCollection2 = message.ToResourceAsync<DocumentCollection>().Result;
+                        retrievedCollection2 = await message.ToResourceAsync<DocumentCollection>();
 
                         Logger.LogLine("Creating document #1");
 
@@ -454,14 +442,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 {
 
                                     uri = new Uri(this.baseUri, retrievedCollection1.SelfLink + "docs");
-                                    message = client.PostAsync(uri, documentContent1).Result;
+                                    message = await client.PostAsync(uri, documentContent1);
 
                                     Assert.IsTrue(message.IsSuccessStatusCode, "Doc#1 create failed");
 
                                     // For session reads, there had better be a session token.
                                     Assert.IsTrue(message.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
 
-                                    retrievedDocument1 = message.ToResourceAsync<Document>().Result;
+                                    retrievedDocument1 = await message.ToResourceAsync<Document>();
                                 }
                             }
                         }
@@ -496,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                 uri = new Uri(this.baseUri, retrievedCollection2.SelfLink + "docs");
 
-                                using (message = client.PostAsync(uri, documentContent2).Result)
+                                using (message = await client.PostAsync(uri, documentContent2))
                                 {
                                     using (var ms = new MemoryStream())
                                     {
@@ -509,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     // For session reads, there had better be a session token.
                                     Assert.IsTrue(message.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
 
-                                    retrievedDocument2 = message.ToResourceAsync<Document>().Result;
+                                    retrievedDocument2 = await message.ToResourceAsync<Document>();
 
                                 }
                             }
@@ -543,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                 uri = new Uri(this.baseUri, retrievedCollection2.SelfLink + "docs");
 
-                                using (message = client.PostAsync(uri, documentContent3).Result)
+                                using (message = await client.PostAsync(uri, documentContent3))
                                 {
 
                                     Assert.IsTrue(message.IsSuccessStatusCode, "Doc#3 create failed");
@@ -551,7 +539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     // For session reads, there had better be a session token.
                                     Assert.IsTrue(message.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
 
-                                    retrievedDocument3 = message.ToResourceAsync<Document>().Result;
+                                    retrievedDocument3 = await message.ToResourceAsync<Document>();
 
                                 }
                             }
@@ -577,8 +565,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Logger.LogLine("Reading document #1 {0} iteration", i);
 
                         uri = new Uri(this.baseUri, retrievedDocument1.SelfLink);
-                        retrievedTask = client.GetAsync(uri);
-                        using (message = retrievedTask.Result)
+                        retrievedTask = await client.GetAsync(uri);
+                        using (message = retrievedTask)
                         {
 
                             Assert.IsTrue(message.IsSuccessStatusCode, "Document #1 read failed");
@@ -586,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             // For session reads, there had better be a session token.
                             Assert.IsTrue(message.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
 
-                            String receivedDocument1 = message.Content.ReadAsStringAsync().Result;
+                            String receivedDocument1 = await message.Content.ReadAsStringAsync();
 
                             Assert.IsTrue(receivedDocument1.Length != 0, "Query failed to retrieve document #1");
                         }
@@ -603,8 +591,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.PartitionKey);
                     client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.PartitionKey, "[1]");
                     uri = new Uri(this.baseUri, retrievedDocument2.SelfLink);
-                    retrievedTask = client.GetAsync(uri);
-                    using (message = retrievedTask.Result)
+                    retrievedTask = await client.GetAsync(uri);
+                    using (message = retrievedTask)
                     {
                         using (var ms = new MemoryStream())
                         {
@@ -617,7 +605,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         // For session reads, there had better be a session token.
                         Assert.IsTrue(message.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
 
-                        String receivedDocument2 = message.Content.ReadAsStringAsync().Result;
+                        String receivedDocument2 = await message.Content.ReadAsStringAsync();
 
                         Assert.IsTrue(receivedDocument2.Length != 0, "Query failed to retrieve the document");
                     }
@@ -630,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateAPIVersionCheck()
+        public async Task ValidateAPIVersionCheck()
         {
             Uri uri = new Uri(baseUri, new Uri("dbs", UriKind.Relative));
 
@@ -642,7 +630,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Logger.LogLine("Making request with valid API version");
                 client.AddMasterAuthorizationHeader("get", "", "dbs", headers, this.masterKey);
-                ICollection<Database> databaseCollection1 = client.ListAllAsync<Database>(uri).Result;
+                ICollection<Database> databaseCollection1 = await client.ListAllAsync<Database>(uri);
             }
 
             // Negative test: create HttpClient with invalid versions, which should
@@ -660,12 +648,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     client.AddMasterAuthorizationHeader("get", "", "dbs", headers, this.masterKey);
                     try
                     {
-                        ICollection<Database> databaseCollection1 = client.ListAllAsync<Database>(uri).Result;
+                        ICollection<Database> databaseCollection1 = await client.ListAllAsync<Database>(uri);
                     }
-                    catch (AggregateException e)
+                    catch (DocumentClientException de)
                     {
                         expectedException = true;
-                        DocumentClientException de = e.InnerException as DocumentClientException;
                         Assert.IsNotNull(de, "Unexpected Exception");
                         Assert.AreEqual(HttpStatusCode.BadRequest.ToString(), de.Error.Code);
                     }
@@ -676,7 +663,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void LoadBalancerProbeTest()
+        public async Task LoadBalancerProbeTest()
         {
             Uri uri = new Uri(baseUri, new Uri("probe", UriKind.Relative));
 
@@ -685,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     // Plain HTTP GET should respond with 200
-                    HttpResponseMessage response = client.GetAsync(uri).Result;
+                    HttpResponseMessage response = await client.GetAsync(uri);
 
                     Assert.AreEqual(response.StatusCode, HttpStatusCode.OK);
                 }
@@ -697,25 +684,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateContentType()
+        public async Task ValidateContentType()
         {
             try
             {
                 using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
                 {
-                    Document retrievedDocument = null;
-                    CreateItemsForContentType(client, out retrievedDocument);
+                    Document retrievedDocument = await CreateItemsForContentType(client);
 
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, null);
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "application/json");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "*/*");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "application/*");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "text/html, application/json; q=0.1");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "text/html");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "application/**");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "*/json");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "abc/def");
-                    ValidateContentTypeForAcceptTypes(client, retrievedDocument, "text/html, application/xml");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, null);
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "application/json");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "*/*");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "application/*");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "text/html, application/json; q=0.1");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "text/html");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "application/**");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "*/json");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "abc/def");
+                    await ValidateContentTypeForAcceptTypes(client, retrievedDocument, "text/html, application/xml");
                 }
             }
             catch (Exception e)
@@ -769,7 +755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private void ValidateContentTypeForAcceptTypes(HttpClient client, Document retrievedDocument, string acceptTypes)
+        private async Task ValidateContentTypeForAcceptTypes(HttpClient client, Document retrievedDocument, string acceptTypes)
         {
             Logger.LogLine("Reading document for Accept Types '{0}'", acceptTypes);
             INameValueCollection headers = new StringKeyValueCollection();
@@ -783,21 +769,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             client.AddMasterAuthorizationHeader("get", retrievedDocument.ResourceId, "docs", headers, this.masterKey);
             Uri uri = new Uri(this.baseUri, retrievedDocument.SelfLink);
-            var retrievedTask = client.GetAsync(uri);
-            using (HttpResponseMessage message = retrievedTask.Result)
+            using (HttpResponseMessage message = await client.GetAsync(uri))
             {
 
                 Assert.IsTrue(message.IsSuccessStatusCode, "Document read failed with status code {0}", message.StatusCode);
 
-                String receivedDocument1 = message.Content.ReadAsStringAsync().Result;
+                String receivedDocument1 = await message.Content.ReadAsStringAsync();
                 Assert.IsTrue(receivedDocument1.Length != 0, "Query failed to retrieve document");
 
                 Assert.AreEqual("application/json", message.Content.Headers.ContentType.MediaType, "Document read returned unexpected content type");
             }
         }
 
-        private void CreateItemsForContentType(HttpClient client, out Document retrievedDocument)
+        private async Task<Document> CreateItemsForContentType(HttpClient client)
         {
+            Document retrievedDocument = null;
             client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.ConsistencyLevel, "Session");
             INameValueCollection headers;
             HttpResponseMessage message;
@@ -811,8 +797,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Logger.LogLine("Creating Database");
             headers = new StringKeyValueCollection();
             client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
-            var retrievedTask = client.PostAsync(new Uri(this.baseUri, "dbs"), database.AsHttpContent());
-            Database retrievedDatabase = retrievedTask.Result.ToResourceAsync<Database>().Result;
+            var retrievedTask = await client.PostAsync(new Uri(this.baseUri, "dbs"), database.AsHttpContent());
+            Database retrievedDatabase = await retrievedTask.ToResourceAsync<Database>();
 
             string collectionName = "coll1";
             DocumentCollection collection = new DocumentCollection
@@ -828,12 +814,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             uri = new Uri(this.baseUri, retrievedDatabase.SelfLink + "colls");
 
             DocumentCollection retrievedCollection = null;
-            using (message = client.PostAsync(uri, collection.AsHttpContent()).Result)
+            using (message = await client.PostAsync(uri, collection.AsHttpContent()))
             {
 
                 Assert.IsTrue(message.IsSuccessStatusCode, "Collection create failed");
 
-                retrievedCollection = message.ToResourceAsync<DocumentCollection>().Result;
+                retrievedCollection = await message.ToResourceAsync<DocumentCollection>();
             }
 
             Logger.LogLine("Creating document");
@@ -854,17 +840,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
 
                         uri = new Uri(this.baseUri, retrievedCollection.SelfLink + "docs");
-                        message = client.PostAsync(uri, documentContent).Result;
+                        message = await client.PostAsync(uri, documentContent);
 
                         Assert.IsTrue(message.IsSuccessStatusCode, "Doc#1 create failed");
 
                         // For session reads, there had better be a session token.
                         Assert.IsTrue(message.Headers.Contains(HttpConstants.HttpHeaders.SessionToken));
 
-                        retrievedDocument = message.ToResourceAsync<Document>().Result;
+                        retrievedDocument = await message.ToResourceAsync<Document>();
                     }
                 }
             }
+
+            return retrievedDocument;
         }
 
         [TestMethod]
