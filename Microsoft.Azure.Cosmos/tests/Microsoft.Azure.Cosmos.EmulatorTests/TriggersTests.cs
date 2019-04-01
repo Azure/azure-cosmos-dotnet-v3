@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
     {
-        private CosmosContainer container = null;
+        private CosmosContainerCore container = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.container = response;
+            this.container = (CosmosContainerCore)response;
         }
 
         [TestCleanup]

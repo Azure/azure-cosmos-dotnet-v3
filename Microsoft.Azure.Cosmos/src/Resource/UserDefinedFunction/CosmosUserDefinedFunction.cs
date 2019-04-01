@@ -29,13 +29,15 @@ namespace Microsoft.Azure.Cosmos
         protected internal CosmosUserDefinedFunction(
             CosmosContainer container,
             string userDefinedFunctionId)
-            : base(container.Client,
-                container.Link,
-                userDefinedFunctionId)
         {
+            this.Id = userDefinedFunctionId;
+            base.Initialize(
+               client: container.Client,
+               parentLink: container.LinkUri.OriginalString,
+               uriPathSegment: Paths.UserDefinedFunctionsPathSegment);
         }
 
-        internal override string UriPathSegment => Paths.UserDefinedFunctionsPathSegment;
+        public override string Id { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
