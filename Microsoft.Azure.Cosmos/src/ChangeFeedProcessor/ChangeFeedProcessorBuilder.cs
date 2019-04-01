@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring;
@@ -23,48 +26,43 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private const string InMemoryDefaultHostName = "InMemory";
         private const string EstimatorDefaultHostName = "Estimator";
 
-        private readonly CosmosContainer initialCosmosContainer;
         private readonly Func<IReadOnlyList<T>, CancellationToken, Task> initialChangesDelegate;
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
 
-        private ChangeFeedProcessorBuilderInstance<T> changeFeedProcessorBuilderInstance;
+        private ChangeFeedProcessorOptions changeFeedProcessorOptions;
+        private ChangeFeedLeaseOptions changeFeedLeaseOptions;
+        private ChangeFeedObserverFactory<T> observerFactory = null;
+        private ChangeFeedEstimatorDispatcher estimatorDispatcher = null;
+        private LoadBalancingStrategy loadBalancingStrategy;
+        private FeedProcessorFactory<T> partitionProcessorFactory = null;
+        private HealthMonitor healthMonitor;
+        private CosmosContainer monitoredContainer;
+        private CosmosContainer leaseContainer;
+        private string InstanceName;
+        private DocumentServiceLeaseStoreManager LeaseStoreManager;
+        private string databaseResourceId;
+        private string collectionResourceId;
+        private bool isBuilt;
 
         private bool IsBuildingEstimator => this.initialEstimateDelegate != null;
 
-        internal string InstanceName
-        {
-            get => this.changeFeedProcessorBuilderInstance.InstanceName;
-        }
-
-        /// <summary>
-        /// Gets the lease manager.
-        /// </summary>
-        /// <remarks>
-        /// Internal for testing only, otherwise it would be private.
-        /// </remarks>
-        internal DocumentServiceLeaseStoreManager LeaseStoreManager
-        {
-            get => this.changeFeedProcessorBuilderInstance.LeaseStoreManager;
-        }
-
         internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer): base()
         {
-            this.initialCosmosContainer = cosmosContainer;
-            this.Reset();
+            this.monitoredContainer = cosmosContainer;
         }
 
         internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
             : this(cosmosContainer)
         {
             this.initialChangesDelegate = onChangesDelegate;
-            this.changeFeedProcessorBuilderInstance.observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+            this.observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
         }
 
         internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate, TimeSpan? estimationPeriod = null)
             : this(cosmosContainer)
         {
             this.initialEstimateDelegate = estimateDelegate;
-            this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher(estimateDelegate, estimationPeriod);
+            this.estimatorDispatcher = new ChangeFeedEstimatorDispatcher(estimateDelegate, estimationPeriod);
         }
 
         /// <summary>
@@ -74,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
         public ChangeFeedProcessorBuilder<T> WithInstanceName(string instanceName)
         {
-            this.changeFeedProcessorBuilderInstance.InstanceName = instanceName;
+            this.InstanceName = instanceName;
             return this;
         }
 
@@ -88,11 +86,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
         public ChangeFeedProcessorBuilder<T> WithCustomLeaseConfiguration(string leasePrefix, TimeSpan? acquireInterval = null, TimeSpan? expirationInterval = null, TimeSpan? renewInterval = null)
         {
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions = this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeasePrefix = leasePrefix;
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseAcquireInterval = acquireInterval ?? ChangeFeedLeaseOptions.DefaultAcquireInterval;
-            this.changeFeedProcessorBuilderInstance.changeFeedLeaseOptions.LeaseExpirationInterval = expirationInterval ?? ChangeFeedLeaseOptions.DefaultExpirationInterval;
+            this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
+            this.changeFeedLeaseOptions.LeasePrefix = leasePrefix;
+            this.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;
+            this.changeFeedLeaseOptions.LeaseAcquireInterval = acquireInterval ?? ChangeFeedLeaseOptions.DefaultAcquireInterval;
+            this.changeFeedLeaseOptions.LeaseExpirationInterval = expirationInterval ?? ChangeFeedLeaseOptions.DefaultExpirationInterval;
             return this;
         }
 
@@ -107,8 +105,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithFeedPollDelay(TimeSpan feedPollDelay)
         {
             if (feedPollDelay == null) throw new ArgumentNullException(nameof(feedPollDelay));
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.FeedPollDelay = feedPollDelay;
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.FeedPollDelay = feedPollDelay;
             return this;
         }
 
@@ -125,8 +123,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
         public ChangeFeedProcessorBuilder<T> WithStartFromBeginning()
         {
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.StartFromBeginning = true;
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.StartFromBeginning = true;
             return this;
         }
 
@@ -140,8 +138,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
         public ChangeFeedProcessorBuilder<T> WithStartContinuation(string startContinuation)
         {
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.StartContinuation = startContinuation;
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.StartContinuation = startContinuation;
             return this;
         }
 
@@ -159,8 +157,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithStartTime(DateTime startTime)
         {
             if (startTime == null) throw new ArgumentNullException(nameof(startTime));
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.StartTime = startTime;
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.StartTime = startTime;
             return this;
         }
 
@@ -172,8 +170,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithMaxItems(int maxItemCount)
         {
             if (maxItemCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxItemCount));
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions = this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorBuilderInstance.changeFeedProcessorOptions.MaxItemCount = maxItemCount;
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.MaxItemCount = maxItemCount;
             return this;
         }
 
@@ -185,9 +183,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithCosmosLeaseContainer(CosmosContainer leaseContainer)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (this.changeFeedProcessorBuilderInstance.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
-            if (this.changeFeedProcessorBuilderInstance.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined a custom Lease Store Manager instance.");
-            this.changeFeedProcessorBuilderInstance.leaseContainer = leaseContainer;
+            if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
+            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined a custom Lease Store Manager instance.");
+            this.leaseContainer = leaseContainer;
             return this;
         }
 
@@ -200,14 +198,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
         public ChangeFeedProcessorBuilder<T> WithInMemoryLeaseContainer()
         {
-            if (this.changeFeedProcessorBuilderInstance.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
-            if (this.changeFeedProcessorBuilderInstance.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container or a custom Lease Store Manager instance.");
+            if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
+            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container or a custom Lease Store Manager instance.");
             if (string.IsNullOrEmpty(this.InstanceName))
             {
-                this.changeFeedProcessorBuilderInstance.InstanceName = ChangeFeedProcessorBuilder<T>.InMemoryDefaultHostName;
+                this.InstanceName = ChangeFeedProcessorBuilder<T>.InMemoryDefaultHostName;
             }
 
-            this.changeFeedProcessorBuilderInstance.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
+            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
             return this;
         }
 
@@ -217,29 +215,166 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>
         public async Task<ChangeFeedProcessor> BuildAsync()
         {
+            if (this.isBuilt)
+            {
+                throw new InvalidOperationException("This builder instance has already been used to build a processor. Create a new instance to build another.");
+            }
+
             if (IsBuildingEstimator)
             {
-                this.changeFeedProcessorBuilderInstance.InstanceName = ChangeFeedProcessorBuilder<T>.EstimatorDefaultHostName;
+                this.InstanceName = ChangeFeedProcessorBuilder<T>.EstimatorDefaultHostName;
             }
 
-            ChangeFeedProcessor changeFeedProcessor =  await this.changeFeedProcessorBuilderInstance.BuildAsync().ConfigureAwait(false);
-            this.Reset();
-            return changeFeedProcessor;
+            if (this.monitoredContainer == null)
+            {
+                throw new InvalidOperationException(nameof(this.monitoredContainer) + " was not specified");
+            }
+
+            if (this.leaseContainer == null && this.LeaseStoreManager == null)
+            {
+                throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer, WithInMemoryLeaseContainer, or WithLeaseStoreManager is required.");
+            }
+
+            if (this.observerFactory == null && this.estimatorDispatcher == null)
+            {
+                throw new InvalidOperationException("Observer or Dispatcher need to be specified.");
+            }
+
+            if (this.observerFactory != null && this.InstanceName == null)
+            {
+                // Processor requires Instace Name
+                throw new InvalidOperationException("Instance name was not specified");
+            }
+
+            this.InitializeDefaultOptions();
+            this.InitializeCollectionPropertiesForBuild();
+
+            DocumentServiceLeaseStoreManager leaseStoreManager = await this.GetLeaseStoreManagerAsync().ConfigureAwait(false);
+
+            ChangeFeedProcessor builtInstance;
+            if (this.observerFactory != null)
+            {
+                PartitionManager partitionManager = this.BuildPartitionManager(leaseStoreManager);
+                builtInstance = new ChangeFeedProcessorCore(partitionManager);
+            }
+            else {
+
+                FeedEstimator remainingWorkEstimator = this.BuildFeedEstimator(leaseStoreManager);
+                builtInstance = new ChangeFeedEstimatorCore(remainingWorkEstimator);
+            }
+
+            this.isBuilt = true;
+            return builtInstance;
         }
 
-        private void Reset()
+        private FeedEstimator BuildFeedEstimator(DocumentServiceLeaseStoreManager leaseStoreManager)
         {
-            this.changeFeedProcessorBuilderInstance = new ChangeFeedProcessorBuilderInstance<T>();
-            this.changeFeedProcessorBuilderInstance.monitoredContainer = this.initialCosmosContainer;
-            if (this.initialChangesDelegate != null)
+            RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
+               leaseStoreManager.LeaseContainer,
+               this.monitoredContainer,
+               this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
+
+            return new FeedEstimatorCore(this.estimatorDispatcher, remainingWorkEstimator);
+        }
+
+        private PartitionManager BuildPartitionManager(DocumentServiceLeaseStoreManager leaseStoreManager)
+        {
+            var factory = new CheckpointerObserverFactory<T>(this.observerFactory, this.changeFeedProcessorOptions.CheckpointFrequency);
+            var synchronizer = new PartitionSynchronizerCore(
+                this.monitoredContainer,
+                leaseStoreManager.LeaseContainer,
+                leaseStoreManager.LeaseManager,
+                PartitionSynchronizerCore.DefaultDegreeOfParallelism,
+                this.changeFeedProcessorOptions.QueryFeedMaxBatchSize);
+            var bootstrapper = new BootstrapperCore(synchronizer, leaseStoreManager.LeaseStore, BootstrapperCore.DefaultLockTime, BootstrapperCore.DefaultSleepTime);
+            var partitionSuperviserFactory = new PartitionSupervisorFactoryCore<T>(
+                factory,
+                leaseStoreManager.LeaseManager,
+                this.partitionProcessorFactory ?? new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, leaseStoreManager.LeaseCheckpointer),
+                this.changeFeedLeaseOptions);
+
+            if (this.loadBalancingStrategy == null)
             {
-                this.changeFeedProcessorBuilderInstance.observerFactory = new ChangeFeedObserverFactoryCore<T>(this.initialChangesDelegate);
+                this.loadBalancingStrategy = new EqualPartitionsBalancingStrategy(
+                    this.InstanceName,
+                    EqualPartitionsBalancingStrategy.DefaultMinLeaseCount,
+                    EqualPartitionsBalancingStrategy.DefaultMaxLeaseCount,
+                    this.changeFeedLeaseOptions.LeaseExpirationInterval);
             }
 
-            if (this.initialEstimateDelegate != null)
+            PartitionController partitionController = new PartitionControllerCore(leaseStoreManager.LeaseContainer, leaseStoreManager.LeaseManager, partitionSuperviserFactory, synchronizer);
+
+            if (this.healthMonitor == null)
             {
-                this.changeFeedProcessorBuilderInstance.estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate);
+                this.healthMonitor = new TraceHealthMonitor();
             }
+
+            partitionController = new HealthMonitoringPartitionControllerDecorator(partitionController, this.healthMonitor);
+            var partitionLoadBalancer = new PartitionLoadBalancerCore(
+                partitionController,
+                leaseStoreManager.LeaseContainer,
+                this.loadBalancingStrategy,
+                this.changeFeedLeaseOptions.LeaseAcquireInterval);
+            return new PartitionManagerCore(bootstrapper, partitionController, partitionLoadBalancer);
+        }
+
+        private async Task<DocumentServiceLeaseStoreManager> GetLeaseStoreManagerAsync()
+        {
+            if (this.LeaseStoreManager == null)
+            {
+                var cosmosContainerResponse = await this.leaseContainer.ReadAsync().ConfigureAwait(false);
+                var containerSettings = cosmosContainerResponse.Resource;
+
+                bool isPartitioned =
+                    containerSettings.PartitionKey != null &&
+                    containerSettings.PartitionKey.Paths != null &&
+                    containerSettings.PartitionKey.Paths.Count > 0;
+                if (isPartitioned &&
+                    (containerSettings.PartitionKey.Paths.Count != 1 || containerSettings.PartitionKey.Paths[0] != "/id"))
+                {
+                    throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
+                }
+
+                var requestOptionsFactory = isPartitioned ?
+                    (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory() :
+                    (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
+
+                string leasePrefix = this.GetLeasePrefix();
+                var leaseStoreManagerBuilder = new DocumentServiceLeaseStoreManagerBuilder()
+                    .WithLeasePrefix(leasePrefix)
+                    .WithLeaseContainer(this.leaseContainer)
+                    .WithRequestOptionsFactory(requestOptionsFactory)
+                    .WithHostName(this.InstanceName);
+
+                this.LeaseStoreManager = await leaseStoreManagerBuilder.BuildAsync().ConfigureAwait(false);
+            }
+
+            return this.LeaseStoreManager;
+        }
+
+        private string GetLeasePrefix()
+        {
+            string optionsPrefix = this.changeFeedLeaseOptions.LeasePrefix ?? string.Empty;
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}{1}_{2}_{3}",
+                optionsPrefix,
+                this.monitoredContainer.Client.Configuration.AccountEndPoint.Host,
+                this.databaseResourceId,
+                this.collectionResourceId);
+        }
+
+        private void InitializeCollectionPropertiesForBuild()
+        {
+            var containerLinkSegments = this.monitoredContainer.LinkUri.OriginalString.Split('/');
+            this.databaseResourceId = containerLinkSegments[2];
+            this.collectionResourceId = containerLinkSegments[4];
+        }
+
+        private void InitializeDefaultOptions()
+        {
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
         }
     }
 }
