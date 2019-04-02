@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             CosmosContainer monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
+            if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
             if (instanceName == null) throw new ArgumentNullException(nameof(instanceName));
             if (observerFactory == null) throw new ArgumentNullException(nameof(observerFactory));
 
