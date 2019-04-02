@@ -847,7 +847,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns></returns>
-        public abstract ChangeFeedProcessorBuilder<T> CreateChangeFeedProcessorBuilder<T>(Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed monitoring.
@@ -855,6 +855,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
         /// <returns></returns>
-        public abstract ChangeFeedProcessorBuilder<dynamic> CreateChangeFeedProcessorBuilder(Func<long, CancellationToken, Task> estimationDelegate, TimeSpan? estimationPeriod = null);
+        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(Func<long, CancellationToken, Task> estimationDelegate, TimeSpan? estimationPeriod = null);
     }
 }

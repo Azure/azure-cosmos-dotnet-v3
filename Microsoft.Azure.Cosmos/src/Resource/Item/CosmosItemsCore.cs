@@ -341,20 +341,20 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override ChangeFeedProcessorBuilder<T> CreateChangeFeedProcessorBuilder<T>(Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
+        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
         {
             if (onChangesDelegate == null) throw new ArgumentNullException(nameof(onChangesDelegate));
 
-            return new ChangeFeedProcessorBuilder<T>(this.container, onChangesDelegate);
+            return new ChangeFeedProcessorBuilderCore<T>(this.container, onChangesDelegate);
         }
 
-        public override ChangeFeedProcessorBuilder<dynamic> CreateChangeFeedProcessorBuilder(
+        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
             Func<long, CancellationToken, Task> estimationDelegate, 
             TimeSpan? estimationPeriod = null)
         {
             if (estimationDelegate == null) throw new ArgumentNullException(nameof(estimationDelegate));
 
-            return new ChangeFeedProcessorBuilder<dynamic>(this.container, estimationDelegate, estimationPeriod);
+            return new ChangeFeedProcessorBuilderCore<dynamic>(this.container, estimationDelegate, estimationPeriod);
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
