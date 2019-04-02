@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private ChangeFeedObserverFactory<T> observerFactory = null;
-        private ChangeFeedEstimatorDispatcher estimatorDispatcher = null;
+        private TimeSpan? estimatorPeriod = null;
         private LoadBalancingStrategy loadBalancingStrategy;
         private FeedProcessorFactory<T> partitionProcessorFactory = null;
         private HealthMonitor healthMonitor;
@@ -58,11 +58,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             this.observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
         }
 
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate, TimeSpan? estimationPeriod = null)
+        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate, TimeSpan? estimatorPeriod = null)
             : this(cosmosContainer)
         {
             this.initialEstimateDelegate = estimateDelegate;
-            this.estimatorDispatcher = new ChangeFeedEstimatorDispatcher(estimateDelegate, estimationPeriod);
+            this.estimatorPeriod = estimatorPeriod;
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
         /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithCustomLeaseConfiguration(string leasePrefix, TimeSpan? acquireInterval = null, TimeSpan? expirationInterval = null, TimeSpan? renewInterval = null)
+        public ChangeFeedProcessorBuilder<T> WithLeaseConfiguration(string leasePrefix, TimeSpan? acquireInterval = null, TimeSpan? expirationInterval = null, TimeSpan? renewInterval = null)
         {
             this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
             this.changeFeedLeaseOptions.LeasePrefix = leasePrefix;
@@ -105,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithFeedPollDelay(TimeSpan feedPollDelay)
         {
             if (feedPollDelay == null) throw new ArgumentNullException(nameof(feedPollDelay));
+
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.FeedPollDelay = feedPollDelay;
             return this;
@@ -157,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithStartTime(DateTime startTime)
         {
             if (startTime == null) throw new ArgumentNullException(nameof(startTime));
+
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartTime = startTime;
             return this;
@@ -170,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithMaxItems(int maxItemCount)
         {
             if (maxItemCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxItemCount));
+
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.MaxItemCount = maxItemCount;
             return this;
@@ -185,6 +188,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+
             this.leaseContainer = leaseContainer;
             return this;
         }
@@ -200,6 +204,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         {
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
+
             if (string.IsNullOrEmpty(this.InstanceName))
             {
                 this.InstanceName = ChangeFeedProcessorBuilder<T>.InMemoryDefaultHostName;
@@ -235,9 +240,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                 throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer, WithInMemoryLeaseContainer, or WithLeaseStoreManager is required.");
             }
 
-            if (this.observerFactory == null && this.estimatorDispatcher == null)
+            if (this.observerFactory == null && this.initialEstimateDelegate == null)
             {
-                throw new InvalidOperationException("Observer or Dispatcher need to be specified.");
+                throw new InvalidOperationException("Observer or Estimation delegate need to be specified.");
             }
 
             if (this.observerFactory != null && this.InstanceName == null)
@@ -275,7 +280,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                this.monitoredContainer,
                this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
 
-            return new FeedEstimatorCore(this.estimatorDispatcher, remainingWorkEstimator);
+            ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate, this.estimatorPeriod);
+
+            return new FeedEstimatorCore(estimatorDispatcher, remainingWorkEstimator);
         }
 
         private PartitionManager BuildPartitionManager(DocumentServiceLeaseStoreManager leaseStoreManager)
