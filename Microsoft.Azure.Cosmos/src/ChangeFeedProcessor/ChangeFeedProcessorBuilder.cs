@@ -33,9 +33,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private ChangeFeedObserverFactory<T> observerFactory = null;
         private TimeSpan? estimatorPeriod = null;
-        private LoadBalancingStrategy loadBalancingStrategy;
-        private FeedProcessorFactory<T> partitionProcessorFactory = null;
-        private HealthMonitor healthMonitor;
         private CosmosContainer monitoredContainer;
         private CosmosContainer leaseContainer;
         private string InstanceName;
@@ -51,14 +48,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             this.monitoredContainer = cosmosContainer;
         }
 
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
+        internal ChangeFeedProcessorBuilder(
+            CosmosContainer cosmosContainer, 
+            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
             : this(cosmosContainer)
         {
             this.initialChangesDelegate = onChangesDelegate;
             this.observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
         }
 
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate, TimeSpan? estimatorPeriod = null)
+        internal ChangeFeedProcessorBuilder(
+            CosmosContainer cosmosContainer, 
+            Func<long, CancellationToken, Task> estimateDelegate, 
+            TimeSpan? estimatorPeriod = null)
             : this(cosmosContainer)
         {
             this.initialEstimateDelegate = estimateDelegate;
@@ -77,17 +79,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
+        /// Sets the logical operational grouping for a group of processor instances managing a particular workflow.
+        /// </summary>
+        /// <param name="workflowName">Name of the logical workflow.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
+        public ChangeFeedProcessorBuilder<T> WithWorkflowName(string workflowName)
+        {
+            this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
+            this.changeFeedLeaseOptions.LeasePrefix = workflowName;
+            return this;
+        }
+
+        /// <summary>
         /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithCosmosLeaseContainer(CosmosContainer)"/>.
         /// </summary>
-        /// <param name="leasePrefix">Prefix to use for the leases. Used for when the same lease container is shared across different processors.</param>
         /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
         /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithLeaseConfiguration(string leasePrefix, TimeSpan? acquireInterval = null, TimeSpan? expirationInterval = null, TimeSpan? renewInterval = null)
+        public ChangeFeedProcessorBuilder<T> WithLeaseConfiguration(TimeSpan? acquireInterval = null, TimeSpan? expirationInterval = null, TimeSpan? renewInterval = null)
         {
             this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
-            this.changeFeedLeaseOptions.LeasePrefix = leasePrefix;
             this.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;
             this.changeFeedLeaseOptions.LeaseAcquireInterval = acquireInterval ?? ChangeFeedLeaseOptions.DefaultAcquireInterval;
             this.changeFeedLeaseOptions.LeaseExpirationInterval = expirationInterval ?? ChangeFeedLeaseOptions.DefaultExpirationInterval;
@@ -122,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// (3) StartTime is not specified.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithStartFromBeginning()
+        internal ChangeFeedProcessorBuilder<T> WithStartFromBeginning()
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartFromBeginning = true;
@@ -137,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// If this is specified, both StartTime and StartFromBeginning are ignored.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder{T}"/> to use.</returns>
-        public ChangeFeedProcessorBuilder<T> WithStartContinuation(string startContinuation)
+        public ChangeFeedProcessorBuilder<T> WithContinuation(string startContinuation)
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartContinuation = startContinuation;
@@ -218,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>
-        public async Task<ChangeFeedProcessor> BuildAsync()
+        public ChangeFeedProcessor Build()
         {
             if (this.isBuilt)
             {
@@ -251,113 +263,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                 throw new InvalidOperationException("Instance name was not specified");
             }
 
+            if (this.changeFeedLeaseOptions?.LeasePrefix == null)
+            {
+                throw new InvalidOperationException("Workflow name was not specified using WithWorkflowName");
+            }
+
             this.InitializeDefaultOptions();
             this.InitializeCollectionPropertiesForBuild();
-
-            DocumentServiceLeaseStoreManager leaseStoreManager = await this.GetLeaseStoreManagerAsync().ConfigureAwait(false);
 
             ChangeFeedProcessor builtInstance;
             if (this.observerFactory != null)
             {
-                PartitionManager partitionManager = this.BuildPartitionManager(leaseStoreManager);
-                builtInstance = new ChangeFeedProcessorCore(partitionManager);
+                builtInstance = new ChangeFeedProcessorCore<T>(this.LeaseStoreManager, this.leaseContainer, this.GetLeasePrefix(), this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.observerFactory, this.monitoredContainer);
             }
             else
             {
-
-                FeedEstimator remainingWorkEstimator = this.BuildFeedEstimator(leaseStoreManager);
-                builtInstance = new ChangeFeedEstimatorCore(remainingWorkEstimator);
+                builtInstance = new ChangeFeedEstimatorCore(this.LeaseStoreManager, this.leaseContainer, this.GetLeasePrefix(), this.InstanceName, this.initialEstimateDelegate, this.estimatorPeriod, this.monitoredContainer);
             }
 
             this.isBuilt = true;
             return builtInstance;
-        }
-
-        private FeedEstimator BuildFeedEstimator(DocumentServiceLeaseStoreManager leaseStoreManager)
-        {
-            RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
-               leaseStoreManager.LeaseContainer,
-               this.monitoredContainer,
-               this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
-
-            ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate, this.estimatorPeriod);
-
-            return new FeedEstimatorCore(estimatorDispatcher, remainingWorkEstimator);
-        }
-
-        private PartitionManager BuildPartitionManager(DocumentServiceLeaseStoreManager leaseStoreManager)
-        {
-            var factory = new CheckpointerObserverFactory<T>(this.observerFactory, this.changeFeedProcessorOptions.CheckpointFrequency);
-            var synchronizer = new PartitionSynchronizerCore(
-                this.monitoredContainer,
-                leaseStoreManager.LeaseContainer,
-                leaseStoreManager.LeaseManager,
-                PartitionSynchronizerCore.DefaultDegreeOfParallelism,
-                this.changeFeedProcessorOptions.QueryFeedMaxBatchSize);
-            var bootstrapper = new BootstrapperCore(synchronizer, leaseStoreManager.LeaseStore, BootstrapperCore.DefaultLockTime, BootstrapperCore.DefaultSleepTime);
-            var partitionSuperviserFactory = new PartitionSupervisorFactoryCore<T>(
-                factory,
-                leaseStoreManager.LeaseManager,
-                this.partitionProcessorFactory ?? new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, leaseStoreManager.LeaseCheckpointer),
-                this.changeFeedLeaseOptions);
-
-            if (this.loadBalancingStrategy == null)
-            {
-                this.loadBalancingStrategy = new EqualPartitionsBalancingStrategy(
-                    this.InstanceName,
-                    EqualPartitionsBalancingStrategy.DefaultMinLeaseCount,
-                    EqualPartitionsBalancingStrategy.DefaultMaxLeaseCount,
-                    this.changeFeedLeaseOptions.LeaseExpirationInterval);
-            }
-
-            PartitionController partitionController = new PartitionControllerCore(leaseStoreManager.LeaseContainer, leaseStoreManager.LeaseManager, partitionSuperviserFactory, synchronizer);
-
-            if (this.healthMonitor == null)
-            {
-                this.healthMonitor = new TraceHealthMonitor();
-            }
-
-            partitionController = new HealthMonitoringPartitionControllerDecorator(partitionController, this.healthMonitor);
-            var partitionLoadBalancer = new PartitionLoadBalancerCore(
-                partitionController,
-                leaseStoreManager.LeaseContainer,
-                this.loadBalancingStrategy,
-                this.changeFeedLeaseOptions.LeaseAcquireInterval);
-            return new PartitionManagerCore(bootstrapper, partitionController, partitionLoadBalancer);
-        }
-
-        private async Task<DocumentServiceLeaseStoreManager> GetLeaseStoreManagerAsync()
-        {
-            if (this.LeaseStoreManager == null)
-            {
-                var cosmosContainerResponse = await this.leaseContainer.ReadAsync().ConfigureAwait(false);
-                var containerSettings = cosmosContainerResponse.Resource;
-
-                bool isPartitioned =
-                    containerSettings.PartitionKey != null &&
-                    containerSettings.PartitionKey.Paths != null &&
-                    containerSettings.PartitionKey.Paths.Count > 0;
-                if (isPartitioned &&
-                    (containerSettings.PartitionKey.Paths.Count != 1 || containerSettings.PartitionKey.Paths[0] != "/id"))
-                {
-                    throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
-                }
-
-                var requestOptionsFactory = isPartitioned ?
-                    (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory() :
-                    (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
-
-                string leasePrefix = this.GetLeasePrefix();
-                var leaseStoreManagerBuilder = new DocumentServiceLeaseStoreManagerBuilder()
-                    .WithLeasePrefix(leasePrefix)
-                    .WithLeaseContainer(this.leaseContainer)
-                    .WithRequestOptionsFactory(requestOptionsFactory)
-                    .WithHostName(this.InstanceName);
-
-                this.LeaseStoreManager = await leaseStoreManagerBuilder.BuildAsync().ConfigureAwait(false);
-            }
-
-            return this.LeaseStoreManager;
         }
 
         private string GetLeasePrefix()
@@ -383,20 +308,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
-        }
-    }
-
-    /// <summary>
-    /// Provides a flexible way to to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
-    /// </summary>
-    public class ChangeFeedProcessorBuilder : ChangeFeedProcessorBuilder<dynamic>
-    {
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<IReadOnlyList<dynamic>, CancellationToken, Task> onChangesDelegate) : base(cosmosContainer, onChangesDelegate)
-        {
-        }
-
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate, TimeSpan? estimationPeriod = null) : base(cosmosContainer, estimateDelegate, estimationPeriod)
-        {
         }
     }
 }
