@@ -96,7 +96,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Delete database if exist:
                 CosmosDatabase databaseToDelete = await client.Databases[databaseId].DeleteAsync();
- 
 
                 //1. Database CRUD
                 CosmosDatabase database = await client.Databases.CreateDatabaseAsync(resourceRandomId);

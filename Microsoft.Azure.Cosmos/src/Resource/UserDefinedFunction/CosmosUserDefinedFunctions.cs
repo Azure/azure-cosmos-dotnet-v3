@@ -18,14 +18,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosUserDefinedFunctions
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly CosmosClient client;
 
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunctions"/>
         /// </summary>
         /// <param name="container">The <see cref="CosmosContainer"/> the user defined function set is related to.</param>
-        protected internal CosmosUserDefinedFunctions(CosmosContainer container)
+        protected internal CosmosUserDefinedFunctions(CosmosContainerCore container)
         {
             this.container = container;
             this.client = container.Client;
