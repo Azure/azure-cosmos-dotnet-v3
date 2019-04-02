@@ -20,10 +20,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         private readonly CosmosContainer monitoredContainer;
         private readonly ChangeFeedProcessor changeFeedProcessor;
+        private readonly ChangeFeedLeaseOptions changeFeedLeaseOptions;
 
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
-        private ChangeFeedLeaseOptions changeFeedLeaseOptions;
-        
+
         private CosmosContainer leaseContainer;
         private string InstanceName;
         private DocumentServiceLeaseStoreManager LeaseStoreManager;
@@ -31,8 +31,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private string collectionResourceId;
         private bool isBuilt;
 
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, ChangeFeedProcessor changeFeedProcessor)
+        internal ChangeFeedProcessorBuilder(
+            string workflowName, 
+            CosmosContainer cosmosContainer, ChangeFeedProcessor 
+            changeFeedProcessor)
         {
+            this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
+            this.changeFeedLeaseOptions.LeasePrefix = workflowName;
             this.monitoredContainer = cosmosContainer;
             this.changeFeedProcessor = changeFeedProcessor;
         }
@@ -49,27 +54,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the logical operational grouping for a group of processor instances managing a particular workflow.
-        /// </summary>
-        /// <param name="workflowName">Name of the logical workflow.</param>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithWorkflowName(string workflowName)
-        {
-            this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
-            this.changeFeedLeaseOptions.LeasePrefix = workflowName;
-            return this;
-        }
-
-        /// <summary>
         /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithCosmosLeaseContainer(CosmosContainer)"/>.
         /// </summary>
         /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
         /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithLeaseConfiguration(TimeSpan? acquireInterval = null, TimeSpan? expirationInterval = null, TimeSpan? renewInterval = null)
+        public ChangeFeedProcessorBuilder WithLeaseConfiguration(
+            TimeSpan? acquireInterval = null, 
+            TimeSpan? expirationInterval = null, 
+            TimeSpan? renewInterval = null)
         {
-            this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
             this.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;
             this.changeFeedLeaseOptions.LeaseAcquireInterval = acquireInterval ?? ChangeFeedLeaseOptions.DefaultAcquireInterval;
             this.changeFeedLeaseOptions.LeaseExpirationInterval = expirationInterval ?? ChangeFeedLeaseOptions.DefaultExpirationInterval;
@@ -82,14 +77,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// <remarks>
         /// Applies only after a read on the change feed yielded no results.
         /// </remarks>
-        /// <param name="feedPollDelay">Polling interval value.</param>
+        /// <param name="pollInterval">Polling interval value.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithFeedPollDelay(TimeSpan feedPollDelay)
+        public ChangeFeedProcessorBuilder WithPollInternal(TimeSpan pollInterval)
         {
-            if (feedPollDelay == null) throw new ArgumentNullException(nameof(feedPollDelay));
+            if (pollInterval == null) throw new ArgumentNullException(nameof(pollInterval));
 
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorOptions.FeedPollDelay = feedPollDelay;
+            this.changeFeedProcessorOptions.FeedPollDelay = pollInterval;
             return this;
         }
 
@@ -112,14 +107,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         }
 
         /// <summary>
-        /// Sets the start request continuation token to start looking for changes after.
+        /// Sets the start request session continuation token to start looking for changes after.
         /// </summary>
         /// <remarks>
         /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
         /// If this is specified, both StartTime and StartFromBeginning are ignored.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithContinuation(string startContinuation)
+        public ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartContinuation = startContinuation;
@@ -182,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
+        internal ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
         {
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
@@ -253,7 +248,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private void InitializeDefaultOptions()
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
         }
     }
 }

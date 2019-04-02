@@ -342,21 +342,26 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
+        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
+            string workflowName, 
+            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
         {
+            if (workflowName == null) throw new ArgumentNullException(nameof(workflowName));
             if (onChangesDelegate == null) throw new ArgumentNullException(nameof(onChangesDelegate));
 
             ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
-            return new ChangeFeedProcessorBuilder(this.container, new ChangeFeedProcessorCore<T>(observerFactory));
+            return new ChangeFeedProcessorBuilder(workflowName, this.container, new ChangeFeedProcessorCore<T>(observerFactory));
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
+            string workflowName,
             Func<long, CancellationToken, Task> estimationDelegate, 
             TimeSpan? estimationPeriod = null)
         {
+            if (workflowName == null) throw new ArgumentNullException(nameof(workflowName));
             if (estimationDelegate == null) throw new ArgumentNullException(nameof(estimationDelegate));
 
-            return new ChangeFeedProcessorBuilder(this.container, new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod));
+            return new ChangeFeedProcessorBuilder(workflowName, this.container, new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod));
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
