@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestInitialize()
         {
             DocumentClient client = TestCommon.CreateClient(false);
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            TestCommon.DeleteAllDatabasesAsync().Wait();
 
             this.writeRegionEndpointUri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
             this.masterKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
