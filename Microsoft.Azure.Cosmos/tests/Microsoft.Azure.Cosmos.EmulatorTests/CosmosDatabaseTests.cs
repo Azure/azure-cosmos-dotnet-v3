@@ -46,8 +46,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropDatabase()
         {
-            await this.cosmosClient.DocumentClient.OpenAsync();
-
             CosmosDatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.IsNotNull(response);
             Assert.IsTrue(response.RequestCharge > 0);

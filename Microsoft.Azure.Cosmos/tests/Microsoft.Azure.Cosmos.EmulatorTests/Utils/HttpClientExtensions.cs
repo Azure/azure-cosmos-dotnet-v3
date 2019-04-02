@@ -14,8 +14,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -68,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static async Task<ICollection<T>> ListAllAsync<T>(this HttpClient client,
             Uri collectionUri,
             INameValueCollection headers = null) where T : Resource, new()
-        {            
+        {
             Collection<T> responseCollection = new Collection<T>();
             string responseContinuation = null;
 
@@ -82,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 HttpResponseMessage responseMessage;
-                foreach (var header in headers.AllKeys())
+                foreach (string header in headers.AllKeys())
                 {
                     client.DefaultRequestHeaders.Add(header, headers[header]);
                 }
@@ -95,10 +93,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     responseCollection.Add(resource);
                 }
-                                
-                IEnumerable<string> continuationToken = null;
+
                 if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.Continuation,
-                    out continuationToken))
+                    out IEnumerable<string> continuationToken))
                 {
                     responseContinuation = continuationToken.SingleOrDefault();
                 }
@@ -113,31 +110,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         #endregion
 
         #region HttpResponseMessage
-        public static Task<T> ToResourceAsync<T>(this HttpResponseMessage responseMessage)
+        public static async Task<T> ToResourceAsync<T>(this HttpResponseMessage responseMessage)
             where T : Resource, new()
         {
             if (responseMessage.StatusCode == HttpStatusCode.NoContent ||
                 responseMessage.StatusCode == HttpStatusCode.NotModified)
             {
                 responseMessage.Dispose();
-                return Task.FromResult(default(T));
+                return default(T);
             }
 
             if ((int)responseMessage.StatusCode < 400)
             {
-                return responseMessage.Content.ToResourceAsync<T>();
+                return await responseMessage.Content.ToResourceAsync<T>();
             }
 
-            Task<Error> deserializeTask = responseMessage.Content.ToResourceAsync<Error>();
-            return deserializeTask.ContinueWith<T>(delegate
-            {
-                if (deserializeTask.Exception != null)
-                {
-                    throw deserializeTask.Exception.InnerException;
-                }
-                throw new DocumentClientException(deserializeTask.Result,
-                    responseMessage.Headers, null);
-            }, TaskContinuationOptions.ExecuteSynchronously);
+            Error error = await responseMessage.Content.ToResourceAsync<Error>();
+            throw new DocumentClientException(
+                error,
+                responseMessage.Headers,
+                null);
         }
         #endregion
 
@@ -155,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (additionalHeaders != null)
             {
-                foreach (var header in additionalHeaders.AllKeys)
+                foreach (string header in additionalHeaders.AllKeys)
                 {
                     requestMessage.Headers.Add(header, additionalHeaders[header]);
                 }
