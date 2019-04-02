@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
             if (this.leaseContainer == null && this.LeaseStoreManager == null)
             {
-                throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer, WithInMemoryLeaseContainer, or WithLeaseStoreManager is required.");
+                throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer or WithInMemoryLeaseContainer is required.");
             }
 
             if (this.changeFeedLeaseOptions?.LeasePrefix == null)
