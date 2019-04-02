@@ -350,7 +350,8 @@ namespace Microsoft.Azure.Cosmos
             if (onChangesDelegate == null) throw new ArgumentNullException(nameof(onChangesDelegate));
 
             ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
-            return new ChangeFeedProcessorBuilder(workflowName, this.container, new ChangeFeedProcessorCore<T>(observerFactory));
+            ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedProcessor, changeFeedProcessor.ApplyBuildConfiguration);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
@@ -361,7 +362,8 @@ namespace Microsoft.Azure.Cosmos
             if (workflowName == null) throw new ArgumentNullException(nameof(workflowName));
             if (estimationDelegate == null) throw new ArgumentNullException(nameof(estimationDelegate));
 
-            return new ChangeFeedProcessorBuilder(workflowName, this.container, new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod));
+            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(

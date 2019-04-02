@@ -28,15 +28,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private bool initialized = false;
 
-        public ChangeFeedProcessorCore(
-            ChangeFeedObserverFactory<T> observerFactory)
+        public ChangeFeedProcessorCore(ChangeFeedObserverFactory<T> observerFactory)
         {
             if (observerFactory == null) throw new ArgumentNullException(nameof(observerFactory));
 
             this.observerFactory = observerFactory;
         }
 
-        internal override void ApplyBuildConfiguration(
+        public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
             CosmosContainer leaseContainer,
             string leaseContainerPrefix,

@@ -21,6 +21,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         private readonly CosmosContainer monitoredContainer;
         private readonly ChangeFeedProcessor changeFeedProcessor;
         private readonly ChangeFeedLeaseOptions changeFeedLeaseOptions;
+        private readonly Action<DocumentServiceLeaseStoreManager,
+                CosmosContainer,
+                string,
+                string,
+                ChangeFeedLeaseOptions,
+                ChangeFeedProcessorOptions,
+                CosmosContainer> applyBuilderConfiguration;
 
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
 
@@ -33,13 +40,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         internal ChangeFeedProcessorBuilder(
             string workflowName, 
-            CosmosContainer cosmosContainer, ChangeFeedProcessor 
-            changeFeedProcessor)
+            CosmosContainer cosmosContainer, 
+            ChangeFeedProcessor changeFeedProcessor,
+            Action<DocumentServiceLeaseStoreManager,
+                CosmosContainer,
+                string,
+                string,
+                ChangeFeedLeaseOptions,
+                ChangeFeedProcessorOptions,
+                CosmosContainer> applyBuilderConfiguration)
         {
             this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
             this.changeFeedLeaseOptions.LeasePrefix = workflowName;
             this.monitoredContainer = cosmosContainer;
             this.changeFeedProcessor = changeFeedProcessor;
+            this.applyBuilderConfiguration = applyBuilderConfiguration;
         }
 
         /// <summary>
@@ -220,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             this.InitializeDefaultOptions();
             this.InitializeCollectionPropertiesForBuild();
 
-            this.changeFeedProcessor.ApplyBuildConfiguration(this.LeaseStoreManager, this.leaseContainer, this.GetLeasePrefix(), this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
+            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.GetLeasePrefix(), this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;

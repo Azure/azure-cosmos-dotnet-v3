@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 {
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
 
     /// <summary>
     /// Provides an API to start and stop a <see cref="ChangeFeedProcessor"/> instance created by <see cref="ChangeFeedProcessorBuilder.Build"/>.
@@ -24,14 +22,5 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         /// </summary>
         /// <returns>A <see cref="Task"/>.</returns>
         public abstract Task StopAsync();
-
-        internal abstract void ApplyBuildConfiguration(
-            DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            CosmosContainer leaseContainer,
-            string leaseContainerPrefix,
-            string instanceName,
-            ChangeFeedLeaseOptions changeFeedLeaseOptions,
-            ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            CosmosContainer monitoredContainer);
     }
 }

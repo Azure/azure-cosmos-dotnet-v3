@@ -30,7 +30,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         private Task runAsync;
 
-        public ChangeFeedEstimatorCore(Func<long, CancellationToken, Task> initialEstimateDelegate, TimeSpan? estimatorPeriod)
+        public ChangeFeedEstimatorCore(
+            Func<long, CancellationToken, Task> initialEstimateDelegate, 
+            TimeSpan? estimatorPeriod)
         {
             if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
 
@@ -38,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
             this.estimatorPeriod = estimatorPeriod;
         }
 
-        internal override void ApplyBuildConfiguration(
+        public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
             CosmosContainer leaseContainer,
             string leaseContainerPrefix,
