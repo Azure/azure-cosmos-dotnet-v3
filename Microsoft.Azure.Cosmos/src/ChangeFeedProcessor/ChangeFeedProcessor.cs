@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Provides an API to start and stop a <see cref="ChangeFeedProcessor"/> instance created by <see cref="ChangeFeedProcessorBuilder{T}.BuildAsync"/>.
+    /// Provides an API to start and stop a <see cref="ChangeFeedProcessor"/> instance created by <see cref="ChangeFeedProcessorBuilder.Build"/>.
     /// </summary>
     public abstract class ChangeFeedProcessor
     {

@@ -843,14 +843,14 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed processing.
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
         /// </summary>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder{T}"/> for change feed monitoring.
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
         /// </summary>
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
