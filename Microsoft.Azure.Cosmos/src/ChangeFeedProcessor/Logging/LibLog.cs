@@ -64,12 +64,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging
 #endif
 #endif
 
-#if LIBLOG_PROVIDERS_ONLY
-    internal
-#else
-    public
-#endif
-    delegate bool Logger(LogLevel logLevel, Func<string> messageFunc, Exception exception = null, params object[] formatParameters);
+    internal delegate bool Logger(LogLevel logLevel, Func<string> messageFunc, Exception exception = null, params object[] formatParameters);
 
     [System.CodeDom.Compiler.GeneratedCode("liblog", "4.2")]
     internal
@@ -95,12 +90,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging
     /// <summary>
     /// The log level.
     /// </summary>
-#if LIBLOG_PROVIDERS_ONLY
-    internal
-#else
-    public
-#endif
-    enum LogLevel
+    internal enum LogLevel
     {
         Trace,
         Debug,
@@ -110,13 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging
         Fatal
     }
 
-#if !LIBLOG_PROVIDERS_ONLY
-#if LIBLOG_PUBLIC
-    public
-#else
-    internal
-#endif
-    static partial class LogExtensions
+    internal static partial class LogExtensions
     {
         public static bool IsDebugEnabled(this ILog logger)
         {
@@ -366,17 +350,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging
             return value;
         }
     }
-#endif
 
     /// <summary>
     /// Represents a way to get a <see cref="ILog"/>
     /// </summary>
-#if LIBLOG_PROVIDERS_ONLY
-    internal
-#else
-    public
-#endif
-    interface ILogProvider
+    internal interface ILogProvider
     {
         /// <summary>
         /// Gets the specified named logger.
@@ -404,12 +382,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging
     /// <summary>
     /// Provides a mechanism to create instances of <see cref="ILog" /> objects.
     /// </summary>
-#if LIBLOG_PROVIDERS_ONLY
-    internal
-#else
-    public
-#endif
-    static class LogProvider
+    internal static class LogProvider
     {
 #if !LIBLOG_PROVIDERS_ONLY
         private const string NullLogProvider = "Current Log Provider is not set. Call SetCurrentLogProvider " +

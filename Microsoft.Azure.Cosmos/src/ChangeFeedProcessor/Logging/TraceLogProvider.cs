@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging
     /// ]]>
     /// </code>
     /// </example>
-    public class TraceLogProvider : ILogProvider
+    internal class TraceLogProvider : ILogProvider
     {
         private TraceLogProviderImplementation logProvider = new TraceLogProviderImplementation();
 
