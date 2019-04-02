@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         private bool IsBuildingEstimator => this.initialEstimateDelegate != null;
 
-        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer): base()
+        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer) : base()
         {
             this.monitoredContainer = cosmosContainer;
         }
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
-            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined a custom Lease Store Manager instance.");
+            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
             this.leaseContainer = leaseContainer;
             return this;
         }
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         public ChangeFeedProcessorBuilder<T> WithInMemoryLeaseContainer()
         {
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
-            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container or a custom Lease Store Manager instance.");
+            if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
             if (string.IsNullOrEmpty(this.InstanceName))
             {
                 this.InstanceName = ChangeFeedProcessorBuilder<T>.InMemoryDefaultHostName;
@@ -257,7 +257,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
                 PartitionManager partitionManager = this.BuildPartitionManager(leaseStoreManager);
                 builtInstance = new ChangeFeedProcessorCore(partitionManager);
             }
-            else {
+            else
+            {
 
                 FeedEstimator remainingWorkEstimator = this.BuildFeedEstimator(leaseStoreManager);
                 builtInstance = new ChangeFeedEstimatorCore(remainingWorkEstimator);
@@ -375,6 +376,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedLeaseOptions = this.changeFeedLeaseOptions ?? new ChangeFeedLeaseOptions();
+        }
+    }
+
+    /// <summary>
+    /// Provides a flexible way to to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
+    /// </summary>
+    public class ChangeFeedProcessorBuilder : ChangeFeedProcessorBuilder<dynamic>
+    {
+        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<IReadOnlyList<dynamic>, CancellationToken, Task> onChangesDelegate) : base(cosmosContainer, onChangesDelegate)
+        {
+        }
+
+        internal ChangeFeedProcessorBuilder(CosmosContainer cosmosContainer, Func<long, CancellationToken, Task> estimateDelegate, TimeSpan? estimationPeriod = null) : base(cosmosContainer, estimateDelegate, estimationPeriod)
+        {
         }
     }
 }
