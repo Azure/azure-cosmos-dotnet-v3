@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            this.lastPage = await ExecuteInternalAsync(cancellationToken);
+            this.lastPage = await this.ExecuteInternalAsync(cancellationToken);
             return this.lastPage;
         }
 
@@ -314,17 +314,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec, PartitionKeyInternal partitionKey)
         {
-            DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
-            PopulatePartitionKeyInfo(request, partitionKey);
+            DocumentServiceRequest request = this.CreateDocumentServiceRequest(requestHeaders, querySpec);
+            this.PopulatePartitionKeyInfo(request, partitionKey);
             request.Properties = this.feedOptions.Properties;
             return request;
         }
 
         public DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec, PartitionKeyRange targetRange, string collectionRid)
         {
-            DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
+            DocumentServiceRequest request = this.CreateDocumentServiceRequest(requestHeaders, querySpec);
 
-            PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
+            this.PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
             request.Properties = this.feedOptions.Properties;
             return request;
         }
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            DocumentServiceResponse documentServiceResponse = await ExecuteQueryRequestInternalAsync(
+            DocumentServiceResponse documentServiceResponse = await this.ExecuteQueryRequestInternalAsync(
                 request,
                 cancellationToken);
 
@@ -354,8 +354,8 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             return await (this.ShouldExecuteQueryRequest ?
-                ExecuteQueryRequestAsync<T>(request, cancellationToken) :
-                ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
+                this.ExecuteQueryRequestAsync<T>(request, cancellationToken) :
+                this.ExecuteReadFeedRequestAsync<T>(request, cancellationToken));
         }
 
         public async Task<FeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
@@ -369,21 +369,21 @@ namespace Microsoft.Azure.Cosmos.Query
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            return GetFeedResponse<T>(await ExecuteQueryRequestInternalAsync(request, cancellationToken));
+            return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<CosmosElement>> ExecuteReadFeedRequestAsync(
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            return GetFeedResponse(request, await this.client.ReadFeedAsync(request, cancellationToken));
+            return this.GetFeedResponse(request, await this.client.ReadFeedAsync(request, cancellationToken));
         }
 
         public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
             DocumentServiceRequest request,
             CancellationToken cancellationToken)
         {
-            return GetFeedResponse<T>(await this.client.ReadFeedAsync(request, cancellationToken));
+            return this.GetFeedResponse<T>(await this.client.ReadFeedAsync(request, cancellationToken));
         }
 
         public void PopulatePartitionKeyRangeInfo(DocumentServiceRequest request, PartitionKeyRange range, string collectionRid)
@@ -428,18 +428,37 @@ namespace Microsoft.Azure.Cosmos.Query
             return range;
         }
 
-        public async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(string collectionResourceId, List<Range<string>> providedRanges)
+        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(string collectionResourceId, string effectivePartitionKeyString)
         {
+            return this.GetTargetPartitionKeyRanges(collectionResourceId,
+                new List<Range<string>>
+                {
+                    Range<string>.GetPointRange(effectivePartitionKeyString)
+                });
+        }
+
+        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(string collectionResourceId, List<Range<string>> providedRanges)
+        {
+            if (string.IsNullOrEmpty(nameof(collectionResourceId)))
+            {
+                throw new ArgumentNullException();
+            }
+
+            if (providedRanges == null || !providedRanges.Any())
+            {
+                throw new ArgumentNullException(nameof(providedRanges));
+            }
+
             IRoutingMapProvider routingMapProvider = await this.client.GetRoutingMapProviderAsync();
 
             List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
             if (ranges == null && PathsHelper.IsNameBased(this.resourceLink))
             {
-                // Refresh the cache and don't try to reresolve collection as it is not clear what already
+                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
                 // happened based on previously resolved collection rid.
                 // Return NotFoundException this time. Next query will succeed.
                 // This can only happen if collection is deleted/created with same name and client was not restarted
-                // inbetween.
+                // in between.
                 CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
                 collectionCache.Refresh(this.resourceLink);
             }
@@ -498,8 +517,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec)
         {
             DocumentServiceRequest request = querySpec != null ?
-                CreateQueryDocumentServiceRequest(requestHeaders, querySpec) :
-                CreateReadFeedDocumentServiceRequest(requestHeaders);
+                this.CreateQueryDocumentServiceRequest(requestHeaders, querySpec) :
+                this.CreateReadFeedDocumentServiceRequest(requestHeaders);
 
             if (this.feedOptions.JsonSerializerSettings != null)
             {
@@ -603,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private FeedResponse<CosmosElement> GetFeedResponse(
-            DocumentServiceRequest documentServiceRequest, 
+            DocumentServiceRequest documentServiceRequest,
             DocumentServiceResponse documentServiceResponse)
         {
             // Execute the callback an each element of the page
@@ -642,7 +661,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 jsonNavigator = JsonNavigator.Create(content);
             }
 
-            string resourceName = GetRootNodeName(documentServiceRequest.ResourceType);
+            string resourceName = this.GetRootNodeName(documentServiceRequest.ResourceType);
 
             if (!jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),

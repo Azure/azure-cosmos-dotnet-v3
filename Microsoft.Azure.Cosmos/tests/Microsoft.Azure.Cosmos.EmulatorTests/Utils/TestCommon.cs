@@ -15,8 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Utils;
@@ -61,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
-            if(customizeClientBuilder != null)
+            if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
             }
@@ -77,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientBuilder.UseConnectionModeGateway();
             }
-            
+
             return cosmosClientBuilder.Build();
         }
 
@@ -198,8 +196,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection headers,
             string key)
         {
-            if (String.IsNullOrEmpty(verb)) throw new ArgumentException("verb");
-            if (String.IsNullOrEmpty(key)) throw new ArgumentException("key");
+            if (string.IsNullOrEmpty(verb)) throw new ArgumentException("verb");
+            if (string.IsNullOrEmpty(key)) throw new ArgumentException("key");
             if (headers == null) throw new ArgumentNullException("headers");
 
             string xDate = DateTime.UtcNow.ToString("r");
@@ -525,8 +523,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static User CreateOrGetUser(DocumentClient client)
         {
-            Database ignored = null;
-            return TestCommon.CreateOrGetUser(client, out ignored);
+            return TestCommon.CreateOrGetUser(client, out Database ignored);
         }
 
         internal static User CreateOrGetUser(DocumentClient client, out Database database)
@@ -561,8 +558,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static DocumentCollection CreateOrGetDocumentCollection(DocumentClient client)
         {
-            Database ignored = null;
-            return TestCommon.CreateOrGetDocumentCollection(client, out ignored);
+            return TestCommon.CreateOrGetDocumentCollection(client, out Database ignored);
         }
 
         internal static DocumentCollection CreateOrGetDocumentCollection(DocumentClient client, out Database database)
@@ -589,10 +585,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static Document CreateOrGetDocument(DocumentClient client)
         {
-            DocumentCollection ignored1 = null;
-            Database ignored2 = null;
 
-            return TestCommon.CreateOrGetDocument(client, out ignored1, out ignored2);
+            return TestCommon.CreateOrGetDocument(client, out DocumentCollection ignored1, out Database ignored2);
         }
 
         internal static Document CreateOrGetDocument(DocumentClient client, out DocumentCollection documentCollection, out Database database)
@@ -694,8 +688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
         public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
         {
-            INameValueCollection ignored;
-            return client.ReadFeedWithRetry<T>(resourceIdOrFullName, out ignored, headers);
+            return client.ReadFeedWithRetry<T>(resourceIdOrFullName, out INameValueCollection ignored, headers);
         }
 
         public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
@@ -758,8 +751,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //Sync helpers for DocumentStoreClient
         public static T Read<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
         {
-            INameValueCollection ignored;
-            return client.Read<T>(resourceIdOrFullName, out ignored, headers);
+            return client.Read<T>(resourceIdOrFullName, out INameValueCollection ignored, headers);
         }
 
         public static T Read<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
@@ -995,7 +987,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                String link = resource.SelfLink;
+                string link = resource.SelfLink;
                 DocumentServiceRequest request;
 
                 if (link != null)
@@ -1086,8 +1078,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceIdOrFullName,
             INameValueCollection headers = null) where T : Resource, new()
         {
-            INameValueCollection ignored;
-            return client.ReadFeed<T>(resourceIdOrFullName, out ignored, headers);
+            return client.ReadFeed<T>(resourceIdOrFullName, out INameValueCollection ignored, headers);
         }
 
         public static FeedResponse<T> ReadFeed<T>(
@@ -1197,7 +1188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 while (remaingBytesToWrite > 0)
                 {
-                    Byte[] buffer = new Byte[Math.Min(bufferSize, remaingBytesToWrite)];
+                    byte[] buffer = new byte[Math.Min(bufferSize, remaingBytesToWrite)];
                     random.NextBytes(buffer);
 
 
@@ -1209,7 +1200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-#region Environment Configuration Helpers
+        #region Environment Configuration Helpers
         private static ReplicationPolicy GetServerReplicationPolicy()
         {
             return new ReplicationPolicy
@@ -1230,13 +1221,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return consistencyPolicy;
         }
 
-#endregion
+        #endregion
 
         public static string GetCollectionOfferDetails(DocumentClient client, string collectionResourceId)
         {
             using (ActivityScope scope = new ActivityScope(Guid.NewGuid()))
             {
-                var offer = client.CreateOfferQuery().Where(o => o.OfferResourceId == collectionResourceId).AsEnumerable().FirstOrDefault(); ;
+                Offer offer = client.CreateOfferQuery().Where(o => o.OfferResourceId == collectionResourceId).AsEnumerable().FirstOrDefault(); ;
                 OfferV2 offerV2 = null;
                 try
                 {
@@ -1247,7 +1238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ;
                 }
 
-                if(offerV2 != null)
+                if (offerV2 != null)
                 {
                     return offerV2.OfferType;
                 }
@@ -1309,10 +1300,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // There is no federation configuration in the Public Emulator
         }
 
-        public static async Task DeleteAllDatabasesAsync(DocumentClient client)
+        public static async Task DeleteAllDatabasesAsync()
         {
+            CosmosClient client = TestCommon.CreateCosmosClient(false);
             int numberOfRetry = 3;
-            DocumentClientException finalException = null;
+            CosmosException finalException = null;
             do
             {
                 TimeSpan retryAfter = TimeSpan.Zero;
@@ -1320,25 +1312,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     await TestCommon.DeleteAllDatabasesAsyncWorker(client);
 
-                    FeedResponse<Offer> offerResponse = client.ReadOffersFeedAsync().Result;
-                    if (offerResponse.Count != 0)
-                    {
-                        // Number of offers should have been 0 after deleting all the databases
-                        string error = string.Format("All offers not deleted after DeleteAllDatabases. Number of offer remaining {0}",
-                            offerResponse.Count);
-                        Logger.LogLine(error);
-                        Logger.LogLine("Remaining offers are: ");
-                        foreach (Offer offer in offerResponse)
-                        {
-                            Logger.LogLine("Offer resourceId: {0}, offer resourceLink: {1}", offer.OfferResourceId, offer.ResourceLink);
-                        }
+                    // Offer read feed not supported in v3 SDK
+                    //FeedResponse<Offer> offerResponse = client.ReadOffersFeedAsync().Result;
+                    //if (offerResponse.Count != 0)
+                    //{
+                    //    // Number of offers should have been 0 after deleting all the databases
+                    //    string error = string.Format("All offers not deleted after DeleteAllDatabases. Number of offer remaining {0}",
+                    //        offerResponse.Count);
+                    //    Logger.LogLine(error);
+                    //    Logger.LogLine("Remaining offers are: ");
+                    //    foreach (Offer offer in offerResponse)
+                    //    {
+                    //        Logger.LogLine("Offer resourceId: {0}, offer resourceLink: {1}", offer.OfferResourceId, offer.ResourceLink);
+                    //    }
 
-                        //Assert.Fail(error);
-                    }
+                    //    //Assert.Fail(error);
+                    //}
 
                     return;
                 }
-                catch (DocumentClientException clientException)
+                catch (CosmosException clientException)
                 {
                     finalException = clientException;
                     if (clientException.StatusCode == (HttpStatusCode)429)
@@ -1380,65 +1373,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             } while (numberOfRetry-- > 0);
         }
 
-        public static async Task DeleteAllDatabasesAsyncWorker(DocumentClient client)
+        public static async Task DeleteAllDatabasesAsyncWorker(CosmosClient client)
         {
-            do
+            IList<CosmosDatabase> databases = new List<CosmosDatabase>();
+
+            CosmosResultSetIterator<CosmosDatabaseSettings> resultSetIterator = client.Databases.GetDatabaseIterator(maxItemCount: 10);
+            List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
+            int totalCount = 0;
+            while (resultSetIterator.HasMoreResults)
             {
-                IList<Database> databases = TestCommon.RetryRateLimiting(
-                    () => TestCommon.ListAll<Database>(client, null));
-
-                Logger.LogLine("Number of database to delete {0}", databases.Count);
-
-                if (databases.Count == 0) return;
-
-                List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
-
-                foreach (Database database in databases)
+                foreach (CosmosDatabaseSettings database in await resultSetIterator.FetchNextSetAsync())
                 {
-                    if (deleteTasks.Count == 10) break;
-                    deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, database));
+                    deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.Databases[database.Id]));
+                    totalCount++;
                 }
 
                 await Task.WhenAll(deleteTasks);
-            } while (true);
+                deleteTasks.Clear();
+            }
+
+            Logger.LogLine("Number of database to delete {0}", totalCount);
         }
 
-        public static async Task DeleteDatabaseAsync(DocumentClient client, Database database)
+        public static async Task DeleteDatabaseAsync(CosmosClient client, CosmosDatabase database)
         {
             await TestCommon.DeleteDatabaseCollectionAsync(client, database);
 
-            await TestCommon.AsyncRetryRateLimiting(() => client.DeleteDatabaseAsync(database.SelfLink));
+            await TestCommon.AsyncRetryRateLimiting(() => database.DeleteAsync());
         }
 
-        public static async Task DeleteDatabaseCollectionAsync(DocumentClient client, Database database)
+        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, CosmosDatabase database)
         {
-            do //Delete them in chunks of 10.
+            //Delete them in chunks of 10.
+            CosmosResultSetIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator(maxItemCount: 10);
+            while (resultSetIterator.HasMoreResults)
             {
-                IList<DocumentCollection> collections = TestCommon.RetryRateLimiting(
-                    () => TestCommon.ListAll<DocumentCollection>(client, database.ResourceId));
-
-                Logger.LogLine("Number of Collections {1}  to delete in database {0}", database.ResourceId, collections.Count);
-
-                if (collections.Count != 0)
+                List<Task> deleteCollectionTasks = new List<Task>(10);
+                foreach (CosmosContainerSettings container in await resultSetIterator.FetchNextSetAsync())
                 {
-                    List<Task> deleteCollectionTasks = new List<Task>(10);
-
-                    foreach (DocumentCollection collection in collections)
-                    {
-                        if (deleteCollectionTasks.Count == 10) break;
-                        Logger.LogLine("Deleting Collection with following info Id:{0},SelfLink:{1}", collection.ResourceId, collection.SelfLink);
-
-                        deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => client.DeleteDocumentCollectionAsync(collection.SelfLink)));
-                    }
-                    await Task.WhenAll(deleteCollectionTasks);
+                    Logger.LogLine("Deleting Collection with following info Id:{0}, database Id: {1}", container.Id, database.Id);
+                    deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.Containers[container.Id].DeleteAsync()));
                 }
-                else
-                {
-                    break;
-                }
-            } while (true);
 
-
+                await Task.WhenAll(deleteCollectionTasks);
+                deleteCollectionTasks.Clear();
+            }
         }
 
         public static async Task<T> AsyncRetryRateLimiting<T>(Func<Task<T>> work)
@@ -1453,7 +1432,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (DocumentClientException e)
                 {
-                    if ((int)e.StatusCode == (int) StatusCodes.TooManyRequests)
+                    if ((int)e.StatusCode == (int)StatusCodes.TooManyRequests)
                     {
                         if (e.RetryAfter.TotalMilliseconds > 0)
                         {
@@ -1655,7 +1634,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class DisposableList : IDisposable
         {
-            private List<IDisposable> disposableList;
+            private readonly List<IDisposable> disposableList;
 
             internal DisposableList()
             {
@@ -1680,8 +1659,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class RestoreNamingConfigurations : IDisposable
         {
-            private Uri parentName;
-            private List<KeyValuePair<string, string>> keyValues;
+            private readonly Uri parentName;
+            private readonly List<KeyValuePair<string, string>> keyValues;
 
             internal RestoreNamingConfigurations(Uri parentName, List<KeyValuePair<string, string>> keyValues)
             {

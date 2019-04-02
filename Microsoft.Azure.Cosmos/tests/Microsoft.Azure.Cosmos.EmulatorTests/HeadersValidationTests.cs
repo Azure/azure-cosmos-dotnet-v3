@@ -28,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestInitialize]
-        public void Startup()
+        public async Task Startup()
         {
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
             var client = TestCommon.CreateClient(true);
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
         [TestMethod]
