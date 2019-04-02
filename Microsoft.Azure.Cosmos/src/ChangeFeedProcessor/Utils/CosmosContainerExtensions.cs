@@ -15,23 +15,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Utils
             object partitionKey,
             string itemId)
         {
-            try
-            {
-                var response = await container.Items.ReadItemAsync<T>(
-                        partitionKey,
-                        itemId)
-                        .ConfigureAwait(false);
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return default(T);
-                }
-
-                return response;
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            var response = await container.Items.ReadItemAsync<T>(
+                    partitionKey,
+                    itemId)
+                    .ConfigureAwait(false);
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return default(T);
             }
+
+            return response;
         }
 
         public static async Task<CosmosItemResponse<T>> TryCreateItemAsync<T>(
@@ -55,20 +48,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Utils
             string itemId,
             CosmosItemRequestOptions cosmosItemRequestOptions = null)
         {
-            try
+            var response = await container.Items.DeleteItemAsync<T>(partitionKey, itemId, cosmosItemRequestOptions).ConfigureAwait(false);
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                var response = await container.Items.DeleteItemAsync<T>(partitionKey, itemId, cosmosItemRequestOptions).ConfigureAwait(false);
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return default(T);
-                }
+                return default(T);
+            }
 
-                return response.Resource;
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                return default(T);    // Ignore -- document not found.
-            }
+            return response.Resource;
         }
 
         public static async Task<bool> ItemExistsAsync(
@@ -76,19 +62,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Utils
             object partitionKey,
             string itemId)
         {
-            try
-            {
-                var response = await container.Items.ReadItemStreamAsync(
+            var response = await container.Items.ReadItemStreamAsync(
                         partitionKey,
                         itemId)
                         .ConfigureAwait(false);
 
-                return response.IsSuccessStatusCode;
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                return false;
-            }
+            return response.IsSuccessStatusCode;
         }
     }
 }
