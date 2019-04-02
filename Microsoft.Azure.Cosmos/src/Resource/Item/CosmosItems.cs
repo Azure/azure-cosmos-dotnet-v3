@@ -847,7 +847,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns></returns>
-        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(string workflowName, Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
+        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
+            string workflowName, 
+            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
@@ -855,6 +857,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
         /// <returns></returns>
-        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(string workflowName, Func<long, CancellationToken, Task> estimationDelegate, TimeSpan? estimationPeriod = null);
+        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
+            string workflowName, 
+            Func<long, CancellationToken, Task> estimationDelegate, 
+            TimeSpan? estimationPeriod = null);
     }
 }
