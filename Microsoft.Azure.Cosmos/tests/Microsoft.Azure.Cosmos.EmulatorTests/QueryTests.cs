@@ -897,7 +897,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             const int partitionCount = 5;
             DocumentClient client = TestCommon.CreateClient(useGateway);
 
-            await TestCommon.DeleteAllDatabasesAsync(client);
             string guid = Guid.NewGuid().ToString();
 
             Database database = await client.CreateDatabaseAsync(new Database { Id = "db" + guid });
@@ -937,6 +936,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             response = await client.ReadDocumentFeedAsync(coll.SelfLink, new FeedOptions { PartitionKeyRangeId = ranges.First(r => r.Id != partitionKeyRangeId).Id });
             Assert.AreEqual(0, response.Count);
+
+            await client.DeleteDatabaseAsync(database);
         }
 
         [Ignore("Native dll dependency")]
@@ -963,7 +964,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = TestCommon.CreateClient(useGateway);
             string guid = Guid.NewGuid().ToString();
 
-            await TestCommon.DeleteAllDatabasesAsync(client);
             Database database = await client.CreateDatabaseAsync(new Database { Id = guid + "db" });
 
             DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
@@ -1137,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             DocumentClient client = TestCommon.CreateClient(useGateway);
 
-            await TestCommon.DeleteAllDatabasesAsync(client);
+            await TestCommon.DeleteAllDatabasesAsync();
             Random random = new Random();
 
             Database database = await client.CreateDatabaseAsync(new Database { Id = dbName });
@@ -1577,7 +1577,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient originalClient = TestCommon.CreateClient(true);
 
-            await TestCommon.DeleteAllDatabasesAsync(originalClient);
             string guid = Guid.NewGuid().ToString();
             Database database = await originalClient.CreateDatabaseAsync(new Database { Id = "db" + guid });
 
@@ -1759,7 +1758,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 DocumentClient client = TestCommon.CreateClient(true, Protocol.Tcp);
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                TestCommon.DeleteAllDatabasesAsync().Wait();
             }
         }
 
@@ -1977,7 +1976,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
 
-            await TestCommon.DeleteAllDatabasesAsync(client);
             string guid = Guid.NewGuid().ToString();
             Database database = await client.CreateDatabaseAsync(new Database { Id = "db" + guid });
 
