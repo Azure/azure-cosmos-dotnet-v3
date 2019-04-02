@@ -504,14 +504,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     throughput: 15000);
                 container = containerResponse;
 
-                // Get all the partition key ranges to verify there is a split
+                // Get all the partition key ranges to verify there is more than one partition
                 IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true));
                 
-                // If this fails the RUs of the container need to be increased to ensure at least 2 partitions.
-                Assert.IsTrue(ranges.Count > 1);
+                // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
+                Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
                 FeedOptions options = new FeedOptions()
                 {
@@ -544,7 +544,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     collection: containerResponse,
                     feedOptions: options);
 
-                Assert.IsTrue(partitionKeyRanges.Count == 1);
+                Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }
             finally
             {
