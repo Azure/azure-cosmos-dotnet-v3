@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -345,7 +346,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (onChangesDelegate == null) throw new ArgumentNullException(nameof(onChangesDelegate));
 
-            return new ChangeFeedProcessorBuilderCore<T>(this.container, onChangesDelegate);
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+            return new ChangeFeedProcessorBuilder(this.container, new ChangeFeedProcessorCore<T>(observerFactory));
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
@@ -354,7 +356,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (estimationDelegate == null) throw new ArgumentNullException(nameof(estimationDelegate));
 
-            return new ChangeFeedProcessorBuilderCore<dynamic>(this.container, estimationDelegate, estimationPeriod);
+            return new ChangeFeedProcessorBuilder(this.container, new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod));
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(

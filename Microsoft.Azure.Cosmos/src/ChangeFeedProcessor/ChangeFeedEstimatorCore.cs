@@ -11,43 +11,48 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
+        private const string EstimatorDefaultHostName = "Estimator";
+
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
-        private readonly CancellationTokenSource shutdownCts = new CancellationTokenSource();
-        private readonly CosmosContainer leaseContainer;
-        private readonly string leaseContainerPrefix;
-        private readonly string instanceName;
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
-        private readonly TimeSpan? estimatorPeriod = null;
-        private readonly CosmosContainer monitoredContainer;
+        private CancellationTokenSource shutdownCts = new CancellationTokenSource();
+        private CosmosContainer leaseContainer;
+        private string leaseContainerPrefix;
+        private TimeSpan? estimatorPeriod = null;
+        private CosmosContainer monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimator feedEstimator;
         private bool initialized = false;
 
         private Task runAsync;
 
-        public ChangeFeedEstimatorCore(
+        public ChangeFeedEstimatorCore(Func<long, CancellationToken, Task> initialEstimateDelegate, TimeSpan? estimatorPeriod)
+        {
+            if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
+
+            this.initialEstimateDelegate = initialEstimateDelegate;
+            this.estimatorPeriod = estimatorPeriod;
+        }
+
+        internal override void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
             CosmosContainer leaseContainer,
             string leaseContainerPrefix,
             string instanceName,
-            Func<long, CancellationToken, Task> initialEstimateDelegate,
-            TimeSpan? estimatorPeriod,
+            ChangeFeedLeaseOptions changeFeedLeaseOptions,
+            ChangeFeedProcessorOptions changeFeedProcessorOptions,
             CosmosContainer monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (instanceName == null) throw new ArgumentNullException(nameof(instanceName));
-            if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
 
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
-            this.initialEstimateDelegate = initialEstimateDelegate;
-            this.estimatorPeriod = estimatorPeriod;
             this.leaseContainer = leaseContainer;
             this.leaseContainerPrefix = leaseContainerPrefix;
-            this.instanceName = instanceName;
             this.monitoredContainer = monitoredContainer;
         }
 
@@ -78,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
 
         private async Task InitializeAsync()
         {
-            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.leaseContainerPrefix, this.instanceName).ConfigureAwait(false);
+            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.leaseContainerPrefix, ChangeFeedEstimatorCore.EstimatorDefaultHostName).ConfigureAwait(false);
             this.feedEstimator = this.BuildFeedEstimator();
             this.initialized = true;
         }
