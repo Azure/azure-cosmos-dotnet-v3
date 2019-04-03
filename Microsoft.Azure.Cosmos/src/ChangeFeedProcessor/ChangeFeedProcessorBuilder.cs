@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="instanceName">Name to be used for the processor instance. When using multiple processor hosts, each host must have a unique name.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithInstanceName(string instanceName)
+        public virtual ChangeFeedProcessorBuilder WithInstanceName(string instanceName)
         {
             this.InstanceName = instanceName;
             return this;
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
         /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithLeaseConfiguration(
+        public virtual ChangeFeedProcessorBuilder WithLeaseConfiguration(
             TimeSpan? acquireInterval = null, 
             TimeSpan? expirationInterval = null, 
             TimeSpan? renewInterval = null)
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="pollInterval">Polling interval value.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithPollInternal(TimeSpan pollInterval)
+        public virtual ChangeFeedProcessorBuilder WithPollInternal(TimeSpan pollInterval)
         {
             if (pollInterval == null) throw new ArgumentNullException(nameof(pollInterval));
 
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         /// (3) StartTime is not specified.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        internal ChangeFeedProcessorBuilder WithStartFromBeginning()
+        internal virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartFromBeginning = true;
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
         /// If this is specified, both StartTime and StartFromBeginning are ignored.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
+        public virtual ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartContinuation = startContinuation;
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="startTime">Date and time when to start looking for changes.</param>
         /// <returns></returns>
-        public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
+        public virtual ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
         {
             if (startTime == null) throw new ArgumentNullException(nameof(startTime));
 
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxItemCount">Maximum amount of items to be returned in a Change Feed request.</param>
         /// <returns></returns>
-        public ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount)
+        public virtual ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount)
         {
             if (maxItemCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxItemCount));
 
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
         /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        internal ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
+        internal virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
         {
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>
-        public ChangeFeedProcessor Build()
+        public virtual ChangeFeedProcessor Build()
         {
             if (this.isBuilt)
             {
