@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     using System.Threading;
     using System.Threading.Tasks;

@@ -2,13 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
 
     internal sealed class AutoCheckpointer<T> : ChangeFeedObserver<T>
     {

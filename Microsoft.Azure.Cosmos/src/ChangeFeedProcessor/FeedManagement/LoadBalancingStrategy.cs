@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     /// <summary>
     /// A strategy defines which leases should be taken by the current host in a certain moment.

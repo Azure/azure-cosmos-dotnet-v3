@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
+namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
 {
     using System;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     /// <summary>
     /// Exception occurred when lease is lost, that would typically happen when it is taken by another host. Other cases: communication failure, number of retries reached, lease not found.

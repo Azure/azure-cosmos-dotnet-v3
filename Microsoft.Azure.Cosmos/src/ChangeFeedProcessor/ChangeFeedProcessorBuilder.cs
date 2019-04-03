@@ -2,13 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     /// <summary>
     /// Provides a flexible way to to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.

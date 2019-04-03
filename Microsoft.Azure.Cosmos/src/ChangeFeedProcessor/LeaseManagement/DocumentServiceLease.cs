@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 
     /// <summary>
     /// Represents a lease that is persisted as a document in the lease collection.

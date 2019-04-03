@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Utils
+namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     internal static class TaskExtensions
     {

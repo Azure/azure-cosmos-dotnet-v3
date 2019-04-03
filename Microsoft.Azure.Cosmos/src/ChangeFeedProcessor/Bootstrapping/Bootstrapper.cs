@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Bootstrapping
+namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 {
     using System.Threading.Tasks;
 

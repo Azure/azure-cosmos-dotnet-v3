@@ -2,9 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //  ----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     /// <summary>
     /// Factory class used to create instance(s) of <see cref="FeedProcessor"/>.

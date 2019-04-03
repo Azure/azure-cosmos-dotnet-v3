@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions
+namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
 {
     using System;
     using System.Runtime.Serialization;

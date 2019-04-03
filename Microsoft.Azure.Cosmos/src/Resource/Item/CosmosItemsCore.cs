@@ -5,18 +5,16 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor;
-    using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.

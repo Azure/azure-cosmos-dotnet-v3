@@ -2,9 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
+using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     internal abstract class PartitionSupervisorFactory
     {

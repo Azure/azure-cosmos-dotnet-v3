@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Bootstrapping
+namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 {
     using System;
     using System.Collections.Concurrent;
@@ -10,10 +10,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Bootstrapping
     using System.Globalization;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Utils;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 

@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 
     /// <summary>
     /// The context passed to <see cref="ChangeFeedObserver{T}"/> events.

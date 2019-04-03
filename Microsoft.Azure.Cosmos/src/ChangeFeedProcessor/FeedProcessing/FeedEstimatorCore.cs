@@ -2,15 +2,15 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.DocDBErrors;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Documents;
 
     internal sealed class FeedEstimatorCore : FeedEstimator

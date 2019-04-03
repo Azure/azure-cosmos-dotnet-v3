@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     /// <summary>
     /// The reason for the <see cref="ChangeFeedObserver{T}"/> to close.

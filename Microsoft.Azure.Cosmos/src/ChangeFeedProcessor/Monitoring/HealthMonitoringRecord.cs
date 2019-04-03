@@ -2,10 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.Monitoring
+namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     /// <summary>
     /// A record used in the health monitoring.

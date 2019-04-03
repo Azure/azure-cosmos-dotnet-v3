@@ -2,12 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     internal sealed class PartitionSupervisorFactoryCore<T> : PartitionSupervisorFactory
     {

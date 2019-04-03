@@ -1,11 +1,11 @@
-﻿namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
+﻿namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Utils;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses In-Memory

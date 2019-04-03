@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.

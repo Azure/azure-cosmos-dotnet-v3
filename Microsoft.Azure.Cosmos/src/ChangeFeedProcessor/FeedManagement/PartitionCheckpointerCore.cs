@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     internal sealed class PartitionCheckpointerCore : PartitionCheckpointer
     {

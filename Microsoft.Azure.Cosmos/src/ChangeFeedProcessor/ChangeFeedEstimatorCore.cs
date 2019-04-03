@@ -2,16 +2,16 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
     using System.Threading;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Configuration;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {

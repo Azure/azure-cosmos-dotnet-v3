@@ -3,12 +3,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     internal sealed class DocumentServiceLeaseCheckpointerCore : DocumentServiceLeaseCheckpointer
     {

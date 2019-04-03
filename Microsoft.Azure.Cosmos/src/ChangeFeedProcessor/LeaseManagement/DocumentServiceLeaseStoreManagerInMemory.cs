@@ -2,12 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeedProcessor.LeaseManagement
+namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Collections.Concurrent;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.ChangeFeedProcessor.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     /// <summary>
     /// Lease manager that is using In-Memory as lease storage.
