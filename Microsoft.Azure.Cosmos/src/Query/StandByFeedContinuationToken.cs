@@ -61,8 +61,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public string UpdateCurrentToken(string localContinuationToken)
         {
-            this.currentLocalContinuationToken = localContinuationToken;
-            return StandByFeedContinuationToken.Format(this.currentMinInclusive, this.currentMaxInclusive, localContinuationToken) + this.standByFeedContinuationToken;
+            this.currentLocalContinuationToken = localContinuationToken?.Replace("\"", string.Empty);
+            return StandByFeedContinuationToken.Format(this.currentMinInclusive, this.currentMaxInclusive, this.currentLocalContinuationToken) + this.standByFeedContinuationToken;
         }
 
         public bool IsLoopCompleted => this.initialMinInclusive.Equals(this.currentMinInclusive, StringComparison.OrdinalIgnoreCase);

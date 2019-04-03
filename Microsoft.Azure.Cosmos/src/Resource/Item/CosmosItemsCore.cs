@@ -625,7 +625,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxitemcount);
                     request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
-                    //request.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, cfstate.StartEffectivePartitionKeyString);
+                    request.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, cfstate.StartEffectivePartitionKeyString);
                     if (!string.IsNullOrEmpty(cfstate.StartEffectivePartitionKeyString))
                     {
                         request.Properties.Add(HandlerConstants.StartEpkString, cfstate.StartEffectivePartitionKeyString);

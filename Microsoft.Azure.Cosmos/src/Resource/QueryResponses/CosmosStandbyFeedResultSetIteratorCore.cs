@@ -100,10 +100,7 @@ namespace Microsoft.Azure.Cosmos
                 .ContinueWith(task =>
                 {
                     CosmosResponseMessage response = task.Result;
-                    List<CompositeContinuationToken> suppliedTokens;
-                    Documents.Routing.Range<string> partitionKeyRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(response.Headers, out suppliedTokens);
-
-                    string responseContinuationToken = response.Headers.Continuation;
+                    string responseContinuationToken = response.Headers.ETag;
                     response.Headers.Continuation = this.compositeContinuationToken.UpdateCurrentToken(responseContinuationToken);
                     this.HasMoreResults = GetHasMoreResults(responseContinuationToken, response.StatusCode);
                     if (!this.HasMoreResults)
