@@ -116,25 +116,9 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        internal static string GetContinuationToken(CosmosResponseMessage httpResponseMessage)
-        {
-            return httpResponseMessage.Headers.Continuation;
-        }
-
         internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)
         {
             return continuationToken != null && statusCode != HttpStatusCode.NotModified;
-        }
-
-        internal static string BuildCompositeContinuationToken(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
-        {
-            StringBuilder compositeToken = new StringBuilder();
-            foreach(Documents.PartitionKeyRange keyRange in keyRanges)
-            {
-                compositeToken.Append($"");
-            }
-
-            return compositeToken.ToString();
         }
     }
 }
