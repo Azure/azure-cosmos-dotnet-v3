@@ -5,14 +5,15 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -337,6 +338,30 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 cancellationToken);
+        }
+
+        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
+            string workflowName, 
+            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
+        {
+            if (workflowName == null) throw new ArgumentNullException(nameof(workflowName));
+            if (onChangesDelegate == null) throw new ArgumentNullException(nameof(onChangesDelegate));
+
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+            ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedProcessor, changeFeedProcessor.ApplyBuildConfiguration);
+        }
+
+        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
+            string workflowName,
+            Func<long, CancellationToken, Task> estimationDelegate, 
+            TimeSpan? estimationPeriod = null)
+        {
+            if (workflowName == null) throw new ArgumentNullException(nameof(workflowName));
+            if (estimationDelegate == null) throw new ArgumentNullException(nameof(estimationDelegate));
+
+            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
