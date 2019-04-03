@@ -676,7 +676,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ValidateTriggersNameBased()
         {
             DocumentClient client = TestCommon.CreateClient(false);
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            TestCommon.DeleteAllDatabasesAsync().Wait();
             Database database = TestCommon.CreateOrGetDatabase(client);
 
             DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database.SelfLink, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
@@ -735,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if !DIRECT_MODE
             DocumentClient client = TestCommon.CreateClient(true, defaultConsistencyLevel: consistencyLevel);
 #endif
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            TestCommon.DeleteAllDatabasesAsync().Wait();
             Database database = TestCommon.CreateOrGetDatabase(client);
 
             DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
@@ -1487,7 +1487,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
 
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            TestCommon.DeleteAllDatabasesAsync().Wait();
 
             Database database = TestCommon.CreateOrGetDatabase(client);
 
@@ -2133,7 +2133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DocumentClient lockedClient = lockedClients[index];
 
-                await TestCommon.DeleteAllDatabasesAsync(masterClient);
+                await TestCommon.DeleteAllDatabasesAsync();
 
                 Database database = TestCommon.CreateOrGetDatabase(masterClient);
 
@@ -2974,7 +2974,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
-            await TestCommon.DeleteAllDatabasesAsync(client);
+            await TestCommon.DeleteAllDatabasesAsync();
             Database database = await client.CreateDatabaseAsync(new Database { Id = "db" });
 
             DocumentCollection collection = await TestCommon.CreateCollectionAsync(client,
@@ -3274,9 +3274,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if !DIRECT_MODE
             DocumentClient client = TestCommon.CreateClient(true);
 #endif
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
-
-            Database database = null;
+            Database database = TestCommon.CreateDatabase(client);
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
             //Since this test starts with read operation first on fresh session client, it may start with stale reads.
@@ -3324,6 +3322,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Logger.LogLine("Querying Document to ensure if document is not indexed");
             queriedDocuments = client.CreateDocumentQuery<Document>(collection.DocumentsLink, @"select * from root r where r.StringField=""222""", null);
             Assert.AreEqual(0, queriedDocuments.Count());
+
+            await client.DeleteDatabaseAsync(database);
         }
 
         public static string DumpFullExceptionMessage(Exception e)
@@ -3355,12 +3355,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateCollectionQuotaTestsWithFailure(bool useGateway)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway);
+            Database database = null;
             try
             {
                 Logger.LogLine("ValidateCollectionQuotaTestsWithFailure");
                 Logger.LogLine("Deleting all databases in the system");
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
-                Database database = client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString() }).Result;
+                database = client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString() }).Result;
 
                 string duplicateCollectionName = Guid.NewGuid().ToString("N");
                 List<DocumentCollection> documentCollections = new List<DocumentCollection>();
@@ -3404,7 +3404,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if(database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 

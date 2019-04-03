@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             using (var client = TestCommon.CreateClient(true))
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                TestCommon.DeleteAllDatabasesAsync().Wait();
             }
         }
 
