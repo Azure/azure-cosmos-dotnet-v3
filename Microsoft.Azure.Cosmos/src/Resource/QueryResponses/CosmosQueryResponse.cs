@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosQueryResponse : IDisposable
     {
         private bool _isDisposed = false;
-        private INameValueCollection _responseHeaders = null;
+        private readonly INameValueCollection _responseHeaders = null;
         private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
 
         /// <summary>
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return GetEnumerator();
+            return this.GetEnumerator();
         }
 
         internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
@@ -227,6 +227,34 @@ namespace Microsoft.Azure.Cosmos
             CosmosJsonSerializer jsonSerializer)
         {
             this.Resources = jsonSerializer.FromStream<CosmosFeedResponse<T>>(stream).Data;
+        }
+
+        internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
+            FeedResponse<CosmosElement> feedResponse,
+            CosmosJsonSerializer jsonSerializer,
+            string continuationToken,
+            bool hasMoreResults,
+            ResourceType resourceType)
+        {
+            CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>()
+            {
+                ContinuationToken = continuationToken,
+                HasMoreResults = hasMoreResults
+            };
+
+            queryResponse.InitializeResource(feedResponse, jsonSerializer, resourceType);
+            return queryResponse;
+        }
+
+        private void InitializeResource(
+            FeedResponse<CosmosElement> feedResponse,
+            CosmosJsonSerializer jsonSerializer,
+            ResourceType resourceType)
+        {
+            this.Resources = FeedResponseBinder.ConvertCosmosElementFeed<T>(
+                feedResponse,
+                resourceType,
+                jsonSerializer);
         }
 
         private void SetProperties(

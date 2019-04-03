@@ -82,6 +82,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal OperationType OperationType { get; set; }
 
+        /// <summary>
+        /// Used to override the client default. This is used for scenarios
+        /// in query where the service interop is not present.
+        /// </summary>
+        internal bool? UseGatewayMode { get; set; }
+
         internal DocumentServiceRequest DocumentServiceRequest { get; set; }
 
         internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
@@ -173,6 +179,11 @@ namespace Microsoft.Azure.Cosmos
                 else
                 {
                     serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                }
+
+                if (this.UseGatewayMode.HasValue)
+                {
+                    serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
                 serviceRequest.UseStatusCodeForFailures = true;

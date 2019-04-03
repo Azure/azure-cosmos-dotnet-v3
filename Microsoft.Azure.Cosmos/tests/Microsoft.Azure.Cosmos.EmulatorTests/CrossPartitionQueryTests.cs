@@ -1008,7 +1008,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
-                        maxConcurrency = maxDegreeOfParallelism
+                        MaxConcurrency = maxDegreeOfParallelism
                     };
 
                     List<JToken> actualFromQueryWithoutContinutionTokens;

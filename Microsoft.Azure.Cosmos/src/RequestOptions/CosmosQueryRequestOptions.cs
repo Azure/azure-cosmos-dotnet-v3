@@ -106,6 +106,26 @@ namespace Microsoft.Azure.Cosmos
         public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The maximum number of items to be returned in the enumeration operation.
+        /// </value> 
+        /// <remarks>
+        /// Used for query pagination.
+        /// '-1' Used for dynamic page size.
+        /// </remarks>
+        public virtual int? MaxItemCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the request continuation token in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The request continuation token.
+        /// </value>>
+        public virtual string RequestContinuation { get; set; }
+
+        /// <summary>
         /// Gets or sets the number of concurrent operations run client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
         /// A positive property value limits the number of 
@@ -116,14 +136,14 @@ namespace Microsoft.Azure.Cosmos
         /// The maximum number of concurrent operations during parallel execution. 
         /// Defaults will be executed serially with no-parallelism
         /// </value> 
-        internal int maxConcurrency { get; set; }
+        internal int MaxConcurrency { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
         internal PartitionKey PartitionKey { get; set; }
 
-        internal bool EnableCrossPartitionQuery {get; set;}
+        internal bool EnableCrossPartitionQuery { get; set; }
 
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 
@@ -148,7 +168,66 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
             CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
+            if (!string.IsNullOrEmpty(this.RequestContinuation))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Continuation, this.RequestContinuation);
+            }
+            
+            request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+
+            // Flow the pageSize only when we are not doing client eval
+            if (this.MaxItemCount.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
+            }
+
+            if (this.MaxConcurrency != 0)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery, bool.TrueString);
+            }
+
+            if (this.EnableScanInQuery != null)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, this.EnableScanInQuery.ToString());
+            }
+
+            if (this.EnableLowPrecisionOrderBy != null)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, this.EnableLowPrecisionOrderBy.ToString());
+            }
+
+            if (this.ResponseContinuationTokenLimitInKb != null)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
+            }
+
+            if (this.CosmosSerializationOptions != null)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationOptions.ContentSerializationFormat);
+            }
+
             base.FillRequestOptions(request);
+        }
+
+        internal CosmosQueryRequestOptions Clone()
+        {
+            CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions();
+            queryRequestOptions.AccessCondition = this.AccessCondition;
+            queryRequestOptions.RequestContinuation = this.RequestContinuation;
+            queryRequestOptions.MaxItemCount = this.MaxItemCount;
+            queryRequestOptions.ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb;
+            queryRequestOptions.EnableScanInQuery = this.EnableScanInQuery;
+            queryRequestOptions.EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy;
+            queryRequestOptions.MaxBufferedItemCount = this.MaxBufferedItemCount;
+            queryRequestOptions.SessionToken = this.SessionToken;
+            queryRequestOptions.ConsistencyLevel = this.ConsistencyLevel;
+            queryRequestOptions.MaxConcurrency = this.MaxConcurrency;
+            queryRequestOptions.PartitionKey = this.PartitionKey;
+            queryRequestOptions.EnableCrossPartitionQuery = this.EnableCrossPartitionQuery;
+            queryRequestOptions.CosmosSerializationOptions = this.CosmosSerializationOptions;
+            queryRequestOptions.Properties = this.Properties;
+
+            return queryRequestOptions;
         }
 
         internal FeedOptions ToFeedOptions()
@@ -156,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedOptions()
             {
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
-                MaxDegreeOfParallelism = this.maxConcurrency,
+                MaxDegreeOfParallelism = this.MaxConcurrency,
                 PartitionKey = this.PartitionKey,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
