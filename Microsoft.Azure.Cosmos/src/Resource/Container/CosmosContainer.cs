@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract CosmosStoredProcedures StoredProcedures { get; }
 
+        public abstract CosmosScripts Scripts { get; }
+
         /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>

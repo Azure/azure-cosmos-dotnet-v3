@@ -80,6 +80,23 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<CosmosScriptResponse> CreateScriptResponse(
+            Task<CosmosResponseMessage> cosmosResponseMessageTask, CosmosScriptType? scriptType)
+        {
+            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                CosmosScriptSettings settings = this.ToObjectInternal<CosmosScriptSettings>(cosmosResponseMessage);
+                if(settings != null)
+                {
+                    settings.Type = scriptType;
+                }
+                return new CosmosScriptResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    settings);
+            });
+        }
+
         internal Task<CosmosStoredProcedureResponse> CreateStoredProcedureResponse(
             CosmosStoredProcedure storedProcedure,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
