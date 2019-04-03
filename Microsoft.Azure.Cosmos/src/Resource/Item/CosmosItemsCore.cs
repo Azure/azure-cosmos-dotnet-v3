@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Text;
@@ -364,6 +365,25 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
+        public virtual CosmosFeedResultSetIterator GetStandByFeedIterator(
+            int? maxItemCount = null,
+            string continuationToken = null,
+            bool startFromBeginning = false,
+            CosmosQueryRequestOptions options = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ChangeFeedState state = new ChangeFeedState();
+            state.StartFromBeginning = startFromBeginning;
+
+            return new CosmosStandbyFeedResultSetIteratorCore(
+                cosmosContainer: (CosmosContainerCore)this.container,
+                maxItemCount: maxItemCount,
+                continuationToken: continuationToken,
+                options: options,
+                nextDelegate: this.ChangeFeedNextResultSetAsync,
+                state: state);
+        }
+
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
             int? maxItemCount,
             string continuationToken,
@@ -569,6 +589,57 @@ namespace Microsoft.Azure.Cosmos
         private Uri ContcatCachedUriWithId(string resourceId)
         {
             return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+        }
+
+        private Task<CosmosResponseMessage> ChangeFeedNextResultSetAsync(
+            int? maxitemcount,
+            string continuationtoken,
+            CosmosRequestOptions options,
+            object state,
+            CancellationToken cancellationtoken)
+        {
+            ChangeFeedState cfstate = (ChangeFeedState)state;
+            Uri resourceUri = this.container.LinkUri;
+            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
+                client: this.container.Database.Client,
+                resourceUri: resourceUri,
+                resourceType: ResourceType.Document,
+                operationType: OperationType.ReadFeed,
+                requestOptions: options,
+                requestEnricher: request =>
+                {
+                    if (!string.IsNullOrWhiteSpace(continuationtoken))
+                    {
+                        // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
+                        request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, continuationtoken);
+                    }
+                    else if (!cfstate.StartFromBeginning && cfstate.StartTime == null)
+                    {
+                        request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, "*");
+                    }
+                    else if (cfstate.StartTime != null)
+                    {
+                        request.Headers.Add(HttpConstants.HttpHeaders.IfModifiedSince, cfstate.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
+                    }
+
+                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxitemcount);
+                    request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
+
+                    //request.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, cfstate.StartEffectivePartitionKeyString);
+                    if (!string.IsNullOrEmpty(cfstate.StartEffectivePartitionKeyString))
+                    {
+                        request.Properties.Add(HandlerConstants.StartEpkString, cfstate.StartEffectivePartitionKeyString);
+                    }
+
+                    if (!string.IsNullOrEmpty(cfstate.EndEffectivePartitionKeyString))
+                    {
+                        request.Properties.Add(HandlerConstants.EndEpkString, cfstate.EndEffectivePartitionKeyString);
+                    }
+                },
+                responseCreator: response => response,
+                partitionKey: null,
+                streamPayload: null,
+                cancellationToken: cancellationtoken);
         }
     }
 }
