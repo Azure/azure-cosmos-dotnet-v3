@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             throttled = false;
             try
             {
-                client.CreateDatabaseQuery().AsDocumentQuery().ExecuteNextAsync().Wait();
+                client.CreateDatabaseQuery("SELECT * FROM r").AsDocumentQuery().ExecuteNextAsync().Wait();
             }
             catch (Exception exp)
             {

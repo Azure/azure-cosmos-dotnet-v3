@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Serialization;
 
     [TestClass]
+    [Ignore]
     public abstract class CustomSerializationTests
     {
         private const string PartitionKeyProperty = "pk";
@@ -105,9 +106,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestCleanup]
-        public void TestCleanup()
+        public async Task TestCleanup()
         {
-            TestCommon.DeleteAllDatabasesAsync(documentClient).Wait();
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
         // Need to convert to use v3 API

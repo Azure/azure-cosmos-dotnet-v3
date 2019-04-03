@@ -29,8 +29,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task NameRoutingSmokeGatewayTest()
         {
-            DocumentClient client;
-            client = TestCommon.CreateClient(true);
+            CosmosClient client = TestCommon.CreateCosmosClient(true);
 
             await SmokeTestForNameAPI(client);
         }
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.NameRoutingSmokeTestPrivateAsync(client).Wait();
         }
 #endif
-        private async Task NameRoutingSmokeTestPrivateAsync(DocumentClient client)
+        private async Task NameRoutingSmokeTestPrivateAsync(CosmosClient client)
         {
             try
             {
@@ -72,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task SmokeTestForNameAPI(DocumentClient client)
+        private async Task SmokeTestForNameAPI(CosmosClient client)
         {
             try
             {
@@ -96,197 +95,160 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string resourceRandom2Id = "randomToDelete2" + suffix;
 
                 // Delete database if exist:
-                try
-                {
-                    Database databaseToDelete = await client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(databaseId));
-                    Assert.Fail("Should have thrown exception in here");
-                }
-                catch (NotFoundException e)
-                {
-                    // ignore the exception that database doesn't exist.
-                    Assert.IsNotNull(e.Message);
-                }
-                catch (DocumentClientException e)
-                {
-                    Assert.IsNotNull(e.Message);
-                    Assert.AreEqual(e.StatusCode, HttpStatusCode.NotFound);
-                }
+                CosmosDatabase databaseToDelete = await client.Databases[databaseId].DeleteAsync();
 
                 //1. Database CRUD
-                Database database = await client.CreateDatabaseAsync(new Database() { Id = resourceRandomId });
-                database = await client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(resourceRandomId));
+                CosmosDatabase database = await client.Databases.CreateDatabaseAsync(resourceRandomId);
+                database = await database.DeleteAsync();
 
-                database = await client.CreateDatabaseAsync(new Database() { Id = databaseId });
-                database = await client.ReadDatabaseAsync(UriFactory.CreateDatabaseUri(databaseId));
+                database = await client.Databases.CreateDatabaseAsync(databaseId );
+                database = await database.ReadAsync();
 
                 // database = await client.ReadDatabaseByIdPrivateAsync(databaseId, null);
 
                 //2. DocumentCollection CRUD
+                CosmosContainer container = await database.Containers.CreateContainerAsync(resourceRandomId, partitionKeyPath: "/id");
+                await container.DeleteAsync();
+
+                container = await database.Containers.CreateContainerAsync(collectionId, partitionKeyPath: "/id");
+                container = await container.ReadAsync();
+
+                // read documentCollection feed.
+                CosmosResultSetIterator<CosmosContainerSettings> rr = database.Containers.GetContainerIterator();
+                List<CosmosContainerSettings> settings = new List<CosmosContainerSettings>();
+                while (rr.HasMoreResults)
                 {
-                    DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = resourceRandomId });
-                    coll = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, resourceRandomId));
-
-                    coll = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionId });
-                    coll = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
-
-                    // read documentCollection feed.
-                    FeedResponse<DocumentCollection> rr = await client.ReadDocumentCollectionFeedAsync(UriFactory.CreateDatabaseUri(databaseId));
-                    Assert.AreEqual(rr.Count, 1);
-                    Assert.AreEqual(rr.First().Id, collectionId);
-
-                    // query document collection 
-                    var query = from c in client.CreateDocumentCollectionQuery(UriFactory.CreateDatabaseUri(databaseId))
-                                where c.Id == collectionId
-                                select c;
-                    Assert.AreEqual(query.AsEnumerable().Single().Id, collectionId);
-
-                    bool bFound = false;
-                    IDocumentQuery<dynamic> docServiceQuery = client.CreateDocumentCollectionQuery(UriFactory.CreateDatabaseUri(databaseId),
-                                string.Format("select * from c where c.id = \"{0}\"", collectionId.EscapeForSQL())).AsDocumentQuery();
-                    while (docServiceQuery.HasMoreResults)
-                    {
-                        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
-                        if (r.Count == 1)
-                        {
-                            bFound = true;
-                            Assert.AreEqual(r.First()["id"].ToString(), collectionId);
-                        }
-                    }
-                    Assert.AreEqual(bFound, true);
+                    settings.AddRange(await rr.FetchNextSetAsync());
                 }
+
+                Assert.AreEqual(settings.Count, 1);
+                Assert.AreEqual(settings.First().Id, collectionId);
 
                 //3. Document CRUD
                 Document doc1;
                 {
-                    doc1 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc1Id });
-                    doc1 = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id));
-                    Document doc2 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc2Id });
-                    Document doc3 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc3Id });
+                    doc1 = await container.Items.CreateItemAsync<Document>(partitionKey: doc1Id, item: new Document() { Id = doc1Id });
+                    doc1 = await container.Items.ReadItemAsync<Document>(partitionKey: doc1Id, id: doc1Id);
+                    Document doc2 = await container.Items.CreateItemAsync<Document>(partitionKey: doc2Id, item: new Document() { Id = doc2Id });
+                    Document doc3 = await container.Items.CreateItemAsync<Document>(partitionKey: doc3Id, item: new Document() { Id = doc3Id });
 
                     // create conflict document
                     try
                     {
-                        Document doc1Conflict = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc1Id });
+                        Document doc1Conflict = await container.Items.CreateItemAsync<Document>(partitionKey: doc1Id, item: new Document() { Id = doc1Id });
                     }
-                    catch (DocumentClientException e)
+                    catch (CosmosException e)
                     {
                         Assert.AreEqual(e.StatusCode, HttpStatusCode.Conflict, "Must return conflict code");
                     }
 
                     // 
-                    doc3 = await client.ReplaceDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc3Id), new Document() { Id = resourceRandomId });
-                    doc3 = await client.DeleteDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, resourceRandomId));
+                    await container.Items.ReplaceItemAsync<dynamic>(partitionKey: doc3Id, id: doc3Id, item: new { id = doc3Id, Description = "test" });
+                    doc3 = await container.Items.DeleteItemAsync<Document>(partitionKey: resourceRandomId, id: resourceRandomId);
 
                     // read databaseCollection feed.
-                    FeedResponse<dynamic> rr = await client.ReadDocumentFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
-                    Assert.AreEqual(rr.Count, 2);
+                    CosmosResultSetIterator<dynamic> itemIterator = container.Items.GetItemIterator<dynamic>();
+                    int count = 0;
+                    while (itemIterator.HasMoreResults)
+                    {
+                        CosmosQueryResponse<dynamic> items = await itemIterator.FetchNextSetAsync();
+                        count += items.Count();
+                    }
+                    Assert.AreEqual(3, count);
 
                     // query documents 
                     {
                         bool bFound = false;
-                        IDocumentQuery<Document> docServiceQuery = client.CreateDocumentQuery<Document>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
-                                    string.Format("select * from c where c.id = \"{0}\"", doc1Id.EscapeForSQL())).AsDocumentQuery();
+                        CosmosSqlQueryDefinition sqlQueryDefinition = new CosmosSqlQueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
+                        CosmosResultSetIterator<Document> docServiceQuery = container.Items.CreateItemQuery<Document>(
+                            sqlQueryDefinition: sqlQueryDefinition,
+                            partitionKey: doc1.Id);
                         while (docServiceQuery.HasMoreResults)
                         {
-                            FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
-                            if (r.Count == 1)
+                            CosmosQueryResponse<Document> r = await docServiceQuery.FetchNextSetAsync();
+                            if (r.Count() == 1)
                             {
                                 bFound = true;
-                                Assert.AreEqual(r.First()["id"].ToString(), doc1Id);
+                                Assert.AreEqual(r.First().Id, doc1Id);
                             }
                         }
                         Assert.AreEqual(bFound, true);
                     }
-                    {
-                        bool bFound = false;
-                        IDocumentQuery<dynamic> docServiceQuery = client.CreateDocumentQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
-                                    string.Format("select * from c where c.id = \"{0}\"", doc1Id.EscapeForSQL())).AsDocumentQuery();
-                        while (docServiceQuery.HasMoreResults)
-                        {
-                            FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
-                            if (r.Count == 1)
-                            {
-                                bFound = true;
-                                Assert.AreEqual(r.First()["id"].ToString(), doc1Id);
-                            }
-                        }
-                        Assert.AreEqual(bFound, true);
-                    }
-                    {
-                        var docQuery = from book in client.CreateDocumentQuery<Document>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                                       where book.Id == doc1Id
-                                       select book;
+                    //{
+                    //    var docQuery = from book in client.CreateDocumentQuery<Document>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                    //                   where book.Id == doc1Id
+                    //                   select book;
 
-                        IEnumerable<Document> enums = docQuery.AsEnumerable();
-                        if (enums.Count() == 0)
-                        {
-                            Assert.Fail("Not found the document " + doc1Id);
-                        }
-                        else
-                        {
-                            Assert.AreEqual(enums.Single().Id, doc1Id);
-                        }
-                    }
-                    {
-                        var docQuery = from book in client.CreateDocumentQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                                       where book.Id == doc1Id
-                                       select book;
-                        IEnumerable<dynamic> enums = docQuery.AsEnumerable();
-                        if (enums.Count() == 0)
-                        {
-                            Assert.Fail("Not found the document " + doc1Id);
-                        }
-                        else
-                        {
-                            Assert.AreEqual(enums.Single().Id, doc1Id);
-                        }
-                    }
+                    //    IEnumerable<Document> enums = docQuery.AsEnumerable();
+                    //    if (enums.Count() == 0)
+                    //    {
+                    //        Assert.Fail("Not found the document " + doc1Id);
+                    //    }
+                    //    else
+                    //    {
+                    //        Assert.AreEqual(enums.Single().Id, doc1Id);
+                    //    }
+                    //}
+                    //{
+                    //    var docQuery = from book in client.CreateDocumentQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                    //                   where book.Id == doc1Id
+                    //                   select book;
+                    //    IEnumerable<dynamic> enums = docQuery.AsEnumerable();
+                    //    if (enums.Count() == 0)
+                    //    {
+                    //        Assert.Fail("Not found the document " + doc1Id);
+                    //    }
+                    //    else
+                    //    {
+                    //        Assert.AreEqual(enums.Single().Id, doc1Id);
+                    //    }
+                    //}
                 }
 
                 //7. Trigger CRUD
-                {
-                    Trigger mytrigger = new Trigger
-                    {
-                        Id = resourceRandomId,
-                        Body = "function() {var x = 10;}",
-                        TriggerType = TriggerType.Pre,
-                        TriggerOperation = TriggerOperation.All
-                    };
+                //{
+                //    Trigger mytrigger = new Trigger
+                //    {
+                //        Id = resourceRandomId,
+                //        Body = "function() {var x = 10;}",
+                //        TriggerType = TriggerType.Pre,
+                //        TriggerOperation = TriggerOperation.All
+                //    };
 
-                    Trigger trigger1 = await client.CreateTriggerAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), mytrigger);
-                    mytrigger.Id = resourceRandom2Id;
-                    trigger1 = await client.ReplaceTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, resourceRandomId), mytrigger);
-                    trigger1 = await client.DeleteTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, resourceRandom2Id));
+                //    Trigger trigger1 = await client.CreateTriggerAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), mytrigger);
+                //    mytrigger.Id = resourceRandom2Id;
+                //    trigger1 = await client.ReplaceTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, resourceRandomId), mytrigger);
+                //    trigger1 = await client.DeleteTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, resourceRandom2Id));
 
-                    mytrigger.Id = trigger1Id;
-                    trigger1 = await client.CreateTriggerAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), mytrigger);
-                    trigger1 = await client.ReadTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, trigger1Id));
+                //    mytrigger.Id = trigger1Id;
+                //    trigger1 = await client.CreateTriggerAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), mytrigger);
+                //    trigger1 = await client.ReadTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, trigger1Id));
 
-                    // 
-                    // read trigger feed.
-                    FeedResponse<Trigger> rr = await client.ReadTriggerFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
-                    Assert.AreEqual(rr.Count, 1);
+                //    // 
+                //    // read trigger feed.
+                //    FeedResponse<Trigger> rr = await client.ReadTriggerFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
+                //    Assert.AreEqual(rr.Count, 1);
 
-                    // query documents 
-                    var docQuery = from book in client.CreateTriggerQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                                   where book.Id == trigger1Id
-                                   select book;
-                    Assert.AreEqual(docQuery.AsEnumerable().Single().Id, trigger1Id);
+                //    // query documents 
+                //    var docQuery = from book in client.CreateTriggerQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                //                   where book.Id == trigger1Id
+                //                   select book;
+                //    Assert.AreEqual(docQuery.AsEnumerable().Single().Id, trigger1Id);
 
-                    bool bFound = false;
-                    IDocumentQuery<dynamic> docServiceQuery = client.CreateTriggerQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
-                                string.Format("select * from c where c.id = \"{0}\"", trigger1Id.EscapeForSQL())).AsDocumentQuery();
-                    while (docServiceQuery.HasMoreResults)
-                    {
-                        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
-                        if (r.Count == 1)
-                        {
-                            bFound = true;
-                            Assert.AreEqual(r.First()["id"].ToString(), trigger1Id);
-                        }
-                    }
-                    Assert.AreEqual(bFound, true);
-                }
+                //    bool bFound = false;
+                //    IDocumentQuery<dynamic> docServiceQuery = client.CreateTriggerQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
+                //                string.Format("select * from c where c.id = \"{0}\"", trigger1Id.EscapeForSQL())).AsDocumentQuery();
+                //    while (docServiceQuery.HasMoreResults)
+                //    {
+                //        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                //        if (r.Count == 1)
+                //        {
+                //            bFound = true;
+                //            Assert.AreEqual(r.First()["id"].ToString(), trigger1Id);
+                //        }
+                //    }
+                //    Assert.AreEqual(bFound, true);
+                //}
 
                 //8. StoredProcedure CRUD
                 {
@@ -296,138 +258,143 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Body = "function() {var x = 10;}",
                     };
 
-                    StoredProcedure storedProcedure1 = await client.CreateStoredProcedureAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myStoredProcedure);
-                    myStoredProcedure.Id = resourceRandom2Id;
-                    storedProcedure1 = await client.ReplaceStoredProcedureAsync(UriFactory.CreateStoredProcedureUri(databaseId, collectionId, resourceRandomId), myStoredProcedure);
-                    storedProcedure1 = await client.DeleteStoredProcedureAsync(UriFactory.CreateStoredProcedureUri(databaseId, collectionId, resourceRandom2Id));
+                    CosmosStoredProcedure storedProcedure1 = await container.StoredProcedures.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
+                    myStoredProcedure.Body = "function() {var x = 5;}";
+                    storedProcedure1 = await storedProcedure1.ReplaceAsync(body: myStoredProcedure.Body);
+                    storedProcedure1 = await storedProcedure1.DeleteAsync();
 
-                    myStoredProcedure.Id = storedProcedure1Id;
-                    storedProcedure1 = await client.CreateStoredProcedureAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myStoredProcedure);
-                    storedProcedure1 = await client.ReadStoredProcedureAsync(UriFactory.CreateStoredProcedureUri(databaseId, collectionId, storedProcedure1Id));
+                    storedProcedure1 = await container.StoredProcedures.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
+                    storedProcedure1 = await storedProcedure1.ReadAsync();
 
                     // 
                     // read databaseCollection feed.
-                    FeedResponse<StoredProcedure> rr = await client.ReadStoredProcedureFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
-                    Assert.AreEqual(rr.Count, 1);
+                    CosmosResultSetIterator<CosmosStoredProcedureSettings> storedProcedureIter = container.StoredProcedures.GetStoredProcedureIterator();
+                    List<CosmosStoredProcedureSettings> storedProcedures = new List<CosmosStoredProcedureSettings>();
+                    while (storedProcedureIter.HasMoreResults)
+                    {
+                        storedProcedures.AddRange(await storedProcedureIter.FetchNextSetAsync());
+                    }
+
+                    Assert.AreEqual(storedProcedures.Count, 1);
 
                     // query documents 
-                    var docQuery = from book in client.CreateStoredProcedureQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                                   where book.Id == storedProcedure1Id
-                                   select book;
-                    Assert.AreEqual(docQuery.AsEnumerable().Single().Id, storedProcedure1Id);
+                    //var docQuery = from book in client.CreateStoredProcedureQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                    //               where book.Id == storedProcedure1Id
+                    //               select book;
+                    //Assert.AreEqual(docQuery.AsEnumerable().Single().Id, storedProcedure1Id);
 
-                    bool bFound = false;
-                    IDocumentQuery<dynamic> docServiceQuery = client.CreateStoredProcedureQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
-                                string.Format("select * from c where c.id = \"{0}\"", storedProcedure1Id.EscapeForSQL())).AsDocumentQuery();
-                    while (docServiceQuery.HasMoreResults)
-                    {
-                        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
-                        if (r.Count == 1)
-                        {
-                            bFound = true;
-                            Assert.AreEqual(r.First()["id"].ToString(), storedProcedure1Id);
-                        }
-                    }
-                    Assert.AreEqual(bFound, true);
+                    //bool bFound = false;
+                    //IDocumentQuery<dynamic> docServiceQuery = client.CreateStoredProcedureQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
+                    //            string.Format("select * from c where c.id = \"{0}\"", storedProcedure1Id.EscapeForSQL())).AsDocumentQuery();
+                    //while (docServiceQuery.HasMoreResults)
+                    //{
+                    //    FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                    //    if (r.Count == 1)
+                    //    {
+                    //        bFound = true;
+                    //        Assert.AreEqual(r.First()["id"].ToString(), storedProcedure1Id);
+                    //    }
+                    //}
+                    //Assert.AreEqual(bFound, true);
                 }
 
                 //9. Udf CRUD
-                {
-                    UserDefinedFunction myudf = new UserDefinedFunction
-                    {
-                        Id = resourceRandomId,
-                        Body = "function() {var x = 10;}",
-                    };
+                //{
+                //    UserDefinedFunction myudf = new UserDefinedFunction
+                //    {
+                //        Id = resourceRandomId,
+                //        Body = "function() {var x = 10;}",
+                //    };
 
-                    UserDefinedFunction udf1 = await client.CreateUserDefinedFunctionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myudf);
-                    myudf.Id = resourceRandom2Id;
-                    udf1 = await client.ReplaceUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, resourceRandomId), myudf);
-                    udf1 = await client.DeleteUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, resourceRandom2Id));
+                //    UserDefinedFunction udf1 = await client.CreateUserDefinedFunctionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myudf);
+                //    myudf.Id = resourceRandom2Id;
+                //    udf1 = await client.ReplaceUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, resourceRandomId), myudf);
+                //    udf1 = await client.DeleteUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, resourceRandom2Id));
 
-                    myudf.Id = udf1Id;
-                    udf1 = await client.CreateUserDefinedFunctionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myudf);
-                    udf1 = await client.ReadUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, udf1Id));
+                //    myudf.Id = udf1Id;
+                //    udf1 = await client.CreateUserDefinedFunctionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myudf);
+                //    udf1 = await client.ReadUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, udf1Id));
 
-                    // 
-                    // read UserDefinedFunction feed.
-                    FeedResponse<UserDefinedFunction> rr = await client.ReadUserDefinedFunctionFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
-                    Assert.AreEqual(rr.Count, 1);
+                //    // 
+                //    // read UserDefinedFunction feed.
+                //    FeedResponse<UserDefinedFunction> rr = await client.ReadUserDefinedFunctionFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
+                //    Assert.AreEqual(rr.Count, 1);
 
-                    // query UserDefinedFunction 
-                    var docQuery = from book in client.CreateUserDefinedFunctionQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                                   where book.Id == udf1Id
-                                   select book;
-                    Assert.AreEqual(docQuery.AsEnumerable().Single().Id, udf1Id);
+                //    // query UserDefinedFunction 
+                //    var docQuery = from book in client.CreateUserDefinedFunctionQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                //                   where book.Id == udf1Id
+                //                   select book;
+                //    Assert.AreEqual(docQuery.AsEnumerable().Single().Id, udf1Id);
 
-                    bool bFound = false;
-                    IDocumentQuery<dynamic> docServiceQuery = client.CreateUserDefinedFunctionQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
-                                string.Format("select * from c where c.id = \"{0}\"", udf1Id.EscapeForSQL())).AsDocumentQuery();
-                    while (docServiceQuery.HasMoreResults)
-                    {
-                        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
-                        if (r.Count == 1)
-                        {
-                            bFound = true;
-                            Assert.AreEqual(r.First()["id"].ToString(), udf1Id);
-                        }
-                    }
-                    Assert.AreEqual(bFound, true);
-                }
+                //    bool bFound = false;
+                //    IDocumentQuery<dynamic> docServiceQuery = client.CreateUserDefinedFunctionQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
+                //                string.Format("select * from c where c.id = \"{0}\"", udf1Id.EscapeForSQL())).AsDocumentQuery();
+                //    while (docServiceQuery.HasMoreResults)
+                //    {
+                //        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                //        if (r.Count == 1)
+                //        {
+                //            bFound = true;
+                //            Assert.AreEqual(r.First()["id"].ToString(), udf1Id);
+                //        }
+                //    }
+                //    Assert.AreEqual(bFound, true);
+                //}
 
                 //10. Conflicts CRUD
-                {
-                    Conflict conflict1;
-                    try
-                    {
-                        conflict1 = await client.ReadConflictAsync(UriFactory.CreateConflictUri(databaseId, collectionId, resourceRandom2Id));
-                        Assert.Fail("Should have thrown exception in here");
-                    }
-                    catch (NotFoundException e)
-                    {
-                        Assert.IsNotNull(e.Message);
-                    }
-                    catch (DocumentClientException e)
-                    {
-                        // TODO: Backend return 0 length response back, gateway translate it ServiceUnavailable.
-                        Assert.IsNotNull(e.Message);
-                        Assert.IsNotNull(e.StatusCode == HttpStatusCode.ServiceUnavailable);
-                    }
+                //{
+                //    Conflict conflict1;
+                //    try
+                //    {
+                //        conflict1 = await client.ReadConflictAsync(UriFactory.CreateConflictUri(databaseId, collectionId, resourceRandom2Id));
+                //        Assert.Fail("Should have thrown exception in here");
+                //    }
+                //    catch (NotFoundException e)
+                //    {
+                //        Assert.IsNotNull(e.Message);
+                //    }
+                //    catch (DocumentClientException e)
+                //    {
+                //        // TODO: Backend return 0 length response back, gateway translate it ServiceUnavailable.
+                //        Assert.IsNotNull(e.Message);
+                //        Assert.IsNotNull(e.StatusCode == HttpStatusCode.ServiceUnavailable);
+                //    }
 
-                    try
-                    {
-                        conflict1 = await client.DeleteConflictAsync(UriFactory.CreateConflictUri(databaseId, collectionId, resourceRandom2Id));
-                        Assert.Fail("Should have thrown exception in here");
-                    }
-                    catch (NotFoundException e)
-                    {
-                        Assert.IsNotNull(e.Message);
-                    }
-                    catch (DocumentClientException e)
-                    {
-                        // TODO: Backend return 0 length response back, gateway translate it ServiceUnavailable.
-                        Assert.IsNotNull(e.Message);
-                        Assert.IsNotNull(e.StatusCode == HttpStatusCode.ServiceUnavailable);
-                    }
+                //    try
+                //    {
+                //        conflict1 = await client.DeleteConflictAsync(UriFactory.CreateConflictUri(databaseId, collectionId, resourceRandom2Id));
+                //        Assert.Fail("Should have thrown exception in here");
+                //    }
+                //    catch (NotFoundException e)
+                //    {
+                //        Assert.IsNotNull(e.Message);
+                //    }
+                //    catch (DocumentClientException e)
+                //    {
+                //        // TODO: Backend return 0 length response back, gateway translate it ServiceUnavailable.
+                //        Assert.IsNotNull(e.Message);
+                //        Assert.IsNotNull(e.StatusCode == HttpStatusCode.ServiceUnavailable);
+                //    }
 
-                    // 
-                    // read conflict feed.
-                    FeedResponse<Conflict> rr = await client.ReadConflictFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
-                    Assert.AreEqual(rr.Count, 0);
+                //    // 
+                //    // read conflict feed.
+                //    FeedResponse<Conflict> rr = await client.ReadConflictFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
+                //    Assert.AreEqual(rr.Count, 0);
 
-                    // query conflict 
-                    var docQuery = from book in client.CreateConflictQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                                   select book;
+                //    // query conflict 
+                //    var docQuery = from book in client.CreateConflictQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
+                //                   select book;
 
-                    IDocumentQuery<dynamic> docServiceQuery = client.CreateConflictQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
-                                string.Format("select * from c")).AsDocumentQuery();
-                    while (docServiceQuery.HasMoreResults)
-                    {
-                        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
-                    }
-                }
+                //    IDocumentQuery<dynamic> docServiceQuery = client.CreateConflictQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
+                //                string.Format("select * from c")).AsDocumentQuery();
+                //    while (docServiceQuery.HasMoreResults)
+                //    {
+                //        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                //    }
+                //}
 
                 // after all finish, delete the databaseAccount.
-                database = await client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(databaseId));
+                await database.DeleteAsync();
 
             }
             catch (NotFoundException ex)
@@ -568,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                TestCommon.DeleteAllDatabasesAsync().Wait();
             }
         }
 
@@ -645,12 +612,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task VerifyGatewayNameIdCacheRefreshPrivateAsync(DocumentClient client)
         {
-            await this.DeleteAllDatabaseAsync(client);
-
+            Database database = null;
             try
             {
                 // Create database and create collection
-                Database database = await client.CreateDatabaseAsync(new Database() { Id = "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString() });
+                database = await client.CreateDatabaseAsync(new Database() { Id = "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString() });
 
                 int collectionsCount = 10;
                 Logger.LogLine("Create {0} collections simultaneously.", collectionsCount);
@@ -667,7 +633,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                if(database != null)
+                {
+                    await client.DeleteDatabaseAsync(database);
+                }
             }
         }
 
@@ -872,7 +841,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CrazyNameTestPrivateAsync(DocumentClient client, bool useGateway, bool useTcp = false)
         {
-            await TestCommon.DeleteAllDatabasesAsync(client);
+            await TestCommon.DeleteAllDatabasesAsync();
 
             // Try longest name, note if the name is unicode, the number of character available might become less.
             string longestName = "Try longest name 253. At general availability, DocumentDB will be available in three standard performance levels: S1, S2, and S3, Vibhor Kapoor, director of product marketing for Azure, wrote in a blog post today. Collections of data within a DocumentDB database can be assigned to different performance levels, allowing customers to purchase only the performance they need";
@@ -949,7 +918,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.DeleteDatabaseAsync(db.AltLink);
             }
 
-            await TestCommon.DeleteAllDatabasesAsync(client);
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
 
@@ -1033,7 +1002,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                await client.DeleteDatabaseAsync(database);
             }
         }
 
@@ -1228,7 +1197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreate(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
@@ -1265,7 +1234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1302,7 +1271,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1360,7 +1329,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForParallelQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1412,7 +1381,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }) };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1461,7 +1430,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestRouteToNonExistentRangeAfterCollectionRecreate(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             DocumentCollection collection = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1527,7 +1496,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestRouteToExistentRangeAfterCollectionRecreate(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
 
@@ -1584,7 +1553,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitionedForQuery(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1636,7 +1605,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
@@ -1667,7 +1636,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
@@ -1696,7 +1665,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal async Task TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned(DocumentClient client)
         {
-            await TestCommon.DeleteAllDatabasesAsync(TestCommon.CreateClient(true));
+            await TestCommon.DeleteAllDatabasesAsync();
             await client.CreateDatabaseAsync(new Database { Id = "db1" });
             await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
             Document document1 = new Document { Id = "doc1" };
@@ -1719,7 +1688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                await TestCommon.DeleteAllDatabasesAsync(client);
+                await TestCommon.DeleteAllDatabasesAsync();
 
                 // Scenario 1: name based collection read.
 
@@ -1771,7 +1740,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                TestCommon.DeleteAllDatabasesAsync().Wait();
             }
         }
 
