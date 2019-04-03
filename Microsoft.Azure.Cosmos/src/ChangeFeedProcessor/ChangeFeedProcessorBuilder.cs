@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="leaseContainer">Instance of a Cosmos Container to hold the leases.</param>
         /// <returns></returns>
-        public ChangeFeedProcessorBuilder WithCosmosLeaseContainer(CosmosContainer leaseContainer)
+        public virtual ChangeFeedProcessorBuilder WithCosmosLeaseContainer(CosmosContainer leaseContainer)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
