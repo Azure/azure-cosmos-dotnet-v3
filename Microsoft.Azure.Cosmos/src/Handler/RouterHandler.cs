@@ -40,17 +40,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             CosmosRequestHandler targetHandler = null;
-            if (request.OperationType == OperationType.ReadFeed && request.ResourceType == ResourceType.Document)
+            if (request.OperationType == OperationType.ReadFeed 
+                && request.ResourceType == ResourceType.Document 
+                && string.IsNullOrEmpty(request.Headers.IncrementalFeed)) // Incremental / Change Feed
             {
-                if (string.IsNullOrEmpty(request.Headers.IncrementalFeed))
-                {
-                    targetHandler = documentFeedHandler;
-                }
-                else
-                {
-                    // Incremental / Change Feed
-                    targetHandler = pointOperationHandler;
-                }
+                targetHandler = documentFeedHandler;
             }
             else
             {
