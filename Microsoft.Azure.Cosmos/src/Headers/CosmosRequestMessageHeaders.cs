@@ -35,6 +35,9 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.A_IM)]
         internal string IncrementalFeed { get; set; }
 
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IfNoneMatch)]
+        internal string IfNoneMatch { get; set; }
+
         private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<CosmosRequestMessageHeaders>();
 
         internal override Dictionary<string, CosmosCustomHeader> CreateKnownDictionary()

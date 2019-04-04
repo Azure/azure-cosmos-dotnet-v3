@@ -24,8 +24,7 @@ namespace Microsoft.Azure.Cosmos
         internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
-            object state,
+            CosmosChangeFeedRequestOptions options,
             CancellationToken cancellationToken);
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerCore cosmosContainer,
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            CosmosChangeFeedRequestOptions options,
             NextResultSetDelegate nextDelegate,
             object state)
         {
@@ -42,13 +41,12 @@ namespace Microsoft.Azure.Cosmos
             this.nextResultSetDelegate = nextDelegate;
             this.HasMoreResults = true;
             this.state = state;
-            this.MaxItemCount = maxItemCount;
             if (!string.IsNullOrEmpty(continuationToken))
             {
                 this.compositeContinuationToken = new StandByFeedContinuationToken(continuationToken);
             }
 
-            this.queryOptions = options;
+            this.changeFeedOptions = options ?? new CosmosChangeFeedRequestOptions();
         }
 
         /// <summary>
@@ -59,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly CosmosRequestOptions queryOptions;
+        protected readonly CosmosChangeFeedRequestOptions changeFeedOptions;
 
         /// <summary>
         /// The state of the result set.
@@ -91,11 +89,10 @@ namespace Microsoft.Azure.Cosmos
                 this.compositeContinuationToken = new StandByFeedContinuationToken(keyRanges);
             }
 
-            ChangeFeedState iterationState = (ChangeFeedState)this.state;
-            iterationState.StartEffectivePartitionKeyString = this.compositeContinuationToken.MinInclusiveRange;
-            iterationState.EndEffectivePartitionKeyString = this.compositeContinuationToken.MaxExclusiveRange;
+            this.changeFeedOptions.StartEffectivePartitionKeyString = this.compositeContinuationToken.MinInclusiveRange;
+            this.changeFeedOptions.EndEffectivePartitionKeyString = this.compositeContinuationToken.MaxExclusiveRange;
 
-            return await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, iterationState, cancellationToken)
+            return await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken,this.changeFeedOptions, cancellationToken)
                 .ContinueWith(task =>
                 {
                     CosmosResponseMessage response = task.Result;

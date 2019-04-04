@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosItemsCore : CosmosItems
     {
-        private const string IfNoneMatchAllHeaderValue = "*";
         /// <summary>
         /// Cache the full URI segment without the last resource id.
         /// This allows only a single con-cat operation instead of building the full URI string each time.
@@ -369,12 +368,11 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosFeedResultSetIterator GetStandByFeedIterator(
             int? maxItemCount = null,
             string continuationToken = null,
-            bool startFromBeginning = false,
-            CosmosQueryRequestOptions options = null,
+            CosmosChangeFeedRequestOptions options = null,
+            object state = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            ChangeFeedState state = new ChangeFeedState();
-            state.StartFromBeginning = startFromBeginning;
+            CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = options as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
 
             return new CosmosStandbyFeedResultSetIteratorCore(
                 cosmosContainer: (CosmosContainerCore)this.container,
@@ -593,13 +591,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<CosmosResponseMessage> ChangeFeedNextResultSetAsync(
-            int? maxitemcount,
-            string continuationtoken,
+            int? maxItemCount,
+            string continuationToken,
             CosmosRequestOptions options,
-            object state,
             CancellationToken cancellationtoken)
         {
-            ChangeFeedState cfstate = (ChangeFeedState)state;
             Uri resourceUri = this.container.LinkUri;
             return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
                 client: this.container.Database.Client,
@@ -607,35 +603,9 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,
-                requestEnricher: request =>
-                {
-                    if (!string.IsNullOrWhiteSpace(continuationtoken))
-                    {
-                        // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                        request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, continuationtoken);
-                    }
-                    else if (!cfstate.StartFromBeginning && cfstate.StartTime == null)
-                    {
-                        request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, CosmosItemsCore.IfNoneMatchAllHeaderValue);
-                    }
-                    else if (cfstate.StartTime != null)
-                    {
-                        request.Headers.Add(HttpConstants.HttpHeaders.IfModifiedSince, cfstate.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
-                    }
-
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxitemcount);
-                    request.Headers.IncrementalFeed = HttpConstants.A_IMHeaderValues.IncrementalFeed;
-
-                    request.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, cfstate.StartEffectivePartitionKeyString);
-                    if (!string.IsNullOrEmpty(cfstate.StartEffectivePartitionKeyString))
-                    {
-                        request.Properties.Add(HandlerConstants.StartEpkString, cfstate.StartEffectivePartitionKeyString);
-                    }
-
-                    if (!string.IsNullOrEmpty(cfstate.EndEffectivePartitionKeyString))
-                    {
-                        request.Properties.Add(HandlerConstants.EndEpkString, cfstate.EndEffectivePartitionKeyString);
-                    }
+                requestEnricher: request => {
+                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => response,
                 partitionKey: null,
