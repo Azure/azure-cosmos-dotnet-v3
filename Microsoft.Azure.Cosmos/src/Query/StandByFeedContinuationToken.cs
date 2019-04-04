@@ -52,13 +52,13 @@ namespace Microsoft.Azure.Cosmos.Query
             string token)
         {
             this.compositeContinuationTokens.Enqueue(StandByFeedContinuationToken.BuildTokenForRange(min, max, token));
-            return JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
+            return this.ToString();
         }
 
         public string UpdateCurrentToken(string localContinuationToken)
         {
             this.currentToken.Token = localContinuationToken?.Replace("\"", string.Empty);
-            return JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
+            return this.ToString();
         }
 
         public void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
@@ -72,6 +72,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.PushRangeWithToken(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
             }
         }
+
+        internal new string ToString() => JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
 
         private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
