@@ -153,7 +153,10 @@ namespace Microsoft.Azure.Cosmos.Query
             // so forcing the request through Gateway. We are also now by-passing this for 32-bit host process in NETFX on Windows
             // as the ServiceInterop dll is only available in 64-bit.
             return await this.queryContext.ExecuteQueryAsync(cancellationToken,
-                requestEnricher: (cosmosRequestMessage) => { cosmosRequestMessage.UseGatewayMode = true; });
+                requestEnricher: (cosmosRequestMessage) => {
+                    cosmosRequestMessage.UseGatewayMode = true;
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.isContinuationExpected.ToString());
+                });
         }
 
         public void Dispose()

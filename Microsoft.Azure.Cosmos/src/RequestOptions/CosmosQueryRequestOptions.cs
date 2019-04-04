@@ -153,12 +153,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
-            if (request.OperationType == OperationType.SqlQuery)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery ? bool.TrueString : bool.FalseString);
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-            }
+            request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+            request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery ? bool.TrueString : bool.FalseString);
 
             if (this.EnableScanInQuery.HasValue && this.EnableScanInQuery.Value)
             {
@@ -168,12 +165,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
             CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
-            if (!string.IsNullOrEmpty(this.RequestContinuation))
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.Continuation, this.RequestContinuation);
-            }
-            
-            request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+            request.Headers.Continuation = this.RequestContinuation;
 
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)

@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ActivityId = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
                 this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
+                this.Error = cosmosResponseMessage.Error;
                 if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
@@ -85,6 +86,11 @@ namespace Microsoft.Azure.Cosmos
         /// The activity ID for the request.
         /// </value>
         public virtual string ActivityId { get; }
+
+        /// <summary>
+        /// Gets the internal error object
+        /// </summary>
+        internal virtual Error Error { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message

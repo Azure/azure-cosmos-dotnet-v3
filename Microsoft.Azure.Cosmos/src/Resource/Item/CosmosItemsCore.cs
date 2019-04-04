@@ -349,9 +349,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosQueryRequestOptions cosmosQueryRequestOptions = options as CosmosQueryRequestOptions ?? new CosmosQueryRequestOptions();
-            FeedOptions feedOptions = cosmosQueryRequestOptions.ToFeedOptions();
-            feedOptions.RequestContinuation = continuationToken;
-            feedOptions.MaxItemCount = maxItemCount;
+            cosmosQueryRequestOptions.RequestContinuation = continuationToken;
+            cosmosQueryRequestOptions.MaxItemCount = maxItemCount;
 
             CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
             IDocumentQueryExecutionContext documentQueryExecution = await CosmosQueryExecutionContextFactory.CreateItemQueryExecutionContextAsync(
@@ -366,19 +365,14 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken,
                 correlatedActivityId: Guid.NewGuid());
 
-            IDocumentQuery<T> documentClientResult = this.client.DocumentClient.CreateDocumentQuery<T>(
-                collectionLink: this.container.LinkUri.OriginalString,
-                feedOptions: feedOptions,
-                querySpec: state as SqlQuerySpec).AsDocumentQuery();
-
             try
             {
                 FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
                 return CosmosQueryResponse<T>.CreateResponse<T>(
                     feedResponse, 
                     this.cosmosJsonSerializer,
-                    feedResponse.ResponseContinuation, 
-                    documentClientResult.HasMoreResults, 
+                    feedResponse.ResponseContinuation,
+                    documentQueryExecution.IsDone, 
                     ResourceType.Document);
             }
             catch (DocumentClientException exception)

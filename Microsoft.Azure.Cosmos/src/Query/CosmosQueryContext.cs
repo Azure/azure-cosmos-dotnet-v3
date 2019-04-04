@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            this.ResourceTypeEnum,
                            this.OperationTypeEnum,
                            requestOptions,
-                           this.SqlQuerySpecForInit,
+                           this.SqlQuerySpecForInit ?? this.SqlQuerySpecFromUser,
                            requestEnricher,
                            cancellationToken);
         }

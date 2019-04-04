@@ -86,9 +86,9 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 return await this.innerExecutionContext.ExecuteNextAsync(token);
             }
-            catch (DocumentClientException ex)
+            catch (CosmosException ex)
             {
-                if (ex.StatusCode != HttpStatusCode.BadRequest || ex.GetSubStatus() != SubStatusCodes.CrossPartitionQueryNotServable)
+                if (ex.StatusCode != HttpStatusCode.BadRequest || ex.SubStatusCode != (int)SubStatusCodes.CrossPartitionQueryNotServable)
                 {
                     throw;
                 }
@@ -99,13 +99,11 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo =
                     JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(error.AdditionalErrorInfo);
 
-            DefaultDocumentQueryExecutionContext queryExecutionContext =
-                (DefaultDocumentQueryExecutionContext)this.innerExecutionContext;
-
             List<PartitionKeyRange> partitionKeyRanges =
-                await
-                    queryExecutionContext.GetTargetPartitionKeyRanges(collection.ResourceId,
-                        partitionedQueryExecutionInfo.QueryRanges);
+                await this.queryContext.QueryClient.GetTargetPartitionKeyRanges(
+                    this.queryContext.ResourceLink.OriginalString,
+                    collection.ResourceId,
+                    partitionedQueryExecutionInfo.QueryRanges);
 
             this.innerExecutionContext = await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContext(
                 this.queryContext,

@@ -192,24 +192,21 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> targetRanges = null;
             if (queryRequestOptions.PartitionKey != null)
             {
-                targetRanges = await GetTargetPartitionKeyRangesByEpkString(
-                    queryClient,
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
                     resourceLink,
                     collection.ResourceId,
                     queryRequestOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {
-                targetRanges = await GetTargetPartitionKeyRangesByEpkString(
-                    queryClient,
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
                     resourceLink,
                     collection.ResourceId,
                     effectivePartitionKeyString);
             }
             else
             {
-                targetRanges = await GetTargetPartitionKeyRanges(
-                    queryClient,
+                targetRanges = await queryClient.GetTargetPartitionKeyRanges(
                     resourceLink,
                     collection.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);
@@ -231,61 +228,6 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryPartitionProvider queryPartitionProvider = await queryClient.GetQueryPartitionProviderAsync(cancellationToken);
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(sqlQuerySpec, partitionKeyDefinition, requireFormattableOrderByQuery, isContinuationExpected);
         }
-
-        internal static Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(
-            CosmosQueries queryClient,
-            string resourceLink,
-            string collectionResourceId,
-            string effectivePartitionKeyString)
-        {
-            return GetTargetPartitionKeyRanges(
-                queryClient,
-                resourceLink,
-                collectionResourceId,
-                new List<Range<string>>
-                {
-                    Range<string>.GetPointRange(effectivePartitionKeyString)
-                });
-        }
-
-        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
-            CosmosQueries queryClient,
-            string resourceLink,
-            string collectionResourceId,
-            List<Range<string>> providedRanges)
-        {
-            if (string.IsNullOrEmpty(nameof(collectionResourceId)))
-            {
-                throw new ArgumentNullException();
-            }
-
-            if (providedRanges == null || !providedRanges.Any())
-            {
-                throw new ArgumentNullException(nameof(providedRanges));
-            }
-
-            IRoutingMapProvider routingMapProvider = await queryClient.GetRoutingMapProviderAsync();
-
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
-            if (ranges == null && PathsHelper.IsNameBased(resourceLink))
-            {
-                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
-                // happened based on previously resolved collection rid.
-                // Return NotFoundException this time. Next query will succeed.
-                // This can only happen if collection is deleted/created with same name and client was not restarted
-                // in between.
-                CollectionCache collectionCache = await queryClient.GetCollectionCacheAsync();
-                collectionCache.Refresh(resourceLink);
-            }
-
-            if (ranges == null)
-            {
-                throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
-            }
-
-            return ranges;
-        }
-
 
         private static bool ShouldCreateSpecializedDocumentQueryExecutionContext(
             ResourceType resourceTypeEnum,

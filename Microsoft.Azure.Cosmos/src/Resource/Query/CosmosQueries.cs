@@ -5,7 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -14,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     internal class CosmosQueries
     {
@@ -94,6 +98,57 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentClient.GetPartitionKeyRangeCache();
         }
 
+        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(
+            string resourceLink,
+            string collectionResourceId,
+            string effectivePartitionKeyString)
+        {
+            return GetTargetPartitionKeyRanges(
+                resourceLink,
+                collectionResourceId,
+                new List<Range<string>>
+                {
+                    Range<string>.GetPointRange(effectivePartitionKeyString)
+                });
+        }
+
+        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+            string resourceLink,
+            string collectionResourceId,
+            List<Range<string>> providedRanges)
+        {
+            if (string.IsNullOrEmpty(nameof(collectionResourceId)))
+            {
+                throw new ArgumentNullException();
+            }
+
+            if (providedRanges == null || !providedRanges.Any())
+            {
+                throw new ArgumentNullException(nameof(providedRanges));
+            }
+
+            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
+
+            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+            if (ranges == null && PathsHelper.IsNameBased(resourceLink))
+            {
+                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
+                // happened based on previously resolved collection rid.
+                // Return NotFoundException this time. Next query will succeed.
+                // This can only happen if collection is deleted/created with same name and client was not restarted
+                // in between.
+                CollectionCache collectionCache = await this.GetCollectionCacheAsync();
+                collectionCache.Refresh(resourceLink);
+            }
+
+            if (ranges == null)
+            {
+                throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
+            }
+
+            return ranges;
+        }
+
         private FeedResponse<CosmosElement> GetFeedResponse(
             CosmosQueryRequestOptions requestOptions,
             ResourceType resourceType,
@@ -101,6 +156,9 @@ namespace Microsoft.Azure.Cosmos
         {
             using (cosmosResponseMessage)
             {
+                // DEVNOTE: For now throw the exception. Needs to be converted to handle exceptionless path.
+                cosmosResponseMessage.EnsureSuccessStatusCode();
+
                 // Execute the callback an each element of the page
                 // For example just could get a response like this
                 // {

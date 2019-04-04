@@ -79,6 +79,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual CosmosRequestMessage RequestMessage { get; internal set; }
 
+        /// <summary>
+        /// Gets the internal error object.
+        /// </summary>
+        internal virtual Error Error { get; set; }
+
         private bool _disposed;
 
         private Stream _content;
