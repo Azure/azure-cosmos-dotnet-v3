@@ -5,90 +5,96 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System.Collections.Generic;
-    using System.Text;
     using System;
+    using System.Linq;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Stand by continuation token representing a contiguous read over all the ranges with continuation state across all ranges.
     /// </summary>
-    /// <remarks>
-    /// Format is {range}:{token}|{range}:{token}|
-    /// Where {range} is {min},{max}
-    /// </remarks>
     internal class StandByFeedContinuationToken
     {
-        private const string RangeSeparator = ",";
-        private const string HeaderSeparator = ":";
-        private const string TokenSeparator = "|";
+        private Queue<CompositeContinuationToken> compositeContinuationTokens;
+        private CompositeContinuationToken currentToken;
 
-        private string initialMinInclusive;
-        private string standByFeedContinuationToken;
+        public string NextToken => this.currentToken.Token;
+
+        public string MinInclusiveRange => this.currentToken.Range.Min;
+
+        public string MaxExclusiveRange => this.currentToken.Range.Max;
 
         public StandByFeedContinuationToken(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
             if (keyRanges.Count == 0) throw new ArgumentOutOfRangeException(nameof(keyRanges));
 
-            StringBuilder compositeToken = new StringBuilder();
-            foreach (Documents.PartitionKeyRange keyRange in keyRanges)
-            {
-                compositeToken.Append(StandByFeedContinuationToken.Format(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty));
-            }
-
-            this.standByFeedContinuationToken = compositeToken.ToString();
-            this.PopNewToken();
+            this.InitializeCompositeTokens(this.BuildCompositeTokens(keyRanges));
         }
 
         public StandByFeedContinuationToken(string initialStandByFeedContinuationToken)
         {
             if (string.IsNullOrEmpty(initialStandByFeedContinuationToken)) throw new ArgumentNullException(nameof(initialStandByFeedContinuationToken));
 
-            this.standByFeedContinuationToken = initialStandByFeedContinuationToken;
-            this.PopNewToken();
+            this.InitializeCompositeTokens(this.BuildCompositeTokens(initialStandByFeedContinuationToken));
         }
 
-        public string PushCurrentToBack() => this.PushRangeWithToken(this.MinInclusiveRange, this.MaxInclusiveRange, this.NextToken);
+        public string PushCurrentToBack() {
 
-        public string PushRangeWithToken(string minInclusive, string maxInclusive, string localContinuationToken)
+            this.compositeContinuationTokens.Dequeue();
+            string continuationToken = this.PushRangeWithToken(this.MinInclusiveRange, this.MaxExclusiveRange, this.NextToken);
+            this.currentToken = this.compositeContinuationTokens.Peek();
+            return continuationToken;
+        }
+
+        public string PushRangeWithToken(
+            string min, 
+            string max, 
+            string token)
         {
-            StringBuilder compositeToken = new StringBuilder(this.standByFeedContinuationToken);
-            compositeToken.Append(StandByFeedContinuationToken.Format(minInclusive, maxInclusive, localContinuationToken));
-            this.standByFeedContinuationToken = compositeToken.ToString();
-            return this.standByFeedContinuationToken;
+            this.compositeContinuationTokens.Enqueue(StandByFeedContinuationToken.BuildTokenForRange(min, max, token));
+            return JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
         }
-
-        public string NextToken { get; private set; }
-
-        public string MinInclusiveRange { get; private set; }
-
-        public string MaxInclusiveRange { get; private set; }
 
         public string UpdateCurrentToken(string localContinuationToken)
         {
-            this.NextToken = localContinuationToken?.Replace("\"", string.Empty);
-            return StandByFeedContinuationToken.Format(this.MinInclusiveRange, this.MaxInclusiveRange, this.NextToken) + this.standByFeedContinuationToken;
+            this.currentToken.Token = localContinuationToken?.Replace("\"", string.Empty);
+            return JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
         }
 
-        public bool IsLoopCompleted => this.initialMinInclusive.Equals(this.MinInclusiveRange, StringComparison.OrdinalIgnoreCase);
-
-        public void PopNewToken()
+        private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
-            int rangeIndex = this.standByFeedContinuationToken.IndexOf(StandByFeedContinuationToken.RangeSeparator);
-            int headerIndex = this.standByFeedContinuationToken.IndexOf(StandByFeedContinuationToken.HeaderSeparator, rangeIndex);
-            int separatorIndex = this.standByFeedContinuationToken.IndexOf(StandByFeedContinuationToken.TokenSeparator, headerIndex);
-            this.MinInclusiveRange = this.standByFeedContinuationToken.Substring(0, rangeIndex);
-            this.MaxInclusiveRange = this.standByFeedContinuationToken.Substring(rangeIndex + 1, headerIndex - rangeIndex - 1);
-            this.NextToken = this.standByFeedContinuationToken.Substring(headerIndex + 1, separatorIndex - headerIndex - 1);
-            this.standByFeedContinuationToken = this.standByFeedContinuationToken.Remove(0, separatorIndex + 1);
-            if (this.initialMinInclusive == null)
+            foreach (Documents.PartitionKeyRange keyRange in keyRanges)
             {
-                this.initialMinInclusive = this.MinInclusiveRange;
+                yield return StandByFeedContinuationToken.BuildTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
             }
         }
 
-        private static string Format(string minIncluive, string maxInclusive, string token)
+        private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(string initialContinuationToken)
         {
-            return $"{minIncluive}{StandByFeedContinuationToken.RangeSeparator}{maxInclusive}{StandByFeedContinuationToken.HeaderSeparator}{token}{StandByFeedContinuationToken.TokenSeparator}";
+            foreach (CompositeContinuationToken token in JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken))
+            {
+                yield return token;
+            }
+        }
+
+        private void InitializeCompositeTokens(IEnumerable<CompositeContinuationToken> tokens)
+        {
+            this.compositeContinuationTokens = new Queue<CompositeContinuationToken>();
+
+            foreach (CompositeContinuationToken token in tokens)
+            {
+                this.compositeContinuationTokens.Enqueue(token);
+            }
+
+            this.currentToken = this.compositeContinuationTokens.Peek();
+        }
+
+        internal static CompositeContinuationToken BuildTokenForRange(string min, string max, string token)
+        {
+            return new CompositeContinuationToken() {
+                Range = new Documents.Routing.Range<string>(min, max, true, false),
+                Token = token
+            };
         }
     }
 }

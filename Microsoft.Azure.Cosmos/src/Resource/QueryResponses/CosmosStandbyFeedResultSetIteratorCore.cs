@@ -93,22 +93,25 @@ namespace Microsoft.Azure.Cosmos
 
             ChangeFeedState iterationState = (ChangeFeedState)this.state;
             iterationState.StartEffectivePartitionKeyString = this.compositeContinuationToken.MinInclusiveRange;
-            iterationState.EndEffectivePartitionKeyString = this.compositeContinuationToken.MaxInclusiveRange;
+            iterationState.EndEffectivePartitionKeyString = this.compositeContinuationToken.MaxExclusiveRange;
 
             return await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, iterationState, cancellationToken)
                 .ContinueWith(task =>
                 {
                     CosmosResponseMessage response = task.Result;
+                    
+                    // Change Feed read uses Etag
                     string responseContinuationToken = response.Headers.ETag;
-                    response.Headers.Continuation = this.compositeContinuationToken.UpdateCurrentToken(responseContinuationToken);
                     this.HasMoreResults = GetHasMoreResults(responseContinuationToken, response.StatusCode);
                     if (!this.HasMoreResults)
                     {
                         // Current Range is done, push it to the end
                         response.Headers.Continuation = this.compositeContinuationToken.PushCurrentToBack();
-                        this.compositeContinuationToken.PopNewToken();
-
-                        this.HasMoreResults = !this.compositeContinuationToken.IsLoopCompleted;
+                        this.HasMoreResults = true;
+                    }
+                    else
+                    {
+                        response.Headers.Continuation = this.compositeContinuationToken.UpdateCurrentToken(responseContinuationToken);
                     }
 
                     return response;

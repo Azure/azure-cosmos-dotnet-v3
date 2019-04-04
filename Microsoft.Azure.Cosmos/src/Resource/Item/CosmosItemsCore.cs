@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosItemsCore : CosmosItems
     {
+        private const string IfNoneMatchAllHeaderValue = "*";
         /// <summary>
         /// Cache the full URI segment without the last resource id.
         /// This allows only a single con-cat operation instead of building the full URI string each time.
@@ -615,7 +616,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else if (!cfstate.StartFromBeginning && cfstate.StartTime == null)
                     {
-                        request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, "*");
+                        request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, CosmosItemsCore.IfNoneMatchAllHeaderValue);
                     }
                     else if (cfstate.StartTime != null)
                     {
@@ -623,7 +624,7 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxitemcount);
-                    request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
+                    request.Headers.IncrementalFeed = HttpConstants.A_IMHeaderValues.IncrementalFeed;
 
                     request.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, cfstate.StartEffectivePartitionKeyString);
                     if (!string.IsNullOrEmpty(cfstate.StartEffectivePartitionKeyString))

@@ -5,11 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
-    using System.Diagnostics;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -17,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RouterHandler : CosmosRequestHandler
     {
-        private readonly CosmosRequestHandler doucumentFeedHandler;
+        private readonly CosmosRequestHandler documentFeedHandler;
         private readonly CosmosRequestHandler pointOperationHandler;
 
         public RouterHandler(
@@ -34,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(pointOperationHandler));
             }
 
-            this.doucumentFeedHandler = doucumentFeedHandler;
+            this.documentFeedHandler = doucumentFeedHandler;
             this.pointOperationHandler = pointOperationHandler;
         }
 
@@ -45,7 +42,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosRequestHandler targetHandler = null;
             if (request.OperationType == OperationType.ReadFeed && request.ResourceType == ResourceType.Document)
             {
-                targetHandler = doucumentFeedHandler;
+                //if (string.IsNullOrEmpty(request.Headers.IncrementalFeed))
+                //{
+                    targetHandler = documentFeedHandler;
+                //}
+                //else
+                //{
+                //    // Incremental / Change Feed
+                //    targetHandler = pointOperationHandler;
+                //}
             }
             else
             {
