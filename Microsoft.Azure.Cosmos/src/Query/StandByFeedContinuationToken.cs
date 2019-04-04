@@ -61,6 +61,18 @@ namespace Microsoft.Azure.Cosmos.Query
             return JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
         }
 
+        public void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
+        {
+            // Update current
+            Documents.PartitionKeyRange firstRange = keyRanges[0];
+            this.currentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
+            // Add children
+            foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+            {
+                this.PushRangeWithToken(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
+            }
+        }
+
         private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             foreach (Documents.PartitionKeyRange keyRange in keyRanges)
