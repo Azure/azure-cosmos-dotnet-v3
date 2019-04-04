@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string PartitionKey = "/status";
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                throughput: 10000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -258,6 +259,79 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(itemIds.Count, 0);
+        }
+
+        [TestMethod]
+        public async Task StandByFeedIterator()
+        {
+            var count = 0;
+            var lastcontinuation = string.Empty;
+            var firstRunTotal = 25;
+            var batchSize = 25;
+            Documents.Routing.Range<string> firstRange = null;
+            Documents.Routing.Range<string> currentRange = null;
+
+            await CreateRandomItems(batchSize, randomPartitionKey: true);
+            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(startFromBeginning: true);
+
+            while (setIterator.HasMoreResults)
+            {
+                using (CosmosResponseMessage iterator =
+                    await setIterator.FetchNextSetAsync(this.cancellationToken))
+                {
+                    lastcontinuation = iterator.Headers.Continuation;
+                    currentRange = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation)[0].Range;
+
+                    if (iterator.Content != null)
+                    {
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(iterator.Content).Data;
+                        count += response.Count;
+                    }
+
+                    if (currentRange.Equals(firstRange)) break;
+                    if (firstRange == null)
+                    {
+                        firstRange = currentRange;
+                    }
+
+                }
+
+            }
+            Assert.AreEqual(firstRunTotal, count);
+
+            var secondRunTotal = 50;
+            firstRange = null;
+            currentRange = null;
+
+            await CreateRandomItems(batchSize, randomPartitionKey: true);
+            CosmosFeedResultSetIterator setIteratorNew =
+                itemsCore.GetStandByFeedIterator(continuationToken: lastcontinuation);
+
+            while (setIteratorNew.HasMoreResults)
+            {
+                using (CosmosResponseMessage iterator =
+                    await setIteratorNew.FetchNextSetAsync(this.cancellationToken))
+                {
+                    lastcontinuation = iterator.Headers.Continuation;
+                    currentRange = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation)[0].Range;
+
+                    if (iterator.Content != null)
+                    {
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(iterator.Content).Data;
+                        count += response.Count;
+                    }
+
+                    if (currentRange.Equals(firstRange)) break;
+                    if (firstRange == null)
+                    {
+                        firstRange = currentRange;
+                    }
+                }
+
+            }
+
+            Assert.AreEqual(secondRunTotal, count);
         }
 
         [TestMethod]
