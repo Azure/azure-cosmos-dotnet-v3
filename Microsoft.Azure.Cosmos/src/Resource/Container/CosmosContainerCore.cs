@@ -31,11 +31,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.Database = database;
             this.Items = new CosmosItemsCore(this);
-            this.StoredProcedures = new CosmosStoredProceduresCore(this);
             this.Scripts = new CosmosScripts(this);
             this.DocumentClient = this.Client.DocumentClient;
-            this.Triggers = new CosmosTriggers(this);
-            this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this);
         }
 
         public override string Id { get; }
@@ -44,13 +41,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosItems Items { get; }
 
-        public override CosmosStoredProcedures StoredProcedures { get; }
-
         public override CosmosScripts Scripts { get; }
-
-        internal CosmosTriggers Triggers { get; }
-
-        internal CosmosUserDefinedFunctions UserDefinedFunctions { get; }
 
         internal DocumentClient DocumentClient { get; private set; }
 

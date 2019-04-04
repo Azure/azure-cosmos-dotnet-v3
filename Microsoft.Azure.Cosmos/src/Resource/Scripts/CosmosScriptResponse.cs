@@ -8,10 +8,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using Microsoft.Azure.Documents;
 
+    /// <summary>
+    /// The cosmos script response
+    /// </summary>
     public class CosmosScriptResponse : CosmosResponse<CosmosScriptSettings>
     {
         /// <summary>
-        /// Create a <see cref="CosmosJavaScriptResponse"/> as a no-op for mock testing
+        /// Create a <see cref="CosmosScriptResponse"/> as a no-op for mock testing
         /// </summary>
         public CosmosScriptResponse() : base()
         {
@@ -32,8 +35,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The reference to the cosmos stored procedure.
-        /// This allows additional operations for the stored procedure
+        /// The reference to the cosmos script settings.
         /// </summary>
         public virtual CosmosScriptSettings ScriptSettings => this.Resource;
 

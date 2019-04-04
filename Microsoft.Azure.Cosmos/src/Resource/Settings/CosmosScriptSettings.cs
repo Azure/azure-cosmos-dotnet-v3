@@ -8,6 +8,15 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Converters;
     using Microsoft.Azure.Documents;
 
+    /// <summary>
+    /// Represents a script in the Azure Cosmos DB service.
+    /// </summary>
+    /// <remarks> 
+    /// Azure Cosmos DB allows storedProcedures which application logic written entirely in JavaScript to be executed directly inside the database engine under the database transaction.
+    /// Azure Cosmos supports JavaScript user defined functions (UDFs) which are stored in the database and can be used inside queries. 
+    /// Azure Cosmos DB supports pre and post triggers written in JavaScript to be executed on creates, updates and deletes. 
+    /// For additional details, refer to the server-side JavaScript API documentation.
+    /// </remarks>
     public class CosmosScriptSettings
     {
 
@@ -62,6 +71,10 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.Body)]
         public string Body { get; set; }
 
+        /// <summary>
+        /// Gets or sets the type of the script(StoredProcedure, UDFs, Trigger) for the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The body of the trigger.</value>
         [JsonIgnore]
         public CosmosScriptType? Type { get; set; }
 
@@ -81,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="TriggerOperation"/>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.TriggerOperation)]
-        internal TriggerOperation TriggerOperation { get; set; }
+        internal TriggerOperation TriggerOperation { get; set; }//Need to discuss
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.

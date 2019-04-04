@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// The cosmos stored procedure request options
+    /// The cosmos script execution request options
     /// </summary>
     public class CosmosScriptExecuteRequestOptions : CosmosRequestOptions
     {

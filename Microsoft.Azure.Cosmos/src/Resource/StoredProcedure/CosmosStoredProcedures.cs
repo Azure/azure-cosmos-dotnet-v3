@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosStoredProcedure"/> for reading, replacing, or deleting an existing stored procedures.
     /// </summary>
-    public abstract class CosmosStoredProcedures
+    internal abstract class CosmosStoredProcedures
     {
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.

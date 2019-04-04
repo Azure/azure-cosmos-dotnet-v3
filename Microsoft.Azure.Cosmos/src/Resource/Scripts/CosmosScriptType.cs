@@ -5,6 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
 
+    /// <summary>
+    /// The cosmos script type
+    /// </summary>
     public enum CosmosScriptType
     {
         StoredProcedure,

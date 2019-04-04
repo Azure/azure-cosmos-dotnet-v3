@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosScriptResponse cosmosTrigger = await CreateRandomTrigger();
 
             HashSet<string> settings = new HashSet<string>();
-            CosmosResultSetIterator<CosmosScriptSettings> iter = this.container.Scripts.GetScriptIterator(CosmosScriptType.PreTrigger);
+            CosmosResultSetIterator<CosmosScriptSettings> iter = this.container.Scripts.GetScriptIterator(CosmosScriptType.PreTrigger);//Need to discuss
             while (iter.HasMoreResults)
             {
                 CosmosQueryResponse<CosmosScriptSettings> currentResultSet = await iter.FetchNextSetAsync();

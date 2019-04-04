@@ -39,23 +39,23 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosItems Items { get; }
 
         /// <summary>
-        /// Operations for creating, reading/querying all stored procedures
+        /// Operations for creating new scripts,reading, replacing, or deleting a specific, existing scripts by id,
+        /// reading/querying all stored scripts
         /// </summary>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosStoredProcedureSettings settings = new CosmosStoredProcedureSettings
+        /// CosmosScriptSettings settings = new CosmosScriptSettings
         ///{
         ///    Id = "testSProcId",
-        ///    Body = "function() { { var x = 42; } }"
+        ///    Body = "function() { { var x = 42; } }",
+        ///    Type = CosmosScriptType.StoredProcedure
         ///};
         ///
-        /// CosmosStoredProcedureResponse response = await cosmosContainer.StoredProcedures.CreateStoredProcedureAsync(settings);
+        ///  CosmosScriptResponse scriptResponse = await this.container.Scripts.CreateAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosStoredProcedures StoredProcedures { get; }
-
         public abstract CosmosScripts Scripts { get; }
 
         /// <summary>
