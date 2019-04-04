@@ -365,22 +365,20 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-        public virtual CosmosFeedResultSetIterator GetStandByFeedIterator(
+        public override CosmosFeedResultSetIterator GetStandByFeedIterator(
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosChangeFeedRequestOptions options = null,
-            object state = null,
+            CosmosChangeFeedRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = options as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
+            CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
 
             return new CosmosStandbyFeedResultSetIteratorCore(
                 cosmosContainer: (CosmosContainerCore)this.container,
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
-                options: options,
-                nextDelegate: this.ChangeFeedNextResultSetAsync,
-                state: state);
+                options: cosmosQueryRequestOptions,
+                nextDelegate: this.ChangeFeedNextResultSetAsync);
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(

@@ -34,19 +34,16 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount,
             string continuationToken,
             CosmosChangeFeedRequestOptions options,
-            NextResultSetDelegate nextDelegate,
-            object state)
+            NextResultSetDelegate nextDelegate)
         {
             this.cosmosContainer = cosmosContainer;
             this.nextResultSetDelegate = nextDelegate;
             this.HasMoreResults = true;
-            this.state = state;
+            this.changeFeedOptions = options;
             if (!string.IsNullOrEmpty(continuationToken))
             {
                 this.compositeContinuationToken = new StandByFeedContinuationToken(continuationToken);
             }
-
-            this.changeFeedOptions = options ?? new CosmosChangeFeedRequestOptions();
         }
 
         /// <summary>
@@ -58,11 +55,6 @@ namespace Microsoft.Azure.Cosmos
         /// The query options for the result set
         /// </summary>
         protected readonly CosmosChangeFeedRequestOptions changeFeedOptions;
-
-        /// <summary>
-        /// The state of the result set.
-        /// </summary>
-        protected readonly object state;
 
         /// <summary>
         /// The max item count to return as part of the query

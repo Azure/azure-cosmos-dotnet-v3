@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await CreateRandomItems(batchSize, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(options: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true });
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true });
 
             while (setIterator.HasMoreResults)
             {
