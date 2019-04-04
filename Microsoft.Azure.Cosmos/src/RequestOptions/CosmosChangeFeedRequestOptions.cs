@@ -28,9 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual DateTime? StartTime { get; set; }
 
-        internal virtual string StartEffectivePartitionKeyString { get; set; }
-
-        internal virtual string EndEffectivePartitionKeyString { get; set; }
+        internal virtual string PartitionKeyRangeId { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -52,15 +50,9 @@ namespace Microsoft.Azure.Cosmos
 
             request.Headers.IncrementalFeed = HttpConstants.A_IMHeaderValues.IncrementalFeed;
 
-            request.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, this.StartEffectivePartitionKeyString);
-            if (!string.IsNullOrEmpty(this.StartEffectivePartitionKeyString))
+            if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
             {
-                request.Properties.Add(HandlerConstants.StartEpkString, this.StartEffectivePartitionKeyString);
-            }
-
-            if (!string.IsNullOrEmpty(this.EndEffectivePartitionKeyString))
-            {
-                request.Properties.Add(HandlerConstants.EndEpkString, this.EndEffectivePartitionKeyString);
+                request.PartitionKeyRangeId = this.PartitionKeyRangeId;
             }
 
             base.FillRequestOptions(request);

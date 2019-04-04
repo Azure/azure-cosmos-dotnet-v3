@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
         private readonly CosmosContainerCore cosmosContainer;
         private StandByFeedContinuationToken compositeContinuationToken;
+        private string containerRid;
 
         internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
@@ -68,43 +69,48 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            PartitionKeyRangeCache pkRangeCache = await this.cosmosContainer.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            if (this.containerRid == null)
+            {
+                this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
+            }
+
             if (this.compositeContinuationToken == null)
             {
-                PartitionKeyRangeCache pkRangeCache = await this.cosmosContainer.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                string containerRid = await this.cosmosContainer.GetRID(cancellationToken);
-                IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await pkRangeCache.TryGetOverlappingRangesAsync(containerRid, new Documents.Routing.Range<string>(
+                IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(containerRid, new Documents.Routing.Range<string>(
                     Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                     Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                     true,
                     false));
 
-                this.compositeContinuationToken = new StandByFeedContinuationToken(keyRanges);
+                this.compositeContinuationToken = new StandByFeedContinuationToken(allRanges);
             }
 
-            this.changeFeedOptions.StartEffectivePartitionKeyString = this.compositeContinuationToken.MinInclusiveRange;
-            this.changeFeedOptions.EndEffectivePartitionKeyString = this.compositeContinuationToken.MaxExclusiveRange;
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await pkRangeCache.TryGetOverlappingRangesAsync(containerRid, new Documents.Routing.Range<string>(
+                    this.compositeContinuationToken.MinInclusiveRange,
+                    this.compositeContinuationToken.MaxExclusiveRange,
+                    true,
+                    false));
 
-            return await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken,this.changeFeedOptions, cancellationToken)
-                .ContinueWith(task =>
-                {
-                    CosmosResponseMessage response = task.Result;
-                    
-                    // Change Feed read uses Etag
-                    string responseContinuationToken = response.Headers.ETag;
-                    this.HasMoreResults = GetHasMoreResults(responseContinuationToken, response.StatusCode);
-                    if (!this.HasMoreResults)
-                    {
-                        // Current Range is done, push it to the end
-                        response.Headers.Continuation = this.compositeContinuationToken.PushCurrentToBack();
-                        this.HasMoreResults = true;
-                    }
-                    else
-                    {
-                        response.Headers.Continuation = this.compositeContinuationToken.UpdateCurrentToken(responseContinuationToken);
-                    }
+            this.changeFeedOptions.PartitionKeyRangeId = keyRanges[0].Id;
 
-                    return response;
-                }, cancellationToken);
+            CosmosResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.changeFeedOptions, cancellationToken);
+
+            // Change Feed read uses Etag
+            string responseContinuationToken = response.Headers.ETag;
+            this.HasMoreResults = GetHasMoreResults(responseContinuationToken, response.StatusCode);
+            if (!this.HasMoreResults)
+            {
+                // Current Range is done, push it to the end
+                response.Headers.Continuation = this.compositeContinuationToken.PushCurrentToBack();
+                this.HasMoreResults = true;
+            }
+            else
+            {
+                response.Headers.Continuation = this.compositeContinuationToken.UpdateCurrentToken(responseContinuationToken);
+            }
+
+            return response;
         }
 
         internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)

@@ -82,6 +82,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal OperationType OperationType { get; set; }
 
+        internal string PartitionKeyRangeId { get; set; }
+
         internal DocumentServiceRequest DocumentServiceRequest { get; set; }
 
         internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
@@ -173,6 +175,12 @@ namespace Microsoft.Azure.Cosmos
                 else
                 {
                     serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                }
+
+                // Routing to a particular PartitionKeyRangeId
+                if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
+                {
+                    serviceRequest.RouteTo(new PartitionKeyRangeIdentity(this.PartitionKeyRangeId));
                 }
 
                 serviceRequest.UseStatusCodeForFailures = true;
