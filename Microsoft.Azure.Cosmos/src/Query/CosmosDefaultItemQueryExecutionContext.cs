@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Whether or not a continuation is expected.
         /// </summary>
-        private readonly bool isContinuationExpected;
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
         private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
         private readonly IDictionary<string, IReadOnlyList<Range<string>>> providedRangesCache;
@@ -42,11 +41,9 @@ namespace Microsoft.Azure.Cosmos.Query
         public bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
         public CosmosDefaultItemQueryExecutionContext(
-            CosmosQueryContext constructorParams,
-            bool isContinuationExpected)
+            CosmosQueryContext constructorParams)
         {
             this.queryContext = constructorParams;
-            this.isContinuationExpected = isContinuationExpected;
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
             this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(SinglePartitionKeyId);
@@ -57,13 +54,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public static CosmosDefaultItemQueryExecutionContext CreateAsync(
             CosmosQueryContext constructorParams,
-            bool isContinuationExpected,
             CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
             return new CosmosDefaultItemQueryExecutionContext(
-                constructorParams,
-                isContinuationExpected);
+                constructorParams);
         }
 
         public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)
@@ -155,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.queryContext.ExecuteQueryAsync(cancellationToken,
                 requestEnricher: (cosmosRequestMessage) => {
                     cosmosRequestMessage.UseGatewayMode = true;
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.isContinuationExpected.ToString());
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
                 });
         }
 

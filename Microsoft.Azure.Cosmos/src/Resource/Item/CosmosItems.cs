@@ -795,8 +795,7 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetIterator.
@@ -837,7 +836,6 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CosmosQueryRequestOptions requestOptions = null);
     }
 }

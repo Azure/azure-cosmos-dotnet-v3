@@ -358,6 +358,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         FeedResponse<CosmosElement> feedResponse = await this.queryContext.ExecuteQueryAsync(
                             token,
+                            requestEnricher: (cosmosRequestMessage) =>
+                            {
+                                this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage.ToDocumentServiceRequest());
+                                cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
+                            },
                             requestOptionsEnricher: (queryRequestOptions) => 
                             {
                                 queryRequestOptions.MaxItemCount = pageSize;
@@ -443,6 +448,24 @@ namespace Microsoft.Azure.Cosmos.Query
         public void Shutdown()
         {
             this.hasMoreResults = false;
+        }
+
+        private void PopulatePartitionKeyRangeInfo(DocumentServiceRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException("request");
+            }
+
+            if (this.PartitionKeyRange == null)
+            {
+                throw new ArgumentNullException("range");
+            }
+
+            if (this.queryContext.ResourceTypeEnum.IsPartitioned())
+            {
+                request.RouteTo(new PartitionKeyRangeIdentity(this.queryContext.ContainerResourceId, this.PartitionKeyRange.Id));
+            }
         }
 
         /// <summary>

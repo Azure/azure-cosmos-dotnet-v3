@@ -225,27 +225,27 @@ namespace Microsoft.Azure.Cosmos
             requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
             requestOptions.MaxConcurrency = maxConcurrency;
             requestOptions.EnableCrossPartitionQuery = true;
+            requestOptions.RequestContinuation = continuationToken;
+            requestOptions.MaxItemCount = maxItemCount;
 
-            FeedOptions feedOptions = requestOptions.ToFeedOptions();
-            feedOptions.RequestContinuation = continuationToken;
-            feedOptions.MaxItemCount = maxItemCount;
-            if (partitionKey != null)
-            {
-                PartitionKey pk = new PartitionKey(partitionKey);
-                feedOptions.PartitionKey = pk;
-            }
-
-            DocumentQuery<CosmosQueryResponse> documentQuery = (DocumentQuery<CosmosQueryResponse>)this.client.DocumentClient.CreateDocumentQuery<CosmosQueryResponse>(
-                collectionLink: this.container.LinkUri.OriginalString,
-                feedOptions: feedOptions,
-                querySpec: sqlQueryDefinition.ToSqlQuerySpec());
+            CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
+            IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+                client: cosmosQueries,
+                resourceTypeEnum: ResourceType.Document,
+                operationType: OperationType.Query,
+                resourceType: typeof(CosmosQueryResponse),
+                sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                queryRequestOptions: requestOptions as CosmosQueryRequestOptions,
+                resourceLink: this.container.LinkUri,
+                isContinuationExpected: true,
+                correlatedActivityId: Guid.NewGuid());
 
             return new CosmosResultSetIteratorCore(
                 maxItemCount,
                 continuationToken,
                 requestOptions,
                 this.QueryRequestExecutor,
-                documentQuery);
+                documentQueryExecution);
         }
 
         public override CosmosResultSetIterator CreateItemQueryAsStream(
@@ -272,21 +272,35 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
-            CosmosQueryRequestOptions options = requestOptions ?? new CosmosQueryRequestOptions();
+            requestOptions = requestOptions  ?? new CosmosQueryRequestOptions();
             if (partitionKey != null)
             {
                 PartitionKey pk = new PartitionKey(partitionKey);
-                options.PartitionKey = pk;
+                requestOptions.PartitionKey = pk;
             }
 
-            options.EnableCrossPartitionQuery = false;
+            requestOptions.EnableCrossPartitionQuery = false;
+            requestOptions.RequestContinuation = continuationToken;
+            requestOptions.MaxItemCount = maxItemCount;
+
+            CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
+            IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+                client: cosmosQueries,
+                resourceTypeEnum: ResourceType.Document,
+                operationType: OperationType.Query,
+                resourceType: typeof(T),
+                sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                queryRequestOptions: requestOptions,
+                resourceLink: this.container.LinkUri,
+                isContinuationExpected: true,
+                correlatedActivityId: Guid.NewGuid());
 
             return new CosmosDefaultResultSetIterator<T>(
                 maxItemCount,
                 continuationToken,
-                options,
+                requestOptions,
                 this.NextResultSetAsync<T>,
-                sqlQueryDefinition.ToSqlQuerySpec());
+                documentQueryExecution);
         }
 
         public override CosmosResultSetIterator<T> CreateItemQuery<T>(
@@ -309,19 +323,32 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CosmosQueryRequestOptions requestOptions = null)
         {
-            CosmosQueryRequestOptions options = requestOptions ?? new CosmosQueryRequestOptions();
-            options.MaxConcurrency = maxConcurrency;
-            options.EnableCrossPartitionQuery = true;
+            requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
+            requestOptions.EnableCrossPartitionQuery = true;
+            requestOptions.RequestContinuation = continuationToken;
+            requestOptions.MaxItemCount = maxItemCount;
+            requestOptions.MaxConcurrency = maxConcurrency;
+
+            CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
+            IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+                client: cosmosQueries,
+                resourceTypeEnum: ResourceType.Document,
+                operationType: OperationType.Query,
+                resourceType: typeof(T),
+                sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                queryRequestOptions: requestOptions,
+                resourceLink: this.container.LinkUri,
+                isContinuationExpected: true,
+                correlatedActivityId: Guid.NewGuid());
 
             return new CosmosDefaultResultSetIterator<T>(
                 maxItemCount,
                 continuationToken,
-                options,
+                requestOptions,
                 this.NextResultSetAsync<T>,
-                sqlQueryDefinition.ToSqlQuerySpec());
+                documentQueryExecution);
         }
 
         public override CosmosResultSetIterator<T> CreateItemQuery<T>(
@@ -329,16 +356,14 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CosmosQueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQuery<T>(
                 new CosmosSqlQueryDefinition(sqlQueryText),
                 maxConcurrency,
                 maxItemCount,
                 continuationToken,
-                requestOptions,
-                cancellationToken);
+                requestOptions);
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
@@ -348,32 +373,17 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            CosmosQueryRequestOptions cosmosQueryRequestOptions = options as CosmosQueryRequestOptions ?? new CosmosQueryRequestOptions();
-            cosmosQueryRequestOptions.RequestContinuation = continuationToken;
-            cosmosQueryRequestOptions.MaxItemCount = maxItemCount;
-
-            CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
-            IDocumentQueryExecutionContext documentQueryExecution = await CosmosQueryExecutionContextFactory.CreateItemQueryExecutionContextAsync(
-                client: cosmosQueries,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(T),
-                sqlQuerySpec: state as SqlQuerySpec,
-                queryRequestOptions: options as CosmosQueryRequestOptions,
-                resourceLink: this.container.LinkUri,
-                isContinuationExpected: true,
-                cancellationToken: cancellationToken,
-                correlatedActivityId: Guid.NewGuid());
+            IDocumentQueryExecutionContext documentQueryExecution = (IDocumentQueryExecutionContext)state;
 
             try
             {
                 FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
                 return CosmosQueryResponse<T>.CreateResponse<T>(
-                    feedResponse, 
-                    this.cosmosJsonSerializer,
-                    feedResponse.ResponseContinuation,
-                    documentQueryExecution.IsDone, 
-                    ResourceType.Document);
+                    feedResponse: feedResponse,
+                    jsonSerializer: this.cosmosJsonSerializer,
+                    continuationToken: feedResponse.ResponseContinuation,
+                    hasMoreResults: !documentQueryExecution.IsDone,
+                    resourceType: ResourceType.Document);
             }
             catch (DocumentClientException exception)
             {
@@ -461,14 +471,17 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<CosmosQueryResponse> QueryRequestExecutor(
             string continuationToken,
+            CosmosRequestOptions requestOptions,
             object state,
             CancellationToken cancellationToken)
         {
-            DocumentQuery<CosmosQueryResponse> documentQuery = (DocumentQuery<CosmosQueryResponse>)state;
+            IDocumentQueryExecutionContext documentQueryExecution = (IDocumentQueryExecutionContext)state;
+            CosmosQueryRequestOptions queryRequestOptions = (CosmosQueryRequestOptions)requestOptions;
             // DEVNOTE: Remove try catch once query pipeline is converted to exceptionless
             try
             {
-                return await documentQuery.ExecuteNextQueryStreamAsync(cancellationToken);
+                FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
+                return CosmosQueryResponse.CreateResponse(feedResponse: feedResponse, queryRequestOptions.CosmosSerializationOptions);
             }
             catch (DocumentClientException exception)
             {

@@ -38,8 +38,6 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal abstract class CosmosCrossPartitionQueryExecutionContext : IDocumentQueryExecutionComponent
     {
-        protected SqlQuerySpec querySpec;
-
         private CosmosQueryContext queryContext;
 
         private CosmosQueryRequestOptions queryRequestOptions;
@@ -137,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (!string.IsNullOrWhiteSpace(rewrittenQuery))
             {
-                this.querySpec = new SqlQuerySpec(rewrittenQuery, this.QuerySpec.Parameters);
+                initParams.SqlQuerySpecForInit = new SqlQuerySpec(rewrittenQuery, initParams.SqlQuerySpecFromUser.Parameters);
             }
 
             if (moveNextComparer == null)
@@ -196,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public int? MaxItemCount => this.queryRequestOptions.MaxBufferedItemCount;
 
-        protected SqlQuerySpec QuerySpec => this.queryContext.SqlQuerySpecFromUser;
+        protected SqlQuerySpec QuerySpec => this.queryContext.SqlQuerySpecForInit;
 
         protected PartitionKeyInternal PartitionKeyInternal => this.queryRequestOptions.PartitionKey == null ? null : this.queryRequestOptions.PartitionKey.InternalKey;
 
@@ -439,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.TraceInformation(string.Format(
                 CultureInfo.InvariantCulture,
                 "parallel~contextbase.initializeasync, queryspec {0}, maxbuffereditemcount: {1}, target partitionkeyrange count: {2}, maximumconcurrencylevel: {3}, documentproducer initial page size {4}",
-                JsonConvert.SerializeObject(this.querySpec, DefaultJsonSerializationSettings.Value),
+                JsonConvert.SerializeObject(this.queryContext.SqlQuerySpecForInit, DefaultJsonSerializationSettings.Value),
                 this.actualMaxBufferedItemCount,
                 partitionKeyRanges.Count,
                 this.comparableTaskScheduler.MaximumConcurrencyLevel,

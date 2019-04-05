@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     {
         internal delegate Task<CosmosQueryResponse> NextResultSetDelegate(
             string continuationToken,
+            CosmosRequestOptions options,
             object state,
             CancellationToken cancellationToken);
 
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return this.nextResultSetDelegate(this.continuationToken, this.state, cancellationToken)
+            return this.nextResultSetDelegate(this.continuationToken, this.queryOptions, this.state, cancellationToken)
                 .ContinueWith(task =>
                 {
                     CosmosQueryResponse response = task.Result;

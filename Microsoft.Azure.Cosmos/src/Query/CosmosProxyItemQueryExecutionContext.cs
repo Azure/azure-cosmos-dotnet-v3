@@ -31,36 +31,32 @@ namespace Microsoft.Azure.Cosmos.Query
         CosmosQueryContext queryContext;
 
         private readonly CosmosContainerSettings collection;
-        private readonly bool isContinuationExpected;
 
         private CosmosProxyItemQueryExecutionContext(
             IDocumentQueryExecutionContext innerExecutionContext,
             CosmosQueryContext queryContext,
-            CosmosContainerSettings collection,
-            bool isContinuationExpected)
+            CosmosContainerSettings collection)
         {
             this.innerExecutionContext = innerExecutionContext;
 
             this.queryContext = queryContext;
 
             this.collection = collection;
-            this.isContinuationExpected = isContinuationExpected;
         }
 
         public static CosmosProxyItemQueryExecutionContext CreateAsync(
             CosmosQueryContext queryContext,
             CancellationToken token,
-            CosmosContainerSettings collection,
-            bool isContinuationExpected)
+            CosmosContainerSettings collection)
         {
             token.ThrowIfCancellationRequested();
             IDocumentQueryExecutionContext innerExecutionContext =
-             new CosmosDefaultItemQueryExecutionContext(queryContext, isContinuationExpected);
+             new CosmosDefaultItemQueryExecutionContext(queryContext);
 
-            return new CosmosProxyItemQueryExecutionContext(innerExecutionContext,
+            return new CosmosProxyItemQueryExecutionContext(
+                innerExecutionContext,
                 queryContext,
-                collection, 
-                isContinuationExpected);
+                collection);
         }
 
         public bool IsDone
@@ -110,7 +106,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo,
                 partitionKeyRanges,
                 this.collection.ResourceId,
-                this.isContinuationExpected,
                 token);
 
             return await this.innerExecutionContext.ExecuteNextAsync(token);

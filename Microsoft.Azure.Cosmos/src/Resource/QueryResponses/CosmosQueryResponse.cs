@@ -135,6 +135,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual bool IsSuccess => this.StatusCode == HttpStatusCode.OK;
 
+        internal static CosmosQueryResponse CreateResponse(
+            FeedResponse<CosmosElement> feedResponse,
+            CosmosSerializationOptions cosmosSerializationOptions)
+        {
+            return FeedResponseBinder.ConvertToCosmosQueryResponse(feedResponse, null);
+        }
+
         /// <summary>
         /// Dispose of the response content
         /// </summary>

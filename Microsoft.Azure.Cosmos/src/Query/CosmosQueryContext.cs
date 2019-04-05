@@ -39,8 +39,9 @@ namespace Microsoft.Azure.Cosmos.Query
         public SqlQuerySpec SqlQuerySpecFromUser { get; }
         public SqlQuerySpec SqlQuerySpecForInit { get; set; }
         public CosmosQueryRequestOptions QueryRequestOptions { get; }
+        public bool IsContinuationExpected { get; }
         public Uri ResourceLink { get; }
-        public bool GetLazyFeedResponse { get; }
+        public string ContainerResourceId { get; set; }
         public Guid CorrelatedActivityId { get; }
 
         public CosmosQueryContext(
@@ -52,7 +53,9 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool getLazyFeedResponse,
-            Guid correlatedActivityId)
+            Guid correlatedActivityId,
+            bool isContinuationExpected,
+            string containerResourceId = null)
         {
             if (client == null)
             {
@@ -86,7 +89,8 @@ namespace Microsoft.Azure.Cosmos.Query
             this.SqlQuerySpecFromUser = sqlQuerySpecFromUser;
             this.QueryRequestOptions = queryRequestOptions;
             this.ResourceLink = resourceLink;
-            this.GetLazyFeedResponse = getLazyFeedResponse;
+            this.ContainerResourceId = containerResourceId;
+            this.IsContinuationExpected = isContinuationExpected;
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
