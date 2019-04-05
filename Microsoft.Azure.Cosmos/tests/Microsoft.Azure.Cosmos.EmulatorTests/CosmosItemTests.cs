@@ -335,6 +335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public async Task StandByFeedIterator_WithInexistentRange()
         {
             var count = 0;

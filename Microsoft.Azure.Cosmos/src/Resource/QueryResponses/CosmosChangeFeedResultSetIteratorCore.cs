@@ -33,10 +33,7 @@ namespace Microsoft.Azure.Cosmos
             this.HasMoreResults = true;
             this.changeFeedOptions = options;
             this.originalMaxItemCount = options.MaxItemCount;
-            if (!string.IsNullOrEmpty(options.RequestContinuation))
-            {
-                this.compositeContinuationToken = new StandByFeedContinuationToken(options.RequestContinuation);
-            }
+            this.compositeContinuationToken = new StandByFeedContinuationToken(options.RequestContinuation);
         }
 
         /// <summary>
@@ -62,19 +59,10 @@ namespace Microsoft.Azure.Cosmos
                 this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
             }
 
-            await this.InitializeCompositeToken(pkRangeCache);
-
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetPartitionKeyRangesForCurrentFetch(pkRangeCache);
-
-            this.changeFeedOptions.PartitionKeyRangeId = keyRanges[0].Id;
-            if (keyRanges.Count > 1)
-            {
-                // Original range contains now more than 1 Key Range due to a split
-                // Push the rest and update the current range
-                this.compositeContinuationToken.HandleSplit(keyRanges);
-            }
-
+            await this.compositeContinuationToken.InitializeCompositeTokens(this.containerRid, pkRangeCache);
+            this.changeFeedOptions.PartitionKeyRangeId = await this.compositeContinuationToken.GetPartitionKeyRangeIdForCurrentState(this.containerRid, pkRangeCache);
             this.changeFeedOptions.RequestContinuation = this.continuationToken;
+
             CosmosResponseMessage response = await this.NextResultSetDelegate(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailure(pkRangeCache, response, cancellationToken))
             {
@@ -109,56 +97,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Checks current range and obtains PK Range. If current range does not exist, it skips it for the next in the token list. If none exist, it refreshes the all and starts from the beginning.        
-        /// </summary>
-        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetPartitionKeyRangesForCurrentFetch(PartitionKeyRangeCache pkRangeCache)
-        {
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
-
-            while (keyRanges.Count == 0 && this.compositeContinuationToken.HasRange)
-            {
-                // Current received range does not exist
-                this.compositeContinuationToken.RemoveCurrent();
-                keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
-            }
-
-            if (!this.compositeContinuationToken.HasRange)
-            {
-                // Continuation is totally invalid
-                await this.InitializeCompositeToken(pkRangeCache, true);
-                keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
-            }
-
-            return keyRanges;
-        }
-
-        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetCurrentPartitionKeyRanges(PartitionKeyRangeCache pkRangeCache)
-        {
-            return await pkRangeCache.TryGetOverlappingRangesAsync(this.containerRid, new Documents.Routing.Range<string>(
-                    this.compositeContinuationToken.MinInclusiveRange,
-                    this.compositeContinuationToken.MaxExclusiveRange,
-                    true,
-                    false));
-        }
-
-        private async Task InitializeCompositeToken(
-            PartitionKeyRangeCache pkRangeCache, 
-            bool forceRefresh = false)
-        {
-            if (this.compositeContinuationToken == null || forceRefresh)
-            {
-                // Initialize composite token with all the ranges
-                IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(this.containerRid, new Documents.Routing.Range<string>(
-                    Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    true,
-                    false));
-
-                this.compositeContinuationToken = new StandByFeedContinuationToken(allRanges);
-            }
-        }
-
-        /// <summary>
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
         internal async Task<bool> ShouldRetryFailure(
@@ -181,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionNotFound)
             {
                 this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
-                await this.InitializeCompositeToken(pkRangeCache, true);
+                await this.compositeContinuationToken.InitializeCompositeTokens(this.containerRid, pkRangeCache, true);
                 return true;
             }
 
@@ -189,16 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
-                // Get all new children
-                IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
-
-                if (keyRanges.Count > 0)
-                {
-                    this.compositeContinuationToken.HandleSplit(keyRanges);
-                    return true;
-                }
-
-                return false;
+                return await this.compositeContinuationToken.HandleRequestSplit(this.containerRid, pkRangeCache);
             }
 
             bool pageSizeError = response.ErrorMessage.Contains("Reduce page size and try again.");
