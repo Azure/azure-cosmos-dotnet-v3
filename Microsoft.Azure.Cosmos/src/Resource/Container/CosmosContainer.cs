@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
@@ -238,5 +240,31 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
+
+        abstract internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
+        /// </summary>
+        /// <remarks>
+        /// The function selects the right partition key constant for inserting documents that don't have
+        /// a value for partition key. The constant selection is based on whether the collection is migrated
+        /// or user partitioned
+        /// </remarks>
+        internal PartitionKeyInternal NonePartitionKeyValue
+        {
+            get
+            {
+                PartitionKeyDefinition partitionKey = this.GetPartitionKeyDefinitionAsync().Result;//Need to discuss
+                if (partitionKey.Paths.Count == 0 || partitionKey.IsSystemKey)
+                {
+                    return PartitionKeyInternal.Empty;
+                }
+                else
+                {
+                    return PartitionKeyInternal.Undefined;
+                }
+            }
+        }
     }
 }

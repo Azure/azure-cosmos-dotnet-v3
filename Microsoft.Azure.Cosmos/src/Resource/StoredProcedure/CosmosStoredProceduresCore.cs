@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.StoredProcedure,
                 OperationType.Create,
                 requestOptions,
+                this.container,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,

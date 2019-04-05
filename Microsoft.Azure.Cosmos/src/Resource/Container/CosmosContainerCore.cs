@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
         }
 
-        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken)
+        internal override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerSettingsAsync(cancellationToken)
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
@@ -232,6 +232,7 @@ namespace Microsoft.Azure.Cosmos
               resourceUri: this.LinkUri,
               resourceType: ResourceType.Collection,
               operationType: operationType,
+              cosmosContainer: null,
               partitionKey: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,

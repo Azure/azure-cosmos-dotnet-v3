@@ -414,6 +414,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Document,
                 operationType,
                 requestOptions,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -440,6 +441,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => response,
+                cosmosContainer: this.container,
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);
@@ -465,6 +467,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.client.ResponseFactory.CreateResultSetQueryResponse<T>(response),
+                cosmosContainer: this.container,
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);

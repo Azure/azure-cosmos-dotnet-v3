@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
@@ -170,6 +170,7 @@ namespace Microsoft.Azure.Cosmos
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
+               cosmosContainer: null,
                partitionKey: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
@@ -189,6 +190,7 @@ namespace Microsoft.Azure.Cosmos
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.ReadFeed,
+               cosmosContainer: null,
                partitionKey: null,
                streamPayload: null,
                requestOptions: requestOptions,

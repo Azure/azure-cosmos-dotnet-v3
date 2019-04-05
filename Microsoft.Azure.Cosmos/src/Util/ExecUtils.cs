@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.Azure.Documents;
 
     internal static class ExecUtils
@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainer: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: requestEnricher,
@@ -52,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainer: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: null,
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainer: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: null,
@@ -92,6 +95,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
+            CosmosContainer cosmosContainer,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -123,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainer,
                 partitionKey,
                 streamPayload,
                 requestEnricher);
@@ -137,6 +142,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
+            CosmosContainer cosmosContainer,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -147,6 +153,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainer,
                 partitionKey,
                 streamPayload,
                 requestEnricher);
@@ -159,6 +166,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
+            CosmosContainer cosmosContainer,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher)
@@ -173,8 +181,15 @@ namespace Microsoft.Azure.Cosmos
 
             if (partitionKey != null)
             {
-                PartitionKey pk = new PartitionKey(partitionKey);
-                request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
+                if (cosmosContainer != null && partitionKey.Equals(PartitionKey.None))
+                {
+                    PartitionKeyInternal partitionKeyInternal = cosmosContainer.NonePartitionKeyValue;
+                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                } else
+                {
+                    PartitionKey pk = new PartitionKey(partitionKey);
+                    request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
+                }
             }
 
             if (operationType == OperationType.Upsert)
@@ -187,6 +202,19 @@ namespace Microsoft.Azure.Cosmos
             return request;
         }
 
+        internal static PartitionKey GetPartitionKey(Object partitionKey)
+        {
+            PartitionKey pk = null;
+            if (partitionKey.GetType() == typeof(PartitionKey))
+            {
+                pk = (PartitionKey)partitionKey;
+            }
+            else
+            {
+                pk = new PartitionKey(partitionKey);
+            }
+            return pk;
+        }
         internal static HttpMethod GetHttpMethod(
             OperationType operationType)
         {

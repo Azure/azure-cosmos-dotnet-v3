@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
             string userDefinedFunctionId)
         {
             this.Id = userDefinedFunctionId;
+            this.container = container;
             base.Initialize(
                client: container.Client,
                parentLink: container.LinkUri.OriginalString,
@@ -186,6 +187,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.UserDefinedFunction,
                 operationType,
                 requestOptions,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -193,5 +195,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.Client.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
         }
+        internal CosmosContainer container { get; }
     }
 }

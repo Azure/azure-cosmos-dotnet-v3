@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default connection mode
         /// </summary>
-        private const ConnectionMode DefaultConnectionMode = ConnectionMode.Direct;
+        private const ConnectionMode DefaultConnectionMode = ConnectionMode.Gateway;
 
         /// <summary>
         /// Default Protocol mode

@@ -5,6 +5,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -25,11 +26,12 @@
     // 1. Basic CRUD operations on a item using regular POCOs
     // 1.1 - Create a item
     // 1.2 - Read a item by its Id
-    // 1.3 - Read all items in a Collection
+    // 1.3 - Read all items in a Container
     // 1.4 - Query for items by a property other than Id
     // 1.5 - Replace a item
     // 1.6 - Upsert a item
     // 1.7 - Delete a item
+    // 1.8 - Read write non partition Container item.
     //
     // 2. Work with dynamic objects
     //
@@ -54,11 +56,18 @@
     {
         private static readonly string databaseId = "samples";
         private static readonly string containerId = "item-samples";
+        private static readonly string nonPartitionContainerId = "fixed-Container";
+        private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         //Reusable instance of ItemClient which represents the connection to a Cosmos endpoint
         private static CosmosDatabase database = null;
         private static CosmosContainer container = null;
+        private static CosmosContainer fixedContainer = null;
+        private static readonly string utc_date = DateTime.UtcNow.ToString("r");
+        private static string endpoint;
+        private static string authKey;
+
 
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
         public static async Task Main(string[] args)
@@ -69,13 +78,13 @@
                     .AddJsonFile("appSettings.json")
                     .Build();
 
-                string endpoint = configuration["EndPointUrl"];
+                endpoint = configuration["EndPointUrl"];
                 if (string.IsNullOrEmpty(endpoint))
                 {
                     throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
                 }
 
-                string authKey = configuration["AuthorizationKey"];
+                authKey = configuration["AuthorizationKey"];
                 if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
                 {
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
@@ -126,11 +135,12 @@
         /// 1. Basic CRUD operations on a item
         /// 1.1 - Create a item
         /// 1.2 - Read a item by its Id
-        /// 1.3 - Read all items in a Collection
+        /// 1.3 - Read all items in a Container
         /// 1.4 - Query for items by a property other than Id
         /// 1.5 - Replace a item
         /// 1.6 - Upsert a item
         /// 1.7 - Delete a item
+        /// 1.8 - read write a non partition container item
         /// </summary>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
         {
@@ -145,6 +155,8 @@
             await Program.UpsertItemAsync();
 
             await Program.DeleteItemAsync();
+
+            await Program.ReadWriteNonPartitionItemAsync();
         }
 
         private static async Task<SalesOrder> CreateItemsAsync()
@@ -253,19 +265,20 @@
             // Use the same query as before but get the cosmos response message to access the stream directly
             CosmosResultSetIterator streamResultSet = container.Items.CreateItemQueryAsStream(
                 query,
+                maxConcurrency: 1,
                 partitionKey: "Account1",
                 maxItemCount: 10);
 
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
             {
-                using (CosmosResponseMessage responseMessage = await streamResultSet.FetchNextSetAsync())
+                using (CosmosQueryResponse responseMessage = await streamResultSet.FetchNextSetAsync())
                 {
                     // Item stream operations do not throw exceptions for better performance
-                    if (responseMessage.IsSuccessStatusCode)
+                    if (responseMessage.IsSuccess)
                     {
                         dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
-                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
+                        List<SalesOrder> salesOrders = streamResponse.ToObject<List<SalesOrder>>();
                         Console.WriteLine($"\n1.4.3 - Item Query via stream {salesOrders.Count}");
                         allSalesForAccount1FromStream.AddRange(salesOrders);
                     }
@@ -381,6 +394,22 @@
             Console.WriteLine("Request charge of delete operation: {0}", response.RequestCharge);
             Console.WriteLine("StatusCode of operation: {0}", response.StatusCode);
         }
+        private static async Task ReadWriteNonPartitionItemAsync()
+        {
+            Console.WriteLine("\n1.8 - Reading writing non partitioned container item");
+            CosmosItemResponse<SalesOrder> response = await fixedContainer.Items.ReadItemAsync<SalesOrder>(
+                partitionKey:  CosmosRequestOptions.PartitionKeyNone, //will uncomment once next cosmosclient higher than 3.0.0.1-preview become available into nuget.
+                id: nonPartitionItemId);
+
+            Console.WriteLine("Request charge of read operation: {0}", response.RequestCharge);
+            Console.WriteLine("StatusCode of operation: {0}", response.StatusCode);
+
+            CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
+
+            SalesOrderAfterMigration salesOrderAfterMigration = GetSalesOrderSampleAfterMigration("ItemAfterMigration");
+            CosmosItemResponse<SalesOrderAfterMigration> response2 = await fixedContainer.Items.CreateItemAsync(salesOrderAfterMigration.partitionKey, salesOrderAfterMigration);
+            Console.WriteLine("StatusCode of operation : {0}", response2.StatusCode);
+        }
 
         private static T FromStream<T>(Stream stream)
         {
@@ -443,7 +472,38 @@
                 },
             };
 
-            // Set the "ttl" property to auto-expire sales orders in 30 days 
+            // Set the "ttl" property to auto-expire sales orders in 30 days
+            salesOrder.TimeToLive = 60 * 60 * 24 * 30;
+
+            return salesOrder;
+        }
+
+        private static SalesOrderAfterMigration GetSalesOrderSampleAfterMigration(string itemId)
+        {
+            SalesOrderAfterMigration salesOrder = new SalesOrderAfterMigration
+            {
+                Id = itemId,
+                AccountNumber = "Account1",
+                partitionKey = Guid.NewGuid().ToString(),
+                PurchaseOrderNumber = "PO18009186470",
+                OrderDate = new DateTime(2005, 7, 1),
+                SubTotal = 419.4589m,
+                TaxAmount = 12.5838m,
+                Freight = 472.3108m,
+                TotalDue = 985.018m,
+                Items = new SalesOrderDetail[]
+                {
+                    new SalesOrderDetail
+                    {
+                        OrderQty = 1,
+                        ProductId = 760,
+                        UnitPrice = 419.4589m,
+                        LineTotal = 419.4589m
+                    }
+                },
+            };
+
+            // Set the "ttl" property to auto-expire sales orders in 30 days
             salesOrder.TimeToLive = 60 * 60 * 24 * 30;
 
             return salesOrder;
@@ -635,6 +695,62 @@
             Console.WriteLine("Read doc with StatusCode of {0}", response.StatusCode);
         }
 
+        private static async Task CreateNonPartitionContainerItem()
+        {
+            //Creating non partition container, rest api used instead of .NET SDK api as it is not supported anymore.
+            var client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "colls";
+            string resourceId = string.Format("dbs/{0}", databaseId);
+            string resourceLink = string.Format("dbs/{0}/colls", databaseId);
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+
+            string authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+            String containerDefinition = "{\n  \"id\": \"" + nonPartitionContainerId + "\"\n}";
+            StringContent containerContent = new StringContent(containerDefinition);
+            Uri requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), containerContent);
+
+            //Creating non partition container item.
+            verb = "POST";
+            resourceType = "docs";
+            resourceId = string.Format("dbs/{0}/colls/{1}", databaseId,nonPartitionContainerId);
+            resourceLink = string.Format("dbs/{0}/colls/{1}/docs", databaseId, nonPartitionContainerId);
+            authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Remove("authorization");
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+
+            String itemDefinition = JsonConvert.SerializeObject(GetSalesOrderSample(nonPartitionItemId));
+            StringContent itemContent = new StringContent(itemDefinition);
+            requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), itemContent);
+        }
+
+        private static string GenerateMasterKeyAuthorizationSignature(string verb, string resourceId, string resourceType, string key, string keyType, string tokenVersion)
+        {
+            var hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
+
+            string payLoad = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}\n{1}\n{2}\n{3}\n{4}\n",
+                    verb.ToLowerInvariant(),
+                    resourceType.ToLowerInvariant(),
+                    resourceId,
+                    utc_date.ToLowerInvariant(),
+                    ""
+            );
+
+            byte[] hashPayLoad = hmacSha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payLoad));
+            string signature = Convert.ToBase64String(hashPayLoad);
+
+            return System.Web.HttpUtility.UrlEncode(String.Format(System.Globalization.CultureInfo.InvariantCulture, "type={0}&ver={1}&sig={2}",
+                keyType,
+                tokenVersion,
+                signature));
+        }
         private static async Task UseConsistencyLevels()
         {
             // Override the consistency level for a read request
@@ -659,11 +775,11 @@
             // Delete the existing container to prevent create item conflicts
             await database.Containers[containerId].DeleteAsync();
 
-            // We create a partitioned collection here which needs a partition key. Partitioned collections
+            // We create a partitioned container here which needs a partition key. Partitioned containers
             // can be created with very high values of provisioned throughput (up to Throughput = 250,000)
             // and used to store up to 250 GB of data. You can also skip specifying a partition key to create
-            // single partition collections that store up to 10 GB of data.
-            // For this demo, we create a collection to store SalesOrders. We set the partition key to the account
+            // single partition containers that store up to 10 GB of data.
+            // For this demo, we create a container to store SalesOrders. We set the partition key to the account
             // number so that we can retrieve all sales orders for an account efficiently from a single partition,
             // and perform transactions across multiple sales order for a single account number. 
             CosmosContainerSettings containerSettings = new CosmosContainerSettings(containerId, partitionKeyPath: "/AccountNumber");
@@ -675,6 +791,11 @@
             container = await database.Containers.CreateContainerIfNotExistsAsync(
                 containerSettings,
                 throughput: 1000);
+
+            // Create fixed partition container.
+            await CreateNonPartitionContainerItem();
+
+            fixedContainer = database.Containers[nonPartitionContainerId];
         }
     }
 }
