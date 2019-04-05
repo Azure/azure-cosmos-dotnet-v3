@@ -116,6 +116,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void RemoveCurrentReducesRanges()
+        {
+            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
+                new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
+            };
+            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(keyRanges);
+            Assert.IsTrue(compositeToken.HasRange);
+            compositeToken.RemoveCurrent();
+            Assert.IsTrue(compositeToken.HasRange);
+            compositeToken.RemoveCurrent();
+            Assert.IsFalse(compositeToken.HasRange);
+        }
+
+        [TestMethod]
         public void PushRangeWithTokenAddsAtTheEnd()
         {
             List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()

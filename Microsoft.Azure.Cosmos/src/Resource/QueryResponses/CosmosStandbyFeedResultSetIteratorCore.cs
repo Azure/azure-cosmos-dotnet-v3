@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Net;
     using System.Threading;
@@ -81,12 +82,12 @@ namespace Microsoft.Azure.Cosmos
 
             await this.InitializeCompositeToken(pkRangeCache);
 
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetPartitionKeyRangesForCurrentFetch(pkRangeCache);
 
             this.changeFeedOptions.PartitionKeyRangeId = keyRanges[0].Id;
             if (keyRanges.Count > 1)
             {
-                // Original range contains now more than 1 Key Range
+                // Original range contains now more than 1 Key Range due to a split
                 // Push the rest and update the current range
                 this.compositeContinuationToken.HandleSplit(keyRanges);
             }
@@ -122,6 +123,30 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode)
         {
             return continuationToken != null && statusCode != HttpStatusCode.NotModified;
+        }
+
+        /// <summary>
+        /// Checks current range and obtains PK Range. If current range does not exist, it skips it for the next in the token list. If none exist, it refreshes the all and starts from the beginning.        
+        /// </summary>
+        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetPartitionKeyRangesForCurrentFetch(PartitionKeyRangeCache pkRangeCache)
+        {
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
+
+            while (keyRanges.Count == 0 && this.compositeContinuationToken.HasRange)
+            {
+                // Current received range does not exist
+                this.compositeContinuationToken.RemoveCurrent();
+                keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
+            }
+
+            if (!this.compositeContinuationToken.HasRange)
+            {
+                // Continuation is totally invalid
+                await this.InitializeCompositeToken(pkRangeCache, true);
+                keyRanges = await this.GetCurrentPartitionKeyRanges(pkRangeCache);
+            }
+
+            return keyRanges;
         }
 
         private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetCurrentPartitionKeyRanges(PartitionKeyRangeCache pkRangeCache)

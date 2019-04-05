@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public string MaxExclusiveRange => this.currentToken.Range.Max;
 
+        public bool HasRange => this.currentToken != null;
+
         public StandByFeedContinuationToken(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
@@ -70,6 +72,19 @@ namespace Microsoft.Azure.Cosmos.Query
             foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
             {
                 this.PushRangeWithToken(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
+            }
+        }
+
+        public void RemoveCurrent()
+        {
+            this.compositeContinuationTokens.Dequeue();
+            if (this.compositeContinuationTokens.Count == 0)
+            {
+                this.currentToken = null;
+            }
+            else
+            {
+                this.currentToken = this.compositeContinuationTokens.Peek();
             }
         }
 
