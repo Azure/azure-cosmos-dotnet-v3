@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -836,6 +837,27 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null);
+            CosmosQueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns></returns>
+        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
+            string workflowName, 
+            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
+        /// </summary>
+        /// <param name="estimationDelegate">Delegate to receive estimation.</param>
+        /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
+        /// <returns></returns>
+        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
+            string workflowName, 
+            Func<long, CancellationToken, Task> estimationDelegate, 
+            TimeSpan? estimationPeriod = null);
     }
 }
