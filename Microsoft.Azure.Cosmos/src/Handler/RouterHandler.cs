@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosRequestHandler targetHandler = null;
             if (request.OperationType == OperationType.ReadFeed 
                 && request.ResourceType == ResourceType.Document 
-                && string.IsNullOrEmpty(request.Headers.IncrementalFeed)) // Incremental / Change Feed
+                && string.IsNullOrEmpty(request.PartitionKeyRangeId))
             {
                 targetHandler = documentFeedHandler;
             }
