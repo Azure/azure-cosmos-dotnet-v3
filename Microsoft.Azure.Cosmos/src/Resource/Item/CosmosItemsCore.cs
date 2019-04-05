@@ -582,23 +582,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
         }
-
-        private Task<CosmosResponseMessage> ChangeFeedNextResultSetAsync(
-            CosmosRequestOptions options,
-            CancellationToken cancellationtoken)
-        {
-            Uri resourceUri = this.container.LinkUri;
-            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
-                client: this.container.Database.Client,
-                resourceUri: resourceUri,
-                resourceType: ResourceType.Document,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                requestEnricher: request => { },
-                responseCreator: response => response,
-                partitionKey: null,
-                streamPayload: null,
-                cancellationToken: cancellationtoken);
-        }
     }
 }

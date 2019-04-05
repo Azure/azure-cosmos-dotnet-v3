@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string PartitionKey = "/status";
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                throughput: 10000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);

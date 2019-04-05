@@ -46,8 +46,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
-            CosmosChangeFeedRequestOptions.FillContinuationToken(request, this.RequestContinuation);
-            CosmosChangeFeedRequestOptions.FillMaxItemCount(request, this.MaxItemCount);
+            if (!string.IsNullOrWhiteSpace(this.RequestContinuation))
+            {
+                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
+                request.Headers.IfNoneMatch = this.RequestContinuation;
+            }
+
+            if (this.MaxItemCount != null && this.MaxItemCount.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.Value.ToString(CultureInfo.InvariantCulture));
+            }
 
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
             {
@@ -69,27 +77,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             base.FillRequestOptions(request);
-        }
-
-        internal static void FillContinuationToken(
-            CosmosRequestMessage request,
-            string continuationToken)
-        {
-            if (!string.IsNullOrWhiteSpace(continuationToken))
-            {
-                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                request.Headers.IfNoneMatch = continuationToken;
-            }
-        }
-
-        internal static void FillMaxItemCount(
-            CosmosRequestMessage request,
-            int? maxItemCount)
-        {
-            if (maxItemCount != null && maxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
-            }
         }
     }
 }

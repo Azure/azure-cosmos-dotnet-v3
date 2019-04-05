@@ -42,8 +42,8 @@ namespace Microsoft.Azure.Cosmos.Query
             this.InitializeCompositeTokens(this.BuildCompositeTokens(initialStandByFeedContinuationToken));
         }
 
-        public string PushCurrentToBack() {
-
+        public string PushCurrentToBack()
+        {
             this.compositeContinuationTokens.Dequeue();
             string continuationToken = this.PushRangeWithToken(this.MinInclusiveRange, this.MaxExclusiveRange, this.NextToken);
             this.currentToken = this.compositeContinuationTokens.Peek();
