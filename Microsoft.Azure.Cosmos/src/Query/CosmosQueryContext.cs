@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal class CosmosQueryContext
     {
-        public CosmosQueries QueryClient { get; }
+        public CosmosQueryClient QueryClient { get; }
         public ResourceType ResourceTypeEnum { get; }
         public OperationType OperationTypeEnum { get; }
         public Type ResourceType { get; }
         public SqlQuerySpec SqlQuerySpecFromUser { get; }
-        public SqlQuerySpec SqlQuerySpecForInit { get; set; }
+        public SqlQuerySpec SqlQuerySpecOptimized { get; set; }
         public CosmosQueryRequestOptions QueryRequestOptions { get; }
         public bool IsContinuationExpected { get; }
         public Uri ResourceLink { get; }
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public Guid CorrelatedActivityId { get; }
 
         public CosmosQueryContext(
-            CosmosQueries client,
+            CosmosQueryClient client,
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            this.ResourceTypeEnum,
                            this.OperationTypeEnum,
                            requestOptions,
-                           this.SqlQuerySpecForInit ?? this.SqlQuerySpecFromUser,
+                           this.SqlQuerySpecOptimized ?? this.SqlQuerySpecFromUser,
                            requestEnricher,
                            cancellationToken);
         }

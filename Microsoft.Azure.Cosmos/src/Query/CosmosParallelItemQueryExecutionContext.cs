@@ -48,11 +48,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="constructorParams">The parameters for constructing the base class.</param>
         /// <param name="rewrittenQuery">The rewritten query.</param>
         private CosmosParallelItemQueryExecutionContext(
-            CosmosQueryContext constructorParams,
-            string rewrittenQuery) :
+            CosmosQueryContext constructorParams) :
             base(
                 constructorParams,
-                rewrittenQuery,
                 CosmosParallelItemQueryExecutionContext.MoveNextComparer,
                 CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
                 CosmosParallelItemQueryExecutionContext.EqualityComparer)
@@ -105,8 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 "Parallel~Context must not have order by query info.");
 
             CosmosParallelItemQueryExecutionContext context = new CosmosParallelItemQueryExecutionContext(
-                constructorParams,
-                initParams.PartitionedQueryExecutionInfo.QueryInfo.RewrittenQuery);
+                constructorParams);
 
             await context.InitializeAsync(
                 initParams.CollectionRid,
@@ -240,7 +237,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 collectionRid,
                 filteredPartitionKeyRanges,
                 initialPageSize,
-                this.QuerySpec,
                 (targetIndicesForFullContinuation != null) ? targetIndicesForFullContinuation.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token) : null,
                 true,
                 null,

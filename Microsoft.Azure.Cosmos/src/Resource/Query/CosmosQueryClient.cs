@@ -19,12 +19,12 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
-    internal class CosmosQueries
+    internal class CosmosQueryClient
     {
         private readonly CosmosClient _client;
         internal readonly IDocumentQueryClient DocumentClient;
 
-        internal CosmosQueries(CosmosClient client, IDocumentQueryClient documentClient)
+        internal CosmosQueryClient(CosmosClient client, IDocumentQueryClient documentClient)
         {
             this._client = client;
             this.DocumentClient = documentClient;
@@ -72,12 +72,6 @@ namespace Microsoft.Azure.Cosmos
 
             return GetFeedResponse(requestOptions, resourceType, message);
         }
-
-        internal Task<CosmosResponseMessage> ReadFeedAsync(CosmosRequestMessage request, CancellationToken cancellationToken)
-        {
-            return Task.FromResult<CosmosResponseMessage>(null);
-        }
-
         internal Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             return this.DocumentClient.GetDefaultConsistencyLevelAsync();

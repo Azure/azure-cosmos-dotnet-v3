@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly SemaphoreSlim executeWithSplitProofingSemaphore;
 
-        private readonly CosmosQueries queryClient;
+        private readonly CosmosQueryClient queryClient;
 
         /// <summary>
         /// Initializes a new instance of the ItemProducerTree class.

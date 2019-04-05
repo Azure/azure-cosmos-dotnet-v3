@@ -128,16 +128,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>
         protected CosmosCrossPartitionQueryExecutionContext(
             CosmosQueryContext initParams,
-            string rewrittenQuery,
             IComparer<ItemProducerTree> moveNextComparer,
             Func<ItemProducerTree, int> fetchPrioirtyFunction,
             IEqualityComparer<CosmosElement> equalityComparer)
         {
-            if (!string.IsNullOrWhiteSpace(rewrittenQuery))
-            {
-                initParams.SqlQuerySpecForInit = new SqlQuerySpec(rewrittenQuery, initParams.SqlQuerySpecFromUser.Parameters);
-            }
-
             if (moveNextComparer == null)
             {
                 throw new ArgumentNullException($"{nameof(moveNextComparer)} can not be null");
@@ -194,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public int? MaxItemCount => this.queryRequestOptions.MaxBufferedItemCount;
 
-        protected SqlQuerySpec QuerySpec => this.queryContext.SqlQuerySpecForInit;
+        protected SqlQuerySpec QuerySpec => this.queryContext.SqlQuerySpecOptimized;
 
         protected PartitionKeyInternal PartitionKeyInternal => this.queryRequestOptions.PartitionKey == null ? null : this.queryRequestOptions.PartitionKey.InternalKey;
 
@@ -425,7 +419,6 @@ namespace Microsoft.Azure.Cosmos.Query
             string collectionRid,
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
-            SqlQuerySpec querySpecForInit,
             Dictionary<string, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
@@ -433,11 +426,10 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken token)
         {
             CollectionCache collectionCache = await this.queryContext.QueryClient.GetCollectionCacheAsync();
-            this.queryContext.SqlQuerySpecForInit = querySpecForInit;
             this.TraceInformation(string.Format(
                 CultureInfo.InvariantCulture,
                 "parallel~contextbase.initializeasync, queryspec {0}, maxbuffereditemcount: {1}, target partitionkeyrange count: {2}, maximumconcurrencylevel: {3}, documentproducer initial page size {4}",
-                JsonConvert.SerializeObject(this.queryContext.SqlQuerySpecForInit, DefaultJsonSerializationSettings.Value),
+                JsonConvert.SerializeObject(this.QuerySpec, DefaultJsonSerializationSettings.Value),
                 this.actualMaxBufferedItemCount,
                 partitionKeyRanges.Count,
                 this.comparableTaskScheduler.MaximumConcurrencyLevel,

@@ -561,11 +561,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 deleteList = await CreateRandomItems(6, randomPartitionKey: false);
 
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.taskNum = @task").UseParameter("@task", deleteList.First().taskNum);
+                ToDoActivity toDoActivity = deleteList.First();
+                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
+                    "select * from toDoActivity t where t.status = @status")
+                    .UseParameter("@status", toDoActivity.status);
 
                 // Test max size at 1
                 CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, "TBD", maxItemCount: 1);
+                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
                 while (setIterator.HasMoreResults)
                 {
                     CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
@@ -574,7 +577,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Test max size at 2
                 CosmosResultSetIterator<ToDoActivity> setIteratorMax2 =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, "TBD", maxItemCount: 2);
+                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
                 while (setIteratorMax2.HasMoreResults)
                 {
                     CosmosQueryResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();

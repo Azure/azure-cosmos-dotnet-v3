@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             token.ThrowIfCancellationRequested();
             IDocumentQueryExecutionContext innerExecutionContext =
-             new CosmosDefaultItemQueryExecutionContext(queryContext);
+             new CosmosGatewayQueryExecutionContext(queryContext);
 
             return new CosmosProxyItemQueryExecutionContext(
                 innerExecutionContext,
@@ -94,6 +94,16 @@ namespace Microsoft.Azure.Cosmos.Query
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo =
                     JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(error.AdditionalErrorInfo);
+
+            string rewrittenQuery = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery;
+            if (string.IsNullOrEmpty(rewrittenQuery))
+            {
+                rewrittenQuery = this.queryContext.SqlQuerySpecFromUser.QueryText;
+            }
+
+            this.queryContext.SqlQuerySpecOptimized = new SqlQuerySpec(
+                rewrittenQuery, 
+                this.queryContext.SqlQuerySpecFromUser.Parameters);
 
             List<PartitionKeyRange> partitionKeyRanges =
                 await this.queryContext.QueryClient.GetTargetPartitionKeyRanges(

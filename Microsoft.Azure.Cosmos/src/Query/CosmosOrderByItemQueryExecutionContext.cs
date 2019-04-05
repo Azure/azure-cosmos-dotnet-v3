@@ -76,11 +76,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
         private CosmosOrderByItemQueryExecutionContext(
            CosmosQueryContext initPararms,
-            string rewrittenQuery,
             OrderByConsumeComparer consumeComparer) :
             base(
                 initPararms,
-                rewrittenQuery,
                 consumeComparer,
                 CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
                 new OrderByEqualityComparer(consumeComparer))
@@ -147,9 +145,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
                 "OrderBy~Context must have order by query info.");
 
+            constructorParams.SqlQuerySpecOptimized.QueryText = constructorParams.SqlQuerySpecOptimized.QueryText.Replace(
+                oldValue: FormatPlaceHolder,
+                newValue: True);
+
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
                 constructorParams,
-                initParams.PartitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
                 new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
 
             await context.InitializeAsync(
@@ -285,7 +286,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         partitionKeyRanges,
                         initialPageSize,
                         token: cancellationToken,
-                        querySpecForInit: new SqlQuerySpec(this.QuerySpec.QueryText.Replace(FormatPlaceHolder, True), this.QuerySpec.Parameters),
                         targetRangeToContinuationMap: null,
                         deferFirstPage: false,
                         filter: null,
@@ -325,9 +325,6 @@ namespace Microsoft.Azure.Cosmos.Query
                             collectionRid,
                             partialRanges,
                             initialPageSize,
-                            new SqlQuerySpec(
-                                this.QuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
-                                this.QuerySpec.Parameters),
                             targetRangeToOrderByContinuationMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompositeContinuationToken.Token),
                             false,
                             info.Filter,

@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         private string cachedUriSegmentWithoutId { get; }
         private CosmosJsonSerializer cosmosJsonSerializer { get; }
         private CosmosClient client { get; }
+        private CosmosQueryClient queryClient { get; }
 
         internal CosmosItemsCore(CosmosContainer container)
         {
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
             this.container = container;
             this.cosmosJsonSerializer = this.container.Client.CosmosJsonSerializer;
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
+            this.queryClient = new CosmosQueryClient(this.client, new DocumentQueryClient(this.client.DocumentClient));
         }
 
         internal readonly CosmosContainer container;
@@ -228,9 +230,8 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.RequestContinuation = continuationToken;
             requestOptions.MaxItemCount = maxItemCount;
 
-            CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
-                client: cosmosQueries,
+                client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(CosmosQueryResponse),
@@ -283,9 +284,8 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.RequestContinuation = continuationToken;
             requestOptions.MaxItemCount = maxItemCount;
 
-            CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
-                client: cosmosQueries,
+                client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxItemCount = maxItemCount;
             requestOptions.MaxConcurrency = maxConcurrency;
 
-            CosmosQueries cosmosQueries = new CosmosQueries(this.client, new DocumentQueryClient(this.client.DocumentClient));
+            CosmosQueryClient cosmosQueries = new CosmosQueryClient(this.client, new DocumentQueryClient(this.client.DocumentClient));
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: cosmosQueries,
                 resourceTypeEnum: ResourceType.Document,

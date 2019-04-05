@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public bool IsDone => this.innerExecutionContext == null ? false : this.innerExecutionContext.IsDone;
 
         public CosmosQueryExecutionContextFactory(
-            CosmosQueries client,
+            CosmosQueryClient client,
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// 4. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
         internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
-            CosmosQueries queryClient,
+            CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             CosmosContainerSettings collection,
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
-            CosmosQueries queryClient,
+            CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,

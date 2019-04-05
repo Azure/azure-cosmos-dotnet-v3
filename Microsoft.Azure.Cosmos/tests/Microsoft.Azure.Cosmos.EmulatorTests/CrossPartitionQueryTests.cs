@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IEnumerable<string> documents,
             Query query,
             string partitionKey = "/id",
-            IndexingPolicy indexingPolicy = null,
+            Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
             Query<object> queryWrapper = (container, inputDocuments, throwaway) =>
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Query<T> query,
             T testArgs,
             string partitionKey = "/id",
-            IndexingPolicy indexingPolicy = null,
+            Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
             await this.CreateIngestQueryDelete(
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            CosmosClientFactory cosmosClientFactory,
            T testArgs,
            string partitionKey = "/id",
-           IndexingPolicy indexingPolicy = null)
+           Cosmos.IndexingPolicy indexingPolicy = null)
         {
             int retryCount = 1;
             AggregateException exceptionHistory = new AggregateException();
@@ -261,6 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>();
+                    createContainerTasks.Add(CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy));
 
                     Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
 
@@ -1930,43 +1931,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Just have range indexes
-            IndexingPolicy indexV1Policy = new IndexingPolicy()
+            Cosmos.IndexingPolicy indexV1Policy = new Cosmos.IndexingPolicy()
             {
-                IncludedPaths = new Collection<IncludedPath>()
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
                 {
-                    new IncludedPath()
+                    new Cosmos.IncludedPath()
                     {
                         Path = "/*",
-                        Indexes = new Collection<Index>()
+                        Indexes = new Collection<Cosmos.Index>()
                         {
-                            Index.Range(DataType.String, -1),
-                            Index.Range(DataType.Number, -1),
+                            Cosmos.Index.Range(Cosmos.DataType.String, -1),
+                            Cosmos.Index.Range(Cosmos.DataType.Number, -1),
                         }
                     }
                 }
             };
 
             // Add a composite index to force an index v2 container to be made.
-            IndexingPolicy indexV2Policy = new IndexingPolicy()
+            Cosmos.IndexingPolicy indexV2Policy = new Cosmos.IndexingPolicy()
             {
-                IncludedPaths = new Collection<IncludedPath>()
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
                 {
-                    new IncludedPath()
+                    new Cosmos.IncludedPath()
                     {
                         Path = "/*",
                     }
                 },
 
-                CompositeIndexes = new Collection<Collection<CompositePath>>()
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
                     // Simple
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/_ts",
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/_etag",
                         }
@@ -1981,7 +1982,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
                 string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
-                IndexingPolicy indexingPolicy = allowMixedTypeOrderByTestFlag ? indexV2Policy : indexV1Policy;
+                Cosmos.IndexingPolicy indexingPolicy = allowMixedTypeOrderByTestFlag ? indexV2Policy : indexV1Policy;
                 try
                 {
                     OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlag;
@@ -2869,135 +2870,135 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            IndexingPolicy indexingPolicy = new IndexingPolicy()
+            Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
-                CompositeIndexes = new Collection<Collection<CompositePath>>()
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
                     // Simple
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         }
                     },
 
                     // Max Columns
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField2),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField2),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         }
                     },
 
                     // All primitive values
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.BoolField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NullField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         }
                     },
 
                     // Primitive and Non Primitive (waiting for composite on objects and arrays)
-                    //new Collection<CompositePath>()
+                    //new Collection<Cosmos.CompositePath>()
                     //{
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.NumberField),
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.ObjectField),
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.StringField),
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.ArrayField),
                     //    },
                     //},
 
                     // Long strings
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.ShortStringField),
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.MediumStringField),
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.LongStringField),
                         }
                     },
 
                     // System Properties 
-                    //new Collection<CompositePath>()
+                    //new Collection<Cosmos.CompositePath>()
                     //{
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/id",
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/_ts",
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/_etag",
                     //    },
 
                     //    // _rid is not allowed
-                    //    //new CompositePath()
+                    //    //new Cosmos.CompositePath()
                     //    //{
                     //    //    Path = "/_rid",
                     //    //},

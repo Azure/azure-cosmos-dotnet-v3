@@ -20,9 +20,14 @@ namespace Microsoft.Azure.Cosmos.Query
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Default document query execution context for single partition queries or for split proofing general requests.
+    /// Gateway document query execution context for single partition queries where the service interop is not available
     /// </summary>
-    internal sealed class CosmosDefaultItemQueryExecutionContext : IDocumentQueryExecutionContext
+    /// <remarks>
+    /// For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop for parsing the query, 
+    /// so forcing the request through Gateway. We are also now by-passing this for 32-bit host process in NETFX on Windows
+    /// as the ServiceInterop dll is only available in 64-bit.
+    /// </remarks>
+    internal sealed class CosmosGatewayQueryExecutionContext : IDocumentQueryExecutionContext
     {
         // For a single partition collection the only partition is 0
         private const string SinglePartitionKeyId = "0";
@@ -32,32 +37,31 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
         private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
-        private readonly IDictionary<string, IReadOnlyList<Range<string>>> providedRangesCache;
         private long retries;
         private readonly PartitionRoutingHelper partitionRoutingHelper;
         private readonly CosmosQueryContext queryContext;
         private FeedResponse<CosmosElement> lastPage;
+        private string ContinuationToken => this.lastPage == null ? this.queryContext.QueryRequestOptions.RequestContinuation : this.lastPage.ResponseContinuation;
 
         public bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
-        public CosmosDefaultItemQueryExecutionContext(
+        public CosmosGatewayQueryExecutionContext(
             CosmosQueryContext constructorParams)
         {
             this.queryContext = constructorParams;
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
             this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(SinglePartitionKeyId);
-            this.providedRangesCache = new Dictionary<string, IReadOnlyList<Range<string>>>();
             this.retries = -1;
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
 
-        public static CosmosDefaultItemQueryExecutionContext CreateAsync(
+        public static CosmosGatewayQueryExecutionContext CreateAsync(
             CosmosQueryContext constructorParams,
             CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            return new CosmosDefaultItemQueryExecutionContext(
+            return new CosmosGatewayQueryExecutionContext(
                 constructorParams);
         }
 
@@ -134,23 +138,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<FeedResponse<CosmosElement>> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            // Don't reuse request, as the rest of client SDK doesn't reuse requests between retries.
-            // The code leaves some temporary garbage in request (in RequestContext etc.),
-            // which should be erased during retries.
-
-            if (this.queryContext.QueryRequestOptions.PartitionKey != null
-                || !this.queryContext.ResourceTypeEnum.IsPartitioned())
-            {
-                return await this.queryContext.ExecuteQueryAsync(cancellationToken);
-            }
-
             // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop for parsing the query, 
             // so forcing the request through Gateway. We are also now by-passing this for 32-bit host process in NETFX on Windows
             // as the ServiceInterop dll is only available in 64-bit.
             return await this.queryContext.ExecuteQueryAsync(cancellationToken,
-                requestEnricher: (cosmosRequestMessage) => {
+                requestEnricher: (cosmosRequestMessage) =>
+                {
                     cosmosRequestMessage.UseGatewayMode = true;
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
+                },
+                requestOptionsEnricher: (queryRequestOptions) =>
+                {
+                    queryRequestOptions.RequestContinuation = this.ContinuationToken;
                 });
         }
 
