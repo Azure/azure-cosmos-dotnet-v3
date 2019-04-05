@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string containerRid,
             PartitionKeyRangeCache pkRangeCache)
         {
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetPartitionKeyRangesForCurrentState(containerRid, pkRangeCache);
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetPartitionKeyRangesForCurrentState(containerRid, pkRangeCache, true);
 
             if (keyRanges.Count > 0)
             {
@@ -179,9 +179,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetPartitionKeyRangesForCurrentState(
             string containerRid, 
-            PartitionKeyRangeCache pkRangeCache)
+            PartitionKeyRangeCache pkRangeCache,
+            bool forceRefresh = false)
         {
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(containerRid, pkRangeCache);
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(containerRid, pkRangeCache, forceRefresh);
 
             if (keyRanges.Count == 0)
             {
@@ -193,13 +194,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetCurrentPartitionKeyRanges(
             string containerRid, 
-            PartitionKeyRangeCache pkRangeCache)
+            PartitionKeyRangeCache pkRangeCache,
+            bool forceRefresh = false)
         {
-            return await pkRangeCache.TryGetOverlappingRangesAsync(containerRid, new Documents.Routing.Range<string>(
+            return await pkRangeCache.TryGetOverlappingRangesAsync(
+                    containerRid, 
+                    new Documents.Routing.Range<string>(
                     this.MinInclusiveRange,
                     this.MaxExclusiveRange,
                     true,
-                    false));
+                    false),
+                    forceRefresh);
         }
 
         internal static CompositeContinuationToken BuildTokenForRange(string min, string max, string token)
