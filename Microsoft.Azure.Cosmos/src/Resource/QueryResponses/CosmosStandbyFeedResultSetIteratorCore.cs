@@ -214,6 +214,8 @@ namespace Microsoft.Azure.Cosmos
                     this.compositeContinuationToken.HandleSplit(keyRanges);
                     return true;
                 }
+
+                return false;
             }
 
             bool pageSizeError = response.ErrorMessage.Contains("Reduce page size and try again.");

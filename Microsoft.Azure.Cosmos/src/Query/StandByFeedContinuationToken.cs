@@ -100,7 +100,16 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(string initialContinuationToken)
         {
-            foreach (CompositeContinuationToken token in JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken))
+            List<CompositeContinuationToken> deserializedToken;
+            try
+            {
+                deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
+            }
+            catch
+            {
+                throw new FormatException("Provided token has an invalid format");
+            }
+            foreach (CompositeContinuationToken token in deserializedToken)
             {
                 yield return token;
             }

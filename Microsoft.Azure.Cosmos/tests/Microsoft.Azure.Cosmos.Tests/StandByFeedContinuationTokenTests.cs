@@ -192,6 +192,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        [ExpectedException(typeof(FormatException))]
+        public void ConstructorWithInvalidTokenFormat()
+        {
+            new StandByFeedContinuationToken("notatoken");
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ConstructorWithNullRangesThrows()
         {
