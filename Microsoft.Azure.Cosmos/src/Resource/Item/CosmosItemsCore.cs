@@ -365,20 +365,15 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-        public override CosmosFeedResultSetIterator GetStandByFeedIterator(
-            int? maxItemCount = null,
-            string continuationToken = null,
+        internal CosmosFeedResultSetIterator GetStandByFeedIterator(
             CosmosChangeFeedRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
 
-            return new CosmosStandbyFeedResultSetIteratorCore(
+            return new CosmosChangeFeedResultSetIteratorCore(
                 cosmosContainer: (CosmosContainerCore)this.container,
-                maxItemCount: maxItemCount,
-                continuationToken: continuationToken,
-                options: cosmosQueryRequestOptions,
-                nextDelegate: this.ChangeFeedNextResultSetAsync);
+                options: cosmosQueryRequestOptions);
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
@@ -589,8 +584,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<CosmosResponseMessage> ChangeFeedNextResultSetAsync(
-            int? maxItemCount,
-            string continuationToken,
             CosmosRequestOptions options,
             CancellationToken cancellationtoken)
         {
@@ -601,10 +594,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,
-                requestEnricher: request => {
-                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
+                requestEnricher: request => { },
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,

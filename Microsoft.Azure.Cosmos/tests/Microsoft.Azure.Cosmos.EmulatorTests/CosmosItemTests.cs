@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await CreateRandomItems(batchSize, randomPartitionKey: true);
             CosmosFeedResultSetIterator setIteratorNew =
-                itemsCore.GetStandByFeedIterator(continuationToken: lastcontinuation);
+                itemsCore.GetStandByFeedIterator(new CosmosChangeFeedRequestOptions() { RequestContinuation = lastcontinuation });
 
             while (setIteratorNew.HasMoreResults)
             {
@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await CreateRandomItems(batchSize, randomPartitionKey: true);
             CosmosFeedResultSetIterator setIteratorNew =
-                itemsCore.GetStandByFeedIterator(continuationToken: lastcontinuation);
+                itemsCore.GetStandByFeedIterator(new CosmosChangeFeedRequestOptions() { RequestContinuation = lastcontinuation });
 
             while (setIteratorNew.HasMoreResults)
             {
@@ -415,6 +415,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(secondRunTotal, count);
+        }
+
+        [TestMethod]
+        public async Task StandByFeedIterator_WithMaxItemCount()
+        {
+            await CreateRandomItems(2, randomPartitionKey: true);
+            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true, MaxItemCount = 1 });
+
+            while (setIterator.HasMoreResults)
+            {
+                using (CosmosResponseMessage iterator =
+                    await setIterator.FetchNextSetAsync(this.cancellationToken))
+                {
+                    if (iterator.Content != null)
+                    {
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(iterator.Content).Data;
+                        Assert.AreEqual(1, response.Count);
+                        return;
+                    }
+                }
+
+            }
+
+            Assert.Fail("Found no batch with size 1");
         }
 
         [TestMethod]

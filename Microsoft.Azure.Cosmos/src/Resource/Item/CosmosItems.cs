@@ -860,19 +860,5 @@ namespace Microsoft.Azure.Cosmos
             string workflowName, 
             Func<long, CancellationToken, Task> estimationDelegate, 
             TimeSpan? estimationPeriod = null);
-
-        /// <summary>
-        /// Gets an iterator to go through the Change Feed sequentially.
-        /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the change feed read <see cref="CosmosChangeFeedRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns></returns>
-        public abstract CosmosFeedResultSetIterator GetStandByFeedIterator(
-            int? maxItemCount = null,
-            string continuationToken = null,
-            CosmosChangeFeedRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
     }
 }

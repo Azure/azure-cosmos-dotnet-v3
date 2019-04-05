@@ -11,9 +11,19 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos Change Feed request options
     /// </summary>
-    public class CosmosChangeFeedRequestOptions : CosmosRequestOptions
+    internal class CosmosChangeFeedRequestOptions : CosmosRequestOptions
     {
         private const string IfNoneMatchAllHeaderValue = "*";
+
+        /// <summary>
+        /// Maximum response size for the feed read measured in items.
+        /// </summary>
+        public virtual int? MaxItemCount { get; set; }
+
+        /// <summary>
+        /// Continuation from a previous request.
+        /// </summary>
+        public virtual string RequestContinuation { get; set; }
 
         /// <summary>
         /// Marks whether the change feed should be read from the start.
@@ -36,6 +46,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
+            CosmosChangeFeedRequestOptions.FillContinuationToken(request, this.RequestContinuation);
+            CosmosChangeFeedRequestOptions.FillMaxItemCount(request, this.MaxItemCount);
+
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
             {
                 if (!this.StartFromBeginning && this.StartTime == null)
@@ -48,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            request.Headers.IncrementalFeed = HttpConstants.A_IMHeaderValues.IncrementalFeed;
+            request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
             if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
             {

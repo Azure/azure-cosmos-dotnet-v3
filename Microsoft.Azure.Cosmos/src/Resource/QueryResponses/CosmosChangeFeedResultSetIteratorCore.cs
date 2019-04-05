@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class CosmosStandbyFeedResultSetIteratorCore : CosmosFeedResultSetIterator
+    internal class CosmosChangeFeedResultSetIteratorCore : CosmosFeedResultSetIterator
     {
         private static readonly int DefaultMaxItemCount = 100;
 
@@ -25,30 +25,17 @@ namespace Microsoft.Azure.Cosmos
         private string containerRid;
         private int? originalMaxItemCount;
 
-        internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
-            int? maxItemCount,
-            string continuationToken,
-            CosmosChangeFeedRequestOptions options,
-            CancellationToken cancellationToken);
-
-        internal readonly NextResultSetDelegate nextResultSetDelegate;
-
-        internal CosmosStandbyFeedResultSetIteratorCore(
+        internal CosmosChangeFeedResultSetIteratorCore(
             CosmosContainerCore cosmosContainer,
-            int? maxItemCount,
-            string continuationToken,
-            CosmosChangeFeedRequestOptions options,
-            NextResultSetDelegate nextDelegate)
+            CosmosChangeFeedRequestOptions options)
         {
             this.cosmosContainer = cosmosContainer;
-            this.nextResultSetDelegate = nextDelegate;
             this.HasMoreResults = true;
             this.changeFeedOptions = options;
-            this.MaxItemCount = maxItemCount;
-            this.originalMaxItemCount = maxItemCount;
-            if (!string.IsNullOrEmpty(continuationToken))
+            this.originalMaxItemCount = options.MaxItemCount;
+            if (!string.IsNullOrEmpty(options.RequestContinuation))
             {
-                this.compositeContinuationToken = new StandByFeedContinuationToken(continuationToken);
+                this.compositeContinuationToken = new StandByFeedContinuationToken(options.RequestContinuation);
             }
         }
 
@@ -61,11 +48,6 @@ namespace Microsoft.Azure.Cosmos
         /// The query options for the result set
         /// </summary>
         protected readonly CosmosChangeFeedRequestOptions changeFeedOptions;
-
-        /// <summary>
-        /// The max item count to return as part of the query
-        /// </summary>
-        protected int? MaxItemCount;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -92,7 +74,8 @@ namespace Microsoft.Azure.Cosmos
                 this.compositeContinuationToken.HandleSplit(keyRanges);
             }
 
-            CosmosResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.changeFeedOptions, cancellationToken);
+            this.changeFeedOptions.RequestContinuation = this.continuationToken;
+            CosmosResponseMessage response = await this.NextResultSetDelegate(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailure(pkRangeCache, response, cancellationToken))
             {
                 this.HasMoreResults = true;
@@ -185,9 +168,9 @@ namespace Microsoft.Azure.Cosmos
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
             {
-                if (this.MaxItemCount != this.originalMaxItemCount)
+                if (this.changeFeedOptions.MaxItemCount != this.originalMaxItemCount)
                 {
-                    this.MaxItemCount = this.originalMaxItemCount;   // Reset after successful execution.
+                    this.changeFeedOptions.MaxItemCount = this.originalMaxItemCount;   // Reset after successful execution.
                 }
 
                 return false;
@@ -221,20 +204,38 @@ namespace Microsoft.Azure.Cosmos
             bool pageSizeError = response.ErrorMessage.Contains("Reduce page size and try again.");
             if (pageSizeError)
             {
-                if (!this.MaxItemCount.HasValue)
+                if (!this.changeFeedOptions.MaxItemCount.HasValue)
                 {
-                    this.MaxItemCount = CosmosStandbyFeedResultSetIteratorCore.DefaultMaxItemCount;
+                    this.changeFeedOptions.MaxItemCount = CosmosChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
                 }
-                else if (this.MaxItemCount <= 1)
+                else if (this.changeFeedOptions.MaxItemCount <= 1)
                 {
                     return false;
                 }
 
-                this.MaxItemCount /= 2;
+                this.changeFeedOptions.MaxItemCount /= 2;
                 return true;
             }
 
             return false;
+        }
+
+        private Task<CosmosResponseMessage> NextResultSetDelegate(
+            CosmosChangeFeedRequestOptions options,
+            CancellationToken cancellationToken)
+        {
+            Uri resourceUri = this.cosmosContainer.LinkUri;
+            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
+                client: this.cosmosContainer.Database.Client,
+                resourceUri: resourceUri,
+                resourceType: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: options,
+                requestEnricher: request => { },
+                responseCreator: response => response,
+                partitionKey: null,
+                streamPayload: null,
+                cancellationToken: cancellationToken);
         }
     }
 }
