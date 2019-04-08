@@ -72,11 +72,11 @@ namespace Microsoft.Azure.Cosmos
 
             // Change Feed read uses Etag for continuation
             string responseContinuationToken = response.Headers.ETag;
-            bool hasMoreResults = GetHasMoreResults(responseContinuationToken, response.StatusCode);
+            bool hasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
             if (!hasMoreResults)
             {
                 // Current Range is done, push it to the end
-                this.compositeContinuationToken.MoveToNextToken();
+                await this.compositeContinuationToken.MoveToNextTokenAsync();
             }
             else if (response.IsSuccessStatusCode)
             {
@@ -85,13 +85,6 @@ namespace Microsoft.Azure.Cosmos
 
             response.Headers.Continuation = this.compositeContinuationToken.ToString();
             return response;
-        }
-
-        internal static bool GetHasMoreResults(
-            string continuationToken, 
-            HttpStatusCode statusCode)
-        {
-            return continuationToken != null && statusCode != HttpStatusCode.NotModified;
         }
 
         /// <summary>
