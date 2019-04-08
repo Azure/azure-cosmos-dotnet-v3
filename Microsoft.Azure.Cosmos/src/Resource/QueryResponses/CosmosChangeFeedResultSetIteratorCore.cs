@@ -30,16 +30,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosChangeFeedRequestOptions options)
         {
             this.cosmosContainer = cosmosContainer;
-            this.HasMoreResults = true;
             this.changeFeedOptions = options;
             this.originalMaxItemCount = options.MaxItemCount;
             this.compositeContinuationToken = new StandByFeedContinuationToken(options.RequestContinuation);
+            this.HasMoreResults = true;
         }
 
         /// <summary>
         /// The Continuation Token
         /// </summary>
-        protected string continuationToken => this.compositeContinuationToken?.NextToken;
+        protected string continuationToken => this.compositeContinuationToken.NextToken;
 
         /// <summary>
         /// The query options for the result set
@@ -66,22 +66,18 @@ namespace Microsoft.Azure.Cosmos
             CosmosResponseMessage response = await this.NextResultSetDelegate(this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailure(pkRangeCache, response, cancellationToken))
             {
-                this.HasMoreResults = true;
-                CosmosResponseMessage retryMessage = new CosmosResponseMessage(HttpStatusCode.NoContent);
-                retryMessage.Headers.Continuation = this.compositeContinuationToken.NextToken;
-                return retryMessage;
+                response = await this.NextResultSetDelegate(this.changeFeedOptions, cancellationToken);
             }
 
             // Change Feed read uses Etag for continuation
             string responseContinuationToken = response.Headers.ETag;
-            this.HasMoreResults = GetHasMoreResults(responseContinuationToken, response.StatusCode);
-            if (!this.HasMoreResults)
+            bool hasMoreResults = GetHasMoreResults(responseContinuationToken, response.StatusCode);
+            if (!hasMoreResults)
             {
                 // Current Range is done, push it to the end
                 response.Headers.Continuation = this.compositeContinuationToken.PushCurrentToBack();
-                this.HasMoreResults = true;
             }
-            else
+            else if(response.IsSuccessStatusCode)
             {
                 response.Headers.Continuation = this.compositeContinuationToken.UpdateCurrentToken(responseContinuationToken);
             }

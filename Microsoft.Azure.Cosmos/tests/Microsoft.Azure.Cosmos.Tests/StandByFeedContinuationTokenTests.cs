@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [ExpectedException(typeof(FormatException))]
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public void ConstructorWithInvalidTokenFormat()
         {
             new StandByFeedContinuationToken("notatoken");

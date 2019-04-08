@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Newtonsoft.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using System.Diagnostics;
 
     /// <summary>
     /// Stand by continuation token representing a contiguous read over all the ranges with continuation state across all ranges.
@@ -24,10 +25,6 @@ namespace Microsoft.Azure.Cosmos.Query
         public string MinInclusiveRange => this.currentToken.Range.Min;
 
         public string MaxExclusiveRange => this.currentToken.Range.Max;
-
-        public StandByFeedContinuationToken()
-        {
-        }
 
         public StandByFeedContinuationToken(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
@@ -44,37 +41,20 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public string PushCurrentToBack()
         {
-            this.compositeContinuationTokens.Dequeue();
-            string continuationToken = this.PushRangeWithToken(this.MinInclusiveRange, this.MaxExclusiveRange, this.NextToken);
+            Debug.Assert(this.compositeContinuationTokens != null);
+
+            CompositeContinuationToken recentToken = this.compositeContinuationTokens.Dequeue();
+            string continuationToken = this.PushRangeWithToken(recentToken);
             this.currentToken = this.compositeContinuationTokens.Peek();
             return continuationToken;
         }
 
-        public string PushRangeWithToken(
-            string min, 
-            string max, 
-            string token)
-        {
-            this.compositeContinuationTokens.Enqueue(StandByFeedContinuationToken.BuildTokenForRange(min, max, token));
-            return this.ToString();
-        }
-
         public string UpdateCurrentToken(string localContinuationToken)
         {
+            Debug.Assert(this.compositeContinuationTokens != null);
+
             this.currentToken.Token = localContinuationToken?.Replace("\"", string.Empty);
             return this.ToString();
-        }
-
-        public void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
-        {
-            // Update current
-            Documents.PartitionKeyRange firstRange = keyRanges[0];
-            this.currentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
-            // Add children
-            foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
-            {
-                this.PushRangeWithToken(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
-            }
         }
 
         public async Task InitializeCompositeTokens(
@@ -89,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                     Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                     true,
-                    false));
+                    false)
+                    ,forceRefresh);
 
                 this.InitializeCompositeTokens(this.BuildCompositeTokens(allRanges));
             }
@@ -130,6 +111,36 @@ namespace Microsoft.Azure.Cosmos.Query
             return false;
         }
 
+        internal void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
+        {
+            if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
+
+            // Update current
+            Documents.PartitionKeyRange firstRange = keyRanges[0];
+            this.currentToken.Range = new Documents.Routing.Range<string>(firstRange.MinInclusive, firstRange.MaxExclusive, true, false);
+            // Add children
+            foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
+            {
+                this.PushRangeWithToken(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
+            }
+        }
+
+        internal string PushRangeWithToken(
+            string min,
+            string max,
+            string token)
+        {
+            return this.PushRangeWithToken(StandByFeedContinuationToken.BuildTokenForRange(min, max, token));
+        }
+
+        internal string PushRangeWithToken(CompositeContinuationToken token)
+        {
+            Debug.Assert(this.compositeContinuationTokens != null);
+
+            this.compositeContinuationTokens.Enqueue(token);
+            return this.ToString();
+        }
+
         internal new string ToString() => JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
 
         private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
@@ -154,8 +165,9 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch
             {
-                throw new FormatException("Provided token has an invalid format");
+                throw new ArgumentOutOfRangeException("Provided token has an invalid format");
             }
+
             foreach (CompositeContinuationToken token in deserializedToken)
             {
                 yield return token;
@@ -182,11 +194,13 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyRangeCache pkRangeCache,
             bool forceRefresh = false)
         {
+            Debug.Assert(this.compositeContinuationTokens != null);
+
             IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(containerRid, pkRangeCache, forceRefresh);
 
             if (keyRanges.Count == 0)
             {
-                throw new ArgumentOutOfRangeException("RequestContinuation", $"Token contains invalid or stale range {this.MinInclusiveRange}-{this.MaxExclusiveRange}.");
+                throw new ArgumentOutOfRangeException("RequestContinuation", $"Token contains invalid range {this.MinInclusiveRange}-{this.MaxExclusiveRange}.");
             }
 
             return keyRanges;
