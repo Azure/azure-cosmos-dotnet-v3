@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq;
     using Newtonsoft.Json;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Routing;
     using System.Diagnostics;
 
     /// <summary>
@@ -17,99 +16,62 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal class StandByFeedContinuationToken
     {
+        private readonly string containerRid;
+        private readonly Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> pkRangeCacheDelegate;
+        private readonly string inputContinuationToken;
+
         private Queue<CompositeContinuationToken> compositeContinuationTokens;
         private CompositeContinuationToken currentToken;
 
-        public string NextToken => this.currentToken.Token;
-
-        public string MinInclusiveRange => this.currentToken.Range.Min;
-
-        public string MaxExclusiveRange => this.currentToken.Range.Max;
-
-        public StandByFeedContinuationToken(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
+        public StandByFeedContinuationToken(
+            string containerRid,
+            string initialStandByFeedContinuationToken,
+            Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> pkRangeCacheDelegate)
         {
-            if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
-            if (keyRanges.Count == 0) throw new ArgumentOutOfRangeException(nameof(keyRanges));
+            if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
+            if (pkRangeCacheDelegate == null) throw new ArgumentNullException(nameof(pkRangeCacheDelegate));
 
-            this.InitializeCompositeTokens(this.BuildCompositeTokens(keyRanges));
+            this.containerRid = containerRid;
+            this.pkRangeCacheDelegate = pkRangeCacheDelegate;
+            this.inputContinuationToken = initialStandByFeedContinuationToken;
         }
 
-        public StandByFeedContinuationToken(string initialStandByFeedContinuationToken)
+        public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentToken(bool forceRefresh = false)
         {
-            this.InitializeCompositeTokens(this.BuildCompositeTokens(initialStandByFeedContinuationToken));
+            await this.EnsureInitialized();
+            Debug.Assert(this.compositeContinuationTokens != null);
+            IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(this.currentToken.Range, forceRefresh: forceRefresh);
+            if (resolvedRanges.Count > 1
+                || forceRefresh) // forceRefresh is called when we indeed got a split. Splits can happen and yield 1 children too.
+            {
+                this.HandleSplit(resolvedRanges);
+            }
+
+            return new Tuple<CompositeContinuationToken, string>(this.currentToken, resolvedRanges[0].Id);
         }
 
-        public string PushCurrentToBack()
+        public void MoveToNextToken()
         {
             Debug.Assert(this.compositeContinuationTokens != null);
 
             CompositeContinuationToken recentToken = this.compositeContinuationTokens.Dequeue();
-            string continuationToken = this.PushRangeWithToken(recentToken);
+            this.PushRangeWithToken(recentToken);
             this.currentToken = this.compositeContinuationTokens.Peek();
-            return continuationToken;
         }
 
-        public string UpdateCurrentToken(string localContinuationToken)
+        public async Task EnsureInitialized()
         {
-            Debug.Assert(this.compositeContinuationTokens != null);
-
-            this.currentToken.Token = localContinuationToken?.Replace("\"", string.Empty);
-            return this.ToString();
-        }
-
-        public async Task InitializeCompositeTokens(
-            string containerRid,
-            PartitionKeyRangeCache pkRangeCache,
-            bool forceRefresh = false)
-        {
-            if (this.compositeContinuationTokens.Count == 0 || forceRefresh)
+            if (this.compositeContinuationTokens == null)
             {
-                // Initialize composite token with all the ranges
-                IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(containerRid, new Documents.Routing.Range<string>(
-                    Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    true,
-                    false)
-                    ,forceRefresh);
+                IEnumerable<CompositeContinuationToken> tokens = await this.BuildCompositeTokens(this.inputContinuationToken);
 
-                this.InitializeCompositeTokens(this.BuildCompositeTokens(allRanges));
+                this.InitializeCompositeTokens(tokens);
+
+                Debug.Assert(this.compositeContinuationTokens.Count > 0);
             }
         }
 
-        public async Task<string> GetPartitionKeyRangeIdForCurrentState(
-            string containerRid, 
-            PartitionKeyRangeCache pkRangeCache)
-        {
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetPartitionKeyRangesForCurrentState(containerRid, pkRangeCache);
-
-            if (keyRanges.Count > 1)
-            {
-                // Original range contains now more than 1 Key Range due to a split
-                // Push the rest and update the current range
-                this.HandleSplit(keyRanges);
-            }
-
-            return keyRanges[0].Id;
-        }
-
-        /// <summary>
-        /// Only called when we received a split as response.
-        /// </summary>
-        /// <returns>true if we were able to detect the new ranges</returns>
-        public async Task<bool> HandleRequestSplit(
-            string containerRid,
-            PartitionKeyRangeCache pkRangeCache)
-        {
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetPartitionKeyRangesForCurrentState(containerRid, pkRangeCache, true);
-
-            if (keyRanges.Count > 0)
-            {
-                this.HandleSplit(keyRanges);
-                return true;
-            }
-
-            return false;
-        }
+        public new string ToString() => JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
 
         internal void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
@@ -121,56 +83,50 @@ namespace Microsoft.Azure.Cosmos.Query
             // Add children
             foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
             {
-                this.PushRangeWithToken(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
+                this.PushRangeWithToken(new CompositeContinuationToken()
+                {
+                    Range = new Documents.Routing.Range<string>(keyRange.MinInclusive, keyRange.MaxExclusive, true, false),
+                    Token = this.currentToken.Token
+                });
             }
         }
 
-        internal string PushRangeWithToken(
-            string min,
-            string max,
-            string token)
-        {
-            return this.PushRangeWithToken(StandByFeedContinuationToken.BuildTokenForRange(min, max, token));
-        }
-
-        internal string PushRangeWithToken(CompositeContinuationToken token)
+        internal void PushRangeWithToken(CompositeContinuationToken token)
         {
             Debug.Assert(this.compositeContinuationTokens != null);
 
             this.compositeContinuationTokens.Enqueue(token);
-            return this.ToString();
         }
 
-        internal new string ToString() => JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
-
-        private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
-        {
-            foreach (Documents.PartitionKeyRange keyRange in keyRanges)
-            {
-                yield return StandByFeedContinuationToken.BuildTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, string.Empty);
-            }
-        }
-
-        private IEnumerable<CompositeContinuationToken> BuildCompositeTokens(string initialContinuationToken)
+        private async Task<IEnumerable<CompositeContinuationToken>> BuildCompositeTokens(string initialContinuationToken)
         {
             if (string.IsNullOrEmpty(initialContinuationToken))
             {
-                yield break;
+                // Initialize composite token with all the ranges
+                IReadOnlyList<Documents.PartitionKeyRange> allRanges = await this.pkRangeCacheDelegate(
+                        this.containerRid,
+                        new Documents.Routing.Range<string>(
+                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false),
+                            false);
+
+                Debug.Assert(allRanges.Count != 0);
+                return allRanges.Select(e => new CompositeContinuationToken()
+                {
+                    Range = new Documents.Routing.Range<string>(e.MinInclusive, e.MaxExclusive, isMinInclusive: true, isMaxInclusive: false),
+                    Token = string.Empty,
+                });
             }
 
-            List<CompositeContinuationToken> deserializedToken;
             try
             {
-                deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
+                return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
             }
             catch
             {
                 throw new ArgumentOutOfRangeException("Provided token has an invalid format");
-            }
-
-            foreach (CompositeContinuationToken token in deserializedToken)
-            {
-                yield return token;
             }
         }
 
@@ -189,44 +145,27 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetPartitionKeyRangesForCurrentState(
-            string containerRid, 
-            PartitionKeyRangeCache pkRangeCache,
+        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> TryGetOverlappingRangesAsync(
+            Documents.Routing.Range<string> targetRange,
             bool forceRefresh = false)
         {
-            Debug.Assert(this.compositeContinuationTokens != null);
+            if (targetRange == null) throw new ArgumentNullException(nameof(targetRange));
 
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.GetCurrentPartitionKeyRanges(containerRid, pkRangeCache, forceRefresh);
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = await this.pkRangeCacheDelegate(
+            this.containerRid,
+            new Documents.Routing.Range<string>(
+                targetRange.Min,
+                targetRange.Max,
+                isMaxInclusive: true,
+                isMinInclusive: false),
+                forceRefresh);
 
             if (keyRanges.Count == 0)
             {
-                throw new ArgumentOutOfRangeException("RequestContinuation", $"Token contains invalid range {this.MinInclusiveRange}-{this.MaxExclusiveRange}.");
+                throw new ArgumentOutOfRangeException("RequestContinuation", $"Token contains invalid range {targetRange.Min}-{targetRange.Max}");
             }
 
             return keyRanges;
-        }
-
-        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetCurrentPartitionKeyRanges(
-            string containerRid, 
-            PartitionKeyRangeCache pkRangeCache,
-            bool forceRefresh = false)
-        {
-            return await pkRangeCache.TryGetOverlappingRangesAsync(
-                    containerRid, 
-                    new Documents.Routing.Range<string>(
-                    this.MinInclusiveRange,
-                    this.MaxExclusiveRange,
-                    true,
-                    false),
-                    forceRefresh);
-        }
-
-        internal static CompositeContinuationToken BuildTokenForRange(string min, string max, string token)
-        {
-            return new CompositeContinuationToken() {
-                Range = new Documents.Routing.Range<string>(min, max, true, false),
-                Token = token
-            };
         }
     }
 }

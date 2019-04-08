@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -13,50 +15,70 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class StandByFeedContinuationTokenTests
     {
+        private const string ContainerRid = "containerRid";
+
         [TestMethod]
-        public void InitializeThroughPKRanges()
+        public async Task EnsureInitialized_CreatesToken_WithNoInitialContinuation()
         {
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D" },
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" },
+                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D", Id = "1" },
             };
 
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(keyRanges);
-            Assert.AreEqual(keyRanges[0].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, compositeToken.MaxExclusiveRange);
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual(keyRanges[1].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, compositeToken.MaxExclusiveRange);
+            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, StandByFeedContinuationTokenTests.CreateCacheFromRange(keyRanges));
+            await compositeToken.EnsureInitialized();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
+            Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
+            Assert.AreEqual(keyRanges[0].Id, rangeId);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
+            Assert.AreEqual(keyRanges[1].MaxExclusive, token2.Range.Max);
+            Assert.AreEqual(keyRanges[1].Id, rangeId2);
         }
 
         [TestMethod]
-        public void InitializeThroughString()
+        public async Task EnsureInitialized_CreatesToken_WithInitialContinuation()
         {
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
+                {
+                    StandByFeedContinuationTokenTests.BuildTokenForRange("A", "B", "token1"),
+                    StandByFeedContinuationTokenTests.BuildTokenForRange("C", "D", "token2")
+                };
+
+            string initialToken = JsonConvert.SerializeObject(compositeContinuationTokens);
+
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D" },
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" },
+                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D", Id = "1" },
             };
 
-            StandByFeedContinuationToken compositeTokenInitial = new StandByFeedContinuationToken(keyRanges);
-            string serialized = compositeTokenInitial.ToString();
+            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, initialToken, CreateCacheFromRange(keyRanges));
+            await compositeToken.EnsureInitialized();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
+            Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
+            Assert.AreEqual(keyRanges[0].Id, rangeId);
+            Assert.AreEqual(compositeContinuationTokens[0].Token, token.Token);
 
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(serialized);
-            Assert.AreEqual(keyRanges[0].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, compositeToken.MaxExclusiveRange);
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual(keyRanges[1].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, compositeToken.MaxExclusiveRange);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
+            Assert.AreEqual(keyRanges[1].MaxExclusive, token2.Range.Max);
+            Assert.AreEqual(keyRanges[1].Id, rangeId2);
+            Assert.AreEqual(compositeContinuationTokens[1].Token, token2.Token);
         }
 
         [TestMethod]
-        public void SerializationIsExpected()
+        public async Task SerializationIsExpected()
         {
             List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
             {
-                StandByFeedContinuationToken.BuildTokenForRange("A", "B", "C"),
-                StandByFeedContinuationToken.BuildTokenForRange("D", "E", "F")
+                StandByFeedContinuationTokenTests.BuildTokenForRange("A", "B", "C"),
+                StandByFeedContinuationTokenTests.BuildTokenForRange("D", "E", "F")
             };
 
             string expected = JsonConvert.SerializeObject(compositeContinuationTokens);
@@ -66,159 +88,150 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
                 new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
             };
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(keyRanges);
-            compositeToken.UpdateCurrentToken("C");
-            compositeToken.PushCurrentToBack();
-            compositeToken.UpdateCurrentToken("F");
-            compositeToken.PushCurrentToBack();
+            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
+            await compositeToken.EnsureInitialized();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            token.Token = "C";
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            token2.Token = "F";
+            compositeToken.MoveToNextToken();
 
             Assert.AreEqual(expected, compositeToken.ToString());
         }
 
         [TestMethod]
-        public void UpdateCurrenTokenUpdatesFirst()
-        {
-            List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
-            {
-                StandByFeedContinuationToken.BuildTokenForRange("A", "B", "C"),
-                StandByFeedContinuationToken.BuildTokenForRange("D", "E", "")
-            };
-
-            string expected = JsonConvert.SerializeObject(compositeContinuationTokens);
-
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
-            {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
-            };
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(keyRanges);
-            compositeToken.UpdateCurrentToken("C");
-            
-            Assert.AreEqual(expected, compositeToken.ToString());
-        }
-
-        [TestMethod]
-        public void PushToBackCircles()
+        public async Task MoveToNextTokenCircles()
         {
             List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
             {
                 new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
                 new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
             };
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(keyRanges);
-            Assert.AreEqual(keyRanges[0].MinInclusive, compositeToken.MinInclusiveRange);
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual(keyRanges[1].MinInclusive, compositeToken.MinInclusiveRange);
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual(keyRanges[0].MinInclusive, compositeToken.MinInclusiveRange);
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual(keyRanges[1].MinInclusive, compositeToken.MinInclusiveRange);
+            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
+            await compositeToken.EnsureInitialized();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token3, string rangeId3) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[0].MinInclusive, token3.Range.Min);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token4, string rangeId4) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[1].MinInclusive, token4.Range.Min);
         }
 
         [TestMethod]
-        public void PushRangeWithTokenAddsAtTheEnd()
+        public async Task HandleSplitGeneratesChildren()
         {
             List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" }
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="C" },
+                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F" }
             };
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(keyRanges);
-            Assert.AreEqual(keyRanges[0].MinInclusive, compositeToken.MinInclusiveRange);
-
-            compositeToken.PushRangeWithToken("C", "D", "E");
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual("C", compositeToken.MinInclusiveRange);
-            Assert.AreEqual("D", compositeToken.MaxExclusiveRange);
-            Assert.AreEqual("E", compositeToken.NextToken);
-        }
-
-        [TestMethod]
-        public void HandleSplitGeneratesChildren()
-        {
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
-            {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
-                new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive ="C" }
-            };
-
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(keyRanges);
 
             List<Documents.PartitionKeyRange> keyRangesAfterSplit = new List<Documents.PartitionKeyRange>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="X" },
-                new Documents.PartitionKeyRange() { MinInclusive = "X", MaxExclusive ="Z" },
-                new Documents.PartitionKeyRange() { MinInclusive = "Z", MaxExclusive ="B" },
-
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
+                new Documents.PartitionKeyRange() { MinInclusive = "B", MaxExclusive ="C" },
+                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F" },
             };
 
-            Assert.AreEqual(keyRanges[0].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, compositeToken.MaxExclusiveRange);
+            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges, keyRangesAfterSplit));
+
+            await compositeToken.EnsureInitialized();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
+            Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
 
             compositeToken.HandleSplit(keyRangesAfterSplit);
             // Current should be updated
-            Assert.AreEqual(keyRangesAfterSplit[0].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRangesAfterSplit[0].MaxExclusive, compositeToken.MaxExclusiveRange);
-            compositeToken.PushCurrentToBack();
+            Assert.AreEqual(keyRangesAfterSplit[0].MinInclusive, token.Range.Min);
+            Assert.AreEqual(keyRangesAfterSplit[0].MaxExclusive, token.Range.Max);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
             // Next should be the original second
-            Assert.AreEqual(keyRanges[1].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, compositeToken.MaxExclusiveRange);
-            compositeToken.PushCurrentToBack();
+            Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
+            Assert.AreEqual(keyRanges[1].MaxExclusive, token2.Range.Max);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token3, string rangeId3) = await compositeToken.GetCurrentToken();
             // Finally the new children
-            Assert.AreEqual(keyRangesAfterSplit[1].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRangesAfterSplit[1].MaxExclusive, compositeToken.MaxExclusiveRange);
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual(keyRangesAfterSplit[2].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRangesAfterSplit[2].MaxExclusive, compositeToken.MaxExclusiveRange);
+            Assert.AreEqual(keyRangesAfterSplit[1].MinInclusive, token3.Range.Min);
+            Assert.AreEqual(keyRangesAfterSplit[1].MaxExclusive, token3.Range.Max);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token4, string rangeId4) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRangesAfterSplit[2].MinInclusive, token4.Range.Min);
+            Assert.AreEqual(keyRangesAfterSplit[2].MaxExclusive, token4.Range.Max);
             // And go back to the beginning
-            compositeToken.PushCurrentToBack();
-            Assert.AreEqual(keyRangesAfterSplit[0].MinInclusive, compositeToken.MinInclusiveRange);
-            Assert.AreEqual(keyRangesAfterSplit[0].MaxExclusive, compositeToken.MaxExclusiveRange);
+            compositeToken.MoveToNextToken();
+            (CompositeContinuationToken token5, string rangeId5) = await compositeToken.GetCurrentToken();
+            Assert.AreEqual(keyRangesAfterSplit[0].MinInclusive, token5.Range.Min);
+            Assert.AreEqual(keyRangesAfterSplit[0].MaxExclusive, token5.Range.Max);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
-        public void ConstructorWithInvalidTokenFormat()
+        public async Task ConstructorWithInvalidTokenFormat()
         {
-            new StandByFeedContinuationToken("notatoken");
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" },
+                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D", Id = "1" },
+            };
+
+            StandByFeedContinuationToken token = new StandByFeedContinuationToken("containerRid", "notatoken", CreateCacheFromRange(keyRanges));
+            await token.EnsureInitialized();
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        public void ConstructorWithNullRangesThrows()
+        public void ConstructorWithNullContainer()
         {
-            new StandByFeedContinuationToken(keyRanges: null);
+            new StandByFeedContinuationToken(null, null, null);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentOutOfRangeException))]
-        public void ConstructorWithEmptyRangesThrows()
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ConstructorWithNullDelegate()
         {
-            new StandByFeedContinuationToken(new List<Documents.PartitionKeyRange>());
+            new StandByFeedContinuationToken("something", null, null);
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(NullReferenceException))]
-        public void ConstructorWithNullStringCreatesEmptyToken()
+        private static Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> CreateCacheFromRange(
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges,
+            IReadOnlyList<Documents.PartitionKeyRange> afterSplit = null)
         {
-            StandByFeedContinuationToken token = new StandByFeedContinuationToken(initialStandByFeedContinuationToken: null);
-            string tokenString = token.NextToken;
-        }
-
-        [TestMethod]
-        public void BuildTokenForRangeCreatesCorrectObject()
-        {
-            CompositeContinuationToken expected = new CompositeContinuationToken()
+            return (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
             {
-                Range = new Documents.Routing.Range<string>("A", "B", true, false),
-                Token = "C"
-            };
+                if (ranges.Max.Equals(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey))
+                {
+                    return Task.FromResult(keyRanges);
+                }
 
-            CompositeContinuationToken built = StandByFeedContinuationToken.BuildTokenForRange(expected.Range.Min, expected.Range.Max, expected.Token);
-            Assert.AreEqual(expected.Range.Min, built.Range.Min);
-            Assert.AreEqual(expected.Range.Max, built.Range.Max);
-            Assert.AreEqual(expected.Range.IsMinInclusive, built.Range.IsMinInclusive);
-            Assert.AreEqual(expected.Range.IsMaxInclusive, built.Range.IsMaxInclusive);
-            Assert.AreEqual(expected.Token, built.Token);
+                IReadOnlyList<Documents.PartitionKeyRange> nosplit = new List<Documents.PartitionKeyRange>(keyRanges.Where(range=> range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
+
+                if (nosplit.Any())
+                {
+                    return Task.FromResult(nosplit);
+                }
+
+                IReadOnlyList<Documents.PartitionKeyRange> afterSplitResults = new List<Documents.PartitionKeyRange>(afterSplit.Where(range => range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
+                return Task.FromResult(afterSplitResults);
+            };
+        }
+
+        private static CompositeContinuationToken BuildTokenForRange(
+            string min, 
+            string max, 
+            string token)
+        {
+            return new CompositeContinuationToken()
+            {
+                Token = token,
+                Range = new Documents.Routing.Range<string>(min, max, true, false)
+            };
         }
     }
 }
