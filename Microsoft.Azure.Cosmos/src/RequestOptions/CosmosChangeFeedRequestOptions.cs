@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using Microsoft.Azure.Documents;
 
@@ -61,24 +62,32 @@ namespace Microsoft.Azure.Cosmos
 
         internal void ValidateOptions(string providedContinuationToken)
         {
-            if (this.StartFromBeginning && this.StartTime != null)
+            int setOptions = 0;
+            if (this.StartFromBeginning)
             {
-                throw new ArgumentException("Cannot specify both StartFromBeginning, and StartTime.");
+                setOptions++;
             }
 
-            if (this.StartFromBeginning && providedContinuationToken != null)
+            if (providedContinuationToken != null)
             {
-                throw new ArgumentException("Cannot specify both StartFromBeginning, and ContinuationToken.");
+                setOptions++;
             }
 
-            if (this.StartTime != null && providedContinuationToken != null)
+            if (this.StartTime != null)
             {
-                throw new ArgumentException("Cannot specify both ContinuationToken, and StartTime.");
+                setOptions++;
+            }
+
+            if (setOptions > 1)
+            {
+                throw new ArgumentException("Cannot specify ContinuationToken, StartFromBeginning, and StartTime. Only one of them can be used");
             }
         }
 
         internal static void FillContinuationToken(CosmosRequestMessage request, string continuationToken)
         {
+            Debug.Assert(request != null);
+
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
                 // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
@@ -88,6 +97,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal static void FillMaxItemCount(CosmosRequestMessage request, int? maxItemCount)
         {
+            Debug.Assert(request != null);
+
             if (maxItemCount.HasValue)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));

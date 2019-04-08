@@ -261,57 +261,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task StandByFeedIterator_NoFetchNext()
-        {
-            int expected = 25;
-            int iterations = 0;
-            await CreateRandomItems(expected, randomPartitionKey: true);
-            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            string continuationToken = null;
-            int count = 0;
-            while (true)
-            {
-                CosmosChangeFeedRequestOptions requestOptions;
-                if (string.IsNullOrEmpty(continuationToken))
-                {
-                    requestOptions = new CosmosChangeFeedRequestOptions() { StartFromBeginning = true};
-                }
-                else
-                {
-                    requestOptions = new CosmosChangeFeedRequestOptions() { };
-                }
-
-                CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
-                using (CosmosResponseMessage iterator =
-                    await setIterator.FetchNextSetAsync(this.cancellationToken))
-                {
-                    continuationToken = iterator.Headers.Continuation;
-                    if (iterator.Content != null)
-                    {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(iterator.Content).Data;
-                        count += response.Count;
-                    }
-                }
-
-                if(count > expected)
-                {
-                    Assert.Fail($"{count} does not equal {expected}");
-                }
-
-                if (count.Equals(expected))
-                {
-                    break;
-                }
-
-                if (iterations++ > 20)
-                {
-                    Assert.Fail("Feed does not contain all elements even after 20 executions. Either the continuation is not moving forward or there is some state problem.");
-
-                }
-            }
-        }
-
-        [TestMethod]
         public async Task QueryStreamSingleItem()
         {
             await ItemSinglePartitionQueryStream(1, 1);

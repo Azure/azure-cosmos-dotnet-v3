@@ -268,12 +268,12 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestMessage request = new CosmosRequestMessage();
             CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions()
             {
-                StartTime = new DateTime(1985, 1, 1)
+                StartTime = new DateTime(1985, 1, 1, 0, 0,0, DateTimeKind.Utc)
             };
 
             requestOptions.FillRequestOptions(request);
 
-            Assert.AreEqual("Tue, 01 Jan 1985 08:00:00 GMT", request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+            Assert.AreEqual("Tue, 01 Jan 1985 00:00:00 GMT", request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
             Assert.IsNull(request.Headers.IfNoneMatch);
         }
 
