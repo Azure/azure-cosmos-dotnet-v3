@@ -90,6 +90,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
+        internal bool IsDocumentFeedOperation => this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Document && string.IsNullOrEmpty(this.PartitionKeyRangeId);
+
         /// <summary>
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.

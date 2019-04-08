@@ -14,6 +14,9 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <summary>
     /// Stand by continuation token representing a contiguous read over all the ranges with continuation state across all ranges.
     /// </summary>
+    /// <remarks>
+    /// The StandByFeed token represents the state of continuation tokens across all Partition Key Ranges and can be used to sequentially read the Change Feed for each range while maintaining a global state by serializing the values (and allowing deserialization).
+    /// </remarks>
     internal class StandByFeedContinuationToken
     {
         private readonly string containerRid;
