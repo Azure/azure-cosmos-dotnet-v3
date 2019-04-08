@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,9 +16,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosChangeFeedResultSetIteratorCore : CosmosFeedResultSetIterator
     {
-        private static readonly int DefaultMaxItemCount = 100;
+        private const int DefaultMaxItemCount = 100;
+        private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
 
-        private readonly PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
         private readonly CosmosContainerCore cosmosContainer;
         private StandByFeedContinuationToken compositeContinuationToken;
         private string containerRid;
@@ -29,6 +28,9 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerCore cosmosContainer,
             CosmosChangeFeedRequestOptions options)
         {
+            if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
+            if (options == null) throw new ArgumentNullException(nameof(options));
+
             this.cosmosContainer = cosmosContainer;
             this.changeFeedOptions = options;
             this.originalMaxItemCount = options.MaxItemCount;
@@ -117,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            bool pageSizeError = response.ErrorMessage.Contains("Reduce page size and try again.");
+            bool pageSizeError = response.ErrorMessage.Contains(CosmosChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
             if (pageSizeError)
             {
                 if (!this.changeFeedOptions.MaxItemCount.HasValue)
