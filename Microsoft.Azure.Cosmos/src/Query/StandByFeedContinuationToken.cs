@@ -44,8 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query
             await this.EnsureInitializedAsync();
             Debug.Assert(this.compositeContinuationTokens != null);
             IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(this.currentToken.Range, forceRefresh: forceRefresh);
-            if (resolvedRanges.Count > 1
-                || forceRefresh) // forceRefresh is called when we indeed got a split. Splits can happen and yield 1 children too.
+            if (resolvedRanges.Count > 1)
             {
                 this.HandleSplit(resolvedRanges);
             }
@@ -73,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
         }
 
-        internal void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
+        private void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             if (keyRanges == null) throw new ArgumentNullException(nameof(keyRanges));
 

@@ -122,11 +122,13 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task HandleSplitGeneratesChildren()
         {
-            List<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
             {
-                new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="C" },
-                new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F" }
+                StandByFeedContinuationTokenTests.BuildTokenForRange("A", "C", ""),
+                StandByFeedContinuationTokenTests.BuildTokenForRange("C", "F", "")
             };
+
+            string expected = JsonConvert.SerializeObject(compositeContinuationTokens);
 
             List<Documents.PartitionKeyRange> keyRangesAfterSplit = new List<Documents.PartitionKeyRange>()
             {
@@ -135,30 +137,26 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F" },
             };
 
-            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges, keyRangesAfterSplit));
+            StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, expected, CreateCacheFromRange(keyRangesAfterSplit));
 
             (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
-            Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
+            //Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
+            //Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
 
-            compositeToken.HandleSplit(keyRangesAfterSplit);
+            //compositeToken.HandleSplit(keyRangesAfterSplit);
             // Current should be updated
             Assert.AreEqual(keyRangesAfterSplit[0].MinInclusive, token.Range.Min);
             Assert.AreEqual(keyRangesAfterSplit[0].MaxExclusive, token.Range.Max);
             await compositeToken.MoveToNextTokenAsync();
             (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
             // Next should be the original second
-            Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
-            Assert.AreEqual(keyRanges[1].MaxExclusive, token2.Range.Max);
+            Assert.AreEqual(compositeContinuationTokens[1].Range.Min, token2.Range.Min);
+            Assert.AreEqual(compositeContinuationTokens[1].Range.Max, token2.Range.Max);
             await compositeToken.MoveToNextTokenAsync();
             (CompositeContinuationToken token3, string rangeId3) = await compositeToken.GetCurrentToken();
             // Finally the new children
             Assert.AreEqual(keyRangesAfterSplit[1].MinInclusive, token3.Range.Min);
             Assert.AreEqual(keyRangesAfterSplit[1].MaxExclusive, token3.Range.Max);
-            await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token4, string rangeId4) = await compositeToken.GetCurrentToken();
-            Assert.AreEqual(keyRangesAfterSplit[2].MinInclusive, token4.Range.Min);
-            Assert.AreEqual(keyRangesAfterSplit[2].MaxExclusive, token4.Range.Max);
             // And go back to the beginning
             await compositeToken.MoveToNextTokenAsync();
             (CompositeContinuationToken token5, string rangeId5) = await compositeToken.GetCurrentToken();
