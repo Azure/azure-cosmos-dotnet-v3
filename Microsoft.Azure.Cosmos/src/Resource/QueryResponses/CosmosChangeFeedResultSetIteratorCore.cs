@@ -20,20 +20,25 @@ namespace Microsoft.Azure.Cosmos
         private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
 
         private readonly CosmosContainerCore cosmosContainer;
+        private readonly int? originalMaxItemCount;
         private StandByFeedContinuationToken compositeContinuationToken;
         private string containerRid;
-        private int? originalMaxItemCount;
+        private string continuationToken;
+        private int? maxItemCount;
 
         internal CosmosChangeFeedResultSetIteratorCore(
             CosmosContainerCore cosmosContainer,
+            string continuationToken,
+            int? maxItemCount,
             CosmosChangeFeedRequestOptions options)
         {
             if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
-            if (options == null) throw new ArgumentNullException(nameof(options));
 
             this.cosmosContainer = cosmosContainer;
             this.changeFeedOptions = options;
-            this.originalMaxItemCount = options.MaxItemCount;
+            this.maxItemCount = maxItemCount;
+            this.originalMaxItemCount = maxItemCount;
+            this.continuationToken = continuationToken;
             this.HasMoreResults = true;
         }
 
@@ -53,21 +58,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKeyRangeCache pkRangeCache = await this.cosmosContainer.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
-                this.compositeContinuationToken = new StandByFeedContinuationToken(this.containerRid, this.changeFeedOptions.RequestContinuation, pkRangeCache.TryGetOverlappingRangesAsync);
+                this.compositeContinuationToken = new StandByFeedContinuationToken(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentToken();
             this.changeFeedOptions.PartitionKeyRangeId = rangeId;
-            this.changeFeedOptions.RequestContinuation = currentRangeToken.Token;
+            this.continuationToken = currentRangeToken.Token;
 
-            CosmosResponseMessage response = await this.NextResultSetDelegate(this.changeFeedOptions, cancellationToken);
+            CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailure(response, cancellationToken))
             {
                 (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentToken();
                 currentRangeToken = currentRangeTokenForRetry;
                 this.changeFeedOptions.PartitionKeyRangeId = rangeIdForRetry;
-                this.changeFeedOptions.RequestContinuation = currentRangeToken.Token;
-                response = await this.NextResultSetDelegate(this.changeFeedOptions, cancellationToken);
+                this.continuationToken = currentRangeToken.Token;
+                response = await this.NextResultSetDelegate(this.continuationToken, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             }
 
             // Change Feed read uses Etag for continuation
@@ -96,9 +101,9 @@ namespace Microsoft.Azure.Cosmos
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
             {
-                if (this.changeFeedOptions.MaxItemCount != this.originalMaxItemCount)
+                if (this.maxItemCount != this.originalMaxItemCount)
                 {
-                    this.changeFeedOptions.MaxItemCount = this.originalMaxItemCount;   // Reset after successful execution.
+                    this.maxItemCount = this.originalMaxItemCount;   // Reset after successful execution.
                 }
 
                 return false;
@@ -115,16 +120,16 @@ namespace Microsoft.Azure.Cosmos
             bool pageSizeError = response.ErrorMessage.Contains(CosmosChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
             if (pageSizeError)
             {
-                if (!this.changeFeedOptions.MaxItemCount.HasValue)
+                if (!this.maxItemCount.HasValue)
                 {
-                    this.changeFeedOptions.MaxItemCount = CosmosChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
+                    this.maxItemCount = CosmosChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
                 }
-                else if (this.changeFeedOptions.MaxItemCount <= 1)
+                else if (this.maxItemCount <= 1)
                 {
                     return false;
                 }
 
-                this.changeFeedOptions.MaxItemCount /= 2;
+                this.maxItemCount /= 2;
                 return true;
             }
 
@@ -132,6 +137,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<CosmosResponseMessage> NextResultSetDelegate(
+            string continuationToken,
+            int? maxItemCount,
             CosmosChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
@@ -142,7 +149,10 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                requestEnricher: request => { },
+                requestEnricher: request => {
+                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, this.continuationToken);
+                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, this.maxItemCount);
+                },
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,

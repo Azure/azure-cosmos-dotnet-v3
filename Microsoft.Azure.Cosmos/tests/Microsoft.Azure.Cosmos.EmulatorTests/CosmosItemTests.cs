@@ -278,10 +278,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 else
                 {
-                    requestOptions = new CosmosChangeFeedRequestOptions() { RequestContinuation = continuationToken };
+                    requestOptions = new CosmosChangeFeedRequestOptions() { };
                 }
 
-                CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: requestOptions);
+                CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (CosmosResponseMessage iterator =
                     await setIterator.FetchNextSetAsync(this.cancellationToken))
                 {

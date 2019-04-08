@@ -16,16 +16,6 @@ namespace Microsoft.Azure.Cosmos
         private const string IfNoneMatchAllHeaderValue = "*";
 
         /// <summary>
-        /// Maximum response size for the feed read measured in items.
-        /// </summary>
-        public virtual int? MaxItemCount { get; set; }
-
-        /// <summary>
-        /// Continuation from a previous request.
-        /// </summary>
-        public virtual string RequestContinuation { get; set; }
-
-        /// <summary>
         /// Marks whether the change feed should be read from the start.
         /// </summary>
         /// <remarks>
@@ -46,17 +36,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
-            if (!string.IsNullOrWhiteSpace(this.RequestContinuation))
-            {
-                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                request.Headers.IfNoneMatch = this.RequestContinuation;
-            }
-
-            if (this.MaxItemCount != null && this.MaxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.Value.ToString(CultureInfo.InvariantCulture));
-            }
-
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
             {
                 if (!this.StartFromBeginning && this.StartTime == null)
@@ -77,6 +56,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             base.FillRequestOptions(request);
+        }
+
+        internal static void FillContinuationToken(CosmosRequestMessage request, string continuationToken)
+        {
+            if (!string.IsNullOrWhiteSpace(continuationToken))
+            {
+                // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
+                request.Headers.IfNoneMatch = continuationToken;
+            }
+        }
+
+        internal static void FillMaxItemCount(CosmosRequestMessage request, int? maxItemCount)
+        {
+            if (maxItemCount != null && maxItemCount.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
+            }
         }
     }
 }

@@ -366,12 +366,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal CosmosFeedResultSetIterator GetStandByFeedIterator(
+            string continuationToken = null,
+            int? maxItemCount = null,
             CosmosChangeFeedRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
 
             return new CosmosChangeFeedResultSetIteratorCore(
+                continuationToken: continuationToken,
+                maxItemCount: maxItemCount,
                 cosmosContainer: (CosmosContainerCore)this.container,
                 options: cosmosQueryRequestOptions);
         }
