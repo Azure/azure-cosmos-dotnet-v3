@@ -411,7 +411,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(iter.Count <= 5);
                         totalRequstCharge += iter.RequestCharge;
 
-                        ToDoActivity response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content).First();
+                        ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                        Assert.AreEqual(1, activities.Length);
+                        ToDoActivity response = activities.First();
                         resultList.Add(response);
                     }
                 }

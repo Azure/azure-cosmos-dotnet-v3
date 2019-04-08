@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the <see cref="PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
-        internal PartitionKey PartitionKey { get; set; }
+        internal object PartitionKey { get; set; }
 
         internal bool EnableCrossPartitionQuery { get; set; }
 
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 MaxDegreeOfParallelism = this.MaxConcurrency,
-                PartitionKey = this.PartitionKey,
+                PartitionKey = new PartitionKey(this.PartitionKey),
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,

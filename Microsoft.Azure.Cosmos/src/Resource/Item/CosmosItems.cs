@@ -837,8 +837,7 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.

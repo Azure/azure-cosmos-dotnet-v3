@@ -26,6 +26,16 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosQueryClient(CosmosClient client, IDocumentQueryClient documentClient)
         {
+            if(client == null)
+            {
+                throw new ArgumentException(nameof(client));
+            }
+
+            if (documentClient == null)
+            {
+                throw new ArgumentException(nameof(documentClient));
+            }
+
             this._client = client;
             this.DocumentClient = documentClient;
         }
@@ -60,15 +70,15 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosResponseMessage message = await ExecUtils.ProcessResourceOperationStreamAsync(
-                this._client,
-                resourceUri,
-                resourceType,
-                operationType,
-                requestOptions,
-                null,
-                this._client.CosmosJsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
-                requestEnricher,
-                cancellationToken);
+                client: this._client,
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                partitionKey: requestOptions.PartitionKey,
+                streamPayload: this._client.CosmosJsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken);
 
             return GetFeedResponse(requestOptions, resourceType, message);
         }
@@ -111,9 +121,9 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             List<Range<string>> providedRanges)
         {
-            if (string.IsNullOrEmpty(nameof(collectionResourceId)))
+            if (string.IsNullOrEmpty(collectionResourceId))
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(collectionResourceId));
             }
 
             if (providedRanges == null || !providedRanges.Any())

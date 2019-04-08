@@ -138,6 +138,19 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<FeedResponse<CosmosElement>> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
+            if(this.queryContext.QueryRequestOptions.PartitionKey != null || !this.queryContext.ResourceTypeEnum.IsPartitioned())
+            {
+                return await this.queryContext.ExecuteQueryAsync(cancellationToken,
+                                requestEnricher: (cosmosRequestMessage) =>
+                                {
+                                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.FalseString);
+                                },
+                                requestOptionsEnricher: (queryRequestOptions) =>
+                                {
+                                    queryRequestOptions.RequestContinuation = this.ContinuationToken;
+                                });
+            }
+
             // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop for parsing the query, 
             // so forcing the request through Gateway. We are also now by-passing this for 32-bit host process in NETFX on Windows
             // as the ServiceInterop dll is only available in 64-bit.

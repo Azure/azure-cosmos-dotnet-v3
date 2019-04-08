@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.Headers,
                 memoryStream,
                 dynamicFeed.Count,
-                dynamicFeed.ResponseContinuation,
+                string.IsNullOrEmpty(dynamicFeed.ResponseContinuation) ? null : dynamicFeed.ResponseContinuation,
                 dynamicFeed.QueryMetrics);
         }
     }

@@ -190,8 +190,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         protected SqlQuerySpec QuerySpec => this.queryContext.SqlQuerySpecOptimized;
 
-        protected PartitionKeyInternal PartitionKeyInternal => this.queryRequestOptions.PartitionKey == null ? null : this.queryRequestOptions.PartitionKey.InternalKey;
-
         protected int MaxBufferedItemCount => this.queryRequestOptions.MaxBufferedItemCount;
 
         protected int MaxDegreeOfParallelism => this.queryRequestOptions.MaxConcurrency;

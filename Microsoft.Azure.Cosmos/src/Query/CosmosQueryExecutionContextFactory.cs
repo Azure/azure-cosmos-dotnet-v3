@@ -43,13 +43,32 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             Guid correlatedActivityId)
         {
+            // Prevent users from updating the values after creating the execution context.
+            CosmosQueryRequestOptions cloneQueryRequestOptions = queryRequestOptions.Clone();
+
+            // Swapping out negative values in feedOptions for int.MaxValue
+            if (cloneQueryRequestOptions.MaxBufferedItemCount < 0)
+            {
+                cloneQueryRequestOptions.MaxBufferedItemCount = int.MaxValue;
+            }
+
+            if (cloneQueryRequestOptions.MaxConcurrency < 0)
+            {
+                cloneQueryRequestOptions.MaxConcurrency = int.MaxValue;
+            }
+
+            if (cloneQueryRequestOptions.MaxItemCount.HasValue && cloneQueryRequestOptions.MaxItemCount < 0)
+            {
+                cloneQueryRequestOptions.MaxItemCount = int.MaxValue;
+            }
+
             this.cosmosQueryContext = new CosmosQueryContext(
                   client: client,
                   resourceTypeEnum: resourceTypeEnum,
                   operationType: operationType,
                   resourceType: resourceType,
                   sqlQuerySpecFromUser: sqlQuerySpec,
-                  queryRequestOptions: queryRequestOptions,
+                  queryRequestOptions: cloneQueryRequestOptions,
                   resourceLink: resourceLink,
                   getLazyFeedResponse: isContinuationExpected,
                   isContinuationExpected: isContinuationExpected,
@@ -197,13 +216,13 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosContainerSettings collection,
             CosmosQueryRequestOptions queryRequestOptions)
         {
-            List<PartitionKeyRange> targetRanges = null;
+            List<PartitionKeyRange> targetRanges;
             if (queryRequestOptions.PartitionKey != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
                     resourceLink,
                     collection.ResourceId,
-                    queryRequestOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
+                    new PartitionKey(queryRequestOptions.PartitionKey).InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {

@@ -230,6 +230,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.EnableCrossPartitionQuery = true;
             requestOptions.RequestContinuation = continuationToken;
             requestOptions.MaxItemCount = maxItemCount;
+            requestOptions.PartitionKey = partitionKey;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -275,12 +276,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions  ?? new CosmosQueryRequestOptions();
-            if (partitionKey != null)
-            {
-                PartitionKey pk = new PartitionKey(partitionKey);
-                requestOptions.PartitionKey = pk;
-            }
-
+            requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = false;
             requestOptions.RequestContinuation = continuationToken;
             requestOptions.MaxItemCount = maxItemCount;
@@ -406,7 +402,7 @@ namespace Microsoft.Azure.Cosmos
                 return CosmosQueryResponse<T>.CreateResponse<T>(
                     feedResponse: feedResponse,
                     jsonSerializer: this.cosmosJsonSerializer,
-                    continuationToken: feedResponse.ResponseContinuation,
+                    continuationToken: string.IsNullOrEmpty(feedResponse.DisallowContinuationTokenMessage) ? feedResponse.ResponseContinuation : null,
                     hasMoreResults: !documentQueryExecution.IsDone,
                     resourceType: ResourceType.Document);
             }
