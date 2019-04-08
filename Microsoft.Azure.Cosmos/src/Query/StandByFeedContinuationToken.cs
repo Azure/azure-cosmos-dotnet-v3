@@ -128,9 +128,9 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
             }
-            catch
+            catch(Exception ex)
             {
-                throw new ArgumentOutOfRangeException("Provided token has an invalid format");
+                throw new ArgumentOutOfRangeException("Provided token has an invalid format", ex);
             }
         }
 

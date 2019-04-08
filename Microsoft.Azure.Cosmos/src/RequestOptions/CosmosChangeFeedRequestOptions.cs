@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosChangeFeedRequestOptions : CosmosRequestOptions
     {
-        private const string IfNoneMatchAllHeaderValue = "*";
+        internal const string IfNoneMatchAllHeaderValue = "*";
 
         /// <summary>
         /// Marks whether the change feed should be read from the start.
@@ -56,6 +56,24 @@ namespace Microsoft.Azure.Cosmos
             }
 
             base.FillRequestOptions(request);
+        }
+
+        internal void ValidateOptions(string providedContinuationToken)
+        {
+            if (this.StartFromBeginning && this.StartTime != null)
+            {
+                throw new ArgumentException("Cannot specify both StartFromBeginning, and StartTime.");
+            }
+
+            if (this.StartFromBeginning && providedContinuationToken != null)
+            {
+                throw new ArgumentException("Cannot specify both StartFromBeginning, and ContinuationToken.");
+            }
+
+            if (this.StartTime != null && providedContinuationToken != null)
+            {
+                throw new ArgumentException("Cannot specify both ContinuationToken, and StartTime.");
+            }
         }
 
         internal static void FillContinuationToken(CosmosRequestMessage request, string continuationToken)

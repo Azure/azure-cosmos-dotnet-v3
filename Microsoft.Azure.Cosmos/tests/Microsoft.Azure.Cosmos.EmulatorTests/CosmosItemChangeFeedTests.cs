@@ -277,6 +277,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void StandByFeedIterator_ValidatesContinuationTokenAndStartFromBeginning()
+        {
+            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator("someContinuation", requestOptions: new CosmosChangeFeedRequestOptions()
+            {
+                StartFromBeginning = true
+            });
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void StandByFeedIterator_ValidatesContinuationTokenAndStartTime()
+        {
+            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator("someContinuation", requestOptions: new CosmosChangeFeedRequestOptions()
+            {
+                StartTime = new DateTime(1985, 1, 1)
+            });
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void StandByFeedIterator_ValidatesStartTimeAndStartFromBeginning()
+        {
+            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions()
+            {
+                StartFromBeginning = true,
+                StartTime = new DateTime(1985, 1, 1)
+            });
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);

@@ -192,6 +192,91 @@ namespace Microsoft.Azure.Cosmos
             new StandByFeedContinuationToken("something", null, null);
         }
 
+        [TestMethod]
+        public void CosmosChangeFeedRequestOptions_ContinuationIsSet()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions(){ };
+
+            CosmosChangeFeedRequestOptions.FillContinuationToken(request, "something");
+            requestOptions.FillRequestOptions(request);
+
+            Assert.AreEqual("something", request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
+        public void CosmosChangeFeedRequestOptions_DefaultValues()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { };
+
+            requestOptions.FillRequestOptions(request);
+
+            Assert.AreEqual(CosmosChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
+        public void CosmosChangeFeedRequestOptions_MaxItemSizeIsSet()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { };
+
+            CosmosChangeFeedRequestOptions.FillMaxItemCount(request, 10);
+            requestOptions.FillRequestOptions(request);
+
+            Assert.AreEqual("10", request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
+            Assert.AreEqual(CosmosChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
+        public void CosmosChangeFeedRequestOptions_ContinuationBeatsStartTime()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions()
+            {
+                StartTime = new DateTime(1985, 1, 1)
+            };
+
+            CosmosChangeFeedRequestOptions.FillContinuationToken(request, "something");
+            requestOptions.FillRequestOptions(request);
+
+            Assert.AreEqual("something", request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
+        public void CosmosChangeFeedRequestOptions_AddsStartFromBeginning()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions()
+            {
+                StartFromBeginning = true
+            };
+
+            requestOptions.FillRequestOptions(request);
+
+            Assert.IsNull(request.Headers.IfNoneMatch);
+            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+        }
+
+        [TestMethod]
+        public void CosmosChangeFeedRequestOptions_AddsStartTime()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions()
+            {
+                StartTime = new DateTime(1985, 1, 1)
+            };
+
+            requestOptions.FillRequestOptions(request);
+
+            Assert.AreEqual("Tue, 01 Jan 1985 08:00:00 GMT", request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
+            Assert.IsNull(request.Headers.IfNoneMatch);
+        }
+
         private static Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> CreateCacheFromRange(
             IReadOnlyList<Documents.PartitionKeyRange> keyRanges,
             IReadOnlyList<Documents.PartitionKeyRange> afterSplit = null)
