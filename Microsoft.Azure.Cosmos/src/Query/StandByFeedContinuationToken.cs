@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.inputContinuationToken = initialStandByFeedContinuationToken;
         }
 
-        public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentToken(bool forceRefresh = false)
+        public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync(bool forceRefresh = false)
         {
             await this.EnsureInitializedAsync();
             Debug.Assert(this.compositeContinuationTokens != null);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (this.compositeContinuationTokens == null)
             {
-                IEnumerable<CompositeContinuationToken> tokens = await this.BuildCompositeTokens(this.inputContinuationToken);
+                IEnumerable<CompositeContinuationToken> tokens = await this.BuildCompositeTokensAsync(this.inputContinuationToken);
 
                 this.InitializeCompositeTokens(tokens);
 
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private async Task<IEnumerable<CompositeContinuationToken>> BuildCompositeTokens(string initialContinuationToken)
+        private async Task<IEnumerable<CompositeContinuationToken>> BuildCompositeTokensAsync(string initialContinuationToken)
         {
             if (string.IsNullOrEmpty(initialContinuationToken))
             {

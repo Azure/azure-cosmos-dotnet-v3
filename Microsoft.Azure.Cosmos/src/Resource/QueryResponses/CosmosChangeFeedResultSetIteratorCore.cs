@@ -61,14 +61,14 @@ namespace Microsoft.Azure.Cosmos
                 this.compositeContinuationToken = new StandByFeedContinuationToken(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
-            (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentToken();
+            (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             this.changeFeedOptions.PartitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
 
             CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.maxItemCount, this.changeFeedOptions, cancellationToken);
-            if (await this.ShouldRetryFailure(response, cancellationToken))
+            if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentToken();
+                (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentTokenAsync();
                 currentRangeToken = currentRangeTokenForRetry;
                 this.changeFeedOptions.PartitionKeyRangeId = rangeIdForRetry;
                 this.continuationToken = currentRangeToken.Token;
@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 currentRangeToken.Token = responseContinuationToken;
             }
 
+            // Send to the user the composite state for all ranges
             response.Headers.Continuation = this.compositeContinuationToken.ToString();
             return response;
         }
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
-        internal async Task<bool> ShouldRetryFailure(
+        internal async Task<bool> ShouldRetryFailureAsync(
             CosmosResponseMessage response, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
-                await this.compositeContinuationToken.GetCurrentToken(forceRefresh: true);
+                await this.compositeContinuationToken.GetCurrentTokenAsync(forceRefresh: true);
                 return true;
             }
 

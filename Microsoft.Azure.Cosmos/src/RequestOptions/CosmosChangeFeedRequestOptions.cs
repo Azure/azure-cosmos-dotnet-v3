@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
+            // Check if no Continuation Token is present
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
             {
                 if (!this.StartFromBeginning && this.StartTime == null)
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static void FillMaxItemCount(CosmosRequestMessage request, int? maxItemCount)
         {
-            if (maxItemCount != null && maxItemCount.HasValue)
+            if (maxItemCount.HasValue)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }

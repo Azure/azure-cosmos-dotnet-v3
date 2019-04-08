@@ -27,12 +27,12 @@ namespace Microsoft.Azure.Cosmos
             };
 
             StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, StandByFeedContinuationTokenTests.CreateCacheFromRange(keyRanges));
-            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
             Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
             Assert.AreEqual(keyRanges[0].Id, rangeId);
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
             Assert.AreEqual(keyRanges[1].MaxExclusive, token2.Range.Max);
             Assert.AreEqual(keyRanges[1].Id, rangeId2);
@@ -56,14 +56,14 @@ namespace Microsoft.Azure.Cosmos
             };
 
             StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, initialToken, CreateCacheFromRange(keyRanges));
-            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
             Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
             Assert.AreEqual(keyRanges[0].Id, rangeId);
             Assert.AreEqual(compositeContinuationTokens[0].Token, token.Token);
 
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
             Assert.AreEqual(keyRanges[1].MaxExclusive, token2.Range.Max);
             Assert.AreEqual(keyRanges[1].Id, rangeId2);
@@ -87,10 +87,10 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
             };
             StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
-            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             token.Token = "C";
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentTokenAsync();
             token2.Token = "F";
             await compositeToken.MoveToNextTokenAsync();
 
@@ -106,16 +106,16 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
             };
             StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
-            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[1].MinInclusive, token2.Range.Min);
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token3, string rangeId3) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token3, string rangeId3) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[0].MinInclusive, token3.Range.Min);
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token4, string rangeId4) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token4, string rangeId4) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[1].MinInclusive, token4.Range.Min);
         }
 
@@ -124,8 +124,8 @@ namespace Microsoft.Azure.Cosmos
         {
             List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
             {
-                StandByFeedContinuationTokenTests.BuildTokenForRange("A", "C", ""),
-                StandByFeedContinuationTokenTests.BuildTokenForRange("C", "F", "")
+                StandByFeedContinuationTokenTests.BuildTokenForRange("A", "C", "token1"),
+                StandByFeedContinuationTokenTests.BuildTokenForRange("C", "F", "token2")
             };
 
             string expected = JsonConvert.SerializeObject(compositeContinuationTokens);
@@ -139,29 +139,29 @@ namespace Microsoft.Azure.Cosmos
 
             StandByFeedContinuationToken compositeToken = new StandByFeedContinuationToken(StandByFeedContinuationTokenTests.ContainerRid, expected, CreateCacheFromRange(keyRangesAfterSplit));
 
-            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentToken();
-            //Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
-            //Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
-
-            //compositeToken.HandleSplit(keyRangesAfterSplit);
+            (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             // Current should be updated
             Assert.AreEqual(keyRangesAfterSplit[0].MinInclusive, token.Range.Min);
             Assert.AreEqual(keyRangesAfterSplit[0].MaxExclusive, token.Range.Max);
+            Assert.AreEqual(compositeContinuationTokens[0].Token, token.Token);
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token2, string rangeId2) = await compositeToken.GetCurrentTokenAsync();
             // Next should be the original second
             Assert.AreEqual(compositeContinuationTokens[1].Range.Min, token2.Range.Min);
             Assert.AreEqual(compositeContinuationTokens[1].Range.Max, token2.Range.Max);
+            Assert.AreEqual(compositeContinuationTokens[1].Token, token2.Token);
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token3, string rangeId3) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token3, string rangeId3) = await compositeToken.GetCurrentTokenAsync();
             // Finally the new children
             Assert.AreEqual(keyRangesAfterSplit[1].MinInclusive, token3.Range.Min);
             Assert.AreEqual(keyRangesAfterSplit[1].MaxExclusive, token3.Range.Max);
+            Assert.AreEqual(compositeContinuationTokens[0].Token, token3.Token);
             // And go back to the beginning
             await compositeToken.MoveToNextTokenAsync();
-            (CompositeContinuationToken token5, string rangeId5) = await compositeToken.GetCurrentToken();
+            (CompositeContinuationToken token5, string rangeId5) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRangesAfterSplit[0].MinInclusive, token5.Range.Min);
             Assert.AreEqual(keyRangesAfterSplit[0].MaxExclusive, token5.Range.Max);
+            Assert.AreEqual(compositeContinuationTokens[0].Token, token5.Token);
         }
 
         [TestMethod]
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
             };
 
             StandByFeedContinuationToken token = new StandByFeedContinuationToken("containerRid", "notatoken", CreateCacheFromRange(keyRanges));
-            await token.GetCurrentToken();
+            await token.GetCurrentTokenAsync();
         }
 
         [TestMethod]
@@ -277,9 +277,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNull(request.Headers.IfNoneMatch);
         }
 
-        private static Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> CreateCacheFromRange(
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges,
-            IReadOnlyList<Documents.PartitionKeyRange> afterSplit = null)
+        private static Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             return (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
             {
@@ -288,15 +286,9 @@ namespace Microsoft.Azure.Cosmos
                     return Task.FromResult(keyRanges);
                 }
 
-                IReadOnlyList<Documents.PartitionKeyRange> nosplit = new List<Documents.PartitionKeyRange>(keyRanges.Where(range=> range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
+                IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>(keyRanges.Where(range=> range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
 
-                if (nosplit.Any())
-                {
-                    return Task.FromResult(nosplit);
-                }
-
-                IReadOnlyList<Documents.PartitionKeyRange> afterSplitResults = new List<Documents.PartitionKeyRange>(afterSplit.Where(range => range.MinInclusive.CompareTo(ranges.Min) >= 0 && range.MaxExclusive.CompareTo(ranges.Max) <= 0));
-                return Task.FromResult(afterSplitResults);
+                return Task.FromResult(filteredRanges);
             };
         }
 
