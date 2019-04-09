@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (setOptions > 1)
             {
-                throw new ArgumentException("Cannot specify ContinuationToken, StartFromBeginning, and StartTime. Only one of them can be used");
+                throw new ArgumentException("Only one of Cannot specify ContinuationToken, StartFromBeginning, and StartTime are supported.");
             }
         }
 

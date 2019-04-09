@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D", Id = "1" },
             };
 
-            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.InitializeTokenAsync(StandByFeedContinuationTokenTests.ContainerRid, null, StandByFeedContinuationTokenTests.CreateCacheFromRange(keyRanges));
+            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.CreateAsync(StandByFeedContinuationTokenTests.ContainerRid, null, StandByFeedContinuationTokenTests.CreateCacheFromRange(keyRanges));
             (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
             Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D", Id = "1" },
             };
 
-            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.InitializeTokenAsync(StandByFeedContinuationTokenTests.ContainerRid, initialToken, CreateCacheFromRange(keyRanges));
+            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.CreateAsync(StandByFeedContinuationTokenTests.ContainerRid, initialToken, CreateCacheFromRange(keyRanges));
             (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
             Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
                 new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
             };
-            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.InitializeTokenAsync(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
+            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.CreateAsync(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
             (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             token.Token = "C";
             compositeToken.MoveToNextToken();
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B" },
                 new Documents.PartitionKeyRange() { MinInclusive = "D", MaxExclusive ="E" },
             };
-            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.InitializeTokenAsync(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
+            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.CreateAsync(StandByFeedContinuationTokenTests.ContainerRid, null, CreateCacheFromRange(keyRanges));
             (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
             compositeToken.MoveToNextToken();
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="F" },
             };
 
-            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.InitializeTokenAsync(StandByFeedContinuationTokenTests.ContainerRid, expected, CreateCacheFromRange(keyRangesAfterSplit));
+            StandByFeedContinuationToken compositeToken = await StandByFeedContinuationToken.CreateAsync(StandByFeedContinuationTokenTests.ContainerRid, expected, CreateCacheFromRange(keyRangesAfterSplit));
 
             (CompositeContinuationToken token, string rangeId) = await compositeToken.GetCurrentTokenAsync();
             // Current should be updated
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
                 new Documents.PartitionKeyRange() { MinInclusive = "C", MaxExclusive ="D", Id = "1" },
             };
 
-            StandByFeedContinuationToken token = await StandByFeedContinuationToken.InitializeTokenAsync("containerRid", "notatoken", CreateCacheFromRange(keyRanges));
+            StandByFeedContinuationToken token = await StandByFeedContinuationToken.CreateAsync("containerRid", "notatoken", CreateCacheFromRange(keyRanges));
             await token.GetCurrentTokenAsync();
         }
 
@@ -182,14 +182,14 @@ namespace Microsoft.Azure.Cosmos
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task ConstructorWithNullContainer()
         {
-            await StandByFeedContinuationToken.InitializeTokenAsync(null, null, null);
+            await StandByFeedContinuationToken.CreateAsync(null, null, null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task ConstructorWithNullDelegate()
         {
-            await StandByFeedContinuationToken.InitializeTokenAsync("something", null, null);
+            await StandByFeedContinuationToken.CreateAsync("something", null, null);
         }
 
         [TestMethod]

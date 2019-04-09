@@ -134,69 +134,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public async Task StandByFeedIterator_WithInexistentRange()
         {
-            int count = 0;
-            string lastcontinuation = string.Empty;
-            int firstRunTotal = 25;
-            int batchSize = 25;
-            Documents.Routing.Range<string> previousRange = null;
-            Documents.Routing.Range<string> currentRange = null;
-            List<CompositeContinuationToken> lastToken = null;
-
-            int pkRangesCount = (await this.Container.Client.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri)).Count;
-            int visitedPkRanges = 0;
-
-            await CreateRandomItems(batchSize, randomPartitionKey: true);
-            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true });
-
-            while (setIterator.HasMoreResults)
-            {
-                using (CosmosResponseMessage responseMessage =
-                    await setIterator.FetchNextSetAsync(this.cancellationToken))
-                {
-                    lastcontinuation = responseMessage.Headers.Continuation;
-                    lastToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation);
-                    currentRange = lastToken[0].Range;
-
-                    if (responseMessage.IsSuccessStatusCode)
-                    {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
-                        count += response.Count;
-                    }
-
-                    if(!currentRange.Equals(previousRange))
-                    {
-                        visitedPkRanges++;
-                    }
-
-                    if (visitedPkRanges == pkRangesCount && responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified) break;
-                    previousRange = currentRange;
-                }
-
-            }
-            Assert.AreEqual(firstRunTotal, count);
-
             // Add some random range, this will force the failure
-            lastToken.Add(new CompositeContinuationToken()
+            List<CompositeContinuationToken> corruptedTokens = new List<CompositeContinuationToken>();
+            corruptedTokens.Add(new CompositeContinuationToken()
             {
                 Range = new Documents.Routing.Range<string>("whatever", "random", true, false),
                 Token = "oops"
             });
-            lastcontinuation = JsonConvert.SerializeObject(lastToken);
 
-            await CreateRandomItems(batchSize, randomPartitionKey: true);
+            string corruptedTokenSerialized = JsonConvert.SerializeObject(corruptedTokens);
+
+            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
             CosmosFeedResultSetIterator setIteratorNew =
-                itemsCore.GetStandByFeedIterator(lastcontinuation);
+                itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
-            while (setIteratorNew.HasMoreResults)
-            {
-                using (CosmosResponseMessage responseMessage =
-                    await setIteratorNew.FetchNextSetAsync(this.cancellationToken))
-                {
-                    
-                }
-
-            }
+            CosmosResponseMessage responseMessage =
+                    await setIteratorNew.FetchNextSetAsync(this.cancellationToken);
 
             Assert.Fail("Should have thrown.");
         }
@@ -378,12 +331,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        internal class CosmosChangeFeedResultSetIteratorCoreMock : CosmosChangeFeedResultSetIteratorCore
+        private class CosmosChangeFeedResultSetIteratorCoreMock : CosmosChangeFeedResultSetIteratorCore
         {
             public int Iteration = 0;
             public bool HasCalledForceRefresh = false;
 
-            internal CosmosChangeFeedResultSetIteratorCoreMock(CosmosContainerCore cosmosContainer, string continuationToken, int? maxItemCount, CosmosChangeFeedRequestOptions options) : base(cosmosContainer, continuationToken, maxItemCount, options)
+            internal CosmosChangeFeedResultSetIteratorCoreMock(
+                CosmosContainerCore cosmosContainer, 
+                string continuationToken, 
+                int? maxItemCount, 
+                CosmosChangeFeedRequestOptions options) : base(cosmosContainer, continuationToken, maxItemCount, options)
             {
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
                 {
@@ -396,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
 
-                this.compositeContinuationToken = StandByFeedContinuationToken.InitializeTokenAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
+                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
                 {
                     IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
                     {

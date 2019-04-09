@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private Queue<CompositeContinuationToken> compositeContinuationTokens;
         private CompositeContinuationToken currentToken;
 
-        public static async Task<StandByFeedContinuationToken> InitializeTokenAsync(
+        public static async Task<StandByFeedContinuationToken> CreateAsync(
             string containerRid,
             string initialStandByFeedContinuationToken,
             PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
