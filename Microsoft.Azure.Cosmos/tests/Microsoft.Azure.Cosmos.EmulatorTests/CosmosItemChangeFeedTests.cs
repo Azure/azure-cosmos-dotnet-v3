@@ -201,15 +201,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (true)
             {
-                CosmosChangeFeedRequestOptions requestOptions;
-                if (string.IsNullOrEmpty(continuationToken))
-                {
-                    requestOptions = new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
-                }
-                else
-                {
-                    requestOptions = new CosmosChangeFeedRequestOptions() { };
-                }
+                CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
 
                 CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (CosmosResponseMessage responseMessage =
