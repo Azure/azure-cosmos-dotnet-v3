@@ -120,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public void TestDateParseHandlingOnReadDocument()
         {
             const string jsonProperty = "jsonString";
@@ -156,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public void TestDateParseHandlingOnDocumentQuery()
         {
             const string jsonProperty = "jsonString";
@@ -179,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public void TestDateParseHandling()
         {
             const string jsonProperty = "jsonString";
@@ -227,6 +230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestStoredProcJsonSerializerSettings()
         {
             JsonSerializerSettings serializerSettings = new JsonSerializerSettings
@@ -330,6 +334,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public void TestStoredProcedure()
         {
             // Create a document client with a customer json serializer settings

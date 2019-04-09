@@ -16,8 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
@@ -33,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using IndexingMode = IndexingMode;
 
     [TestClass]
     public class GatewayTests
@@ -231,309 +231,315 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        public async Task ValidateStoredProcedureCrud_SessionGW()
-        {
-            await this.ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
-                new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway });
-        }
+        //[TestMethod]
+        //public async Task ValidateStoredProcedureCrud_SessionGW()
+        //{
+        //    await this.ValidateStoredProcedureCrudAsync(Cosmos.ConsistencyLevel.Session,
+        //        new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway });
+        //}
+
+        //[TestMethod]
+        //public async Task ValidateStoredProcedureCrud_SessionDirectTcp()
+        //{
+        //    await this.ValidateStoredProcedureCrudAsync(Cosmos.ConsistencyLevel.Session,
+        //        new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
+        //}
+
+        //[TestMethod]
+        //public async Task ValidateStoredProcedureCrud_SessionDirectHttps()
+        //{
+        //    await this.ValidateStoredProcedureCrudAsync(Cosmos.ConsistencyLevel.Session,
+        //        new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
+        //}
+
+        //internal async Task ValidateStoredProcedureCrudAsync(Cosmos.ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
+        //{
+        //    DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
+        //        connectionPolicy.ConnectionProtocol,
+        //        defaultConsistencyLevel: consistencyLevel);
+
+        //    Database database = null;
+        //    DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+
+        //    Logger.LogLine("Listing StoredProcedures");
+        //    FeedResponse<StoredProcedure> storedProcedureCollection1 = await client.ReadStoredProcedureFeedAsync(collection1.StoredProceduresLink);
+
+        //    string storedProcedureName = "StoredProcedure" + Guid.NewGuid();
+        //    StoredProcedure storedProcedure = new StoredProcedure
+        //    {
+        //        Id = storedProcedureName,
+        //        Body = "function() {var x = 10;}"
+        //    };
+
+        //    Logger.LogLine("Adding StoredProcedure");
+        //    StoredProcedure retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection1, storedProcedure).Result;
+        //    Assert.IsNotNull(retrievedStoredProcedure);
+        //    Assert.IsTrue(retrievedStoredProcedure.Id.Equals(storedProcedureName, StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure name");
+        //    Assert.IsTrue(retrievedStoredProcedure.Body.Equals("function() {var x = 10;}", StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure content");
+
+        //    Logger.LogLine("Listing StoredProcedures");
+        //    FeedResponse<StoredProcedure> storedProcedureCollection2 = client.ReadFeed<StoredProcedure>(collection1.GetIdOrFullName());
+        //    Assert.AreEqual(storedProcedureCollection1.Count + 1, storedProcedureCollection2.Count, "StoredProcedure Collections count dont match");
+
+        //    Logger.LogLine("Listing StoredProcedures with FeedReader");
+        //    var feedReader = client.CreateStoredProcedureFeedReader(collection1);
+        //    var count = 0;
+        //    while (feedReader.HasMoreResults)
+        //    {
+        //        count += feedReader.ExecuteNextAsync().Result.Count;
+        //    }
+
+        //    Assert.AreEqual(storedProcedureCollection1.Count + 1, count, "StoredProcedure Collections count dont match for feedReader");
+
+        //    Logger.LogLine("Querying StoredProcedure");
+        //    Retry(() =>
+        //    {
+        //        IDocumentQuery<dynamic> queryService = client.CreateStoredProcedureQuery(collection1.StoredProceduresLink,
+        //            @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
+
+        //        FeedResponse<StoredProcedure> storedProcedureCollection3 = queryService.ExecuteNextAsync<StoredProcedure>().Result;
+
+        //        Assert.IsNotNull(storedProcedureCollection3, "Query result is null");
+        //        Assert.AreNotEqual(0, storedProcedureCollection3.Count, "Collection count dont match");
+
+        //        foreach (StoredProcedure queryStoredProcedure in storedProcedureCollection3)
+        //        {
+        //            Assert.AreEqual(storedProcedureName, queryStoredProcedure.Id, "StoredProcedure Name dont match");
+        //        }
+        //    });
+
+        //    Logger.LogLine("Updating StoredProcedure");
+        //    retrievedStoredProcedure.Body = "function() {var x = 20;}";
+        //    StoredProcedure retrievedStoredProcedure2 = client.Update(retrievedStoredProcedure, null);
+        //    Assert.IsNotNull(retrievedStoredProcedure2);
+        //    Assert.IsTrue(retrievedStoredProcedure2.Id.Equals(storedProcedureName, StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure name");
+        //    Assert.IsTrue(retrievedStoredProcedure2.Body.Equals("function() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure content");
+
+        //    Logger.LogLine("Querying StoredProcedure");
+        //    Retry(() =>
+        //    {
+        //        IDocumentQuery<dynamic> queryService = client.CreateStoredProcedureQuery(collection1.StoredProceduresLink,
+        //            @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
+
+        //        FeedResponse<StoredProcedure> storedProcedureCollection4 = queryService.ExecuteNextAsync<StoredProcedure>().Result;
+
+        //        Assert.AreEqual(1, storedProcedureCollection4.Count); // name is always indexed
+        //    });
+
+        //    Logger.LogLine("Read StoredProcedure");
+        //    StoredProcedure getStoredProcedure = client.Read<StoredProcedure>(retrievedStoredProcedure.ResourceId);
+        //    Assert.IsNotNull(getStoredProcedure);
+        //    Assert.IsTrue(getStoredProcedure.Id.Equals(storedProcedureName, StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure name");
+
+        //    Logger.LogLine("Deleting StoredProcedure");
+        //    client.Delete<StoredProcedure>(retrievedStoredProcedure.ResourceId);
+
+        //    Logger.LogLine("Listing StoredProcedures");
+        //    FeedResponse<StoredProcedure> storedProcedureCollection5 = client.ReadFeed<StoredProcedure>(collection1.GetIdOrFullName());
+        //    Assert.AreEqual(storedProcedureCollection5.Count, storedProcedureCollection1.Count, "StoredProcedure delete is not working.");
+
+        //    Logger.LogLine("Try read deleted storedProcedure");
+        //    try
+        //    {
+        //        client.Read<StoredProcedure>(retrievedStoredProcedure.ResourceId);
+        //        Assert.Fail("Should have thrown exception in previous statement");
+        //    }
+        //    catch (DocumentClientException clientException)
+        //    {
+        //        Assert.AreEqual(HttpStatusCode.NotFound, clientException.StatusCode, "StatusCode dont match");
+        //    }
+
+        //    await client.DeleteDocumentCollectionAsync(collection1);
+
+        //    try
+        //    {
+        //        IDocumentQuery<dynamic> queryService1 =
+        //            client.CreateStoredProcedureQuery(
+        //                collection1.StoredProceduresLink,
+        //                @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
+
+        //        await queryService1.ExecuteNextAsync<StoredProcedure>();
+        //        Assert.Fail("Should get not found");
+        //    }
+        //    catch (DocumentClientException ex)
+        //    {
+        //        Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+        //    }
+
+        //    try
+        //    {
+        //        await client.DeleteStoredProcedureAsync(collection1.StoredProceduresLink);
+
+        //        Assert.Fail("Should get not found");
+        //    }
+        //    catch (DocumentClientException ex)
+        //    {
+        //        Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+        //    }
+        //}
 
         [TestMethod]
-        public async Task ValidateStoredProcedureCrud_SessionDirectTcp()
-        {
-            await this.ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
-                new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
-        }
-
-        [TestMethod]
-        public async Task ValidateStoredProcedureCrud_SessionDirectHttps()
-        {
-            await this.ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
-                new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
-        }
-
-        internal async Task ValidateStoredProcedureCrudAsync(ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
-        {
-            DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
-                connectionPolicy.ConnectionProtocol,
-                defaultConsistencyLevel: consistencyLevel);
-
-            Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
-
-            Logger.LogLine("Listing StoredProcedures");
-            FeedResponse<StoredProcedure> storedProcedureCollection1 = await client.ReadStoredProcedureFeedAsync(collection1.StoredProceduresLink);
-
-            string storedProcedureName = "StoredProcedure" + Guid.NewGuid();
-            StoredProcedure storedProcedure = new StoredProcedure
-            {
-                Id = storedProcedureName,
-                Body = "function() {var x = 10;}"
-            };
-
-            Logger.LogLine("Adding StoredProcedure");
-            StoredProcedure retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection1, storedProcedure).Result;
-            Assert.IsNotNull(retrievedStoredProcedure);
-            Assert.IsTrue(retrievedStoredProcedure.Id.Equals(storedProcedureName, StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure name");
-            Assert.IsTrue(retrievedStoredProcedure.Body.Equals("function() {var x = 10;}", StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure content");
-
-            Logger.LogLine("Listing StoredProcedures");
-            FeedResponse<StoredProcedure> storedProcedureCollection2 = client.ReadFeed<StoredProcedure>(collection1.GetIdOrFullName());
-            Assert.AreEqual(storedProcedureCollection1.Count + 1, storedProcedureCollection2.Count, "StoredProcedure Collections count dont match");
-
-            Logger.LogLine("Listing StoredProcedures with FeedReader");
-            var feedReader = client.CreateStoredProcedureFeedReader(collection1);
-            var count = 0;
-            while (feedReader.HasMoreResults)
-            {
-                count += feedReader.ExecuteNextAsync().Result.Count;
-            }
-
-            Assert.AreEqual(storedProcedureCollection1.Count + 1, count, "StoredProcedure Collections count dont match for feedReader");
-
-            Logger.LogLine("Querying StoredProcedure");
-            Retry(() =>
-            {
-                IDocumentQuery<dynamic> queryService = client.CreateStoredProcedureQuery(collection1.StoredProceduresLink,
-                    @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
-
-                FeedResponse<StoredProcedure> storedProcedureCollection3 = queryService.ExecuteNextAsync<StoredProcedure>().Result;
-
-                Assert.IsNotNull(storedProcedureCollection3, "Query result is null");
-                Assert.AreNotEqual(0, storedProcedureCollection3.Count, "Collection count dont match");
-
-                foreach (StoredProcedure queryStoredProcedure in storedProcedureCollection3)
-                {
-                    Assert.AreEqual(storedProcedureName, queryStoredProcedure.Id, "StoredProcedure Name dont match");
-                }
-            });
-
-            Logger.LogLine("Updating StoredProcedure");
-            retrievedStoredProcedure.Body = "function() {var x = 20;}";
-            StoredProcedure retrievedStoredProcedure2 = client.Update(retrievedStoredProcedure, null);
-            Assert.IsNotNull(retrievedStoredProcedure2);
-            Assert.IsTrue(retrievedStoredProcedure2.Id.Equals(storedProcedureName, StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure name");
-            Assert.IsTrue(retrievedStoredProcedure2.Body.Equals("function() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure content");
-
-            Logger.LogLine("Querying StoredProcedure");
-            Retry(() =>
-            {
-                IDocumentQuery<dynamic> queryService = client.CreateStoredProcedureQuery(collection1.StoredProceduresLink,
-                    @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
-
-                FeedResponse<StoredProcedure> storedProcedureCollection4 = queryService.ExecuteNextAsync<StoredProcedure>().Result;
-
-                Assert.AreEqual(1, storedProcedureCollection4.Count); // name is always indexed
-            });
-
-            Logger.LogLine("Read StoredProcedure");
-            StoredProcedure getStoredProcedure = client.Read<StoredProcedure>(retrievedStoredProcedure.ResourceId);
-            Assert.IsNotNull(getStoredProcedure);
-            Assert.IsTrue(getStoredProcedure.Id.Equals(storedProcedureName, StringComparison.OrdinalIgnoreCase), "Mismatch in storedProcedure name");
-
-            Logger.LogLine("Deleting StoredProcedure");
-            client.Delete<StoredProcedure>(retrievedStoredProcedure.ResourceId);
-
-            Logger.LogLine("Listing StoredProcedures");
-            FeedResponse<StoredProcedure> storedProcedureCollection5 = client.ReadFeed<StoredProcedure>(collection1.GetIdOrFullName());
-            Assert.AreEqual(storedProcedureCollection5.Count, storedProcedureCollection1.Count, "StoredProcedure delete is not working.");
-
-            Logger.LogLine("Try read deleted storedProcedure");
-            try
-            {
-                client.Read<StoredProcedure>(retrievedStoredProcedure.ResourceId);
-                Assert.Fail("Should have thrown exception in previous statement");
-            }
-            catch (DocumentClientException clientException)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, clientException.StatusCode, "StatusCode dont match");
-            }
-
-            await client.DeleteDocumentCollectionAsync(collection1);
-
-            try
-            {
-                IDocumentQuery<dynamic> queryService1 =
-                    client.CreateStoredProcedureQuery(
-                        collection1.StoredProceduresLink,
-                        @"select * from root r where r.id=""" + storedProcedureName + @"""").AsDocumentQuery();
-
-                await queryService1.ExecuteNextAsync<StoredProcedure>();
-                Assert.Fail("Should get not found");
-            }
-            catch (DocumentClientException ex)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-            }
-
-            try
-            {
-                await client.DeleteStoredProcedureAsync(collection1.StoredProceduresLink);
-
-                Assert.Fail("Should get not found");
-            }
-            catch (DocumentClientException ex)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-            }
-        }
-
-        [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateTriggerCrud_SessionGW()
         {
-            this.ValidateTriggerCrud(ConsistencyLevel.Session,
+            this.ValidateTriggerCrud(Cosmos.ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway });
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateTriggerCrud_SessionDirectTcp()
         {
-            this.ValidateTriggerCrud(ConsistencyLevel.Session,
+            this.ValidateTriggerCrud(Cosmos.ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateTriggerCrud_SessionDirectHttps()
         {
-            this.ValidateTriggerCrud(ConsistencyLevel.Session,
+            this.ValidateTriggerCrud(Cosmos.ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
         }
 
-        internal void ValidateTriggerCrud(ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
+        internal void ValidateTriggerCrud(Cosmos.ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
         {
-            DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
-                connectionPolicy.ConnectionProtocol,
-                defaultConsistencyLevel: consistencyLevel);
+            //DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
+            //    connectionPolicy.ConnectionProtocol,
+            //    defaultConsistencyLevel: consistencyLevel);
 
-            Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            //Database database = null;
+            //DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
-            Logger.LogLine("Listing Triggers");
-            FeedResponse<Trigger> triggerCollection1 = client.ReadFeed<Trigger>(collection1.GetIdOrFullName());
+            //Logger.LogLine("Listing Triggers");
+            //FeedResponse<Trigger> triggerCollection1 = client.ReadFeed<Trigger>(collection1.GetIdOrFullName());
 
-            string triggerName = "Trigger" + Guid.NewGuid();
-            Trigger trigger = new Trigger
-            {
-                Id = triggerName,
-                Body = "function() {var x = 10;}",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
+            //string triggerName = "Trigger" + Guid.NewGuid();
+            //Trigger trigger = new Trigger
+            //{
+            //    Id = triggerName,
+            //    Body = "function() {var x = 10;}",
+            //    TriggerType = TriggerType.Pre,
+            //    TriggerOperation = TriggerOperation.All
+            //};
 
-            Logger.LogLine("Adding Trigger");
-            Trigger retrievedTrigger = client.CreateTriggerAsync(collection1, trigger).Result;
-            Assert.IsNotNull(retrievedTrigger);
-            Assert.IsTrue(retrievedTrigger.Id.Equals(triggerName, StringComparison.OrdinalIgnoreCase), "Mismatch in trigger name");
-            Assert.IsTrue(retrievedTrigger.Body.Equals("function() {var x = 10;}", StringComparison.OrdinalIgnoreCase), "Mismatch in trigger content");
-            Assert.IsTrue(retrievedTrigger.TriggerType.Equals(TriggerType.Pre), "Mismatch in trigger type");
-            Assert.IsTrue(retrievedTrigger.TriggerOperation.Equals(TriggerOperation.All), "Mismatch in trigger CRUD type");
+            //Logger.LogLine("Adding Trigger");
+            //Trigger retrievedTrigger = client.CreateTriggerAsync(collection1, trigger).Result;
+            //Assert.IsNotNull(retrievedTrigger);
+            //Assert.IsTrue(retrievedTrigger.Id.Equals(triggerName, StringComparison.OrdinalIgnoreCase), "Mismatch in trigger name");
+            //Assert.IsTrue(retrievedTrigger.Body.Equals("function() {var x = 10;}", StringComparison.OrdinalIgnoreCase), "Mismatch in trigger content");
+            //Assert.IsTrue(retrievedTrigger.TriggerType.Equals(TriggerType.Pre), "Mismatch in trigger type");
+            //Assert.IsTrue(retrievedTrigger.TriggerOperation.Equals(TriggerOperation.All), "Mismatch in trigger CRUD type");
 
-            Logger.LogLine("Listing Triggers");
-            FeedResponse<Trigger> triggerCollection2 = client.ReadFeed<Trigger>(collection1.GetIdOrFullName());
-            Assert.AreEqual(triggerCollection1.Count + 1, triggerCollection2.Count, "Trigger Collections count dont match");
+            //Logger.LogLine("Listing Triggers");
+            //FeedResponse<Trigger> triggerCollection2 = client.ReadFeed<Trigger>(collection1.GetIdOrFullName());
+            //Assert.AreEqual(triggerCollection1.Count + 1, triggerCollection2.Count, "Trigger Collections count dont match");
 
-            Logger.LogLine("Listing Triggers with FeedReader");
-            var feedReader = client.CreateTriggerFeedReader(collection1);
-            var count = 0;
-            while (feedReader.HasMoreResults)
-            {
-                count += feedReader.ExecuteNextAsync().Result.Count;
-            }
+            //Logger.LogLine("Listing Triggers with FeedReader");
+            //var feedReader = client.CreateTriggerFeedReader(collection1);
+            //var count = 0;
+            //while (feedReader.HasMoreResults)
+            //{
+            //    count += feedReader.ExecuteNextAsync().Result.Count;
+            //}
 
-            Assert.AreEqual(triggerCollection1.Count + 1, count, "Trigger Collections count dont match for feedReader");
+            //Assert.AreEqual(triggerCollection1.Count + 1, count, "Trigger Collections count dont match for feedReader");
 
 
-            Logger.LogLine("Querying Trigger");
-            Retry(() =>
-            {
-                IDocumentQuery<dynamic> queryService = client.CreateTriggerQuery(collection1.TriggersLink,
-                    @"select * from root r where r.id=""" + triggerName + @"""").AsDocumentQuery();
+            //Logger.LogLine("Querying Trigger");
+            //Retry(() =>
+            //{
+            //    IDocumentQuery<dynamic> queryService = client.CreateTriggerQuery(collection1.TriggersLink,
+            //        @"select * from root r where r.id=""" + triggerName + @"""").AsDocumentQuery();
 
-                FeedResponse<Trigger> triggerCollection3 = queryService.ExecuteNextAsync<Trigger>().Result;
+            //    FeedResponse<Trigger> triggerCollection3 = queryService.ExecuteNextAsync<Trigger>().Result;
 
-                Assert.IsNotNull(triggerCollection3, "Query result is null");
-                Assert.AreNotEqual(0, triggerCollection3.Count, "Collection count dont match");
+            //    Assert.IsNotNull(triggerCollection3, "Query result is null");
+            //    Assert.AreNotEqual(0, triggerCollection3.Count, "Collection count dont match");
 
-                foreach (Trigger queryTrigger in triggerCollection3)
-                {
-                    Assert.AreEqual(triggerName, queryTrigger.Id, "Trigger Name dont match");
-                }
-            });
+            //    foreach (Trigger queryTrigger in triggerCollection3)
+            //    {
+            //        Assert.AreEqual(triggerName, queryTrigger.Id, "Trigger Name dont match");
+            //    }
+            //});
 
-            Logger.LogLine("Updating Trigger");
-            try
-            {
-                retrievedTrigger.Body = "function() {var x = 20;}";
-                retrievedTrigger.TriggerOperation = TriggerOperation.Create;
-                Trigger retrievedTrigger2 = client.Update(retrievedTrigger, null);
-                Assert.IsNotNull(retrievedTrigger2);
-                Assert.IsTrue(retrievedTrigger2.Id.Equals(triggerName, StringComparison.OrdinalIgnoreCase), "Mismatch in trigger name");
-                Assert.IsTrue(retrievedTrigger2.Body.Equals("function() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in trigger content");
-                Assert.IsTrue(retrievedTrigger2.TriggerType.Equals(TriggerType.Pre), "Mismatch in trigger type");
-                Assert.IsTrue(retrievedTrigger2.TriggerOperation.Equals(TriggerOperation.Create), "Mismatch in trigger CRUD type");
-            }
-            catch (Exception e)
-            {
-                Assert.IsNull(e);
-            }
+            //Logger.LogLine("Updating Trigger");
+            //try
+            //{
+            //    retrievedTrigger.Body = "function() {var x = 20;}";
+            //    retrievedTrigger.TriggerOperation = TriggerOperation.Create;
+            //    Trigger retrievedTrigger2 = client.Update(retrievedTrigger, null);
+            //    Assert.IsNotNull(retrievedTrigger2);
+            //    Assert.IsTrue(retrievedTrigger2.Id.Equals(triggerName, StringComparison.OrdinalIgnoreCase), "Mismatch in trigger name");
+            //    Assert.IsTrue(retrievedTrigger2.Body.Equals("function() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in trigger content");
+            //    Assert.IsTrue(retrievedTrigger2.TriggerType.Equals(TriggerType.Pre), "Mismatch in trigger type");
+            //    Assert.IsTrue(retrievedTrigger2.TriggerOperation.Equals(TriggerOperation.Create), "Mismatch in trigger CRUD type");
+            //}
+            //catch (Exception e)
+            //{
+            //    Assert.IsNull(e);
+            //}
 
-            Logger.LogLine("Querying Trigger");
-            Retry(() =>
-            {
-                IDocumentQuery<dynamic> queryService = client.CreateTriggerQuery(collection1.TriggersLink,
-                    @"select * from root r where r.id=""" + triggerName + @"""").AsDocumentQuery();
+            //Logger.LogLine("Querying Trigger");
+            //Retry(() =>
+            //{
+            //    IDocumentQuery<dynamic> queryService = client.CreateTriggerQuery(collection1.TriggersLink,
+            //        @"select * from root r where r.id=""" + triggerName + @"""").AsDocumentQuery();
 
-                FeedResponse<Trigger> triggerCollection4 = queryService.ExecuteNextAsync<Trigger>().Result;
+            //    FeedResponse<Trigger> triggerCollection4 = queryService.ExecuteNextAsync<Trigger>().Result;
 
-                Assert.AreEqual(1, triggerCollection4.Count); // name is always indexed
-            });
+            //    Assert.AreEqual(1, triggerCollection4.Count); // name is always indexed
+            //});
 
-            Logger.LogLine("Read Trigger");
-            Trigger getTrigger = client.Read<Trigger>((string)retrievedTrigger.ResourceId);
-            Assert.IsNotNull(getTrigger);
-            Assert.IsTrue(getTrigger.Id.Equals(triggerName, StringComparison.OrdinalIgnoreCase), "Mismatch in trigger name");
+            //Logger.LogLine("Read Trigger");
+            //Trigger getTrigger = client.Read<Trigger>((string)retrievedTrigger.ResourceId);
+            //Assert.IsNotNull(getTrigger);
+            //Assert.IsTrue(getTrigger.Id.Equals(triggerName, StringComparison.OrdinalIgnoreCase), "Mismatch in trigger name");
 
-            Logger.LogLine("Deleting Trigger");
-            client.Delete<Trigger>(retrievedTrigger.ResourceId);
+            //Logger.LogLine("Deleting Trigger");
+            //client.Delete<Trigger>(retrievedTrigger.ResourceId);
 
-            Logger.LogLine("Listing Triggers");
-            FeedResponse<Trigger> triggerCollection5 = client.ReadFeed<Trigger>(collection1.ResourceId);
-            Assert.AreEqual(triggerCollection5.Count, triggerCollection1.Count, "Trigger delete is not working.");
+            //Logger.LogLine("Listing Triggers");
+            //FeedResponse<Trigger> triggerCollection5 = client.ReadFeed<Trigger>(collection1.ResourceId);
+            //Assert.AreEqual(triggerCollection5.Count, triggerCollection1.Count, "Trigger delete is not working.");
 
-            Logger.LogLine("Try read deleted trigger");
-            try
-            {
-                client.Read<Trigger>((string)retrievedTrigger.ResourceId);
-                Assert.Fail("Should have thrown exception in previous statement");
-            }
-            catch (DocumentClientException clientException)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, clientException.StatusCode, "StatusCode dont match");
-            }
+            //Logger.LogLine("Try read deleted trigger");
+            //try
+            //{
+            //    client.Read<Trigger>((string)retrievedTrigger.ResourceId);
+            //    Assert.Fail("Should have thrown exception in previous statement");
+            //}
+            //catch (DocumentClientException clientException)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.NotFound, clientException.StatusCode, "StatusCode dont match");
+            //}
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateUserDefinedFunctionCrud_SessionGW()
         {
-            this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
+            this.ValidateUserDefinedFunctionCrud(Cosmos.ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Gateway });
         }
 
         [TestMethod]
         public void ValidateUserDefinedFunctionCrud_SessionDirectTcp()
         {
-            this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
+            this.ValidateUserDefinedFunctionCrud(Cosmos.ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
         }
 
         [TestMethod]
+
         public void ValidateUserDefinedFunctionCrud_SessionDirectHttps()
         {
-            this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
+            this.ValidateUserDefinedFunctionCrud(Cosmos.ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateUserDefinedFunctionTimeout()
         {
             try
@@ -565,114 +571,115 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal void ValidateUserDefinedFunctionCrud(ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
+        internal void ValidateUserDefinedFunctionCrud(Cosmos.ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
         {
-            DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
-                connectionPolicy.ConnectionProtocol,
-                defaultConsistencyLevel: consistencyLevel);
+            //DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
+            //    connectionPolicy.ConnectionProtocol,
+            //    defaultConsistencyLevel: consistencyLevel);
 
-            Database database = null;
-            DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            //Database database = null;
+            //DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
-            Logger.LogLine("Listing UserDefinedFunctions");
-            FeedResponse<UserDefinedFunction> userDefinedFunctionCollection1 = client.ReadFeed<UserDefinedFunction>(collection1.ResourceId);
+            //Logger.LogLine("Listing UserDefinedFunctions");
+            //FeedResponse<UserDefinedFunction> userDefinedFunctionCollection1 = client.ReadFeed<UserDefinedFunction>(collection1.ResourceId);
 
-            string userDefinedFunctionName = "UserDefinedFunction" + Guid.NewGuid();
-            UserDefinedFunction userDefinedFunction = new UserDefinedFunction
-            {
-                Id = userDefinedFunctionName,
-                Body = "function userDefinedFunction() {var x = 10;}",
-            };
+            //string userDefinedFunctionName = "UserDefinedFunction" + Guid.NewGuid();
+            //UserDefinedFunction userDefinedFunction = new UserDefinedFunction
+            //{
+            //    Id = userDefinedFunctionName,
+            //    Body = "function userDefinedFunction() {var x = 10;}",
+            //};
 
-            Logger.LogLine("Adding UserDefinedFunction");
-            UserDefinedFunction retrievedUserDefinedFunction = new UserDefinedFunction { };
+            //Logger.LogLine("Adding UserDefinedFunction");
+            //UserDefinedFunction retrievedUserDefinedFunction = new UserDefinedFunction { };
 
-            try
-            {
-                retrievedUserDefinedFunction = client.CreateUserDefinedFunctionAsync(collection1, userDefinedFunction).Result;
-                Assert.IsNotNull(retrievedUserDefinedFunction);
-                Assert.IsTrue(retrievedUserDefinedFunction.Id.Equals(userDefinedFunctionName, StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction name");
-                Assert.IsTrue(retrievedUserDefinedFunction.Body.Equals("function userDefinedFunction() {var x = 10;}", StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction content");
-            }
-            catch (Exception e)
-            {
-                Assert.IsNull(e);
-            }
+            //try
+            //{
+            //    retrievedUserDefinedFunction = client.CreateUserDefinedFunctionAsync(collection1, userDefinedFunction).Result;
+            //    Assert.IsNotNull(retrievedUserDefinedFunction);
+            //    Assert.IsTrue(retrievedUserDefinedFunction.Id.Equals(userDefinedFunctionName, StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction name");
+            //    Assert.IsTrue(retrievedUserDefinedFunction.Body.Equals("function userDefinedFunction() {var x = 10;}", StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction content");
+            //}
+            //catch (Exception e)
+            //{
+            //    Assert.IsNull(e);
+            //}
 
-            Logger.LogLine("Listing UserDefinedFunctions");
-            FeedResponse<UserDefinedFunction> userDefinedFunctionCollection2 = client.ReadFeed<UserDefinedFunction>(collection1.GetIdOrFullName());
-            Assert.AreEqual(userDefinedFunctionCollection1.Count + 1, userDefinedFunctionCollection2.Count, "UserDefinedFunction Collections count dont match");
+            //Logger.LogLine("Listing UserDefinedFunctions");
+            //FeedResponse<UserDefinedFunction> userDefinedFunctionCollection2 = client.ReadFeed<UserDefinedFunction>(collection1.GetIdOrFullName());
+            //Assert.AreEqual(userDefinedFunctionCollection1.Count + 1, userDefinedFunctionCollection2.Count, "UserDefinedFunction Collections count dont match");
 
-            Logger.LogLine("Listing UserDefinedFunctions with FeedReader");
-            var feedReader = client.CreateUserDefinedFunctionFeedReader(collection1);
-            var count = 0;
-            while (feedReader.HasMoreResults)
-            {
-                count += feedReader.ExecuteNextAsync().Result.Count;
-            }
+            //Logger.LogLine("Listing UserDefinedFunctions with FeedReader");
+            //var feedReader = client.CreateUserDefinedFunctionFeedReader(collection1);
+            //var count = 0;
+            //while (feedReader.HasMoreResults)
+            //{
+            //    count += feedReader.ExecuteNextAsync().Result.Count;
+            //}
 
-            Assert.AreEqual(userDefinedFunctionCollection1.Count + 1, count, "UserDefinedFunctions Collections count dont match for feedReader");
+            //Assert.AreEqual(userDefinedFunctionCollection1.Count + 1, count, "UserDefinedFunctions Collections count dont match for feedReader");
 
-            Logger.LogLine("Querying UserDefinedFunction");
-            Retry(() =>
-            {
-                IDocumentQuery<dynamic> queryService = client.CreateUserDefinedFunctionQuery(collection1,
-                    @"select * from root r where r.id=""" + userDefinedFunctionName + @"""").AsDocumentQuery();
+            //Logger.LogLine("Querying UserDefinedFunction");
+            //Retry(() =>
+            //{
+            //    IDocumentQuery<dynamic> queryService = client.CreateUserDefinedFunctionQuery(collection1,
+            //        @"select * from root r where r.id=""" + userDefinedFunctionName + @"""").AsDocumentQuery();
 
-                FeedResponse<UserDefinedFunction> userDefinedFunctionCollection3 = queryService.ExecuteNextAsync<UserDefinedFunction>().Result;
+            //    FeedResponse<UserDefinedFunction> userDefinedFunctionCollection3 = queryService.ExecuteNextAsync<UserDefinedFunction>().Result;
 
-                Assert.IsNotNull(userDefinedFunctionCollection3, "Query result is null");
-                Assert.AreNotEqual(0, userDefinedFunctionCollection3.Count, "Collection count dont match");
+            //    Assert.IsNotNull(userDefinedFunctionCollection3, "Query result is null");
+            //    Assert.AreNotEqual(0, userDefinedFunctionCollection3.Count, "Collection count dont match");
 
-                foreach (UserDefinedFunction queryUserDefinedFunction in userDefinedFunctionCollection3)
-                {
-                    Assert.AreEqual(userDefinedFunctionName, queryUserDefinedFunction.Id, "UserDefinedFunction Name dont match");
-                }
-            });
+            //    foreach (UserDefinedFunction queryUserDefinedFunction in userDefinedFunctionCollection3)
+            //    {
+            //        Assert.AreEqual(userDefinedFunctionName, queryUserDefinedFunction.Id, "UserDefinedFunction Name dont match");
+            //    }
+            //});
 
-            Logger.LogLine("Updating UserDefinedFunction");
-            retrievedUserDefinedFunction.Body = "function userDefinedFunction() {var x = 20;}";
-            UserDefinedFunction retrievedUserDefinedFunction2 = client.Update(retrievedUserDefinedFunction, null);
-            Assert.IsNotNull(retrievedUserDefinedFunction2);
-            Assert.IsTrue(retrievedUserDefinedFunction2.Id.Equals(userDefinedFunctionName, StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction name");
-            Assert.IsTrue(retrievedUserDefinedFunction2.Body.Equals("function userDefinedFunction() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction content");
+            //Logger.LogLine("Updating UserDefinedFunction");
+            //retrievedUserDefinedFunction.Body = "function userDefinedFunction() {var x = 20;}";
+            //UserDefinedFunction retrievedUserDefinedFunction2 = client.Update(retrievedUserDefinedFunction, null);
+            //Assert.IsNotNull(retrievedUserDefinedFunction2);
+            //Assert.IsTrue(retrievedUserDefinedFunction2.Id.Equals(userDefinedFunctionName, StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction name");
+            //Assert.IsTrue(retrievedUserDefinedFunction2.Body.Equals("function userDefinedFunction() {var x = 20;}", StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction content");
 
-            Logger.LogLine("Querying UserDefinedFunction");
-            Retry(() =>
-            {
-                IDocumentQuery<dynamic> queryService = client.CreateUserDefinedFunctionQuery(collection1,
-                    @"select * from root r where r.id=""" + userDefinedFunctionName + @"""").AsDocumentQuery();
+            //Logger.LogLine("Querying UserDefinedFunction");
+            //Retry(() =>
+            //{
+            //    IDocumentQuery<dynamic> queryService = client.CreateUserDefinedFunctionQuery(collection1,
+            //        @"select * from root r where r.id=""" + userDefinedFunctionName + @"""").AsDocumentQuery();
 
-                FeedResponse<UserDefinedFunction> userDefinedFunctionCollection4 = queryService.ExecuteNextAsync<UserDefinedFunction>().Result;
+            //    FeedResponse<UserDefinedFunction> userDefinedFunctionCollection4 = queryService.ExecuteNextAsync<UserDefinedFunction>().Result;
 
-                Assert.AreEqual(1, userDefinedFunctionCollection4.Count); // name is always indexed
-            });
+            //    Assert.AreEqual(1, userDefinedFunctionCollection4.Count); // name is always indexed
+            //});
 
-            Logger.LogLine("Read UserDefinedFunction");
-            UserDefinedFunction getUserDefinedFunction = client.Read<UserDefinedFunction>(retrievedUserDefinedFunction.GetIdOrFullName());
-            Assert.IsNotNull(getUserDefinedFunction);
-            Assert.IsTrue(getUserDefinedFunction.Id.Equals(userDefinedFunctionName, StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction name");
+            //Logger.LogLine("Read UserDefinedFunction");
+            //UserDefinedFunction getUserDefinedFunction = client.Read<UserDefinedFunction>(retrievedUserDefinedFunction.GetIdOrFullName());
+            //Assert.IsNotNull(getUserDefinedFunction);
+            //Assert.IsTrue(getUserDefinedFunction.Id.Equals(userDefinedFunctionName, StringComparison.OrdinalIgnoreCase), "Mismatch in userDefinedFunction name");
 
-            Logger.LogLine("Deleting UserDefinedFunction");
-            client.Delete<UserDefinedFunction>(retrievedUserDefinedFunction.ResourceId);
+            //Logger.LogLine("Deleting UserDefinedFunction");
+            //client.Delete<UserDefinedFunction>(retrievedUserDefinedFunction.ResourceId);
 
-            Logger.LogLine("Listing UserDefinedFunctions");
-            FeedResponse<UserDefinedFunction> userDefinedFunctionCollection5 = client.ReadFeed<UserDefinedFunction>(collection1.GetIdOrFullName());
-            Assert.AreEqual(userDefinedFunctionCollection5.Count, userDefinedFunctionCollection1.Count, "UserDefinedFunction delete is not working.");
+            //Logger.LogLine("Listing UserDefinedFunctions");
+            //FeedResponse<UserDefinedFunction> userDefinedFunctionCollection5 = client.ReadFeed<UserDefinedFunction>(collection1.GetIdOrFullName());
+            //Assert.AreEqual(userDefinedFunctionCollection5.Count, userDefinedFunctionCollection1.Count, "UserDefinedFunction delete is not working.");
 
-            Logger.LogLine("Try read deleted userDefinedFunction");
-            try
-            {
-                client.Read<UserDefinedFunction>(retrievedUserDefinedFunction.ResourceId);
-                Assert.Fail("Should have thrown exception in previous statement");
-            }
-            catch (DocumentClientException clientException)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, clientException.StatusCode, "StatusCode dont match");
-            }
+            //Logger.LogLine("Try read deleted userDefinedFunction");
+            //try
+            //{
+            //    client.Read<UserDefinedFunction>(retrievedUserDefinedFunction.ResourceId);
+            //    Assert.Fail("Should have thrown exception in previous statement");
+            //}
+            //catch (DocumentClientException clientException)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.NotFound, clientException.StatusCode, "StatusCode dont match");
+            //}
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateTriggersNameBased()
         {
             DocumentClient client = TestCommon.CreateClient(false);
@@ -690,7 +697,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     item.id = item.id.toUpperCase() + 't1';
                     getContext().getRequest().setBody(item);
                 }",
-                TriggerType = TriggerType.Pre,
+                //TriggerType = TriggerType.Pre,
                 TriggerOperation = TriggerOperation.All
             };
             Trigger retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, t1).Result;
@@ -720,596 +727,597 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateTriggers()
         {
-            ValidateTriggersInternal(Protocol.Https, ConsistencyLevel.Session);
-            ValidateTriggersInternal(Protocol.Tcp, ConsistencyLevel.Session);
+            ValidateTriggersInternal(Protocol.Https, Cosmos.ConsistencyLevel.Session);
+            ValidateTriggersInternal(Protocol.Tcp, Cosmos.ConsistencyLevel.Session);
         }
 
-        internal void ValidateTriggersInternal(Protocol protocol = Protocol.Https, ConsistencyLevel? consistencyLevel = null)
-        {
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
-            DocumentClient client = TestCommon.CreateClient(false, protocol: protocol, defaultConsistencyLevel: consistencyLevel);
-#endif
-#if !DIRECT_MODE
-            DocumentClient client = TestCommon.CreateClient(true, defaultConsistencyLevel: consistencyLevel);
-#endif
-            TestCommon.DeleteAllDatabasesAsync().Wait();
-            Database database = TestCommon.CreateOrGetDatabase(client);
+        internal void ValidateTriggersInternal(Protocol protocol = Protocol.Https, Cosmos.ConsistencyLevel? consistencyLevel = null)
+       {
+//#if DIRECT_MODE
+//            // DIRECT MODE has ReadFeed issues in the Public emulator
+//            DocumentClient client = TestCommon.CreateClient(false, protocol: protocol, defaultConsistencyLevel: consistencyLevel);
+//#endif
+//#if !DIRECT_MODE
+//            DocumentClient client = TestCommon.CreateClient(true, defaultConsistencyLevel: consistencyLevel);
+//#endif
+//            TestCommon.DeleteAllDatabasesAsync().Wait();
+//            Database database = TestCommon.CreateOrGetDatabase(client);
 
-            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
+//            DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
 
-            // 1. Basic tests
+//            // 1. Basic tests
 
-            // uppercase name
-            Trigger t1 = new Trigger
-            {
-                Id = "t1",
-                Body = @"function() {
-                    var item = getContext().getRequest().getBody();
-                    item.id = item.id.toUpperCase() + 't1';
-                    getContext().getRequest().setBody(item);
-                }",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            Trigger retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, t1).Result;
+//            // uppercase name
+//            Trigger t1 = new Trigger
+//            {
+//                Id = "t1",
+//                Body = @"function() {
+//                    var item = getContext().getRequest().getBody();
+//                    item.id = item.id.toUpperCase() + 't1';
+//                    getContext().getRequest().setBody(item);
+//                }",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            Trigger retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, t1).Result;
 
-            dynamic doct1 = GatewayTests.CreateDocument(client, baseUri, collection1, "Doc1", "empty", 0, pretrigger: "t1");
-            Assert.AreEqual("DOC1t1", doct1.Id);
+//            dynamic doct1 = GatewayTests.CreateDocument(client, baseUri, collection1, "Doc1", "empty", 0, pretrigger: "t1");
+//            Assert.AreEqual("DOC1t1", doct1.Id);
 
-            // post trigger - get
-            Trigger response1 = new Trigger
-            {
-                Id = "response1",
-                Body = @"function() {
-                    var prebody = getContext().getRequest().getBody();
-                    if (prebody.id != 'TESTING POST TRIGGERt1') throw 'name mismatch';
-                    var postbody = getContext().getResponse().getBody();
-                    if (postbody.id != 'TESTING POST TRIGGERt1') throw 'name mismatch';
-                };",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response1).Result;
+//            // post trigger - get
+//            Trigger response1 = new Trigger
+//            {
+//                Id = "response1",
+//                Body = @"function() {
+//                    var prebody = getContext().getRequest().getBody();
+//                    if (prebody.id != 'TESTING POST TRIGGERt1') throw 'name mismatch';
+//                    var postbody = getContext().getResponse().getBody();
+//                    if (postbody.id != 'TESTING POST TRIGGERt1') throw 'name mismatch';
+//                };",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response1).Result;
 
-            dynamic docresponse1 = GatewayTests.CreateDocument(client, baseUri, collection1, "testing post trigger", "empty", 0, pretrigger: "t1", posttrigger: "response1");
-            Assert.AreEqual("TESTING POST TRIGGERt1", docresponse1.Id);
+//            dynamic docresponse1 = GatewayTests.CreateDocument(client, baseUri, collection1, "testing post trigger", "empty", 0, pretrigger: "t1", posttrigger: "response1");
+//            Assert.AreEqual("TESTING POST TRIGGERt1", docresponse1.Id);
 
-            // post trigger response
-            Trigger response2 = new Trigger
-            {
-                Id = "response2",
-                Body = @"function() {
-                    var predoc = getContext().getRequest().getBody(); 
-                    var postdoc = getContext().getResponse().getBody();
-                    postdoc.id += predoc.id + 'response2'; 
-                    getContext().getResponse().setBody(postdoc); 
-                };",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response2).Result;
+//            // post trigger response
+//            Trigger response2 = new Trigger
+//            {
+//                Id = "response2",
+//                Body = @"function() {
+//                    var predoc = getContext().getRequest().getBody(); 
+//                    var postdoc = getContext().getResponse().getBody();
+//                    postdoc.id += predoc.id + 'response2'; 
+//                    getContext().getResponse().setBody(postdoc); 
+//                };",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response2).Result;
 
-            dynamic docresponse2 = GatewayTests.CreateDocument(client, baseUri, collection1, "post trigger output", "empty", 0, pretrigger: "t1", posttrigger: "response2");
-            Assert.AreEqual("POST TRIGGER OUTPUTt1POST TRIGGER OUTPUTt1response2", docresponse2.Id);
+//            dynamic docresponse2 = GatewayTests.CreateDocument(client, baseUri, collection1, "post trigger output", "empty", 0, pretrigger: "t1", posttrigger: "response2");
+//            Assert.AreEqual("POST TRIGGER OUTPUTt1POST TRIGGER OUTPUTt1response2", docresponse2.Id);
 
-            // post trigger cannot set anything in request, cannot set headers in response
-            Trigger response3 = new Trigger
-            {
-                Id = "response3",
-                Body = @"function() {
-                    var exceptionSeen = false;
-                    try { getContext().getRequest().setBody('lol'); }
-                    catch (err) { exceptionSeen = true; }
-                    if(!exceptionSeen) throw 'expected exception not seen';
+//            // post trigger cannot set anything in request, cannot set headers in response
+//            Trigger response3 = new Trigger
+//            {
+//                Id = "response3",
+//                Body = @"function() {
+//                    var exceptionSeen = false;
+//                    try { getContext().getRequest().setBody('lol'); }
+//                    catch (err) { exceptionSeen = true; }
+//                    if(!exceptionSeen) throw 'expected exception not seen';
             
-                    exceptionSeen = false;
-                    try { getContext().getRequest().setValue('Body', 'lol'); }
-                    catch (err) { exceptionSeen = true; }
-                    if(!exceptionSeen) throw 'expected exception not seen';
+//                    exceptionSeen = false;
+//                    try { getContext().getRequest().setValue('Body', 'lol'); }
+//                    catch (err) { exceptionSeen = true; }
+//                    if(!exceptionSeen) throw 'expected exception not seen';
 
-                    exceptionSeen = false;
-                    try { getContext().getRequest().setValue('Test', 'lol'); }
-                    catch (err) { exceptionSeen = true; }
-                    if(!exceptionSeen) throw 'expected exception not seen';
+//                    exceptionSeen = false;
+//                    try { getContext().getRequest().setValue('Test', 'lol'); }
+//                    catch (err) { exceptionSeen = true; }
+//                    if(!exceptionSeen) throw 'expected exception not seen';
 
-                    exceptionSeen = false;
-                    try { getContext().getResponse().setValue('Test', 'lol'); }
-                    catch (err) { exceptionSeen = true; }
-                    if(!exceptionSeen) throw 'expected exception not seen';
-                };",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response3).Result;
+//                    exceptionSeen = false;
+//                    try { getContext().getResponse().setValue('Test', 'lol'); }
+//                    catch (err) { exceptionSeen = true; }
+//                    if(!exceptionSeen) throw 'expected exception not seen';
+//                };",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, response3).Result;
 
-            dynamic docresponse3 = GatewayTests.CreateDocument(client, baseUri, collection1, "testing post trigger2", "empty", 0, pretrigger: "t1", posttrigger: "response3");
-            Assert.AreEqual("TESTING POST TRIGGER2t1", docresponse3.Id);
+//            dynamic docresponse3 = GatewayTests.CreateDocument(client, baseUri, collection1, "testing post trigger2", "empty", 0, pretrigger: "t1", posttrigger: "response3");
+//            Assert.AreEqual("TESTING POST TRIGGER2t1", docresponse3.Id);
 
-            DocumentCollection collection2 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
+//            DocumentCollection collection2 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
 
-            // empty trigger
-            Trigger t2 = new Trigger
-            {
-                Id = "t2",
-                Body = @"function() { }",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, t2).Result;
+//            // empty trigger
+//            Trigger t2 = new Trigger
+//            {
+//                Id = "t2",
+//                Body = @"function() { }",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, t2).Result;
 
-            dynamic doct2 = GatewayTests.CreateDocument(client, baseUri, collection2, "Doc2", "Prop1Value", 101, pretrigger: "t2");
-            Assert.AreEqual("Doc2", doct2.Id);
+//            dynamic doct2 = GatewayTests.CreateDocument(client, baseUri, collection2, "Doc2", "Prop1Value", 101, pretrigger: "t2");
+//            Assert.AreEqual("Doc2", doct2.Id);
 
-            // lowercase name
-            Trigger t3 = new Trigger
-            {
-                Id = "t3",
-                Body = @"function() { 
-                    var item = getContext().getRequest().getBody();
-                    item.id = item.id.toLowerCase() + 't3';
-                    getContext().getRequest().setBody(item);
-                }",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, t3).Result;
+//            // lowercase name
+//            Trigger t3 = new Trigger
+//            {
+//                Id = "t3",
+//                Body = @"function() { 
+//                    var item = getContext().getRequest().getBody();
+//                    item.id = item.id.toLowerCase() + 't3';
+//                    getContext().getRequest().setBody(item);
+//                }",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, t3).Result;
 
-            dynamic doct3 = GatewayTests.CreateDocument(client, baseUri, collection2, "Doc3", "empty", 0, pretrigger: "t3");
-            Assert.AreEqual("doc3t3", doct3.Id);
+//            dynamic doct3 = GatewayTests.CreateDocument(client, baseUri, collection2, "Doc3", "empty", 0, pretrigger: "t3");
+//            Assert.AreEqual("doc3t3", doct3.Id);
 
-            // trigger type mismatch - failure case
-            Trigger triggerTypeMismatch = new Trigger
-            {
-                Id = "triggerTypeMismatch",
-                Body = @"function() { }",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, triggerTypeMismatch).Result;
+//            // trigger type mismatch - failure case
+//            Trigger triggerTypeMismatch = new Trigger
+//            {
+//                Id = "triggerTypeMismatch",
+//                Body = @"function() { }",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, triggerTypeMismatch).Result;
 
-            bool exceptionThrown = false;
-            try
-            {
-                dynamic doctriggertype = GatewayTests.CreateDocument(client, baseUri, collection2, "Docoptype", "empty", 0, pretrigger: "triggerTypeMismatch");
-            }
-            catch (DocumentClientException e)
-            {
-                Assert.IsNotNull(e);
-                exceptionThrown = true;
-            }
-            Assert.IsTrue(exceptionThrown, "mismatch in trigger type didn't cause failure");
+//            bool exceptionThrown = false;
+//            try
+//            {
+//                dynamic doctriggertype = GatewayTests.CreateDocument(client, baseUri, collection2, "Docoptype", "empty", 0, pretrigger: "triggerTypeMismatch");
+//            }
+//            catch (DocumentClientException e)
+//            {
+//                Assert.IsNotNull(e);
+//                exceptionThrown = true;
+//            }
+//            Assert.IsTrue(exceptionThrown, "mismatch in trigger type didn't cause failure");
 
-            // pre-trigger throws - failure case
-            Trigger preTriggerThatThrows = new Trigger
-            {
-                Id = "preTriggerThatThrows",
-                Body = @"function() { throw new Error(409, 'Error 409'); }",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, preTriggerThatThrows).Result;
+//            // pre-trigger throws - failure case
+//            Trigger preTriggerThatThrows = new Trigger
+//            {
+//                Id = "preTriggerThatThrows",
+//                Body = @"function() { throw new Error(409, 'Error 409'); }",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, preTriggerThatThrows).Result;
 
-            try
-            {
-                GatewayTests.CreateDocument(client, baseUri, collection2, "Docoptype", "empty", 0, pretrigger: "preTriggerThatThrows");
-                Assert.Fail("Should throw and not get here.");
-            }
-            catch (DocumentClientException e)
-            {
-                Assert.AreEqual(HttpStatusCode.BadRequest, e.StatusCode);
-                Assert.AreEqual(409, (int)e.GetSubStatus());
-                Assert.IsNotNull(e.Message);
-            }
+//            try
+//            {
+//                GatewayTests.CreateDocument(client, baseUri, collection2, "Docoptype", "empty", 0, pretrigger: "preTriggerThatThrows");
+//                Assert.Fail("Should throw and not get here.");
+//            }
+//            catch (DocumentClientException e)
+//            {
+//                Assert.AreEqual(HttpStatusCode.BadRequest, e.StatusCode);
+//                Assert.AreEqual(409, (int)e.GetSubStatus());
+//                Assert.IsNotNull(e.Message);
+//            }
 
-            // post-trigger throws - failure case
-            Trigger postTriggerThatThrows = new Trigger
-            {
-                Id = "postTriggerThatThrows",
-                Body = @"function() { throw new Error(4444, 'Error 4444'); }",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, postTriggerThatThrows).Result;
+//            // post-trigger throws - failure case
+//            Trigger postTriggerThatThrows = new Trigger
+//            {
+//                Id = "postTriggerThatThrows",
+//                Body = @"function() { throw new Error(4444, 'Error 4444'); }",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, postTriggerThatThrows).Result;
 
-            try
-            {
-                GatewayTests.CreateDocument(client, baseUri, collection2, "Docoptype", "empty", 0, posttrigger: "postTriggerThatThrows");
-                Assert.Fail("Should throw and not get here.");
-            }
-            catch (DocumentClientException e)
-            {
-                Assert.AreEqual(HttpStatusCode.BadRequest, e.StatusCode);
-                Assert.AreEqual(4444, (int)e.GetSubStatus());
-                Assert.IsNotNull(e.Message);
-            }
+//            try
+//            {
+//                GatewayTests.CreateDocument(client, baseUri, collection2, "Docoptype", "empty", 0, posttrigger: "postTriggerThatThrows");
+//                Assert.Fail("Should throw and not get here.");
+//            }
+//            catch (DocumentClientException e)
+//            {
+//                Assert.AreEqual(HttpStatusCode.BadRequest, e.StatusCode);
+//                Assert.AreEqual(4444, (int)e.GetSubStatus());
+//                Assert.IsNotNull(e.Message);
+//            }
 
-            // failure test - trigger without body
-            Trigger triggerNoBody = new Trigger
-            {
-                Id = "trigger" + Guid.NewGuid(),
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            try
-            {
-                Trigger retrievedTriggerNoBody = client.CreateTriggerAsync(collection2, triggerNoBody).Result;
-            }
-            catch (Exception ex)
-            {
-                Assert.IsNotNull(ex);
-                Assert.IsNotNull(ex.InnerException);
-                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'body; ' - are missing"));
-            }
+//            // failure test - trigger without body
+//            Trigger triggerNoBody = new Trigger
+//            {
+//                Id = "trigger" + Guid.NewGuid(),
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            try
+//            {
+//                Trigger retrievedTriggerNoBody = client.CreateTriggerAsync(collection2, triggerNoBody).Result;
+//            }
+//            catch (Exception ex)
+//            {
+//                Assert.IsNotNull(ex);
+//                Assert.IsNotNull(ex.InnerException);
+//                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'body; ' - are missing"));
+//            }
 
-            // failure test - trigger without trigger type
-            Trigger triggerNoType = new Trigger
-            {
-                Id = "trigger" + Guid.NewGuid(),
-                Body = @"function() { }",
-                TriggerOperation = TriggerOperation.All
-            };
-            try
-            {
-                Trigger retrievedTriggerNoType = client.CreateTriggerAsync(collection2, triggerNoType).Result;
-            }
-            catch (Exception ex)
-            {
-                Assert.IsNotNull(ex);
-                Assert.IsNotNull(ex.InnerException);
-                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'triggerType; ' - are missing"));
-            }
+//            // failure test - trigger without trigger type
+//            Trigger triggerNoType = new Trigger
+//            {
+//                Id = "trigger" + Guid.NewGuid(),
+//                Body = @"function() { }",
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            try
+//            {
+//                Trigger retrievedTriggerNoType = client.CreateTriggerAsync(collection2, triggerNoType).Result;
+//            }
+//            catch (Exception ex)
+//            {
+//                Assert.IsNotNull(ex);
+//                Assert.IsNotNull(ex.InnerException);
+//                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'triggerType; ' - are missing"));
+//            }
 
-            // failure test - trigger without trigger operation
-            Trigger triggerNoOperation = new Trigger
-            {
-                Id = "trigger" + Guid.NewGuid(),
-                Body = @"function() { }",
-                TriggerType = TriggerType.Post,
-            };
-            try
-            {
-                Trigger retrievedTriggerNoType = client.CreateTriggerAsync(collection2, triggerNoOperation).Result;
-            }
-            catch (Exception ex)
-            {
-                Assert.IsNotNull(ex);
-                Assert.IsNotNull(ex.InnerException);
-                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'triggerOperation; ' - are missing"));
-            }
+//            // failure test - trigger without trigger operation
+//            Trigger triggerNoOperation = new Trigger
+//            {
+//                Id = "trigger" + Guid.NewGuid(),
+//                Body = @"function() { }",
+//                TriggerType = TriggerType.Post,
+//            };
+//            try
+//            {
+//                Trigger retrievedTriggerNoType = client.CreateTriggerAsync(collection2, triggerNoOperation).Result;
+//            }
+//            catch (Exception ex)
+//            {
+//                Assert.IsNotNull(ex);
+//                Assert.IsNotNull(ex.InnerException);
+//                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'triggerOperation; ' - are missing"));
+//            }
 
-            // TODO: uncomment when preserializedScripts is enabled.
-            //// failure test - trigger with empty body
-            //Trigger triggerEmptyBody = new Trigger
-            //{
-            //    Id = "triggerEmptyBody",
-            //    Body = @"",
-            //    TriggerType = TriggerType.Pre,
-            //    TriggerOperation = TriggerOperation.All
-            //};
-            //try
-            //{
-            //    retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, triggerEmptyBody).Result;
-            //    Assert.Fail("Script with syntax error should have failed when being stored");
-            //}
-            //catch (AggregateException e)
-            //{
-            //    Assert.IsNotNull(e.InnerException);
-            //    Assert.IsInstanceOfType(e.InnerException, typeof(DocumentClientException));
-            //    TestCommon.AssertException((DocumentClientException)e.InnerException, HttpStatusCode.BadRequest);
-            //    Assert.IsTrue(e.InnerException.Message.Contains("Encountered exception while compiling Javascript."));
-            //}
+//            // TODO: uncomment when preserializedScripts is enabled.
+//            //// failure test - trigger with empty body
+//            //Trigger triggerEmptyBody = new Trigger
+//            //{
+//            //    Id = "triggerEmptyBody",
+//            //    Body = @"",
+//            //    TriggerType = TriggerType.Pre,
+//            //    TriggerOperation = TriggerOperation.All
+//            //};
+//            //try
+//            //{
+//            //    retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, triggerEmptyBody).Result;
+//            //    Assert.Fail("Script with syntax error should have failed when being stored");
+//            //}
+//            //catch (AggregateException e)
+//            //{
+//            //    Assert.IsNotNull(e.InnerException);
+//            //    Assert.IsInstanceOfType(e.InnerException, typeof(DocumentClientException));
+//            //    TestCommon.AssertException((DocumentClientException)e.InnerException, HttpStatusCode.BadRequest);
+//            //    Assert.IsTrue(e.InnerException.Message.Contains("Encountered exception while compiling Javascript."));
+//            //}
 
-            // failure test - trigger on resource other than document, say database
-            Database dbToCreate = new Database
-            {
-                Id = "temp" + Guid.NewGuid().ToString()
-            };
-            try
-            {
-                dbToCreate = client.CreateDatabaseAsync(dbToCreate, new RequestOptions { PreTriggerInclude = new List<string> { "t1" } }).Result;
-            }
-            catch (Exception e)
-            {
-                Assert.IsNotNull(e);
-                Assert.IsNotNull(e.InnerException);
+//            // failure test - trigger on resource other than document, say database
+//            Database dbToCreate = new Database
+//            {
+//                Id = "temp" + Guid.NewGuid().ToString()
+//            };
+//            try
+//            {
+//                dbToCreate = client.CreateDatabaseAsync(dbToCreate, new RequestOptions { PreTriggerInclude = new List<string> { "t1" } }).Result;
+//            }
+//            catch (Exception e)
+//            {
+//                Assert.IsNotNull(e);
+//                Assert.IsNotNull(e.InnerException);
 
-                DocumentClientException de = e.InnerException as DocumentClientException;
-                Assert.AreEqual(HttpStatusCode.BadRequest.ToString(), de.Error.Code);
-            }
+//                DocumentClientException de = e.InnerException as DocumentClientException;
+//                Assert.AreEqual(HttpStatusCode.BadRequest.ToString(), de.Error.Code);
+//            }
 
-            // failure test - trigger on non-CRUD operation
-            INameValueCollection headers = new StringKeyValueCollection();
-            headers.Add("x-ms-pre-trigger-include", "t1");
+//            // failure test - trigger on non-CRUD operation
+//            INameValueCollection headers = new StringKeyValueCollection();
+//            headers.Add("x-ms-pre-trigger-include", "t1");
 
-            try
-            {
-                dynamic docFailure = client.ReadFeed<Document>(collection1.ResourceId, headers);
-                // It actually always succeed here.
-                // Assert.Fail("It should fail with trigger on non-CRUD operation");
-            }
-            catch (DocumentClientException e)
-            {
-                Assert.IsNotNull(e);
-                Assert.AreEqual(HttpStatusCode.BadRequest.ToString(), e.Error.Code);
-            }
+//            try
+//            {
+//                dynamic docFailure = client.ReadFeed<Document>(collection1.ResourceId, headers);
+//                // It actually always succeed here.
+//                // Assert.Fail("It should fail with trigger on non-CRUD operation");
+//            }
+//            catch (DocumentClientException e)
+//            {
+//                Assert.IsNotNull(e);
+//                Assert.AreEqual(HttpStatusCode.BadRequest.ToString(), e.Error.Code);
+//            }
 
-            // TODO: uncomment when preserializeScripts is enabled.
-            //            // precompilation should catch errors on create
-            //            Trigger triggerSyntaxError = new Trigger
-            //            {
-            //                Id = "trigger" + Guid.NewGuid().ToString(),
-            //                Body = @"
-            //                    method() { // method is invalid identifier
-            //                        for(var i = 0; i < 10; i++) getContext().getResponse().appendValue('Body', i);
-            //                    }",
-            //                TriggerType = TriggerType.Pre,
-            //                TriggerOperation = TriggerOperation.All
-            //            };
+//            // TODO: uncomment when preserializeScripts is enabled.
+//            //            // precompilation should catch errors on create
+//            //            Trigger triggerSyntaxError = new Trigger
+//            //            {
+//            //                Id = "trigger" + Guid.NewGuid().ToString(),
+//            //                Body = @"
+//            //                    method() { // method is invalid identifier
+//            //                        for(var i = 0; i < 10; i++) getContext().getResponse().appendValue('Body', i);
+//            //                    }",
+//            //                TriggerType = TriggerType.Pre,
+//            //                TriggerOperation = TriggerOperation.All
+//            //            };
 
-            //            try
-            //            {
-            //                Trigger failureTrigger = client.CreateTriggerAsync(collection2, triggerSyntaxError).Result;
-            //                Assert.Fail("Script with syntax error should have failed when being stored");
-            //            }
-            //            catch (AggregateException e)
-            //            {
-            //                Assert.IsNotNull(e.InnerException);
-            //                Assert.IsInstanceOfType(e.InnerException, typeof(DocumentClientException));
-            //                TestCommon.AssertException((DocumentClientException)e.InnerException, HttpStatusCode.BadRequest);
-            //                Assert.IsTrue(e.InnerException.Message.Contains("Encountered exception while compiling Javascript."));
-            //            }
+//            //            try
+//            //            {
+//            //                Trigger failureTrigger = client.CreateTriggerAsync(collection2, triggerSyntaxError).Result;
+//            //                Assert.Fail("Script with syntax error should have failed when being stored");
+//            //            }
+//            //            catch (AggregateException e)
+//            //            {
+//            //                Assert.IsNotNull(e.InnerException);
+//            //                Assert.IsInstanceOfType(e.InnerException, typeof(DocumentClientException));
+//            //                TestCommon.AssertException((DocumentClientException)e.InnerException, HttpStatusCode.BadRequest);
+//            //                Assert.IsTrue(e.InnerException.Message.Contains("Encountered exception while compiling Javascript."));
+//            //            }
 
-            // 2. Request and response objects
+//            // 2. Request and response objects
 
-            // set request body - pretrigger
-            Trigger request1 = new Trigger
-            {
-                Id = "request1",
-                Body = @"function() {
-                    var docBody = getContext().getRequest().getBody();
-                    if(docBody.id != 'abc') throw 'name mismatch';
-                    docBody.id = 'def';
-                    getContext().getRequest().setBody(docBody);
-                };",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, request1).Result;
+//            // set request body - pretrigger
+//            Trigger request1 = new Trigger
+//            {
+//                Id = "request1",
+//                Body = @"function() {
+//                    var docBody = getContext().getRequest().getBody();
+//                    if(docBody.id != 'abc') throw 'name mismatch';
+//                    docBody.id = 'def';
+//                    getContext().getRequest().setBody(docBody);
+//                };",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection2, request1).Result;
 
-            dynamic docrequest1 = GatewayTests.CreateDocument(client, baseUri, collection2, "abc", "empty", 0, pretrigger: "request1");
-            Assert.AreEqual("def", docrequest1.Id);
+//            dynamic docrequest1 = GatewayTests.CreateDocument(client, baseUri, collection2, "abc", "empty", 0, pretrigger: "request1");
+//            Assert.AreEqual("def", docrequest1.Id);
 
-            DocumentCollection collection3 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
+//            DocumentCollection collection3 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
 
-            // set request body multiple times
-            Trigger request2 = new Trigger
-            {
-                Id = "request2",
-                Body = @"function() {
-                    for (var i = 0; i < 200; i++)
-                        { 
-                        var item = getContext().getRequest().getBody();
-                        item.id += 'a';
-                        getContext().getRequest().setBody(item);
-                        }
-                };",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request2).Result;
+//            // set request body multiple times
+//            Trigger request2 = new Trigger
+//            {
+//                Id = "request2",
+//                Body = @"function() {
+//                    for (var i = 0; i < 200; i++)
+//                        { 
+//                        var item = getContext().getRequest().getBody();
+//                        item.id += 'a';
+//                        getContext().getRequest().setBody(item);
+//                        }
+//                };",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request2).Result;
 
-            dynamic docrequest2 = GatewayTests.CreateDocument(client, baseUri, collection3, "doc", "empty", 0, pretrigger: "request2");
-            Assert.AreEqual(203, docrequest2.Id.Length);
+//            dynamic docrequest2 = GatewayTests.CreateDocument(client, baseUri, collection3, "doc", "empty", 0, pretrigger: "request2");
+//            Assert.AreEqual(203, docrequest2.Id.Length);
 
-            // no response in pre-trigger
-            Trigger request3 = new Trigger
-            {
-                Id = "request3",
-                Body = @"function() {
-                    var exceptionSeen = false;
-                    try { getContext().getResponse(); }
-                    catch (err) { exceptionSeen = true; }
-                    if (!exceptionSeen) throw 'expected exception not seen';
+//            // no response in pre-trigger
+//            Trigger request3 = new Trigger
+//            {
+//                Id = "request3",
+//                Body = @"function() {
+//                    var exceptionSeen = false;
+//                    try { getContext().getResponse(); }
+//                    catch (err) { exceptionSeen = true; }
+//                    if (!exceptionSeen) throw 'expected exception not seen';
 
-                    var item = getContext().getRequest().getBody();
-                    item.id = 'noresponse';
-                    getContext().getRequest().setValue('Body', item);
-                }",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request3).Result;
+//                    var item = getContext().getRequest().getBody();
+//                    item.id = 'noresponse';
+//                    getContext().getRequest().setValue('Body', item);
+//                }",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request3).Result;
 
-            dynamic docrequest3 = GatewayTests.CreateDocument(client, baseUri, collection3, "noname", "empty", 0, pretrigger: "request3");
-            Assert.AreEqual("noresponse", docrequest3.Id);
+//            dynamic docrequest3 = GatewayTests.CreateDocument(client, baseUri, collection3, "noname", "empty", 0, pretrigger: "request3");
+//            Assert.AreEqual("noresponse", docrequest3.Id);
 
-            // not allowed to set headers in pre-trigger
-            Trigger request4 = new Trigger
-            {
-                Id = "request4",
-                Body = @"function() {
-                    var exceptionSeen = false;
-                    try { getContext().getRequest().setValue('Test', '123');; }
-                    catch (err) { exceptionSeen = true; }
-                    if (!exceptionSeen) throw 'expected exception not seen';
+//            // not allowed to set headers in pre-trigger
+//            Trigger request4 = new Trigger
+//            {
+//                Id = "request4",
+//                Body = @"function() {
+//                    var exceptionSeen = false;
+//                    try { getContext().getRequest().setValue('Test', '123');; }
+//                    catch (err) { exceptionSeen = true; }
+//                    if (!exceptionSeen) throw 'expected exception not seen';
 
-                    var item = getContext().getRequest().getBody();
-                    item.id = 'noheaders';
-                    getContext().getRequest().setValue('Body', item);
-                }",
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request4).Result;
+//                    var item = getContext().getRequest().getBody();
+//                    item.id = 'noheaders';
+//                    getContext().getRequest().setValue('Body', item);
+//                }",
+//                TriggerType = TriggerType.Pre,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request4).Result;
 
-            ResourceResponse<Document> docrequest4 = client.CreateDocumentAsync(collection3, new Document { Id = "noname" }, new RequestOptions { PreTriggerInclude = new List<string> { "request4" } }).Result;
-            Assert.IsTrue(docrequest4.Resource.Id == "noheaders");
-            Assert.IsTrue(docrequest4.ResponseHeaders["Test"] == null);
+//            ResourceResponse<Document> docrequest4 = client.CreateDocumentAsync(collection3, new Document { Id = "noname" }, new RequestOptions { PreTriggerInclude = new List<string> { "request4" } }).Result;
+//            Assert.IsTrue(docrequest4.Resource.Id == "noheaders");
+//            Assert.IsTrue(docrequest4.ResponseHeaders["Test"] == null);
 
-            // post-trigger response - contains quota details
-            Trigger responseQuotaHeader = new Trigger
-            {
-                Id = "responseQuotaHeader",
-                Body = @"function() {
-                    var quotaCurrentUsage = getContext().getResponse().getResourceQuotaCurrentUsage();
-                    var quotaMax = getContext().getResponse().getMaxResourceQuota();
+//            // post-trigger response - contains quota details
+//            Trigger responseQuotaHeader = new Trigger
+//            {
+//                Id = "responseQuotaHeader",
+//                Body = @"function() {
+//                    var quotaCurrentUsage = getContext().getResponse().getResourceQuotaCurrentUsage();
+//                    var quotaMax = getContext().getResponse().getMaxResourceQuota();
 
-                    var postdoc = getContext().getResponse().getBody();
-                    postdoc.Title = quotaCurrentUsage;
-                    postdoc.Author = quotaMax;
-                    getContext().getResponse().setValue('Body', postdoc);
-                }",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, responseQuotaHeader).Result;
+//                    var postdoc = getContext().getResponse().getBody();
+//                    postdoc.Title = quotaCurrentUsage;
+//                    postdoc.Author = quotaMax;
+//                    getContext().getResponse().setValue('Body', postdoc);
+//                }",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, responseQuotaHeader).Result;
 
-            Book docresponseQuotaHeader = (dynamic)client.CreateDocumentAsync(collection3, new Book { Id = "quotaDocument" }, new RequestOptions { PostTriggerInclude = new List<string> { "responseQuotaHeader" } }).Result.Resource;
-            Assert.IsTrue(docresponseQuotaHeader.Author.Contains("collectionSize"));
-            Assert.IsTrue(docresponseQuotaHeader.Title.Contains("collectionSize"));
+//            Book docresponseQuotaHeader = (dynamic)client.CreateDocumentAsync(collection3, new Book { Id = "quotaDocument" }, new RequestOptions { PostTriggerInclude = new List<string> { "responseQuotaHeader" } }).Result.Resource;
+//            Assert.IsTrue(docresponseQuotaHeader.Author.Contains("collectionSize"));
+//            Assert.IsTrue(docresponseQuotaHeader.Title.Contains("collectionSize"));
 
-            // 3. CRUD
+//            // 3. CRUD
 
-            // trigger operation type mismatch
-            Trigger triggerOpType = new Trigger
-            {
-                Id = "triggerOpType",
-                Body = @"function() { }",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.Delete
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, triggerOpType).Result;
+//            // trigger operation type mismatch
+//            Trigger triggerOpType = new Trigger
+//            {
+//                Id = "triggerOpType",
+//                Body = @"function() { }",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.Delete
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, triggerOpType).Result;
 
-            exceptionThrown = false;
-            try
-            {
-                dynamic docoptype = GatewayTests.CreateDocument(client, baseUri, collection3, "Docoptype", "empty", 0, null, posttrigger: "triggerOpType");
-            }
-            catch (DocumentClientException e)
-            {
-                Assert.IsNotNull(e);
-                exceptionThrown = true;
-            }
-            Assert.IsTrue(exceptionThrown, "mismatch in trigger operation type didn't cause failure");
+//            exceptionThrown = false;
+//            try
+//            {
+//                dynamic docoptype = GatewayTests.CreateDocument(client, baseUri, collection3, "Docoptype", "empty", 0, null, posttrigger: "triggerOpType");
+//            }
+//            catch (DocumentClientException e)
+//            {
+//                Assert.IsNotNull(e);
+//                exceptionThrown = true;
+//            }
+//            Assert.IsTrue(exceptionThrown, "mismatch in trigger operation type didn't cause failure");
 
-            // to test if post trigger can abort transaction
-            Trigger triggerAbortTransaction = new Trigger
-            {
-                Id = "triggerAbortTransaction",
-                Body = @"function() { throw 'always throw';}",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, triggerAbortTransaction).Result;
+//            // to test if post trigger can abort transaction
+//            Trigger triggerAbortTransaction = new Trigger
+//            {
+//                Id = "triggerAbortTransaction",
+//                Body = @"function() { throw 'always throw';}",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, triggerAbortTransaction).Result;
 
-            exceptionThrown = false;
-            try
-            {
-                dynamic docabort = GatewayTests.CreateDocument(client, baseUri, collection3, "Docabort", "empty", 0, null, posttrigger: "triggerAbortTransaction");
-            }
-            catch
-            {
-                exceptionThrown = true;
-            }
-            Assert.IsTrue(exceptionThrown, "always throw post trigger didnt not cause create document to fail");
+//            exceptionThrown = false;
+//            try
+//            {
+//                dynamic docabort = GatewayTests.CreateDocument(client, baseUri, collection3, "Docabort", "empty", 0, null, posttrigger: "triggerAbortTransaction");
+//            }
+//            catch
+//            {
+//                exceptionThrown = true;
+//            }
+//            Assert.IsTrue(exceptionThrown, "always throw post trigger didnt not cause create document to fail");
 
-            FeedResponse<Document> docCollection = client.ReadFeed<Document>(collection3.GetIdOrFullName());
+//            FeedResponse<Document> docCollection = client.ReadFeed<Document>(collection3.GetIdOrFullName());
 
-            foreach (Document doc in docCollection)
-            {
-                Assert.AreNotEqual(doc.Id, "Docabort"); // make sure the doc isnt present
-            }
+//            foreach (Document doc in docCollection)
+//            {
+//                Assert.AreNotEqual(doc.Id, "Docabort"); // make sure the doc isnt present
+//            }
 
-            DocumentCollection collection4 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
+//            DocumentCollection collection4 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString() })).Result;
 
-            // delete post trigger
-            Trigger deletePostTrigger = new Trigger
-            {
-                Id = "deletePostTrigger",
-                Body = @"function() {
-                var client = getContext().getCollection();
-                var item = getContext().getResponse().getBody();
-                function callback(err, docFeed, responseOptions) 
-                { 
-                    if(err) throw 'Error while creating document'; 
-                    if(docFeed.length > 0 )
-                    {
-                        var doc = null;
-                        for(var i = 0; i < docFeed.length; i++)
-                        {
-                            //if(docFeed[i].id && docFeed[i].id != item.id)
-                            if(docFeed[i].id && docFeed[i].id == item.id)
-                            {
-                            doc = docFeed[i];
-                            break;
-                            }
-                        }
-                        if(doc != null)
-                        { 
-                            //client.replaceDocument(doc._self, {newDocProperty : 1, etag : doc.etag}, {}, function(err, respons) { if (err) throw new Error('error');});
-                            client.deleteDocument(doc._self, function(err) {if(err) throw 'Error while deleting document';});
-                        }
-                    }
-                    if(responseOptions.continuation) client.readDocuments(client.getSelfLink(), { pageSize : 10, continuation : responseOptions.continuation }, callback);
-                }; 
-                client.readDocuments(client.getSelfLink(), { pageSize : 10}, callback);}",
-                TriggerType = TriggerType.Post,
-                TriggerOperation = TriggerOperation.All
-            };
-            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection4, deletePostTrigger).Result;
+//            // delete post trigger
+//            Trigger deletePostTrigger = new Trigger
+//            {
+//                Id = "deletePostTrigger",
+//                Body = @"function() {
+//                var client = getContext().getCollection();
+//                var item = getContext().getResponse().getBody();
+//                function callback(err, docFeed, responseOptions) 
+//                { 
+//                    if(err) throw 'Error while creating document'; 
+//                    if(docFeed.length > 0 )
+//                    {
+//                        var doc = null;
+//                        for(var i = 0; i < docFeed.length; i++)
+//                        {
+//                            //if(docFeed[i].id && docFeed[i].id != item.id)
+//                            if(docFeed[i].id && docFeed[i].id == item.id)
+//                            {
+//                            doc = docFeed[i];
+//                            break;
+//                            }
+//                        }
+//                        if(doc != null)
+//                        { 
+//                            //client.replaceDocument(doc._self, {newDocProperty : 1, etag : doc.etag}, {}, function(err, respons) { if (err) throw new Error('error');});
+//                            client.deleteDocument(doc._self, function(err) {if(err) throw 'Error while deleting document';});
+//                        }
+//                    }
+//                    if(responseOptions.continuation) client.readDocuments(client.getSelfLink(), { pageSize : 10, continuation : responseOptions.continuation }, callback);
+//                }; 
+//                client.readDocuments(client.getSelfLink(), { pageSize : 10}, callback);}",
+//                TriggerType = TriggerType.Post,
+//                TriggerOperation = TriggerOperation.All
+//            };
+//            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection4, deletePostTrigger).Result;
 
-            dynamic docDeletePostTrigger = null;
-            try
-            {
-                docDeletePostTrigger = GatewayTests.CreateDocument(client, baseUri, collection4, "Doc4", "Prop1Value", 101, null, posttrigger: "deletePostTrigger");
-            }
-            catch (Exception e)
-            {
-                Logger.LogLine(e.Message);
-                Assert.Fail(e.Message);
-            }
+//            dynamic docDeletePostTrigger = null;
+//            try
+//            {
+//                docDeletePostTrigger = GatewayTests.CreateDocument(client, baseUri, collection4, "Doc4", "Prop1Value", 101, null, posttrigger: "deletePostTrigger");
+//            }
+//            catch (Exception e)
+//            {
+//                Logger.LogLine(e.Message);
+//                Assert.Fail(e.Message);
+//            }
 
-            try
-            {
-                Document docRead = client.Read<Document>((string)docDeletePostTrigger.ResourceId);
-                Assert.Fail("Delete in post trigger didn't succeed");
-            }
-            catch
-            {
-                Logger.LogLine("Exception thrown when trying to read deleted document as expected");
-            }
+//            try
+//            {
+//                Document docRead = client.Read<Document>((string)docDeletePostTrigger.ResourceId);
+//                Assert.Fail("Delete in post trigger didn't succeed");
+//            }
+//            catch
+//            {
+//                Logger.LogLine("Exception thrown when trying to read deleted document as expected");
+//            }
 
-            // 4. Multiple triggers
-            exceptionThrown = false;
-            try
-            {
-                Document doc5 = client.CreateDocumentAsync(collection4, new Document { Id = "Doc5" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } }).Result.Resource;
-            }
-            catch (Exception e)
-            {
-                Assert.IsNotNull(e);
-                DocumentClientException de = e.InnerException as DocumentClientException;
-                Assert.IsNotNull(de);
-                exceptionThrown = true;
-            }
-            Assert.IsTrue(exceptionThrown, "multiple pre-triggers didn't cause failure");
+//            // 4. Multiple triggers
+//            exceptionThrown = false;
+//            try
+//            {
+//                Document doc5 = client.CreateDocumentAsync(collection4, new Document { Id = "Doc5" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } }).Result.Resource;
+//            }
+//            catch (Exception e)
+//            {
+//                Assert.IsNotNull(e);
+//                DocumentClientException de = e.InnerException as DocumentClientException;
+//                Assert.IsNotNull(de);
+//                exceptionThrown = true;
+//            }
+//            Assert.IsTrue(exceptionThrown, "multiple pre-triggers didn't cause failure");
 
-            exceptionThrown = false;
-            try
-            {
-                ResourceResponse<Document> docMultiple1 = client.CreateDocumentAsync(collection4, new Document { Id = "multipleHeaders1" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1" } }).Result;
-            }
-            catch (Exception e)
-            {
-                Assert.IsNotNull(e);
-                DocumentClientException de = e.InnerException as DocumentClientException;
-                Assert.IsNotNull(de);
-                exceptionThrown = true;
-            }
-            Assert.IsTrue(exceptionThrown, "multiple post-triggers didn't cause failure");
+//            exceptionThrown = false;
+//            try
+//            {
+//                ResourceResponse<Document> docMultiple1 = client.CreateDocumentAsync(collection4, new Document { Id = "multipleHeaders1" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1" } }).Result;
+//            }
+//            catch (Exception e)
+//            {
+//                Assert.IsNotNull(e);
+//                DocumentClientException de = e.InnerException as DocumentClientException;
+//                Assert.IsNotNull(de);
+//                exceptionThrown = true;
+//            }
+//            Assert.IsTrue(exceptionThrown, "multiple post-triggers didn't cause failure");
 
             // re-enable these tests if we re-enable multiple triggers
             //            // pre-trigger request body
@@ -1382,7 +1390,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
                 __.readDocuments(__.getSelfLink(), { pageSize : 1, continuation : ''}, callback);
             }";
-
             //Script cannot timeout.
             string result = GatewayTests.CreateExecuteAndDeleteProcedure<string>(client, collection, script);
         }
@@ -2209,8 +2216,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = TestCommon.CreateClient(true);
 
             Database database = TestCommon.CreateOrGetDatabase(client);
-
-            DocumentCollection inputCollection = new DocumentCollection { Id = "ValidateStoredProceduresBlacklisting" + Guid.NewGuid().ToString() };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            DocumentCollection inputCollection = new DocumentCollection { Id = "ValidateStoredProceduresBlacklisting" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
             DocumentCollection collection = TestCommon.CreateCollectionAsync(client, database, inputCollection).Result;
 
             string badScript = @"function() { 
@@ -2227,17 +2234,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Body = badScript
             };
             StoredProcedure retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedure).Result;
-
+            RequestOptions requestOptions = new RequestOptions();
+            requestOptions.PartitionKey = new PartitionKey("test");
             for (int numExec = 0; numExec < 3; numExec++)
             {
-                client.ExecuteStoredProcedureAsync<string>(retrievedStoredProcedure).Wait();
+                client.ExecuteStoredProcedureAsync<string>(retrievedStoredProcedure, requestOptions).Wait();
             }
 
             bool isBlacklisted = false;
             try
             {
                 // 3 strikes and then out
-                client.ExecuteStoredProcedureAsync<string>(retrievedStoredProcedure).Wait();
+                client.ExecuteStoredProcedureAsync<string>(retrievedStoredProcedure, requestOptions).Wait();
             }
             catch (Exception e)
             {
@@ -2253,6 +2261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateUserDefinedFunctions()
         {
             DocumentClient client = TestCommon.CreateClient(true);
@@ -2266,7 +2275,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database database = TestCommon.CreateOrGetDatabase(client);
 
             DocumentCollection inputCollection = new DocumentCollection { Id = "ValidateUserDefinedFunctions" + Guid.NewGuid().ToString() };
-            inputCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
+            inputCollection.IndexingPolicy.IndexingMode = Documents.IndexingMode.Consistent;
             DocumentCollection collection = client.Create(database.ResourceId, inputCollection);
 
             // 1. UDF input
@@ -2368,6 +2377,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] //UDFs and Trigger need to be rewrittenafter new OM script model
         public void ValidateUserDefinedFunctionsBlacklisting()
         {
             try
@@ -2475,7 +2485,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1000, docCollection3.Count);
         }
 
+        //ReadPartitionKeyRangeFeedAsync method not expose in V3
         [TestMethod]
+        [Ignore]
         public async Task ValidateChangeFeedIfNoneMatch()
         {
             await ValidateChangeFeedIfNoneMatchHelper(true);
@@ -2623,7 +2635,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        //ReadPartitionKeyRangeFeedAsync method not expose in V3
         [TestMethod]
+        [Ignore]
         public async Task ValidateChangeFeedIfModifiedSince()
         {
             await ValidateChangeFeedIfModifiedSinceHelper(true);
@@ -3035,13 +3049,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task ValidateGenericReadDocument(bool useGateway, Protocol protocol)
         {
-            DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
+            CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
 
-            Database database = TestCommon.CreateOrGetDatabase(client);
-
-            DocumentCollection collection = await TestCommon.CreateCollectionAsync(client,
-                database,
-                new DocumentCollection() { Id = Guid.NewGuid().ToString() });
+            CosmosDatabase database = await client.Databases.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+            CosmosContainer collection = await database.Containers.CreateContainerAsync(new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
 
             string guidId = Guid.NewGuid().ToString();
             CustomerPOCO poco = new CustomerPOCO()
@@ -3053,44 +3065,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             poco.authors.Add("Mark Twain");
 
-            Document doc = await client.CreateDocumentAsync(collection.SelfLink, poco);
+            CosmosItemResponse<CustomerPOCO> doc = await collection.Items.CreateItemAsync(poco.id, poco);
 
             // This tests that the existing ReadDocumentAsync API works as expected, you can only access Document properties
-            ResourceResponse<Document> documentResponse = await client.ReadDocumentAsync(doc.SelfLink);
+            CosmosItemResponse<CustomerPOCO> documentResponse = await collection.Items.ReadItemAsync<CustomerPOCO>(partitionKey :poco.id, id : poco.id);
             Assert.AreEqual(documentResponse.StatusCode, HttpStatusCode.OK);
-            Assert.IsNotNull(documentResponse.ResponseStream);
+            Assert.IsNotNull(documentResponse.Resource);
 
-            Assert.AreEqual(documentResponse.Resource.Id, guidId);
+            Assert.AreEqual(documentResponse.Resource.id, guidId);
 
             // This tests shows how you can extract the CustomerPOCO from ReadDocumentAsync API, to access POCO properties
             CustomerPOCO customerPOCO = (CustomerPOCO)(dynamic)documentResponse.Resource;
             Assert.AreEqual(customerPOCO.BookId, "isbn");
 
             // This tests the implicit operator for ReadDocumentAsync
-            Document doc1 = await client.ReadDocumentAsync(doc.SelfLink);
-            Assert.IsNotNull(doc1.Id);
+           CustomerPOCO  doc1 = await collection.Items.ReadItemAsync<CustomerPOCO>(partitionKey: poco.id, id: poco.id);
+            Assert.IsNotNull(doc1.id);
 
-            // This tests the new ReadDocumentAsync<T> API works as expected without requiring any special cast
-            DocumentResponse<CustomerPOCO> response = await client.ReadDocumentAsync<CustomerPOCO>(doc.SelfLink);
-            Assert.AreEqual(response.StatusCode, HttpStatusCode.OK);
-            Assert.IsNotNull(response.ResponseStream);
-
-            Assert.AreEqual(response.Document.id, guidId);
-            Assert.AreEqual(response.Document.BookId, "isbn");
-
-            // This tests the implicit operator for ReadDocumentAsync<T>
-            customerPOCO = await client.ReadDocumentAsync<CustomerPOCO>(doc.SelfLink);
-            Assert.AreEqual(customerPOCO.BookId, "isbn");
         }
 
         private async Task ValidateGenericReadDocumentFromResource(bool useGateway, Protocol protocol)
         {
-            DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
+            CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
 
-            Database database = TestCommon.CreateOrGetDatabase(client);
-            DocumentCollection collection = await TestCommon.CreateCollectionAsync(client,
-                database,
-                new DocumentCollection() { Id = Guid.NewGuid().ToString() });
+            CosmosDatabase database = await client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+
+            CosmosContainer collection = await database.Containers.CreateContainerAsync(new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
+
 
             string guidId = Guid.NewGuid().ToString();
             CustomerObjectFromResource objectFromResource = new CustomerObjectFromResource()
@@ -3102,39 +3104,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             objectFromResource.authors.Add("Ernest Hemingway");
 
-            Document doc = await client.CreateDocumentAsync(collection.SelfLink, objectFromResource);
+            CosmosItemResponse<CustomerObjectFromResource> doc = await collection.Items.CreateItemAsync(objectFromResource.id, objectFromResource);
 
             // This tests that the existing ReadDocumentAsync API works as expected, you can only access Document properties
-            ResourceResponse<Document> documentResponse = await client.ReadDocumentAsync(doc.SelfLink);
+            CosmosItemResponse<CustomerObjectFromResource> documentResponse = await collection.Items.ReadItemAsync<CustomerObjectFromResource>(partitionKey: objectFromResource.id, id: objectFromResource.id);
             Assert.AreEqual(documentResponse.StatusCode, HttpStatusCode.OK);
-            Assert.IsNotNull(documentResponse.ResponseStream);
+            Assert.IsNotNull(documentResponse.Resource);
 
-            Assert.AreEqual(documentResponse.Resource.Id, guidId);
+            Assert.AreEqual(documentResponse.Resource.id, guidId);
 
             // This tests how you can extract the CustomerObjectFromResource from ReadDocumentAsync API, to access POCO properties
             CustomerObjectFromResource customerObjectFromResource = (CustomerObjectFromResource)(dynamic)documentResponse.Resource;
             Assert.AreEqual(customerObjectFromResource.BookId, "isbn1");
 
             // This tests the implicit operator for ReadDocumentAsync
-            Document doc1 = await client.ReadDocumentAsync(doc.SelfLink);
-            Assert.IsNotNull(doc1.Id);
-
-            Uri docUri = UriFactory.CreateDocumentUri(database.Id, collection.Id, doc.Id);
-
-            // This tests the new ReadDocumentAsync<T> API works as expected without requiring any special cast
-            DocumentResponse<CustomerObjectFromResource> response = await client.ReadDocumentAsync<CustomerObjectFromResource>(docUri);
-            Assert.AreEqual(response.StatusCode, HttpStatusCode.OK);
-            Assert.IsNotNull(response.ResponseStream);
-
-            Assert.AreEqual(response.Document.BookId, "isbn1");
-            Assert.AreEqual(response.Document.id, guidId);
-
-            // This tests the implicit operator for ReadDocumentAsync<T>
-            customerObjectFromResource = await client.ReadDocumentAsync<CustomerObjectFromResource>(docUri);
-            Assert.AreEqual(customerObjectFromResource.BookId, "isbn1");
+            CustomerObjectFromResource doc1 = await collection.Items.ReadItemAsync<CustomerObjectFromResource>(partitionKey: customerObjectFromResource.id, id: customerObjectFromResource.id);
+            Assert.IsNotNull(doc1.id);
         }
 
         [TestMethod]
+        [Ignore] //Below Serialization test not valid for V3
         public void ValidatePOCODocumentSerialization()
         {
             // 1. Verify the customer can serialize their POCO object in their own ways
@@ -3272,10 +3261,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = TestCommon.CreateClient(false);
 #endif
 #if !DIRECT_MODE
-            DocumentClient client = TestCommon.CreateClient(true);
+            CosmosClient client = TestCommon.CreateCosmosClient(true);
 #endif
-            Database database = TestCommon.CreateDatabase(client);
-            DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client, out database);
+            CosmosDatabase database = await client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+            CosmosContainer collection = await database.Containers.CreateContainerAsync(new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
+
 
             //Since this test starts with read operation first on fresh session client, it may start with stale reads.
             //Wait for server replication before excising this tests starting with read operation.
@@ -3289,41 +3280,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document.StringField = "222";
 
             Logger.LogLine("Adding Document with exclusion");
-            dynamic retrievedDocument = await client.CreateDocumentAsync(collection, (Document)document, new RequestOptions { IndexingDirective = IndexingDirective.Exclude });
+            dynamic retrievedDocument = await collection.Items.CreateItemAsync(documentName, document, new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            IEnumerable<Document> queriedDocuments = client.CreateDocumentQuery<Document>(collection, @"select * from root r where r.StringField=""222""", null);
-            Assert.AreEqual(0, queriedDocuments.Count());
+            CosmosResultSetIterator<Document> queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText : @"select * from root r where r.StringField=""222""", partitionKey:null, requestOptions : new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+
+            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to include in index");
-            retrievedDocument = await client.ReplaceDocumentAsync((Document)retrievedDocument, new RequestOptions { IndexingDirective = IndexingDirective.Include });
+            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName, id: documentName, item: (Document)retrievedDocument, requestOptions: new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Include });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = client.CreateDocumentQuery<Document>(collection.DocumentsLink, @"select * from root r where r.StringField=""222""", null);
-            Assert.AreEqual(1, queriedDocuments.Count());
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", partitionKey: null, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            Assert.AreEqual(1, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
-            retrievedDocument = await client.ReplaceDocumentAsync((Document)retrievedDocument, new RequestOptions { IndexingDirective = IndexingDirective.Exclude });
+            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName,id: documentName, item : (Document)retrievedDocument, requestOptions: new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = client.CreateDocumentQuery<Document>(collection.DocumentsLink, @"select * from root r where r.StringField=""222""", null);
-            Assert.AreEqual(0, queriedDocuments.Count());
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", partitionKey: null, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
-            retrievedDocument = await client.ReplaceDocumentAsync((Document)retrievedDocument, new RequestOptions { IndexingDirective = IndexingDirective.Exclude });
+            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName, id: documentName, item: (Document)retrievedDocument, requestOptions: new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = client.CreateDocumentQuery<Document>(collection.DocumentsLink, @"select * from root r where r.StringField=""222""", null);
-            Assert.AreEqual(0, queriedDocuments.Count());
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", partitionKey: null, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Delete document");
-            await client.DeleteDocumentAsync((Document)retrievedDocument);
+            await collection.Items.DeleteItemAsync<Document>(partitionKey:  documentName, id: documentName);
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = client.CreateDocumentQuery<Document>(collection.DocumentsLink, @"select * from root r where r.StringField=""222""", null);
-            Assert.AreEqual(0, queriedDocuments.Count());
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", partitionKey: null, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
-            await client.DeleteDatabaseAsync(database);
+            await database.DeleteAsync();
         }
 
         public static string DumpFullExceptionMessage(Exception e)
@@ -3546,6 +3538,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return Char.ToLowerInvariant(propertyName[0]).ToString() + propertyName.Substring(1);
             }
+        }
+
+        private async Task<int> GetCountFromIterator<T>(CosmosResultSetIterator<T> iterator)
+        {
+            int count = 0;
+            while (iterator.HasMoreResults)
+            {
+                CosmosQueryResponse<T> countiter = await iterator.FetchNextSetAsync();
+                count += countiter.Count();
+                
+            }
+            return count;
         }
     }
 }

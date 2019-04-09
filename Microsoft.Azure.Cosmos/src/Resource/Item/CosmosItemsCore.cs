@@ -276,9 +276,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKey pk = new PartitionKey(partitionKey);
                 options.PartitionKey = pk;
+                options.EnableCrossPartitionQuery = false;
             }
-
-            options.EnableCrossPartitionQuery = false;
 
             return new CosmosDefaultResultSetIterator<T>(
                 maxItemCount,
