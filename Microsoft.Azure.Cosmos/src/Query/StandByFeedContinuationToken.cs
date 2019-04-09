@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return null;
             }
 
-            return JsonConvert.SerializeObject(this.compositeContinuationTokens.ToList());
+            return JsonConvert.SerializeObject(this.compositeContinuationTokens);
         }
 
         private void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (this.compositeContinuationTokens == null)
             {
-                IReadOnlyList<CompositeContinuationToken> tokens = await this.BuildCompositeTokensAsync(this.inputContinuationToken);
+                IEnumerable<CompositeContinuationToken> tokens = await this.BuildCompositeTokensAsync(this.inputContinuationToken);
 
                 this.InitializeCompositeTokens(tokens);
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private async Task<IReadOnlyList<CompositeContinuationToken>> BuildCompositeTokensAsync(string initialContinuationToken)
+        private async Task<IEnumerable<CompositeContinuationToken>> BuildCompositeTokensAsync(string initialContinuationToken)
         {
             if (string.IsNullOrEmpty(initialContinuationToken))
             {
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     Range = new Documents.Routing.Range<string>(e.MinInclusive, e.MaxExclusive, isMinInclusive: true, isMaxInclusive: false),
                     Token = null,
-                }).ToList();
+                });
             }
 
             try
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private void InitializeCompositeTokens(IReadOnlyList<CompositeContinuationToken> tokens)
+        private void InitializeCompositeTokens(IEnumerable<CompositeContinuationToken> tokens)
         {
             this.compositeContinuationTokens = new Queue<CompositeContinuationToken>();
 
