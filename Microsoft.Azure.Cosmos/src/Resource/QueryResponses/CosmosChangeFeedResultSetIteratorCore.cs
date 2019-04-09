@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int? originalMaxItemCount;
         private string containerRid;
         private string continuationToken;
+        private string partitionKeyRangeId;
         private int? maxItemCount;
 
         internal CosmosChangeFeedResultSetIteratorCore(
@@ -65,19 +66,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-            this.changeFeedOptions.PartitionKeyRangeId = rangeId;
+            this.partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
 
-            CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentTokenAsync();
                 currentRangeToken = currentRangeTokenForRetry;
-                this.changeFeedOptions.PartitionKeyRangeId = rangeIdForRetry;
+                this.partitionKeyRangeId = rangeIdForRetry;
                 this.continuationToken = currentRangeToken.Token;
-                response = await this.NextResultSetDelegate(this.continuationToken, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+                response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             }
 
             // Change Feed read uses Etag for continuation
@@ -145,6 +146,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Task<CosmosResponseMessage> NextResultSetDelegate(
             string continuationToken,
+            string partitionKeyRangeId,
             int? maxItemCount,
             CosmosChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
@@ -157,8 +159,9 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
                 requestEnricher: request => {
-                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, this.continuationToken);
-                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, this.maxItemCount);
+                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
                 responseCreator: response => response,
                 partitionKey: null,

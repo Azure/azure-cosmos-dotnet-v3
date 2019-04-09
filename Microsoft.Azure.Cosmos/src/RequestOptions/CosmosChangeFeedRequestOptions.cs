@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual DateTime? StartTime { get; set; }
 
-        internal virtual string PartitionKeyRangeId { get; set; }
-
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -51,11 +49,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
-
-            if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
-            {
-                request.PartitionKeyRangeId = this.PartitionKeyRangeId;
-            }
 
             base.FillRequestOptions(request);
         }
@@ -81,6 +74,16 @@ namespace Microsoft.Azure.Cosmos
             if (setOptions > 1)
             {
                 throw new ArgumentException("Only one of Cannot specify ContinuationToken, StartFromBeginning, and StartTime are supported.");
+            }
+        }
+
+        internal static void FillPartitionKeyRangeId(CosmosRequestMessage request, string partitionKeyRangeId)
+        {
+            Debug.Assert(request != null);
+
+            if (!string.IsNullOrEmpty(partitionKeyRangeId))
+            {
+                request.PartitionKeyRangeId = partitionKeyRangeId;
             }
         }
 

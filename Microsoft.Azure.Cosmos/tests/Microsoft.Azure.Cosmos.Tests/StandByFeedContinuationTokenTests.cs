@@ -277,6 +277,17 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNull(request.Headers.IfNoneMatch);
         }
 
+        [TestMethod]
+        public void CosmosChangeFeedRequestOptions_AddsPartitionKeyRangeId()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions();
+
+            CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, "randomPK");
+
+            Assert.AreEqual("randomPK", request.PartitionKeyRangeId);
+        }
+
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             return (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
