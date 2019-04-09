@@ -53,15 +53,10 @@ namespace Microsoft.Azure.Cosmos
             base.FillRequestOptions(request);
         }
 
-        internal void ValidateOptions(string providedContinuationToken)
+        internal void ValidateOptions()
         {
             int setOptions = 0;
             if (this.StartFromBeginning)
-            {
-                setOptions++;
-            }
-
-            if (providedContinuationToken != null)
             {
                 setOptions++;
             }

@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
-            cosmosQueryRequestOptions.ValidateOptions(continuationToken);
+            cosmosQueryRequestOptions.ValidateOptions();
 
             return new CosmosChangeFeedResultSetIteratorCore(
                 continuationToken: continuationToken,

@@ -126,6 +126,9 @@ namespace Microsoft.Azure.Cosmos.Query
                         false);
 
                 Debug.Assert(allRanges.Count != 0);
+                // Initial state for a scenario where user does not provide any initial continuation token.
+                // StartTime and StartFromBeginning can handle the logic if the user wants to start reading from any particular point in time
+                // After the first iteration, token will be updated with a recent value
                 return allRanges.Select(e => new CompositeContinuationToken()
                 {
                     Range = new Documents.Routing.Range<string>(e.MinInclusive, e.MaxExclusive, isMinInclusive: true, isMaxInclusive: false),
