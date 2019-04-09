@@ -19,9 +19,10 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultMaxItemCount = 100;
         private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
 
+        internal StandByFeedContinuationToken compositeContinuationToken;
+
         private readonly CosmosContainerCore cosmosContainer;
         private readonly int? originalMaxItemCount;
-        private StandByFeedContinuationToken compositeContinuationToken;
         private string containerRid;
         private string continuationToken;
         private int? maxItemCount;
@@ -54,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (this.compositeContinuationToken == null)
             {
                 PartitionKeyRangeCache pkRangeCache = await this.cosmosContainer.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
@@ -68,6 +71,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentTokenAsync();
                 currentRangeToken = currentRangeTokenForRetry;
                 this.changeFeedOptions.PartitionKeyRangeId = rangeIdForRetry;
@@ -137,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        private Task<CosmosResponseMessage> NextResultSetDelegate(
+        internal virtual Task<CosmosResponseMessage> NextResultSetDelegate(
             string continuationToken,
             int? maxItemCount,
             CosmosChangeFeedRequestOptions options,

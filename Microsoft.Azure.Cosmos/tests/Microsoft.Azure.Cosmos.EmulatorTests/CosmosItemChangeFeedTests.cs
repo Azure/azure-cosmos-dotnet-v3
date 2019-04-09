@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -204,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await CreateRandomItems(2, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(maxItemCount : 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true });
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true });
 
             while (setIterator.HasMoreResults)
             {
@@ -240,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosChangeFeedRequestOptions requestOptions;
                 if (string.IsNullOrEmpty(continuationToken))
                 {
-                    requestOptions = new CosmosChangeFeedRequestOptions() { StartFromBeginning = true};
+                    requestOptions = new CosmosChangeFeedRequestOptions() { StartFromBeginning = true };
                 }
                 else
                 {
@@ -248,18 +250,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
-                using (CosmosResponseMessage iterator =
+                using (CosmosResponseMessage responseMessage =
                     await setIterator.FetchNextSetAsync(this.cancellationToken))
                 {
-                    continuationToken = iterator.Headers.Continuation;
-                    if (iterator.IsSuccessStatusCode)
+                    continuationToken = responseMessage.Headers.Continuation;
+                    if (responseMessage.IsSuccessStatusCode)
                     {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(iterator.Content).Data;
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
                         count += response.Count;
                     }
                 }
 
-                if(count > expected)
+                if (count > expected)
                 {
                     Assert.Fail($"{count} does not equal {expected}");
                 }
@@ -274,6 +276,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.Fail("Feed does not contain all elements even after looping through PK ranges. Either the continuation is not moving forward or there is some state problem.");
 
                 }
+            }
+        }
+
+        [TestMethod]
+        public async Task StandByFeedIterator_VerifyRefreshIsCalledOnSplit()
+        {
+            CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock((CosmosContainerCore)this.Container, "", 100, new CosmosChangeFeedRequestOptions());
+            using (CosmosResponseMessage responseMessage =
+                    await iterator.FetchNextSetAsync(this.cancellationToken))
+            {
+                Assert.IsTrue(iterator.HasCalledForceRefresh);
+                Assert.IsTrue(iterator.Iteration > 1);
+                Assert.AreEqual(responseMessage.StatusCode, System.Net.HttpStatusCode.NotModified);
             }
         }
 
@@ -353,6 +368,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cost = double.MaxValue
             };
         }
+
+        internal class CosmosChangeFeedResultSetIteratorCoreMock : CosmosChangeFeedResultSetIteratorCore
+        {
+            public int Iteration = 0;
+            public bool HasCalledForceRefresh = false;
+
+            internal CosmosChangeFeedResultSetIteratorCoreMock(CosmosContainerCore cosmosContainer, string continuationToken, int? maxItemCount, CosmosChangeFeedRequestOptions options) : base(cosmosContainer, continuationToken, maxItemCount, options)
+            {
+                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
+                {
+                    new CompositeContinuationToken()
+                    {
+                        Token = null,
+                        Range = new Documents.Routing.Range<string>("A", "B", true, false)
+                    }
+                };
+
+                string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
+
+                this.compositeContinuationToken = new StandByFeedContinuationToken("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
+                {
+                    IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
+                    {
+                        new Documents.PartitionKeyRange() { MinInclusive = "A", MaxExclusive ="B", Id = "0" }
+                    };
+
+                    if (forceRefresh)
+                    {
+                        this.HasCalledForceRefresh = true;
+                    }
+
+                    return Task.FromResult(filteredRanges);
+                });
+            }
+
+            internal override Task<CosmosResponseMessage> NextResultSetDelegate(
+                string continuationToken,
+                int? maxItemCount,
+                CosmosChangeFeedRequestOptions options,
+                CancellationToken cancellationToken)
+            {
+                if (this.Iteration ++ == 0)
+                {
+                    CosmosResponseMessage httpResponse = new CosmosResponseMessage(System.Net.HttpStatusCode.Gone);
+                    httpResponse.Headers.Add(Documents.WFConstants.BackendHeaders.SubStatus, ((uint)Documents.SubStatusCodes.PartitionKeyRangeGone).ToString(CultureInfo.InvariantCulture));
+
+                    return Task.FromResult(httpResponse);
+                }
+
+                return Task.FromResult(new CosmosResponseMessage(System.Net.HttpStatusCode.NotModified));
+            }
+        }
+
 
         public class ToDoActivity
         {

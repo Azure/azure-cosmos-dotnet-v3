@@ -19,8 +19,10 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </remarks>
     internal class StandByFeedContinuationToken
     {
+        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh);
+
         private readonly string containerRid;
-        private readonly Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> pkRangeCacheDelegate;
+        private readonly PartitionKeyRangeCacheDelegate pkRangeCacheDelegate;
         private readonly string inputContinuationToken;
 
         private Queue<CompositeContinuationToken> compositeContinuationTokens;
@@ -29,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public StandByFeedContinuationToken(
             string containerRid,
             string initialStandByFeedContinuationToken,
-            Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> pkRangeCacheDelegate)
+            PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
         {
             if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
             if (pkRangeCacheDelegate == null) throw new ArgumentNullException(nameof(pkRangeCacheDelegate));
@@ -94,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (this.compositeContinuationTokens == null)
             {
-                IEnumerable<CompositeContinuationToken> tokens = await this.BuildCompositeTokensAsync(this.inputContinuationToken);
+                IReadOnlyList<CompositeContinuationToken> tokens = await this.BuildCompositeTokensAsync(this.inputContinuationToken);
 
                 this.InitializeCompositeTokens(tokens);
 
@@ -102,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private async Task<IEnumerable<CompositeContinuationToken>> BuildCompositeTokensAsync(string initialContinuationToken)
+        private async Task<IReadOnlyList<CompositeContinuationToken>> BuildCompositeTokensAsync(string initialContinuationToken)
         {
             if (string.IsNullOrEmpty(initialContinuationToken))
             {
@@ -120,21 +122,21 @@ namespace Microsoft.Azure.Cosmos.Query
                 return allRanges.Select(e => new CompositeContinuationToken()
                 {
                     Range = new Documents.Routing.Range<string>(e.MinInclusive, e.MaxExclusive, isMinInclusive: true, isMaxInclusive: false),
-                    Token = string.Empty,
-                });
+                    Token = null,
+                }).ToList();
             }
 
             try
             {
                 return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
             }
-            catch(Exception ex)
+            catch(JsonReaderException ex)
             {
-                throw new ArgumentOutOfRangeException("Provided token has an invalid format", ex);
+                throw new ArgumentOutOfRangeException($"Provided token has an invalid format: {initialContinuationToken}", ex);
             }
         }
 
-        private void InitializeCompositeTokens(IEnumerable<CompositeContinuationToken> tokens)
+        private void InitializeCompositeTokens(IReadOnlyList<CompositeContinuationToken> tokens)
         {
             this.compositeContinuationTokens = new Queue<CompositeContinuationToken>();
 

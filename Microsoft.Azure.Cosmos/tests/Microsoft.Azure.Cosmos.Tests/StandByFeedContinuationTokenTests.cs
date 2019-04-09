@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNull(request.Headers.IfNoneMatch);
         }
 
-        private static Func<string, Documents.Routing.Range<string>, bool, Task<IReadOnlyList<Documents.PartitionKeyRange>>> CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
+        private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
             return (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
             {
