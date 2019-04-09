@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
 
-                this.compositeContinuationToken = new StandByFeedContinuationToken("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
+                this.compositeContinuationToken = StandByFeedContinuationToken.InitializeTokenAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
                 {
                     IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
                     {
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     return Task.FromResult(filteredRanges);
-                });
+                }).Result;
             }
 
             internal override Task<CosmosResponseMessage> NextResultSetDelegate(

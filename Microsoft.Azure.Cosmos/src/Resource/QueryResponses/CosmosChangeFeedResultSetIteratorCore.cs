@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKeyRangeCache pkRangeCache = await this.cosmosContainer.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
-                this.compositeContinuationToken = new StandByFeedContinuationToken(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
+                this.compositeContinuationToken = await StandByFeedContinuationToken.InitializeTokenAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             if (!hasMoreResults)
             {
                 // Current Range is done, push it to the end
-                await this.compositeContinuationToken.MoveToNextTokenAsync();
+                this.compositeContinuationToken.MoveToNextToken();
             }
             else if (response.IsSuccessStatusCode)
             {

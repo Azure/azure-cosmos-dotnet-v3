@@ -28,7 +28,17 @@ namespace Microsoft.Azure.Cosmos.Query
         private Queue<CompositeContinuationToken> compositeContinuationTokens;
         private CompositeContinuationToken currentToken;
 
-        public StandByFeedContinuationToken(
+        public static async Task<StandByFeedContinuationToken> InitializeTokenAsync(
+            string containerRid,
+            string initialStandByFeedContinuationToken,
+            PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
+        {
+            StandByFeedContinuationToken standByFeedContinuationToken = new StandByFeedContinuationToken(containerRid, initialStandByFeedContinuationToken, pkRangeCacheDelegate);
+            await standByFeedContinuationToken.EnsureInitializedAsync();
+            return standByFeedContinuationToken;
+        }
+
+        private StandByFeedContinuationToken(
             string containerRid,
             string initialStandByFeedContinuationToken,
             PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
@@ -43,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync(bool forceRefresh = false)
         {
-            await this.EnsureInitializedAsync();
             Debug.Assert(this.compositeContinuationTokens != null);
             IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(this.currentToken.Range, forceRefresh: forceRefresh);
             if (resolvedRanges.Count > 1)
@@ -54,10 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query
             return new Tuple<CompositeContinuationToken, string>(this.currentToken, resolvedRanges[0].Id);
         }
 
-        public async Task MoveToNextTokenAsync()
+        public void MoveToNextToken()
         {
-            await this.EnsureInitializedAsync();
-
             CompositeContinuationToken recentToken = this.compositeContinuationTokens.Dequeue();
             this.compositeContinuationTokens.Enqueue(recentToken);
             this.currentToken = this.compositeContinuationTokens.Peek();
