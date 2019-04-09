@@ -57,9 +57,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 cloneQueryRequestOptions.MaxConcurrency = int.MaxValue;
             }
 
-            if (cloneQueryRequestOptions.MaxItemCount.HasValue && cloneQueryRequestOptions.MaxItemCount < 0)
+            if (cloneQueryRequestOptions.MaxPageSize.HasValue && cloneQueryRequestOptions.MaxPageSize < 0)
             {
-                cloneQueryRequestOptions.MaxItemCount = int.MaxValue;
+                cloneQueryRequestOptions.MaxPageSize = int.MaxValue;
             }
 
             this.cosmosQueryContext = new CosmosQueryContext(
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             // Figure out the optimal page size.
-            long initialPageSize = constructorParams.QueryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
+            long initialPageSize = constructorParams.QueryRequestOptions.MaxPageSize.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
 
             if (initialPageSize < -1 || initialPageSize == 0)
             {
@@ -256,37 +256,6 @@ namespace Microsoft.Azure.Cosmos.Query
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(sqlQuerySpec, partitionKeyDefinition, requireFormattableOrderByQuery, isContinuationExpected);
         }
 
-        private static bool IsTopOrderByQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
-        {
-            return (partitionedQueryExecutionInfo.QueryInfo != null)
-                && (partitionedQueryExecutionInfo.QueryInfo.HasOrderBy || partitionedQueryExecutionInfo.QueryInfo.HasTop);
-        }
-
-        private static bool IsAggregateQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
-        {
-            return (partitionedQueryExecutionInfo.QueryInfo != null)
-                && (partitionedQueryExecutionInfo.QueryInfo.HasAggregates);
-        }
-
-        private static bool IsAggregateQueryWithoutContinuation(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, bool isContinuationExpected)
-        {
-            return IsAggregateQuery(partitionedQueryExecutionInfo) && !isContinuationExpected;
-        }
-
-        private static bool IsDistinctQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
-        {
-            return partitionedQueryExecutionInfo.QueryInfo.HasDistinct;
-        }
-
-        private static bool IsParallelQuery(CosmosQueryRequestOptions feedOptions)
-        {
-            return (feedOptions.MaxConcurrency != 0);
-        }
-
-        private static bool IsOffsetLimitQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
-        {
-            return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
-        }
 
         private static bool TryGetEpkProperty(
             CosmosQueryRequestOptions queryRequestOptions,
@@ -312,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
         {
-            if(this.innerExecutionContext == null)
+            if (this.innerExecutionContext == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
             }

@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -29,11 +28,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestMessage">The <see cref="CosmosRequestMessage"/> object</param>
         /// <param name="errorMessage">The reason for failures if any.</param>
         public CosmosResponseMessage(
-            HttpStatusCode statusCode, 
-            CosmosRequestMessage requestMessage = null, 
+            HttpStatusCode statusCode,
+            CosmosRequestMessage requestMessage = null,
             string errorMessage = null)
         {
-            if (((int)statusCode < 0) || ((int)statusCode > 999))
+            if ((statusCode < 0) || ((int)statusCode > 999))
             {
                 throw new ArgumentOutOfRangeException(nameof(statusCode));
             }
@@ -53,10 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual Stream Content
         {
-            get
-            {
-                return this._content;
-            }
+            get => this._content;
             set
             {
                 this.CheckDisposed();
@@ -117,19 +113,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
 
         internal string GetResourceAddress()
         {
-            string resourceIdOrFullName;
-            bool isNameBased = false;
-            bool isFeed = false;
-            string resourceTypeString;
 
             string resourceLink = this.RequestMessage?.RequestUri.OriginalString;
-            if (PathsHelper.TryParsePathSegments(resourceLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased))
+            if (PathsHelper.TryParsePathSegments(
+                resourceLink, 
+                out bool isFeed, 
+                out string resourceTypeString, 
+                out string resourceIdOrFullName, 
+                out bool isNameBased))
             {
                 Debug.Assert(resourceIdOrFullName != null);
                 return resourceIdOrFullName;
@@ -144,16 +141,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True to dispose of content</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (disposing && !this._disposed)
             {
-                _disposed = true;
+                this._disposed = true;
                 if (this._content != null)
                 {
                     this._content.Dispose();
                     this._content = null;
                 }
 
-                if(this.RequestMessage != null)
+                if (this.RequestMessage != null)
                 {
                     this.RequestMessage.Dispose();
                     this.RequestMessage = null;
@@ -163,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void CheckDisposed()
         {
-            if (_disposed)
+            if (this._disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }

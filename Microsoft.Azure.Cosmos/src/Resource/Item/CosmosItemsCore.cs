@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxConcurrency = maxConcurrency;
             requestOptions.EnableCrossPartitionQuery = true;
             requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxItemCount = maxItemCount;
+            requestOptions.MaxPageSize = maxItemCount;
             requestOptions.PartitionKey = partitionKey;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = false;
             requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxItemCount = maxItemCount;
+            requestOptions.MaxPageSize = maxItemCount;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
             requestOptions.EnableCrossPartitionQuery = true;
             requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxItemCount = maxItemCount;
+            requestOptions.MaxPageSize = maxItemCount;
             requestOptions.MaxConcurrency = maxConcurrency;
 
             CosmosQueryClient cosmosQueries = new CosmosQueryClient(this.client, new DocumentQueryClient(this.client.DocumentClient));

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Dictionary<string, long> quotaHeaders;
         private readonly bool useETagAsContinuation;
         private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;
-        private readonly string disallowContinuationTokenMessage;
+        internal readonly string disallowContinuationTokenMessage;
 
         /// <summary>
         /// Constructor exposed for mocking purposes.

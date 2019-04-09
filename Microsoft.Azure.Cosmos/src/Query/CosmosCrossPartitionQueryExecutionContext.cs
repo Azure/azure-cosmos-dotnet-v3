@@ -134,17 +134,17 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (moveNextComparer == null)
             {
-                throw new ArgumentNullException($"{nameof(moveNextComparer)} can not be null");
+                throw new ArgumentNullException(nameof(moveNextComparer));
             }
 
             if (fetchPrioirtyFunction == null)
             {
-                throw new ArgumentNullException($"{nameof(fetchPrioirtyFunction)} can not be null");
+                throw new ArgumentNullException(nameof(fetchPrioirtyFunction));
             }
 
             if (equalityComparer == null)
             {
-                throw new ArgumentNullException($"{nameof(equalityComparer)} can not be null");
+                throw new ArgumentNullException(nameof(equalityComparer));
             }
 
             this.queryContext = initParams;
@@ -156,17 +156,18 @@ namespace Microsoft.Azure.Cosmos.Query
             this.requestChargeTracker = new RequestChargeTracker();
             this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
             this.actualMaxPageSize = this.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
+
             if (this.actualMaxPageSize < 0)
             {
-                throw new OverflowException("actualMaxPageSize should never be less than 0");
+                throw new ArgumentOutOfRangeException("actualMaxPageSize should never be less than 0");
             }
 
             if (this.actualMaxPageSize > int.MaxValue)
             {
-                throw new OverflowException("actualMaxPageSize should never be greater than int.MaxValue");
+                throw new ArgumentOutOfRangeException("actualMaxPageSize should never be greater than int.MaxValue");
             }
 
-            if (IsMaxBufferedItemCountSet(this.MaxBufferedItemCount))
+            if (CosmosCrossPartitionQueryExecutionContext.IsMaxBufferedItemCountSet(this.MaxBufferedItemCount))
             {
                 this.actualMaxBufferedItemCount = this.MaxBufferedItemCount;
             }
@@ -177,12 +178,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.actualMaxBufferedItemCount < 0)
             {
-                throw new OverflowException("actualMaxBufferedItemCount should never be less than 0");
+                throw new ArgumentOutOfRangeException("actualMaxBufferedItemCount should never be less than 0");
             }
 
             if (this.actualMaxBufferedItemCount > int.MaxValue)
             {
-                throw new OverflowException("actualMaxBufferedItemCount should never be greater than int.MaxValue");
+                throw new ArgumentOutOfRangeException("actualMaxBufferedItemCount should never be greater than int.MaxValue");
             }
         }
 
@@ -511,30 +512,30 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (partitionKeyRanges == null)
             {
-                throw new ArgumentNullException($"{nameof(partitionKeyRanges)} can not be null.");
+                throw new ArgumentNullException(nameof(partitionKeyRanges));
             }
 
             if (partitionKeyRanges.Count < 1)
             {
-                throw new ArgumentException($"{nameof(partitionKeyRanges)} must have atleast one element.");
+                throw new ArgumentException(nameof(partitionKeyRanges));
             }
 
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
                 if (partitionKeyRange == null)
                 {
-                    throw new ArgumentException($"{nameof(partitionKeyRanges)} can not have null elements.");
+                    throw new ArgumentException(nameof(partitionKeyRanges));
                 }
             }
 
             if (suppliedContinuationTokens == null)
             {
-                throw new ArgumentNullException($"{nameof(suppliedContinuationTokens)} can not be null.");
+                throw new ArgumentNullException(nameof(suppliedContinuationTokens));
             }
 
             if (suppliedContinuationTokens.Count() < 1)
             {
-                throw new ArgumentException($"{nameof(suppliedContinuationTokens)} must have atleast one element.");
+                throw new ArgumentException(nameof(suppliedContinuationTokens));
             }
 
             if (suppliedContinuationTokens.Count() > partitionKeyRanges.Count)

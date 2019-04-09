@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
-    using Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -272,9 +271,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>();
+                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>
+                    {
+                        this.CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy)
+                    };
 
-                    createContainerTasks.Add(CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy));
                     Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
 
                     List<CosmosClient> cosmosClients = new List<CosmosClient>();
@@ -778,8 +779,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             QueryWithSpecialPartitionKeysArgs args = testArgs;
 
-            SpecialPropertyDocument specialPropertyDocument = new SpecialPropertyDocument();
-            specialPropertyDocument.id = Guid.NewGuid().ToString();
+            SpecialPropertyDocument specialPropertyDocument = new SpecialPropertyDocument
+            {
+                id = Guid.NewGuid().ToString()
+            };
+
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
             Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
 
@@ -1225,7 +1229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Tuple.Create<string, object>("COUNT", (long)numberOfDocumentSamePartitionKey),
                     Tuple.Create<string, object>("MAX", (long)numberOfDocumentSamePartitionKey),
                     Tuple.Create<string, object>("MIN", (long)1),
-                    Tuple.Create<string, object>("SUM", (Int64)singlePartitionSum),
+                    Tuple.Create<string, object>("SUM", (long)singlePartitionSum),
                 };
 
                 string field = aggregateTestArgs.Field;
@@ -2506,7 +2510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                     DateTime startTime = DateTime.Now;
                                     List<Document> result = new List<Document>();
-                                    var query = container.Items.CreateItemQuery<Document>(
+                                    CosmosResultSetIterator<Document> query = container.Items.CreateItemQuery<Document>(
                                         querySpec,
                                         maxConcurrency: maxDegreeOfParallelism,
                                         requestOptions: feedOptions);

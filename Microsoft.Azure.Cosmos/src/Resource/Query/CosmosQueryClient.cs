@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosQueryClient(CosmosClient client, IDocumentQueryClient documentClient)
         {
-            if(client == null)
+            if (client == null)
             {
                 throw new ArgumentException(nameof(client));
             }
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<IRoutingMapProvider> GetRoutingMapProviderAsync()
         {
             return this.DocumentClient.GetRoutingMapProviderAsync();
-        } 
+        }
 
         internal Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken)
         {
@@ -80,8 +80,9 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);
 
-            return GetFeedResponse(requestOptions, resourceType, message);
+            return this.GetFeedResponse(requestOptions, resourceType, message);
         }
+
         internal Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             return this.DocumentClient.GetDefaultConsistencyLevelAsync();
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             string effectivePartitionKeyString)
         {
-            return GetTargetPartitionKeyRanges(
+            return this.GetTargetPartitionKeyRanges(
                 resourceLink,
                 collectionResourceId,
                 new List<Range<string>>
@@ -126,7 +127,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(collectionResourceId));
             }
 
-            if (providedRanges == null || !providedRanges.Any())
+            if (providedRanges == null || 
+                !providedRanges.Any() || 
+                providedRanges.Any(x => x == null))
             {
                 throw new ArgumentNullException(nameof(providedRanges));
             }
