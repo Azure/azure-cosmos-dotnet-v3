@@ -502,7 +502,9 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
-                return CosmosQueryResponse.CreateResponse(feedResponse: feedResponse, queryRequestOptions.CosmosSerializationOptions);
+                return CosmosQueryResponse.CreateResponse(
+                    feedResponse: feedResponse, 
+                    cosmosSerializationOptions: queryRequestOptions.CosmosSerializationOptions);
             }
             catch (DocumentClientException exception)
             {
