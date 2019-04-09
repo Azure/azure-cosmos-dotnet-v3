@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await CreateRandomItems(batchSize, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true });
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (setIterator.HasMoreResults)
             {
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await CreateRandomItems(2, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartFromBeginning = true });
+            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (setIterator.HasMoreResults)
             {
@@ -172,8 +172,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
-                        Assert.AreEqual(1, response.Count);
-                        return;
+                        if (response.Count > 0)
+                        {
+                            Assert.AreEqual(1, response.Count);
+                            return;
+                        }
                     }
                 }
 
@@ -201,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosChangeFeedRequestOptions requestOptions;
                 if (string.IsNullOrEmpty(continuationToken))
                 {
-                    requestOptions = new CosmosChangeFeedRequestOptions() { StartFromBeginning = true };
+                    requestOptions = new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
                 }
                 else
                 {
@@ -252,18 +255,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(iterator.Iteration > 1);
                 Assert.AreEqual(responseMessage.StatusCode, System.Net.HttpStatusCode.NotModified);
             }
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void StandByFeedIterator_ValidatesStartTimeAndStartFromBeginning()
-        {
-            CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions()
-            {
-                StartFromBeginning = true,
-                StartTime = new DateTime(1985, 1, 1)
-            });
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)

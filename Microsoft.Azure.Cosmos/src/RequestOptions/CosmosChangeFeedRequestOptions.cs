@@ -17,16 +17,11 @@ namespace Microsoft.Azure.Cosmos
         internal const string IfNoneMatchAllHeaderValue = "*";
 
         /// <summary>
-        /// Marks whether the change feed should be read from the start.
-        /// </summary>
-        /// <remarks>
-        /// If this is specified, StartTime is ignored.
-        /// </remarks>
-        public virtual bool StartFromBeginning { get; set; }
-
-        /// <summary>
         /// Specifies a particular point in time to start to read the change feed.
         /// </summary>
+        /// <remarks>
+        /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.
+        /// </remarks>
         public virtual DateTime? StartTime { get; set; }
 
         /// <summary>
@@ -38,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             // Check if no Continuation Token is present
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
             {
-                if (!this.StartFromBeginning && this.StartTime == null)
+                if (this.StartTime == null)
                 {
                     request.Headers.IfNoneMatch = CosmosChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
                 }
@@ -51,25 +46,6 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
             base.FillRequestOptions(request);
-        }
-
-        internal void ValidateOptions()
-        {
-            int setOptions = 0;
-            if (this.StartFromBeginning)
-            {
-                setOptions++;
-            }
-
-            if (this.StartTime != null)
-            {
-                setOptions++;
-            }
-
-            if (setOptions > 1)
-            {
-                throw new ArgumentException("Only one of Cannot specify ContinuationToken, StartFromBeginning, and StartTime are supported.");
-            }
         }
 
         internal static void FillPartitionKeyRangeId(CosmosRequestMessage request, string partitionKeyRangeId)

@@ -248,21 +248,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_AddsStartFromBeginning()
-        {
-            CosmosRequestMessage request = new CosmosRequestMessage();
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions()
-            {
-                StartFromBeginning = true
-            };
-
-            requestOptions.FillRequestOptions(request);
-
-            Assert.IsNull(request.Headers.IfNoneMatch);
-            Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
-        }
-
-        [TestMethod]
         public void CosmosChangeFeedRequestOptions_AddsStartTime()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
