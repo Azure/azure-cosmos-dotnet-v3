@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             },
                             requestOptionsEnricher: (queryRequestOptions) =>
                             {
-                                queryRequestOptions.MaxPageSize = pageSize;
+                                queryRequestOptions.MaxItemCount = pageSize;
                                 queryRequestOptions.RequestContinuation = this.BackendContinuationToken;
                             });
 

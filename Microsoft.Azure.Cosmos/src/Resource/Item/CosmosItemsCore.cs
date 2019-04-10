@@ -34,13 +34,14 @@ namespace Microsoft.Azure.Cosmos
         private CosmosClient client { get; }
         private CosmosQueryClient queryClient { get; }
 
-        internal CosmosItemsCore(CosmosContainer container)
+        internal CosmosItemsCore(
+            CosmosContainer container, 
+            CosmosQueryClient cosmosQueryClient = null)
         {
-            this.client = container.Client;
             this.container = container;
             this.cosmosJsonSerializer = this.container.Client.CosmosJsonSerializer;
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
-            this.queryClient = new CosmosQueryClient(this.client, new DocumentQueryClient(this.client.DocumentClient));
+            this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.client, new DocumentQueryClient(this.client.DocumentClient));
         }
 
         internal readonly CosmosContainer container;
@@ -229,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxConcurrency = maxConcurrency;
             requestOptions.EnableCrossPartitionQuery = true;
             requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxPageSize = maxItemCount;
+            requestOptions.MaxItemCount = maxItemCount;
             requestOptions.PartitionKey = partitionKey;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
@@ -238,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Query,
                 resourceType: typeof(CosmosQueryResponse),
                 sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
-                queryRequestOptions: requestOptions as CosmosQueryRequestOptions,
+                queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: true,
                 correlatedActivityId: Guid.NewGuid());
@@ -279,7 +280,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = false;
             requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxPageSize = maxItemCount;
+            requestOptions.MaxItemCount = maxItemCount;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -325,12 +326,11 @@ namespace Microsoft.Azure.Cosmos
             requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
             requestOptions.EnableCrossPartitionQuery = true;
             requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxPageSize = maxItemCount;
+            requestOptions.MaxItemCount = maxItemCount;
             requestOptions.MaxConcurrency = maxConcurrency;
 
-            CosmosQueryClient cosmosQueries = new CosmosQueryClient(this.client, new DocumentQueryClient(this.client.DocumentClient));
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
-                client: cosmosQueries,
+                client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(T),

@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         /// '-1' Used for dynamic page size.
         /// This is a maximum. Query can return 0 items in the page.
         /// </remarks>
-        public virtual int? MaxPageSize { get; set; }
+        public virtual int? MaxItemCount { get; set; }
 
         /// <summary>
         /// Gets or sets the request continuation token in the Azure Cosmos DB service.
@@ -178,9 +178,9 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Continuation = this.RequestContinuation;
 
             // Flow the pageSize only when we are not doing client eval
-            if (this.MaxPageSize.HasValue)
+            if (this.MaxItemCount.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxPageSize.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
             }
 
             if (this.isMaxConcurrencySet)
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 AccessCondition = this.AccessCondition,
                 RequestContinuation = this.RequestContinuation,
-                MaxPageSize = this.MaxPageSize,
+                MaxItemCount = this.MaxItemCount,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,

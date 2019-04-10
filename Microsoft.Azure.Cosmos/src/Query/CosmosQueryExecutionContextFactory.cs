@@ -54,9 +54,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 cloneQueryRequestOptions.MaxConcurrency = int.MaxValue;
             }
 
-            if (cloneQueryRequestOptions.MaxPageSize.HasValue && cloneQueryRequestOptions.MaxPageSize < 0)
+            if (cloneQueryRequestOptions.MaxItemCount.HasValue && cloneQueryRequestOptions.MaxItemCount < 0)
             {
-                cloneQueryRequestOptions.MaxPageSize = int.MaxValue;
+                cloneQueryRequestOptions.MaxItemCount = int.MaxValue;
             }
 
             this.cosmosQueryContext = new CosmosQueryContext(
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
             // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
-            if (CustomTypeExtensions.ByPassQueryParsing())
+            if (this.cosmosQueryContext.QueryClient.ByPassQueryParsing())
             {
                 // We create a ProxyDocumentQueryExecutionContext that will be initialized with DefaultDocumentQueryExecutionContext
                 // which will be used to send the query to Gateway and on getting 400(bad request) with 1004(cross partition query not servable), we initialize it with
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             // Figure out the optimal page size.
-            long initialPageSize = constructorParams.QueryRequestOptions.MaxPageSize.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
+            long initialPageSize = constructorParams.QueryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
 
             if (initialPageSize < -1 || initialPageSize == 0)
             {
