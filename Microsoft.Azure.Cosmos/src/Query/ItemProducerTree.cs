@@ -85,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="initialContinuationToken">The initial continuation token.</param>
         public ItemProducerTree(
             CosmosQueryContext queryContext,
+            SqlQuerySpec querySpecForInit,
             PartitionKeyRange partitionKeyRange,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
@@ -132,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.root = new ItemProducer(
                 queryContext,
+                querySpecForInit,
                 partitionKeyRange,
                 createRetryPolicyFunc,
                 (itemProducer, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token),
@@ -145,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.collectionRid = collectionRid;
             this.createItemProducerTreeCallback = ItemProducerTree.CreateItemProducerTreeCallback(
                 queryContext,
+                querySpecForInit,
                 createRetryPolicyFunc,
                 produceAsyncCompleteCallback,
                 itemProducerTreeComparer,
@@ -521,6 +524,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>A function that given a partition key range and continuation token will create a document producer.</returns>
         private static Func<PartitionKeyRange, string, ItemProducerTree> CreateItemProducerTreeCallback(
             CosmosQueryContext queryContext,
+            SqlQuerySpec querySpecForInit,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
@@ -533,6 +537,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 return new ItemProducerTree(
                     queryContext,
+                    querySpecForInit,
                     partitionKeyRange,
                     createRetryPolicyFunc,
                     produceAsyncCompleteCallback,

@@ -96,19 +96,15 @@ namespace Microsoft.Azure.Cosmos.Query
                     JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(error.AdditionalErrorInfo);
 
             string rewrittenQuery = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery;
-            if (string.IsNullOrEmpty(rewrittenQuery))
+            if (!string.IsNullOrEmpty(rewrittenQuery))
             {
-                rewrittenQuery = this.queryContext.SqlQuerySpecFromUser.QueryText;
+                this.queryContext.SqlQuerySpec.QueryText = rewrittenQuery;
             }
-
-            this.queryContext.SqlQuerySpecOptimized = new SqlQuerySpec(
-                rewrittenQuery, 
-                this.queryContext.SqlQuerySpecFromUser.Parameters);
 
             List<PartitionKeyRange> partitionKeyRanges =
                 await this.queryContext.QueryClient.GetTargetPartitionKeyRanges(
                     this.queryContext.ResourceLink.OriginalString,
-                    collection.ResourceId,
+                    this.collection.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);
 
             this.innerExecutionContext = await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContext(

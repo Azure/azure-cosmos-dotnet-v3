@@ -149,8 +149,9 @@ namespace Microsoft.Azure.Cosmos
                 .ContinueWith(task =>
                 {
                     CosmosQueryResponse<T> response = task.Result;
-                    this.continuationToken = response.ContinuationToken;
                     this.HasMoreResults = response.GetHasMoreResults();
+                    this.continuationToken = response.InternalContinuationToken;
+                    
                     return response;
                 }, cancellationToken);
         }

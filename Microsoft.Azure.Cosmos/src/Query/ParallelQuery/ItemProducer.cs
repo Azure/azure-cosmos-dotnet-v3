@@ -105,6 +105,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly CosmosQueryContext queryContext;
 
+        private readonly SqlQuerySpec querySpecForInit;
+
         /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
@@ -118,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="initialContinuationToken">The initial continuation token.</param>
         public ItemProducer(
             CosmosQueryContext queryContext,
+            SqlQuerySpec querySpecForInit,
             PartitionKeyRange partitionKeyRange,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
@@ -148,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             this.queryContext = queryContext;
+            this.querySpecForInit = querySpecForInit;
             this.PartitionKeyRange = partitionKeyRange;
             this.createRetryPolicyFunc = createRetryPolicyFunc;
             this.produceAsyncCompleteCallback = produceAsyncCompleteCallback;
@@ -316,6 +320,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     try
                     {
                         FeedResponse<CosmosElement> feedResponse = await this.queryContext.ExecuteQueryAsync(
+                            this.querySpecForInit,
                             token,
                             requestEnricher: (cosmosRequestMessage) =>
                             {

@@ -145,15 +145,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
                 "OrderBy~Context must have order by query info.");
 
-            constructorParams.SqlQuerySpecOptimized.QueryText = constructorParams.SqlQuerySpecOptimized.QueryText.Replace(
-                oldValue: FormatPlaceHolder,
-                newValue: True);
-
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
                 constructorParams,
                 new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
 
             await context.InitializeAsync(
+                constructorParams.SqlQuerySpec,
                 initParams.RequestContinuation,
                 initParams.CollectionRid,
                 initParams.PartitionKeyRanges,
@@ -269,22 +266,28 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
-          string requestContinuation,
-          string collectionRid,
-          List<PartitionKeyRange> partitionKeyRanges,
-          int initialPageSize,
-          SortOrder[] sortOrders,
-          string[] orderByExpressions,
-          CancellationToken cancellationToken)
+            SqlQuerySpec sqlQuerySpec,
+            string requestContinuation,
+            string collectionRid,
+            List<PartitionKeyRange> partitionKeyRanges,
+            int initialPageSize,
+            SortOrder[] sortOrders,
+            string[] orderByExpressions,
+            CancellationToken cancellationToken)
         {
             try
             {
                 if (requestContinuation == null)
                 {
+                    SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
+                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True), 
+                        sqlQuerySpec.Parameters);
+
                     await base.InitializeAsync(
                         collectionRid,
                         partitionKeyRanges,
                         initialPageSize,
+                        sqlQuerySpecForInit,
                         token: cancellationToken,
                         targetRangeToContinuationMap: null,
                         deferFirstPage: false,
@@ -321,10 +324,15 @@ namespace Microsoft.Azure.Cosmos.Query
                         PartialReadOnlyList<PartitionKeyRange> partialRanges =
                             new PartialReadOnlyList<PartitionKeyRange>(partitionKeyRanges, info.StartIndex, info.EndIndex - info.StartIndex + 1);
 
+                        SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
+                            sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
+                            sqlQuerySpec.Parameters);
+
                         await base.InitializeAsync(
                             collectionRid,
                             partialRanges,
                             initialPageSize,
+                            sqlQuerySpecForInit,
                             targetRangeToOrderByContinuationMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompositeContinuationToken.Token),
                             false,
                             info.Filter,

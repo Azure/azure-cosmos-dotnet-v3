@@ -189,8 +189,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public int? MaxItemCount => this.queryRequestOptions.MaxBufferedItemCount;
 
-        protected SqlQuerySpec QuerySpec => this.queryContext.SqlQuerySpecOptimized;
-
         protected int MaxBufferedItemCount => this.queryRequestOptions.MaxBufferedItemCount;
 
         protected int MaxDegreeOfParallelism => this.queryRequestOptions.MaxConcurrency;
@@ -418,6 +416,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string collectionRid,
             IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
+            SqlQuerySpec querySpecForInit,
             Dictionary<string, string> targetRangeToContinuationMap,
             bool deferFirstPage,
             string filter,
@@ -428,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.TraceInformation(string.Format(
                 CultureInfo.InvariantCulture,
                 "parallel~contextbase.initializeasync, queryspec {0}, maxbuffereditemcount: {1}, target partitionkeyrange count: {2}, maximumconcurrencylevel: {3}, documentproducer initial page size {4}",
-                JsonConvert.SerializeObject(this.QuerySpec, DefaultJsonSerializationSettings.Value),
+                JsonConvert.SerializeObject(querySpecForInit, DefaultJsonSerializationSettings.Value),
                 this.actualMaxBufferedItemCount,
                 partitionKeyRanges.Count,
                 this.comparableTaskScheduler.MaximumConcurrencyLevel,
@@ -438,9 +437,9 @@ namespace Microsoft.Azure.Cosmos.Query
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
                 string initialContinuationToken = (targetRangeToContinuationMap != null && targetRangeToContinuationMap.ContainsKey(partitionKeyRange.Id)) ? targetRangeToContinuationMap[partitionKeyRange.Id] : null;
-
                 ItemProducerTree itemProducerTree = new ItemProducerTree(
                     this.queryContext,
+                    querySpecForInit,
                     partitionKeyRange,
                     //// Retry policy callback
                     () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.queryContext.QueryClient.GetRetryPolicy()),

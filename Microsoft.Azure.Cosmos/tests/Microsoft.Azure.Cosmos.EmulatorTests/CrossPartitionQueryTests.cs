@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -1761,7 +1762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             #endregion
             #region Unordered Continuation
-            // Run the unordered distinct query through the continuation api should result in the same set (but maybe some duplicates)
+            // Run the unordered distinct query through the continuation api should result in the same set(but maybe some duplicates)
             foreach (string query in new string[]
             {
                 "SELECT {0} VALUE c.name from c",
@@ -1875,16 +1876,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string continuationToken = null;
                     do
                     {
-                        CosmosResultSetIterator<JToken> documentQuery = container.Items.CreateItemQuery<JToken>(
+                        CosmosResultSetIterator<JToken> cosmosQuery = container.Items.CreateItemQuery<JToken>(
                                    sqlQueryText: queryWithDistinct,
                                    maxConcurrency: 100,
                                    maxItemCount: 1,
                                    continuationToken: continuationToken);
-                        {
-                            CosmosQueryResponse<JToken> cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
-                            documentsFromWithDistinct.AddRange(cosmosQueryResponse);
-                            continuationToken = cosmosQueryResponse.ContinuationToken;
-                        }
+
+                        CosmosQueryResponse<JToken> cosmosQueryResponse = await cosmosQuery.FetchNextSetAsync();
+                        documentsFromWithDistinct.AddRange(cosmosQueryResponse);
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
                     }
                     while (continuationToken != null);
 

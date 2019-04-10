@@ -172,11 +172,6 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
             request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery ? bool.TrueString : bool.FalseString);
 
-            if (this.EnableScanInQuery.HasValue && this.EnableScanInQuery.Value)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
-            }
-
             CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
             CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
@@ -193,9 +188,9 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery, bool.TrueString);
             }
 
-            if (this.EnableScanInQuery != null)
+            if (this.EnableScanInQuery.HasValue && this.EnableScanInQuery.Value)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, this.EnableScanInQuery.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
             }
 
             if (this.EnableLowPrecisionOrderBy != null)

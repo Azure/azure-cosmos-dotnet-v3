@@ -13,10 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -275,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions  ?? new CosmosQueryRequestOptions();
+            requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = false;
             requestOptions.RequestContinuation = continuationToken;
@@ -364,11 +363,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
-            string workflowName, 
+            string workflowName,
             Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
         {
-            if (workflowName == null) throw new ArgumentNullException(nameof(workflowName));
-            if (onChangesDelegate == null) throw new ArgumentNullException(nameof(onChangesDelegate));
+            if (workflowName == null)
+            {
+                throw new ArgumentNullException(nameof(workflowName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
 
             ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
             ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
@@ -377,11 +383,18 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
             string workflowName,
-            Func<long, CancellationToken, Task> estimationDelegate, 
+            Func<long, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            if (workflowName == null) throw new ArgumentNullException(nameof(workflowName));
-            if (estimationDelegate == null) throw new ArgumentNullException(nameof(estimationDelegate));
+            if (workflowName == null)
+            {
+                throw new ArgumentNullException(nameof(workflowName));
+            }
+
+            if (estimationDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(estimationDelegate));
+            }
 
             ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
@@ -402,7 +415,6 @@ namespace Microsoft.Azure.Cosmos
                 return CosmosQueryResponse<T>.CreateResponse<T>(
                     feedResponse: feedResponse,
                     jsonSerializer: this.cosmosJsonSerializer,
-                    continuationToken: string.IsNullOrEmpty(feedResponse.DisallowContinuationTokenMessage) ? feedResponse.ResponseContinuation : null,
                     hasMoreResults: !documentQueryExecution.IsDone,
                     resourceType: ResourceType.Document);
             }
@@ -503,7 +515,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
                 return CosmosQueryResponse.CreateResponse(
-                    feedResponse: feedResponse, 
+                    feedResponse: feedResponse,
                     cosmosSerializationOptions: queryRequestOptions.CosmosSerializationOptions);
             }
             catch (DocumentClientException exception)
@@ -512,10 +524,11 @@ namespace Microsoft.Azure.Cosmos
                         errorMessage: exception.Message,
                         httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
                         retryAfter: exception.RetryAfter);
-            }catch(AggregateException ae)
+            }
+            catch (AggregateException ae)
             {
                 DocumentClientException exception = ae.InnerException as DocumentClientException;
-                if(exception == null)
+                if (exception == null)
                 {
                     throw;
                 }

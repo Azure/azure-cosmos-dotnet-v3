@@ -36,8 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public ResourceType ResourceTypeEnum { get; }
         public OperationType OperationTypeEnum { get; }
         public Type ResourceType { get; }
-        public SqlQuerySpec SqlQuerySpecFromUser { get; }
-        public SqlQuerySpec SqlQuerySpecOptimized { get; set; }
+        public SqlQuerySpec SqlQuerySpec { get; }
         public CosmosQueryRequestOptions QueryRequestOptions { get; }
         public bool IsContinuationExpected { get; }
         public Uri ResourceLink { get; }
@@ -86,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.QueryClient = client;
             this.ResourceTypeEnum = resourceTypeEnum;
             this.ResourceType = resourceType;
-            this.SqlQuerySpecFromUser = sqlQuerySpecFromUser;
+            this.SqlQuerySpec = sqlQuerySpecFromUser;
             this.QueryRequestOptions = queryRequestOptions;
             this.ResourceLink = resourceLink;
             this.ContainerResourceId = containerResourceId;
@@ -95,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         internal async Task<FeedResponse<CosmosElement>> ExecuteQueryAsync(
+            SqlQuerySpec querySpecForInit,
             CancellationToken cancellationToken,
             Action<CosmosRequestMessage> requestEnricher = null,
             Action<CosmosQueryRequestOptions> requestOptionsEnricher = null)
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            this.ResourceTypeEnum,
                            this.OperationTypeEnum,
                            requestOptions,
-                           this.SqlQuerySpecOptimized ?? this.SqlQuerySpecFromUser,
+                           querySpecForInit,
                            requestEnricher,
                            cancellationToken);
         }

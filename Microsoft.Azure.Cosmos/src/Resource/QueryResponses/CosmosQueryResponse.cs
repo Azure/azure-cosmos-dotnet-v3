@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos
         private bool _isDisposed = false;
         private readonly INameValueCollection _responseHeaders = null;
         private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
+        private readonly string disallowContinuationTokenMessage;
+        private readonly string continuationToken;
 
         /// <summary>
         /// Empty constructor that can be used for unit testing
@@ -38,14 +40,16 @@ namespace Microsoft.Azure.Cosmos
             Stream content,
             int count,
             string continuationToken,
+            string disallowContinuationTokenMessage,
             IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
         {
             this._responseHeaders = responseHeaders;
             this._queryMetrics = queryMetrics;
             this.Content = content;
             this.Count = count;
-            this.ContinuationToken = continuationToken;
             this.StatusCode = HttpStatusCode.OK;
+            this.disallowContinuationTokenMessage = disallowContinuationTokenMessage;
+            this.continuationToken = continuationToken;
         }
 
         internal CosmosQueryResponse(
@@ -54,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan retryAfter,
             INameValueCollection responseHeaders = null)
         {
-            this.ContinuationToken = null;
+            this.continuationToken = null;
             this.Content = null;
             this._responseHeaders = responseHeaders;
             this.StatusCode = httpStatusCode;
@@ -65,7 +69,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the continuation token
         /// </summary>
-        public virtual string ContinuationToken { get; protected set; }
+        public virtual string ContinuationToken
+        {
+            get
+            {
+                if (this.disallowContinuationTokenMessage != null)
+                {
+                    throw new ArgumentException(this.disallowContinuationTokenMessage);
+                }
+
+                return this.continuationToken;
+            }
+        }
 
         /// <summary>
         /// Contains the stream response of the operation
@@ -172,14 +187,35 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosQueryResponse{T}"/>
         /// </summary>
-        protected CosmosQueryResponse()
+        protected CosmosQueryResponse(
+            bool hasMoreResults,
+            string continuationToken,
+            string disallowContinuationTokenMessage)
         {
+            this.HasMoreResults = hasMoreResults;
+            this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
+            this.InternalContinuationToken = continuationToken;
         }
+
+        internal virtual string DisallowContinuationTokenMessage { get; }
+
+        internal virtual string InternalContinuationToken { get; }
 
         /// <summary>
         /// Gets the continuation token
         /// </summary>
-        public virtual string ContinuationToken { get; protected set; }
+        public virtual string ContinuationToken
+        {
+            get
+            {
+                if (this.DisallowContinuationTokenMessage != null)
+                {
+                    throw new ArgumentException(this.DisallowContinuationTokenMessage);
+                }
+
+                return this.InternalContinuationToken;
+            }
+        }
 
         /// <summary>
         /// Get the enumerators to iterate through the results
@@ -208,11 +244,10 @@ namespace Microsoft.Azure.Cosmos
         {
             using (stream)
             {
-                CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>()
-                {
-                    ContinuationToken = continuationToken,
-                    HasMoreResults = hasMoreResults
-                };
+                CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+                    hasMoreResults: hasMoreResults,
+                    continuationToken: continuationToken,
+                    disallowContinuationTokenMessage: null);
 
                 queryResponse.InitializeResource(stream, jsonSerializer);
                 return queryResponse;
@@ -224,8 +259,11 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             bool hasMoreResults)
         {
-            CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>();
-            queryResponse.SetProperties(resources, continuationToken, hasMoreResults);
+            CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+                hasMoreResults: hasMoreResults,
+                continuationToken: continuationToken,
+                disallowContinuationTokenMessage: null);
+            queryResponse.Resources = resources;
             return queryResponse;
         }
 
@@ -239,15 +277,13 @@ namespace Microsoft.Azure.Cosmos
         internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
             FeedResponse<CosmosElement> feedResponse,
             CosmosJsonSerializer jsonSerializer,
-            string continuationToken,
             bool hasMoreResults,
             ResourceType resourceType)
         {
-            CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>()
-            {
-                ContinuationToken = continuationToken,
-                HasMoreResults = hasMoreResults
-            };
+            CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+                hasMoreResults: hasMoreResults,
+                continuationToken: feedResponse.InternalResponseContinuation,
+                disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage);
 
             queryResponse.InitializeResource(feedResponse, jsonSerializer, resourceType);
             return queryResponse;
@@ -262,16 +298,6 @@ namespace Microsoft.Azure.Cosmos
                 feedResponse,
                 resourceType,
                 jsonSerializer);
-        }
-
-        private void SetProperties(
-            IEnumerable<T> resources,
-            string continuationToken,
-            bool hasMoreResults)
-        {
-            this.ContinuationToken = continuationToken;
-            this.Resources = resources;
-            this.HasMoreResults = hasMoreResults;
         }
 
         internal bool GetHasMoreResults()

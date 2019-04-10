@@ -9,16 +9,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
@@ -103,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // PipelinedDocumentQueryExecutionContext by providing the partition query execution info that's needed(which we get from the exception returned from Gateway).
                 CosmosProxyItemQueryExecutionContext proxyQueryExecutionContext =
                     CosmosProxyItemQueryExecutionContext.CreateAsync(
-                        queryContext: cosmosQueryContext,
+                        queryContext: this.cosmosQueryContext,
                         token: cancellationToken,
                         collection: collection);
 
@@ -114,22 +111,22 @@ namespace Microsoft.Azure.Cosmos.Query
             //if collection is deleted/created with same name.
             //need to make it not rely on information from collection cache.
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
-                cosmosQueryContext.QueryClient,
-                cosmosQueryContext.SqlQuerySpecFromUser,
+                this.cosmosQueryContext.QueryClient,
+                this.cosmosQueryContext.SqlQuerySpec,
                 collection.PartitionKey,
                 true,
                 true,
                 cancellationToken);
 
             List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
-                cosmosQueryContext.QueryClient,
-                cosmosQueryContext.ResourceLink.OriginalString,
+                this.cosmosQueryContext.QueryClient,
+                this.cosmosQueryContext.ResourceLink.OriginalString,
                 partitionedQueryExecutionInfo,
                 collection,
-                cosmosQueryContext.QueryRequestOptions);
+                this.cosmosQueryContext.QueryRequestOptions);
 
             return await CreateSpecializedDocumentQueryExecutionContext(
-                cosmosQueryContext,
+                this.cosmosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 collection.ResourceId,

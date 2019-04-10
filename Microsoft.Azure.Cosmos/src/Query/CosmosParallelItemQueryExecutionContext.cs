@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 constructorParams);
 
             await context.InitializeAsync(
+                constructorParams.SqlQuerySpec,
                 initParams.CollectionRid,
                 initParams.PartitionKeyRanges,
                 initParams.InitialPageSize,
@@ -174,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
+            SqlQuerySpec sqlQuerySpec,
             string collectionRid,
             List<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
@@ -237,6 +239,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 collectionRid,
                 filteredPartitionKeyRanges,
                 initialPageSize,
+                sqlQuerySpec,
                 (targetIndicesForFullContinuation != null) ? targetIndicesForFullContinuation.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token) : null,
                 true,
                 null,
