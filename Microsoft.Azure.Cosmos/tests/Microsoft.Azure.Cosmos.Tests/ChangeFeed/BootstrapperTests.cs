@@ -33,153 +33,87 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task InitializeAsyncOrderIsCorrect()
         {
-            List<string> expectedOrderOfEvents = new List<string>()
-            {
-                "IsInitializedAsync",
-                "AcquireInitializationLockAsync",
-                "CreateMissingLeasesAsync",
-                "MarkInitializedAsync",
-                "ReleaseInitializationLockAsync"
-            };
-
-            List<string> events = new List<string>();
-
             Mock<PartitionSynchronizer> synchronizer = new Mock<PartitionSynchronizer>();
-            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Returns(() =>
-            {
-                events.Add("CreateMissingLeasesAsync");
-                return Task.CompletedTask;
-            });
+            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Returns(Task.CompletedTask);
             Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
-            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(() =>
-            {
-                events.Add("IsInitializedAsync");
-                return false;
-            });
-            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(() =>
-            {
-                events.Add("AcquireInitializationLockAsync");
-                return true;
-            });
-            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(() =>
-            {
-                events.Add("MarkInitializedAsync");
-                return Task.CompletedTask;
-            });
-            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(() =>
-            {
-                events.Add("ReleaseInitializationLockAsync");
-                return true;
-            });
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(false);
+            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(true);
+            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(Task.CompletedTask);
+            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(true);
             TimeSpan lockTime = TimeSpan.FromSeconds(30);
             TimeSpan sleepTime = TimeSpan.FromSeconds(30);
 
             BootstrapperCore bootstrapper = new BootstrapperCore(synchronizer.Object, leaseStore.Object, lockTime, sleepTime);
 
             await bootstrapper.InitializeAsync();
-            CollectionAssert.AreEqual(expectedOrderOfEvents, events);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.IsInitializedAsync(), Times.Once);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.AcquireInitializationLockAsync(It.IsAny<TimeSpan>()), Times.Once);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.MarkInitializedAsync(), Times.Once);
+            Mock.Get(synchronizer.Object)
+                .Verify(store => store.CreateMissingLeasesAsync(), Times.Once);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.ReleaseInitializationLockAsync(), Times.Once);
         }
 
         [TestMethod]
         public async Task IfInitializedDoNotRunAnythingElse()
         {
-            List<string> expectedOrderOfEvents = new List<string>()
-            {
-                "IsInitializedAsync"
-            };
-
-            List<string> events = new List<string>();
-
             Mock<PartitionSynchronizer> synchronizer = new Mock<PartitionSynchronizer>();
-            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Returns(() =>
-            {
-                events.Add("CreateMissingLeasesAsync");
-                return Task.CompletedTask;
-            });
+            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Returns(Task.CompletedTask);
             Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
-            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(() =>
-            {
-                events.Add("IsInitializedAsync");
-                return true;
-            });
-            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(() =>
-            {
-                events.Add("AcquireInitializationLockAsync");
-                return true;
-            });
-            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(() =>
-            {
-                events.Add("MarkInitializedAsync");
-                return Task.CompletedTask;
-            });
-            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(() =>
-            {
-                events.Add("ReleaseInitializationLockAsync");
-                return true;
-            });
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(true);
+            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(Task.CompletedTask);
+            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(true);
             TimeSpan lockTime = TimeSpan.FromSeconds(30);
             TimeSpan sleepTime = TimeSpan.FromSeconds(30);
 
             BootstrapperCore bootstrapper = new BootstrapperCore(synchronizer.Object, leaseStore.Object, lockTime, sleepTime);
 
             await bootstrapper.InitializeAsync();
-            CollectionAssert.AreEqual(expectedOrderOfEvents, events);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.IsInitializedAsync(), Times.Once);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.AcquireInitializationLockAsync(It.IsAny<TimeSpan>()), Times.Never);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.MarkInitializedAsync(), Times.Never);
+            Mock.Get(synchronizer.Object)
+                .Verify(store => store.CreateMissingLeasesAsync(), Times.Never);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.ReleaseInitializationLockAsync(), Times.Never);
         }
 
         [TestMethod]
         public async Task IfCannotAcquireRetry()
         {
-            // Includes expected retry
-            List<string> expectedOrderOfEvents = new List<string>()
-            {
-                "IsInitializedAsync",
-                "AcquireInitializationLockAsync",
-                "IsInitializedAsync",
-                "AcquireInitializationLockAsync",
-                "CreateMissingLeasesAsync",
-                "MarkInitializedAsync",
-                "ReleaseInitializationLockAsync"
-            };
-
-            int iteration = 1;
-
-            List<string> events = new List<string>();
-
             Mock<PartitionSynchronizer> synchronizer = new Mock<PartitionSynchronizer>();
-            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Returns(() =>
-            {
-                events.Add("CreateMissingLeasesAsync");
-                return Task.CompletedTask;
-            });
+            synchronizer.Setup(s => s.CreateMissingLeasesAsync()).Returns(Task.CompletedTask);
             Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
-            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(() =>
-            {
-                events.Add("IsInitializedAsync");
-                return false;
-            });
-            leaseStore.Setup(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>())).ReturnsAsync(() =>
-            {
-                events.Add("AcquireInitializationLockAsync");
-                // Only acquire on retry
-                return (iteration++ > 1);
-            });
-            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(() =>
-            {
-                events.Add("MarkInitializedAsync");
-                return Task.CompletedTask;
-            });
-            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(() =>
-            {
-                events.Add("ReleaseInitializationLockAsync");
-                return true;
-            });
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(false);
+            leaseStore.SetupSequence(l => l.AcquireInitializationLockAsync(It.IsAny<TimeSpan>()))
+                .ReturnsAsync(false)
+                .ReturnsAsync(true);
+            leaseStore.Setup(l => l.MarkInitializedAsync()).Returns(Task.CompletedTask);
+            leaseStore.Setup(l => l.ReleaseInitializationLockAsync()).ReturnsAsync(true);
             TimeSpan lockTime = TimeSpan.FromSeconds(1);
             TimeSpan sleepTime = TimeSpan.FromSeconds(1);
 
             BootstrapperCore bootstrapper = new BootstrapperCore(synchronizer.Object, leaseStore.Object, lockTime, sleepTime);
 
             await bootstrapper.InitializeAsync();
-            CollectionAssert.AreEqual(expectedOrderOfEvents, events);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.IsInitializedAsync(), Times.Exactly(2));
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.AcquireInitializationLockAsync(It.IsAny<TimeSpan>()), Times.Exactly(2));
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.MarkInitializedAsync(), Times.Once);
+            Mock.Get(synchronizer.Object)
+                .Verify(store => store.CreateMissingLeasesAsync(), Times.Once);
+            Mock.Get(leaseStore.Object)
+                .Verify(store => store.ReleaseInitializationLockAsync(), Times.Once);
         }
     }
 }
