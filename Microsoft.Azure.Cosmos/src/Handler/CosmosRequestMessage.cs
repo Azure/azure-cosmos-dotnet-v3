@@ -82,6 +82,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal OperationType OperationType { get; set; }
 
+        internal string PartitionKeyRangeId { get; set; }
+
         /// <summary>
         /// Used to override the client default. This is used for scenarios
         /// in query where the service interop is not present.
@@ -93,6 +95,8 @@ namespace Microsoft.Azure.Cosmos
         internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
+
+        internal bool IsDocumentFeedOperation => this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Document && string.IsNullOrEmpty(this.PartitionKeyRangeId);
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -184,6 +188,12 @@ namespace Microsoft.Azure.Cosmos
                 if (this.UseGatewayMode.HasValue)
                 {
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
+                }
+
+                // Routing to a particular PartitionKeyRangeId
+                if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
+                {
+                    serviceRequest.RouteTo(new PartitionKeyRangeIdentity(this.PartitionKeyRangeId));
                 }
 
                 serviceRequest.UseStatusCodeForFailures = true;

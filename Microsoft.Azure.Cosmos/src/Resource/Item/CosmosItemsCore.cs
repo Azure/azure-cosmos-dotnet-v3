@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Text;
@@ -398,6 +399,21 @@ namespace Microsoft.Azure.Cosmos
 
             ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
+        }
+
+        internal CosmosFeedResultSetIterator GetStandByFeedIterator(
+            string continuationToken = null,
+            int? maxItemCount = null,
+            CosmosChangeFeedRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
+
+            return new CosmosChangeFeedResultSetIteratorCore(
+                continuationToken: continuationToken,
+                maxItemCount: maxItemCount,
+                cosmosContainer: (CosmosContainerCore)this.container,
+                options: cosmosQueryRequestOptions);
         }
 
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(

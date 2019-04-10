@@ -5,11 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
-    using System.Diagnostics;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -17,16 +14,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RouterHandler : CosmosRequestHandler
     {
-        private readonly CosmosRequestHandler doucumentFeedHandler;
+        private readonly CosmosRequestHandler documentFeedHandler;
         private readonly CosmosRequestHandler pointOperationHandler;
 
         public RouterHandler(
-            CosmosRequestHandler doucumentFeedHandler, 
+            CosmosRequestHandler documentFeedHandler, 
             CosmosRequestHandler pointOperationHandler)
         {
-            if (doucumentFeedHandler == null)
+            if (documentFeedHandler == null)
             {
-                throw new ArgumentNullException(nameof(doucumentFeedHandler));
+                throw new ArgumentNullException(nameof(documentFeedHandler));
             }
 
             if (pointOperationHandler == null)
@@ -34,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(pointOperationHandler));
             }
 
-            this.doucumentFeedHandler = doucumentFeedHandler;
+            this.documentFeedHandler = documentFeedHandler;
             this.pointOperationHandler = pointOperationHandler;
         }
 
@@ -43,9 +40,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             CosmosRequestHandler targetHandler = null;
-            if (request.OperationType == OperationType.ReadFeed && request.ResourceType == ResourceType.Document)
+            if (request.IsDocumentFeedOperation)
             {
-                targetHandler = doucumentFeedHandler;
+                targetHandler = documentFeedHandler;
             }
             else
             {
