@@ -56,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestSetup()
         {
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
             databaseName = ConfigurationManager.AppSettings["DatabaseAccountId"];
             collectionName = Guid.NewGuid().ToString();
             partitionedCollectionName = Guid.NewGuid().ToString();
