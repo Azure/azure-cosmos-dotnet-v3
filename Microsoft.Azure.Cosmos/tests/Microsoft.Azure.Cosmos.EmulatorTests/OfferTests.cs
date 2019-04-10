@@ -105,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
             using (var client = TestCommon.CreateClient(true))
             {
                 TestCommon.DeleteAllDatabasesAsync().Wait();
