@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer or WithInMemoryLeaseContainer is required.");
             }
 
-            if (this.changeFeedLeaseOptions?.LeasePrefix == null)
+            if (this.changeFeedLeaseOptions.LeasePrefix == null)
             {
                 throw new InvalidOperationException("Workflow name was not specified using WithWorkflowName");
             }
