@@ -40,6 +40,26 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             Guid correlatedActivityId)
         {
+            if(client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (queryRequestOptions == null)
+            {
+                throw new ArgumentNullException(nameof(queryRequestOptions));
+            }
+
+            if (resourceLink == null)
+            {
+                throw new ArgumentNullException(nameof(resourceLink));
+            }
+
             // Prevent users from updating the values after creating the execution context.
             CosmosQueryRequestOptions cloneQueryRequestOptions = queryRequestOptions.Clone();
 
@@ -139,14 +159,14 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
-            CosmosQueryContext constructorParams,
+            CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
             string collectionRid,
             CancellationToken cancellationToken)
         {
             // Figure out the optimal page size.
-            long initialPageSize = constructorParams.QueryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
+            long initialPageSize = cosmosQueryContext.QueryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
 
             if (initialPageSize < -1 || initialPageSize == 0)
             {
@@ -177,14 +197,14 @@ namespace Microsoft.Azure.Cosmos.Query
                         initialPageSize = pageSizeWithTop;
                     }
                 }
-                else if (constructorParams.IsContinuationExpected)
+                else if (cosmosQueryContext.IsContinuationExpected)
                 {
                     if (initialPageSize < 0)
                     {
-                        if (constructorParams.QueryRequestOptions.MaxBufferedItemCount.HasValue)
+                        if (cosmosQueryContext.QueryRequestOptions.MaxBufferedItemCount.HasValue)
                         {
                             // Max of what the user is willing to buffer and the default (note this is broken if MaxBufferedItemCount = -1)
-                            initialPageSize = Math.Max(constructorParams.QueryRequestOptions.MaxBufferedItemCount.Value, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
+                            initialPageSize = Math.Max(cosmosQueryContext.QueryRequestOptions.MaxBufferedItemCount.Value, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
                         }
                         else
                         {
@@ -202,12 +222,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
             return await CosmosPipelinedItemQueryExecutionContext.CreateAsync(
-                constructorParams,
+                cosmosQueryContext,
                 collectionRid,
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 (int)initialPageSize,
-                constructorParams.QueryRequestOptions.RequestContinuation,
+                cosmosQueryContext.QueryRequestOptions.RequestContinuation,
                 cancellationToken);
         }
 
