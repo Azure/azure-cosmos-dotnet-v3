@@ -46,18 +46,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }
 
                 Logger.InfoFormat("Lease with token {0} update conflict. Reading the current version of lease.", lease.CurrentLeaseToken);
-                DocumentServiceLeaseCore serverLease;
-                try
-                {
-                    var response = await this.container.Items.ReadItemAsync<DocumentServiceLeaseCore>(
-                        partitionKey, itemId).ConfigureAwait(false);
-                    serverLease = response.Resource;
-                }
-                catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+
+                CosmosItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReadItemAsync<DocumentServiceLeaseCore>(
+                    partitionKey, itemId).ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     Logger.InfoFormat("Lease with token {0} no longer exists", lease.CurrentLeaseToken);
-                    throw new LeaseLostException(lease);
+                    throw new LeaseLostException(lease, true);
                 }
+
+                DocumentServiceLeaseCore serverLease = response.Resource;
 
                 Logger.InfoFormat(
                     "Lease with token {0} update failed because the lease with concurrency token '{1}' was updated by host '{2}' with concurrency token '{3}'. Will retry, {4} retry(s) left.",
@@ -77,11 +75,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
-                var response = await this.container.Items.ReplaceItemAsync<DocumentServiceLeaseCore>(
+                CosmosItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReplaceItemAsync<DocumentServiceLeaseCore>(
                     partitionKey,
                     itemId, 
                     lease, 
                     this.CreateIfMatchOptions(lease)).ConfigureAwait(false);
+
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new LeaseLostException(lease, true);
+                }
 
                 return response.Resource;
             }
@@ -93,10 +96,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     return null;
                 }
 
-                if (ex.StatusCode == HttpStatusCode.Conflict ||
-                    ex.StatusCode == HttpStatusCode.NotFound)
+                if (ex.StatusCode == HttpStatusCode.Conflict)
                 {
-                    throw new LeaseLostException(lease, ex, ex.StatusCode == HttpStatusCode.NotFound);
+                    throw new LeaseLostException(lease, ex, false);
                 }
 
                 throw;
