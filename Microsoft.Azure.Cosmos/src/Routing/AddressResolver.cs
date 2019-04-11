@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos
     /// AddressCache internally maintains CollectionCache, CollectionRoutingMapCache and BackendAddressCache.
     /// Logic in this class mainly joins these 3 caches and deals with potential staleness of the caches.
     /// 
+    /// More details are available here:
+    /// https://microsoft.sharepoint.com/teams/DocumentDB/Design%20Documents/Manageability/Elastic%20Collections%20Routing.docx?d=w3356bd9ad32746b280c0bcb8f9905986
     /// </summary>
     internal sealed class AddressResolver : IAddressResolver
     {
@@ -68,7 +70,30 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.ResolvedPartitionKeyRange = result.TargetPartitionKeyRange;
             request.RequestContext.RegionName = this.location;
 
-            await this.requestSigner.SignRequestAsync(request, CancellationToken.None);
+            if (request.RequestContext.LastResolvedTargetIdentity != null &&
+                request.RequestContext.TargetIdentity != null &&
+                !string.Equals(
+                    request.RequestContext.LastResolvedTargetIdentity.FederationId,
+                    request.RequestContext.TargetIdentity.FederationId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                DefaultTrace.TraceInformation(
+                    "AddressResolver.ResolveAsync RequestAuthorizationTokenType = {0}, LastResolvedTargetIdentity = {1}, " +
+                    "TargetIdentity = {2}, forceRefreshPartitionAddresses = {3}, ForceCollectionRoutingMapRefresh = {4}, " +
+                    "ForceMasterRefresh = {5}, OperationType = {6}, ResourceType = {7}",
+                    request.RequestAuthorizationTokenType,
+                    request.RequestContext.LastResolvedTargetIdentity,
+                    request.RequestContext.TargetIdentity,
+                    forceRefreshPartitionAddresses,
+                    request.ForceCollectionRoutingMapRefresh,
+                    request.ForceMasterRefresh,
+                    request.OperationType,
+                    request.ResourceType);
+
+                await this.requestSigner.ReauthorizeSystemKeySignedRequestAsync(request, cancellationToken);
+            }
+
+            await this.requestSigner.SignRequestAsync(request, cancellationToken);
 
             return result.Addresses;
         }
@@ -188,9 +213,18 @@ namespace Microsoft.Azure.Cosmos
 
             if (ReplicatedResourceClient.IsReadingFromMaster(request.ResourceType, request.OperationType) && request.PartitionKeyRangeIdentity == null)
             {
-                // Client implementation, GlobalAddressResolver passes in a null IMasterServiceIdentityProvider, because it does't actually use the serviceIdentity
+                DefaultTrace.TraceInformation("Resolving Master service address, forceMasterRefresh: {0}, currentMaster: {1}",
+                    request.ForceMasterRefresh,
+                    this.masterServiceIdentityProvider?.MasterServiceIdentity);
+
+                // Client implementation, GlobalAddressResolver passes in a null IMasterServiceIdentityProvider, because it doesn't actually use the serviceIdentity
                 // in the addressCache.TryGetAddresses method. In GatewayAddressCache.cs, the master address is resolved by making a call to Gateway AddressFeed,
                 // not using the serviceIdentity that is passed in
+                if (request.ForceMasterRefresh && this.masterServiceIdentityProvider != null)
+                {
+                    ServiceIdentity previousMasterService = this.masterServiceIdentityProvider.MasterServiceIdentity;
+                    await this.masterServiceIdentityProvider.RefreshAsync(previousMasterService, cancellationToken);
+                }
                 ServiceIdentity serviceIdentity = this.masterServiceIdentityProvider?.MasterServiceIdentity;
                 PartitionKeyRangeIdentity partitionKeyRangeIdentity = this.masterPartitionKeyRangeIdentity;
                 PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
@@ -408,6 +442,12 @@ namespace Microsoft.Azure.Cosmos
                 WFConstants.BackendHeaders.EffectivePartitionKeyString,
                 out object effectivePartitionKeyStringObject))
             {
+                // Allow EPK only for partitioned collection (excluding migrated fixed collections)
+                if (! (collection.PartitionKey != null && collection.PartitionKey.IsSystemKey))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(collection));
+                }
+
                 string effectivePartitionKeyString = effectivePartitionKeyStringObject as string;
                 if (string.IsNullOrEmpty(effectivePartitionKeyString))
                 {
@@ -585,7 +625,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new InternalServerErrorException(string.Format(CultureInfo.InvariantCulture, "partition key is null '{0}'", partitionKeyString));
             }
 
-            if (partitionKey.Components.Count == collection.PartitionKey.Paths.Count)
+            if (partitionKey.Equals(PartitionKeyInternal.Empty) || partitionKey.Components.Count == collection.PartitionKey.Paths.Count)
             {
                 // Although we can compute effective partition key here, in general case this Gateway can have outdated
                 // partition key definition cached - like if collection with same name but with Range partitioning is created.
