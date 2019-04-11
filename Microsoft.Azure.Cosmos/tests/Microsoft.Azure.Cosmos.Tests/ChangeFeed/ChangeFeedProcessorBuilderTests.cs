@@ -199,6 +199,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.ThrowsException<InvalidOperationException>(() => builder.Build());
         }
 
+        [TestMethod]
+        public void CanBuildWithCosmosLeaseContainer()
+        {
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            builder.WithCosmosLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+
+            Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
+        }
+
+        [TestMethod]
+        public void CanBuildWithInMemoryContainer()
+        {
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            builder.WithCosmosLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+
+            Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
+        }
+
         private static CosmosContainer GetMockedContainer(string containerName = "myColl")
         {
             Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
