@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string trId = "tr9002";
             string udfId = "udf9003";
 
-            CosmosClientContext context = new CosmosClientContext(
+            CosmosClientContext context = new CosmosClientContextCore(
                 client: null,
                 cosmosJsonSerializer: null,
                 cosmosResponseFactory: null,
