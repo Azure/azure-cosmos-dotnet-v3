@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}_{3}",
                 optionsPrefix,
-                this.monitoredContainer.Client.Configuration.AccountEndPoint.Host,
+                ((CosmosContainerCore)this.monitoredContainer).ClientContext.Client.Configuration.AccountEndPoint.Host,
                 this.databaseResourceId,
                 this.collectionResourceId);
         }

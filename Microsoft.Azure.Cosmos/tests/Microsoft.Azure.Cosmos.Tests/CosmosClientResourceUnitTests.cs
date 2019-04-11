@@ -25,20 +25,26 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string trId = "tr9002";
             string udfId = "udf9003";
 
-            CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient();
-            CosmosDatabaseCore db = new CosmosDatabaseCore(mockClient, databaseId);
+            CosmosClientContext context = new CosmosClientContext(
+                client: null,
+                cosmosJsonSerializer: null,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: null);
+
+            CosmosDatabaseCore db = new CosmosDatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "/dbs/" + databaseId);
 
-            CosmosContainerCore container = new CosmosContainerCore(db, crId);
+            CosmosContainerCore container = new CosmosContainerCore(context, db, crId);
             Assert.AreEqual(container.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId);
 
-            CosmosStoredProcedureCore sp = new CosmosStoredProcedureCore(container, spId);
+            CosmosStoredProcedureCore sp = new CosmosStoredProcedureCore(context, container, spId);
             Assert.AreEqual(sp.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/sprocs/" + spId);
 
-            CosmosTrigger tr = new CosmosTrigger(container, trId);
+            CosmosTrigger tr = new CosmosTrigger(context, container, trId);
             Assert.AreEqual(tr.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/triggers/" + trId);
 
-            CosmosUserDefinedFunction udf = new CosmosUserDefinedFunction(container, udfId);
+            CosmosUserDefinedFunction udf = new CosmosUserDefinedFunction(context, container, udfId);
             Assert.AreEqual(udf.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/udfs/" + udfId);
         }
 

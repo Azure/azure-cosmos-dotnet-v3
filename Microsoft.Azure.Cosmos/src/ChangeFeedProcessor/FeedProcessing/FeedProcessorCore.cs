@@ -10,11 +10,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 StartTime = settings.StartTime,
             };
 
-            this.query = container.Client.DocumentClient.CreateDocumentChangeFeedQuery(container.LinkUri.ToString(), this.options);
+            this.query = ((CosmosContainerCore)container).ClientContext.DocumentClient.CreateDocumentChangeFeedQuery(container.LinkUri.ToString(), this.options);
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
@@ -107,12 +107,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     }
 
                     if (clientException.RetryAfter != TimeSpan.Zero)
+                    {
                         delay = clientException.RetryAfter;
+                    }
                 }
                 catch (TaskCanceledException canceledException)
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         throw;
+                    }
 
                     this.logger.WarnException("exception: lease token '{0}'", canceledException, this.settings.LeaseToken);
 
@@ -126,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private Task DispatchChanges(IFeedResponse<T> response, CancellationToken cancellationToken)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.settings.LeaseToken, response, this.checkpointer);
-            var docs = new List<T>(response.Count);
+            List<T> docs = new List<T>(response.Count);
             using (IEnumerator<T> e = response.GetEnumerator())
             {
                 while (e.MoveNext())

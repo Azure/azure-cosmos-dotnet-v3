@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,8 +20,13 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract class CosmosContainer : CosmosIdentifier
+    public abstract class CosmosContainer
     {
+        /// <summary>
+        /// The Id of the cosmos resource
+        /// </summary>
+        public abstract string Id { get; }
+
         /// <summary>
         /// Returns the parent database reference
         /// </summary>
@@ -55,6 +61,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract CosmosStoredProcedures StoredProcedures { get; }
+
+        /// <summary>
+        /// Gets the name based URI for the resource
+        /// </summary>
+        internal abstract Uri LinkUri { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.

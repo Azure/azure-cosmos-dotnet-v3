@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
                this.documentServiceLeaseStoreManager.LeaseContainer,
                this.monitoredContainer,
-               this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
+               ((CosmosContainerCore)this.monitoredContainer).ClientContext.Client.Configuration?.MaxConnectionLimit ?? 1);
 
             ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate, this.estimatorPeriod);
 

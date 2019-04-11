@@ -145,7 +145,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 RequestContinuation = existingLease.ContinuationToken,
                 StartFromBeginning = string.IsNullOrEmpty(existingLease.ContinuationToken),
             };
-            IDocumentQuery<Document> query = this.container.Client.DocumentClient.CreateDocumentChangeFeedQuery(container.LinkUri.ToString(), options);
+
+            IDocumentQuery<Document> query = ((CosmosContainerCore)this.container).ClientContext.DocumentClient.CreateDocumentChangeFeedQuery(this.container.LinkUri.ToString(), options);
             IFeedResponse<Document> response = null;
 
             try

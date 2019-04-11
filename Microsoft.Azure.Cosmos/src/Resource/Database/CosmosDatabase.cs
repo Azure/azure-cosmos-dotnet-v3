@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -18,8 +19,13 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
-    public abstract class CosmosDatabase : CosmosIdentifier
+    public abstract class CosmosDatabase
     {
+        /// <summary>
+        /// The Id of the cosmos resource
+        /// </summary>
+        public abstract string Id { get;  }
+
         /// <summary>
         /// An object to create a Cosmos Container or to iterate over all containers
         /// </summary>
@@ -27,6 +33,8 @@ namespace Microsoft.Azure.Cosmos
         /// Use Containers to access a <see cref="CosmosContainer"/>
         /// </remarks>
         public abstract CosmosContainers Containers { get; }
+
+        internal abstract Uri LinkUri { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.

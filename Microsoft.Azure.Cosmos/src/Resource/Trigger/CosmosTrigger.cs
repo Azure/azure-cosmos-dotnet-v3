@@ -16,8 +16,10 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosTriggers"/> for creating new triggers, and reading/querying all triggers;
     /// </summary>
-    internal class CosmosTrigger : CosmosIdentifier
+    internal class CosmosTrigger
     {
+        private readonly CosmosClientContext clientContext;
+        
         /// <summary>
         /// Create a <see cref="CosmosTrigger"/>
         /// </summary>
@@ -28,17 +30,21 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosTrigger(
+            CosmosClientContext clientContext,
             CosmosContainer container,
             string triggerId)
         {
             this.Id = triggerId;
-            base.Initialize(
-                client: container.Client,
+            this.clientContext = clientContext;
+            this.LinkUri = this.clientContext.CreateLink(
                 parentLink: container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment);
+                uriPathSegment: Paths.TriggersPathSegment,
+                id: triggerId);
         }
 
-        public override string Id { get; }
+        public string Id { get; }
+
+        internal Uri LinkUri;
 
         /// <summary>
         /// Reads a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -191,8 +197,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.Client,
+            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 this.LinkUri,
                 ResourceType.Trigger,
                 operationType,
@@ -202,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 cancellationToken);
 
-            return this.Client.ResponseFactory.CreateTriggerResponse(this, response);
+            return this.clientContext.ResponseFactory.CreateTriggerResponse(this, response);
         }
     }
 }
