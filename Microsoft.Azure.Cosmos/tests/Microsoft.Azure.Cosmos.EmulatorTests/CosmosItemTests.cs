@@ -52,9 +52,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             this.Container = response;
             this.jsonSerializer = new CosmosDefaultJsonSerializer();
-            await CreateUndefinedPartitionItem();
-            await CreateNonPartitionContainerItem();
-            fixedContainer = database.Containers[nonPartitionContainerId];
         }
 
         [TestCleanup]
@@ -780,31 +777,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(deleteResponse);
             }
         }
+
         // Read write non partition Container item.
         [TestMethod]
         public async Task ReadNonPartitionItemAsync()
         {
-            CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
-            Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
-            Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemKeyPath);
+            try
+            {
+                await CreateNonPartitionContainerItem();
+                await CreateUndefinedPartitionItem();
+                fixedContainer = database.Containers[nonPartitionContainerId];
 
-            CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
-                partitionKey: CosmosRequestOptions.PartitionKeyNone,
-                id: nonPartitionItemId);
+                CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
+                Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
+                Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemKeyPath);
 
-            Assert.IsNotNull(response.Resource);
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
-            Assert.IsNotNull(response.Resource.id == nonPartitionItemId);
+                CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
+                    partitionKey: CosmosRequestOptions.PartitionKeyNone,
+                    id: nonPartitionItemId);
 
-            CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
-                partitionKey: CosmosRequestOptions.PartitionKeyNone,
-                id: undefinedPartitionItemId);
-
-            Assert.IsNotNull(undefinedItemResponse.Resource);
-            Assert.IsTrue(undefinedItemResponse.StatusCode == HttpStatusCode.OK);
-            Assert.IsNotNull(undefinedItemResponse.Resource.id == undefinedPartitionItemId);
+                Assert.IsNotNull(response.Resource);
+                Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
+                Assert.IsNotNull(response.Resource.id == nonPartitionItemId);
 
 
+                CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
+                    partitionKey: CosmosRequestOptions.PartitionKeyNone,
+                    id: undefinedPartitionItemId);
+
+                Assert.IsNotNull(undefinedItemResponse.Resource);
+                Assert.IsTrue(undefinedItemResponse.StatusCode == HttpStatusCode.OK);
+                Assert.IsNotNull(undefinedItemResponse.Resource.id == undefinedPartitionItemId);
+            }
+            finally
+            {
+                if (fixedContainer != null)
+                {
+                    await fixedContainer.DeleteAsync();
+                }
+            }
         }
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {

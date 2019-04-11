@@ -913,7 +913,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string collectionId = "collection" + suffix;
 
             CosmosDatabase database = await client.Databases.CreateDatabaseAsync(databaseId);
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             CosmosContainerSettings containerSetting = new CosmosContainerSettings()
             {
                 Id = collectionId,
@@ -923,10 +923,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (string documentId in crazyNameSupportList)
             {
-                Document doc1 = await coll1.Items.CreateItemAsync<Document>(documentId, new Document() { Id = documentId });
+                Document documentDefinition = new Document() { Id = documentId };
+                documentDefinition.SetPropertyValue("pk", "test");
+                Document doc1 = await coll1.Items.CreateItemAsync<Document>("test", documentDefinition);
 
                 // and then read it!
-                Document docIgnore = await coll1.Items.ReadItemAsync<Document>(documentId, documentId, null);
+                Document docIgnore = await coll1.Items.ReadItemAsync<Document>("test", documentId, null);
                 Assert.AreEqual(docIgnore.Id, documentId);
             }
 
@@ -947,7 +949,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     PartitionKey = partitionKeyDefinition
                 };
                 CosmosContainer coll = await db.Containers.CreateContainerAsync(containerSetting);
-                Document doc = await coll.Items.CreateItemAsync<Document>(crazyName, new Document() { Id = crazyName });
+                Document documentDefinition = new Document() { Id = crazyName };
+                documentDefinition.SetPropertyValue("pk", "test");
+                Document doc = await coll.Items.CreateItemAsync<Document>("test", documentDefinition);
 
                 await db.DeleteAsync();
             }
