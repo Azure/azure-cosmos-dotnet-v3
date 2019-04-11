@@ -1984,13 +1984,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string guid = Guid.NewGuid().ToString();
             Database database = await client.CreateDatabaseAsync(new Database { Id = "db" + guid });
-
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
                 database,
                 new DocumentCollection
                 {
                     Id = "coll" + guid,
-                    PartitionKey = defaultPartitionKeyDefinition
+                    PartitionKey = partitionKeyDefinition
                 },
                 new RequestOptions { OfferThroughput = 5000 });
 
@@ -2005,7 +2005,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedOptions feedOptions = new FeedOptions
             {
                 PopulateQueryMetrics = true,
-                EnableCrossPartitionQuery = true
+                PartitionKey = new PartitionKey("1")
             };
 
             IDocumentQuery<dynamic> documentQuery = client.CreateDocumentQuery(coll, "SELECT TOP 1 * FROM c", feedOptions).AsDocumentQuery();
