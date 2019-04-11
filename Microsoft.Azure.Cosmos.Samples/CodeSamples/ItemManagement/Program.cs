@@ -265,20 +265,19 @@
             // Use the same query as before but get the cosmos response message to access the stream directly
             CosmosResultSetIterator streamResultSet = container.Items.CreateItemQueryAsStream(
                 query,
-                maxConcurrency: 1,
                 partitionKey: "Account1",
                 maxItemCount: 10);
 
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
             {
-                using (CosmosQueryResponse responseMessage = await streamResultSet.FetchNextSetAsync())
+                using (CosmosResponseMessage responseMessage = await streamResultSet.FetchNextSetAsync())
                 {
                     // Item stream operations do not throw exceptions for better performance
-                    if (responseMessage.IsSuccess)
+                    if (responseMessage.IsSuccessStatusCode)
                     {
                         dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
-                        List<SalesOrder> salesOrders = streamResponse.ToObject<List<SalesOrder>>();
+                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
                         Console.WriteLine($"\n1.4.3 - Item Query via stream {salesOrders.Count}");
                         allSalesForAccount1FromStream.AddRange(salesOrders);
                     }
@@ -398,7 +397,7 @@
         {
             Console.WriteLine("\n1.8 - Reading writing non partitioned container item");
             CosmosItemResponse<SalesOrder> response = await fixedContainer.Items.ReadItemAsync<SalesOrder>(
-                partitionKey:  CosmosRequestOptions.PartitionKeyNone, //will uncomment once next cosmosclient higher than 3.0.0.1-preview become available into nuget.
+                partitionKey: null, //CosmosRequestOptions.PartitionKeyNone, will uncomment once next cosmosclient with np->p (https://github.com/Azure/azure-cosmos-dotnet-v3/pull/116) become available into nuget.
                 id: nonPartitionItemId);
 
             Console.WriteLine("Request charge of read operation: {0}", response.RequestCharge);
