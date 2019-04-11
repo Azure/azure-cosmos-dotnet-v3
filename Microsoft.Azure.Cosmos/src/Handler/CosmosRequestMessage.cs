@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -55,20 +54,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="CosmosRequestMessage"/> HTTP headers.
         /// </summary>
-        public virtual CosmosRequestMessageHeaders Headers
-        {
-            get => this.headers.Value;
-        }
+        public virtual CosmosRequestMessageHeaders Headers => this.headers.Value;
 
         /// <summary>
         /// Gets or sets the current <see cref="CosmosRequestMessage"/> payload.
         /// </summary>
         public virtual Stream Content
         {
-            get
-            {
-                return this._content;
-            }
+            get => this._content;
             set
             {
                 this.CheckDisposed();
@@ -102,10 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.
         /// </summary>
-        public virtual Dictionary<string, object> Properties
-        {
-            get => this.properties.Value;
-        }
+        public virtual Dictionary<string, object> Properties => this.properties.Value;
 
         private bool _disposed;
 
@@ -120,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
 
@@ -132,9 +122,9 @@ namespace Microsoft.Azure.Cosmos
         {
             // The reason for this type to implement IDisposable is that it contains instances of types that implement
             // IDisposable (content). 
-            if (disposing && !_disposed)
+            if (disposing && !this._disposed)
             {
-                _disposed = true;
+                this._disposed = true;
                 if (this.Content != null)
                 {
                     this.Content.Dispose();
@@ -255,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void CheckDisposed()
         {
-            if (_disposed)
+            if (this._disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }

@@ -44,12 +44,12 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryRequestOptions cloneQueryRequestOptions = queryRequestOptions.Clone();
 
             // Swapping out negative values in feedOptions for int.MaxValue
-            if (cloneQueryRequestOptions.MaxBufferedItemCount < 0)
+            if (cloneQueryRequestOptions.MaxBufferedItemCount.HasValue && cloneQueryRequestOptions.MaxBufferedItemCount < 0)
             {
                 cloneQueryRequestOptions.MaxBufferedItemCount = int.MaxValue;
             }
 
-            if (cloneQueryRequestOptions.MaxConcurrency < 0)
+            if (cloneQueryRequestOptions.MaxConcurrency.HasValue && cloneQueryRequestOptions.MaxConcurrency < 0)
             {
                 cloneQueryRequestOptions.MaxConcurrency = int.MaxValue;
             }
@@ -74,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<IDocumentQueryExecutionContext> CreateItemQueryExecutionContextAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             CosmosContainerSettings collection = null;
             if (this.cosmosQueryContext.ResourceTypeEnum.IsCollectionChild())
             {
@@ -89,6 +90,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
+            if(collection == null)
+            {
+                throw new ArgumentException($"The container was not found for resource: {this.cosmosQueryContext.ResourceLink.OriginalString} ");
+            }
+
             this.cosmosQueryContext.ContainerResourceId = collection.ResourceId;
 
             // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
@@ -99,10 +105,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 // which will be used to send the query to Gateway and on getting 400(bad request) with 1004(cross partition query not servable), we initialize it with
                 // PipelinedDocumentQueryExecutionContext by providing the partition query execution info that's needed(which we get from the exception returned from Gateway).
                 CosmosProxyItemQueryExecutionContext proxyQueryExecutionContext =
-                    CosmosProxyItemQueryExecutionContext.CreateAsync(
+                    new CosmosProxyItemQueryExecutionContext(
                         queryContext: this.cosmosQueryContext,
-                        token: cancellationToken,
-                        collection: collection);
+                        containerSettings: collection);
 
                 return proxyQueryExecutionContext;
             }
@@ -111,12 +116,12 @@ namespace Microsoft.Azure.Cosmos.Query
             //if collection is deleted/created with same name.
             //need to make it not rely on information from collection cache.
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
-                this.cosmosQueryContext.QueryClient,
-                this.cosmosQueryContext.SqlQuerySpec,
-                collection.PartitionKey,
-                true,
-                true,
-                cancellationToken);
+                queryClient: this.cosmosQueryContext.QueryClient,
+                sqlQuerySpec: this.cosmosQueryContext.SqlQuerySpec,
+                partitionKeyDefinition: collection.PartitionKey,
+                requireFormattableOrderByQuery: true,
+                isContinuationExpected: true,
+                cancellationToken: cancellationToken);
 
             List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
                 this.cosmosQueryContext.QueryClient,
@@ -176,8 +181,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     if (initialPageSize < 0)
                     {
-                        // Max of what the user is willing to buffer and the default (note this is broken if MaxBufferedItemCount = -1)
-                        initialPageSize = Math.Max(constructorParams.QueryRequestOptions.MaxBufferedItemCount, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
+                        if (constructorParams.QueryRequestOptions.MaxBufferedItemCount.HasValue)
+                        {
+                            // Max of what the user is willing to buffer and the default (note this is broken if MaxBufferedItemCount = -1)
+                            initialPageSize = Math.Max(constructorParams.QueryRequestOptions.MaxBufferedItemCount.Value, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
+                        }
+                        else
+                        {
+                            initialPageSize = ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize;
+                        }
                     }
 
                     initialPageSize = (long)Math.Min(

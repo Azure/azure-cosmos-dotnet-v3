@@ -30,33 +30,25 @@ namespace Microsoft.Azure.Cosmos.Query
 
         CosmosQueryContext queryContext;
 
-        private readonly CosmosContainerSettings collection;
+        private readonly CosmosContainerSettings containerSettings;
 
-        private CosmosProxyItemQueryExecutionContext(
-            IDocumentQueryExecutionContext innerExecutionContext,
+        public CosmosProxyItemQueryExecutionContext(
             CosmosQueryContext queryContext,
-            CosmosContainerSettings collection)
+            CosmosContainerSettings containerSettings)
         {
-            this.innerExecutionContext = innerExecutionContext;
+            if(queryContext == null)
+            {
+                throw new ArgumentNullException(nameof(queryContext));
+            }
 
+            if (queryContext == null)
+            {
+                throw new ArgumentNullException(nameof(queryContext));
+            }
+
+            this.innerExecutionContext = new CosmosGatewayQueryExecutionContext(queryContext);
             this.queryContext = queryContext;
-
-            this.collection = collection;
-        }
-
-        public static CosmosProxyItemQueryExecutionContext CreateAsync(
-            CosmosQueryContext queryContext,
-            CancellationToken token,
-            CosmosContainerSettings collection)
-        {
-            token.ThrowIfCancellationRequested();
-            IDocumentQueryExecutionContext innerExecutionContext =
-             new CosmosGatewayQueryExecutionContext(queryContext);
-
-            return new CosmosProxyItemQueryExecutionContext(
-                innerExecutionContext,
-                queryContext,
-                collection);
+            this.containerSettings = containerSettings;
         }
 
         public bool IsDone
@@ -76,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            Error error = null;
+            Error error;
 
             try
             {
@@ -104,14 +96,14 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> partitionKeyRanges =
                 await this.queryContext.QueryClient.GetTargetPartitionKeyRanges(
                     this.queryContext.ResourceLink.OriginalString,
-                    this.collection.ResourceId,
+                    this.containerSettings.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);
 
             this.innerExecutionContext = await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContext(
                 this.queryContext,
                 partitionedQueryExecutionInfo,
                 partitionKeyRanges,
-                this.collection.ResourceId,
+                this.containerSettings.ResourceId,
                 token);
 
             return await this.innerExecutionContext.ExecuteNextAsync(token);

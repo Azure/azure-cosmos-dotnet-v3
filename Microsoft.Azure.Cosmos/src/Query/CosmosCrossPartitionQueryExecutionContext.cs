@@ -151,11 +151,11 @@ namespace Microsoft.Azure.Cosmos.Query
             this.queryRequestOptions = initParams.QueryRequestOptions;
             this.itemProducerForest = new PriorityQueue<ItemProducerTree>(moveNextComparer, isSynchronized: true);
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;
-            this.comparableTaskScheduler = new ComparableTaskScheduler(initParams.QueryRequestOptions.MaxConcurrency);
+            this.comparableTaskScheduler = new ComparableTaskScheduler(initParams.QueryRequestOptions.MaxConcurrency.GetValueOrDefault(0));
             this.equalityComparer = equalityComparer;
             this.requestChargeTracker = new RequestChargeTracker();
             this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
-            this.actualMaxPageSize = this.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
+            this.actualMaxPageSize = this.queryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
 
             if (this.actualMaxPageSize < 0)
             {
@@ -167,9 +167,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentOutOfRangeException("actualMaxPageSize should never be greater than int.MaxValue");
             }
 
-            if (CosmosCrossPartitionQueryExecutionContext.IsMaxBufferedItemCountSet(this.MaxBufferedItemCount))
+            if (this.queryRequestOptions.MaxBufferedItemCount.HasValue)
             {
-                this.actualMaxBufferedItemCount = this.MaxBufferedItemCount;
+                this.actualMaxBufferedItemCount = this.queryRequestOptions.MaxBufferedItemCount.Value;
             }
             else
             {
@@ -186,12 +186,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentOutOfRangeException("actualMaxBufferedItemCount should never be greater than int.MaxValue");
             }
         }
-
-        public int? MaxItemCount => this.queryRequestOptions.MaxBufferedItemCount;
-
-        protected int MaxBufferedItemCount => this.queryRequestOptions.MaxBufferedItemCount;
-
-        protected int MaxDegreeOfParallelism => this.queryRequestOptions.MaxConcurrency;
 
         /// <summary>
         /// Gets a value indicating whether this context is done having documents drained.
@@ -236,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.MaxDegreeOfParallelism != 0;
+                return this.queryRequestOptions.MaxConcurrency.HasValue && this.queryRequestOptions.MaxConcurrency.Value != 0;
             }
         }
 

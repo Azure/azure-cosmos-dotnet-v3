@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.container = container;
             this.cosmosJsonSerializer = this.container.Client.CosmosJsonSerializer;
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
+            this.client = container.Client;
             this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.client, new DocumentQueryClient(this.client.DocumentClient));
         }
 

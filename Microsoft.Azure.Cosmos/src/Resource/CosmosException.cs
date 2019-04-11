@@ -17,7 +17,10 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosResponseMessageHeaders Headers = null;
 
-        internal CosmosException(CosmosResponseMessage cosmosResponseMessage, string message) :
+        internal CosmosException(
+            CosmosResponseMessage cosmosResponseMessage, 
+            string message,
+            Error error = null) :
             base(message)
         {
             if (cosmosResponseMessage != null)
@@ -27,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ActivityId = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
                 this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
-                this.Error = cosmosResponseMessage.Error;
+                this.Error = error;
                 if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))

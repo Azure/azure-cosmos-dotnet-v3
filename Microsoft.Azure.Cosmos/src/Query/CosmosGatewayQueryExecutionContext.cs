@@ -37,18 +37,23 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
         private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
-        private long retries;
         private readonly PartitionRoutingHelper partitionRoutingHelper;
         private readonly CosmosQueryContext queryContext;
+
+        private long retries;
         private FeedResponse<CosmosElement> lastPage;
         private string ContinuationToken => this.lastPage == null ? this.queryContext.QueryRequestOptions.RequestContinuation : this.lastPage.ResponseContinuation;
-
-        public bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
+        
 
         public CosmosGatewayQueryExecutionContext(
-            CosmosQueryContext constructorParams)
+            CosmosQueryContext cosmosQueryContext)
         {
-            this.queryContext = constructorParams;
+            if(cosmosQueryContext == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosQueryContext));
+            }
+
+            this.queryContext = cosmosQueryContext;
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
             this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(SinglePartitionKeyId);
@@ -56,17 +61,12 @@ namespace Microsoft.Azure.Cosmos.Query
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
 
-        public static CosmosGatewayQueryExecutionContext CreateAsync(
-            CosmosQueryContext constructorParams,
-            CancellationToken token)
-        {
-            token.ThrowIfCancellationRequested();
-            return new CosmosGatewayQueryExecutionContext(
-                constructorParams);
-        }
+        public bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
         public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (this.IsDone)
             {
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);

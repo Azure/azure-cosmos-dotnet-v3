@@ -14,17 +14,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosQueryRequestOptions : CosmosRequestOptions
     {
         /// <summary>
-        /// Defaults will be executed serially with no-parallelism
-        /// </summary>
-        private const int DefaultMaxConcurrency = 0;
-        private int maxConcurrency = CosmosQueryRequestOptions.DefaultMaxConcurrency;
-
-        /// <summary>
-        /// Used to determine if the user ever set the MaxConcurrency
-        /// </summary>
-        private bool isMaxConcurrencySet = false;
-
-        /// <summary>
         ///  Gets or sets the <see cref="ResponseContinuationTokenLimitInKb"/> request option for document query requests in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -64,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is only suggestive and cannot be abided by in certain cases.
         /// </remarks>
-        public virtual int MaxBufferedItemCount { get; set; }
+        public virtual int? MaxBufferedItemCount { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -144,14 +133,7 @@ namespace Microsoft.Azure.Cosmos
         /// The maximum number of concurrent operations during parallel execution. 
         /// Defaults will be executed serially with no-parallelism
         /// </value> 
-        internal int MaxConcurrency {
-            get => this.maxConcurrency;
-            set
-            {
-                this.maxConcurrency = value;
-                this.isMaxConcurrencySet = true;
-            }
-        }
+        internal int? MaxConcurrency { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="PartitionKey"/> for the current request in the Azure Cosmos DB service.
@@ -183,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
             }
 
-            if (this.isMaxConcurrencySet)
+            if (this.MaxConcurrency.HasValue && this.MaxConcurrency > 0)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery, bool.TrueString);
             }
@@ -239,12 +221,12 @@ namespace Microsoft.Azure.Cosmos
             return new FeedOptions()
             {
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
-                MaxDegreeOfParallelism = this.MaxConcurrency,
+                MaxDegreeOfParallelism = this.MaxConcurrency.HasValue ? this.MaxConcurrency.Value : 0,
                 PartitionKey = new PartitionKey(this.PartitionKey),
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
-                MaxBufferedItemCount = this.MaxBufferedItemCount,
+                MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 Properties = this.Properties,
             };
