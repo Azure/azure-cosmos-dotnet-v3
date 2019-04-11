@@ -17,14 +17,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateProperties()
         {
-            var id = "id";
-            var etag = "etag";
-            var partitionId = "0";
-            var owner = "owner";
-            var continuationToken = "continuation";
-            var timestamp = DateTime.Now - TimeSpan.FromSeconds(5);
-            var key = "key";
-            var value = "value";
+            string id = "id";
+            string etag = "etag";
+            string partitionId = "0";
+            string owner = "owner";
+            string continuationToken = "continuation";
+            DateTime timestamp = DateTime.Now - TimeSpan.FromSeconds(5);
+            string key = "key";
+            string value = "value";
 
             DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore
             {
@@ -61,10 +61,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Properties = new Dictionary<string, string> { { "key", "value" } }
             };
 
-            var buffer = new byte[4096];
-            var formatter = new BinaryFormatter();
-            var stream1 = new MemoryStream(buffer);
-            var stream2 = new MemoryStream(buffer);
+            byte[] buffer = new byte[4096];
+            BinaryFormatter formatter = new BinaryFormatter();
+            MemoryStream stream1 = new MemoryStream(buffer);
+            MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalLease);
             var lease = (DocumentServiceLeaseCore)formatter.Deserialize(stream2);
@@ -83,10 +83,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void ValidateSerialization_NullFields()
         {
             DocumentServiceLeaseCore originalLease = new DocumentServiceLeaseCore();
-            var buffer = new byte[4096];
-            var formatter = new BinaryFormatter();
-            var stream1 = new MemoryStream(buffer);
-            var stream2 = new MemoryStream(buffer);
+            byte[]buffer = new byte[4096];
+            BinaryFormatter formatter = new BinaryFormatter();
+            MemoryStream stream1 = new MemoryStream(buffer);
+            MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalLease);
             var lease = (DocumentServiceLeaseCore)formatter.Deserialize(stream2);

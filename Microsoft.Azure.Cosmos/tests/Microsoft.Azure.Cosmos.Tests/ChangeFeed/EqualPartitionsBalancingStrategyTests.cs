@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_NoLeases_ReturnsEmpty()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var leasesToTake = strategy.SelectLeasesToTake(Enumerable.Empty<DocumentServiceLease>());
+            IEnumerable<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(Enumerable.Empty<DocumentServiceLease>());
             Assert.IsTrue(leasesToTake.Count() == 0);
         }
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_OwnLeasesOnly_ReturnsEmpty()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var leasesToTake = strategy.SelectLeasesToTake(new[] { CreateLease(ownerSelf, "1"), CreateLease(ownerSelf, "2") });
+            IEnumerable<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(new[] { CreateLease(ownerSelf, "1"), CreateLease(ownerSelf, "2") });
             Assert.IsTrue(leasesToTake.Count() == 0);
         }
 
@@ -41,8 +41,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_NotOwnedLeasesOnly_ReturnsAll()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new HashSet<DocumentServiceLease> { CreateLease(ownerNone, "1"), CreateLease(ownerNone, "2") };
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases);
+            HashSet<DocumentServiceLease> allLeases = new HashSet<DocumentServiceLease> { CreateLease(ownerNone, "1"), CreateLease(ownerNone, "2") };
+            IEnumerable<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases);
             CollectionAssert.AreEqual(allLeases.ToList(), (new HashSet<DocumentServiceLease>(leasesToTake)).ToList());
         }
 
@@ -50,8 +50,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_ExpiredLeasesOnly_ReturnsAll()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new HashSet<DocumentServiceLease> { CreateExpiredLease(ownerSelf, "1"), CreateExpiredLease(owner1, "2") };
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases);
+            HashSet<DocumentServiceLease> allLeases = new HashSet<DocumentServiceLease> { CreateExpiredLease(ownerSelf, "1"), CreateExpiredLease(owner1, "2") };
+            IEnumerable<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases);
             CollectionAssert.AreEqual(allLeases.ToList(), (new HashSet<DocumentServiceLease>(leasesToTake)).ToList());
         }
 
@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_OtherSingleOwnerTwoLeasesOnly_ReturnsOne()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new HashSet<DocumentServiceLease> { CreateLease(owner1, "1"), CreateLease(owner1, "2") };
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            HashSet<DocumentServiceLease> allLeases = new HashSet<DocumentServiceLease> { CreateLease(owner1, "1"), CreateLease(owner1, "2") };
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 1);
             CollectionAssert.IsSubsetOf((new HashSet<DocumentServiceLease>(leasesToTake)).ToList(), allLeases.ToList());
         }
@@ -70,14 +70,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
             DocumentServiceLease expiredLease = CreateExpiredLease(owner1, "4");
-            var allLeases = new HashSet<DocumentServiceLease>
+            HashSet<DocumentServiceLease> allLeases = new HashSet<DocumentServiceLease>
             {
                 CreateLease(owner1, "1"),
                 CreateLease(owner1, "2"),
                 CreateLease(owner1, "3"),
                 expiredLease
             };
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 1);
             CollectionAssert.Contains(leasesToTake, expiredLease);
         }
@@ -86,11 +86,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_ExpiredAndOtherSingleOwner_ReturnsHalfOfExpiredRoundedUp()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases1 = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>();
             allLeases1.Add(CreateLease(owner1, "0"));
             allLeases1.AddRange(Enumerable.Range(1, 10).Select(index => CreateExpiredLease(owner1, index.ToString())));
-            var allLeases = allLeases1;
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> allLeases = allLeases1;
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.AreEqual(6, leasesToTake.Count);
         }
 
@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_MinPartitionsSet_ReturnsMinCountOfPartitions()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy(minPartitionCount: 7);
-            var allLeases1 = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>();
             allLeases1.Add(CreateLease(owner1, "0"));
             allLeases1.AddRange(Enumerable.Range(1, 10).Select(index => CreateExpiredLease(owner1, index.ToString())));
-            var allLeases = allLeases1;
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> allLeases = allLeases1;
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.AreEqual(7, leasesToTake.Count);
         }
 
@@ -110,11 +110,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_MaxPartitionsSet_ReturnsMaxCountOfPartitions()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy(maxPartitionCount: 3);
-            var allLeases1 = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>();
             allLeases1.Add(CreateLease(owner1, "0"));
             allLeases1.AddRange(Enumerable.Range(1, 10).Select(index => CreateExpiredLease(owner1, index.ToString())));
-            var allLeases = allLeases1;
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> allLeases = allLeases1;
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.AreEqual(3, leasesToTake.Count);
         }
 
@@ -122,10 +122,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_TwoOwners_ReturnsStolenFromLargerOwner()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases = new List<DocumentServiceLease>();
             allLeases.AddRange(Enumerable.Range(1, 5).Select(index => CreateLease(owner1, "A" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 10).Select(index => CreateLease(owner2, "B" + index.ToString())));
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 1);
             Assert.IsTrue(leasesToTake.First().CurrentLeaseToken.StartsWith("B"));
         }
@@ -134,10 +134,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_HavingMoreThanOtherOwner_ReturnsEmpty()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases = new List<DocumentServiceLease>();
             allLeases.AddRange(Enumerable.Range(1, 5).Select(index => CreateLease(owner1, "A" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 6).Select(index => CreateLease(ownerSelf, "B" + index.ToString())));
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 0);
         }
 
@@ -145,10 +145,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_HavingEqualThanOtherOwner_ReturnsEmpty()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases = new List<DocumentServiceLease>();
             allLeases.AddRange(Enumerable.Range(1, 5).Select(index => CreateLease(owner1, "A" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 5).Select(index => CreateLease(ownerSelf, "B" + index.ToString())));
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 0);
         }
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             var allLeases = new List<DocumentServiceLease>();
             allLeases.AddRange(Enumerable.Range(1, 4).Select(index => CreateLease(owner1, "A" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 3).Select(index => CreateLease(ownerSelf, "B" + index.ToString())));
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 0);
         }
 
@@ -167,10 +167,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_OtherOwnerGreaterThanTargetCount_ReturnsLease()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases = new List<DocumentServiceLease>();
             allLeases.AddRange(Enumerable.Range(1, 4).Select(index => CreateLease(owner1, "A" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 2).Select(index => CreateLease(ownerSelf, "B" + index.ToString())));
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 1);
             Assert.IsTrue(leasesToTake.First().CurrentLeaseToken.StartsWith("A"));
         }
@@ -179,11 +179,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_NeedTwoAndOtherOwnersEqualThanTargetCount_ReturnsLease()
         {
             EqualPartitionsBalancingStrategy strategy = CreateStrategy();
-            var allLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> allLeases = new List<DocumentServiceLease>();
             allLeases.AddRange(Enumerable.Range(1, 10).Select(index => CreateLease(owner1, "A" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 10).Select(index => CreateLease(owner2, "B" + index.ToString())));
             allLeases.AddRange(Enumerable.Range(1, 8).Select(index => CreateLease(ownerSelf, "C" + index.ToString())));
-            var leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
+            List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
             Assert.IsTrue(leasesToTake.Count == 1);
         }
 

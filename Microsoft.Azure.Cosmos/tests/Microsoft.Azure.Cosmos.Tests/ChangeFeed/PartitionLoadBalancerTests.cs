@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             FailingPartitionController controller = new FailingPartitionController();
 
             // long acquire interval to ensure that only 1 load balancing iteration is performed in a test run
-            var leaseAcquireInterval = TimeSpan.FromHours(1);
-            var loadBalancer = new PartitionLoadBalancerCore(controller, this.leaseContainer, this.strategy, leaseAcquireInterval);
+            TimeSpan leaseAcquireInterval = TimeSpan.FromHours(1);
+            PartitionLoadBalancerCore loadBalancer = new PartitionLoadBalancerCore(controller, this.leaseContainer, this.strategy, leaseAcquireInterval);
 
             Mock.Get(this.strategy)
                 .Setup(s => s.SelectLeasesToTake(It.IsAny<IEnumerable<DocumentServiceLease>>()))

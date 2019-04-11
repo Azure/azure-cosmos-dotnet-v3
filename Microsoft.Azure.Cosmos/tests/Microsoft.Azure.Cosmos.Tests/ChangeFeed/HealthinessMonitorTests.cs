@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task AcquireLease_ShouldReportHealthy_IfNoIssues()
         {
-            var monitor = new Mock<HealthMonitor>();
-            var sut = new HealthMonitoringPartitionControllerDecorator(Mock.Of<PartitionController>(), monitor.Object);
-            var lease = Mock.Of<DocumentServiceLease>();
+            Mock<HealthMonitor> monitor = new Mock<HealthMonitor>();
+            HealthMonitoringPartitionControllerDecorator sut = new HealthMonitoringPartitionControllerDecorator(Mock.Of<PartitionController>(), monitor.Object);
+            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>();
             await sut.AddOrUpdateLeaseAsync(lease);
 
             monitor.Verify(m => m.InspectAsync(It.Is<HealthMonitoringRecord>(r => r.Severity == HealthSeverity.Informational && r.Lease == lease && r.Operation == MonitoredOperation.AcquireLease && r.Exception == null)));
@@ -29,16 +29,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task AcquireLease_ShouldReportFailure_IfSystemIssue()
         {
-            var lease = Mock.Of<DocumentServiceLease>();
-            var monitor = new Mock<HealthMonitor>();
-            var controller = new Mock<PartitionController>();
+            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>();
+            Mock<HealthMonitor> monitor = new Mock<HealthMonitor>();
+            Mock<PartitionController> controller = new Mock<PartitionController>();
 
             Exception exception = new InvalidOperationException();
             controller
                 .Setup(c => c.AddOrUpdateLeaseAsync(lease))
                 .Returns(Task.FromException(exception));
 
-            var sut = new HealthMonitoringPartitionControllerDecorator(controller.Object, monitor.Object);
+            HealthMonitoringPartitionControllerDecorator sut = new HealthMonitoringPartitionControllerDecorator(controller.Object, monitor.Object);
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => sut.AddOrUpdateLeaseAsync(lease));
 
             monitor.Verify(m => m.InspectAsync(It.Is<HealthMonitoringRecord>(r => r.Severity == HealthSeverity.Error && r.Lease == lease && r.Operation == MonitoredOperation.AcquireLease && r.Exception == exception)));

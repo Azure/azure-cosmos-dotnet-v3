@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task AddLease_ShouldAcquireLease_IfSecondLeaseAdded()
         {
-            var lease2 = Mock.Of<DocumentServiceLease>();
+            DocumentServiceLease lease2 = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease2)
                 .Setup(l => l.CurrentLeaseToken)
                 .Returns("partitionId2");
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task AddLease_ShouldRunObserver_IfSecondAdded()
         {
-            var lease2 = Mock.Of<DocumentServiceLease>();
+            DocumentServiceLease lease2 = Mock.Of<DocumentServiceLease>();
             Mock.Get(lease2)
                 .Setup(l => l.CurrentLeaseToken)
                 .Returns("partitionId2");

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void ValidateRecommendedConstructors()
         {
             // Default ctor.
-            var ex = new LeaseLostException();
+            LeaseLostException ex = new LeaseLostException();
             Assert.IsNotNull(ex.Message);
 
             // ctor(message).
@@ -37,8 +37,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateLeaseContructor()
         {
-            var lease = Mock.Of<DocumentServiceLease>();
-            var ex = new LeaseLostException(lease);
+            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>();
+            LeaseLostException ex = new LeaseLostException(lease);
             Assert.AreEqual(lease, ex.Lease);
             Assert.IsNotNull(ex.Message);
         }
@@ -46,9 +46,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateIsGoneConstructor()
         {
-            var lease = Mock.Of<DocumentServiceLease>();
-            var innerException = new Exception();
-            var ex = new LeaseLostException(lease, innerException, true);
+            DocumentServiceLease lease = Mock.Of<DocumentServiceLease>();
+            Exception innerException = new Exception();
+            LeaseLostException ex = new LeaseLostException(lease, innerException, true);
 
             Assert.IsNotNull(ex.Message);
             Assert.AreEqual(lease, ex.Lease);
@@ -60,15 +60,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateSerialization_AllFields()
         {
-            var lease = new DocumentServiceLeaseCore() { LeaseId = "id" };
-            var originalException = new LeaseLostException(lease, new Exception("foo"), true);
-            var buffer = new byte[4096];
-            var formatter = new BinaryFormatter();
-            var stream1 = new MemoryStream(buffer);
-            var stream2 = new MemoryStream(buffer);
+            DocumentServiceLeaseCore lease = new DocumentServiceLeaseCore() { LeaseId = "id" };
+            LeaseLostException originalException = new LeaseLostException(lease, new Exception("foo"), true);
+            byte[] buffer = new byte[4096];
+            BinaryFormatter formatter = new BinaryFormatter();
+            MemoryStream stream1 = new MemoryStream(buffer);
+            MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalException);
-            var deserializedException = (LeaseLostException)formatter.Deserialize(stream2);
+            LeaseLostException deserializedException = (LeaseLostException)formatter.Deserialize(stream2);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.AreEqual(originalException.InnerException.Message, deserializedException.InnerException.Message);
@@ -80,14 +80,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateSerialization_NullFields()
         {
-            var originalException = new LeaseLostException("message");
-            var buffer = new byte[4096];
-            var formatter = new BinaryFormatter();
-            var stream1 = new MemoryStream(buffer);
-            var stream2 = new MemoryStream(buffer);
+            LeaseLostException originalException = new LeaseLostException("message");
+            byte[] buffer = new byte[4096];
+            BinaryFormatter formatter = new BinaryFormatter();
+            MemoryStream stream1 = new MemoryStream(buffer);
+            MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalException);
-            var deserializedException = (LeaseLostException)formatter.Deserialize(stream2);
+            LeaseLostException deserializedException = (LeaseLostException)formatter.Deserialize(stream2);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.IsNull(deserializedException.InnerException);
