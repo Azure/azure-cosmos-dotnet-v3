@@ -1,4 +1,8 @@
-﻿using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests

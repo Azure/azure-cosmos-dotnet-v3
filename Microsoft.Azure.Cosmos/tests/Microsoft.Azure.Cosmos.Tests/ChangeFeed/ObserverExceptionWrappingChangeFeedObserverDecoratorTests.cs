@@ -1,17 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+
     [TestClass]
     public class ObserverExceptionWrappingChangeFeedObserverDecoratorTests
     {

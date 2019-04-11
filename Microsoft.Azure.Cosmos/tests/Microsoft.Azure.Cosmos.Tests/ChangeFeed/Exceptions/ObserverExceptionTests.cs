@@ -1,11 +1,15 @@
-﻿using System;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
+    using System;
+    using System.IO;
+    using System.Runtime.Serialization.Formatters.Binary;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     [TestClass]
     public class ObserverExceptionTests
     {
