@@ -148,19 +148,19 @@ namespace Microsoft.Azure.Cosmos
 
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
             return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosDatabaseSettings>>(
-                resourceUri,
-                ResourceType.Database,
-                OperationType.ReadFeed,
-                options,
+                resourceUri: resourceUri,
+                resourceType: ResourceType.Database,
+                operationType: OperationType.ReadFeed,
+                requestOptions: options,
                 partitionKey: null,
                 streamPayload: null,
-                request =>
+                requestEnricher: request =>
                 {
                     CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosDatabaseSettings>(response),
-                cancellationToken);
+                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosDatabaseSettings>(response),
+                cancellationToken: cancellationToken);
         }
     }
 }

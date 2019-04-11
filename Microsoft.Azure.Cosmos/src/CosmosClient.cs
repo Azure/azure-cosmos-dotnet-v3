@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
-            CosmosClientContext clientContext = new CosmosClientContext(
+            CosmosClientContext clientContext = new CosmosClientContextCore(
                 this,
                 this.CosmosJsonSerializer,
                 this.ResponseFactory,
