@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Moq;
 
     [TestClass]
+    [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseContainerCosmosTests
     {
         private static DocumentServiceLeaseStoreManagerSettings leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerSettings()

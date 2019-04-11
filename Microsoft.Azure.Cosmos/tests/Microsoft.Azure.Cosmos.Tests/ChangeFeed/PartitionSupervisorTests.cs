@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Moq;
 
     [TestClass]
+    [TestCategory("ChangeFeed")]
     public class PartitionSupervisorTests : IDisposable
     {
         private readonly DocumentServiceLease lease;

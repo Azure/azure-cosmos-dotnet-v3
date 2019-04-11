@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
+    [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseTests
     {
         [TestMethod]

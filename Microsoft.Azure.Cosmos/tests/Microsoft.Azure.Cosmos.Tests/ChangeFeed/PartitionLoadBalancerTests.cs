@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Moq;
 
     [TestClass]
+    [TestCategory("ChangeFeed")]
     public class PartitionLoadBalancerTests
     {
         private readonly DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();

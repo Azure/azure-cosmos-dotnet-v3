@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
 
     [TestClass]
+    [TestCategory("ChangeFeed")]
     public class EqualPartitionsBalancingStrategyTests
     {
         private const string ownerSelf = "self";

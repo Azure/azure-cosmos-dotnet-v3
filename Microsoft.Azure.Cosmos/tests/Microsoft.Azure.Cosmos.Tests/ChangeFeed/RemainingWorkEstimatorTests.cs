@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     [TestClass]
+    [TestCategory("ChangeFeed")]
     public class RemainingWorkEstimatorTests
     {
         // TODO: Add more tests when Feed Read goes through OM

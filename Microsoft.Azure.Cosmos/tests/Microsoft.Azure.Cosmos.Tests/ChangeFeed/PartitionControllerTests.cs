@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Moq;
 
     [TestClass]
+    [TestCategory("ChangeFeed")]
     public class PartitionControllerTests
     {
         private readonly DocumentServiceLease lease;
