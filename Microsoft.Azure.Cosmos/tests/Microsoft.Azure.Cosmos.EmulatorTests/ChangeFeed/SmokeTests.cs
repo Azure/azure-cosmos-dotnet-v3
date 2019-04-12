@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("withleasecontainer", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
                 {
                     foreach (dynamic doc in docs)
                     {
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("withinmemorycontainer", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
                 {
                     foreach (dynamic doc in docs)
                     {
