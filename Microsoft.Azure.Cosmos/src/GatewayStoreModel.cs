@@ -334,7 +334,8 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.Upsert ||
                 request.OperationType == OperationType.Query ||
                 request.OperationType == OperationType.SqlQuery ||
-                request.OperationType == OperationType.ExecuteJavaScript)
+                request.OperationType == OperationType.ExecuteJavaScript ||
+                request.OperationType == OperationType.Batch)
             {
                 httpMethod = HttpMethod.Post;
             }
