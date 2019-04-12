@@ -64,7 +64,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             {
                 await this.InitializeAsync().ConfigureAwait(false);
             }
-
+            else
+            {
+                this.shutdownCts = new CancellationTokenSource();
+            }
+            
             Logger.InfoFormat("Starting estimator...");
             this.runAsync = this.feedEstimator.RunAsync(this.shutdownCts.Token);
         }
