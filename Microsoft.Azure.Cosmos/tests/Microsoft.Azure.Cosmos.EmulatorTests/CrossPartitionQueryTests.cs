@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
-    using Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -101,8 +101,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 Path = "/*",
                                 Indexes = new Collection<Cosmos.Index>
                                 {
-                                    Cosmos.RangeIndex.Range(Cosmos.DataType.Number),
-                                    Cosmos.RangeIndex.Range(Cosmos.DataType.String),
+                                    Cosmos.Index.Range(Cosmos.DataType.Number),
+                                    Cosmos.Index.Range(Cosmos.DataType.String),
                                 }
                             }
                         }
@@ -127,10 +127,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosContainer partitionedCollection = await this.CreatePartitionContainer(partitionKey, indexingPolicy);
             List<Document> insertedDocuments = new List<Document>();
+            string jObjectPartitionKey = partitionKey.Remove(0, 1);
             foreach (string document in documents)
             {
-                Document documentObject = JsonConvert.DeserializeObject<Document>(document);
-                insertedDocuments.Add(await partitionedCollection.Items.CreateItemAsync<Document>(documentObject.Id, documentObject));
+                JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
+                if (documentObject["id"] == null)
+                {
+                    documentObject["id"] = Guid.NewGuid().ToString();
+                }
+
+                JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
+                object pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
+                insertedDocuments.Add((await partitionedCollection.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
+
             }
 
             return new Tuple<CosmosContainer, List<Document>>(partitionedCollection, insertedDocuments);
@@ -154,6 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string originalApiVersion = GetApiVersion();
             CosmosClient originalCosmosClient = this.Client;
             CosmosClient originalGatewayClient = this.GatewayClient;
+            CosmosDatabase originalDatabase = this.database;
 
             try
             {
@@ -162,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     this.Client = TestCommon.CreateCosmosClient(false);
                     this.GatewayClient = TestCommon.CreateCosmosClient(true);
+                    this.database = this.Client.Databases[this.database.Id];
                 }
 
                 await function();
@@ -170,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 this.Client = originalCosmosClient;
                 this.GatewayClient = originalGatewayClient;
+                this.database = originalDatabase;
                 SetApiVersion(originalApiVersion);
             }
         }
@@ -190,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IEnumerable<string> documents,
             Query query,
             string partitionKey = "/id",
-            IndexingPolicy indexingPolicy = null,
+            Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
             Query<object> queryWrapper = (container, inputDocuments, throwaway) =>
@@ -214,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Query<T> query,
             T testArgs,
             string partitionKey = "/id",
-            IndexingPolicy indexingPolicy = null,
+            Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
             await this.CreateIngestQueryDelete(
@@ -252,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            CosmosClientFactory cosmosClientFactory,
            T testArgs,
            string partitionKey = "/id",
-           IndexingPolicy indexingPolicy = null)
+           Cosmos.IndexingPolicy indexingPolicy = null)
         {
             int retryCount = 1;
             AggregateException exceptionHistory = new AggregateException();
@@ -260,7 +272,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>();
+                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>
+                    {
+                        this.CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy)
+                    };
 
                     Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
 
@@ -380,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     throw new ArgumentException($"Unexpected connection mode: {connectionMode}");
             }
         }
-        
+
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
@@ -389,8 +404,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> results = new List<T>();
             CosmosResultSetIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
-                query,
-                queryRequestOptions);
+                sqlQueryText: query,
+                maxConcurrency: 2,
+                requestOptions: queryRequestOptions);
 
             while (itemQuery.HasMoreResults)
             {
@@ -488,7 +504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     throw e;
                 }
 
-                if (!exception.Message.StartsWith("Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":27,\"end\":28},\"code\":\"SC2001\",\"message\":\"Identifier 'a' could not be resolved.\"}]}"))
+                if (!exception.Message.StartsWith("Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":27,\"end\":28},\"code\":\"SC2001\",\"message\":\"Identifier 'a' could not be resolved.\"}]}"))
                 {
                     throw e;
                 }
@@ -559,9 +575,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 @"{""id"":""documentId4"",""key"":5,""prop"":3,""shortArray"":[{""a"":5}]}",
                 @"{""id"":""documentId5"",""key"":5,""prop"":2,""shortArray"":[{""a"":6}]}",
                 @"{""id"":""documentId6"",""key"":5,""prop"":1,""shortArray"":[{""a"":7}]}",
-                @"{""id"":""documentId7"",""key"":null,""prop"":3,""shortArray"":[{""a"":5}]}",
-                @"{""id"":""documentId8"",""key"":null,""prop"":2,""shortArray"":[{""a"":6}]}",
-                @"{""id"":""documentId9"",""key"":null,""prop"":1,""shortArray"":[{""a"":7}]}",
                 @"{""id"":""documentId10"",""prop"":3,""shortArray"":[{""a"":5}]}",
                 @"{""id"":""documentId11"",""prop"":2,""shortArray"":[{""a"":6}]}",
                 @"{""id"":""documentId12"",""prop"":1,""shortArray"":[{""a"":7}]}",
@@ -583,24 +596,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 @"SELECT * FROM Root r WHERE false",
                 maxConcurrency: 1)).Count);
 
-            object[] keys = new object[] { "A", 5, null, Undefined.Value };
+            object[] keys = new object[] { "A", 5, Undefined.Value };
             for (int i = 0; i < keys.Length; ++i)
             {
                 List<string> expected = documents.Skip(i * 3).Take(3).Select(doc => doc.Id).ToList();
                 string expectedResult = string.Join(",", expected);
+                // Order-by
+                expected.Reverse();
+                string expectedOrderByResult = string.Join(",", expected);
 
-                List<string> queries = new List<string>()
+                List<(string, string)> queries = new List<(string, string)>()
                 {
-                    $@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")",
-                    @"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3",
-                    @"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7",
-                    $@"SELECT TOP 10 * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")",
-                    @"SELECT TOP 10 * FROM Root r WHERE r.prop BETWEEN 1 AND 3",
-                    @"SELECT TOP 10 VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7",
-                    $@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"") ORDER BY r.prop",
-                    @"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop",
-                    @"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7 ORDER BY r.prop",
+                    ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
+                    (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
+                    (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
+                    ($@"SELECT TOP 10 * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
+                    (@"SELECT TOP 10 * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
+                    (@"SELECT TOP 10 VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
+                    ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"") ORDER BY r.prop", expectedOrderByResult),
+                    (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop", expectedOrderByResult),
+                    (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7 ORDER BY r.prop", expectedOrderByResult),
                 };
+
+
 
                 if (i < keys.Length - 1)
                 {
@@ -609,23 +627,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         key = "'" + keys[i].ToString() + "'";
                     }
-                    else if (keys[i] == null)
-                    {
-                        key = "null";
-                    }
                     else
                     {
                         key = keys[i].ToString();
                     }
 
-                    queries.Add(string.Format(CultureInfo.InvariantCulture, @"SELECT * FROM Root r WHERE r.key = {0} ORDER BY r.prop", key));
+                    queries.Add((string.Format(CultureInfo.InvariantCulture, @"SELECT * FROM Root r WHERE r.key = {0} ORDER BY r.prop", key), expectedOrderByResult));
                 }
 
-                foreach (string query in queries)
+                foreach ((string, string) queryAndExpectedResult in queries)
                 {
                     CosmosResultSetIterator<Document> resultSetIterator = container.Items.CreateItemQuery<Document>(
-                        sqlQueryText: query,
-                        partitionKey: new PartitionKey(keys[i]),
+                        sqlQueryText: queryAndExpectedResult.Item1,
+                        partitionKey: keys[i],
                         maxItemCount: 1);
 
                     List<Document> result = new List<Document>();
@@ -634,7 +648,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         result.AddRange(await resultSetIterator.FetchNextSetAsync());
                     }
 
-                    Assert.AreEqual(expectedResult, string.Join(",", result.ToList().Select(doc => doc.Id)));
+                    string resultDocIds = string.Join(",", result.Select(doc => doc.Id));
+                    Assert.AreEqual(queryAndExpectedResult.Item2, resultDocIds);
                 }
             }
         }
@@ -686,7 +701,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public Func<object, object> ValueToPartitionKey;
         }
 
+        // V3 only supports Numeric, string, bool, null, undefined
         [TestMethod]
+        [Ignore]
         public async Task TestQueryWithSpecialPartitionKeys()
         {
             await CrossPartitionQueryTests.NoOp();
@@ -763,17 +780,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             QueryWithSpecialPartitionKeysArgs args = testArgs;
 
-            SpecialPropertyDocument specialPropertyDocument = new SpecialPropertyDocument();
+            SpecialPropertyDocument specialPropertyDocument = new SpecialPropertyDocument
+            {
+                id = Guid.NewGuid().ToString()
+            };
+
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
             Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
 
-            Document document = Document.FromObject(specialPropertyDocument);
-            CosmosItemResponse<Document> response = await container.Items.CreateItemAsync<Document>(testArgs.Value, document);
+            CosmosItemResponse<SpecialPropertyDocument> response = await container.Items.CreateItemAsync<SpecialPropertyDocument>(testArgs.Value, specialPropertyDocument);
             dynamic returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
             PartitionKey key = new PartitionKey(args.ValueToPartitionKey(args.Value));
-            response = await container.Items.ReadItemAsync<Document>(key, document.Id);
+            response = await container.Items.ReadItemAsync<SpecialPropertyDocument>(key, response.Resource.id);
             returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
@@ -820,6 +840,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private sealed class SpecialPropertyDocument
         {
+            public string id
+            {
+                get;
+                set;
+            }
+
             public Guid Guid
             {
                 get;
@@ -1008,7 +1034,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
-                        maxConcurrency = maxDegreeOfParallelism
+                        MaxConcurrency = maxDegreeOfParallelism
                     };
 
                     List<JToken> actualFromQueryWithoutContinutionTokens;
@@ -1033,27 +1059,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKey = "key",
                 UniquePartitionKey = "uniquePartitionKey",
                 Field = "field",
-                Values = new object[] { null, false, true, "abc", "cdfg", "opqrs", "ttttttt", "xyz" },
+                Values = new object[] { false, true, "abc", "cdfg", "opqrs", "ttttttt", "xyz" },
             };
 
             List<string> documents = new List<string>(aggregateTestArgs.NumberOfDocumentsDifferentPartitionKey + aggregateTestArgs.NumberOfDocsWithSamePartitionKey);
             foreach (object val in aggregateTestArgs.Values)
             {
                 Document doc;
-                if (val == null)
-                {
-                    doc = JsonSerializable.LoadFrom<Document>(
-                        new MemoryStream(Encoding.UTF8.GetBytes(string.Format(CultureInfo.InvariantCulture, "{{'{0}':null}}", aggregateTestArgs.PartitionKey))));
-                }
-                else
-                {
-                    doc = new Document();
-                    doc.SetPropertyValue(aggregateTestArgs.PartitionKey, val);
-                }
+                doc = new Document();
+                doc.SetPropertyValue(aggregateTestArgs.PartitionKey, val);
+                doc.SetPropertyValue("id", Guid.NewGuid().ToString());
 
                 documents.Add(doc.ToString());
             }
-
 
             for (int i = 0; i < aggregateTestArgs.NumberOfDocsWithSamePartitionKey; ++i)
             {
@@ -1061,6 +1079,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc.SetPropertyValue(aggregateTestArgs.PartitionKey, aggregateTestArgs.UniquePartitionKey);
                 doc.ResourceId = i.ToString(CultureInfo.InvariantCulture);
                 doc.SetPropertyValue(aggregateTestArgs.Field, i + 1);
+                doc.SetPropertyValue("id", Guid.NewGuid().ToString());
 
                 documents.Add(doc.ToString());
             }
@@ -1069,6 +1088,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Document doc = new Document();
                 doc.SetPropertyValue(aggregateTestArgs.PartitionKey, i + 1);
+                doc.SetPropertyValue("id", Guid.NewGuid().ToString());
                 documents.Add(doc.ToString());
             }
 
@@ -1137,7 +1157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new AggregateQueryArguments()
                 {
                     AggregateOperator = "MIN",
-                    ExpectedValue = null,
+                    ExpectedValue = false,
                     Predicate = "true",
                 },
                 new AggregateQueryArguments()
@@ -1210,7 +1230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Tuple.Create<string, object>("COUNT", (long)numberOfDocumentSamePartitionKey),
                     Tuple.Create<string, object>("MAX", (long)numberOfDocumentSamePartitionKey),
                     Tuple.Create<string, object>("MIN", (long)1),
-                    Tuple.Create<string, object>("SUM", singlePartitionSum),
+                    Tuple.Create<string, object>("SUM", (long)singlePartitionSum),
                 };
 
                 string field = aggregateTestArgs.Field;
@@ -1228,7 +1248,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     if (expected is long)
                     {
-                        expected = (double)((long)expected);
+                        expected = (long)expected;
                     }
 
                     Assert.AreEqual(
@@ -1236,21 +1256,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         aggregate,
                         string.Format(CultureInfo.InvariantCulture, "query: {0}, data: {1}", query, JsonConvert.SerializeObject(data)));
 
+                    // V3 doesn't support an equivalent to ToList()
                     // Aggregate queries need to be in the form SELECT VALUE <AGGREGATE>
-                    query = $"SELECT {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
-                    try
-                    {
-                        await QueryWithoutContinuationTokens<dynamic>(container, query, maxItemCount: 1);
-
-                        Assert.Fail("Expect exception");
-                    }
-                    catch (AggregateException ex)
-                    {
-                        if (!(ex.InnerException is CosmosException) || ((CosmosException)ex.InnerException).StatusCode != HttpStatusCode.BadRequest)
-                        {
-                            throw;
-                        }
-                    }
+                    //query = $"SELECT {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
+                    //try
+                    //{
+                    //     documentClient.CreateDocumentQuery(
+                    //      collection,
+                    //      query).ToList().Single();
+                    //    Assert.Fail($"Expect exception query: {query}");
+                    //}
+                    //catch (AggregateException ex)
+                    //{
+                    //    if (!(ex.InnerException is CosmosException) || ((CosmosException)ex.InnerException).StatusCode != HttpStatusCode.BadRequest)
+                    //    {
+                    //        throw;
+                    //    }
+                    //}
 
                     // Make sure ExecuteNextAsync works for unsupported aggregate projection
                     CosmosQueryResponse<dynamic> page = await container.Items.CreateItemQuery<dynamic>(query, maxConcurrency: 1).FetchNextSetAsync();
@@ -1740,7 +1762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             #endregion
             #region Unordered Continuation
-            // Run the unordered distinct query through the continuation api should result in the same set (but maybe some duplicates)
+            // Run the unordered distinct query through the continuation api should result in the same set(but maybe some duplicates)
             foreach (string query in new string[]
             {
                 "SELECT {0} VALUE c.name from c",
@@ -1854,16 +1876,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string continuationToken = null;
                     do
                     {
-                        CosmosResultSetIterator<JToken> documentQuery = container.Items.CreateItemQuery<JToken>(
+                        CosmosResultSetIterator<JToken> cosmosQuery = container.Items.CreateItemQuery<JToken>(
                                    sqlQueryText: queryWithDistinct,
                                    maxConcurrency: 100,
                                    maxItemCount: 1,
                                    continuationToken: continuationToken);
-                        {
-                            CosmosQueryResponse<JToken> cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
-                            documentsFromWithDistinct.AddRange(cosmosQueryResponse);
-                            continuationToken = cosmosQueryResponse.ContinuationToken;
-                        }
+
+                        CosmosQueryResponse<JToken> cosmosQueryResponse = await cosmosQuery.FetchNextSetAsync();
+                        documentsFromWithDistinct.AddRange(cosmosQueryResponse);
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
                     }
                     while (continuationToken != null);
 
@@ -1886,9 +1907,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 @"{""id"":""documentId4"",""key"":5}",
                 @"{""id"":""documentId5"",""key"":5,""prop"":2}",
                 @"{""id"":""documentId6"",""key"":5}",
-                @"{""id"":""documentId7"",""key"":null}",
-                @"{""id"":""documentId8"",""key"":null,""prop"":1}",
-                @"{""id"":""documentId9"",""key"":null}",
+                @"{""id"":""documentId7"",""key"":2}",
+                @"{""id"":""documentId8"",""key"":2,""prop"":1}",
+                @"{""id"":""documentId9"",""key"":2}",
             };
 
             await this.CreateIngestQueryDelete(
@@ -1930,43 +1951,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Just have range indexes
-            IndexingPolicy indexV1Policy = new IndexingPolicy()
+            Cosmos.IndexingPolicy indexV1Policy = new Cosmos.IndexingPolicy()
             {
-                IncludedPaths = new Collection<IncludedPath>()
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
                 {
-                    new IncludedPath()
+                    new Cosmos.IncludedPath()
                     {
                         Path = "/*",
-                        Indexes = new Collection<Index>()
+                        Indexes = new Collection<Cosmos.Index>()
                         {
-                            Index.Range(DataType.String, -1),
-                            Index.Range(DataType.Number, -1),
+                            Cosmos.Index.Range(Cosmos.DataType.String, -1),
+                            Cosmos.Index.Range(Cosmos.DataType.Number, -1),
                         }
                     }
                 }
             };
 
             // Add a composite index to force an index v2 container to be made.
-            IndexingPolicy indexV2Policy = new IndexingPolicy()
+            Cosmos.IndexingPolicy indexV2Policy = new Cosmos.IndexingPolicy()
             {
-                IncludedPaths = new Collection<IncludedPath>()
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
                 {
-                    new IncludedPath()
+                    new Cosmos.IncludedPath()
                     {
                         Path = "/*",
                     }
                 },
 
-                CompositeIndexes = new Collection<Collection<CompositePath>>()
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
                     // Simple
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/_ts",
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/_etag",
                         }
@@ -1981,7 +2002,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
                 string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
-                IndexingPolicy indexingPolicy = allowMixedTypeOrderByTestFlag ? indexV2Policy : indexV1Policy;
+                Cosmos.IndexingPolicy indexingPolicy = allowMixedTypeOrderByTestFlag ? indexV2Policy : indexV1Policy;
                 try
                 {
                     OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlag;
@@ -2489,9 +2510,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                     DateTime startTime = DateTime.Now;
                                     List<Document> result = new List<Document>();
-                                    var query = container.Items.CreateItemQuery<Document>(
+                                    CosmosResultSetIterator<Document> query = container.Items.CreateItemQuery<Document>(
                                         querySpec,
-                                        feedOptions);
+                                        maxConcurrency: maxDegreeOfParallelism,
+                                        requestOptions: feedOptions);
 
                                     while (query.HasMoreResults)
                                     {
@@ -2505,7 +2527,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                     double time = (DateTime.Now - startTime).TotalMilliseconds;
 
-                                    Trace.TraceInformation("<Query>: {0}, <Document Count>: {2}, <MaxItemCount>: {3}, <MaxDegreeOfParallelism>: {4}, <MaxBufferedItemCount>: {5}, <Time>: {6} ms",
+                                    Trace.TraceInformation("<Query>: {0}, <Document Count>: {1}, <MaxItemCount>: {2}, <MaxDegreeOfParallelism>: {3}, <MaxBufferedItemCount>: {4}, <Time>: {5} ms",
                                         JsonConvert.SerializeObject(querySpec),
                                         actualDocuments.Count(),
                                         maxItemCount,
@@ -2578,7 +2600,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             FeedOptions feedOptions = new FeedOptions
                             {
                                 MaxBufferedItemCount = 1000,
-                               
+
                             };
 
                             // Max DOP needs to be 0 since the query needs to run in serial => 
@@ -2791,12 +2813,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxBufferedItemCount = 10000,
                         };
 
-                            documentQuery = container.Items.CreateItemQuery<Document>(
-                                query,
-                                maxConcurrency: 10000,
-                                maxItemCount: pageSize,
-                                continuationToken: continuationToken,
-                                requestOptions: feedOptions);
+                        documentQuery = container.Items.CreateItemQuery<Document>(
+                            query,
+                            maxConcurrency: 10000,
+                            maxItemCount: pageSize,
+                            continuationToken: continuationToken,
+                            requestOptions: feedOptions);
 
                         CosmosQueryResponse<Document> response;
                         try
@@ -2869,135 +2891,135 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            IndexingPolicy indexingPolicy = new IndexingPolicy()
+            Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
-                CompositeIndexes = new Collection<Collection<CompositePath>>()
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
                     // Simple
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         }
                     },
 
                     // Max Columns
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField2),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField2),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         }
                     },
 
                     // All primitive values
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.BoolField),
-                            Order = CompositePathSortOrder.Descending,
+                            Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NullField),
-                            Order = CompositePathSortOrder.Ascending,
+                            Order = Cosmos.CompositePathSortOrder.Ascending,
                         }
                     },
 
                     // Primitive and Non Primitive (waiting for composite on objects and arrays)
-                    //new Collection<CompositePath>()
+                    //new Collection<Cosmos.CompositePath>()
                     //{
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.NumberField),
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.ObjectField),
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.StringField),
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/" + nameof(MultiOrderByDocument.ArrayField),
                     //    },
                     //},
 
                     // Long strings
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.ShortStringField),
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.MediumStringField),
                         },
-                        new CompositePath()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.LongStringField),
                         }
                     },
 
                     // System Properties 
-                    //new Collection<CompositePath>()
+                    //new Collection<Cosmos.CompositePath>()
                     //{
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/id",
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/_ts",
                     //    },
-                    //    new CompositePath()
+                    //    new Cosmos.CompositePath()
                     //    {
                     //        Path = "/_etag",
                     //    },
 
                     //    // _rid is not allowed
-                    //    //new CompositePath()
+                    //    //new Cosmos.CompositePath()
                     //    //{
                     //    //    Path = "/_rid",
                     //    //},
