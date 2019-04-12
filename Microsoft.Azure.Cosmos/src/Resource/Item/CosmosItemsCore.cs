@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -31,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private string cachedUriSegmentWithoutId { get; }
         private CosmosJsonSerializer cosmosJsonSerializer { get; }
         private CosmosClient client { get; }
+        static readonly char[] InvalidCharacters = new char[] { '/', '\\', '?', '#' };
 
         internal CosmosItemsCore(CosmosContainer container)
         {
@@ -63,6 +66,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            ValidateItemId(item);
             Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
                 partitionKey: partitionKey,
                 streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
@@ -123,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            ValidateItemId(item);
             Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(
                 partitionKey: partitionKey,
                 streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
@@ -277,9 +282,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKey pk = new PartitionKey(partitionKey);
                 options.PartitionKey = pk;
-                options.EnableCrossPartitionQuery = false;
             }
 
+            options.EnableCrossPartitionQuery = false;
             return new CosmosDefaultResultSetIterator<T>(
                 maxItemCount,
                 continuationToken,
@@ -420,6 +425,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
+            ValidateId(itemId);
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
@@ -587,6 +593,40 @@ namespace Microsoft.Azure.Cosmos
         private Uri ContcatCachedUriWithId(string resourceId)
         {
             return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+        }
+
+        private void ValidateId(string resourceId)
+        {
+            if (!string.IsNullOrEmpty(resourceId))
+            {
+                int match = resourceId.IndexOfAny(InvalidCharacters);
+                if (match != -1)
+                {
+                    throw new ArgumentException(string.Format(
+                                CultureInfo.CurrentUICulture,
+                                RMResources.InvalidCharacterInResourceName,
+                                resourceId[match]
+                                ));
+                }
+
+                if (resourceId[resourceId.Length - 1] == ' ')
+                {
+                    throw new ArgumentException(
+                                RMResources.InvalidSpaceEndingInResourceName
+                                );
+                }
+            }
+        }
+
+        private void ValidateItemId<T>(T item)
+        {
+            Type t = item.GetType();
+            PropertyInfo prop = t.GetProperty("id") ?? t.GetProperty("Id");
+            if (prop != null)
+            {
+                string resourceId = (string)prop.GetValue(item);
+                ValidateId(resourceId);
+            }
         }
     }
 }

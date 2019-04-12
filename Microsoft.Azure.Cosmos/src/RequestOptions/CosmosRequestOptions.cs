@@ -53,31 +53,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Instantiates a new instance of the <see cref="PartitionKey"/> object.
-        /// </summary>
-        /// <remarks>
-        /// The returned object represents a partition key value that allows creating and accessing documents
-        /// without a value for partition key
-        /// </remarks>
-        public static object PartitionKeyNone
-        {
-            get
-            {
-                return PartitionKey.None;
-            }
-        }
-
-        //
-        // Summary:
-        //     The tag name to use in the documents for specifying a partition key value when
-        //     inserting such documents into a migrated collection
-        public static readonly string SystemKeyName = PartitionKey.SystemKeyName;
-
-        //
-        // Summary:
-        //     The partition key path in the collection definition for migrated collections
-        public static readonly string SystemKeyPath = PartitionKey.SystemKeyPath;
-        /// <summary>
         /// Gets the resource URI passed in as a request option. This is used by MongoDB and Cassandra implementation for performance reasons.
         /// </summary>
         /// <param name="resourceUri">The URI passed in from the request options</param>

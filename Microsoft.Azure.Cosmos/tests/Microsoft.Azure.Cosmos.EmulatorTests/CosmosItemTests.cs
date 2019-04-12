@@ -793,7 +793,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemKeyPath);
 
                 CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
-                    partitionKey: CosmosRequestOptions.PartitionKeyNone,
+                    partitionKey: CosmosContainerSettings.PartitionKeyNone,
                     id: nonPartitionItemId);
 
                 Assert.IsNotNull(response.Resource);
@@ -802,7 +802,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
                 CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
-                    partitionKey: CosmosRequestOptions.PartitionKeyNone,
+                    partitionKey: CosmosContainerSettings.PartitionKeyNone,
                     id: undefinedPartitionItemId);
 
                 Assert.IsNotNull(undefinedItemResponse.Resource);
@@ -817,6 +817,75 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
         }
+
+        [TestMethod]
+        public async Task NonValidItemIdValidationTest()
+        {
+            ToDoActivity testItem = CreateRandomToDoActivity();
+            CosmosItemResponse<ToDoActivity> response = await this.Container.Items.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
+            Assert.IsNotNull(response);
+            Assert.IsNotNull(response.MaxResourceQuota);
+            Assert.IsNotNull(response.CurrentResourceQuotaUsage);
+            string[] forbiddenCharInNameList = {
+                                      "Contains / character",
+                                      "Contains # character",
+                                      "Contains \\ character",
+                                      "Contains ? character",
+                                      "endWithSpace  ",
+                            };
+            String originalId = testItem.id;
+            foreach (string resourceName in forbiddenCharInNameList)
+            {
+                testItem.id = resourceName;
+                try
+                {
+                    ToDoActivity document = await this.Container.Items.ReadItemAsync<ToDoActivity>(testItem.status, resourceName);
+                    Assert.Fail("Should have thrown exception in here");
+                }
+                catch (ArgumentException e)
+                {
+                    Assert.IsTrue(e.Message.Contains("invalid character") || e.Message.Contains("end with space"));
+                }
+                try
+                {
+                    ToDoActivity document = await this.Container.Items.ReplaceItemAsync<ToDoActivity>(testItem.status, resourceName, testItem);
+                    Assert.Fail("Should have thrown exception in here");
+                }
+                catch (ArgumentException e)
+                {
+                    Assert.IsTrue(e.Message.Contains("invalid character") || e.Message.Contains("end with space"));
+                }
+                try
+                {
+                    await this.Container.Items.ReplaceItemStreamAsync(testItem.status, resourceName, this.jsonSerializer.ToStream<ToDoActivity>(testItem));
+                    Assert.Fail("Should have thrown exception in here");
+                }
+                catch (ArgumentException e)
+                {
+                    Assert.IsTrue(e.Message.Contains("invalid character") || e.Message.Contains("end with space"));
+                }
+                try
+                {
+                    await this.Container.Items.UpsertItemAsync(testItem.status, testItem);
+                    Assert.Fail("Should have thrown exception in here");
+                }
+                catch (ArgumentException e)
+                {
+                    Assert.IsTrue(e.Message.Contains("invalid character") || e.Message.Contains("end with space"));
+                }
+                try
+                {
+                    await this.Container.Items.DeleteItemAsync<ToDoActivity>(testItem.status, resourceName);
+                    Assert.Fail("Should have thrown exception in here");
+                }
+                catch (ArgumentException e)
+                {
+                    Assert.IsTrue(e.Message.Contains("invalid character") || e.Message.Contains("end with space"));
+                }
+            }
+            await this.Container.Items.DeleteItemAsync<ToDoActivity>(testItem.status, originalId);
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);

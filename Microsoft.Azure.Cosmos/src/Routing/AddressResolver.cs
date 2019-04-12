@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos
     /// AddressCache internally maintains CollectionCache, CollectionRoutingMapCache and BackendAddressCache.
     /// Logic in this class mainly joins these 3 caches and deals with potential staleness of the caches.
     /// 
-    /// More details are available here:
-    /// https://microsoft.sharepoint.com/teams/DocumentDB/Design%20Documents/Manageability/Elastic%20Collections%20Routing.docx?d=w3356bd9ad32746b280c0bcb8f9905986
     /// </summary>
     internal sealed class AddressResolver : IAddressResolver
     {

@@ -202,19 +202,6 @@ namespace Microsoft.Azure.Cosmos
             return request;
         }
 
-        internal static PartitionKey GetPartitionKey(Object partitionKey)
-        {
-            PartitionKey pk = null;
-            if (partitionKey.GetType() == typeof(PartitionKey))
-            {
-                pk = (PartitionKey)partitionKey;
-            }
-            else
-            {
-                pk = new PartitionKey(partitionKey);
-            }
-            return pk;
-        }
         internal static HttpMethod GetHttpMethod(
             OperationType operationType)
         {

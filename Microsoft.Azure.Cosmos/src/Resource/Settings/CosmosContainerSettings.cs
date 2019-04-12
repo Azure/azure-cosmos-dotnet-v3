@@ -289,6 +289,32 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Instantiates a new instance of the <see cref="PartitionKey"/> object.
+        /// </summary>
+        /// <remarks>
+        /// The returned object represents a partition key value that allows creating and accessing documents
+        /// without a value for partition key
+        /// </remarks>
+        public static object PartitionKeyNone
+        {
+            get
+            {
+                return Microsoft.Azure.Documents.PartitionKey.None;
+            }
+        }
+
+        //
+        // Summary:
+        //     The tag name to use in the documents for specifying a partition key value when
+        //     inserting such documents into a migrated collection
+        public static readonly string SystemKeyName = Microsoft.Azure.Documents.PartitionKey.SystemKeyName;
+
+        //
+        // Summary:
+        //     The partition key path in the collection definition for migrated collections
+        public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
+
+        /// <summary>
         /// Gets or sets <see cref="PartitionKeyDefinition"/> object in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
