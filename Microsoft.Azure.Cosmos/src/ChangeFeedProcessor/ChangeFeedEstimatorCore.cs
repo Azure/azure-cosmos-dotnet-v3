@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
@@ -21,12 +22,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
         private CancellationTokenSource shutdownCts = new CancellationTokenSource();
         private CosmosContainer leaseContainer;
-        private string leaseContainerPrefix;
+        private string monitoredContainerRid;
         private TimeSpan? estimatorPeriod = null;
         private CosmosContainer monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimator feedEstimator;
         private RemainingWorkEstimator remainingWorkEstimator;
+        private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private bool initialized = false;
 
         private Task runAsync;
@@ -53,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
             CosmosContainer leaseContainer,
-            string leaseContainerPrefix,
+            string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
@@ -64,8 +66,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
-            this.leaseContainerPrefix = leaseContainerPrefix;
+            this.monitoredContainerRid = monitoredContainerRid;
             this.monitoredContainer = monitoredContainer;
+            this.changeFeedLeaseOptions = changeFeedLeaseOptions;
         }
 
         public override async Task StartAsync()
@@ -95,7 +98,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task InitializeAsync()
         {
-            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.leaseContainerPrefix, ChangeFeedEstimatorCore.EstimatorDefaultHostName).ConfigureAwait(false);
+            string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync(this.monitoredContainerRid);
+            this.monitoredContainerRid = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
+            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, ChangeFeedEstimatorCore.EstimatorDefaultHostName).ConfigureAwait(false);
             this.feedEstimator = this.BuildFeedEstimator();
             this.initialized = true;
         }
