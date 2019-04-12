@@ -4,37 +4,20 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
-    public class SmokeTests : BaseCosmosClientHelper
+    public class SmokeTests : BaseChangeFeedClientHelper
     {
-        private CosmosContainer Container = null;
-        private CosmosContainer LeaseContainer = null;
-
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
-            string PartitionKey = "/id";
-            CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
-            this.Container = response;
-
-
-            response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: "leases", partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
-
-            this.LeaseContainer = response;
+            await base.ChangeFeedTestInit();
         }
 
         [TestCleanup]
@@ -63,15 +46,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             await processor.StartAsync();
             // Letting processor initialize
-            await Task.Delay(5000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             // Inserting documents
-            foreach(int id in expectedIds)
+            foreach (int id in expectedIds)
             {
                 await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
             }
 
             // Waiting on all notifications to finish
-            await Task.Delay(5000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
@@ -97,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             await processor.StartAsync();
             // Letting processor initialize
-            await Task.Delay(5000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             // Inserting documents
             foreach (int id in expectedIds)
             {
@@ -105,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
 
             // Waiting on all notifications to finish
-            await Task.Delay(5000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);

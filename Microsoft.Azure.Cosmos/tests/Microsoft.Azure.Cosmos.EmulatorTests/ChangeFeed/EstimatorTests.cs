@@ -9,32 +9,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
-    public class EstimatorTests : BaseCosmosClientHelper
+    public class EstimatorTests : BaseChangeFeedClientHelper
     {
-        private CosmosContainer Container = null;
-        private CosmosContainer LeaseContainer = null;
-
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
-            string PartitionKey = "/id";
-            CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
-            this.Container = response;
-
-
-            response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: "leases", partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
-
-            this.LeaseContainer = response;
+            await base.ChangeFeedTestInit();
         }
 
         [TestCleanup]
@@ -56,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
-            await Task.Delay(1000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             await estimator.StopAsync();
             Assert.IsTrue(receivedEstimation.HasValue);
             Assert.AreEqual(1, receivedEstimation);
@@ -78,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
 
             long? receivedEstimation = null;
@@ -90,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
-            await Task.Delay(1000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await estimator.StopAsync();
             Assert.IsTrue(receivedEstimation.HasValue);
             Assert.AreEqual(0, receivedEstimation);
@@ -113,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             await processor.StartAsync();
             // Letting processor initialize
-            await Task.Delay(1000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             // Inserting documents
             foreach (int id in Enumerable.Range(0, 10))
             {
@@ -121,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
 
             // Waiting on all notifications to finish
-            await Task.Delay(5000);
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
 
             long? receivedEstimation = null;
@@ -141,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             }
 
             await estimator.StartAsync();
-            await Task.Delay(1000); // Let the estimator delegate fire at least once
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             await estimator.StopAsync();
             Assert.IsTrue(receivedEstimation.HasValue);
             Assert.AreEqual(10, receivedEstimation);
