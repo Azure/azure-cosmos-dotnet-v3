@@ -192,10 +192,34 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
         }
 
-        internal override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerSettingsAsync(cancellationToken)
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
+        }
+
+        /// <summary>
+        /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
+        /// </summary>
+        /// <remarks>
+        /// The function selects the right partition key constant for inserting documents that don't have
+        /// a value for partition key. The constant selection is based on whether the collection is migrated
+        /// or user partitioned
+        /// </remarks>
+        internal PartitionKeyInternal NonePartitionKeyValue
+        {
+            get
+            {
+                PartitionKeyDefinition partitionKey = this.GetPartitionKeyDefinitionAsync().Result;//Need to discuss
+                if (partitionKey.Paths.Count == 0 || partitionKey.IsSystemKey)
+                {
+                    return PartitionKeyInternal.Empty;
+                }
+                else
+                {
+                    return PartitionKeyInternal.Undefined;
+                }
+            }
         }
 
         internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)

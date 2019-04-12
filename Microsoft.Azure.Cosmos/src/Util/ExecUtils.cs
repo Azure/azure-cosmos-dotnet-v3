@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (cosmosContainer != null && partitionKey.Equals(PartitionKey.None))
                 {
-                    PartitionKeyInternal partitionKeyInternal = cosmosContainer.NonePartitionKeyValue;
+                    PartitionKeyInternal partitionKeyInternal = ((CosmosContainerCore)cosmosContainer).NonePartitionKeyValue;
                     request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
                 } else
                 {
