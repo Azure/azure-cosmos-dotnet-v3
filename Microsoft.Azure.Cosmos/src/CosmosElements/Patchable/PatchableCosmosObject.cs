@@ -9,6 +9,7 @@
     internal sealed class PatchableCosmosObject : PatchableCosmosElement
     {
         private readonly Dictionary<string, PatchableUnion> properties;
+        private readonly List<ObjectPatchOperation> patchOperations;
 
         private PatchableCosmosObject(CosmosObject cosmosObject)
             : base(PatchableCosmosElementType.Object)
@@ -26,6 +27,8 @@
 
                 this.properties[key] = PatchableUnion.Create(value);
             }
+
+            this.patchOperations = new List<ObjectPatchOperation>();
         }
 
         public static PatchableCosmosObject Create(CosmosObject cosmosObject)
@@ -45,6 +48,7 @@
         {
 
             this.properties.Add(key, PatchableUnion.Create(value));
+            this.patchOperations.Add(ObjectPatchOperation.CreateAddOperation(key, value));
         }
 
         public void Remove(string key)
@@ -54,6 +58,8 @@
             {
                 throw new KeyNotFoundException($"Could not {nameof(Remove)} key: {key} in {nameof(PatchableCosmosObject)}");
             }
+
+            this.patchOperations.Add(ObjectPatchOperation.CreateRemoveOperation(key));
         }
 
         public void Replace(string key, CosmosElement value)
@@ -64,6 +70,7 @@
             }
 
             this.properties[key] = PatchableUnion.Create(value);
+            this.patchOperations.Add(ObjectPatchOperation.CreateReplaceOperation(key, value));
         }
 
         public override CosmosElement ToCosmosElement()
@@ -141,6 +148,49 @@
                 }
 
                 jsonWriter.WriteObjectEnd();
+            }
+        }
+
+        private struct ObjectPatchOperation
+        {
+            private ObjectPatchOperation(
+                PatchOperation patchOperation,
+                string key,
+                CosmosElement value)
+            {
+                this.OperationType = patchOperation;
+                this.Key = key;
+                this.Value = value;
+            }
+
+            public PatchOperation OperationType
+            {
+                get;
+            }
+
+            public string Key
+            {
+                get;
+            }
+
+            public CosmosElement Value
+            {
+                get;
+            }
+
+            public static ObjectPatchOperation CreateAddOperation(string key, CosmosElement value)
+            {
+                return new ObjectPatchOperation(PatchOperation.Add, key, value);
+            }
+
+            public static ObjectPatchOperation CreateRemoveOperation(string key)
+            {
+                return new ObjectPatchOperation(PatchOperation.Remove, key, value: null);
+            }
+
+            public static ObjectPatchOperation CreateReplaceOperation(string key, CosmosElement value)
+            {
+                return new ObjectPatchOperation(PatchOperation.Replace, key, value);
             }
         }
     }

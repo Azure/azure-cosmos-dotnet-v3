@@ -8,6 +8,7 @@
     internal sealed class PatchableCosmosArray : PatchableCosmosElement
     {
         private readonly List<PatchableUnion> items;
+        private readonly List<ArrayPatchOperation> patchOperations;
 
         private PatchableCosmosArray(CosmosArray cosmosArray)
             : base(PatchableCosmosElementType.Array)
@@ -22,6 +23,8 @@
             {
                 items.Add(PatchableUnion.Create(arrayItem));
             }
+
+            this.patchOperations = new List<ArrayPatchOperation>();
         }
 
         public PatchableCosmosElement this[int index]
@@ -47,11 +50,13 @@
             }
 
             this.items.Insert(index, PatchableUnion.Create(item));
+            this.patchOperations.Add(ArrayPatchOperation.CreateAddOperation(index, item));
         }
 
         public void Remove(int index)
         {
             this.items.RemoveAt(index);
+            this.patchOperations.Add(ArrayPatchOperation.CreateRemoveOperation(index));
         }
 
         public void Replace(int index, CosmosElement item)
@@ -62,6 +67,7 @@
             }
 
             this.items[index] = PatchableUnion.Create(item);
+            this.patchOperations.Add(ArrayPatchOperation.CreateReplaceOperation(index, item));
         }
 
         public override CosmosElement ToCosmosElement()
@@ -116,6 +122,49 @@
                 }
 
                 jsonWriter.WriteArrayEnd();
+            }
+        }
+
+        private struct ArrayPatchOperation
+        {
+            private ArrayPatchOperation(
+                PatchOperation patchOperation,
+                int index,
+                CosmosElement item)
+            {
+                this.OperationType = patchOperation;
+                this.Index = index;
+                this.Item = item;
+            }
+
+            public PatchOperation OperationType
+            {
+                get;
+            }
+
+            public int Index
+            {
+                get;
+            }
+
+            public CosmosElement Item
+            {
+                get;
+            }
+
+            public static ArrayPatchOperation CreateAddOperation(int index, CosmosElement item)
+            {
+                return new ArrayPatchOperation(PatchOperation.Add, index, item);
+            }
+
+            public static ArrayPatchOperation CreateRemoveOperation(int index)
+            {
+                return new ArrayPatchOperation(PatchOperation.Remove, index, item: null);
+            }
+
+            public static ArrayPatchOperation CreateReplaceOperation(int index, CosmosElement item)
+            {
+                return new ArrayPatchOperation(PatchOperation.Replace, index, item);
             }
         }
     }
