@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
     internal abstract class CosmosElement
@@ -30,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         }
 
         public abstract void WriteTo(IJsonWriter jsonWriter);
+
+        public abstract PatchableCosmosElement ToPatchable();
 
         public static CosmosElement Create(byte[] buffer)
         {

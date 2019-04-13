@@ -6,8 +6,9 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
-    
+
     internal sealed class CosmosBoolean : CosmosElement
     {
         private static readonly CosmosBoolean True = new CosmosBoolean(true);
@@ -24,11 +25,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             get;
         }
 
-        public static CosmosBoolean Create(bool boolean)
-        {
-            return boolean ? CosmosBoolean.True : CosmosBoolean.False;
-        }
-
         public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
@@ -37,6 +33,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             jsonWriter.WriteBoolValue(this.Value);
+        }
+
+        public override PatchableCosmosElement ToPatchable()
+        {
+            return PatchableCosmosBoolean.Create(this);
+        }
+
+        public static CosmosBoolean Create(bool boolean)
+        {
+            return boolean ? CosmosBoolean.True : CosmosBoolean.False;
         }
     }
 }

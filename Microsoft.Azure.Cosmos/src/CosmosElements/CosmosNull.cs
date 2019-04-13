@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
 
     internal sealed class CosmosNull : CosmosElement
@@ -17,11 +18,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public static CosmosNull Create()
-        {
-            return CosmosNull.Singleton;
-        }
-
         public override void WriteTo(IJsonWriter jsonWriter)
         {
             if (jsonWriter == null)
@@ -30,6 +26,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             jsonWriter.WriteNullValue();
+        }
+
+        public override PatchableCosmosElement ToPatchable()
+        {
+            return PatchableCosmosNull.Create();
+        }
+
+        public static CosmosNull Create()
+        {
+            return CosmosNull.Singleton;
         }
     }
 }

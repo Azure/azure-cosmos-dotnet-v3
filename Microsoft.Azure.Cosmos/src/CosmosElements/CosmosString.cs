@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosString : CosmosElement
@@ -17,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract string Value
         {
             get;
+        }
+
+        public override PatchableCosmosElement ToPatchable()
+        {
+            return PatchableCosmosString.Create(this);
         }
 
         public static CosmosString Create(

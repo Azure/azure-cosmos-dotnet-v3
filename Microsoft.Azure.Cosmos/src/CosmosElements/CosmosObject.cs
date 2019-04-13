@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System.Collections;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
@@ -34,6 +35,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract CosmosElement this[string key]
         {
             get;
+        }
+
+        public override PatchableCosmosElement ToPatchable()
+        {
+            return PatchableCosmosObject.Create(this);
         }
 
         public static CosmosObject Create(

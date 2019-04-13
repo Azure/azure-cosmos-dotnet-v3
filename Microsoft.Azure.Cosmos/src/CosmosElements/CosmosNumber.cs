@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosNumber : CosmosElement
@@ -22,6 +23,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract bool IsFloatingPoint
         {
             get;
+        }
+
+        public override PatchableCosmosElement ToPatchable()
+        {
+            return PatchableCosmosNumber.Create(this);
         }
 
         public static CosmosNumber Create(

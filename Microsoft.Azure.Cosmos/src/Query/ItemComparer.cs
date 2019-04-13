@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -201,6 +202,11 @@ namespace Microsoft.Azure.Cosmos.Query
             {
             }
 
+            public override PatchableCosmosElement ToPatchable()
+            {
+                throw new NotImplementedException();
+            }
+
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 throw new NotImplementedException();
@@ -217,6 +223,11 @@ namespace Microsoft.Azure.Cosmos.Query
             private MaxValueItem()
                 : base(default(CosmosElementType))
             {
+            }
+
+            public override PatchableCosmosElement ToPatchable()
+            {
+                throw new NotImplementedException();
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
