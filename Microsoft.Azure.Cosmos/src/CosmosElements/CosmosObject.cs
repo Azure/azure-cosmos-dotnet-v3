@@ -37,11 +37,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             get;
         }
 
-        public override PatchableCosmosElement ToPatchable()
-        {
-            return PatchableCosmosObject.Create(this);
-        }
-
         public static CosmosObject Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)

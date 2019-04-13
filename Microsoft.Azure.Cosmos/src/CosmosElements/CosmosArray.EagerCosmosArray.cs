@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
@@ -44,6 +45,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             public override IEnumerator<CosmosElement> GetEnumerator() => this.cosmosElements.GetEnumerator();
+
+            public override PatchableCosmosElement ToPatchable()
+            {
+                return PatchableCosmosArray.Create(this);
+            }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {

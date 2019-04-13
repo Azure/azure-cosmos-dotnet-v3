@@ -37,7 +37,7 @@
         {
             get
             {
-                return this.properties[key];
+                return this.properties[key].PatchableCosmosElement;
             }
         }
 
@@ -113,6 +113,11 @@
                 }
 
                 return value != null;
+            }
+
+            public override PatchableCosmosElement ToPatchable()
+            {
+                return this.patchableCosmosObject;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)

@@ -2,13 +2,8 @@
 {
     using System;
 
-    internal abstract class PatchableUnion : PatchableCosmosElement
+    internal abstract class PatchableUnion
     {
-        private PatchableUnion(PatchableCosmosElementType type)
-            : base(type)
-        {
-        }
-
         public abstract PatchableCosmosElement PatchableCosmosElement
         {
             get;
@@ -29,49 +24,18 @@
             return new PatchableUnionCosmosElement(cosmosElement);
         }
 
-        public static implicit operator PatchableCosmosArray(PatchableUnion union)
-        {
-            return (PatchableCosmosArray)union.PatchableCosmosElement;
-        }
-
-        public static implicit operator PatchableCosmosBoolean(PatchableUnion union)
-        {
-            return (PatchableCosmosBoolean)union.PatchableCosmosElement;
-        }
-
-        public static implicit operator PatchableCosmosNull(PatchableUnion union)
-        {
-            return (PatchableCosmosNull)union.PatchableCosmosElement;
-        }
-
-        public static implicit operator PatchableCosmosNumber(PatchableUnion union)
-        {
-            return (PatchableCosmosNumber)union.PatchableCosmosElement;
-        }
-
-        public static implicit operator PatchableCosmosObject(PatchableUnion union)
-        {
-            return (PatchableCosmosObject)union.PatchableCosmosElement;
-        }
-
-        public static implicit operator PatchableCosmosString(PatchableUnion union)
-        {
-            return (PatchableCosmosString)union.PatchableCosmosElement;
-        }
-
-        public override CosmosElement ToCosmosElement()
-        {
-            return this.CosmosElement;
-        }
-
         private sealed class PatchableUnionPatch : PatchableUnion
         {
             private readonly PatchableCosmosElement patchableCosmosElement;
             private readonly Lazy<CosmosElement> cosmosElementWrapper;
 
             public PatchableUnionPatch(PatchableCosmosElement patchableCosmosElement)
-                : base(patchableCosmosElement.Type)
             {
+                if(patchableCosmosElement == null)
+                {
+                    throw new ArgumentNullException(nameof(patchableCosmosElement));
+                }
+
                 this.patchableCosmosElement = patchableCosmosElement;
                 this.cosmosElementWrapper = new Lazy<CosmosElement>(() => 
                 {
@@ -90,8 +54,12 @@
             private CosmosElement cosmosElement;
 
             public PatchableUnionCosmosElement(CosmosElement cosmosElement)
-                : base(ConvertType(cosmosElement.Type))
             {
+                if (cosmosElement == null)
+                {
+                    throw new ArgumentNullException(nameof(cosmosElement));
+                }
+
                 this.patchableCosmosElement = new Lazy<PatchableCosmosElement>(() =>
                 {
                     return this.cosmosElement.ToPatchable();
@@ -116,43 +84,6 @@
                 {
                     return this.cosmosElement;
                 }
-            }
-
-            private static PatchableCosmosElementType ConvertType(
-                CosmosElementType cosmosElementType)
-            {
-                PatchableCosmosElementType patchableCosmosElementType;
-                switch (cosmosElementType)
-                {
-                    case CosmosElementType.Array:
-                        patchableCosmosElementType = PatchableCosmosElementType.Array;
-                        break;
-
-                    case CosmosElementType.Boolean:
-                        patchableCosmosElementType = PatchableCosmosElementType.Boolean;
-                        break;
-
-                    case CosmosElementType.Null:
-                        patchableCosmosElementType = PatchableCosmosElementType.Null;
-                        break;
-
-                    case CosmosElementType.Number:
-                        patchableCosmosElementType = PatchableCosmosElementType.Number;
-                        break;
-
-                    case CosmosElementType.Object:
-                        patchableCosmosElementType = PatchableCosmosElementType.Object;
-                        break;
-
-                    case CosmosElementType.String:
-                        patchableCosmosElementType = PatchableCosmosElementType.String;
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unknown {nameof(CosmosElementType)}: {cosmosElementType}");
-                }
-
-                return patchableCosmosElementType;
             }
         }
     }

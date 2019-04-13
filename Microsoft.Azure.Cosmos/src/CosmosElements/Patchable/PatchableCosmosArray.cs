@@ -28,7 +28,7 @@
         {
             get
             {
-                return this.items[index];
+                return this.items[index].PatchableCosmosElement;
             }
         }
 
@@ -41,6 +41,11 @@
 
         public void Add(int index, CosmosElement item)
         {
+            if (item == null)
+            {
+                throw new ArgumentNullException($"Can not {nameof(Add)} a null {nameof(CosmosElement)} into a {nameof(PatchableCosmosArray)}");
+            }
+
             this.items.Insert(index, PatchableUnion.Create(item));
         }
 
@@ -51,6 +56,11 @@
 
         public void Replace(int index, CosmosElement item)
         {
+            if (item == null)
+            {
+                throw new ArgumentNullException($"Can not {nameof(Replace)} an element with a null {nameof(CosmosElement)} in a {nameof(PatchableCosmosArray)}");
+            }
+
             this.items[index] = PatchableUnion.Create(item);
         }
 
@@ -64,7 +74,7 @@
             private readonly PatchableCosmosArray patchableCosmosArray;
             public PatchableCosmosArrayWrapper(PatchableCosmosArray patchableCosmosArray)
             {
-                if(patchableCosmosArray == null)
+                if (patchableCosmosArray == null)
                 {
                     throw new ArgumentNullException($"{nameof(patchableCosmosArray)}");
                 }
@@ -91,11 +101,16 @@
                     .GetEnumerator();
             }
 
+            public override PatchableCosmosElement ToPatchable()
+            {
+                return this.patchableCosmosArray;
+            }
+
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 jsonWriter.WriteArrayStart();
 
-                foreach(CosmosElement cosmosElement in this)
+                foreach (CosmosElement cosmosElement in this)
                 {
                     cosmosElement.WriteTo(jsonWriter);
                 }

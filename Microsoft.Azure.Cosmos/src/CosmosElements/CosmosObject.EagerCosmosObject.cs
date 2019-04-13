@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements.Patchable;
     using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json;
 
@@ -46,6 +47,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public override string ToString()
             {
                 return JsonConvert.SerializeObject(this.dictionary);
+            }
+
+            public override PatchableCosmosElement ToPatchable()
+            {
+                return PatchableCosmosObject.Create(this);
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)

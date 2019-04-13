@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
+namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
