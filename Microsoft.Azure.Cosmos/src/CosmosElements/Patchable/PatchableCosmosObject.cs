@@ -43,16 +43,26 @@
 
         public void Add(string key, CosmosElement value)
         {
+
             this.properties.Add(key, PatchableUnion.Create(value));
         }
 
         public void Remove(string key)
         {
-            this.properties.Remove(key);
+            bool found = this.properties.Remove(key);
+            if (!found)
+            {
+                throw new KeyNotFoundException($"Could not {nameof(Remove)} key: {key} in {nameof(PatchableCosmosObject)}");
+            }
         }
 
         public void Replace(string key, CosmosElement value)
         {
+            if (!this.properties.ContainsKey(key))
+            {
+                throw new KeyNotFoundException($"Could not {nameof(Replace)} key: {key} in {nameof(PatchableCosmosObject)}");
+            }
+
             this.properties[key] = PatchableUnion.Create(value);
         }
 
@@ -61,9 +71,9 @@
             return new PatchableCosmosObjectWrapper(this);
         }
 
-        public bool TryGetValue(string key, out CosmosElement value)
+        public bool ContainsKey(string key)
         {
-            throw new NotImplementedException();
+            return this.properties.ContainsKey(key);
         }
 
         private sealed class PatchableCosmosObjectWrapper : CosmosObject
@@ -107,7 +117,7 @@
             public override bool TryGetValue(string key, out CosmosElement value)
             {
                 value = null;
-                if(this.patchableCosmosObject.properties.TryGetValue(key, out PatchableUnion patchableUnion))
+                if (this.patchableCosmosObject.properties.TryGetValue(key, out PatchableUnion patchableUnion))
                 {
                     value = patchableUnion.CosmosElement;
                 }

@@ -117,6 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
             Assert.AreEqual("DB", patchablePerson.Children.First().Name);
         }
 
+        #region PatchableArray
         [TestMethod]
         [Owner("brchon")]
         public void TestArrayAdd()
@@ -166,6 +167,38 @@ namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
                 // Can not add past the end of the array
                 patchableCosmosArray.Add(index: 13387, item: CosmosNumber.Create(42));
                 Assert.Fail($"Expected {nameof(PatchableCosmosArray)} to throw an {nameof(ArgumentOutOfRangeException)} when trying to insert an element past the end of the array.");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestArrayIndex()
+        {
+            // Create an array of array
+            PatchableCosmosArray patchableCosmosArray = PatchableCosmosArray.Create(
+                CosmosArray.Create(new CosmosElement[] 
+                {
+                    CosmosArray.Create(new CosmosElement[] { })
+                })); 
+            
+            // [[]]
+            // Add an item to the inner array.
+            PatchableCosmosArray patchableCosmosSubArray = (PatchableCosmosArray)patchableCosmosArray[0];
+            patchableCosmosSubArray.Add(0, CosmosNumber.Create(42));
+
+            // [[42]]
+            // Check that the change propogates to the parent context
+            CosmosNumber cosmosNumber = (CosmosNumber)((PatchableCosmosNumber)(((PatchableCosmosArray)(patchableCosmosArray[0]))[0])).ToCosmosElement();
+            Assert.AreEqual(42, cosmosNumber.AsInteger().Value);
+
+            try
+            {
+                // Can not index out of bound
+                PatchableCosmosArray arrayOutOfBounds = (PatchableCosmosArray)patchableCosmosArray[1337];
+                Assert.Fail($"Expected {nameof(PatchableCosmosArray)} to throw an {nameof(ArgumentOutOfRangeException)} when trying to remove an index that does not exist.");
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -294,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
             Assert.AreEqual(1, ((CosmosNumber)patchedCosmosArrayWrapper[1]).AsInteger().Value);
             Assert.AreEqual(1337, ((CosmosNumber)patchedCosmosArrayWrapper[2]).AsInteger().Value);
 
-            // And then additional conversions should just change the data
+            // And then additional conversions should not change the data
             PatchableCosmosArray patchableCosmosArray2 = (PatchableCosmosArray)patchedCosmosArrayWrapper.ToPatchable();
             CosmosArray patchedCosmosArrayWrapper2 = (CosmosArray)patchableCosmosArray2.ToCosmosElement();
             Assert.AreEqual(3, patchedCosmosArrayWrapper.Count);
@@ -302,5 +335,191 @@ namespace Microsoft.Azure.Cosmos.Tests.CosmosElements
             Assert.AreEqual(1, ((CosmosNumber)patchedCosmosArrayWrapper[1]).AsInteger().Value);
             Assert.AreEqual(1337, ((CosmosNumber)patchedCosmosArrayWrapper[2]).AsInteger().Value);
         }
+        #endregion
+        #region PatchableObject
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestObjectAdd()
+        {
+            PatchableCosmosObject patchableCosmosObject = PatchableCosmosObject.Create(
+                CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { "name", CosmosString.Create("Bob") },
+                        { "age", CosmosNumber.Create(21) }
+                    }));
+
+            Assert.AreEqual("Bob", ((CosmosString)patchableCosmosObject["name"].ToCosmosElement()).Value);
+            Assert.AreEqual(21, ((CosmosNumber)patchableCosmosObject["age"].ToCosmosElement()).AsInteger().Value);
+
+            // Adds
+            patchableCosmosObject.Add("height", CosmosNumber.Create(72));
+            Assert.AreEqual(72, ((CosmosNumber)patchableCosmosObject["height"].ToCosmosElement()).AsInteger().Value);
+
+            try
+            {
+                // Can not add a null key to the object
+                patchableCosmosObject.Add("asdf", value: null);
+                Assert.Fail($"Expected {nameof(PatchableCosmosObject)} to throw an {nameof(ArgumentNullException)} when trying to insert a null element.");
+            }
+            catch (ArgumentNullException)
+            {
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestObjectIndex()
+        {
+            PatchableCosmosObject patchableCosmosObject = PatchableCosmosObject.Create(
+                CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { "inner", CosmosObject.Create(new Dictionary<string, CosmosElement>()) },
+                    }));
+
+            // {"inner" : {}}
+            // Add an item to the inner context
+            PatchableCosmosObject patchableCosmosSubObject = (PatchableCosmosObject)patchableCosmosObject["inner"];
+            patchableCosmosSubObject.Add("inner2", CosmosNumber.Create(42));
+
+            // {"inner" : {"inner2" : 42}}
+            // See that the patch propogate to the parent context.
+            CosmosNumber cosmosNumber = (CosmosNumber)((PatchableCosmosNumber)((PatchableCosmosObject)patchableCosmosObject["inner"])["inner2"]).ToCosmosElement();
+            Assert.AreEqual(42, cosmosNumber.AsInteger().Value);
+
+            try
+            {
+                // Can not add a null key to the object
+                patchableCosmosObject.Add("asdf", value: null);
+                Assert.Fail($"Expected {nameof(PatchableCosmosObject)} to throw an {nameof(ArgumentNullException)} when trying to insert a null element.");
+            }
+            catch (ArgumentNullException)
+            {
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestObjectRemove()
+        {
+            PatchableCosmosObject patchableCosmosObject = PatchableCosmosObject.Create(
+                CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { "name", CosmosString.Create("Bob") },
+                        { "age", CosmosNumber.Create(21) }
+                    }));
+
+            Assert.AreEqual("Bob", ((CosmosString)patchableCosmosObject["name"].ToCosmosElement()).Value);
+            Assert.AreEqual(21, ((CosmosNumber)patchableCosmosObject["age"].ToCosmosElement()).AsInteger().Value);
+
+            // Removes
+            patchableCosmosObject.Remove("name");
+            patchableCosmosObject.Remove("age");
+            Assert.IsFalse(patchableCosmosObject.ContainsKey("name"));
+            Assert.IsFalse(patchableCosmosObject.ContainsKey("age"));
+
+            try
+            {
+                // Can not remove a null key
+                patchableCosmosObject.Remove(null);
+                Assert.Fail($"Expected {nameof(PatchableCosmosObject)} to throw an {nameof(ArgumentNullException)} when trying to insert a null element.");
+            }
+            catch (ArgumentNullException)
+            {
+            }
+
+            try
+            {
+                // Can not remove a key that does not exist
+                patchableCosmosObject.Remove("key that does not exist");
+                Assert.Fail($"Expected {nameof(PatchableCosmosObject)} to throw an {nameof(ArgumentNullException)} when trying to insert a null element.");
+            }
+            catch (KeyNotFoundException)
+            {
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestObjectReplace()
+        {
+            PatchableCosmosObject patchableCosmosObject = PatchableCosmosObject.Create(
+                CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { "name", CosmosString.Create("Bob") },
+                        { "age", CosmosNumber.Create(21) }
+                    }));
+
+            Assert.AreEqual("Bob", ((CosmosString)patchableCosmosObject["name"].ToCosmosElement()).Value);
+            Assert.AreEqual(21, ((CosmosNumber)patchableCosmosObject["age"].ToCosmosElement()).AsInteger().Value);
+
+            // Replace
+            patchableCosmosObject.Replace("age", CosmosNumber.Create(42));
+            Assert.AreEqual("Bob", ((CosmosString)patchableCosmosObject["name"].ToCosmosElement()).Value);
+            Assert.AreEqual(42, ((CosmosNumber)patchableCosmosObject["age"].ToCosmosElement()).AsInteger().Value);
+
+            try
+            {
+                // Can not replace a null key
+                patchableCosmosObject.Replace(key: null, value: CosmosNumber.Create(42));
+                Assert.Fail($"Expected {nameof(PatchableCosmosObject)} to throw an {nameof(ArgumentNullException)} when trying to insert a null element.");
+            }
+            catch (ArgumentNullException)
+            {
+            }
+
+            try
+            {
+                // Can not replace a key that does not exist
+                patchableCosmosObject.Replace("key that does not exist", CosmosNumber.Create(42));
+                Assert.Fail($"Expected {nameof(PatchableCosmosObject)} to throw an {nameof(ArgumentNullException)} when trying to insert a null element.");
+            }
+            catch (KeyNotFoundException)
+            {
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestObjectPatchThenRead()
+        {
+            // Start with a cosmos array that may or may not be from a byte array.
+            CosmosObject cosmosObject = CosmosObject.Create(
+                new Dictionary<string, CosmosElement>()
+                {
+                    { "name", CosmosString.Create("Bob") },
+                    { "age", CosmosNumber.Create(21) }
+                });
+
+            // If an update is needed convert it into a patchable cosmos object
+            PatchableCosmosObject patchableCosmosObject = (PatchableCosmosObject)cosmosObject.ToPatchable();
+            Assert.AreEqual("Bob", ((CosmosString)patchableCosmosObject["name"].ToCosmosElement()).Value);
+            Assert.AreEqual(21, ((CosmosNumber)patchableCosmosObject["age"].ToCosmosElement()).AsInteger().Value);
+
+            // Do a series of patch operations
+            patchableCosmosObject.Add("height", CosmosNumber.Create(72));
+            patchableCosmosObject.Remove("age");
+            patchableCosmosObject.Replace("name", CosmosString.Create("Alice"));
+            Assert.AreEqual("Alice", ((CosmosString)patchableCosmosObject["name"].ToCosmosElement()).Value);
+            Assert.AreEqual(72, ((CosmosNumber)patchableCosmosObject["height"].ToCosmosElement()).AsInteger().Value);
+            Assert.IsFalse(patchableCosmosObject.ContainsKey("age"));
+
+            // Convert it back into a CosmosElement for navigation
+            CosmosObject patchedCosmosObjectWrapper = (CosmosObject)patchableCosmosObject.ToCosmosElement();
+            Assert.AreEqual(2, patchedCosmosObjectWrapper.Count);
+            Assert.AreEqual(72, ((CosmosNumber)patchedCosmosObjectWrapper["height"]).AsInteger().Value);
+            Assert.AreEqual("Alice", ((CosmosString)patchedCosmosObjectWrapper["name"]).Value);
+
+            // And then additional conversions should not change the data
+            PatchableCosmosObject patchableCosmosObject2 = (PatchableCosmosObject)patchedCosmosObjectWrapper.ToPatchable();
+            CosmosObject patchedCosmosObjectWrapper2 = (CosmosObject)patchableCosmosObject2.ToCosmosElement();
+            Assert.AreEqual(2, patchedCosmosObjectWrapper.Count);
+            Assert.AreEqual(72, ((CosmosNumber)patchedCosmosObjectWrapper["height"]).AsInteger().Value);
+            Assert.AreEqual("Alice", ((CosmosString)patchedCosmosObjectWrapper["name"]).Value);
+        }
+        #endregion
     }
 }
