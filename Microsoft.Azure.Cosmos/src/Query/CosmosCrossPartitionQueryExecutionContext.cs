@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This class is also responsible for prefetching documents if necessary using <see cref="ComparableTaskScheduler"/> whose ordering is also determined by the derived classes.
     /// This class also aggregated all metrics from sending queries to individual partitions.
     /// </summary>
-    internal abstract class CosmosCrossPartitionQueryExecutionContext : IDocumentQueryExecutionComponent
+    internal abstract class CosmosCrossPartitionQueryExecutionContext : CosmosQueryExecutionComponent
     {
         private CosmosQueryContext queryContext;
 
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether this context is done having documents drained.
         /// </summary>
-        public bool IsDone
+        internal override bool IsDone
         {
             get
             {
@@ -260,10 +260,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the response headers for the context.
         /// </summary>
         /// <returns>The response headers for the context.</returns>
-        public INameValueCollection GetResponseHeaders()
+        public CosmosResponseMessageHeaders GetResponseHeaders()
         {
-            StringKeyValueCollection responseHeaders = new StringKeyValueCollection();
-            responseHeaders[HttpConstants.HttpHeaders.Continuation] = this.ContinuationToken;
+            CosmosResponseMessageHeaders responseHeaders = new CosmosResponseMessageHeaders();
+            responseHeaders.Continuation = this.ContinuationToken;
             if (this.ContinuationToken == "[]")
             {
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
@@ -279,9 +279,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 .ToDelimitedString();
             }
 
-            responseHeaders[HttpConstants.HttpHeaders.RequestCharge] = this.requestChargeTracker
-                .GetAndResetCharge()
-                .ToString(CultureInfo.InvariantCulture);
+            responseHeaders.RequestCharge = this.requestChargeTracker.GetAndResetCharge();
 
             return responseHeaders;
         }
@@ -290,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the query metrics that are set in SetQueryMetrics
         /// </summary>
         /// <returns>The grouped query metrics.</returns>
-        public IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
+        internal override IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
         {
             return new PartitionedQueryMetrics(this.groupedQueryMetrics);
         }
@@ -371,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Disposes of the context and implements IDisposable.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             this.comparableTaskScheduler.Dispose();
         }
@@ -379,19 +377,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Stops the execution context.
         /// </summary>
-        public void Stop()
+        internal override void Stop()
         {
             this.comparableTaskScheduler.Stop();
         }
-
-        /// <summary>
-        /// Drains documents from this execution context.
-        /// This method is abstract and meant for the concrete classes to implement.
-        /// </summary>
-        /// <param name="maxElements">The maximum number of elements to drain (you might get less).</param>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task that when awaited on will return a feed response.</returns>
-        public abstract Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.

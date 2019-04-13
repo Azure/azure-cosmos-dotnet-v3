@@ -1,0 +1,86 @@
+﻿//-----------------------------------------------------------------------
+// <copyright file="ItemQueryExecutionComponentBase.cs" company="Microsoft Corporation">
+//     Copyright (c) Microsoft Corporation.  All rights reserved.
+// </copyright>
+//-----------------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+
+    /// <summary>
+    /// Base class for all DocumentQueryExecutionComponents that implements and IDocumentQueryExecutionComponent
+    /// </summary>
+    internal abstract class ItemQueryExecutionComponentBase : CosmosQueryExecutionComponent
+    {
+        /// <summary>
+        /// Source DocumentQueryExecutionComponent that this component will drain from.
+        /// </summary>
+        protected readonly CosmosQueryExecutionComponent Source;
+
+        /// <summary>
+        /// Initializes a new instance of the ItemQueryExecutionComponentBase class.
+        /// </summary>
+        /// <param name="source">The source to drain documents from.</param>
+        protected ItemQueryExecutionComponentBase(CosmosQueryExecutionComponent source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source for a component can not be null.");
+            }
+
+            this.Source = source;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether or not this component is done draining documents.
+        /// </summary>
+        internal override bool IsDone
+        {
+            get
+            {
+                return this.Source.IsDone;
+            }
+        }
+
+        /// <summary>
+        /// Disposes this context.
+        /// </summary>
+        public override void Dispose()
+        {
+            this.Source.Dispose();
+        }
+
+        /// <summary>
+        /// Drains documents from this execution context.
+        /// </summary>
+        /// <param name="maxElements">Upper bound for the number of documents you wish to receive.</param>
+        /// <param name="token">The cancellation token to use.</param>
+        /// <returns>A FeedResponse of documents.</returns>
+        internal override Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken token)
+        {
+            return this.Source.DrainAsync(maxElements, token);
+        }
+
+        /// <summary>
+        /// Stops the execution component.
+        /// </summary>
+        internal override void Stop()
+        {
+            this.Source.Stop();
+        }
+
+        /// <summary>
+        /// Gets the query metrics from this component.
+        /// </summary>
+        /// <returns>The partitioned query metrics from this component.</returns>
+        internal override IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
+        {
+            return this.Source.GetQueryMetrics();
+        }
+    }
+}

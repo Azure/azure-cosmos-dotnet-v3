@@ -34,6 +34,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.messageHeaders.Value[headerName];
             }
+            set
+            {
+                this.messageHeaders.Value[headerName] = value;
+            }
         }
 
         /// <summary>

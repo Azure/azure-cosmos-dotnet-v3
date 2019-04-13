@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxItemCount = maxItemCount;
             requestOptions.PartitionKey = partitionKey;
 
-            IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+            CosmosQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.RequestContinuation = continuationToken;
             requestOptions.MaxItemCount = maxItemCount;
 
-            IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+            CosmosQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxItemCount = maxItemCount;
             requestOptions.MaxConcurrency = maxConcurrency;
 
-            IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+            CosmosQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -424,11 +424,11 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            IDocumentQueryExecutionContext documentQueryExecution = (IDocumentQueryExecutionContext)state;
+            CosmosQueryExecutionContext documentQueryExecution = (CosmosQueryExecutionContext)state;
 
             try
             {
-                FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
+                CosmosElementResponse feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
                 return CosmosQueryResponse<T>.CreateResponse<T>(
                     feedResponse: feedResponse,
                     jsonSerializer: this.cosmosJsonSerializer,
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            IDocumentQueryExecutionContext documentQueryExecution = (IDocumentQueryExecutionContext)state;
+            CosmosQueryExecutionContext documentQueryExecution = (CosmosQueryExecutionContext)state;
             CosmosQueryRequestOptions queryRequestOptions = (CosmosQueryRequestOptions)requestOptions;
             // DEVNOTE: Remove try catch once query pipeline is converted to exceptionless
             try

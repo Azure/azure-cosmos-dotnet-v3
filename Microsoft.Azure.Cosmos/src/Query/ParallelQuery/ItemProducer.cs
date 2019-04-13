@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// The buffered pages that is thread safe, since the producer and consumer of the queue can be on different threads.
         /// </summary>
-        private readonly AsyncCollection<FeedResponse<CosmosElement>> bufferedPages;
+        private readonly AsyncCollection<CosmosElementResponse> bufferedPages;
 
         /// <summary>
         /// The document producer can only be fetching one page at a time.
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            this.bufferedPages = new AsyncCollection<FeedResponse<CosmosElement>>();
+            this.bufferedPages = new AsyncCollection<CosmosElementResponse>();
             this.fetchSemaphore = new SemaphoreSlim(1, 1);
             if (partitionKeyRange == null)
             {
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     int retries = 0;
                     try
                     {
-                        FeedResponse<CosmosElement> feedResponse = await this.queryContext.ExecuteQueryAsync(
+                        CosmosElementResponse feedResponse = await this.queryContext.ExecuteQueryAsync(
                             this.querySpecForInit,
                             token,
                             requestEnricher: (cosmosRequestMessage) =>
@@ -346,10 +346,10 @@ namespace Microsoft.Azure.Cosmos.Query
                         Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
                         QueryMetrics queryMetrics = QueryMetrics.Zero;
 
-                        if (feedResponse.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics] != null)
+                        if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
                         {
                             queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                                feedResponse.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
+                                feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
                                 new ClientSideMetrics(
                                     retries,
                                     feedResponse.RequestCharge,
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
-            FeedResponse<CosmosElement> feedResponse = await this.bufferedPages.TakeAsync(token);
+            CosmosElementResponse feedResponse = await this.bufferedPages.TakeAsync(token);
             this.PreviousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = feedResponse.ResponseContinuation;
             this.CurrentPage = feedResponse.GetEnumerator();

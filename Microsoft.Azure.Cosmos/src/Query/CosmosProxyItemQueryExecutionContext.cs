@@ -6,14 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq.Expressions;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -24,11 +20,10 @@ namespace Microsoft.Azure.Cosmos.Query
     /// haven't produced Linux/Mac version of the ServiceInterop native binary which holds the logic for
     /// parsing the query without having this extra hop to Gateway
     /// </summary>
-    internal sealed class CosmosProxyItemQueryExecutionContext : IDocumentQueryExecutionContext
+    internal sealed class CosmosProxyItemQueryExecutionContext : CosmosQueryExecutionContext
     {
-        private IDocumentQueryExecutionContext innerExecutionContext;
-
-        CosmosQueryContext queryContext;
+        private CosmosQueryExecutionContext innerExecutionContext;
+        private CosmosQueryContext queryContext;
 
         private readonly CosmosContainerSettings containerSettings;
 
@@ -36,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryContext queryContext,
             CosmosContainerSettings containerSettings)
         {
-            if(queryContext == null)
+            if (queryContext == null)
             {
                 throw new ArgumentNullException(nameof(queryContext));
             }
@@ -51,17 +46,14 @@ namespace Microsoft.Azure.Cosmos.Query
             this.containerSettings = containerSettings;
         }
 
-        public bool IsDone
-        {
-            get { return this.innerExecutionContext.IsDone; }
-        }
+        internal override bool IsDone => this.innerExecutionContext.IsDone;
 
-        public void Dispose()
+        public override void Dispose()
         {
             this.innerExecutionContext.Dispose();
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        internal override async Task<CosmosElementResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.IsDone)
             {

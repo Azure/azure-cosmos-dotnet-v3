@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
-        internal async Task<FeedResponse<CosmosElement>> ExecuteQueryAsync(
+        internal async Task<CosmosElementResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             CancellationToken cancellationToken,
             Action<CosmosRequestMessage> requestEnricher = null,

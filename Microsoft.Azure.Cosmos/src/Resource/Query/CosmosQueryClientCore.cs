@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentClient.GetQueryPartitionProviderAsync(cancellationToken);
         }
 
-        internal override async Task<FeedResponse<CosmosElement>> ExecuteItemQueryAsync(
+        internal override async Task<CosmosElementResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        private FeedResponse<CosmosElement> GetFeedResponse(
+        private CosmosElementResponse GetFeedResponse(
             CosmosQueryRequestOptions requestOptions,
             ResourceType resourceType,
             CosmosResponseMessage cosmosResponseMessage)
@@ -192,8 +192,7 @@ namespace Microsoft.Azure.Cosmos
                 byte[] content = memoryStream.ToArray();
                 IJsonNavigator jsonNavigator = null;
 
-                // Use the users custom navigator first. If it returns null back try the
-                // internal override navigator.
+                // Use the users custom navigator
                 if (requestOptions.CosmosSerializationOptions != null)
                 {
                     jsonNavigator = requestOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
@@ -226,10 +225,10 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 int itemCount = cosmosArray.Count;
-                return new FeedResponse<CosmosElement>(
+                return new CosmosElementResponse(
                     result: cosmosArray,
                     count: itemCount,
-                    responseHeaders: cosmosResponseMessage.Headers.CosmosMessageHeaders,
+                    responseHeaders: cosmosResponseMessage.Headers,
                     responseLengthBytes: responseLengthBytes);
             }
         }

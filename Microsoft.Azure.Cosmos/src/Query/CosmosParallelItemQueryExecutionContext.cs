@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drains.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task that when awaited on returns a FeedResponse of results.</returns>
-        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
+        internal override async Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints
             // 1) We fully drain from the left most partition before moving on to the next partition
@@ -154,15 +154,13 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
-            return new FeedResponse<CosmosElement>(
-                results,
-                results.Count,
-                this.GetResponseHeaders(),
-                false,
-                this.GetQueryMetrics(),
-                null,
-                null,
-                this.GetAndResetResponseLengthBytes());
+            return new CosmosElementResponse(
+                result: results,
+                count: results.Count,
+                responseHeaders: this.GetResponseHeaders(),
+                useETagAsContinuation: false,
+                disallowContinuationTokenMessage: null,
+                responseLengthBytes: this.GetAndResetResponseLengthBytes());
         }
 
         /// <summary>

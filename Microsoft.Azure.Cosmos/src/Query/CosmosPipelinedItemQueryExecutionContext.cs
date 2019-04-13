@@ -77,12 +77,12 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This bubbles down until you reach a component that has a DocumentProducer that fetches a document from the backend.
     /// </para>
     /// </summary>
-    internal sealed class CosmosPipelinedItemQueryExecutionContext : IDocumentQueryExecutionContext
+    internal sealed class CosmosPipelinedItemQueryExecutionContext : CosmosQueryExecutionContext
     {
         /// <summary>
         /// The root level component that all calls will be forwarded to.
         /// </summary>
-        private readonly IDocumentQueryExecutionComponent component;
+        private readonly CosmosQueryExecutionComponent component;
 
         /// <summary>
         /// The actual page size to drain.
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="component">The root level component that all calls will be forwarded to.</param>
         /// <param name="actualPageSize">The actual page size to drain.</param>
         private CosmosPipelinedItemQueryExecutionContext(
-            IDocumentQueryExecutionComponent component,
+            CosmosQueryExecutionComponent component,
             int actualPageSize)
         {
             if (component == null)
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether this execution context is done draining documents.
         /// </summary>
-        public bool IsDone
+        internal override bool IsDone
         {
             get
             {
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="requestContinuation">The request continuation.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
-        public static async Task<IDocumentQueryExecutionContext> CreateAsync(
+        public static async Task<CosmosQueryExecutionContext> CreateAsync(
             CosmosQueryContext constructorParams,
             string collectionRid,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                     constructorParams.CorrelatedActivityId));
 
-            Func<string, Task<IDocumentQueryExecutionComponent>> createComponentFunc;
+            Func<string, Task<CosmosQueryExecutionComponent>> createComponentFunc;
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
             if (queryInfo.HasOrderBy)
             {
@@ -189,10 +189,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasAggregates)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                Func<string, Task<CosmosQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
-                    return await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                    return await AggregateItemQueryExecutionComponent.CreateAsync(
                         queryInfo.Aggregates,
                         continuationToken,
                         createSourceCallback);
@@ -201,10 +201,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasDistinct)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                Func<string, Task<CosmosQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
-                    return await DistinctDocumentQueryExecutionComponent.CreateAsync(
+                    return await DistinctItemQueryExecutionComponent.CreateAsync(
                         continuationToken,
                         createSourceCallback,
                         queryInfo.DistinctType);
@@ -213,10 +213,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasOffset)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                Func<string, Task<CosmosQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
-                    return await SkipDocumentQueryExecutionComponent.CreateAsync(
+                    return await SkipItemQueryExecutionComponent.CreateAsync(
                         queryInfo.Offset.Value,
                         continuationToken,
                         createSourceCallback);
@@ -225,10 +225,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasLimit)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                Func<string, Task<CosmosQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
+                    return await TakeItemQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
                         queryInfo.Limit.Value,
                         continuationToken,
                         createSourceCallback);
@@ -237,10 +237,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasTop)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                Func<string, Task<CosmosQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
+                    return await TakeItemQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
                         queryInfo.Top.Value,
                         continuationToken,
                         createSourceCallback);
@@ -264,26 +264,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        internal override async Task<CosmosElementResponse> ExecuteNextAsync(CancellationToken token)
         {
             try
             {
-                List<CosmosElement> dynamics = new List<CosmosElement>();
-                FeedResponse<CosmosElement> feedResponse = await this.component.DrainAsync(this.actualPageSize, token);
-                foreach (CosmosElement element in feedResponse)
-                {
-                    dynamics.Add(element);
-                }
-
-                return new FeedResponse<CosmosElement>(
-                    dynamics,
-                    feedResponse.Count,
-                    feedResponse.Headers,
-                    feedResponse.UseETagAsContinuation,
-                    feedResponse.QueryMetrics,
-                    feedResponse.RequestStatistics,
-                    feedResponse.DisallowContinuationTokenMessage,
-                    feedResponse.ResponseLengthBytes);
+                return await this.component.DrainAsync(this.actualPageSize, token);
             }
             catch (Exception)
             {
