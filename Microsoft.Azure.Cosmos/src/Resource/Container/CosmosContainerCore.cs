@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -206,21 +207,24 @@ namespace Microsoft.Azure.Cosmos
         /// a value for partition key. The constant selection is based on whether the collection is migrated
         /// or user partitioned
         /// </remarks>
-        internal PartitionKeyInternal NonePartitionKeyValue
+        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue()
         {
-            get
+            if(partitionKeyDefinition == null)
             {
-                PartitionKeyDefinition partitionKey = this.GetPartitionKeyDefinitionAsync().Result;//Need to discuss
-                if (partitionKey.Paths.Count == 0 || partitionKey.IsSystemKey)
-                {
-                    return PartitionKeyInternal.Empty;
-                }
-                else
-                {
-                    return PartitionKeyInternal.Undefined;
-                }
+                partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+            }
+
+            if (partitionKeyDefinition.Paths.Count == 0 || partitionKeyDefinition.IsSystemKey)
+            {
+                return PartitionKeyInternal.Empty;
+            }
+            else
+            {
+                return PartitionKeyInternal.Undefined;
             }
         }
+
+        private PartitionKeyDefinition partitionKeyDefinition { get; set; }
 
         internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
@@ -256,7 +260,6 @@ namespace Microsoft.Azure.Cosmos
               resourceUri: this.LinkUri,
               resourceType: ResourceType.Collection,
               operationType: operationType,
-              cosmosContainer: null,
               partitionKey: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,

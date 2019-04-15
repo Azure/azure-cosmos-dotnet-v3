@@ -101,7 +101,6 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Database,
                 OperationType.Create,
                 requestOptions,
-                cosmosContainer: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),

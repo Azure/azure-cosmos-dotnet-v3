@@ -102,7 +102,6 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Trigger,
                 OperationType.Create,
                 requestOptions,
-                cosmosContainer: null,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(triggerSettings),
                 requestEnricher: null,
