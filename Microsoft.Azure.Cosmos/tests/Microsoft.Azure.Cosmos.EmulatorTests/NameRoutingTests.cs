@@ -961,6 +961,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
+        [Ignore] //Not a valid test case from V3 onward
         public void NameRoutingBadUrlTest()
         {
             CosmosClient client;
