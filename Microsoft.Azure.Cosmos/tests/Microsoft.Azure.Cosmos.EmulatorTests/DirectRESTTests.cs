@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
+                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.v2018_06_18))
                 {
                     client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.ConsistencyLevel, "Session");
                     INameValueCollection headers;
@@ -963,6 +963,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] // TODO  https://msdata.visualstudio.com/CosmosDB/_workitems/edit/408486
         public async Task TestPartitionedQueryExecutionInfoInDocumentClientExceptionWithIsContinuationExpectedHeader()
         {
             DocumentClient client = TestCommon.CreateClient(true);
@@ -1125,6 +1126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] // TODO  https://msdata.visualstudio.com/CosmosDB/_workitems/edit/408486
         public async Task TestPartitionedQueryExecutionInfoInDocumentClientException()
         {
             /* Sample response:
