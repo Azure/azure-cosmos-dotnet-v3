@@ -52,6 +52,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
         }
 
+        [TestInitialize]
+        public async Task Setup()
+        {
+            await sut.InitializeAsync().ConfigureAwait(false);
+        }
+
         [TestCleanup]
         public async Task CleanUp()
         {

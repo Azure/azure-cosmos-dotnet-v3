@@ -39,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
 
+            await sut.InitializeAsync().ConfigureAwait(false);
+
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
 
@@ -64,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+
+            await sut.InitializeAsync().ConfigureAwait(false);
 
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
@@ -94,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
 
+            await sut.InitializeAsync().ConfigureAwait(false);
+
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
 
@@ -116,6 +122,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+
+            await sut.InitializeAsync().ConfigureAwait(false);
 
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
@@ -150,6 +158,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+
+            await sut.InitializeAsync().ConfigureAwait(false);
 
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
@@ -192,6 +202,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
 
+            await sut.InitializeAsync().ConfigureAwait(false);
+
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
             await sut.AddOrUpdateLeaseAsync(leaseChild2).ConfigureAwait(false);
@@ -232,6 +244,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
 
+            await sut.InitializeAsync().ConfigureAwait(false);
+
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
 
@@ -261,6 +275,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
             PartitionControllerCore sut = new PartitionControllerCore(leaseContainer, leaseManager, partitionSupervisorFactory, synchronizer);
+
+            await sut.InitializeAsync().ConfigureAwait(false);
 
             //act
             await sut.AddOrUpdateLeaseAsync(lease).ConfigureAwait(false);
