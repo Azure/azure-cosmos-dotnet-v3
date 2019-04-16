@@ -33,8 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private CosmosContainer leaseContainer;
         private string InstanceName;
         private DocumentServiceLeaseStoreManager LeaseStoreManager;
-        private string databaseResourceId;
-        private string collectionResourceId;
+        private string monitoredContainerRid;
         private bool isBuilt;
 
         internal ChangeFeedProcessorBuilder(
@@ -205,6 +204,14 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
+        internal virtual ChangeFeedProcessorBuilder WithMonitoredContainerRid(string monitoredContainerRid)
+        {
+            if (monitoredContainerRid != null) throw new ArgumentNullException(nameof(monitoredContainerRid));
+
+            this.monitoredContainerRid = monitoredContainerRid;
+            return this;
+        }
+
         /// <summary>
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
@@ -226,37 +233,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer or WithInMemoryLeaseContainer is required.");
             }
 
-            if (this.changeFeedLeaseOptions?.LeasePrefix == null)
+            if (this.changeFeedLeaseOptions.LeasePrefix == null)
             {
                 throw new InvalidOperationException("Workflow name was not specified using WithWorkflowName");
             }
 
             this.InitializeDefaultOptions();
-            this.InitializeCollectionPropertiesForBuild();
-
-            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.GetLeasePrefix(), this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
+            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;
-        }
-
-        private string GetLeasePrefix()
-        {
-            string optionsPrefix = this.changeFeedLeaseOptions.LeasePrefix ?? string.Empty;
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}{1}_{2}_{3}",
-                optionsPrefix,
-                this.monitoredContainer.Client.Configuration.AccountEndPoint.Host,
-                this.databaseResourceId,
-                this.collectionResourceId);
-        }
-
-        private void InitializeCollectionPropertiesForBuild()
-        {
-            string[] containerLinkSegments = this.monitoredContainer.LinkUri.OriginalString.Split('/');
-            this.databaseResourceId = containerLinkSegments[2];
-            this.collectionResourceId = containerLinkSegments[4];
         }
 
         private void InitializeDefaultOptions()

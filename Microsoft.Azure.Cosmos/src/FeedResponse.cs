@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -30,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Dictionary<string, long> quotaHeaders;
         private readonly bool useETagAsContinuation;
         private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;
-        private readonly string disallowContinuationTokenMessage;
+        internal readonly string disallowContinuationTokenMessage;
 
         /// <summary>
         /// Constructor exposed for mocking purposes.
@@ -61,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             : this(result)
         {
             this.Count = count;
-            this.responseHeaders = (INameValueCollection)responseHeaders.Clone();
+            this.responseHeaders = responseHeaders.Clone();
             this.usageHeaders = new Dictionary<string, long>();
             this.quotaHeaders = new Dictionary<string, long>();
             this.useETagAsContinuation = useETagAsContinuation;
@@ -109,13 +107,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum quota for the account.
         /// </value>
-        public long DatabaseQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.Database);
-            }
-        }
+        public long DatabaseQuota => this.GetMaxQuotaHeader(Constants.Quota.Database);
 
         /// <summary>
         /// Gets the current number of database resources within the account from the Azure Cosmos DB service.
@@ -123,13 +115,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The number of databases.
         /// </value>
-        public long DatabaseUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.Database);
-            }
-        }
+        public long DatabaseUsage => this.GetCurrentQuotaHeader(Constants.Quota.Database);
 
         /// <summary>
         /// Gets the maximum quota for collection resources within an account from the Azure Cosmos DB service.
@@ -137,13 +123,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum quota for the account.
         /// </value>
-        public long CollectionQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.Collection);
-            }
-        }
+        public long CollectionQuota => this.GetMaxQuotaHeader(Constants.Quota.Collection);
 
         /// <summary>
         /// Gets the current number of collection resources within the account from the Azure Cosmos DB service.
@@ -151,13 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The number of collections.
         /// </value>
-        public long CollectionUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.Collection);
-            }
-        }
+        public long CollectionUsage => this.GetCurrentQuotaHeader(Constants.Quota.Collection);
 
         /// <summary>
         /// Gets the maximum quota for user resources within an account from the Azure Cosmos DB service.
@@ -165,13 +139,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum quota for the account.
         /// </value>
-        public long UserQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.User);
-            }
-        }
+        public long UserQuota => this.GetMaxQuotaHeader(Constants.Quota.User);
 
         /// <summary>
         /// Gets the current number of user resources within the account from the Azure Cosmos DB service.
@@ -179,13 +147,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The number of users.
         /// </value>
-        public long UserUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.User);
-            }
-        }
+        public long UserUsage => this.GetCurrentQuotaHeader(Constants.Quota.User);
 
         /// <summary>
         /// Gets the maximum quota for permission resources within an account from the Azure Cosmos DB service.
@@ -193,13 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum quota for the account.
         /// </value>
-        public long PermissionQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.Permission);
-            }
-        }
+        public long PermissionQuota => this.GetMaxQuotaHeader(Constants.Quota.Permission);
 
         /// <summary>
         /// Gets the current number of permission resources within the account from the Azure Cosmos DB service. 
@@ -207,13 +163,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The number of permissions.
         /// </value>
-        public long PermissionUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.Permission);
-            }
-        }
+        public long PermissionUsage => this.GetCurrentQuotaHeader(Constants.Quota.Permission);
 
         /// <summary>
         /// Gets the maximum size of a collection in kilobytes from the Azure Cosmos DB service.
@@ -221,13 +171,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Quota in kilobytes.
         /// </value>
-        public long CollectionSizeQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.CollectionSize);
-            }
-        }
+        public long CollectionSizeQuota => this.GetMaxQuotaHeader(Constants.Quota.CollectionSize);
 
         /// <summary>
         /// Gets the current size of a collection in kilobytes from the Azure Cosmos DB service. 
@@ -235,13 +179,7 @@ namespace Microsoft.Azure.Cosmos
         /// <vallue>
         /// Current collection size in kilobytes.
         /// </vallue>
-        public long CollectionSizeUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.CollectionSize);
-            }
-        }
+        public long CollectionSizeUsage => this.GetCurrentQuotaHeader(Constants.Quota.CollectionSize);
 
         /// <summary>
         /// Gets the maximum quota of stored procedures for a collection from the Azure Cosmos DB service.
@@ -249,13 +187,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum quota.
         /// </value>
-        public long StoredProceduresQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.StoredProcedure);
-            }
-        }
+        public long StoredProceduresQuota => this.GetMaxQuotaHeader(Constants.Quota.StoredProcedure);
 
         /// <summary>
         /// Gets the current number of stored procedures for a collection from the Azure Cosmos DB service.
@@ -263,13 +195,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Current number of stored procedures.
         /// </value>
-        public long StoredProceduresUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.StoredProcedure);
-            }
-        }
+        public long StoredProceduresUsage => this.GetCurrentQuotaHeader(Constants.Quota.StoredProcedure);
 
         /// <summary>
         /// Gets the maximum quota of triggers for a collection from the Azure Cosmos DB service. 
@@ -277,13 +203,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum quota.
         /// </value>
-        public long TriggersQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.Trigger);
-            }
-        }
+        public long TriggersQuota => this.GetMaxQuotaHeader(Constants.Quota.Trigger);
 
         /// <summary>
         /// Get the current number of triggers for a collection from the Azure Cosmos DB service.
@@ -291,13 +211,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Current number of triggers.
         /// </value>
-        public long TriggersUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.Trigger);
-            }
-        }
+        public long TriggersUsage => this.GetCurrentQuotaHeader(Constants.Quota.Trigger);
 
         /// <summary>
         /// Gets the maximum quota of user defined functions for a collection from the Azure Cosmos DB service. 
@@ -305,13 +219,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Maximum quota.
         /// </value>
-        public long UserDefinedFunctionsQuota
-        {
-            get
-            {
-                return this.GetMaxQuotaHeader(Constants.Quota.UserDefinedFunction);
-            }
-        }
+        public long UserDefinedFunctionsQuota => this.GetMaxQuotaHeader(Constants.Quota.UserDefinedFunction);
 
         /// <summary>
         /// Gets the current number of user defined functions for a collection from the Azure Cosmos DB service.
@@ -319,13 +227,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Current number of user defined functions.
         /// </value>
-        public long UserDefinedFunctionsUsage
-        {
-            get
-            {
-                return this.GetCurrentQuotaHeader(Constants.Quota.UserDefinedFunction);
-            }
-        }
+        public long UserDefinedFunctionsUsage => this.GetCurrentQuotaHeader(Constants.Quota.UserDefinedFunction);
 
         /// <summary>
         /// Gets the number of items returned in the response from the Azure Cosmos DB service.
@@ -346,13 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// The maximum size limit for this entity. Measured in kilobytes for document resources 
         /// and in counts for other resources.
         /// </value>
-        public string MaxResourceQuota
-        {
-            get
-            {
-                return this.responseHeaders[HttpConstants.HttpHeaders.MaxResourceQuota];
-            }
-        }
+        public string MaxResourceQuota => this.responseHeaders[HttpConstants.HttpHeaders.MaxResourceQuota];
 
         /// <summary>
         /// Gets the current size of this entity from the Azure Cosmos DB service.
@@ -361,13 +257,7 @@ namespace Microsoft.Azure.Cosmos
         /// The current size for this entity. Measured in kilobytes for document resources 
         /// and in counts for other resources.
         /// </value>
-        public string CurrentResourceQuotaUsage
-        {
-            get
-            {
-                return this.responseHeaders[HttpConstants.HttpHeaders.CurrentResourceQuotaUsage];
-            }
-        }
+        public string CurrentResourceQuotaUsage => this.responseHeaders[HttpConstants.HttpHeaders.CurrentResourceQuotaUsage];
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -375,16 +265,10 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in reqest units.
         /// </value>
-        public double RequestCharge
-        {
-            get
-            {
-                return Helpers.GetHeaderValueDouble(
+        public double RequestCharge => Helpers.GetHeaderValueDouble(
                     this.responseHeaders,
                     HttpConstants.HttpHeaders.RequestCharge,
                     0);
-            }
-        }
 
         /// <summary>
         /// Gets the activity ID for the request from the Azure Cosmos DB service.
@@ -392,13 +276,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The activity ID for the request.
         /// </value>
-        public string ActivityId
-        {
-            get
-            {
-                return this.responseHeaders[HttpConstants.HttpHeaders.ActivityId];
-            }
-        }
+        public string ActivityId => this.responseHeaders[HttpConstants.HttpHeaders.ActivityId];
 
         /// <summary>
         /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
@@ -415,9 +293,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException(this.disallowContinuationTokenMessage);
                 }
 
-                return useETagAsContinuation ?
-                    this.ETag :
-                    this.responseHeaders[HttpConstants.HttpHeaders.Continuation];
+                return this.InternalResponseContinuation;
             }
 
             internal set
@@ -427,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException(this.disallowContinuationTokenMessage);
                 }
 
-                Debug.Assert(!useETagAsContinuation);
+                Debug.Assert(!this.useETagAsContinuation);
                 this.responseHeaders[HttpConstants.HttpHeaders.Continuation] = value;
             }
         }
@@ -438,24 +314,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The session token for use in session consistency.
         /// </value>
-        public string SessionToken
-        {
-            get
-            {
-                return this.responseHeaders[HttpConstants.HttpHeaders.SessionToken];
-            }
-        }
+        public string SessionToken => this.responseHeaders[HttpConstants.HttpHeaders.SessionToken];
 
         /// <summary>
         /// Gets the content parent location, for example, dbs/foo/colls/bar, from the Azure Cosmos DB service.
         /// </summary>
-        public string ContentLocation
-        {
-            get
-            {
-                return this.responseHeaders[HttpConstants.HttpHeaders.OwnerFullName];
-            }
-        }
+        public string ContentLocation => this.responseHeaders[HttpConstants.HttpHeaders.OwnerFullName];
 
         /// <summary>
         /// Gets the entity tag associated with last transaction in the Azure Cosmos DB service,
@@ -464,18 +328,12 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="DocumentClient.CreateDocumentChangeFeedQuery(string, ChangeFeedOptions)"/> 
         /// to get feed changes since the transaction specified by this entity tag.
         /// </summary>
-        public string ETag
-        {
-            get
-            {
-                return this.responseHeaders[HttpConstants.HttpHeaders.ETag];
-            }
-        }
+        public string ETag => this.responseHeaders[HttpConstants.HttpHeaders.ETag];
 
         internal INameValueCollection Headers
         {
-            get { return this.responseHeaders; }
-            set { this.responseHeaders = value; }
+            get => this.responseHeaders;
+            set => this.responseHeaders = value;
         }
 
         /// <summary>
@@ -484,35 +342,27 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The response headers.
         /// </value>
-        public NameValueCollection ResponseHeaders
-        {
-            get
-            {
-                return this.responseHeaders.ToNameValueCollection();
-            }
-        }
+        public NameValueCollection ResponseHeaders => this.responseHeaders.ToNameValueCollection();
 
         /// <summary>
         /// Get <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> for each individual partition in the Azure Cosmos DB service
         /// </summary>
-        public IReadOnlyDictionary<string, QueryMetrics> QueryMetrics
-        {
-            get
-            {
-                return this.queryMetrics;
-            }
-        }
+        public IReadOnlyDictionary<string, QueryMetrics> QueryMetrics => this.queryMetrics;
+
+        /// <summary>
+        /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The continuation token to be used for continuing enumeration.
+        /// </value>
+        internal string InternalResponseContinuation => this.useETagAsContinuation ?
+                    this.ETag :
+                    this.responseHeaders[HttpConstants.HttpHeaders.Continuation];
 
         // This is used by FeedResponseBinder.
-        internal bool UseETagAsContinuation
-        {
-            get { return this.useETagAsContinuation; }
-        }
+        internal bool UseETagAsContinuation => this.useETagAsContinuation;
 
-        internal string DisallowContinuationTokenMessage
-        {
-            get { return this.disallowContinuationTokenMessage; }
-        }
+        internal string DisallowContinuationTokenMessage => this.disallowContinuationTokenMessage;
 
         /// <summary>
         /// Returns an enumerator that iterates through a collection from the Azure Cosmos DB service.
@@ -536,13 +386,12 @@ namespace Microsoft.Azure.Cosmos
 
         private long GetCurrentQuotaHeader(string headerName)
         {
-            long headerValue = 0;
             if (this.usageHeaders.Count == 0 && !string.IsNullOrEmpty(this.MaxResourceQuota) && !string.IsNullOrEmpty(this.CurrentResourceQuotaUsage))
             {
                 this.PopulateQuotaHeader(this.MaxResourceQuota, this.CurrentResourceQuotaUsage);
             }
 
-            if (this.usageHeaders.TryGetValue(headerName, out headerValue))
+            if (this.usageHeaders.TryGetValue(headerName, out long headerValue))
             {
                 return headerValue;
             }
@@ -552,13 +401,12 @@ namespace Microsoft.Azure.Cosmos
 
         private long GetMaxQuotaHeader(string headerName)
         {
-            long headerValue = 0;
             if (this.quotaHeaders.Count == 0 && !string.IsNullOrEmpty(this.MaxResourceQuota) && !string.IsNullOrEmpty(this.CurrentResourceQuotaUsage))
             {
                 this.PopulateQuotaHeader(this.MaxResourceQuota, this.CurrentResourceQuotaUsage);
             }
 
-            if (this.quotaHeaders.TryGetValue(headerName, out headerValue))
+            if (this.quotaHeaders.TryGetValue(headerName, out long headerValue))
             {
                 return headerValue;
             }
