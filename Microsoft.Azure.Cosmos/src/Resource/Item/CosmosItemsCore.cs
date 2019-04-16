@@ -35,8 +35,6 @@ namespace Microsoft.Azure.Cosmos
         private CosmosJsonSerializer cosmosJsonSerializer { get; }
         private CosmosClient client { get; }
 
-        static readonly char[] InvalidCharacters = new char[] { '/', '\\', '?', '#' };
-
         private CosmosQueryClient queryClient { get; }
 
 

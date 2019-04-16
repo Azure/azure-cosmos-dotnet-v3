@@ -289,12 +289,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Instantiates a new instance of the <see cref="PartitionKey"/> object.
-        /// </summary>
-        /// <remarks>
         /// The returned object represents a partition key value that allows creating and accessing documents
         /// without a value for partition key
-        /// </remarks>
+        /// </summary>
         public static readonly object PartitionKeyNone = Microsoft.Azure.Documents.PartitionKey.None;
 
         /// <summary>
