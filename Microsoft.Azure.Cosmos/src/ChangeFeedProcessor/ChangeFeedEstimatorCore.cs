@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
-        private CancellationTokenSource shutdownCts = new CancellationTokenSource();
+        private CancellationTokenSource shutdownCts;
         private CosmosContainer leaseContainer;
         private string monitoredContainerRid;
         private TimeSpan? estimatorPeriod = null;
@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 await this.InitializeAsync().ConfigureAwait(false);
             }
 
+            this.shutdownCts = new CancellationTokenSource();
             Logger.InfoFormat("Starting estimator...");
             this.runAsync = this.feedEstimator.RunAsync(this.shutdownCts.Token);
         }

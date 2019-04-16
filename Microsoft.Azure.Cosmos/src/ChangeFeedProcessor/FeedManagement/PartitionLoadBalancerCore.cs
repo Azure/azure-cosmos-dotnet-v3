@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly LoadBalancingStrategy partitionLoadBalancingStrategy;
         private readonly TimeSpan leaseAcquireInterval;
-        private readonly CancellationTokenSource cancellationTokenSource;
+        private CancellationTokenSource cancellationTokenSource;
         private Task runTask;
 
         public PartitionLoadBalancerCore(
@@ -35,16 +35,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.leaseContainer = leaseContainer;
             this.partitionLoadBalancingStrategy = partitionLoadBalancingStrategy;
             this.leaseAcquireInterval = leaseAcquireInterval;
-            this.cancellationTokenSource = new CancellationTokenSource();
         }
 
         public override void Start()
         {
-            if (this.runTask != null)
+            if (this.runTask != null && !this.runTask.IsCompleted)
             {
                 throw new InvalidOperationException("Already started");
             }
 
+            this.cancellationTokenSource = new CancellationTokenSource();
             this.runTask = this.RunAsync();
         }
 
