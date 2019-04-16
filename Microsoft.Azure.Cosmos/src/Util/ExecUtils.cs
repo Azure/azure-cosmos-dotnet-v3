@@ -132,8 +132,8 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 requestEnricher);
 
-            return await client.RequestHandler.SendAsync(request, cancellationToken)
-                     .ContinueWith(task => responseCreator(task.Result), cancellationToken);
+            CosmosResponseMessage response = await client.RequestHandler.SendAsync(request, cancellationToken);
+            return responseCreator(response);
         }
 
         /// <summary>

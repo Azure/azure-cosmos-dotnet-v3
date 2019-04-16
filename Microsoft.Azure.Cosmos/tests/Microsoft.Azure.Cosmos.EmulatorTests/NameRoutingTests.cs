@@ -961,7 +961,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        [Ignore] //Not a valid test case from V3 onward
         public void NameRoutingBadUrlTest()
         {
             CosmosClient client;
@@ -1056,6 +1055,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] //TODO once V3 SDK have validation on item id, make this test active
         public void VerifyInvalidNameTest()
         {
             CosmosClient client = TestCommon.CreateCosmosClient(true);

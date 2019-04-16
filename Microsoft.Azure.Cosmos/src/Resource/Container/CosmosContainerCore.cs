@@ -54,7 +54,6 @@ namespace Microsoft.Azure.Cosmos
 
         private PartitionKeyInternal nonePartitionKeyValue { get; set; }
 
-
         public override Task<CosmosContainerResponse> ReadAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
