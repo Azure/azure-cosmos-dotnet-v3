@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.v2018_06_18))
+                using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
                 {
                     client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.ConsistencyLevel, "Session");
                     INameValueCollection headers;
@@ -363,7 +363,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Database retrievedDatabase2 = await retrievedTask.ToResourceAsync<Database>();
 
                     string collectionName1 = "coll1";
-                    PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+                    PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+                    {
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }),
+                        Kind = PartitionKind.Hash,
+                        Version = PartitionKeyDefinitionVersion.V1
+                    };
                     DocumentCollection collection1 = new DocumentCollection { Id = collectionName1, PartitionKey = partitionKeyDefinition };
 
                     Uri uri;
@@ -391,7 +396,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         PartitionKeyDefinition partitionKey = new PartitionKeyDefinition
                         {
                             Paths = new Collection<string> { "/a" },
-                            Kind = PartitionKind.Hash
+                            Kind = PartitionKind.Hash,
+                            Version = PartitionKeyDefinitionVersion.V1
                         };
                         collection2 = new DocumentCollection { Id = collectionName2, PartitionKey = partitionKey };
 
@@ -963,7 +969,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore] // TODO  https://msdata.visualstudio.com/CosmosDB/_workitems/edit/408486
         public async Task TestPartitionedQueryExecutionInfoInDocumentClientExceptionWithIsContinuationExpectedHeader()
         {
             DocumentClient client = TestCommon.CreateClient(true);
@@ -982,7 +987,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Id = uniqCollectionName,
                         PartitionKey = new PartitionKeyDefinition
                         {
-                            Paths = new Collection<string> { "/key" }
+                            Paths = new Collection<string> { "/key" },
+                            Version = PartitionKeyDefinitionVersion.V1
                         }
                     },
                     new RequestOptions { OfferThroughput = 10000 });
@@ -1126,7 +1132,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore] // TODO  https://msdata.visualstudio.com/CosmosDB/_workitems/edit/408486
         public async Task TestPartitionedQueryExecutionInfoInDocumentClientException()
         {
             /* Sample response:
@@ -1162,7 +1167,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Id = uniqCollectionName,
                         PartitionKey = new PartitionKeyDefinition
                         {
-                            Paths = new Collection<string> { "/key" }
+                            Paths = new Collection<string> { "/key" },
+                            Version = PartitionKeyDefinitionVersion.V1
                         }
                     },
                     new RequestOptions { OfferThroughput = 10000 });

@@ -152,8 +152,8 @@ namespace Microsoft.Azure.Cosmos
             Func<CosmosResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
-            return ProcessResourceOperationAsync(client, resourceUri, resourceType, operationType, requestOptions, null
-                , partitionKey, streamPayload, requestEnricher, responseCreator, cancellationToken);
+            return ProcessResourceOperationAsync(client: client, resourceUri: resourceUri, resourceType: resourceType, operationType: operationType, requestOptions: requestOptions, cosmosContainer: null
+                , partitionKey: partitionKey, streamPayload: streamPayload, requestEnricher: requestEnricher, responseCreator: responseCreator, cancellationToken: cancellationToken);
         }
 
         internal static Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(

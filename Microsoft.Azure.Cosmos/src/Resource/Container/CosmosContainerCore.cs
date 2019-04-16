@@ -52,6 +52,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal DocumentClient DocumentClient { get; private set; }
 
+        private PartitionKeyInternal nonePartitionKeyValue { get; set; }
+
+
         public override Task<CosmosContainerResponse> ReadAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -209,22 +212,20 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue()
         {
-            if(partitionKeyDefinition == null)
+            if (nonePartitionKeyValue == null)
             {
-                partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+                if (partitionKeyDefinition.Paths.Count == 0 || partitionKeyDefinition.IsSystemKey)
+                {
+                    nonePartitionKeyValue = PartitionKeyInternal.Empty;
+                }
+                else
+                {
+                    nonePartitionKeyValue = PartitionKeyInternal.Undefined;
+                }
             }
-
-            if (partitionKeyDefinition.Paths.Count == 0 || partitionKeyDefinition.IsSystemKey)
-            {
-                return PartitionKeyInternal.Empty;
-            }
-            else
-            {
-                return PartitionKeyInternal.Undefined;
-            }
+            return nonePartitionKeyValue;
         }
-
-        private PartitionKeyDefinition partitionKeyDefinition { get; set; }
 
         internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
