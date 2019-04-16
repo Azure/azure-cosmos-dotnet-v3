@@ -23,13 +23,13 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             QueryInfo = new QueryInfo(),
             QueryRanges = new List<Range<PartitionKeyInternal>> 
-                    { 
-                        new Range<PartitionKeyInternal>(
-                            PartitionKeyInternal.InclusiveMinimum,
-                            PartitionKeyInternal.ExclusiveMaximum, 
-                            true, 
-                            false) 
-                    }
+            { 
+                new Range<PartitionKeyInternal>(
+                    PartitionKeyInternal.InclusiveMinimum,
+                    PartitionKeyInternal.ExclusiveMaximum, 
+                    true, 
+                    false) 
+            }
         };
 
         private readonly object serviceProviderStateLock;
@@ -102,13 +102,15 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
-            bool isContinuationExpected)
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery)
         {
             PartitionedQueryExecutionInfoInternal queryInfoInternal = this.GetPartitionedQueryExecutionInfoInternal(
                 querySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
-                isContinuationExpected);
+                isContinuationExpected,
+                allowNonValueAggregateQuery);
 
             return this.ConvertPartitionedQueryExecutionInfo(queryInfoInternal, partitionKeyDefinition);
         }
@@ -140,7 +142,8 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
-            bool isContinuationExpected)
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQueries)
         {
             if (querySpec == null || partitionKeyDefinition == null)
             {
@@ -177,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         queryText,
                         requireFormattableOrderByQuery,
                         isContinuationExpected,
+                        //allowNonValueAggregateQueries, Direct needs to be ported from master.
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
@@ -195,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 queryText,
                                 requireFormattableOrderByQuery,
                                 isContinuationExpected,
+                                //allowNonValueAggregateQueries, Direct needs to be ported from master 
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,

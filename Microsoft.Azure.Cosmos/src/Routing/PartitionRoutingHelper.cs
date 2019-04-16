@@ -55,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     querySpec,
                     partitionKeyDefinition,
                     VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
-                isContinuationExpected);
+                isContinuationExpected,
+                allowNonValueAggregateQuery: true);
 
             if (queryExecutionInfo == null ||
                 queryExecutionInfo.QueryRanges == null ||

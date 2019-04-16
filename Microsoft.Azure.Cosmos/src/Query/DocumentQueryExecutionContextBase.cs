@@ -165,7 +165,12 @@ namespace Microsoft.Azure.Cosmos.Query
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
 
             QueryPartitionProvider queryPartitionProvider = await this.client.GetQueryPartitionProviderAsync(cancellationToken);
-            return queryPartitionProvider.GetPartitionedQueryExecutionInfo(this.QuerySpec, partitionKeyDefinition, requireFormattableOrderByQuery, isContinuationExpected);
+            return queryPartitionProvider.GetPartitionedQueryExecutionInfo(
+                this.QuerySpec, 
+                partitionKeyDefinition, 
+                requireFormattableOrderByQuery, 
+                isContinuationExpected,
+                allowNonValueAggregateQuery: true);
         }
 
         public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)
