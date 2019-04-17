@@ -417,6 +417,23 @@ namespace Microsoft.Azure.Cosmos
                 options: cosmosQueryRequestOptions);
         }
 
+        internal CosmosFeedResultSetIterator GetChangeFeedPartitionKeyRangeIterator(
+            string partitionKeyId,
+            string continuationToken = null,
+            int? maxItemCount = null,
+            CosmosChangeFeedRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
+
+            return new CosmosChangeFeedPartitionKeyResultSetIteratorCore(
+                partitionKeyRangeId: partitionKeyId,
+                continuationToken: continuationToken,
+                maxItemCount: maxItemCount,
+                cosmosContainer: (CosmosContainerCore)this.container,
+                options: cosmosQueryRequestOptions);
+        }
+
         internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
             int? maxItemCount,
             string continuationToken,

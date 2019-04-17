@@ -21,13 +21,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     {
         private static readonly int DefaultMaxItemCount = 100;
         private readonly ILog logger = LogProvider.GetCurrentClassLogger();
-        private readonly IDocumentQuery<Document> query;
         private readonly ProcessorSettings settings;
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
         private readonly ChangeFeedOptions options;
+        private readonly CosmosFeedResultSetIterator resultSetIterator;
 
-        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosContainer container, ProcessorSettings settings, PartitionCheckpointer checkpointer)
+        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosFeedResultSetIterator resultSetIterator, ProcessorSettings settings, PartitionCheckpointer checkpointer)
         {
             this.observer = observer;
             this.settings = settings;
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 StartTime = settings.StartTime,
             };
 
-            this.query = container.Client.DocumentClient.CreateDocumentChangeFeedQuery(container.LinkUri.ToString(), this.options);
+            this.resultSetIterator = resultSetIterator;
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
@@ -57,14 +57,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        IFeedResponse<T> response = await this.query.ExecuteNextAsync<T>(cancellationToken).ConfigureAwait(false);
-                        lastContinuation = response.ResponseContinuation;
+                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                        lastContinuation = response.Headers.Continuation;
                         if (response.Count > 0)
                         {
                             await this.DispatchChanges(response, cancellationToken).ConfigureAwait(false);
                         }
                     }
-                    while (this.query.HasMoreResults && !cancellationToken.IsCancellationRequested);
+                    while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
 
                     if (this.options.MaxItemCount != this.settings.MaxItemCount)
                     {
