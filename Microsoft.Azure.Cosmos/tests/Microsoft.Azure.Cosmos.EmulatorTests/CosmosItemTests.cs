@@ -798,7 +798,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemKeyPath);
 
                 CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
-                    partitionKey: CosmosContainerSettings.PartitionKeyNone,
+                    partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                     id: nonPartitionItemId);
 
                 Assert.IsNotNull(response.Resource);
@@ -807,7 +807,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
                 CosmosResultSetIterator<ToDoActivity> setIterator = fixedContainer.Items
-                    .CreateItemQuery<ToDoActivity>(sql, partitionKey :CosmosContainerSettings.PartitionKeyNone, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+                    .CreateItemQuery<ToDoActivity>(sql, partitionKey :CosmosContainerSettings.NonePartitionKeyValue, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
                 while (setIterator.HasMoreResults)
                 {
                     CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
@@ -817,7 +817,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
-                    partitionKey: CosmosContainerSettings.PartitionKeyNone,
+                    partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                     id: undefinedPartitionItemId);
 
                 Assert.IsNotNull(undefinedItemResponse.Resource);

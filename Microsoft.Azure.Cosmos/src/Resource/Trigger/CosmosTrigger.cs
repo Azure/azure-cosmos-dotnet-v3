@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosTrigger(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string triggerId)
         {
             this.Id = triggerId;
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Trigger,
                 operationType,
                 requestOptions,
-                (CosmosContainerCore)this.container,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -206,6 +206,6 @@ namespace Microsoft.Azure.Cosmos
             return this.Client.ResponseFactory.CreateTriggerResponse(this, response);
         }
 
-        internal CosmosContainer container { get; }
+        internal CosmosContainerCore container { get; }
     }
 }

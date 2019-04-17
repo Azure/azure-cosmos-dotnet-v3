@@ -31,12 +31,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default connection mode
         /// </summary>
-        private const ConnectionMode DefaultConnectionMode = ConnectionMode.Gateway;
+        private const ConnectionMode DefaultConnectionMode = ConnectionMode.Direct;
 
         /// <summary>
         /// Default Protocol mode
         /// </summary>
-        private const Protocol DefaultProtocol = Protocol.Https;
+        private const Protocol DefaultProtocol = Protocol.Tcp;
 
         private const string ConnectionStringAccountEndpoint = "AccountEndpoint";
         private const string ConnectionStringAccountKey = "AccountKey";

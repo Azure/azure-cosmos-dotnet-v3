@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosUserDefinedFunction(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string userDefinedFunctionId)
         {
             this.Id = userDefinedFunctionId;
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.UserDefinedFunction,
                 operationType,
                 requestOptions,
-                (CosmosContainerCore)this.container,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -195,6 +195,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.Client.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
         }
-        internal CosmosContainer container { get; }
+        internal CosmosContainerCore container { get; }
     }
 }
