@@ -415,5 +415,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cosmosContainer);
             Assert.IsNull(cosmosContainerSettings);
         }
+
+        /// <summary>
+        /// This test only verifies that we are able to set the ttl property path correctly using SDK.
+        /// For ttl custom property path case, we don't do logical document filtering in backend and since expired
+        /// resource purger is not yet enabled in any fabric emulator; not verifying whether documents are getting ttl'ed
+        /// correctly or not. There are native tests to verify this functionality.
+        /// </summary>
+        [TestMethod]
+        public async Task TimeToLivePropertyPath()
+        {
+
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+            TimeSpan timeToLive = TimeSpan.FromSeconds(1);
+            CosmosContainerSettings setting = new CosmosContainerSettings()
+            {
+                Id = containerName,
+                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                TimeToLivePropertyPath = "/creationDate"
+            };
+            CosmosContainerResponse containerResponse = null;
+            try
+            {
+                containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
+                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
+            }
+            catch (CosmosException exeption)
+            {
+                // expected because DefaultTimeToLive was not specified
+                Assert.AreEqual(HttpStatusCode.BadRequest, exeption.StatusCode);
+            }
+
+            // Verify the collection content.
+            setting.DefaultTimeToLive = TimeSpan.FromSeconds(-1);
+            containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
+            CosmosContainer cosmosContainer = containerResponse;
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), containerResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual("/creationDate", containerResponse.Resource.TimeToLivePropertyPath);
+
+            // verify removing the ttl property path
+            setting.TimeToLivePropertyPath = null;
+            containerResponse = await cosmosContainer.ReplaceAsync(setting);
+            cosmosContainer = containerResponse;
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), containerResponse.Resource.DefaultTimeToLive);
+            Assert.IsNull(containerResponse.Resource.TimeToLivePropertyPath);
+
+            containerResponse = await cosmosContainer.DeleteAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
     }
 }

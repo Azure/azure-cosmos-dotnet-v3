@@ -14,14 +14,9 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document collection in the Azure Cosmos DB service. A collection is a named logical container for documents. 
@@ -104,6 +99,8 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="CosmosDatabaseSettings"/>
     public class CosmosContainerSettings
     {
+
+        private const string TimeToLivePropertyPathConstant = "ttlPropertyPath";
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -221,6 +218,27 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the time to live base timestamp property path.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// This property should be only present when DefaultTimeToLive is set. When this property is present, time to live
+        /// for a item is decided based on the value of this property in item.
+        /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
+        /// </value>
+        public string TimeToLivePropertyPath
+        {
+            get
+            {
+                return this.InternalTimeToLivePropertyPath;
+            }
+            set
+            {
+                this.InternalTimeToLivePropertyPath = value;
+            }
+        }
+
+        /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
         /// </summary>
         /// <value>
@@ -302,6 +320,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
         internal int? InternalTimeToLive { get; set; }
+
+        /// <summary>
+        /// Internal property used as a helper to convert to the back-end type string?
+        /// </summary>
+        [JsonProperty(PropertyName = TimeToLivePropertyPathConstant, NullValueHandling = NullValueHandling.Ignore)]
+        internal string InternalTimeToLivePropertyPath { get; set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
