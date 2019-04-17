@@ -805,6 +805,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
                 Assert.IsNotNull(response.Resource.id == nonPartitionItemId);
 
+                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
+                CosmosResultSetIterator<ToDoActivity> setIterator = fixedContainer.Items
+                    .CreateItemQuery<ToDoActivity>(sql, partitionKey :CosmosContainerSettings.PartitionKeyNone, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(1, queryResponse.Count());
+                    ToDoActivity toDoActivity = queryResponse.First();
+                    Assert.AreEqual(nonPartitionItemId, toDoActivity.id);
+                }
 
                 CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
                     partitionKey: CosmosContainerSettings.PartitionKeyNone,

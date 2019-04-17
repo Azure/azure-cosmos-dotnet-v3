@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Trigger,
                 operationType,
                 requestOptions,
-                this.container,
+                (CosmosContainerCore)this.container,
                 partitionKey,
                 streamPayload,
                 null,

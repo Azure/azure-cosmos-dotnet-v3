@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                cosmosContainer: this.cosmosContainer,
+                cosmosContainerCore: (CosmosContainerCore)this.cosmosContainer,
                 requestEnricher: request => {
                     CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);

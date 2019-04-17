@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.UserDefinedFunction,
                 operationType,
                 requestOptions,
-                this.container,
+                (CosmosContainerCore)this.container,
                 partitionKey,
                 streamPayload,
                 null,

@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosJsonSerializer = this.container.Client.CosmosJsonSerializer;
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.client = container.Client;
-            this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.client, new DocumentQueryClient(this.client.DocumentClient));
+            this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.client, new DocumentQueryClient(this.client.DocumentClient), (CosmosContainerCore)container);
         }
 
         internal readonly CosmosContainer container;
@@ -467,7 +467,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Document,
                 operationType,
                 requestOptions,
-                this.container,
+                (CosmosContainerCore)this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => response,
-                cosmosContainer: this.container,
+                cosmosContainerCore: (CosmosContainerCore)this.container,
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);
@@ -520,7 +520,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.client.ResponseFactory.CreateResultSetQueryResponse<T>(response),
-                cosmosContainer: this.container,
+                cosmosContainerCore: (CosmosContainerCore)this.container,
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
-                cosmosContainer: null,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: requestEnricher,
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
-                cosmosContainer: null,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: null,
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
-                cosmosContainer: null,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: null,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
-            CosmosContainer cosmosContainer,
+            CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
-                cosmosContainer,
+                cosmosContainerCore,
                 partitionKey,
                 streamPayload,
                 requestEnricher);
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             Func<CosmosResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
-            return ProcessResourceOperationAsync(client: client, resourceUri: resourceUri, resourceType: resourceType, operationType: operationType, requestOptions: requestOptions, cosmosContainer: null
+            return ProcessResourceOperationAsync(client: client, resourceUri: resourceUri, resourceType: resourceType, operationType: operationType, requestOptions: requestOptions, cosmosContainerCore: null
                 , partitionKey: partitionKey, streamPayload: streamPayload, requestEnricher: requestEnricher, responseCreator: responseCreator, cancellationToken: cancellationToken);
         }
 
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
-            CosmosContainer cosmosContainer,
+            CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
-                cosmosContainer,
+                cosmosContainerCore,
                 partitionKey,
                 streamPayload,
                 requestEnricher);
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
-            CosmosContainer cosmosContainer,
+            CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher)
@@ -216,9 +216,13 @@ namespace Microsoft.Azure.Cosmos
 
             if (partitionKey != null)
             {
-                if (cosmosContainer != null && partitionKey.Equals(PartitionKey.None))
+                if (cosmosContainerCore == null && partitionKey.Equals(PartitionKey.None))
                 {
-                    PartitionKeyInternal partitionKeyInternal = await ((CosmosContainerCore)cosmosContainer).GetNonePartitionKeyValue();
+                    throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                }
+                else if (partitionKey.Equals(PartitionKey.None))
+                {
+                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValue();
                     request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
                 }
                 else
