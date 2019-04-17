@@ -24,12 +24,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The Cosmos client that is used for the request
         /// </summary>
-        internal CosmosClient Client { get; private set; }
+        internal virtual CosmosClient Client { get; private set; }
 
         /// <summary>
         /// The Cosmos resource URI
         /// </summary>
-        internal Uri LinkUri { get; private set; }
+        internal virtual Uri LinkUri { get; private set; }
 
         /// <summary>
         /// Initialize the common properties
