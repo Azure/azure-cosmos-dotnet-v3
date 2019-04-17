@@ -73,8 +73,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the ItemProducerTree class.
         /// </summary>
+        /// <param name="queryContext">query context.</param>
+        /// <param name="querySpecForInit">query spec init.</param>
         /// <param name="partitionKeyRange">The partition key range.</param>
-        /// <param name="executeRequestFunc">Callback to execute a request.</param>
         /// <param name="createRetryPolicyFunc">Callback to create a retry policy.</param>
         /// <param name="produceAsyncCompleteCallback">Callback to invoke once a fetch finishes.</param>
         /// <param name="itemProducerTreeComparer">Comparer to determine, which tree to produce from.</param>
@@ -512,8 +513,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Callback to create a child document producer tree based on the partition key range.
         /// </summary>
-        /// <param name="createRequestFunc">Callback to create a request.</param>
-        /// <param name="executeRequestFunc">Callback to execute a request.</param>
+        /// <param name="queryContext">request context</param>
+        /// <param name="querySpecForInit">query spec for initialization</param>
         /// <param name="createRetryPolicyFunc">Callback to create a retry policy.</param>
         /// <param name="produceAsyncCompleteCallback">Callback to invoke once a fetch finishes.</param>
         /// <param name="itemProducerTreeComparer">Comparer to determine, which tree to produce from.</param>

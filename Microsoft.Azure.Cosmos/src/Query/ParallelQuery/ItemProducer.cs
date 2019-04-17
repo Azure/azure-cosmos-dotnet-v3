@@ -110,9 +110,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
+        /// <param name="queryContext">request context</param>
+        /// <param name="querySpecForInit">query spec for initialization</param>
         /// <param name="partitionKeyRange">The partition key range.</param>
-        /// <param name="createRequestFunc">The callback to create a request.</param>
-        /// <param name="executeRequestFunc">The callback to execute the request.</param>
         /// <param name="createRetryPolicyFunc">The callback to create the retry policy.</param>
         /// <param name="produceAsyncCompleteCallback">The callback to call once you are done fetching.</param>
         /// <param name="equalityComparer">The comparer to use to determine whether the producer has seen a new document.</param>
