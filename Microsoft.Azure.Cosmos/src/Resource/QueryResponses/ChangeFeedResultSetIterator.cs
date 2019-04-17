@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 bool hasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
                 return CosmosQueryResponse<TInput>.CreateResponse<TInput>(
+                    responseMessageHeaders: cosmosResponseMessage.Headers,
                     stream: cosmosResponseMessage.Content,
                     jsonSerializer: jsonSerializer,
                     continuationToken: continuationToken,

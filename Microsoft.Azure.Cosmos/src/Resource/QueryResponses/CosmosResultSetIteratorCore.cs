@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
                 .ContinueWith(task =>
                 {
                     CosmosQueryResponse response = task.Result;
-                    this.continuationToken = response.ContinuationToken;
+                    this.continuationToken = response.ResponseContinuation;
                     this.HasMoreResults = response.GetHasMoreResults();
                     return response;
                 }, cancellationToken);
@@ -169,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
                 bool hasMoreResults = CosmosFeedResultSetIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
                 return CosmosQueryResponse<T>.CreateResponse<T>(
+                    responseMessageHeaders: cosmosResponseMessage.Headers,
                     stream: cosmosResponseMessage.Content,
                     jsonSerializer: jsonSerializer,
                     continuationToken: continuationToken,

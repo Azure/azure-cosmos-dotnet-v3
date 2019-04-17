@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
         /// This means that if you have a long running query this function will take a very long time to return.
         /// </remarks>
-        internal override async Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken token)
+        internal override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
             double requestCharge = 0;
@@ -105,7 +105,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             while (!this.IsDone)
             {
-                CosmosElementResponse result = await base.DrainAsync(int.MaxValue, token);
+                CosmosQueryResponse result = await base.DrainAsync(int.MaxValue, token);
+                if (!result.IsSuccess)
+                {
+                    return result;
+                }
+
                 requestCharge += result.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
                 //partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
@@ -114,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     replicaUris.AddRange(result.RequestStatistics.ContactedReplicas);
                 }
 
-                foreach (CosmosElement item in result)
+                foreach (CosmosElement item in result.CosmosElements)
                 {
                     if (!(item is CosmosArray comosArray))
                     {
@@ -144,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
-            return new CosmosElementResponse(
+            return new CosmosQueryResponse(
                 finalResult,
                 finalResult.Count,
                 new CosmosResponseMessageHeaders()

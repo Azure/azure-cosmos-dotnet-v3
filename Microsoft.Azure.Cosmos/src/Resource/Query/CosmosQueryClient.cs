@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken);
 
-        internal abstract Task<CosmosElementResponse> ExecuteItemQueryAsync(
+        internal abstract Task<CosmosQueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,

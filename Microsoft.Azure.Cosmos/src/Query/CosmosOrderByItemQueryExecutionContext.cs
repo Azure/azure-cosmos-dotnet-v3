@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        internal override async Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        internal override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation toke for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -201,6 +201,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
                 ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
+                if(!currentItemProducerTree.CurrentResponseContent.IsSuccess)
+                {
+                    return currentItemProducerTree.CurrentResponseContent;
+                }
+
                 OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
 
                 // Only add the payload, since other stuff is garbage from the caller's perspective.
@@ -228,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return new CosmosElementResponse(
+            return new CosmosQueryResponse(
                 result: results,
                 count: results.Count,
                 responseHeaders: this.GetResponseHeaders(),
@@ -433,6 +438,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             foreach (ItemProducerTree tree in producer)
             {
+                if (!tree.CurrentResponseContent.IsSuccess)
+                {
+                    return;
+                }
+
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
                     this.TraceWarning(string.Format(

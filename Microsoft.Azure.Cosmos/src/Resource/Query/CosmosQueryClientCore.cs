@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -60,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentClient.GetQueryPartitionProviderAsync(cancellationToken);
         }
 
-        internal override async Task<CosmosElementResponse> ExecuteItemQueryAsync(
+        internal override async Task<CosmosQueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);
 
-            return this.GetFeedResponse(requestOptions, resourceType, message);
+            return this.GetCosmosElementResponse(requestOptions, resourceType, message);
         }
 
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
@@ -161,15 +162,21 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        private CosmosElementResponse GetFeedResponse(
+        private CosmosQueryResponse GetCosmosElementResponse(
             CosmosQueryRequestOptions requestOptions,
             ResourceType resourceType,
             CosmosResponseMessage cosmosResponseMessage)
         {
             using (cosmosResponseMessage)
             {
-                // DEVNOTE: For now throw the exception. Needs to be converted to handle exceptionless path.
-                cosmosResponseMessage.EnsureSuccessStatusCode();
+                if (!cosmosResponseMessage.IsSuccessStatusCode)
+                {
+                    return new CosmosQueryResponse(
+                        statusCode: cosmosResponseMessage.StatusCode,
+                        errorMessage: cosmosResponseMessage.ErrorMessage,
+                        error: cosmosResponseMessage.Error,
+                        responseHeaders: cosmosResponseMessage.Headers);
+                }
 
                 // Execute the callback an each element of the page
                 // For example just could get a response like this
@@ -225,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 int itemCount = cosmosArray.Count;
-                return new CosmosElementResponse(
+                return new CosmosQueryResponse(
                     result: cosmosArray,
                     count: itemCount,
                     responseHeaders: cosmosResponseMessage.Headers,

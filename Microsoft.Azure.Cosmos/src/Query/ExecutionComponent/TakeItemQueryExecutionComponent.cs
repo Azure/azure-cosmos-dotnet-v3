@@ -85,11 +85,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         internal override bool IsDone => this.Source.IsDone || this.takeCount <= 0;
 
-        internal override async Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken token)
+        internal override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
-            CosmosElementResponse results = await base.DrainAsync(maxElements, token);
-            List<CosmosElement> takedDocuments = results.Take(this.takeCount).ToList();
-            results = new CosmosElementResponse(
+            CosmosQueryResponse results = await base.DrainAsync(maxElements, token);
+            if (!results.IsSuccess)
+            {
+                return results;
+            }
+
+            List<CosmosElement> takedDocuments = results.CosmosElements.Take(this.takeCount).ToList();
+            results = new CosmosQueryResponse(
                 takedDocuments,
                 takedDocuments.Count,
                 results.Headers,

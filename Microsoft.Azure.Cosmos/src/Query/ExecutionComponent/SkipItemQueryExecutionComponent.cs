@@ -60,13 +60,17 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        internal override async Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken token)
+        internal override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
-            CosmosElementResponse sourcePage = await base.DrainAsync(maxElements, token);
+            CosmosQueryResponse sourcePage = await base.DrainAsync(maxElements, token);
+            if (!sourcePage.IsSuccess)
+            {
+                return sourcePage;
+            }
 
             // skip the documents but keep all the other headers
-            List<CosmosElement> documentsAfterSkip = sourcePage.Skip(this.skipCount).ToList();
-            CosmosElementResponse offsetPage = new CosmosElementResponse(
+            List<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
+            CosmosQueryResponse offsetPage = new CosmosQueryResponse(
                     result: documentsAfterSkip,
                     count: documentsAfterSkip.Count(),
                     responseHeaders: sourcePage.Headers,

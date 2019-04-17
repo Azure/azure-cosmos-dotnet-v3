@@ -37,10 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal sealed class ItemProducerTree : IEnumerable<ItemProducerTree>
     {
-        /// <summary>
-        /// Root of the document producer tree.
-        /// </summary>
-        private readonly ItemProducer root;
 
         /// <summary>
         /// The child partitions of this node in the tree that are added after a split.
@@ -74,8 +70,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Initializes a new instance of the ItemProducerTree class.
         /// </summary>
         /// <param name="partitionKeyRange">The partition key range.</param>
-        /// <param name="executeRequestFunc">Callback to execute a request.</param>
-        /// <param name="createRetryPolicyFunc">Callback to create a retry policy.</param>
         /// <param name="produceAsyncCompleteCallback">Callback to invoke once a fetch finishes.</param>
         /// <param name="itemProducerTreeComparer">Comparer to determine, which tree to produce from.</param>
         /// <param name="equalityComparer">Comparer to see if we need to return the continuation token for a partition.</param>
@@ -87,7 +81,6 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
             PartitionKeyRange partitionKeyRange,
-            Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
@@ -104,11 +97,6 @@ namespace Microsoft.Azure.Cosmos.Query
             if (itemProducerTreeComparer == null)
             {
                 throw new ArgumentNullException($"{nameof(itemProducerTreeComparer)}");
-            }
-
-            if (createRetryPolicyFunc == null)
-            {
-                throw new ArgumentNullException($"{nameof(createRetryPolicyFunc)}");
             }
 
             if (produceAsyncCompleteCallback == null)
@@ -131,11 +119,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentException($"{nameof(collectionRid)} can not be null or empty.");
             }
 
-            this.root = new ItemProducer(
+            this.Root = new ItemProducer(
                 queryContext,
                 querySpecForInit,
                 partitionKeyRange,
-                createRetryPolicyFunc,
                 (itemProducer, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token),
                 equalityComparer,
                 initialPageSize,
@@ -148,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.createItemProducerTreeCallback = ItemProducerTree.CreateItemProducerTreeCallback(
                 queryContext,
                 querySpecForInit,
-                createRetryPolicyFunc,
                 produceAsyncCompleteCallback,
                 itemProducerTreeComparer,
                 equalityComparer,
@@ -161,13 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the root document from the tree.
         /// </summary>
-        public ItemProducer Root
-        {
-            get
-            {
-                return this.root;
-            }
-        }
+        public ItemProducer Root { get; }
 
         /// <summary>
         /// Gets the partition key range from the current document producer tree.
@@ -178,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.PartitionKeyRange;
+                    return this.Root.PartitionKeyRange;
                 }
                 else
                 {
@@ -196,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.Filter;
+                    return this.Root.Filter;
                 }
                 else
                 {
@@ -208,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    this.root.Filter = value;
+                    this.Root.Filter = value;
                 }
                 else
                 {
@@ -224,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                if (this.HasSplit && !this.root.HasMoreResults)
+                if (this.HasSplit && !this.Root.HasMoreResults)
                 {
                     // If the partition has split and there are are no more results in the parent buffer
                     // then just pull from the highest priority child (with recursive decent).
@@ -248,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.IsAtBeginningOfPage;
+                    return this.Root.IsAtBeginningOfPage;
                 }
                 else
                 {
@@ -264,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.root.HasMoreResults
+                return this.Root.HasMoreResults
                     || (this.HasSplit && this.children.Peek().HasMoreResults);
             }
         }
@@ -276,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.root.HasMoreBackendResults
+                return this.Root.HasMoreBackendResults
                     || (this.HasSplit && this.children.Peek().HasMoreBackendResults);
             }
         }
@@ -290,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.ItemsLeftInCurrentPage;
+                    return this.Root.ItemsLeftInCurrentPage;
                 }
                 else
                 {
@@ -308,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.BufferedItemCount;
+                    return this.Root.BufferedItemCount;
                 }
                 else
                 {
@@ -324,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.root.IsActive || this.children.Any((child) => child.IsActive);
+                return this.Root.IsActive || this.children.Any((child) => child.IsActive);
             }
         }
 
@@ -337,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.PageSize;
+                    return this.Root.PageSize;
                 }
                 else
                 {
@@ -349,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    this.root.PageSize = value;
+                    this.Root.PageSize = value;
                 }
                 else
                 {
@@ -367,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.ActivityId;
+                    return this.Root.ActivityId;
                 }
                 else
                 {
@@ -385,11 +365,29 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.root.Current;
+                    return this.Root.Current;
                 }
                 else
                 {
                     return this.CurrentItemProducerTree.Current;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the current item from the document producer tree.
+        /// </summary>
+        public CosmosQueryResponse CurrentResponseContent
+        {
+            get
+            {
+                if (this.CurrentItemProducerTree == this)
+                {
+                    return this.Root.CurrentElementResponse;
+                }
+                else
+                {
+                    return this.CurrentItemProducerTree.CurrentResponseContent;
                 }
             }
         }
@@ -454,18 +452,18 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (!this.HasSplit)
             {
-                if (this.root.IsActive)
+                if (this.Root.IsActive)
                 {
-                    yield return this.root;
+                    yield return this.Root;
                 }
             }
             else
             {
                 // A document producer is "active" if it resumed from a continuation token and has more buffered results.
-                if (this.root.IsActive && this.root.BufferedItemCount != 0)
+                if (this.Root.IsActive && this.Root.BufferedItemCount != 0)
                 {
                     // has split but need to check if parent is fully drained
-                    yield return this.root;
+                    yield return this.Root;
                 }
                 else
                 {
@@ -525,7 +523,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private static Func<PartitionKeyRange, string, ItemProducerTree> CreateItemProducerTreeCallback(
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
-            Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
@@ -539,7 +536,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     queryContext,
                     querySpecForInit,
                     partitionKeyRange,
-                    createRetryPolicyFunc,
                     produceAsyncCompleteCallback,
                     itemProducerTreeComparer,
                     equalityComparer,
@@ -574,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.CurrentItemProducerTree == this)
             {
-                return await this.root.MoveNextAsync(token);
+                return await this.Root.MoveNextAsync(token);
             }
             else
             {
@@ -612,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     return null;
                 }
 
-                await this.root.BufferMoreDocuments(token);
+                await this.Root.BufferMoreDocuments(token);
             }
             else
             {
@@ -676,14 +672,14 @@ namespace Microsoft.Azure.Cosmos.Query
                     List<PartitionKeyRange> replacementRanges = await this.GetReplacementRanges(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
                     foreach (PartitionKeyRange replacementRange in replacementRanges)
                     {
-                        ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.root.BackendContinuationToken);
+                        ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.Root.BackendContinuationToken);
 
                         if (!this.deferFirstPage)
                         {
                             await replacementItemProducerTree.MoveNextAsync(cancellationToken);
                         }
 
-                        replacementItemProducerTree.Filter = splitItemProducerTree.root.Filter;
+                        replacementItemProducerTree.Filter = splitItemProducerTree.Root.Filter;
                         if (replacementItemProducerTree.HasMoreResults)
                         {
                             if (!splitItemProducerTree.children.TryAdd(replacementItemProducerTree))

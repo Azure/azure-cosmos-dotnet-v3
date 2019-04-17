@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="token">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        internal abstract Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken token);
+        internal abstract Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Stops this document query execution component.

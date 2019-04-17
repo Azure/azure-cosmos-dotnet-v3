@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the internal error object.
         /// </summary>
-        internal virtual Error Error { private get; set; }
+        internal virtual Error Error { get; set; }
 
         private bool _disposed;
 

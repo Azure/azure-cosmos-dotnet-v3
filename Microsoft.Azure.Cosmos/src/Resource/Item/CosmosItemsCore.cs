@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxItemCount = maxItemCount;
             requestOptions.PartitionKey = partitionKey;
 
-            CosmosQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 this.QueryRequestExecutor,
-                documentQueryExecution);
+                cosmosQueryExecution);
         }
 
         public override CosmosResultSetIterator CreateItemQueryAsStream(
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.RequestContinuation = continuationToken;
             requestOptions.MaxItemCount = maxItemCount;
 
-            CosmosQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 this.NextResultSetAsync<T>,
-                documentQueryExecution);
+                cosmosQueryExecution);
         }
 
         public override CosmosResultSetIterator<T> CreateItemQuery<T>(
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxItemCount = maxItemCount;
             requestOptions.MaxConcurrency = maxConcurrency;
 
-            CosmosQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 this.NextResultSetAsync<T>,
-                documentQueryExecution);
+                cosmosQueryExecution);
         }
 
         public override CosmosResultSetIterator<T> CreateItemQuery<T>(
@@ -424,15 +424,15 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            CosmosQueryExecutionContext documentQueryExecution = (CosmosQueryExecutionContext)state;
+            CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
 
             try
             {
-                CosmosElementResponse feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
+                CosmosQueryResponse feedResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
                 return CosmosQueryResponse<T>.CreateResponse<T>(
-                    feedResponse: feedResponse,
+                    cosmosQueryResponse: feedResponse,
                     jsonSerializer: this.cosmosJsonSerializer,
-                    hasMoreResults: !documentQueryExecution.IsDone,
+                    hasMoreResults: !cosmosQueryExecution.IsDone,
                     resourceType: ResourceType.Document);
             }
             catch (DocumentClientException exception)
@@ -519,42 +519,15 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private async Task<CosmosQueryResponse> QueryRequestExecutor(
+        private Task<CosmosQueryResponse> QueryRequestExecutor(
             string continuationToken,
             CosmosRequestOptions requestOptions,
             object state,
             CancellationToken cancellationToken)
         {
-            CosmosQueryExecutionContext documentQueryExecution = (CosmosQueryExecutionContext)state;
+            CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
             CosmosQueryRequestOptions queryRequestOptions = (CosmosQueryRequestOptions)requestOptions;
-            // DEVNOTE: Remove try catch once query pipeline is converted to exceptionless
-            try
-            {
-                FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
-                return CosmosQueryResponse.CreateResponse(
-                    feedResponse: feedResponse,
-                    cosmosSerializationOptions: queryRequestOptions.CosmosSerializationOptions);
-            }
-            catch (DocumentClientException exception)
-            {
-                return new CosmosQueryResponse(
-                        errorMessage: exception.Message,
-                        httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
-                        retryAfter: exception.RetryAfter);
-            }
-            catch (AggregateException ae)
-            {
-                DocumentClientException exception = ae.InnerException as DocumentClientException;
-                if (exception == null)
-                {
-                    throw;
-                }
-
-                return new CosmosQueryResponse(
-                        errorMessage: exception.Message,
-                        httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
-                        retryAfter: exception.RetryAfter);
-            }
+            return cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
         }
 
         internal Uri GetResourceUri(CosmosRequestOptions requestOptions, OperationType operationType, string itemId)

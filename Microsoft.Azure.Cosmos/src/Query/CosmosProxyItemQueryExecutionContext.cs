@@ -53,31 +53,21 @@ namespace Microsoft.Azure.Cosmos.Query
             this.innerExecutionContext.Dispose();
         }
 
-        internal override async Task<CosmosElementResponse> ExecuteNextAsync(CancellationToken token)
+        internal override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.IsDone)
             {
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            Error error;
-
-            try
+            CosmosQueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
+            if (response.StatusCode != HttpStatusCode.BadRequest || response.Headers.SubStatusCode != SubStatusCodes.CrossPartitionQueryNotServable)
             {
-                return await this.innerExecutionContext.ExecuteNextAsync(token);
-            }
-            catch (CosmosException ex)
-            {
-                if (ex.StatusCode != HttpStatusCode.BadRequest || ex.SubStatusCode != (int)SubStatusCodes.CrossPartitionQueryNotServable)
-                {
-                    throw;
-                }
-
-                error = ex.Error;
+                return response;
             }
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo =
-                    JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(error.AdditionalErrorInfo);
+                    JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(response.Error.AdditionalErrorInfo);
 
             string rewrittenQuery = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery;
             if (!string.IsNullOrEmpty(rewrittenQuery))

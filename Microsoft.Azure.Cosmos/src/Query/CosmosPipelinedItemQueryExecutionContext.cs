@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Disposes of this context.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             this.component.Dispose();
         }
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
-        internal override async Task<CosmosElementResponse> ExecuteNextAsync(CancellationToken token)
+        internal override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             try
             {

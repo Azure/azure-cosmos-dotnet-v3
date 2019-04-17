@@ -6,70 +6,87 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
-    /// The cosmos query response
+    /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
     /// </summary>
-    public class CosmosQueryResponse : IDisposable
+    /// <typeparam name="T">The feed type.</typeparam>
+    public class CosmosQueryResponse
     {
-        private bool _isDisposed = false;
-        private readonly INameValueCollection _responseHeaders = null;
-        private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
-        private readonly string disallowContinuationTokenMessage;
-        private readonly string continuationToken;
+        internal readonly string disallowContinuationTokenMessage;
 
         /// <summary>
-        /// Empty constructor that can be used for unit testing
+        /// Constructor exposed for mocking purposes.
         /// </summary>
         public CosmosQueryResponse()
         {
-
         }
 
-        /// <summary>
-        /// Create a <see cref="CosmosQueryResponse{T}"/>
-        /// </summary>
         internal CosmosQueryResponse(
-            INameValueCollection responseHeaders,
-            Stream content,
+            IEnumerable<CosmosElement> result,
             int count,
-            string continuationToken,
-            string disallowContinuationTokenMessage,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
+            CosmosResponseMessageHeaders responseHeaders,
+            bool useETagAsContinuation = false,
+            string disallowContinuationTokenMessage = null,
+            long responseLengthBytes = 0)
         {
-            this._responseHeaders = responseHeaders;
-            this._queryMetrics = queryMetrics;
-            this.Content = content;
+            this.StatusCode = HttpStatusCode.Accepted;
+            this.IsSuccess = true;
+            this.CosmosElements = result;
             this.Count = count;
-            this.StatusCode = HttpStatusCode.OK;
+            this.UseETagAsContinuation = useETagAsContinuation;
             this.disallowContinuationTokenMessage = disallowContinuationTokenMessage;
-            this.continuationToken = continuationToken;
+            this.ResponseLengthBytes = responseLengthBytes;
+            this.Headers = responseHeaders;
         }
 
         internal CosmosQueryResponse(
+            CosmosResponseMessageHeaders responseHeaders,
+            HttpStatusCode statusCode,
             string errorMessage,
-            HttpStatusCode httpStatusCode,
-            TimeSpan retryAfter,
-            INameValueCollection responseHeaders = null)
+            Error error)
         {
-            this.continuationToken = null;
-            this.Content = null;
-            this._responseHeaders = responseHeaders;
-            this.StatusCode = httpStatusCode;
-            this.RetryAfter = retryAfter;
+            this.StatusCode = statusCode;
+            this.IsSuccess = false;
             this.ErrorMessage = errorMessage;
+            this.Error = error;
+            this.CosmosElements = Enumerable.Empty<CosmosElement>();
+            this.Count = 0;
+            this.disallowContinuationTokenMessage = null;
+            this.ResponseLengthBytes = 0;
+            this.Headers = responseHeaders;
         }
 
         /// <summary>
-        /// Gets the continuation token
+        /// Gets the request charge for this request from the Azure Cosmos DB service.
         /// </summary>
-        public virtual string ContinuationToken
+        /// <value>
+        /// The request charge measured in reqest units.
+        /// </value>
+        public virtual double RequestCharge => this.Headers.RequestCharge;
+
+        /// <summary>
+        /// Gets the activity ID for the request from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The activity ID for the request.
+        /// </value>
+        public virtual string ActivityId => this.Headers[HttpConstants.HttpHeaders.ActivityId];
+
+        /// <summary>
+        /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The continuation token to be used for continuing enumeration.
+        /// </value>
+        public string ResponseContinuation
         {
             get
             {
@@ -78,14 +95,46 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException(this.disallowContinuationTokenMessage);
                 }
 
-                return this.continuationToken;
+                return this.InternalResponseContinuation;
+            }
+
+            internal set
+            {
+                if (this.disallowContinuationTokenMessage != null)
+                {
+                    throw new ArgumentException(this.disallowContinuationTokenMessage);
+                }
+
+                Debug.Assert(!this.UseETagAsContinuation);
+                this.Headers.Continuation = value;
             }
         }
 
         /// <summary>
-        /// Contains the stream response of the operation
+        /// Gets the session token for use in sesssion consistency reads from the Azure Cosmos DB service.
         /// </summary>
-        public virtual Stream Content { get; protected set; }
+        /// <value>
+        /// The session token for use in session consistency.
+        /// </value>
+        public string SessionToken => this.Headers[HttpConstants.HttpHeaders.SessionToken];
+
+        /// <summary>
+        /// Gets the content parent location, for example, dbs/foo/colls/bar, from the Azure Cosmos DB service.
+        /// </summary>
+        public string ContentLocation => this.Headers[HttpConstants.HttpHeaders.OwnerFullName];
+
+        /// <summary>
+        /// Gets the entity tag associated with last transaction in the Azure Cosmos DB service,
+        /// which can be used as If-Non-Match Access condition for ReadFeed REST request or 
+        /// ContinuationToken property of <see cref="ChangeFeedOptions"/> parameter for
+        /// <see cref="DocumentClient.CreateDocumentChangeFeedQuery(string, ChangeFeedOptions)"/> 
+        /// to get feed changes since the transaction specified by this entity tag.
+        /// </summary>
+        public string ETag => this.Headers.ETag;
+
+        public CosmosResponseMessageHeaders Headers { get; }
+
+        public int Count { get; }
 
         /// <summary>
         /// Gets the <see cref="HttpStatusCode"/> of the current response.
@@ -97,81 +146,139 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string ErrorMessage { get; }
 
+        public Stream Content => this.GetStream();
+
         /// <summary>
-        /// The number of items in the query response
+        /// Asserts if the current <see cref="HttpStatusCode"/> is a success.
         /// </summary>
-        public virtual int Count { get; }
+        public virtual bool IsSuccess { get; }
 
-        internal TimeSpan? RetryAfter { get; }
+        internal IEnumerable<CosmosElement> CosmosElements { get; }
+
+        internal virtual Error Error { get; }
 
         /// <summary>
-        /// Gets the request charge for this request from the Azure Cosmos DB service.
+        /// Gets the response length in bytes
+        /// </summary>
+        /// <remarks>
+        /// This value is only set for Direct mode.
+        /// </remarks>
+        internal long ResponseLengthBytes { get; private set; }
+
+        /// <summary>
+        /// Get the client side request statistics for the current request.
+        /// </summary>
+        /// <remarks>
+        /// This value is currently used for tracking replica Uris.
+        /// </remarks>
+        internal ClientSideRequestStatistics RequestStatistics { get; private set; }
+
+        internal virtual CosmosSerializationOptions CosmosSerializationOptions { get; set; }
+
+        /// <summary>
+        /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// The request charge measured in request units.
+        /// The continuation token to be used for continuing enumeration.
         /// </value>
-        public virtual double RequestCharge
-        {
-            get
-            {
-                if (this._responseHeaders == null)
-                {
-                    return 0;
-                }
+        internal string InternalResponseContinuation => this.UseETagAsContinuation ?
+                    this.ETag :
+                    this.Headers.Continuation;
 
-                return Helpers.GetHeaderValueDouble(
-                    this._responseHeaders,
-                    HttpConstants.HttpHeaders.RequestCharge,
-                    0);
-            }
-        }
+        // This is used by CosmosElementResponseBinder.
+        internal bool UseETagAsContinuation { get; }
+
+        internal string DisallowContinuationTokenMessage => this.disallowContinuationTokenMessage;
 
         /// <summary>
-        /// Gets the activity ID for the request from the Azure Cosmos DB service.
+        /// Checks if the current <see cref="CosmosResponseMessage"/> has a successful status code, otherwise, throws.
         /// </summary>
-        /// <value>
-        /// The activity ID for the request.
-        /// </value>
-        public virtual string ActivityId
+        /// <exception cref="HttpRequestException"></exception>
+        /// <returns>The current <see cref="CosmosResponseMessage"/>.</returns>
+        internal virtual CosmosQueryResponse EnsureSuccessStatusCode()
         {
-            get
+            if (!this.IsSuccess)
             {
-                if (this._responseHeaders == null)
-                {
-                    return null;
-                }
+                string message = $"Response status code does not indicate success: {(int)this.StatusCode} Substatus: {(int)this.Headers.SubStatusCode} Reason: ({this.ErrorMessage}).";
 
-                return this._responseHeaders[HttpConstants.HttpHeaders.ActivityId];
+                throw new CosmosException(
+                    message: message,
+                    statusCode: this.StatusCode,
+                    subStatusCode: (int)this.Headers.SubStatusCode,
+                    activityId: this.ActivityId,
+                    requestCharge: this.RequestCharge);
             }
-        }
 
-        /// <summary>
-        /// Returns true if the operation succeeded
-        /// </summary>
-        public virtual bool IsSuccess => this.StatusCode == HttpStatusCode.OK;
-
-        internal static CosmosQueryResponse CreateResponse(
-            FeedResponse<CosmosElement> feedResponse,
-            CosmosSerializationOptions cosmosSerializationOptions)
-        {
-            return FeedResponseBinder.ConvertToCosmosQueryResponse(feedResponse, null);
-        }
-
-        /// <summary>
-        /// Dispose of the response content
-        /// </summary>
-        public void Dispose()
-        {
-            if (!this._isDisposed && this.Content != null)
-            {
-                this._isDisposed = true;
-                this.Content.Dispose();
-            }
+            return this;
         }
 
         internal bool GetHasMoreResults()
         {
-            return !string.IsNullOrEmpty(this.ContinuationToken);
+            return !string.IsNullOrEmpty(this.ResponseContinuation);
+        }
+
+        public Stream GetStream()
+        {
+            IJsonWriter jsonWriter;
+            if (this.CosmosSerializationOptions != null)
+            {
+                jsonWriter = this.CosmosSerializationOptions.CreateCustomWriterCallback();
+            }
+            else
+            {
+                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            }
+
+            jsonWriter.WriteArrayStart();
+
+            foreach (CosmosElement cosmosElement in this.CosmosElements)
+            {
+                cosmosElement.WriteTo(jsonWriter);
+            }
+
+            jsonWriter.WriteArrayEnd();
+
+            return new MemoryStream(jsonWriter.GetResult());
+        }
+
+        internal IEnumerable<T> Convert<T>(
+            ResourceType resourceType,
+            CosmosJsonSerializer jsonSerializer)
+        {
+            // Throw the exception if it exists for type base responses
+            this.EnsureSuccessStatusCode();
+
+            if (this.Count == 0)
+            {
+                return Enumerable.Empty<T>();
+            }
+
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+
+            jsonWriter.WriteArrayStart();
+
+            foreach (CosmosElement cosmosElement in this.CosmosElements)
+            {
+                cosmosElement.WriteTo(jsonWriter);
+            }
+
+            jsonWriter.WriteArrayEnd();
+            MemoryStream stream = new MemoryStream(jsonWriter.GetResult());
+            IEnumerable<T> typedResults;
+
+            // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic
+            // create a OfferV2 object and cast it to T. This is a temporary fix until offers is moved to v3 API. 
+            if (resourceType == ResourceType.Offer &&
+                (typeof(T).IsSubclassOf(typeof(Resource)) || typeof(T) == typeof(object)))
+            {
+                typedResults = jsonSerializer.FromStream<List<OfferV2>>(stream).Cast<T>();
+            }
+            else
+            {
+                typedResults = jsonSerializer.FromStream<List<T>>(stream);
+            }
+
+            return typedResults;
         }
     }
 
@@ -181,18 +288,21 @@ namespace Microsoft.Azure.Cosmos
     /// <typeparam name="T"></typeparam>
     public class CosmosQueryResponse<T> : IEnumerable<T>
     {
-        private IEnumerable<T> Resources;
-        private bool HasMoreResults;
+        private readonly CosmosResponseMessageHeaders responseHeaders = null;
+        private IEnumerable<T> resources;
+        private bool hasMoreResults;
 
         /// <summary>
         /// Create a <see cref="CosmosQueryResponse{T}"/>
         /// </summary>
         protected CosmosQueryResponse(
+            CosmosResponseMessageHeaders responseMessageHeaders,
             bool hasMoreResults,
             string continuationToken,
             string disallowContinuationTokenMessage)
         {
-            this.HasMoreResults = hasMoreResults;
+            this.responseHeaders = responseMessageHeaders;
+            this.hasMoreResults = hasMoreResults;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.InternalContinuationToken = continuationToken;
         }
@@ -218,17 +328,36 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the request charge for this request from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The request charge measured in request units.
+        /// </value>
+        public virtual double RequestCharge
+        {
+            get
+            {
+                if (this.responseHeaders == null)
+                {
+                    return 0;
+                }
+
+                return this.responseHeaders.RequestCharge;
+            }
+        }
+
+        /// <summary>
         /// Get the enumerators to iterate through the results
         /// </summary>
         /// <returns>An enumerator of the response objects</returns>
         public virtual IEnumerator<T> GetEnumerator()
         {
-            if (this.Resources == null)
+            if (this.resources == null)
             {
                 return Enumerable.Empty<T>().GetEnumerator();
             }
 
-            return this.Resources.GetEnumerator();
+            return this.resources.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -237,6 +366,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
+            CosmosResponseMessageHeaders responseMessageHeaders,
             Stream stream,
             CosmosJsonSerializer jsonSerializer,
             string continuationToken,
@@ -245,6 +375,7 @@ namespace Microsoft.Azure.Cosmos
             using (stream)
             {
                 CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+                    responseMessageHeaders: responseMessageHeaders,
                     hasMoreResults: hasMoreResults,
                     continuationToken: continuationToken,
                     disallowContinuationTokenMessage: null);
@@ -255,15 +386,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
+            CosmosResponseMessageHeaders responseMessageHeaders,
             IEnumerable<TInput> resources,
             string continuationToken,
             bool hasMoreResults)
         {
             CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+                responseMessageHeaders: responseMessageHeaders,
                 hasMoreResults: hasMoreResults,
                 continuationToken: continuationToken,
-                disallowContinuationTokenMessage: null);
-            queryResponse.Resources = resources;
+                disallowContinuationTokenMessage: null)
+            {
+                resources = resources
+            };
+
             return queryResponse;
         }
 
@@ -271,38 +407,38 @@ namespace Microsoft.Azure.Cosmos
             Stream stream,
             CosmosJsonSerializer jsonSerializer)
         {
-            this.Resources = jsonSerializer.FromStream<CosmosFeedResponse<T>>(stream).Data;
+            this.resources = jsonSerializer.FromStream<CosmosFeedResponse<T>>(stream).Data;
         }
 
         internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
-            FeedResponse<CosmosElement> feedResponse,
+            CosmosQueryResponse cosmosQueryResponse,
             CosmosJsonSerializer jsonSerializer,
             bool hasMoreResults,
             ResourceType resourceType)
         {
             CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+                responseMessageHeaders: cosmosQueryResponse.Headers,
                 hasMoreResults: hasMoreResults,
-                continuationToken: feedResponse.InternalResponseContinuation,
-                disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage);
+                continuationToken: cosmosQueryResponse.InternalResponseContinuation,
+                disallowContinuationTokenMessage: cosmosQueryResponse.DisallowContinuationTokenMessage);
 
-            queryResponse.InitializeResource(feedResponse, jsonSerializer, resourceType);
+            queryResponse.InitializeResource(cosmosQueryResponse, jsonSerializer, resourceType);
             return queryResponse;
         }
 
         private void InitializeResource(
-            FeedResponse<CosmosElement> feedResponse,
+            CosmosQueryResponse feedResponse,
             CosmosJsonSerializer jsonSerializer,
             ResourceType resourceType)
         {
-            this.Resources = FeedResponseBinder.ConvertCosmosElementFeed<T>(
-                feedResponse,
+            this.resources = feedResponse.Convert<T>(
                 resourceType,
                 jsonSerializer);
         }
 
         internal bool GetHasMoreResults()
         {
-            return this.HasMoreResults;
+            return this.hasMoreResults;
         }
     }
 }

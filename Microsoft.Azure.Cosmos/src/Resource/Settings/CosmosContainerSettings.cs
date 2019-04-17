@@ -2,26 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Linq;
-using Microsoft.Azure.Documents;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document collection in the Azure Cosmos DB service. A collection is a named logical container for documents. 
@@ -121,11 +108,13 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             if (!string.IsNullOrEmpty(partitionKeyPath))
             {
-                this.PartitionKey = new PartitionKeyDefinition();
-                this.PartitionKey.Paths = new Collection<string>() { partitionKeyPath };
+                this.PartitionKey = new PartitionKeyDefinition
+                {
+                    Paths = new Collection<string>() { partitionKeyPath }
+                };
             }
 
-            ValidateRequiredProperties();
+            this.ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -133,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
         {
-            if(string.IsNullOrEmpty(resoruceId))
+            if (string.IsNullOrEmpty(resoruceId))
             {
                 throw new ArgumentNullException(nameof(resoruceId));
             }
@@ -154,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
 
-            ValidateRequiredProperties();
+            this.ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -212,13 +201,7 @@ namespace Microsoft.Azure.Cosmos
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public string PartitionKeyPath
-        {
-            get
-            {
-                return this.PartitionKey?.Paths[0];
-            }
-        }
+        public string PartitionKeyPath => this.PartitionKey?.Paths[0];
 
         /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
@@ -282,10 +265,7 @@ namespace Microsoft.Azure.Cosmos
                 int? seconds = this.InternalTimeToLive;
                 return seconds != null && seconds.HasValue ? TimeSpan.FromSeconds(seconds.Value) : (TimeSpan?)null;
             }
-            set
-            {
-                this.InternalTimeToLive = value != null && value.HasValue ? (int?)value.Value.TotalSeconds : (int?)null;
-            }
+            set => this.InternalTimeToLive = value != null && value.HasValue ? (int?)value.Value.TotalSeconds : null;
         }
 
         /// <summary>
@@ -296,6 +276,22 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
+
+        /// <summary>
+        /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
+        /// </summary>
+        /// <remarks>
+        /// The function selects the right partition key constant for inserting documents that don't have
+        /// a value for partition key. The constant selection is based on whether the collection is migrated
+        /// or user partitioned
+        /// </remarks>
+        internal PartitionKeyInternal NonePartitionKeyValue
+        {
+            get
+            {
+                return CosmosContainerSettings.GetNonePartitionKeyInternal(this.PartitionKey);
+            }
+        }
 
         /// <summary>
         /// Internal property used as a helper to convert to the back-end type int?
@@ -317,6 +313,18 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.RId)]
         internal virtual string ResourceId { get; private set; }
 
+        internal static PartitionKeyInternal GetNonePartitionKeyInternal(PartitionKeyDefinition partitionKeyDefinition)
+        {
+            if (partitionKeyDefinition.Paths.Count == 0 || partitionKeyDefinition.IsSystemKey)
+            {
+                return PartitionKeyInternal.Empty;
+            }
+            else
+            {
+                return PartitionKeyInternal.Undefined;
+            }
+        }
+
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.
         /// </summary>
@@ -324,12 +332,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.Id == null)
             {
-                throw new ArgumentNullException(nameof(Id));
+                throw new ArgumentNullException(nameof(this.Id));
             }
 
             if (this.PartitionKey == null || this.PartitionKey.Paths.Count == 0)
             {
-                throw new ArgumentNullException(nameof(PartitionKey));
+                throw new ArgumentNullException(nameof(this.PartitionKey));
             }
         }
     }

@@ -308,14 +308,17 @@ namespace Microsoft.Azure.Cosmos.Query
             return false;
         }
 
-        public async Task<CosmosElementResponse> ExecuteNextAsync(CancellationToken token)
+        internal override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.innerExecutionContext == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
             }
 
-            return await this.innerExecutionContext.ExecuteNextAsync(token);
+            CosmosQueryResponse response =  await this.innerExecutionContext.ExecuteNextAsync(token);
+            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+            return response;
         }
 
         public override void Dispose()

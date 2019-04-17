@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">Upper bound for the number of documents you wish to receive.</param>
         /// <param name="token">The cancellation token to use.</param>
         /// <returns>A FeedResponse of documents.</returns>
-        internal override Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken token)
+        internal override Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             return this.Source.DrainAsync(maxElements, token);
         }

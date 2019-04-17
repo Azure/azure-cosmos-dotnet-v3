@@ -100,11 +100,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of items to drain.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A page of distinct results.</returns>
-        internal override async Task<CosmosElementResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        internal override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             List<CosmosElement> distinctResults = new List<CosmosElement>();
-            CosmosElementResponse feedResponse = await base.DrainAsync(maxElements, cancellationToken);
-            foreach (CosmosElement document in feedResponse)
+            CosmosQueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
+            if (!cosmosQueryResponse.IsSuccess)
+            {
+                return cosmosQueryResponse;
+            }
+
+            foreach (CosmosElement document in cosmosQueryResponse.CosmosElements)
             {
                 if (this.distinctMap.Add(document, out this.lastHash))
                 {
@@ -114,24 +119,24 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (!this.IsDone)
             {
-                string sourceContinuationToken = feedResponse.ResponseContinuation;
-                feedResponse.ResponseContinuation = new DistinctContinuationToken(
+                string sourceContinuationToken = cosmosQueryResponse.ResponseContinuation;
+                cosmosQueryResponse.ResponseContinuation = new DistinctContinuationToken(
                     this.lastHash,
                     sourceContinuationToken).ToString();
             }
             else
             {
                 this.Source.Stop();
-                feedResponse.ResponseContinuation = null;
+                cosmosQueryResponse.ResponseContinuation = null;
             }
 
-            return new CosmosElementResponse(
+            return new CosmosQueryResponse(
                 distinctResults,
                 distinctResults.Count,
-                feedResponse.Headers,
-                feedResponse.UseETagAsContinuation,
+                cosmosQueryResponse.Headers,
+                cosmosQueryResponse.UseETagAsContinuation,
                 this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken,
-                feedResponse.ResponseLengthBytes);
+                cosmosQueryResponse.ResponseLengthBytes);
         }
 
         /// <summary>

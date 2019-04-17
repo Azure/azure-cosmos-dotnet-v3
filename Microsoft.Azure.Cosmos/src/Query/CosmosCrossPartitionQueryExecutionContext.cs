@@ -424,8 +424,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.queryContext,
                     querySpecForInit,
                     partitionKeyRange,
-                    //// Retry policy callback
-                    () => new NonRetriableInvalidPartitionExceptionRetryPolicy(collectionCache, this.queryContext.QueryClient.GetRetryPolicy()),
                     this.OnItemProducerTreeCompleteFetching,
                     this.itemProducerForest.Comparer as IComparer<ItemProducerTree>,
                     this.equalityComparer,
