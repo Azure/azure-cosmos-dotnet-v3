@@ -211,23 +211,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Only container cache needs this contract. None are expected to use it. 
+        /// The returned object represents a partition key value that allows creating and accessing documents
+        /// without a value for partition key
         /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
-        {
-            if (string.IsNullOrEmpty(resoruceId))
-            {
-                throw new ArgumentNullException(nameof(resoruceId));
-            }
-
-            return new CosmosContainerSettings()
-            {
-                ResourceId = resoruceId,
-            };
-        }
+        public static readonly object NonePartitionKeyValue = Microsoft.Azure.Documents.PartitionKey.None;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
+        /// The tag name to use in the documents for specifying a partition key value
+        /// when inserting such documents into a migrated collection
+        /// </summary>
+        public static readonly string SystemKeyName = Microsoft.Azure.Documents.PartitionKey.SystemKeyName;
+
+        /// <summary>
+        /// The partition key path in the collection definition for migrated collections
+        /// </summary>
+        public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
+
+        /// <summary>
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
