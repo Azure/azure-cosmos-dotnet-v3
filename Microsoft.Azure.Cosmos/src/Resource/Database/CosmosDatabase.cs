@@ -34,8 +34,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public abstract CosmosContainers Containers { get; }
 
-        internal abstract Uri LinkUri { get; }
-
         /// <summary>
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>

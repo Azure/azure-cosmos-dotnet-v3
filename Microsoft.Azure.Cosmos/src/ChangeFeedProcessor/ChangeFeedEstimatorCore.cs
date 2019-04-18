@@ -20,10 +20,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
         private CancellationTokenSource shutdownCts = new CancellationTokenSource();
-        private CosmosContainer leaseContainer;
+        private CosmosContainerCore leaseContainer;
         private string leaseContainerPrefix;
         private TimeSpan? estimatorPeriod = null;
-        private CosmosContainer monitoredContainer;
+        private CosmosContainerCore monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimator feedEstimator;
         private bool initialized = false;
@@ -42,12 +42,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            CosmosContainer leaseContainer,
+            CosmosContainerCore leaseContainer,
             string leaseContainerPrefix,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            CosmosContainer monitoredContainer)
+            CosmosContainerCore monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             RemainingWorkEstimatorCore remainingWorkEstimator = new RemainingWorkEstimatorCore(
                this.documentServiceLeaseStoreManager.LeaseContainer,
                this.monitoredContainer,
-               ((CosmosContainerCore)this.monitoredContainer).ClientContext.Client.Configuration?.MaxConnectionLimit ?? 1);
+               this.monitoredContainer.ClientContext.Client.Configuration?.MaxConnectionLimit ?? 1);
 
             ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate, this.estimatorPeriod);
 

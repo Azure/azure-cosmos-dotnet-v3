@@ -23,13 +23,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            CosmosContainer container,
+            CosmosContainerCore container,
             int degreeOfParallelism)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 StartFromBeginning = string.IsNullOrEmpty(existingLease.ContinuationToken),
             };
 
-            IDocumentQuery<Document> query = ((CosmosContainerCore)this.container).ClientContext.DocumentClient.CreateDocumentChangeFeedQuery(this.container.LinkUri.ToString(), options);
+            IDocumentQuery<Document> query = this.container.ClientContext.DocumentClient.CreateDocumentChangeFeedQuery(this.container.LinkUri.ToString(), options);
             IFeedResponse<Document> response = null;
 
             try

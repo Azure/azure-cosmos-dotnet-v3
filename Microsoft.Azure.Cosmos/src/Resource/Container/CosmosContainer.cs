@@ -63,11 +63,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosStoredProcedures StoredProcedures { get; }
 
         /// <summary>
-        /// Gets the name based URI for the resource
-        /// </summary>
-        internal abstract Uri LinkUri { get; }
-
-        /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>

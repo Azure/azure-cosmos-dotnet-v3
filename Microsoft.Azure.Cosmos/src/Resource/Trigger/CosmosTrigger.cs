@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         protected internal CosmosTrigger(
             CosmosClientContext clientContext,
-            CosmosContainer container,
+            CosmosContainerCore container,
             string triggerId)
         {
             this.Id = triggerId;

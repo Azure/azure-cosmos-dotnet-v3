@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         public override string Id { get; }
         public override CosmosContainers Containers { get; }
 
-        internal override Uri LinkUri { get; }
+        internal Uri LinkUri { get; }
 
         public override Task<CosmosDatabaseResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,

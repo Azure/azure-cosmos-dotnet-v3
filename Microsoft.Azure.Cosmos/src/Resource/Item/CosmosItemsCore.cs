@@ -33,14 +33,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosItemsCore(
             CosmosClientContext clientContext,
-            CosmosContainer container)
+            CosmosContainerCore container)
         {
             this.clientContext = clientContext;
             this.container = container;
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
         }
 
-        internal readonly CosmosContainer container;
+        internal readonly CosmosContainerCore container;
 
         public override Task<CosmosResponseMessage> CreateItemStreamAsync(
                     object partitionKey,
@@ -357,7 +357,11 @@ namespace Microsoft.Azure.Cosmos
 
             ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
             ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
-            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedProcessor, changeFeedProcessor.ApplyBuildConfiguration);
+            return new ChangeFeedProcessorBuilder(
+                workflowName: workflowName,
+                cosmosContainer: this.container,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
@@ -376,7 +380,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
-            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
+            return new ChangeFeedProcessorBuilder(
+                workflowName: workflowName,
+                cosmosContainer: this.container,
+                changeFeedProcessor: changeFeedEstimatorCore,
+                applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
         internal CosmosFeedResultSetIterator GetStandByFeedIterator(
@@ -391,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
                 clientContext: this.clientContext,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,
-                cosmosContainer: (CosmosContainerCore)this.container,
+                cosmosContainer: this.container,
                 options: cosmosQueryRequestOptions);
         }
 

@@ -23,8 +23,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public abstract string Id { get; }
 
-        internal abstract Uri LinkUri { get; }
-
         /// <summary>
         /// Reads a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>

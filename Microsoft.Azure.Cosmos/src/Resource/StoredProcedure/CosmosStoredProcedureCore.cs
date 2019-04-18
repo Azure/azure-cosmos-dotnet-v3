@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosStoredProcedureCore(
             CosmosClientContext clientContext,
-            CosmosContainer container,
+            CosmosContainerCore container,
             string storedProcedureId)
         {
             this.clientContext = clientContext;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        internal override Uri LinkUri { get; }
+        internal Uri LinkUri { get; }
 
         public override Task<CosmosStoredProcedureResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,

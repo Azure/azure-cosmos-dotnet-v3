@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             CosmosItemResponse<ToDoActivity> response = await this.Container.Items.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.MaxResourceQuota);
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemStreamTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 using (CosmosResponseMessage response = await this.Container.Items.CreateItemStreamAsync(partitionKey: testItem.status, streamPayload: stream))
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task UpsertItemStreamTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Create the object
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReplaceItemStreamTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Replace a non-existing item. It should fail, and not throw an exception.
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<string> itemIds = null;
             try
             {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+                deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
                 itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
                 CosmosFeedResultSetIterator setIterator =
                     this.Container.Items.GetItemStreamIterator();
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<string> itemIds = null;
             try
             {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+                deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
                 itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
                 CosmosResultSetIterator<ToDoActivity> setIterator =
                     this.Container.Items.GetItemIterator<ToDoActivity>();
@@ -263,24 +263,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task QueryStreamSingleItem()
         {
-            await ItemSinglePartitionQueryStream(1, 1);
+            await this.ItemSinglePartitionQueryStream(1, 1);
         }
 
         [TestMethod]
         public async Task QueryStreamMultipleItem()
         {
-            await ItemSinglePartitionQueryStream(5, 5);
+            await this.ItemSinglePartitionQueryStream(5, 5);
         }
 
         [TestMethod]
         public async Task QueryStreamMultipleItemWithMaxItemCount()
         {
-            await ItemSinglePartitionQueryStream(6, 2);
+            await this.ItemSinglePartitionQueryStream(6, 2);
         }
 
         internal async Task ItemSinglePartitionQueryStream(int perPKItemCount, int maxItemCount)
         {
-            IList<ToDoActivity> deleteList = deleteList = await CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
+            IList<ToDoActivity> deleteList = deleteList = await this.CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
             ToDoActivity find = deleteList.First();
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
             try
             {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+                deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
 
                 ToDoActivity find = deleteList.First();
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
@@ -388,8 +388,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
             try
             {
-                deleteList = await CreateRandomItems(300, randomPartitionKey: true);
-                
+                deleteList = await this.CreateRandomItems(300, randomPartitionKey: true);
+
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
 
                 CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
@@ -420,7 +420,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(totalRequstCharge > 0);
 
                 List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-                for(int i = 0; i < verifiedOrderBy.Count(); i++)
+                for (int i = 0; i < verifiedOrderBy.Count(); i++)
                 {
                     Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
                     Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
@@ -445,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
             try
             {
-                deleteList = await CreateRandomItems(101, randomPartitionKey: true);
+                deleteList = await this.CreateRandomItems(101, randomPartitionKey: true);
 
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
 
@@ -498,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // Create a container large enough to have at least 2 partitions
-                var containerResponse = await this.database.Containers.CreateContainerAsync(
+                CosmosContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk",
                     throughput: 15000);
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true));
-                
+
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     typeof(object),
                     expression,
                     options,
-                    container.LinkUri.OriginalString,
+                    ((CosmosContainerCore)container).LinkUri.OriginalString,
                     false,
                     Guid.NewGuid());
 
@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                if(container != null)
+                if (container != null)
                 {
                     await container.DeleteAsync();
                 }
@@ -564,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
             try
             {
-                deleteList = await CreateRandomItems(101, randomPartitionKey: true);
+                deleteList = await this.CreateRandomItems(101, randomPartitionKey: true);
 
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
                 CosmosSerializationOptions options = new CosmosSerializationOptions(
@@ -630,7 +630,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<string> itemIds = new HashSet<string>();
             try
             {
-                deleteList = await CreateRandomItems(6, randomPartitionKey: false);
+                deleteList = await this.CreateRandomItems(6, randomPartitionKey: false);
 
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.taskNum = @task").UseParameter("@task", deleteList.First().taskNum);
 
@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task NegativeQueryTest()
         {
-            IList<ToDoActivity> items = await CreateRandomItems(pkCount: 10, perPKItemCount: 20, randomPartitionKey: true);
+            IList<ToDoActivity> items = await this.CreateRandomItems(pkCount: 10, perPKItemCount: 20, randomPartitionKey: true);
 
             try
             {
@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemRequestOptionAccessConditionTest()
         {
             // Create an item
-            ToDoActivity testItem = (await CreateRandomItems(1, randomPartitionKey: true)).First();
+            ToDoActivity testItem = (await this.CreateRandomItems(1, randomPartitionKey: true)).First();
 
             // Create an access condition that will fail because the etag will be different
             AccessCondition accessCondition = new AccessCondition
@@ -783,7 +783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (int j = 0; j < perPKItemCount; j++)
                 {
-                    ToDoActivity temp = CreateRandomToDoActivity(pk);
+                    ToDoActivity temp = this.CreateRandomToDoActivity(pk);
 
                     createdList.Add(temp);
 

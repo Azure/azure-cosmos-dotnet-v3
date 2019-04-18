@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly ChangeFeedObserver<T> observer;
         private readonly ChangeFeedOptions options;
 
-        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosContainer container, ProcessorSettings settings, PartitionCheckpointer checkpointer)
+        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosContainerCore container, ProcessorSettings settings, PartitionCheckpointer checkpointer)
         {
             this.observer = observer;
             this.settings = settings;
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 StartTime = settings.StartTime,
             };
 
-            this.query = ((CosmosContainerCore)container).ClientContext.DocumentClient.CreateDocumentChangeFeedQuery(container.LinkUri.ToString(), this.options);
+            this.query = container.ClientContext.DocumentClient.CreateDocumentChangeFeedQuery(container.LinkUri.ToString(), this.options);
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)

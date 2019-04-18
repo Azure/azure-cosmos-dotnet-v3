@@ -18,10 +18,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     {
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly ChangeFeedObserverFactory<T> observerFactory;
-        private CosmosContainer leaseContainer;
+        private CosmosContainerCore leaseContainer;
         private string leaseContainerPrefix;
         private string instanceName;
-        private CosmosContainer monitoredContainer;
+        private CosmosContainerCore monitoredContainer;
         private PartitionManager partitionManager;
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
@@ -37,12 +37,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            CosmosContainer leaseContainer,
+            CosmosContainerCore leaseContainer,
             string leaseContainerPrefix,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            CosmosContainer monitoredContainer)
+            CosmosContainerCore monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         internal static async Task<DocumentServiceLeaseStoreManager> InitializeLeaseStoreManagerAsync(
             DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager,
-            CosmosContainer leaseContainer,
+            CosmosContainerCore leaseContainer,
             string leaseContainerPrefix,
             string instanceName)
         {

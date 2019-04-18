@@ -22,14 +22,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         internal static int DefaultDegreeOfParallelism = 25;
 
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly int degreeOfParallelism;
         private readonly int maxBatchSize;
 
         public PartitionSynchronizerCore(
-            CosmosContainer container,
+            CosmosContainerCore container,
             DocumentServiceLeaseContainer leaseContainer,
             DocumentServiceLeaseManager leaseManager,
             int degreeOfParallelism,
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                     RequestContinuation = response?.ResponseContinuation,
                 };
 
-                response = await ((CosmosContainerCore)this.container).ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(containerUri, feedOptions).ConfigureAwait(false);
+                response = await this.container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(containerUri, feedOptions).ConfigureAwait(false);
                 IEnumerator<PartitionKeyRange> enumerator = response.GetEnumerator();
                 while (enumerator.MoveNext())
                 {

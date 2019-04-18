@@ -21,13 +21,13 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosContainersCore : CosmosContainers
     {
-        private readonly CosmosDatabase database;
+        private readonly CosmosDatabaseCore database;
         private readonly CosmosClientContext clientContext;
         private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
 
         internal CosmosContainersCore(
-            CosmosClientContext clientContext, 
-            CosmosDatabase database)
+            CosmosClientContext clientContext,
+            CosmosDatabaseCore database)
         {
             this.database = database;
             this.clientContext = clientContext;

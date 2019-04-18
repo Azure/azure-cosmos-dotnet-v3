@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         protected internal CosmosUserDefinedFunction(
             CosmosClientContext clientContext,
-            CosmosContainer container,
+            CosmosContainerCore container,
             string userDefinedFunctionId)
         {
             this.Id = userDefinedFunctionId;

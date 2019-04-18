@@ -20,11 +20,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosContainerCore : CosmosContainer
     {
-        
-
         internal CosmosContainerCore(
             CosmosClientContext clientContext,
-            CosmosDatabase database,
+            CosmosDatabaseCore database,
             string containerId)
         {
             this.Id = containerId;
@@ -49,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosStoredProcedures StoredProcedures { get; }
 
-        internal override Uri LinkUri { get; }
+        internal Uri LinkUri { get; }
 
         internal CosmosTriggers Triggers { get; }
 

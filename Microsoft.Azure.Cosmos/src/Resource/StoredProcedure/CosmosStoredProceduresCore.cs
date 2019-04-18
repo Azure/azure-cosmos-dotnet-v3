@@ -16,12 +16,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosStoredProceduresCore : CosmosStoredProcedures
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly CosmosClientContext clientContext;
 
         internal CosmosStoredProceduresCore(
             CosmosClientContext clientContext,
-            CosmosContainer container)
+            CosmosContainerCore container)
         {
             this.container = container;
             this.clientContext = clientContext;
