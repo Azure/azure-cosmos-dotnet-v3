@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// When a request fails due to a rate limiting error, the service sends back a response that
-        /// contains a value indicating the client should not retry before the <see cref="Microsoft.Azure.Cosmos.Internal.DocumentClientException.RetryAfter"/> time period has
+        /// contains a value indicating the client should not retry before the <see cref="Microsoft.Azure.Documents.DocumentClientException.RetryAfter"/> time period has
         /// elapsed. This property allows the application to set a maximum wait time for all retry attempts.
         /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
         /// </para>
