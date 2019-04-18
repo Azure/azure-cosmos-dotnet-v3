@@ -12,6 +12,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
+    /// <summary>
+    /// This class is used to get access to different client level operations without directly referencing the client object.
+    /// This makes it easy to pass a reference to the client, and it makes it easy to mock for unit tests.
+    /// </summary>
     internal abstract class CosmosClientContext
     {
         /// <summary>
@@ -41,6 +45,10 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract void ValidateResource(string resourceId);
 
+        /// <summary>
+        /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
+        /// in a resource can be unit tested.
+        /// </summary>
         internal abstract Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
@@ -51,6 +59,10 @@ namespace Microsoft.Azure.Cosmos
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 
+        /// <summary>
+        /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
+        /// in a resource can be unit tested.
+        /// </summary>
         internal abstract Task<T> ProcessResourceOperationAsync<T>(
            Uri resourceUri,
            ResourceType resourceType,
