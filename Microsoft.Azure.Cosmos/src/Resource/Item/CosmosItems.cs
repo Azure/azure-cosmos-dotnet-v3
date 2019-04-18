@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts an item stream as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts an item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="CosmosItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
         /// <param name="maxConcurrency">The number of concurrent operations run client side during parallel query execution in the Azure Cosmos DB service.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="CosmosQueryRequestOptions"/></param>
@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="sqlQueryText">The cosmos SQL query string.</param>
         /// <param name="maxConcurrency">The number of concurrent operations run client side during parallel query execution in the Azure Cosmos DB service.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="CosmosQueryRequestOptions"/></param>
@@ -652,7 +652,7 @@ namespace Microsoft.Azure.Cosmos
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="CosmosQueryRequestOptions"/></param>
@@ -693,7 +693,7 @@ namespace Microsoft.Azure.Cosmos
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryText">The cosmos SQL query text.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="CosmosQueryRequestOptions"/></param>
@@ -737,7 +737,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="CosmosQueryRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000
         /// <code language="c#">
@@ -779,7 +778,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="CosmosQueryRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <example>
         /// Create a query to get all the ToDoActivity that have a cost greater than 9000
         /// <code language="c#">
@@ -814,6 +812,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
         /// </summary>
+        /// <param name="workflowName">application name</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
@@ -822,6 +821,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
+        /// <param name="workflowName">application name</param>
         /// </summary>
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>

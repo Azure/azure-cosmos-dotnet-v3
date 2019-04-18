@@ -101,6 +101,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.UserDefinedFunction,
                 OperationType.Create,
                 requestOptions,
+                this.container,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 requestEnricher: null,
