@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Internal
     using System;
 
     /// <summary> 
-    /// These are the access permissions for creating or replacing a <see cref="Permission" /> resource in the Azure Cosmos DB service.
+    /// These are the access permissions for creating or replacing a <see cref="Microsoft.Azure.Documents.Permission" /> resource in the Azure Cosmos DB service.
     /// </summary>
     /// <remarks>
     /// A Permission resource associates an access permission of a user on a particular resource.

@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             string cont = null;
             do
             {
-                FeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = cont, MaxItemCount = 1000 })).Result;
+                FeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = cont, MaxItemCount = 1000 , EnableCrossPartitionQuery = true})).Result;
 
                 Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", response.Count);
 
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                                            resultCount / (double)numberOfQueries, numberOfQueries);
                 }
 
-                IDocumentQuery<dynamic> docQuery = client.CreateDocumentQuery(collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize }).AsDocumentQuery();
+                IDocumentQuery<dynamic> docQuery = client.CreateDocumentQuery(collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize , EnableCrossPartitionQuery = true}).AsDocumentQuery();
                 while (docQuery.HasMoreResults)
                 {
                     DateTime startTime = DateTime.Now;

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB database account.
@@ -136,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException(nameof(cosmosClientConfiguration));
             }
-
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
             DocumentClient documentClient = new DocumentClient(
                 cosmosClientConfiguration.AccountEndPoint,
                 cosmosClientConfiguration.AccountKey,

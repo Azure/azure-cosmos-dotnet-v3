@@ -119,10 +119,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Initializes a new instance of the CosmosCrossPartitionQueryExecutionContext class.
         /// </summary>
         /// <param name="initParams">Constructor parameters for the base class.</param>
-        /// <param name="rewrittenQuery">
-        /// Queries will get rewritten for different reasons.
-        /// You can read more about this in the details from the concrete classes.
-        /// </param>
         /// <param name="moveNextComparer">Comparer used to figure out that document producer tree to serve documents from next.</param>
         /// <param name="fetchPrioirtyFunction">The priority function to determine which partition to fetch documents from next.</param>
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>

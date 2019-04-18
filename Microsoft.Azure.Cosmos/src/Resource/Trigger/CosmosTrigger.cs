@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -28,10 +27,11 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosTrigger(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string triggerId)
         {
             this.Id = triggerId;
+            this.container = container;
             base.Initialize(
                 client: container.Client,
                 parentLink: container.LinkUri.OriginalString,
@@ -197,6 +197,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Trigger,
                 operationType,
                 requestOptions,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -204,5 +205,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.Client.ResponseFactory.CreateTriggerResponse(this, response);
         }
+
+        internal CosmosContainerCore container { get; }
     }
 }

@@ -63,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Initializes a new instance of the CosmosOrderByItemQueryExecutionContext class.
         /// </summary>
         /// <param name="initPararms">The params used to construct the base class.</param>
-        /// <param name="rewrittenQuery">
         /// For cross partition order by queries a query like "SELECT c.id, c.field_0 ORDER BY r.field_7 gets rewritten as:
         /// <![CDATA[
         /// SELECT r._rid, [{"item": r.field_7}] AS orderByItems, {"id": r.id, "field_0": r.field_0} AS payload
@@ -72,7 +71,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// ORDER BY r.field_7]]>
         /// This is needed because we need to add additional filters to the query when we resume from a continuation,
         /// and it lets us easily parse out the _rid orderByItems, and payload without parsing the entire document (and having to remember the order by field).
-        /// </param>
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
         private CosmosOrderByItemQueryExecutionContext(
            CosmosQueryContext initPararms,
@@ -260,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes this execution context.
         /// </summary>
+        /// <param name="sqlQuerySpec">sql query spec.</param>
         /// <param name="requestContinuation">The continuation token to resume from (or null if none).</param>
         /// <param name="collectionRid">The collection rid.</param>
         /// <param name="partitionKeyRanges">The partition key ranges to drain from.</param>

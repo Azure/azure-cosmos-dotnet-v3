@@ -46,7 +46,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Initializes a new instance of the CosmosParallelItemQueryExecutionContext class.
         /// </summary>
         /// <param name="constructorParams">The parameters for constructing the base class.</param>
-        /// <param name="rewrittenQuery">The rewritten query.</param>
         private CosmosParallelItemQueryExecutionContext(
             CosmosQueryContext constructorParams) :
             base(
@@ -170,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initialize the execution context.
         /// </summary>
+        /// <param name="sqlQuerySpec">sql query spec.</param>
         /// <param name="collectionRid">The collection rid.</param>
         /// <param name="partitionKeyRanges">The partition key ranges to drain documents from.</param>
         /// <param name="initialPageSize">The initial page size.</param>

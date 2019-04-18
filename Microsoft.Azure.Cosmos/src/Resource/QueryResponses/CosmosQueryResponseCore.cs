@@ -17,18 +17,18 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
     /// </summary>
-    public class CosmosQueryResponse
+    public class CosmosQueryResponseCore
     {
         internal readonly string disallowContinuationTokenMessage;
 
         /// <summary>
         /// Constructor exposed for mocking purposes.
         /// </summary>
-        public CosmosQueryResponse()
+        public CosmosQueryResponseCore()
         {
         }
 
-        internal CosmosQueryResponse(
+        internal CosmosQueryResponseCore(
             IEnumerable<CosmosElement> result,
             int count,
             CosmosResponseMessageHeaders responseHeaders,
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             this.Headers = responseHeaders;
         }
 
-        internal CosmosQueryResponse(
+        internal CosmosQueryResponseCore(
             CosmosResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
             string errorMessage,
@@ -132,12 +132,12 @@ namespace Microsoft.Azure.Cosmos
         public string ETag => this.Headers.ETag;
 
         /// <summary>
-        /// The headers of the response
+        /// The response headers
         /// </summary>
         public CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
-        /// The number of items in the stream.
+        /// The count of items in the stream
         /// </summary>
         public int Count { get; }
 
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <exception cref="CosmosException"></exception>
         /// <returns>The current <see cref="CosmosResponseMessage"/>.</returns>
-        internal virtual CosmosQueryResponse EnsureSuccessStatusCode()
+        internal virtual CosmosQueryResponseCore EnsureSuccessStatusCode()
         {
             if (!this.IsSuccess)
             {
@@ -294,16 +294,16 @@ namespace Microsoft.Azure.Cosmos
     /// The cosmos query response
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class CosmosQueryResponse<T> : IEnumerable<T>
+    public class CosmosQueryResponseCore<T> : IEnumerable<T>
     {
         private readonly CosmosResponseMessageHeaders responseHeaders = null;
         private IEnumerable<T> resources;
         private bool hasMoreResults;
 
         /// <summary>
-        /// Create a <see cref="CosmosQueryResponse{T}"/>
+        /// Create a <see cref="CosmosQueryResponseCore{T}"/>
         /// </summary>
-        protected CosmosQueryResponse(
+        protected CosmosQueryResponseCore(
             CosmosResponseMessageHeaders responseMessageHeaders,
             bool hasMoreResults,
             string continuationToken,
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos
             return this.GetEnumerator();
         }
 
-        internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
+        internal static CosmosQueryResponseCore<TInput> CreateResponse<TInput>(
             CosmosResponseMessageHeaders responseMessageHeaders,
             Stream stream,
             CosmosJsonSerializer jsonSerializer,
@@ -382,7 +382,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (stream)
             {
-                CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+                CosmosQueryResponseCore<TInput> queryResponse = new CosmosQueryResponseCore<TInput>(
                     responseMessageHeaders: responseMessageHeaders,
                     hasMoreResults: hasMoreResults,
                     continuationToken: continuationToken,
@@ -393,13 +393,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
+        internal static CosmosQueryResponseCore<TInput> CreateResponse<TInput>(
             CosmosResponseMessageHeaders responseMessageHeaders,
             IEnumerable<TInput> resources,
             string continuationToken,
             bool hasMoreResults)
         {
-            CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+            CosmosQueryResponseCore<TInput> queryResponse = new CosmosQueryResponseCore<TInput>(
                 responseMessageHeaders: responseMessageHeaders,
                 hasMoreResults: hasMoreResults,
                 continuationToken: continuationToken,
@@ -418,13 +418,13 @@ namespace Microsoft.Azure.Cosmos
             this.resources = jsonSerializer.FromStream<CosmosFeedResponse<T>>(stream).Data;
         }
 
-        internal static CosmosQueryResponse<TInput> CreateResponse<TInput>(
-            CosmosQueryResponse cosmosQueryResponse,
+        internal static CosmosQueryResponseCore<TInput> CreateResponse<TInput>(
+            CosmosQueryResponseCore cosmosQueryResponse,
             CosmosJsonSerializer jsonSerializer,
             bool hasMoreResults,
             ResourceType resourceType)
         {
-            CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
+            CosmosQueryResponseCore<TInput> queryResponse = new CosmosQueryResponseCore<TInput>(
                 responseMessageHeaders: cosmosQueryResponse.Headers,
                 hasMoreResults: hasMoreResults,
                 continuationToken: cosmosQueryResponse.InternalResponseContinuation,
@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private void InitializeResource(
-            CosmosQueryResponse feedResponse,
+            CosmosQueryResponseCore feedResponse,
             CosmosJsonSerializer jsonSerializer,
             ResourceType resourceType)
         {

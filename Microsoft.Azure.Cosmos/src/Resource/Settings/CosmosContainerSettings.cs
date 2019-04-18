@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
-    /// <seealso cref="Microsoft.Azure.Cosmos.PartitionKeyDefinition"/>
     /// <seealso cref="CosmosDatabaseSettings"/>
     public class CosmosContainerSettings
     {
@@ -165,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         /// When working with document resources, they too have this settable Id property. 
         /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
         /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> instance to true.
+        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
         /// This will prevent the SDK from generating new Ids. 
         /// </para>
         /// <para>
@@ -269,6 +268,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// The returned object represents a partition key value that allows creating and accessing documents
+        /// without a value for partition key
+        /// </summary>
+        public static readonly object NonePartitionKeyValue = Microsoft.Azure.Documents.PartitionKey.None;
+
+        /// <summary>
+        /// The tag name to use in the documents for specifying a partition key value
+        /// when inserting such documents into a migrated collection
+        /// </summary>
+        public static readonly string SystemKeyName = Microsoft.Azure.Documents.PartitionKey.SystemKeyName;
+
+        /// <summary>
+        /// The partition key path in the collection definition for migrated collections
+        /// </summary>
+        public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
+
+        /// <summary>
         /// Gets or sets <see cref="PartitionKeyDefinition"/> object in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -276,22 +292,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
-
-        /// <summary>
-        /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
-        /// </summary>
-        /// <remarks>
-        /// The function selects the right partition key constant for inserting documents that don't have
-        /// a value for partition key. The constant selection is based on whether the collection is migrated
-        /// or user partitioned
-        /// </remarks>
-        internal PartitionKeyInternal NonePartitionKeyValue
-        {
-            get
-            {
-                return CosmosContainerSettings.GetNonePartitionKeyInternal(this.PartitionKey);
-            }
-        }
 
         /// <summary>
         /// Internal property used as a helper to convert to the back-end type int?
