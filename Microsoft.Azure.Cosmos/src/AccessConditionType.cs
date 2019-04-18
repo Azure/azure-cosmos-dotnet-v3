@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     /// Specifies the set of <see cref="AccessCondition"/> types that can be used for operations in the Azure Cosmos DB service. 
     /// </summary>
     /// <seealso cref="AccessCondition"/>
-    /// <seealso cref="RequestOptions"/>
+    /// <seealso cref="CosmosRequestOptions"/>
     public enum AccessConditionType
     {
         /// <summary>

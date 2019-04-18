@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosDatabase"/>for reading, replacing, or deleting an existing container;
     /// </summary>
-    /// </example>
     internal class CosmosDatabasesCore : CosmosDatabases
     {
         private readonly CosmosClient client;

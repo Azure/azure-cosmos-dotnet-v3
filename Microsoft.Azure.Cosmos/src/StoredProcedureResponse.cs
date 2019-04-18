@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Output from console.log() statements in a stored procedure.
         /// </value>
-        /// <seealso cref="RequestOptions.EnableScriptLogging"/>
+        /// <seealso cref="CosmosStoredProcedureRequestOptions.EnableScriptLogging"/>
         public string ScriptLog
         {
             get
