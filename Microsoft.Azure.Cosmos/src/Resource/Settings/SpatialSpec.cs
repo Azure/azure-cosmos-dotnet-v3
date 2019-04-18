@@ -11,73 +11,21 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
-    internal sealed class SpatialSpec : JsonSerializable, ICloneable
+    /// <summary>
+    /// Spatial index specification 
+    /// </summary>
+    public sealed class SpatialSpec
     {
-        private Collection<SpatialType> spatialTypes;
-
+        /// <summary>
+        /// Path of the Item which is spatial
+        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.Path)]
-        public string Path
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Path);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Path, value);
-            }
-        }
+        public string Path { get; set; }
 
+        /// <summary>
+        /// Spatila datatype for the defined path
+        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.Types, ItemConverterType = typeof(StringEnumConverter))]
-        public Collection<SpatialType> SpatialTypes
-        {
-            get
-            {
-                if (this.spatialTypes == null)
-                {
-                    this.spatialTypes = base.GetValue<Collection<SpatialType>>(Constants.Properties.Types);
-
-                    if (this.spatialTypes == null)
-                    {
-                        this.spatialTypes = new Collection<SpatialType>();
-                    }
-                }
-
-                return this.spatialTypes;
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, RMResources.PropertyCannotBeNull, "SpatialTypes"));
-                }
-
-                this.spatialTypes = value;
-                base.SetValue(Constants.Properties.Types, value);
-            }
-        }
-
-        public object Clone()
-        {
-            SpatialSpec cloned = new SpatialSpec()
-            {
-                Path = this.Path
-            };
-
-            foreach (SpatialType spatialType in this.SpatialTypes)
-            {
-                cloned.SpatialTypes.Add(spatialType);
-            }
-
-            return cloned;
-        }
-
-        internal override void OnSave()
-        {
-            if (this.spatialTypes != null)
-            {
-                base.SetValue(Constants.Properties.Types, this.spatialTypes);
-            }
-        }
+        public Collection<SpatialType> SpatialTypes { get; set; } = new Collection<SpatialType>();
     }
 }
