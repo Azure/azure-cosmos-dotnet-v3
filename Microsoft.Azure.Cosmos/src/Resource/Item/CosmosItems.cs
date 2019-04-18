@@ -209,26 +209,6 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <exception>
         /// The Stream operation only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
-        /// <list type="table">
-        ///     <listheader>
-        ///         <term>StatusCode</term><description>Reason for exception</description>
-        ///     </listheader>
-        ///     <item>
-        ///         <term>400</term><description>BadRequest - This means something was wrong with the document supplied. </description>
-        ///     </item>
-        ///     <item>
-        ///         <term>403</term><description>Forbidden - This likely means the collection in to which you were trying to create the document is full.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means a item with an id matching the id field of <paramref name="item"/> already existed</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the item exceeds the current max entity size. Consult documentation for limits and quotas.</description>
-        ///     </item>
-        ///     <item>
-        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second.</description>
-        ///     </item>
-        /// </list>
         /// </exception>
         /// <example>
         /// Upsert a Stream containing the item to Cosmos
