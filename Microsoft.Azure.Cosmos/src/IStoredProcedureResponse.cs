@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is exposed for mocking purposes for the Azure Cosmos DB service.
         /// </remarks>
-        /// <seealso cref="RequestOptions.EnableScriptLogging"/>
+        /// <seealso cref="CosmosStoredProcedureRequestOptions.EnableScriptLogging"/>
         string ScriptLog { get; }
 
         /// <summary>

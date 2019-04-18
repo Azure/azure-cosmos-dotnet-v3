@@ -22,9 +22,10 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
         private readonly CosmosClient _client;
+        private readonly CosmosContainerCore cosmosContainerCore;
         internal readonly IDocumentQueryClient DocumentClient;
 
-        internal CosmosQueryClientCore(CosmosClient client, IDocumentQueryClient documentClient)
+        internal CosmosQueryClientCore(CosmosClient client, IDocumentQueryClient documentClient, CosmosContainerCore cosmosContainerCore)
         {
             if (client == null)
             {
@@ -36,8 +37,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(nameof(documentClient));
             }
 
+            if (cosmosContainerCore == null)
+            {
+                throw new ArgumentException(nameof(cosmosContainerCore));
+            }
+
             this._client = client;
             this.DocumentClient = documentClient;
+            this.cosmosContainerCore = cosmosContainerCore;
         }
 
         internal override IDocumentClientRetryPolicy GetRetryPolicy()
@@ -76,6 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: requestOptions.PartitionKey,
+                cosmosContainerCore: cosmosContainerCore,
                 streamPayload: this._client.CosmosJsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);

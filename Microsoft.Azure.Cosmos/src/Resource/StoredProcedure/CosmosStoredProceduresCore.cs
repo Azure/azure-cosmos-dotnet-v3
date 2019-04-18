@@ -17,10 +17,10 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosStoredProceduresCore : CosmosStoredProcedures
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly CosmosClient client;
 
-        internal CosmosStoredProceduresCore(CosmosContainer container)
+        internal CosmosStoredProceduresCore(CosmosContainerCore container)
         {
             this.container = container;
             this.client = container.Client;
@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.StoredProcedure,
                 OperationType.Create,
                 requestOptions,
+                this.container,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,

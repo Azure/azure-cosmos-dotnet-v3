@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="databaseUri">the URI of the database to create the collection in.</param>
         /// <param name="documentCollection">The <see cref="DocumentCollection"/> object.</param>
-        /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
+        /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
         /// <returns>The <see cref="DocumentCollection"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(Uri databaseUri, DocumentCollection documentCollection, RequestOptions options = null)
         {
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">A URI to the Database resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="databaseUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -526,8 +526,8 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="Database"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<Database>> ReadDatabaseAsync(Uri databaseUri, RequestOptions options = null)
         {
@@ -539,13 +539,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
         /// <param name="documentUri">A URI to the Document resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Document"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="documentUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when reading a Document are:
@@ -578,9 +578,9 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/> 
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -592,13 +592,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> as a generic type T from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as a generic type T from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="documentUri">A URI to the Document resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.DocumentResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Internal.Document"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Document"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="documentUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when reading a Document are:
@@ -631,9 +631,9 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/> 
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -650,7 +650,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">A URI to the DocumentCollection resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="DocumentCollection"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="DocumentCollection"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="documentCollectionUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -683,8 +683,8 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="DocumentCollection"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null)
         {
@@ -701,7 +701,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedureUri">A URI to the StoredProcedure resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="StoredProcedure"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="StoredProcedure"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -735,8 +735,8 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="StoredProcedure"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null)
         {
@@ -753,7 +753,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="triggerUri">A URI to the Trigger resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Trigger"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Trigger"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -787,8 +787,8 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="Trigger"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<Trigger>> ReadTriggerAsync(Uri triggerUri, RequestOptions options = null)
         {
@@ -805,7 +805,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="functionUri">A URI to the User Defined Function resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunction"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -839,8 +839,8 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="UserDefinedFunction"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null)
         {
@@ -852,12 +852,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.Internal.Conflict"/> as an asynchronous operation from the Azure Cosmos DB service.
+        /// Reads a <see cref="Microsoft.Azure.Documents.Conflict"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
         /// <param name="conflictUri">A URI to the Conflict resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Internal.Conflict"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Conflict"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="conflictUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -890,9 +890,9 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Conflict"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Conflict"/> 
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<Conflict>> ReadConflictAsync(Uri conflictUri, RequestOptions options = null)
         {
@@ -904,12 +904,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads a <see cref="Microsoft.Azure.Cosmos.Internal.Schema"/> as an asynchronous operation.
+        /// Reads a <see cref="Microsoft.Azure.Documents.Schema"/> as an asynchronous operation.
         /// </summary>
         /// <param name="schemaUri">A URI to the Schema resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Internal.Schema"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Schema"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="schemaUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when reading a Schema are:
@@ -942,9 +942,9 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Schema"/> 
-        /// <seealso cref="Microsoft.Azure.Cosmos.RequestOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Schema"/> 
+        /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         internal Task<ResourceResponse<Schema>> ReadSchemaAsync(Uri schemaUri, RequestOptions options = null)
         {
@@ -994,7 +994,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="UserDefinedType"/> 
-        /// <seealso cref="RequestOptions"/>
+        /// <seealso cref="CosmosRequestOptions"/>
         /// <seealso cref="ResourceResponse{T}"/>
         /// <seealso cref="Task"/>
         internal Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypeAsync(Uri userDefinedTypeUri, RequestOptions options = null)
@@ -1101,12 +1101,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="partitionKeyRangesOrCollectionUri">The Uri for partition key ranges, or owner collection.</param>
         /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Cosmos.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> containing the read resource record.
         /// </returns>
         /// <example>
         /// <code language="c#">
@@ -1126,7 +1126,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange"/>
+        /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.UriFactory.CreatePartitionKeyRangesUri(string, string)"/>
