@@ -1934,6 +1934,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] // TODO  https://msdata.visualstudio.com/CosmosDB/_workitems/edit/408486
         public async Task TestMixedTypeOrderBy()
         {
             int numberOfDocuments = 1 << 4;

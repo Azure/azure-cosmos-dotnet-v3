@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// This is used to process the change feed in parallel across multiple consumers.
         /// PartitionKeyRangeId cannot be specified along with PartitionKey.
         /// </remarks>
-        /// <see cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange" />
+        /// <see cref="Microsoft.Azure.Documents.PartitionKeyRange" />
         /// <see cref="DocumentClient.ReadPartitionKeyRangeFeedAsync(string, FeedOptions)"/>
         public string PartitionKeyRangeId { get; set; }
 
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// PartitionKey cannot be specified along with PartitionKeyRangeId.
         /// </remarks>
-        /// <see cref="Microsoft.Azure.Cosmos.PartitionKey" />
+        /// <see cref="Microsoft.Azure.Documents.PartitionKey" />
         /// <example>
         /// <![CDATA[
         /// var options = new ChangeFeedOptions()

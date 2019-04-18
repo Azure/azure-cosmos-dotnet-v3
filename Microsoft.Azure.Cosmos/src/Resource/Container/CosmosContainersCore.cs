@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers

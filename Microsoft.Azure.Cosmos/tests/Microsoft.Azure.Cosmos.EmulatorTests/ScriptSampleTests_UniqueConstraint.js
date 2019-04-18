@@ -30,10 +30,10 @@ function uniqueConstraint() {
     };
 
     const OPERATION_TYPE = {
-        create:  "Create",
-        upsert:  "Upsert",
+        create: "Create",
+        upsert: "Upsert",
         replace: "Replace",
-        delete:  "Delete",
+        delete: "Delete",
     };
 
     let operationType = __.request.getOperationType();
@@ -97,7 +97,7 @@ function uniqueConstraint() {
     }
 
     function insertMetaDoc() {
-        let metaDoc = { id: generateUniqueIdValue(docFromRequest, UNIQUE_PROPERTY_NAME), isMetadata: true };
+        let metaDoc = { id: generateUniqueIdValue(docFromRequest, UNIQUE_PROPERTY_NAME), isMetadata: true, pk: "test" };
 
         // This will result in ERROR_CODE.CONFLICT if there is another doc with this id already.
         let isAccepted = __.createDocument(__.getSelfLink(), metaDoc, {}, function (err, body, options) {

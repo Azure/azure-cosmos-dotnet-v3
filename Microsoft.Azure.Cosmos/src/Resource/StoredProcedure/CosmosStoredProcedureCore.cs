@@ -19,10 +19,11 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosStoredProcedureCore : CosmosStoredProcedure
     {
         internal CosmosStoredProcedureCore(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string storedProcedureId)
         {
             this.Id = storedProcedureId;
+            this.container = container;
             base.Initialize(
                 client: container.Client,
                 parentLink: container.LinkUri.OriginalString,
@@ -103,6 +104,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.StoredProcedure,
                 OperationType.ExecuteJavaScript,
                 requestOptions,
+                this.container,
                 partitionKey,
                 parametersStream,
                 null,
@@ -124,6 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.StoredProcedure,
                 operationType,
                 requestOptions,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -131,5 +134,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.Client.ResponseFactory.CreateStoredProcedureResponse(this, response);
         }
+        internal CosmosContainerCore container { get; }
     }
 }
