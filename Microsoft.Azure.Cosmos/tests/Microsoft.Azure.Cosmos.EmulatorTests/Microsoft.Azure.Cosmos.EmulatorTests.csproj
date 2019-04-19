@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DirectVersion>3.0.0.9-preview</DirectVersion>
+    <DirectVersion>3.0.0.10-rc3</DirectVersion>
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Platform>AnyCPU</Platform>
@@ -31,7 +31,7 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.Internal" Version="$(DirectVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">

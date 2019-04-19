@@ -104,6 +104,57 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return (double)((NewtonsoftNode)numberNode).JToken;
         }
 
+        public sbyte GetInt8Value(IJsonNavigatorNode numberNode)
+        {
+            return (sbyte)((NewtonsoftNode)numberNode).JToken;
+        }
+
+        public short GetInt16Value(IJsonNavigatorNode numberNode)
+        {
+            return (short)((NewtonsoftNode)numberNode).JToken;
+        }
+
+        public int GetInt32Value(IJsonNavigatorNode numberNode)
+        {
+            return (int)((NewtonsoftNode)numberNode).JToken;
+        }
+
+        public long GetInt64Value(IJsonNavigatorNode numberNode)
+        {
+            return (long)((NewtonsoftNode)numberNode).JToken;
+        }
+
+        public uint GetUInt32Value(IJsonNavigatorNode numberNode)
+        {
+            return (uint)((NewtonsoftNode)numberNode).JToken;
+        }
+
+        public float GetFloat32Value(IJsonNavigatorNode numberNode)
+        {
+            return (float)((NewtonsoftNode)numberNode).JToken;
+        }
+
+        public double GetFloat64Value(IJsonNavigatorNode numberNode)
+        {
+            return (double)((NewtonsoftNode)numberNode).JToken;
+        }
+
+        public Guid GetGuidValue(IJsonNavigatorNode guidNode)
+        {
+            return (Guid)((NewtonsoftNode)guidNode).JToken;
+        }
+
+        public bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue)
+        {
+            bufferedBinaryValue = null;
+            return false;
+        }
+
+        public byte[] GetBinaryValue(IJsonNavigatorNode binaryNode)
+        {
+            throw new NotImplementedException();
+        }
+
         public IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode)
         {
             JObject jObject = ((NewtonsoftNode)objectNode).JToken as JObject;
