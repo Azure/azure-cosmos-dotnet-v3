@@ -30,7 +30,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ShippingScope>External</ShippingScope>
     <SigningType>Product</SigningType>
-    <DebugType>portable</DebugType>
+    <DebugType>full</DebugType>
     <IncludeSymbols>false</IncludeSymbols>
     <IncludeSource>false</IncludeSource>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
@@ -41,12 +41,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
+  <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
@@ -74,12 +70,15 @@
   <PropertyGroup>
     <DefineConstants>DOCDBCLIENT</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <DefineConstants>$(DefineConstants);NETFX</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <DefineConstants>$(DefineConstants);NETSTANDARD20</DefineConstants>
+    <DefineConstants>DOCDBCLIENT;NETSTANDARD20;SignAssembly</DefineConstants>
   </PropertyGroup> 
 </Project>
