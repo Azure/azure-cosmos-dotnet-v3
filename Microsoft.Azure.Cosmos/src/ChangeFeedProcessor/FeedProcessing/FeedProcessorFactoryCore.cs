@@ -48,8 +48,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 SessionToken = this.changeFeedProcessorOptions.SessionToken,
             };
 
+            var requestOptions = new CosmosChangeFeedRequestOptions()
+            {
+
+            };
+
+            if (settings.StartTime != null)
+            {
+                requestOptions.StartTime = settings.StartTime;
+            }
+            else if (settings.StartFromBeginning)
+            {
+                requestOptions.StartTime = DateTime.MinValue;
+            }
+
             var checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
-            return new FeedProcessorCore<T>(observer, this.container, settings, checkpointer);
+            return new FeedProcessorCore<T>(observer, ((CosmosItemsCore)this.container.Items).GetChangeFeedPartitionKeyRangeIterator<T>(
+                lease.CurrentLeaseToken,  settings.StartContinuation, settings.MaxItemCount, requestOptions), settings, checkpointer);
         }
     }
 }

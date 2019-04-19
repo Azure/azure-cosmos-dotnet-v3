@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
@@ -25,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
         private readonly ChangeFeedOptions options;
-        private readonly CosmosFeedResultSetIterator resultSetIterator;
+        private readonly CosmosResultSetIterator<T> resultSetIterator;
 
-        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosFeedResultSetIterator resultSetIterator, ProcessorSettings settings, PartitionCheckpointer checkpointer)
+        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosResultSetIterator<T> resultSetIterator, ProcessorSettings settings, PartitionCheckpointer checkpointer)
         {
             this.observer = observer;
             this.settings = settings;
@@ -57,9 +56,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
-                        lastContinuation = response.Headers.Continuation;
-                        if (response.Count > 0)
+                        CosmosQueryResponse<T> response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                        lastContinuation = response.ContinuationToken;
+                        if (response.GetHasMoreResults())
                         {
                             await this.DispatchChanges(response, cancellationToken).ConfigureAwait(false);
                         }
@@ -123,19 +122,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        private Task DispatchChanges(IFeedResponse<T> response, CancellationToken cancellationToken)
+        private Task DispatchChanges(CosmosQueryResponse<T> response, CancellationToken cancellationToken)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.settings.LeaseToken, response, this.checkpointer);
-            var docs = new List<T>(response.Count);
-            using (IEnumerator<T> e = response.GetEnumerator())
-            {
-                while (e.MoveNext())
-                {
-                    docs.Add(e.Current);
-                }
-            }
-
-            return this.observer.ProcessChangesAsync(context, docs, cancellationToken);
+            return this.observer.ProcessChangesAsync(context, response, cancellationToken);
         }
     }
 }

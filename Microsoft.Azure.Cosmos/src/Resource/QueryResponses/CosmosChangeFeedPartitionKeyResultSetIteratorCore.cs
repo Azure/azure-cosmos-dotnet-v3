@@ -12,10 +12,9 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
     /// </summary>
-    internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore : CosmosFeedResultSetIterator
+    internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore<T> : CosmosResultSetIterator<T>
     {
         private readonly CosmosContainerCore cosmosContainer;
-        private string containerRid;
         private string continuationToken;
         private string partitionKeyRangeId;
         private int? maxItemCount;
@@ -47,20 +46,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<CosmosQueryResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
-            
-            // Change Feed read uses Etag for continuation
-            string responseContinuationToken = response.Headers.ETag;
-            this.HasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
-            response.Headers.Continuation = responseContinuationToken;
-            return response;
+            return this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken)
+                .ContinueWith(task =>
+                {
+                    CosmosQueryResponse<T> response = task.Result;
+                    this.continuationToken = response.ContinuationToken;
+                    return response;
+                }, cancellationToken);
         }
 
-        internal virtual Task<CosmosResponseMessage> NextResultSetDelegate(
+        internal virtual Task<CosmosQueryResponse<T>> NextResultSetDelegate(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
@@ -68,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
-            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
+            return ExecUtils.ProcessResourceOperationAsync<CosmosQueryResponse<T>>(
                 client: this.cosmosContainer.Database.Client,
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
@@ -79,7 +78,13 @@ namespace Microsoft.Azure.Cosmos
                     CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                     CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
-                responseCreator: response => response,
+                responseCreator: response =>
+                {
+                    // Change Feed uses ETAG
+                    string responseContinuationToken = response.Headers.ETag;
+                    bool hasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
+                    return CosmosQueryResponse<T>.CreateResponse<T>(response.Content, this.cosmosContainer.Database.Client.CosmosJsonSerializer, responseContinuationToken, hasMoreResults);
+                },
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);

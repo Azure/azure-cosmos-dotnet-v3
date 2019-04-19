@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task RunObserver_ShouldPassPartitionToObserver_WhenExecuted()
         {
             Mock.Get(observer)
-                .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<dynamic>>(), It.IsAny<CancellationToken>()))
+                .Setup(feedObserver => feedObserver.ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<CosmosQueryResponse<dynamic>>(), It.IsAny<CancellationToken>()))
                 .Callback(() => shutdownToken.Cancel());
 
             await sut.RunAsync(shutdownToken.Token).ConfigureAwait(false);
