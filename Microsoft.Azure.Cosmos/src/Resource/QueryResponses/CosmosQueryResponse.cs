@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The continuation token to be used for continuing enumeration.
         /// </value>
-        public string ResponseContinuation
+        public virtual string ResponseContinuation
         {
             get
             {
@@ -115,12 +115,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The session token for use in session consistency.
         /// </value>
-        public string SessionToken => this.Headers[HttpConstants.HttpHeaders.SessionToken];
+        public virtual string SessionToken => this.Headers[HttpConstants.HttpHeaders.SessionToken];
 
         /// <summary>
         /// Gets the content parent location, for example, dbs/foo/colls/bar, from the Azure Cosmos DB service.
         /// </summary>
-        public string ContentLocation => this.Headers[HttpConstants.HttpHeaders.OwnerFullName];
+        public virtual string ContentLocation => this.Headers[HttpConstants.HttpHeaders.OwnerFullName];
 
         /// <summary>
         /// Gets the entity tag associated with last transaction in the Azure Cosmos DB service,
@@ -129,17 +129,17 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="DocumentClient.CreateDocumentChangeFeedQuery(string, ChangeFeedOptions)"/> 
         /// to get feed changes since the transaction specified by this entity tag.
         /// </summary>
-        public string ETag => this.Headers.ETag;
+        public virtual string ETag => this.Headers.ETag;
 
         /// <summary>
         /// The headers of the response
         /// </summary>
-        public CosmosResponseMessageHeaders Headers { get; }
+        public virtual CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
         /// The number of items in the stream.
         /// </summary>
-        public int Count { get; }
+        public virtual int Count { get; }
 
         /// <summary>
         /// Gets the <see cref="HttpStatusCode"/> of the current response.
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual bool IsSuccess { get; }
 
-        internal IEnumerable<CosmosElement> CosmosElements { get; }
+        internal virtual IEnumerable<CosmosElement> CosmosElements { get; }
 
         internal virtual Error Error { get; }
 
