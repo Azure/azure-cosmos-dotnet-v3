@@ -41,8 +41,11 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
