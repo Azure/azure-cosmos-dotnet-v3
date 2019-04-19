@@ -2,15 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Linq;
-using Microsoft.Azure.Documents;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -225,17 +216,8 @@ namespace Microsoft.Azure.Cosmos
         /// for a item is decided based on the value of this property in item.
         /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
         /// </value>
-        public string TimeToLivePropertyPath
-        {
-            get
-            {
-                return this.InternalTimeToLivePropertyPath;
-            }
-            set
-            {
-                this.InternalTimeToLivePropertyPath = value;
-            }
-        }
+        [JsonProperty(PropertyName = TimeToLivePropertyPathConstant, NullValueHandling = NullValueHandling.Ignore)]
+        public string TimeToLivePropertyPath { get; set; }
 
         /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
@@ -336,12 +318,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
         internal int? InternalTimeToLive { get; set; }
-
-        /// <summary>
-        /// Internal property used as a helper to convert to the back-end type string?
-        /// </summary>
-        [JsonProperty(PropertyName = TimeToLivePropertyPathConstant, NullValueHandling = NullValueHandling.Ignore)]
-        internal string InternalTimeToLivePropertyPath { get; set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
