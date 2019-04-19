@@ -70,15 +70,12 @@
   <PropertyGroup>
     <DefineConstants>DOCDBCLIENT</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
-    <DelaySign>true</DelaySign>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
     <DefineConstants>$(DefineConstants);NETFX</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <DefineConstants>DOCDBCLIENT;NETSTANDARD20;SignAssembly</DefineConstants>
+    <DefineConstants>$(DefineConstants);NETSTANDARD20</DefineConstants>
   </PropertyGroup> 
 </Project>
