@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             // Flow the pageSize only when we are not doing client eval
-            if (this.MaxItemCount.HasValue && !request.Headers.TryGetValue(HttpConstants.HttpHeaders.PageSize, out string exisitngPageSize))
+            if (this.MaxItemCount.HasValue)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
             }
