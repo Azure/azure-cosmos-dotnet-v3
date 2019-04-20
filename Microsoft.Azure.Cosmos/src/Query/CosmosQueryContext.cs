@@ -96,14 +96,9 @@ namespace Microsoft.Azure.Cosmos.Query
         internal async Task<FeedResponse<CosmosElement>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             CancellationToken cancellationToken,
-            Action<CosmosRequestMessage> requestEnricher = null,
-            Action<CosmosQueryRequestOptions> requestOptionsEnricher = null)
+            Action<CosmosRequestMessage> requestEnricher = null)
         {
             CosmosQueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
-            if (requestOptionsEnricher != null)
-            {
-                requestOptionsEnricher(requestOptions);
-            }
 
             return await this.QueryClient.ExecuteItemQueryAsync(
                            this.ResourceLink,
