@@ -270,25 +270,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemIds.Count, 0);
         }
 
-        [TestMethod]
-        public async Task QueryStreamSingleItem()
-        {
-            await ItemSinglePartitionQueryStream(1, 1);
-        }
-
-        [TestMethod]
-        public async Task QueryStreamMultipleItem()
-        {
-            await ItemSinglePartitionQueryStream(5, 5);
-        }
-
-        [TestMethod]
-        public async Task QueryStreamMultipleItemWithMaxItemCount()
-        {
-            await ItemSinglePartitionQueryStream(6, 2);
-        }
-
-        internal async Task ItemSinglePartitionQueryStream(int perPKItemCount, int maxItemCount)
+        [DataRow(1, 1)]
+        [DataRow(5, 5)]
+        [DataRow(6, 2)]
+        [DataTestMethod]
+        public async Task QuerySinglePartitionItemStreamTest(int perPKItemCount, int maxItemCount)
         {
             IList<ToDoActivity> deleteList = deleteList = await CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
             ToDoActivity find = deleteList.First();

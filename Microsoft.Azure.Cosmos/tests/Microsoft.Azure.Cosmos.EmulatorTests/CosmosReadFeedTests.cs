@@ -44,12 +44,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestCleanup();
         }
 
-        [TestMethod]
-        public async Task CrossPartitionBiDirectionalItemReadFeedTest()
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task CrossPartitionBiDirectionalItemReadFeedTest(bool useStatelessIteration)
         {
             //create items
             const int total = 30;
-            const int maxItemCount = 30;
+            const int maxItemCount = 10;
             List<string> items = new List<string>();
 
             for (int i = 0; i < total; i++)
@@ -68,14 +70,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
+            string lastKnownContinuationToken = null;
             CosmosFeedResultSetIterator iter = this.Container.Database.Containers[this.Container.Id].Items
-                                .GetItemStreamIterator(maxItemCount);
+                                .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
             int count = 0;
             List<string> forwardOrder = new List<string>();
             while (iter.HasMoreResults)
             {
+                if (useStatelessIteration)
+                {
+                    iter = this.Container.Database.Containers[this.Container.Id].Items
+                                        .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
+                }
+
                 using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
                 {
+                    lastKnownContinuationToken = response.Headers.Continuation;
+
                     Assert.IsNotNull(response);
                     using (StreamReader reader = new StreamReader(response.Content))
                     {
@@ -90,21 +101,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
+            Assert.IsNull(lastKnownContinuationToken);
             Assert.IsNotNull(forwardOrder);
             Assert.AreEqual(total, count);
             Assert.IsFalse(forwardOrder.Where(x => string.IsNullOrEmpty(x)).Any());
 
-            CosmosItemRequestOptions queryOptions = new CosmosItemRequestOptions();
-            queryOptions.Properties = queryOptions.Properties = new Dictionary<string, object>();
-            queryOptions.Properties.Add(HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse);
-            iter = this.Container.Database.Containers[this.Container.Id].Items.GetItemStreamIterator(maxItemCount, null, queryOptions);
+            CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
+            requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>();
+            requestOptions.Properties.Add(HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse);
             count = 0;
             List<string> reverseOrder = new List<string>();
 
+            lastKnownContinuationToken = null;
+            iter = this.Container.Database.Containers[this.Container.Id].Items
+                    .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
             while (iter.HasMoreResults)
             {
+                if (useStatelessIteration)
+                {
+                    iter = this.Container.Database.Containers[this.Container.Id].Items
+                            .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                }
+
                 using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
                 {
+                    lastKnownContinuationToken = response.Headers.Continuation;
+
                     Assert.IsNotNull(response);
                     using (StreamReader reader = new StreamReader(response.Content))
                     {
@@ -119,9 +141,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
+            Assert.IsNull(lastKnownContinuationToken);
             Assert.IsNotNull(reverseOrder);
+
             Assert.AreEqual(total, count);
             forwardOrder.Reverse();
+
             CollectionAssert.AreEqual(forwardOrder, reverseOrder);
             Assert.IsFalse(reverseOrder.Where(x => string.IsNullOrEmpty(x)).Any());
         }
