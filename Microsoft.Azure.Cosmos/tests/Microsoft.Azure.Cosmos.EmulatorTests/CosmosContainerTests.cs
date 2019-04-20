@@ -270,8 +270,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
 
+            containerResponse = await this.cosmosDatabase.Containers.CreateContainerAsync(Guid.NewGuid().ToString(), partitionKeyPath);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+
             HashSet<string> containerIds = new HashSet<string>();
-            CosmosFeedResultSetIterator resultSet = this.cosmosDatabase.Containers.GetContainerStreamIterator();
+            CosmosFeedResultSetIterator resultSet = this.cosmosDatabase.Containers.GetContainerStreamIterator(
+                    maxItemCount:1,
+                    requestOptions: new CosmosQueryRequestOptions());
             while (resultSet.HasMoreResults)
             {
                 using (CosmosResponseMessage message = await resultSet.FetchNextSetAsync())

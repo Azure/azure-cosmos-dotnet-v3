@@ -294,17 +294,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity find = deleteList.First();
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetIterator setIterator = this.Container.Items
-                .CreateItemQueryAsStream(sql, 1, find.status, maxItemCount);
 
             int iterationCount = 0;
             int totalReadItem = 0;
             int expectedIterationCount = perPKItemCount / maxItemCount;
             string lastContinuationToken = null;
 
-            while (setIterator.HasMoreResults && expectedIterationCount > iterationCount)
+            do
             {
                 iterationCount++;
+                CosmosResultSetIterator setIterator = this.Container.Items
+                    .CreateItemQueryAsStream(sql, 1, find.status, 
+                        maxItemCount: maxItemCount, 
+                        continuationToken: lastContinuationToken,
+                        requestOptions: new CosmosQueryRequestOptions());
 
                 using (CosmosQueryResponse response = await setIterator.FetchNextSetAsync())
                 {
@@ -340,12 +343,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
+            while (lastContinuationToken != null);
 
             Assert.AreEqual(expectedIterationCount, iterationCount);
             Assert.AreEqual(perPKItemCount, totalReadItem);
-
-            //Assert.IsNull(lastContinuationToken);
-            //Assert.IsFalse(setIterator.HasMoreResults);
         }
 
 
