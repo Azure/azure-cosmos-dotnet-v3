@@ -466,7 +466,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore /* TODO: This tests throws a "The read session is not available for the input session token" */]
         public void CollectionDeleteAndCreateWithSameNameTest()
         {
             // when collection name changes, the collectionName ->Id cache at the gateway need to get invalidated and refreshed.
