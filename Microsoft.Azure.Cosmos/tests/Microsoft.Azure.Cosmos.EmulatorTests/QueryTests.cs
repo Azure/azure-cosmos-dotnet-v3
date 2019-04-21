@@ -891,7 +891,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestRouteToSpecificPartition()
         {
@@ -901,7 +900,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestRoutToSpecificPartition(bool useGateway)
         {
-            const int partitionCount = 5;
             DocumentClient client = TestCommon.CreateClient(useGateway);
 
             string guid = Guid.NewGuid().ToString();
@@ -930,7 +928,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(partitionCount, ranges.Count());
+            Assert.IsTrue(ranges.Count() > 1);
 
             Document document = new Document { Id = "id1" };
             document.SetPropertyValue("key", "hello");
@@ -957,7 +955,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryMultiplePartitions(bool useGateway)
         {
-            const int partitionCount = 5;
             Trace.TraceInformation(
                 "Start TestQueryMultiplePartitions in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
@@ -995,7 +992,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(partitionCount, ranges.Count());
+            Assert.IsTrue(ranges.Count() > 1);
 
             DateTime startTime = DateTime.Now;
             IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
@@ -1017,7 +1014,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await client.DeleteDatabaseAsync(database);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestQueryForRoutingMapSanity()
         {
@@ -1048,7 +1044,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(5, ranges.Count);
+            Assert.IsTrue(ranges.Count > 1);
 
             // Query Number 1, that failed before
             List<string> expected = new List<string> { "documentId123", "documentId124", "documentId125" };
