@@ -5,14 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     /// <summary>

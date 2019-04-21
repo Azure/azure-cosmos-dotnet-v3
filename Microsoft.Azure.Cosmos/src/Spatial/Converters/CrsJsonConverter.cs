@@ -22,11 +22,11 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
         /// <param name="serializer">The calling serializer.</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var crs = (Crs)value;
+            Crs crs = (Crs)value;
             switch (crs.Type)
             {
-                case CoordinateReferenceScheme.Linked:
-                    var linkedCrs = (LinkedCrs)crs;
+                case CrsType.Linked:
+                    LinkedCrs linkedCrs = (LinkedCrs)crs;
                     writer.WriteStartObject();
                     writer.WritePropertyName("type");
                     writer.WriteValue("link");
@@ -44,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
                     writer.WriteEndObject();
                     break;
 
-                case CoordinateReferenceScheme.Named:
-                    var namedCrs = (NamedCrs)crs;
+                case CrsType.Named:
+                    NamedCrs namedCrs = (NamedCrs)crs;
                     writer.WriteStartObject();
                     writer.WritePropertyName("type");
                     writer.WriteValue("name");
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
                     writer.WriteEndObject();
                     break;
 
-                case CoordinateReferenceScheme.Unspecified:
+                case CrsType.Unspecified:
                     writer.WriteNull();
                     break;
             }

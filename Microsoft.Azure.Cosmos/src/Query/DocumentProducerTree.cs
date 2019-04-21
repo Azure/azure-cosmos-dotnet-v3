@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Routing;
 
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public DocumentProducerTree(
             PartitionKeyRange partitionKeyRange,
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
+            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<DocumentProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<DocumentProducerTree> documentProducerTreeComparer,
@@ -245,6 +244,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     // If the partition has split and there are are no more results in the parent buffer
                     // then just pull from the highest priority child (with recursive decent).
+
+                    // Need to pop push to force an update in priority
+                    this.children.Enqueue(this.children.Dequeue());
                     return this.children.Peek().CurrentDocumentProducerTree;
                 }
                 else
@@ -455,9 +457,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreDocuments(CancellationToken token)
+        public Task BufferMoreDocuments(CancellationToken token)
         {
-            await this.ExecuteWithSplitProofing(
+            return this.ExecuteWithSplitProofing(
                 function:this.BufferMoreDocumentsImplementation,
                 functionNeedsBeReexecuted: true,
                 cancellationToken: token);
@@ -542,7 +544,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>A function that given a partition key range and continuation token will create a document producer.</returns>
         private static Func<PartitionKeyRange, string, DocumentProducerTree> CreateDocumentProducerTreeCallback(
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
+            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<DocumentProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<DocumentProducerTree> documentProducerTreeComparer,
@@ -607,14 +609,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn return whether we successfully moved next.</returns>
-        private async Task<dynamic> MoveNextIfNotSplitAsyncImplementation(CancellationToken token)
+        private Task<dynamic> MoveNextIfNotSplitAsyncImplementation(CancellationToken token)
         {
             if (this.HasSplit)
             {
-                return false;
+                return Task.FromResult<dynamic>(false);
             }
 
-            return await this.MoveNextAsyncImplementation(token);
+            return this.MoveNextAsyncImplementation(token);
         }
 
         /// <summary>

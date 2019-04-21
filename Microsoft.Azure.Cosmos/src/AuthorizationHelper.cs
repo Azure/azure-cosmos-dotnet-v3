@@ -3,18 +3,13 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
     using System;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
-    using System.Security;
     using System.Security.Cryptography;
     using System.Text;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     // This class is used by both client (for generating the auth header with master/system key) and 
     // by the G/W when verifying the auth header. Some additional logic is also used by management service.
@@ -51,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException("headers");
             }
-
+            
             string resourceType = string.Empty;
             string resourceIdValue = string.Empty;
             bool isNameBased = false;

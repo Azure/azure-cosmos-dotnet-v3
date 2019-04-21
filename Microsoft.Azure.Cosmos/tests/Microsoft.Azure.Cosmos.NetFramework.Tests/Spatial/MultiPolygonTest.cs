@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1L, multiPolygon.AdditionalProperties["extra"]);
 
             var geom = JsonConvert.DeserializeObject<Geometry>(json);
-            Assert.AreEqual(GeometryShape.MultiPolygon, geom.Type);
+            Assert.AreEqual(GeometryType.MultiPolygon, geom.Type);
 
             Assert.AreEqual(geom, multiPolygon);
 
@@ -80,11 +80,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
 
             var multiPolygon2 =
                 new MultiPolygon(
@@ -102,11 +102,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
 
             var polygon3 =
                 new MultiPolygon(
@@ -124,11 +124,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
 
             var polygon4 =
                 new MultiPolygon(
@@ -146,11 +146,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
 
             var polygon5 =
                 new MultiPolygon(
@@ -168,11 +168,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
 
             var polygon6 =
                 new MultiPolygon(
@@ -190,11 +190,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs1")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs1")
+                    });
 
             Assert.AreEqual(multiPolygon1, multiPolygon2);
             Assert.AreEqual(multiPolygon1.GetHashCode(), multiPolygon2.GetHashCode());
@@ -244,11 +244,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
 
             Assert.AreEqual(new Position(20, 20), multiPolygon.Polygons[0].Rings[0].Positions[0]);
 

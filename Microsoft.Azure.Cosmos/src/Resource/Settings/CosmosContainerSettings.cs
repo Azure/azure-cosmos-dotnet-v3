@@ -2,26 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Linq;
-using Microsoft.Azure.Documents;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document collection in the Azure Cosmos DB service. A collection is a named logical container for documents. 
@@ -305,6 +292,26 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
 
         /// <summary>
+        /// The function selects the right partition key constant mapping for <see cref="NonePartitionKeyValue"/>
+        /// </summary>
+        internal PartitionKeyInternal GetNoneValue()
+        {
+            if (this.PartitionKey == null)
+            {
+                throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
+            }
+
+            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey.HasValue && this.PartitionKey.IsSystemKey.Value))
+            {
+                return PartitionKeyInternal.Empty;
+            }
+            else
+            {
+                return PartitionKeyInternal.Undefined;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets <see cref="PartitionKeyDefinition"/> object in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -331,7 +338,10 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
+
         internal virtual string ResourceId { get; private set; }
+
+        internal bool HasPartitionKey => this.PartitionKey != null;
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.

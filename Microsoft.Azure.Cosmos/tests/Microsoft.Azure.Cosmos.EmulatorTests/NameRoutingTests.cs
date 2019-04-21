@@ -1840,7 +1840,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
 
-                return new ResourceResponse<Document>(await client.CreateAsync(request));
+                return new ResourceResponse<Document>(await client.CreateAsync(request, null));
             }
         }
 

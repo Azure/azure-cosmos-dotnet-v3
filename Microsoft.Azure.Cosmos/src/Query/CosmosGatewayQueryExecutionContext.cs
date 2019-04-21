@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.queryContext = cosmosQueryContext;
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(SinglePartitionKeyId);
+            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator();
             this.retries = -1;
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (!string.IsNullOrEmpty(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
+                            CosmosGatewayQueryExecutionContext.SinglePartitionKeyId,
                             response.ActivityId,
                             response.Count,
                             this.retries);
