@@ -32,9 +32,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             UniqueKey requestedUniqueueKey = new UniqueKey();
-            foreach(string path in uniquePaths)
+            for(int i =0; i < uniquePaths.Length; i++)
             {
-                requestedUniqueueKey.Paths.Add(path);
+                if (string.IsNullOrEmpty(uniquePaths[i]))
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(uniquePaths)} has a null or empty at position {i}");
+                }
+
+                requestedUniqueueKey.Paths.Add(uniquePaths[i]);
             }
 
             this.UniqueKeyPolicy.UniqueKeys.Add(requestedUniqueueKey);
@@ -65,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// Specifies the path of item to be indexed
         /// </summary>
         /// <seealso cref="IndexingPolicy.IncludedPaths"/>
-        public CosmosContainerSettings IncludIndexPath(string path)
+        public CosmosContainerSettings IncludeIndexPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -119,17 +124,22 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(compositeIndexPaths));
             }
 
-            CompositePath[] fullCompositePaths = new CompositePath[compositeIndexPaths.Length];
+            CompositePath[] compositeSpecs = new CompositePath[compositeIndexPaths.Length];
             for (int i = 0; i < compositeIndexPaths.Length; i++)
             {
-                fullCompositePaths[i] = new CompositePath()
+                if (string.IsNullOrEmpty(compositeIndexPaths[i]))
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(compositeIndexPaths)} has null or empty entry at position {i}");
+                }
+
+                compositeSpecs[i] = new CompositePath()
                 {
                     Path = compositeIndexPaths[i],
                     Order = CompositePathSortOrder.Ascending,
                 };
             }
 
-            return this.IncludeCompositeIndex(fullCompositePaths);
+            return this.IncludeCompositeIndex(compositeSpecs);
         }
 
         /// <summary>
@@ -150,9 +160,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Collection<CompositePath> compositePathsCollection = new Collection<CompositePath>();
-            foreach (CompositePath path in compositeIndexPaths)
+            for (int i=0; i < compositeIndexPaths.Length; i++)
             {
-                compositePathsCollection.Add(path);
+                if (compositeIndexPaths[i] == null || String.IsNullOrEmpty(compositeIndexPaths[i].Path))
+                {
+                    throw new ArgumentOutOfRangeException($"{nameof(compositeIndexPaths)} has null or empty path at position {i}");
+                }
+
+                compositePathsCollection.Add(compositeIndexPaths[i]);
             }
 
             this.IndexingPolicy.CompositeIndexes.Add(compositePathsCollection);

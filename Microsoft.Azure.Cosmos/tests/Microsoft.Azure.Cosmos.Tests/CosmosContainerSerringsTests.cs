@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosContainerSettings containerSettings =
                 new CosmosContainerSettings("TestContainer", "/partitionKey")
-                .IncludIndexPath("/includepath1")
-                .IncludIndexPath("/includepath2")
+                .IncludeIndexPath("/includepath1")
+                .IncludeIndexPath("/includepath2")
                 .ExcludeIndexPath("/excludepath1")
                 .ExcludeIndexPath("/excludepath2")
                 .IncludeCompositeIndex("/compPath1", "/compPath2")
