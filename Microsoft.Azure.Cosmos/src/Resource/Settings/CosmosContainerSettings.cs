@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
         /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
         /// </value>
         [JsonProperty(PropertyName = TimeToLivePropertyPathConstant, NullValueHandling = NullValueHandling.Ignore)]
-        public string TimeToLivePropertyPath { get; set; }
+        public virtual string TimeToLivePropertyPath { get; set; }
 
         /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
