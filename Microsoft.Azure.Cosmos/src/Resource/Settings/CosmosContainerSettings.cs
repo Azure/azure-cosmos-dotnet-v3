@@ -90,7 +90,6 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="CosmosDatabaseSettings"/>
     public class CosmosContainerSettings
     {
-        private const string TimeToLivePropertyPathConstant = "ttlPropertyPath";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
@@ -225,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
         /// for a item is decided based on the value of this property in item.
         /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
         /// </value>
-        [JsonProperty(PropertyName = TimeToLivePropertyPathConstant, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = Constants.Properties.TimeToLivePropertyPath, NullValueHandling = NullValueHandling.Ignore)]
         public virtual string TimeToLivePropertyPath { get; set; }
 
         /// <summary>
