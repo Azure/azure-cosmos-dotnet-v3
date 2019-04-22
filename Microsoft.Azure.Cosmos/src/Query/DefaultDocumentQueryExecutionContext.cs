@@ -244,13 +244,34 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.ShouldExecuteQueryRequest)
                 {
+                    FeedOptions feedOptions = this.GetFeedOptions(null);
+                    PartitionKeyDefinition partitionKeyDefinition;
+                    object partitionKeyDefinitionObject;
+                    if (feedOptions.Properties.TryGetValue(DocumentQueryExecutionContextFactory.InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                    {
+                        if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
+                        {
+                            partitionKeyDefinition = definition;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(
+                                "partitionkeydefinition has invalid type",
+                                nameof(partitionKeyDefinitionObject));
+                        }
+                    }
+                    else
+                    {
+                        partitionKeyDefinition = collection.PartitionKey;
+                    }
+
                     QueryInfo queryInfo;
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,
                         isContinuationExpected,
-                        collection.PartitionKey,
+                        partitionKeyDefinition,
                         queryPartitionProvider,
                         version,
                         out queryInfo);

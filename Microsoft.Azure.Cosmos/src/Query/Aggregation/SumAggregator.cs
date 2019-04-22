@@ -35,18 +35,66 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
             else
             {
-                if (!(localSum is CosmosNumber cosmosNumber))
+                switch (localSum)
                 {
-                    throw new ArgumentException("localSum must be a number.");
-                }
+                    case CosmosNumber cosmosNumber:
+                    {
+                        if (cosmosNumber.IsFloatingPoint)
+                        {
+                            this.globalSum += cosmosNumber.AsFloatingPoint().Value;
+                        }
+                        else
+                        {
+                            this.globalSum += cosmosNumber.AsInteger().Value;
+                        }
 
-                if (cosmosNumber.IsFloatingPoint)
-                {
-                    this.globalSum += cosmosNumber.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    this.globalSum += cosmosNumber.AsInteger().Value;
+                        break;
+                    }
+
+                    case CosmosTypedElement<sbyte> int8number:
+                    {
+                        this.globalSum += int8number.Value;
+                        break;
+                    }
+
+                    case CosmosTypedElement<short> number:
+                    {
+                        this.globalSum += number.Value;
+                        break;
+                    }
+
+                    case CosmosTypedElement<int> number:
+                    {
+                        this.globalSum += number.Value;
+                        break;
+                    }
+
+                    case CosmosTypedElement<long> number:
+                    {
+                        this.globalSum += number.Value;
+                        break;
+                    }
+
+                    case CosmosTypedElement<uint> number:
+                    {
+                        this.globalSum += number.Value;
+                        break;
+                    }
+
+                    case CosmosTypedElement<float> number:
+                    {
+                        this.globalSum += number.Value;
+                        break;
+                    }
+
+                    case CosmosTypedElement<double> number:
+                    {
+                        this.globalSum += number.Value;
+                        break;
+                    }
+
+                    default:
+                        throw new ArgumentException("localSum must be a number.");
                 }
             }
         }
@@ -56,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// </summary>
         /// <returns>The current sum.</returns>
         public CosmosElement GetResult()
-        {   
+        {
             if (double.IsNaN(this.globalSum))
             {
                 return null;

@@ -13,5 +13,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         Number,
         Object,
         String,
+        Int8,
+        Int16,
+        Int32,
+        Int64,
+        UInt32,
+        Float32,
+        Float64,
     }
 }

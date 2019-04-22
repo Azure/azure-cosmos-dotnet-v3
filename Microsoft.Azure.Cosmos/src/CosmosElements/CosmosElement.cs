@@ -76,6 +76,34 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     item = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
                     break;
 
+                case JsonNodeType.Int8:
+                    item = CosmosInt8.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
+                case JsonNodeType.Int16:
+                    item = CosmosInt16.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
+                case JsonNodeType.Int32:
+                    item = CosmosInt32.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
+                case JsonNodeType.Int64:
+                    item = CosmosInt64.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
+                case JsonNodeType.UInt32:
+                    item = CosmosUInt32.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
+                case JsonNodeType.Float32:
+                    item = CosmosFloat32.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
+                case JsonNodeType.Float64:
+                    item = CosmosFloat64.Create(jsonNavigator, jsonNavigatorNode);
+                    break;
+
                 default:
                     throw new ArgumentException($"Unknown {nameof(JsonNodeType)}: {jsonNodeType}");
             }

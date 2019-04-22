@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new InvalidOperationException($"Underlying object does not have an '_rid' field.");
                 }
 
-                if (!(cosmosElement is CosmosString cosmosString))
+                if (!(cosmosElement is CosmosTypedElement<string> cosmosString))
                 {
                     throw new InvalidOperationException($"'_rid' field was not a string.");
                 }

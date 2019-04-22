@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal static class DocumentQueryExecutionContextFactory
     {
+        internal const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const int PageSizeFactorForTop = 5;
 
         public static async Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(
@@ -96,8 +97,28 @@ namespace Microsoft.Azure.Cosmos.Query
                 //todo:elasticcollections this may rely on information from collection cache which is outdated
                 //if collection is deleted/created with same name.
                 //need to make it not rely on information from collection cache.
+                PartitionKeyDefinition partitionKeyDefinition;
+                object partitionKeyDefinitionObject;
+                if (feedOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                {
+                    if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
+                    {
+                        partitionKeyDefinition = definition;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            "partitionkeydefinition has invalid type",
+                            nameof(partitionKeyDefinitionObject));
+                    }
+                }
+                else
+                {
+                    partitionKeyDefinition = collection.PartitionKey;
+                }
+
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await queryExecutionContext.GetPartitionedQueryExecutionInfoAsync(
-                    collection.PartitionKey,
+                    partitionKeyDefinition,
                     true,
                     isContinuationExpected,
                     token);

@@ -137,11 +137,16 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.String:
-                        CosmosString string1 = element1 as CosmosString;
-                        CosmosString string2 = element2 as CosmosString;
-                        cmp = string.CompareOrdinal(
-                            string1.Value,
-                            string2.Value);
+                    case CosmosElementType.Int8:
+                    case CosmosElementType.Int16:
+                    case CosmosElementType.Int32:
+                    case CosmosElementType.Int64:
+                    case CosmosElementType.UInt32:
+                    case CosmosElementType.Float32:
+                    case CosmosElementType.Float64:
+                        CosmosTypedElement typedElement1 = element1 as CosmosTypedElement;
+                        CosmosTypedElement typedElement2 = element2 as CosmosTypedElement;
+                        cmp = typedElement1.CompareTo(typedElement2);
                         break;
 
                     default:
@@ -181,6 +186,27 @@ namespace Microsoft.Azure.Cosmos.Query
                     break;
                 case CosmosElementType.String:
                     order = 3;
+                    break;
+                case CosmosElementType.Int8:
+                    order = 4;
+                    break;
+                case CosmosElementType.Int16:
+                    order = 5;
+                    break;
+                case CosmosElementType.Int32:
+                    order = 6;
+                    break;
+                case CosmosElementType.Int64:
+                    order = 7;
+                    break;
+                case CosmosElementType.UInt32:
+                    order = 8;
+                    break;
+                case CosmosElementType.Float32:
+                    order = 9;
+                    break;
+                case CosmosElementType.Float64:
+                    order = 10;
                     break;
                 default:
                     throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {cosmosElementType}");

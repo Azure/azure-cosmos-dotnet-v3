@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     internal sealed class MinMaxAggregator : IAggregator
     {
         private static readonly CosmosElement Undefined = null;
+
         /// <summary>
         /// Whether or not the aggregation is a min or a max.
         /// </summary>
@@ -157,13 +158,18 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 case CosmosElementType.Null:
                     return true;
 
-                case CosmosElementType.Number:
-                    return true;
-
                 case CosmosElementType.Object:
                     return false;
 
+                case CosmosElementType.Number:
                 case CosmosElementType.String:
+                case CosmosElementType.Int8:
+                case CosmosElementType.Int16:
+                case CosmosElementType.Int32:
+                case CosmosElementType.Int64:
+                case CosmosElementType.UInt32:
+                case CosmosElementType.Float32:
+                case CosmosElementType.Float64:
                     return true;
 
                 default:

@@ -201,7 +201,35 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.String:
-                        hash = this.GetStringHash((cosmosElement as CosmosString).Value, seed);
+                        hash = this.GetStringHash((cosmosElement as CosmosTypedElement<string>).Value, seed);
+                        break;
+
+                    case CosmosElementType.Int8:
+                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<sbyte>).Value, seed);
+                        break;
+
+                    case CosmosElementType.Int16:
+                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<short>).Value, seed);
+                        break;
+
+                    case CosmosElementType.Int32:
+                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<int>).Value, seed);
+                        break;
+
+                    case CosmosElementType.Int64:
+                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<long>).Value, seed);
+                        break;
+
+                    case CosmosElementType.UInt32:
+                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<uint>).Value, seed);
+                        break;
+
+                    case CosmosElementType.Float32:
+                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<float>).Value, seed);
+                        break;
+
+                    case CosmosElementType.Float64:
+                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<double>).Value, seed);
                         break;
 
                     default:

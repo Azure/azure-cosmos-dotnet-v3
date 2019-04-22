@@ -192,13 +192,41 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.String:
-                        added = this.AddStringValue((cosmosElement as CosmosString).Value);
+                        added = this.AddStringValue((cosmosElement as CosmosTypedElement<string>).Value);
+                        break;
+
+                    case CosmosElementType.Int8:
+                        added = this.AddNumberValue((cosmosElement as CosmosTypedElement<sbyte>).Value);
+                        break;
+
+                    case CosmosElementType.Int16:
+                        added = this.AddNumberValue((cosmosElement as CosmosTypedElement<short>).Value);
+                        break;
+
+                    case CosmosElementType.Int32:
+                        added = this.AddNumberValue((cosmosElement as CosmosTypedElement<int>).Value);
+                        break;
+
+                    case CosmosElementType.Int64:
+                        added = this.AddNumberValue((cosmosElement as CosmosTypedElement<long>).Value);
+                        break;
+
+                    case CosmosElementType.UInt32:
+                        added = this.AddNumberValue((cosmosElement as CosmosTypedElement<uint>).Value);
+                        break;
+
+                    case CosmosElementType.Float32:
+                        added = this.AddNumberValue((cosmosElement as CosmosTypedElement<float>).Value);
+                        break;
+
+                    case CosmosElementType.Float64:
+                        added = this.AddNumberValue((cosmosElement as CosmosTypedElement<double>).Value);
                         break;
 
                     default:
                         throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElementType}");
                 }
-                
+
                 return added;
             }
 

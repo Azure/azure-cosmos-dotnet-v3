@@ -7,28 +7,26 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosString : CosmosElement
+    internal static class CosmosString
     {
-        protected CosmosString()
-            : base(CosmosElementType.String)
-        {
-        }
-
-        public abstract string Value
-        {
-            get;
-        }
-
-        public static CosmosString Create(
+        public static CosmosElement Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
         {
-            return new LazyCosmosString(jsonNavigator, jsonNavigatorNode);
+            return new CosmosTypedElement<string>.LazyCosmosTypedElement(
+                jsonNavigator,
+                jsonNavigatorNode,
+                JsonNodeType.String,
+                (navigator, node) => navigator.GetStringValue(node),
+                CosmosElementType.String);
         }
 
-        public static CosmosString Create(string value)
+        public static CosmosElement Create(string value)
         {
-            return new EagerCosmosString(value);
+            return new CosmosTypedElement<string>.EagerTypedElement(
+                value,
+                CosmosElementType.String,
+                ((stringValue, writer) => writer.WriteStringValue(stringValue)));
         }
     }
 }

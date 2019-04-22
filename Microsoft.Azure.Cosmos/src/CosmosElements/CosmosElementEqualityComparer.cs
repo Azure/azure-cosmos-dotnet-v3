@@ -35,9 +35,9 @@
             return double1 == double2;
         }
 
-        public bool Equals(CosmosString string1, CosmosString string2)
+        public bool Equals(CosmosTypedElement typedElement, CosmosTypedElement string2)
         {
-            return string1.Value.Equals(string2.Value);
+            return typedElement.Equals(string2);
         }
 
         public bool Equals(CosmosBoolean bool1, CosmosBoolean bool2)
@@ -137,9 +137,16 @@
                         cosmosElement2 as CosmosObject);
 
                 case CosmosElementType.String:
+                case CosmosElementType.Int8:
+                case CosmosElementType.Int16:
+                case CosmosElementType.Int32:
+                case CosmosElementType.Int64:
+                case CosmosElementType.UInt32:
+                case CosmosElementType.Float32:
+                case CosmosElementType.Float64:
                     return this.Equals(
-                        (cosmosElement1 as CosmosString),
-                        (cosmosElement2 as CosmosString));
+                        (cosmosElement1 as CosmosTypedElement),
+                        (cosmosElement2 as CosmosTypedElement));
 
                 default:
                     throw new ArgumentException();
