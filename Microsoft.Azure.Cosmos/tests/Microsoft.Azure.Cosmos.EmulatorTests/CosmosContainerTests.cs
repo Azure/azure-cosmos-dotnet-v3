@@ -445,14 +445,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// This test verifies that we are able to set the ttl property path correctly using SDK.
-        /// Testing both scenerio of read expiried and and active items based on it TimeToLivePropertyPath value
+        /// Also this test will successfully read active item based on its TimeToLivePropertyPath value.
         /// </summary>
         [TestMethod]
         public async Task TimeToLivePropertyPath()
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/user";
-            TimeSpan timeToLive = TimeSpan.FromSeconds(1);
+            TimeSpan timeToLive = TimeSpan.FromSeconds(10);
             CosmosContainerSettings setting = new CosmosContainerSettings()
             {
                 Id = containerName,
@@ -492,29 +492,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             cosmosContainer = containerResponse;
             Assert.AreEqual(containerResponse.Resource.TimeToLivePropertyPath, "/creationDate");
 
-            //Creating an item and reading after expiration
+            //Creating an item and reading before expiration
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
             CosmosItemResponse<dynamic> createItemResponse = await cosmosContainer.Items.CreateItemAsync<dynamic>(payload.user, payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
             Thread.Sleep(6000);
             CosmosItemResponse<dynamic> readItemResponse = await cosmosContainer.Items.ReadItemAsync<dynamic>(payload.user, payload.id);
-            Assert.IsNull(readItemResponse.Resource);
-            Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.NotFound);
-
-
-            // Updating DefaultTimeToLive for container, increasing its value
-            setting.DefaultTimeToLive = TimeSpan.FromSeconds(10);
-            containerResponse = await cosmosContainer.ReplaceAsync(setting);
-            cosmosContainer = containerResponse;
-
-            //Creating an item and reading before expiration
-            payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
-            createItemResponse = await cosmosContainer.Items.CreateItemAsync<dynamic>(payload.user, payload);
-            Assert.IsNotNull(createItemResponse.Resource);
-            Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            Thread.Sleep(6000);
-            readItemResponse = await cosmosContainer.Items.ReadItemAsync<dynamic>(payload.user, payload.id);
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
 
