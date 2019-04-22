@@ -44,13 +44,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task CreateDropDatabase()
+        public async Task DatabaseContractTest()
         {
             CosmosDatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.IsNotNull(response);
             Assert.IsTrue(response.RequestCharge > 0);
             Assert.IsNotNull(response.Headers);
             Assert.IsNotNull(response.Headers.ActivityId);
+
+            CosmosDatabaseSettings databaseSettings = response.Resource;
+            Assert.IsNotNull(databaseSettings.Id);
+            Assert.IsNotNull(databaseSettings.ResourceId);
+            Assert.IsNotNull(databaseSettings.ETag);
+            Assert.IsTrue(databaseSettings.LastModified.HasValue);
+
+            Assert.IsTrue(databaseSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), databaseSettings.LastModified.Value.ToString());
+
+            response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateDropDatabase()
+        {
+            CosmosDatabaseResponse response = await this.CreateDatabaseHelper();
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
             response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
