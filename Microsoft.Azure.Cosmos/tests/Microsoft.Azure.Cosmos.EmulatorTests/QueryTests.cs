@@ -891,14 +891,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        public async Task TestRouteToSpecificPartition()
-        {
-            await this.TestRoutToSpecificPartition(false);
-            await this.TestRoutToSpecificPartition(true);
-        }
-
-        private async Task TestRoutToSpecificPartition(bool useGateway)
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task TestRoutToSpecificPartition(bool useGateway)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway);
 
