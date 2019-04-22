@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient cosmosClient = null;
         private CosmosDatabase cosmosDatabase = null;
         private static long ToEpoch(DateTime dateTime) => (long)(dateTime - (new DateTime(1970, 1, 1))).TotalSeconds;
+
         [TestInitialize]
         public async Task TestInit()
         {
