@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static void TypeAccessorGuard(Type input, params string[] publicSettable)
         {
-            // All properties are public readable only de-defualt
+            // All properties are public readable only by-default
             PropertyInfo[] allProperties = input.GetProperties(BindingFlags.Instance|BindingFlags.Public);
             foreach (PropertyInfo pInfo in allProperties)
             {
