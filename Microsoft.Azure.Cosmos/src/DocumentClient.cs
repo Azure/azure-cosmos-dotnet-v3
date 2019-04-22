@@ -6764,11 +6764,6 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.InsertSystemPartitionKey, bool.TrueString);
             }
 
-            if (options.OfferAutoScaleMode.HasValue)
-            {
-                headers.Set(HttpConstants.HttpHeaders.OfferAutoScaleMode, options.OfferAutoScaleMode.ToString());
-            }
-
             if (options.EnableScriptLogging)
             {
                 headers.Set(HttpConstants.HttpHeaders.EnableLogging, bool.TrueString);
