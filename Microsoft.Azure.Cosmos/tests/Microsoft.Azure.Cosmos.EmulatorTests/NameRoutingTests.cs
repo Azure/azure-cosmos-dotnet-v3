@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -497,7 +498,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Create database and create collection
             Database database = await client.CreateDatabaseAsync(new Database() { Id = databaseId });
-            DocumentCollection coll1 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionId });
+            DocumentCollection collectionDef = new DocumentCollection()
+            {
+                Id = collectionId,
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string>() { "/id" }
+                }
+            };
+            DocumentCollection coll1 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), collectionDef);
             Document doc1 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc1Id });
             Document anotherdoc = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc2Id });
 
@@ -508,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
 
             // now re-create the collection (same name, with different Rid)
-            DocumentCollection coll2 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionId });
+            DocumentCollection coll2 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), collectionDef);
             Assert.AreNotEqual(coll2.ResourceId, coll1.ResourceId);
             Assert.AreEqual(coll2.Id, coll1.Id);
 

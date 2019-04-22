@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net.Http;
     using System.Threading.Tasks;
@@ -296,7 +297,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database createdDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
 
             string collectionId = Guid.NewGuid().ToString();
-            DocumentCollection collection = new DocumentCollection { Id = collectionId};
+            DocumentCollection collection = new DocumentCollection
+                {
+                    Id = collectionId,
+                    PartitionKey = new PartitionKeyDefinition()
+                    {
+                        Paths = new Collection<string>() { "/id" }
+                    },
+                };
 
             DocumentCollection createdCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(createdDatabase.Id), collection).Result;
 
