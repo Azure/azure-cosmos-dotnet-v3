@@ -5,10 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.IO;
+    using System.Linq;
+    using System.Reflection;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -17,6 +17,116 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class SettingsContractTests
     {
+        [TestMethod]
+        public void DatabaseSettingsDefaults()
+        {
+            CosmosDatabaseSettings dbSettings = new CosmosDatabaseSettings();
+
+            Assert.IsNull(dbSettings.LastModified);
+            Assert.IsNull(dbSettings.ResourceId);
+            Assert.IsNull(dbSettings.Id);
+            Assert.IsNull(dbSettings.ETag);
+
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosDatabaseSettings), "Id");
+        }
+
+        [TestMethod]
+        public void StoredProecdureSettingsDefaults()
+        {
+            CosmosStoredProcedureSettings dbSettings = new CosmosStoredProcedureSettings();
+
+            Assert.IsNull(dbSettings.LastModified);
+            Assert.IsNull(dbSettings.ResourceId);
+            Assert.IsNull(dbSettings.Id);
+            Assert.IsNull(dbSettings.ETag);
+
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedureSettings), "Id", "Body");
+        }
+
+        [TestMethod]
+        public void DatabaseStreamDeserialzieTest()
+        {
+            string dbId = "946ad017-14d9-4cee-8619-0cbc62414157";
+            string rid = "vu9cAA==";
+            string self = "dbs\\/vu9cAA==\\/";
+            string etag = "00000000-0000-0000-f8ea-31d6e5f701d4";
+            double ts = 1555923784;
+
+            DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime expected = UnixStartTime.AddSeconds(ts);
+
+            string testPyaload = "{\"id\":\"" + dbId
+                    + "\",\"_rid\":\"" + rid
+                    + "\",\"_self\":\"" + self
+                    + "\",\"_etag\":\"" + etag
+                    + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
+
+            CosmosDatabaseSettings deserializedPayload = 
+                JsonConvert.DeserializeObject<CosmosDatabaseSettings>(testPyaload);
+
+            Assert.IsTrue(deserializedPayload.LastModified.HasValue);
+            Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
+            Assert.AreEqual(dbId, deserializedPayload.Id);
+            Assert.AreEqual(rid, deserializedPayload.ResourceId);
+            Assert.AreEqual(etag, deserializedPayload.ETag);
+        }
+
+        [TestMethod]
+        public void ContainerStreamDeserialzieTest()
+        {
+            string colId = "946ad017-14d9-4cee-8619-0cbc62414157";
+            string rid = "vu9cAA==";
+            string self = "dbs\\/vu9cAA==\\/cols\\/abc==\\/";
+            string etag = "00000000-0000-0000-f8ea-31d6e5f701d4";
+            double ts = 1555923784;
+
+            DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime expected = UnixStartTime.AddSeconds(ts);
+
+            string testPyaload = "{\"id\":\"" + colId
+                    + "\",\"_rid\":\"" + rid
+                    + "\",\"_self\":\"" + self
+                    + "\",\"_etag\":\"" + etag
+                    + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
+
+            CosmosContainerSettings deserializedPayload =
+                JsonConvert.DeserializeObject<CosmosContainerSettings>(testPyaload);
+
+            Assert.IsTrue(deserializedPayload.LastModified.HasValue);
+            Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
+            Assert.AreEqual(colId, deserializedPayload.Id);
+            Assert.AreEqual(rid, deserializedPayload.ResourceId);
+            Assert.AreEqual(etag, deserializedPayload.ETag);
+        }
+
+        [TestMethod]
+        public void StoredProcedureDeserialzieTest()
+        {
+            string colId = "946ad017-14d9-4cee-8619-0cbc62414157";
+            string rid = "vu9cAA==";
+            string self = "dbs\\/vu9cAA==\\/cols\\/abc==\\/sprocs\\/def==\\/";
+            string etag = "00000000-0000-0000-f8ea-31d6e5f701d4";
+            double ts = 1555923784;
+
+            DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            DateTime expected = UnixStartTime.AddSeconds(ts);
+
+            string testPyaload = "{\"id\":\"" + colId
+                    + "\",\"_rid\":\"" + rid
+                    + "\",\"_self\":\"" + self
+                    + "\",\"_etag\":\"" + etag
+                    + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
+
+            CosmosStoredProcedureSettings deserializedPayload =
+                JsonConvert.DeserializeObject<CosmosStoredProcedureSettings>(testPyaload);
+
+            Assert.IsTrue(deserializedPayload.LastModified.HasValue);
+            Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
+            Assert.AreEqual(colId, deserializedPayload.Id);
+            Assert.AreEqual(rid, deserializedPayload.ResourceId);
+            Assert.AreEqual(etag, deserializedPayload.ETag);
+        }
+
         [TestMethod]
         public void DatabaseSettingsSerializeTest()
         {
@@ -165,11 +275,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = Guid.NewGuid().ToString();
             string pkPath = "/partitionKey";
 
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerSettings), "Id", "UniqueKeyPolicy", "DefaultTimeToLive", "IndexingPolicy");
+
             // Two equivalent definitions 
             CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath);
 
             Assert.AreEqual(id, cosmosContainerSettings.Id);
             Assert.AreEqual(pkPath, cosmosContainerSettings.PartitionKeyPath);
+
+            Assert.IsNull(cosmosContainerSettings.ResourceId);
+            Assert.IsNull(cosmosContainerSettings.LastModified);
+            Assert.IsNull(cosmosContainerSettings.ETag);
+            Assert.IsNull(cosmosContainerSettings.DefaultTimeToLive);
 
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy, cosmosContainerSettings.IndexingPolicy));
@@ -235,6 +352,32 @@ namespace Microsoft.Azure.Cosmos.Tests
                 using (StreamReader sr = new StreamReader(ms))
                 {
                     return sr.ReadToEnd();
+                }
+            }
+        }
+
+        private static void TypeAccessorGuard(Type input, params string[] publicSettable)
+        {
+            // All properties are public readable only by-default
+            PropertyInfo[] allProperties = input.GetProperties(BindingFlags.Instance|BindingFlags.Public);
+            foreach (PropertyInfo pInfo in allProperties)
+            {
+                MethodInfo[] accessors = pInfo.GetAccessors();
+                foreach (MethodInfo m in accessors)
+                {
+                    if (m.ReturnType == typeof(void))
+                    {
+                        // Set accessor 
+                        bool publicSetAllowed = publicSettable.Where(e => m.Name.EndsWith("_" + e)).Any();
+                        Assert.AreEqual(publicSetAllowed, m.IsPublic, m.ToString());
+                        Assert.AreEqual(publicSetAllowed, m.IsVirtual, m.ToString());
+                    }
+                    else
+                    {
+                        // get accessor 
+                        Assert.IsTrue(m.IsPublic, m.ToString());
+                        Assert.IsTrue(m.IsVirtual, m.ToString());
+                    }
                 }
             }
         }
