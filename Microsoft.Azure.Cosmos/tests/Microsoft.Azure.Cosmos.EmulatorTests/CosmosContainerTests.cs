@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -497,7 +496,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosItemResponse<dynamic> createItemResponse = await cosmosContainer.Items.CreateItemAsync<dynamic>(payload.user, payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            Thread.Sleep(6000);
             CosmosItemResponse<dynamic> readItemResponse = await cosmosContainer.Items.ReadItemAsync<dynamic>(payload.user, payload.id);
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
