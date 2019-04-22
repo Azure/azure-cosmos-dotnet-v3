@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosDatabase"/>for reading, replacing, or deleting an existing container;
     /// </summary>
-    /// </example>
     internal class CosmosDatabasesCore : CosmosDatabases
     {
         private readonly CosmosClientContext clientContext;
@@ -100,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
@@ -152,6 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: request =>

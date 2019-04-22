@@ -50,10 +50,11 @@ namespace Microsoft.Azure.Cosmos
             };
 
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
-                this.container.LinkUri,
-                ResourceType.StoredProcedure,
-                OperationType.Create,
-                requestOptions,
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosStoredProcedure this[string id] => new CosmosStoredProcedureCore(
             this.clientContext,
-            this.container, 
+            this.container,
             id);
 
         private Task<CosmosQueryResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
@@ -91,6 +92,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: request =>

@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunctions"/>
         /// </summary>
+        /// <param name="clientContext">The client context.</param>
         /// <param name="container">The <see cref="CosmosContainer"/> the user defined function set is related to.</param>
         protected internal CosmosUserDefinedFunctions(
             CosmosClientContext clientContext,
@@ -101,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 requestEnricher: null,
@@ -175,6 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: request =>

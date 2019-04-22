@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunction"/>
         /// </summary>
+        /// <param name="clientContext">The client context</param>
         /// <param name="container">The <see cref="CosmosContainer"/></param>
         /// <param name="userDefinedFunctionId">The cosmos user defined function id.</param>
         /// <remarks>
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = userDefinedFunctionId;
             this.clientContext = clientContext;
+            this.container = container;
             this.LinkUri = this.clientContext.CreateLink(
                parentLink: container.LinkUri.OriginalString,
                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
@@ -188,16 +190,18 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
-                this.LinkUri,
-                ResourceType.UserDefinedFunction,
-                operationType,
-                requestOptions,
-                partitionKey,
-                streamPayload,
-                null,
-                cancellationToken);
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.UserDefinedFunction,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
         }
+        internal CosmosContainerCore container { get; }
     }
 }

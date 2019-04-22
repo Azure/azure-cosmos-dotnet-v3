@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ExecuteJavaScript,
                 requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
                 partitionKey: partitionKey,
                 streamPayload: parametersStream,
                 requestEnricher: null,
@@ -127,6 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.StoredProcedure,
                 operationType: operationType,
                 requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: null,
@@ -134,5 +136,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this, response);
         }
+        internal CosmosContainerCore container { get; }
     }
 }

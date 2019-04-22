@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosTriggers"/>
         /// </summary>
+        /// <param name="clientContext">The client context</param>
         /// <param name="container">The <see cref="CosmosContainer"/> the triggers set is related to.</param>
         protected internal CosmosTriggers(
             CosmosClientContext clientContext,
@@ -99,10 +100,11 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
-                this.container.LinkUri,
-                ResourceType.Trigger,
-                OperationType.Create,
-                requestOptions,
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.Trigger,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(triggerSettings),
                 requestEnricher: null,
@@ -174,6 +176,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.Trigger,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: request =>

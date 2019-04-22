@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosRequestHandler RequestHandler { get; }
 
+        internal abstract CosmosClientConfiguration ClientConfiguration { get; }
+
         /// <summary>
         /// Generates the URI link for the resource
         /// </summary>
@@ -54,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
+            CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -68,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            CosmosRequestOptions requestOptions,
+           CosmosContainerCore cosmosContainerCore,
            Object partitionKey,
            Stream streamPayload,
            Action<CosmosRequestMessage> requestEnricher,

@@ -12,11 +12,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Linq.Expressions;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -28,6 +30,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosContainer Container = null;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
+
+        private static CosmosContainer fixedContainer = null;
+        private static readonly string utc_date = DateTime.UtcNow.ToString("r");
+
+        private static readonly string nonPartitionContainerId = "fixed-Container";
+        private static readonly string nonPartitionItemId = "fixed-Container-Item";
+
+        private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -411,7 +421,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(iter.Count <= 5);
                         totalRequstCharge += iter.RequestCharge;
 
-                        ToDoActivity response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content).First();
+                        ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                        Assert.AreEqual(1, activities.Length);
+                        ToDoActivity response = activities.First();
                         resultList.Add(response);
                     }
                 }
@@ -632,11 +644,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 deleteList = await this.CreateRandomItems(6, randomPartitionKey: false);
 
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.taskNum = @task").UseParameter("@task", deleteList.First().taskNum);
+                ToDoActivity toDoActivity = deleteList.First();
+                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
+                    "select * from toDoActivity t where t.status = @status")
+                    .UseParameter("@status", toDoActivity.status);
 
                 // Test max size at 1
                 CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, "TBD", maxItemCount: 1);
+                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
                 while (setIterator.HasMoreResults)
                 {
                     CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
@@ -645,7 +660,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Test max size at 2
                 CosmosResultSetIterator<ToDoActivity> setIteratorMax2 =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, "TBD", maxItemCount: 2);
+                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
                 while (setIteratorMax2.HasMoreResults)
                 {
                     CosmosQueryResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
@@ -768,6 +783,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        // Read write non partition Container item.
+        [TestMethod]
+        public async Task ReadNonPartitionItemAsync()
+        {
+            try
+            {
+                await CreateNonPartitionContainerItem();
+                await CreateUndefinedPartitionItem();
+                fixedContainer = database.Containers[nonPartitionContainerId];
+
+                CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
+                Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
+                Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemKeyPath);
+
+                CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
+                    partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
+                    id: nonPartitionItemId);
+
+                Assert.IsNotNull(response.Resource);
+                Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
+                Assert.IsNotNull(response.Resource.id == nonPartitionItemId);
+
+                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
+                CosmosResultSetIterator<ToDoActivity> setIterator = fixedContainer.Items
+                    .CreateItemQuery<ToDoActivity>(sql, partitionKey :CosmosContainerSettings.NonePartitionKeyValue, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(1, queryResponse.Count());
+                    ToDoActivity toDoActivity = queryResponse.First();
+                    Assert.AreEqual(nonPartitionItemId, toDoActivity.id);
+                }
+
+                CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
+                    partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
+                    id: undefinedPartitionItemId);
+
+                Assert.IsNotNull(undefinedItemResponse.Resource);
+                Assert.IsTrue(undefinedItemResponse.StatusCode == HttpStatusCode.OK);
+                Assert.IsNotNull(undefinedItemResponse.Resource.id == undefinedPartitionItemId);
+            }
+            finally
+            {
+                if (fixedContainer != null)
+                {
+                    await fixedContainer.DeleteAsync();
+                }
+            }
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
@@ -794,16 +859,110 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createdList;
         }
 
-        private ToDoActivity CreateRandomToDoActivity(string pk = null)
+        private async Task CreateNonPartitionContainerItem()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
+            var client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "colls";
+            string resourceId = string.Format("dbs/{0}", this.database.Id);
+            string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+
+            string authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+            String containerDefinition = "{\n  \"id\": \"" + nonPartitionContainerId + "\"\n}";
+            StringContent containerContent = new StringContent(containerDefinition);
+            Uri requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), containerContent);
+
+            //Creating non partition Container item.
+            verb = "POST";
+            resourceType = "docs";
+            resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
+            resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
+            authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Remove("authorization");
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+
+            String itemDefinition = JsonConvert.SerializeObject(CreateRandomToDoActivity(id: nonPartitionItemId));
+            StringContent itemContent = new StringContent(itemDefinition);
+            requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), itemContent);
+        }
+
+        private async Task CreateUndefinedPartitionItem()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            //Creating undefined partition key  item, rest api used instead of .NET SDK api as it is not supported anymore.
+            var client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "colls";
+            string resourceId = string.Format("dbs/{0}", this.database.Id);
+            string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+            client.DefaultRequestHeaders.Add("x-ms-documentdb-partitionkey", "[{}]");
+
+            //Creating undefined partition Container item.
+            verb = "POST";
+            resourceType = "docs";
+            resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, this.Container.Id);
+            resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, this.Container.Id);
+            string authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Remove("authorization");
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+
+            var payload = new { id = undefinedPartitionItemId, user = undefinedPartitionItemId };
+            String itemDefinition = JsonConvert.SerializeObject(payload);
+            StringContent itemContent = new StringContent(itemDefinition);
+            Uri requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), itemContent);
+        }
+
+        private string GenerateMasterKeyAuthorizationSignature(string verb, string resourceId, string resourceType, string key, string keyType, string tokenVersion)
+        {
+            var hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
+
+            string payLoad = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}\n{1}\n{2}\n{3}\n{4}\n",
+                    verb.ToLowerInvariant(),
+                    resourceType.ToLowerInvariant(),
+                    resourceId,
+                    utc_date.ToLowerInvariant(),
+                    ""
+            );
+
+            byte[] hashPayLoad = hmacSha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payLoad));
+            string signature = Convert.ToBase64String(hashPayLoad);
+
+            return System.Web.HttpUtility.UrlEncode(String.Format(System.Globalization.CultureInfo.InvariantCulture, "type={0}&ver={1}&sig={2}",
+                keyType,
+                tokenVersion,
+                signature));
+        }
+
+        private ToDoActivity CreateRandomToDoActivity(string pk = null, string id = null)
         {
             if (string.IsNullOrEmpty(pk))
             {
                 pk = "TBD" + Guid.NewGuid().ToString();
             }
-
+            if (id == null)
+            {
+                id = Guid.NewGuid().ToString();
+            }
             return new ToDoActivity()
             {
-                id = Guid.NewGuid().ToString(),
+                id = id,
                 description = "CreateRandomToDoActivity",
                 status = pk,
                 taskNum = 42,

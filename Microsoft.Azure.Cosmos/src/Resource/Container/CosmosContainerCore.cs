@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosContainerCore : CosmosContainer
     {
+        internal CosmosContainerCore() {}
+
         internal CosmosContainerCore(
             CosmosClientContext clientContext,
             CosmosDatabaseCore database,
@@ -47,13 +49,15 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosStoredProcedures StoredProcedures { get; }
 
-        internal Uri LinkUri { get; }
+        internal virtual Uri LinkUri { get; }
 
         internal CosmosTriggers Triggers { get; }
 
         internal CosmosUserDefinedFunctions UserDefinedFunctions { get; }
 
-        internal CosmosClientContext ClientContext { get; }
+        internal virtual CosmosClientContext ClientContext { get; }
+
+        private PartitionKeyInternal nonePartitionKeyValue { get; set; }
 
         public override Task<CosmosContainerResponse> ReadAsync(
             CosmosContainerRequestOptions requestOptions = null,
@@ -196,10 +200,35 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
         }
 
-        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken)
+        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerSettingsAsync(cancellationToken)
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
+        }
+
+        /// <summary>
+        /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
+        /// </summary>
+        /// <remarks>
+        /// The function selects the right partition key constant for inserting documents that don't have
+        /// a value for partition key. The constant selection is based on whether the collection is migrated
+        /// or user partitioned
+        /// </remarks>
+        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue()
+        {
+            if (this.nonePartitionKeyValue == null)
+            {
+                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+                if (partitionKeyDefinition.Paths.Count == 0 || partitionKeyDefinition.IsSystemKey)
+                {
+                    this.nonePartitionKeyValue = PartitionKeyInternal.Empty;
+                }
+                else
+                {
+                    this.nonePartitionKeyValue = PartitionKeyInternal.Undefined;
+                }
+            }
+            return this.nonePartitionKeyValue;
         }
 
         internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
@@ -235,6 +264,7 @@ namespace Microsoft.Azure.Cosmos
               resourceUri: this.LinkUri,
               resourceType: ResourceType.Collection,
               operationType: operationType,
+              cosmosContainerCore: null,
               partitionKey: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,

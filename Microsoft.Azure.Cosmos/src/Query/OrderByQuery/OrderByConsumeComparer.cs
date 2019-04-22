@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
     /// that has the next document in the sort order of the query.
     /// If there is a tie, then we break the tie by picking the leftmost partition.
     /// </summary>
-    internal sealed class OrderByConsumeComparer : IComparer<DocumentProducerTree>
+    internal sealed class OrderByConsumeComparer : IComparer<DocumentProducerTree>, IComparer<ItemProducerTree>
     {
         /// <summary>
         /// This flag used to determine whether we should support mixed type order by.
@@ -61,6 +61,38 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
         /// Greater than zero if the document in the second document producer comes first.
         /// </returns>
         public int Compare(DocumentProducerTree producer1, DocumentProducerTree producer2)
+        {
+            if (object.ReferenceEquals(producer1, producer2))
+            {
+                return 0;
+            }
+
+            OrderByQueryResult result1 = new OrderByQueryResult(producer1.Current);
+            OrderByQueryResult result2 = new OrderByQueryResult(producer2.Current);
+
+            // First compare the documents based on the sort order of the query.
+            int cmp = this.CompareOrderByItems(result1.OrderByItems, result2.OrderByItems);
+            if (cmp != 0)
+            {
+                // If there is no tie just return that.
+                return cmp;
+            }
+
+            // If there is a tie, then break the tie by picking the one from the left most partition.
+            return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
+        }
+
+        /// <summary>
+        /// Compares two document producer trees and returns an integer with the relation of which has the document that comes first in the sort order.
+        /// </summary>
+        /// <param name="producer1">The first document producer tree.</param>
+        /// <param name="producer2">The second document producer tree.</param>
+        /// <returns>
+        /// Less than zero if the document in the first document producer comes first.
+        /// Zero if the documents are equivalent.
+        /// Greater than zero if the document in the second document producer comes first.
+        /// </returns>
+        public int Compare(ItemProducerTree producer1, ItemProducerTree producer2)
         {
             if (object.ReferenceEquals(producer1, producer2))
             {

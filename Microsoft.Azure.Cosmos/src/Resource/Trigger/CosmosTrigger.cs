@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -23,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosTrigger"/>
         /// </summary>
+        /// <param name="clientContext">The client context</param>
         /// <param name="container">The <see cref="CosmosContainer"/></param>
         /// <param name="triggerId">The cosmos trigger id.</param>
         /// <remarks>
@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = triggerId;
             this.clientContext = clientContext;
+            this.container = container;
             this.LinkUri = this.clientContext.CreateLink(
                 parentLink: container.LinkUri.OriginalString,
                 uriPathSegment: Paths.TriggersPathSegment,
@@ -198,16 +199,19 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
-                this.LinkUri,
-                ResourceType.Trigger,
-                operationType,
-                requestOptions,
-                partitionKey,
-                streamPayload,
-                null,
-                cancellationToken);
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.Trigger,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateTriggerResponse(this, response);
         }
+
+        internal CosmosContainerCore container { get; }
     }
 }

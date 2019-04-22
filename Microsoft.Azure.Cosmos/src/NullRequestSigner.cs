@@ -17,5 +17,10 @@ namespace Microsoft.Azure.Cosmos
         {
             return Task.FromResult(0);
         }
+
+        public Task ReauthorizeSystemKeySignedRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(0);
+        }
     }
 }

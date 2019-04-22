@@ -4,9 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
+    using System.Globalization;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
 
     internal static class CosmosContainerExtensions
     {
@@ -68,6 +71,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         .ConfigureAwait(false);
 
             return response.IsSuccessStatusCode;
+        }
+
+        public static async Task<string> GetMonitoredContainerRidAsync(
+            this CosmosContainer monitoredContainer,
+            string suggestedMonitoredRid,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!string.IsNullOrEmpty(suggestedMonitoredRid))
+            {
+                return suggestedMonitoredRid;
+            }
+
+            string containerRid = await ((CosmosContainerCore)monitoredContainer).GetRID(cancellationToken);
+            string databaseRid = await ((CosmosDatabaseCore)((CosmosContainerCore)monitoredContainer).Database).GetRID(cancellationToken);
+            return $"{databaseRid}_{containerRid}";
+        }
+
+        public static string GetLeasePrefix(
+            this CosmosContainer monitoredContainer,
+            ChangeFeedLeaseOptions changeFeedLeaseOptions,
+            string monitoredContainerRid)
+        {
+            string optionsPrefix = changeFeedLeaseOptions.LeasePrefix ?? string.Empty;
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}{1}_{2}",
+                optionsPrefix,
+                ((CosmosContainerCore)monitoredContainer).ClientContext.ClientConfiguration.AccountEndPoint.Host,
+                monitoredContainerRid);
         }
     }
 }

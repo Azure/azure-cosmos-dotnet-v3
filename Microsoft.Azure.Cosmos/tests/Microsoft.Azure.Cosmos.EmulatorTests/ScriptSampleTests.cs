@@ -25,7 +25,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.client = TestCommon.CreateClient(true);
             this.database = TestCommon.CreateOrGetDatabase(this.client);
-            this.collection = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
+            PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            this.collection = new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition };
             this.collection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
             try
@@ -58,10 +59,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void TestUniqueConstraintSample()
         {
-            var triggerRequestOptions = new RequestOptions { PreTriggerInclude = new List<string> { this.triggerName } };
+
 
             // 1. Create.
             var doc = new UidDocument { Id = "TestUniqueConstraintSample_1", Uid = "mic" };
+            doc.SetPropertyValue("pk", "test");
+            PartitionKey partitionKey = new PartitionKey("test");
+            var triggerRequestOptions = new RequestOptions { PreTriggerInclude = new List<string> { this.triggerName }, PartitionKey = partitionKey };
             doc = (dynamic)this.client.CreateDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Result.Resource;
 
             // 2. Create with same uid -- conflict.
@@ -110,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void ValidateReadMetadoc(string expectedUid)
         {
-            var query = this.client.CreateDocumentQuery<Document>(this.collection.SelfLink, "SELECT * FROM root r WHERE r.isMetadata = true");
+            var query = this.client.CreateDocumentQuery<Document>(this.collection.SelfLink, "SELECT * FROM root r WHERE r.isMetadata = true", feedOptions: new FeedOptions { EnableCrossPartitionQuery = true });
             foreach (var metaDoc in query)
             {
                 string id = metaDoc.GetPropertyValue<string>("id");
