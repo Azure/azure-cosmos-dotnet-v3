@@ -309,26 +309,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
             }
 
-            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey))
-            {
-                return PartitionKeyInternal.Empty;
-            }
-            else
-            {
-                return PartitionKeyInternal.Undefined;
-            }
-        }
-
-        /// <summary>
-        /// The function selects the right partition key constant mapping for <see cref="NonePartitionKeyValue"/>
-        /// </summary>
-        internal PartitionKeyInternal GetNoneValue()
-        {
-            if (this.PartitionKey == null)
-            {
-                throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
-            }
-
             if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey.HasValue && this.PartitionKey.IsSystemKey.Value))
             {
                 return PartitionKeyInternal.Empty;
