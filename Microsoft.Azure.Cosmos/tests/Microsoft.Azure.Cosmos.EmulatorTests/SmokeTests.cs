@@ -312,7 +312,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(collectionId, createdCollection.Id);
 
             string collectionId2 = Guid.NewGuid().ToString();
-            collection = new DocumentCollection { Id = collectionId2 };
+            collection = new DocumentCollection
+            {
+                Id = collectionId2,
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string>() { "/id" }
+                },
+            };
 
             // Pre-create the collection with this unique id
             createdCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(createdDatabase.SelfLink, collection).Result;
