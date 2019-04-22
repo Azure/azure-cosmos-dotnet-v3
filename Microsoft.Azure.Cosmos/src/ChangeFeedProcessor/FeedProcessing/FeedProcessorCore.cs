@@ -14,34 +14,29 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Documents;
+    using System.Collections.ObjectModel;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
-        private static readonly int DefaultMaxItemCount = 100;
         private readonly ILog logger = LogProvider.GetCurrentClassLogger();
         private readonly ProcessorSettings settings;
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
-        private readonly ChangeFeedOptions options;
-        private readonly CosmosResultSetIterator<T> resultSetIterator;
+        private readonly CosmosFeedResultSetIterator resultSetIterator;
+        private readonly CosmosJsonSerializer cosmosJsonSerializer;
 
-        public FeedProcessorCore(ChangeFeedObserver<T> observer, CosmosResultSetIterator<T> resultSetIterator, ProcessorSettings settings, PartitionCheckpointer checkpointer)
+        public FeedProcessorCore(
+            ChangeFeedObserver<T> observer,
+            CosmosFeedResultSetIterator resultSetIterator, 
+            ProcessorSettings settings, 
+            PartitionCheckpointer checkpointer, 
+            CosmosJsonSerializer cosmosJsonSerializer)
         {
             this.observer = observer;
             this.settings = settings;
             this.checkpointer = checkpointer;
-            this.options = new ChangeFeedOptions
-            {
-                MaxItemCount = settings.MaxItemCount,
-                PartitionKeyRangeId = settings.LeaseToken,
-                SessionToken = settings.SessionToken,
-                StartFromBeginning = settings.StartFromBeginning,
-                RequestContinuation = settings.StartContinuation,
-                StartTime = settings.StartTime,
-            };
-
             this.resultSetIterator = resultSetIterator;
+            this.cosmosJsonSerializer = cosmosJsonSerializer;
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
@@ -56,76 +51,85 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        CosmosQueryResponse<T> response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
-                        lastContinuation = response.ContinuationToken;
-                        if (response.GetHasMoreResults())
+                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            this.logger.WarnFormat("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
+                            this.HandleFailedRequest(response, lastContinuation);
+
+                            if (response.Headers.RetryAfter != null)
+                            {
+                                delay = response.Headers.RetryAfter.Value;
+                            }
+
+                            // Out of the loop for a retry
+                            break;
+                        }
+
+                        lastContinuation = response.Headers.Continuation;
+                        if (this.resultSetIterator.HasMoreResults)
                         {
                             await this.DispatchChanges(response, cancellationToken).ConfigureAwait(false);
                         }
                     }
                     while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
-
-                    if (this.options.MaxItemCount != this.settings.MaxItemCount)
-                    {
-                        this.options.MaxItemCount = this.settings.MaxItemCount;   // Reset after successful execution.
-                    }
-                }
-                catch (DocumentClientException clientException)
-                {
-                    this.logger.WarnException("exception: lease token '{0}'", clientException, this.settings.LeaseToken);
-                    DocDbError docDbError = ExceptionClassifier.ClassifyClientException(clientException);
-                    switch (docDbError)
-                    {
-                        case DocDbError.PartitionNotFound:
-                            throw new FeedNotFoundException("Partition not found.", lastContinuation);
-                        case DocDbError.PartitionSplit:
-                            throw new FeedSplitException("Partition split.", lastContinuation);
-                        case DocDbError.Undefined:
-                            throw;
-                        case DocDbError.TransientError:
-                            // Retry on transient (429) errors
-                            break;
-                        case DocDbError.MaxItemCountTooLarge:
-                            if (!this.options.MaxItemCount.HasValue)
-                            {
-                                this.options.MaxItemCount = DefaultMaxItemCount;
-                            }
-                            else if (this.options.MaxItemCount <= 1)
-                            {
-                                this.logger.ErrorFormat("Cannot reduce maxItemCount further as it's already at {0}.", this.options.MaxItemCount);
-                                throw;
-                            }
-
-                            this.options.MaxItemCount /= 2;
-                            this.logger.WarnFormat("Reducing maxItemCount, new value: {0}.", this.options.MaxItemCount);
-                            break;
-                        default:
-                            this.logger.Fatal($"Unrecognized DocDbError enum value {docDbError}");
-                            Debug.Fail($"Unrecognized DocDbError enum value {docDbError}");
-                            throw;
-                    }
-
-                    if (clientException.RetryAfter != TimeSpan.Zero)
-                        delay = clientException.RetryAfter;
                 }
                 catch (TaskCanceledException canceledException)
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         throw;
+                    }
 
                     this.logger.WarnException("exception: lease token '{0}'", canceledException, this.settings.LeaseToken);
 
-                    // ignore as it is caused by DocumentDB client
+                    // ignore as it is caused by Cosmos DB client when StopAsync is called
                 }
 
                 await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        private Task DispatchChanges(CosmosQueryResponse<T> response, CancellationToken cancellationToken)
+        private void HandleFailedRequest(
+            CosmosResponseMessage response, 
+            string lastContinuation)
+        {
+            DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(response.StatusCode, response.Headers.SubStatusCode);
+            switch (docDbError)
+            {
+                case DocDbError.PartitionNotFound:
+                    throw new FeedNotFoundException("Partition not found.", lastContinuation);
+                case DocDbError.PartitionSplit:
+                    throw new FeedSplitException("Partition split.", lastContinuation);
+                case DocDbError.Undefined:
+                    throw new InvalidOperationException($"Undefined DocDbError for status code {response.StatusCode} and substatus code {response.Headers.SubStatusCode}");
+                case DocDbError.TransientError:
+                    break;
+                default:
+                    this.logger.Fatal($"Unrecognized DocDbError enum value {docDbError}");
+                    Debug.Fail($"Unrecognized DocDbError enum value {docDbError}");
+                    throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {response.StatusCode} and substatus code {response.Headers.SubStatusCode}");
+            }
+        }
+
+        private Task DispatchChanges(CosmosResponseMessage response, CancellationToken cancellationToken)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.settings.LeaseToken, response, this.checkpointer);
-            return this.observer.ProcessChangesAsync(context, response, cancellationToken);
+            Collection<T> asFeedResponse;
+            try
+            {
+                asFeedResponse = cosmosJsonSerializer.FromStream<CosmosFeedResponse<T>>(response.Content).Data;
+            }
+            catch (Exception serializationException)
+            {
+                // Error using custom serializer to parse stream
+                throw new ObserverException(serializationException);
+            }
+
+            List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);
+            asReadOnlyList.AddRange(asFeedResponse);
+
+            return this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellationToken);
         }
     }
 }

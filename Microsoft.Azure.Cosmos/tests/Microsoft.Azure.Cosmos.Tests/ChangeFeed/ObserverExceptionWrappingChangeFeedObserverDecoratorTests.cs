@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly Mock<ChangeFeedObserver<MyDocument>> observer;
         private readonly ChangeFeedObserverContext changeFeedObserverContext;
         private readonly FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument> observerWrapper;
-        private readonly CosmosQueryResponse<MyDocument> documents;
+        private readonly IReadOnlyList<MyDocument> documents;
 
         public ObserverExceptionWrappingChangeFeedObserverDecoratorTests()
         {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             this.observerWrapper = new FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument>(this.observer.Object);
 
             var document = new MyDocument();
-            documents = CosmosQueryResponse<MyDocument>.CreateResponse<MyDocument>(new List<MyDocument> { document }, null, false);
+            documents = new List<MyDocument> { document };
         }
 
         [TestMethod]
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
                         .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
-                            It.Is<CosmosQueryResponse<MyDocument>>(list => this.documents.SequenceEqual(list)),
+                            It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
                             It.IsAny<CancellationToken>()
                         ),
                     Times.Once);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<CosmosQueryResponse<MyDocument>>(), It.IsAny<CancellationToken>()))
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             try
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
                         .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
-                            It.Is<CosmosQueryResponse<MyDocument>>(list => this.documents.SequenceEqual(list)),
+                            It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
                             It.IsAny<CancellationToken>()
                         ),
                     Times.Once);
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<CosmosQueryResponse<MyDocument>>(), It.IsAny<CancellationToken>()))
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
                 .Throws(new Documents.DocumentClientException("Some message", (HttpStatusCode) 429, Documents.SubStatusCodes.Unknown));
 
             try
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
                         .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
-                            It.Is<CosmosQueryResponse<MyDocument>>(list => this.documents.SequenceEqual(list)),
+                            It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
                             It.IsAny<CancellationToken>()
                         ),
                     Times.Once);

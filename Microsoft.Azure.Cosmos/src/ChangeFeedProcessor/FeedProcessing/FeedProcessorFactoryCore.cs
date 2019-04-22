@@ -15,19 +15,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly CosmosContainer container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
+        private readonly CosmosJsonSerializer cosmosJsonSerializer;
 
         public FeedProcessorFactoryCore(
             CosmosContainer container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            DocumentServiceLeaseCheckpointer leaseCheckpointer)
+            DocumentServiceLeaseCheckpointer leaseCheckpointer,
+            CosmosJsonSerializer cosmosJsonSerializer)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
             if (changeFeedProcessorOptions == null) throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
             if (leaseCheckpointer == null) throw new ArgumentNullException(nameof(leaseCheckpointer));
+            if (cosmosJsonSerializer == null) throw new ArgumentNullException(nameof(cosmosJsonSerializer));
 
             this.container = container;
             this.changeFeedProcessorOptions = changeFeedProcessorOptions;
             this.leaseCheckpointer = leaseCheckpointer;
+            this.cosmosJsonSerializer = cosmosJsonSerializer;
         }
 
         public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer)
@@ -35,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             if (observer == null) throw new ArgumentNullException(nameof(observer));
             if (lease == null) throw new ArgumentNullException(nameof(lease));
 
-            var settings = new ProcessorSettings
+            ProcessorSettings settings = new ProcessorSettings
             {
                 StartContinuation = !string.IsNullOrEmpty(lease.ContinuationToken) ?
                     lease.ContinuationToken :
@@ -48,10 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 SessionToken = this.changeFeedProcessorOptions.SessionToken,
             };
 
-            var requestOptions = new CosmosChangeFeedRequestOptions()
-            {
-
-            };
+            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions();
 
             if (settings.StartTime != null)
             {
@@ -62,9 +63,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 requestOptions.StartTime = DateTime.MinValue;
             }
 
-            var checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
-            return new FeedProcessorCore<T>(observer, ((CosmosItemsCore)this.container.Items).GetChangeFeedPartitionKeyRangeIterator<T>(
-                lease.CurrentLeaseToken,  settings.StartContinuation, settings.MaxItemCount, requestOptions), settings, checkpointer);
+            // Current lease schema maps Token to PKRangeId
+            string partitionKeyRangeId = lease.CurrentLeaseToken;
+
+            PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
+            CosmosChangeFeedPartitionKeyResultSetIteratorCore iterator = new CosmosChangeFeedPartitionKeyResultSetIteratorCore(
+                partitionKeyRangeId: partitionKeyRangeId,
+                continuationToken: settings.StartContinuation,
+                maxItemCount: settings.MaxItemCount,
+                cosmosContainer: (CosmosContainerCore)this.container,
+                options: requestOptions);
+            return new FeedProcessorCore<T>(observer, iterator, settings, checkpointer, this.cosmosJsonSerializer);
         }
     }
 }

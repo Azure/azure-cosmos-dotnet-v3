@@ -846,7 +846,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string workflowName, 
-            Func<CosmosQueryResponse<T>, CancellationToken, Task> onChangesDelegate);
+            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.

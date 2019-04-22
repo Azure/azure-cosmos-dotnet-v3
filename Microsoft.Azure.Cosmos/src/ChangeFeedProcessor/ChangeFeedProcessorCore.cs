@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             PartitionSupervisorFactoryCore<T> partitionSuperviserFactory = new PartitionSupervisorFactoryCore<T>(
                 factory,
                 this.documentServiceLeaseStoreManager.LeaseManager,
-                new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, this.documentServiceLeaseStoreManager.LeaseCheckpointer),
+                new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, this.documentServiceLeaseStoreManager.LeaseCheckpointer, this.monitoredContainer.Client.CosmosJsonSerializer),
                 this.changeFeedLeaseOptions);
 
             EqualPartitionsBalancingStrategy loadBalancingStrategy = new EqualPartitionsBalancingStrategy(

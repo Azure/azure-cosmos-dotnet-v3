@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string workflowName,
-            Func<CosmosQueryResponse<T>, CancellationToken, Task> onChangesDelegate)
+            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
         {
             if (workflowName == null)
             {
@@ -411,23 +411,6 @@ namespace Microsoft.Azure.Cosmos
             CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
 
             return new CosmosChangeFeedResultSetIteratorCore(
-                continuationToken: continuationToken,
-                maxItemCount: maxItemCount,
-                cosmosContainer: (CosmosContainerCore)this.container,
-                options: cosmosQueryRequestOptions);
-        }
-
-        internal CosmosResultSetIterator<T> GetChangeFeedPartitionKeyRangeIterator<T>(
-            string partitionKeyId,
-            string continuationToken = null,
-            int? maxItemCount = null,
-            CosmosChangeFeedRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
-
-            return new CosmosChangeFeedPartitionKeyResultSetIteratorCore<T>(
-                partitionKeyRangeId: partitionKeyId,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,
                 cosmosContainer: (CosmosContainerCore)this.container,

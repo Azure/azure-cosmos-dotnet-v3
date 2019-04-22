@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (CosmosQueryResponse<dynamic> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<TestClass> docs, CancellationToken token) =>
                 {
-                    foreach (dynamic doc in docs)
+                    foreach (TestClass doc in docs)
                     {
                         receivedIds.Add(int.Parse(doc.id));
                     }
@@ -66,9 +66,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (CosmosQueryResponse<dynamic> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<TestClass> docs, CancellationToken token) =>
                 {
-                    foreach (dynamic doc in docs)
+                    foreach (TestClass doc in docs)
                     {
                         receivedIds.Add(int.Parse(doc.id));
                     }
@@ -92,6 +92,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
+        }
+
+        public class TestClass
+        {
+            public string id { get; set; }
         }
     }
 }
