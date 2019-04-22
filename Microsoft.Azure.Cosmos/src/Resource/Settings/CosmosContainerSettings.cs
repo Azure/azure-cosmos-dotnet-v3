@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
-        public UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
+        public virtual UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
@@ -184,7 +184,15 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; private set; }
+
+        /// <summary>
+        /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The last modified timestamp associated with the resource.</value>
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonConverter(typeof(UnixDateTimeConverter))]
+        public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
@@ -193,13 +201,13 @@ namespace Microsoft.Azure.Cosmos
         /// The indexing policy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
-        public IndexingPolicy IndexingPolicy { get; set; } = new IndexingPolicy();
+        public virtual IndexingPolicy IndexingPolicy { get; set; } = new IndexingPolicy();
 
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public string PartitionKeyPath
+        public virtual string PartitionKeyPath
         {
             get
             {
@@ -274,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public TimeSpan? DefaultTimeToLive
+        public virtual TimeSpan? DefaultTimeToLive
         {
             get
             {

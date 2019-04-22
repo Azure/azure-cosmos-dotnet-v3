@@ -195,116 +195,94 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        public async Task ItemStreamIterator()
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task ItemStreamIterator(bool useStatelessIterator)
         {
-            IList<ToDoActivity> deleteList = null;
-            HashSet<string> itemIds = null;
-            try
+            IList<ToDoActivity> deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+
+            string lastContinuationToken = null;
+            int pageSize = 1;
+            CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
+            CosmosFeedResultSetIterator setIterator =
+                this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+
+            while (setIterator.HasMoreResults)
             {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
-                itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
-                CosmosFeedResultSetIterator setIterator =
-                    this.Container.Items.GetItemStreamIterator();
-                while (setIterator.HasMoreResults)
+                if (useStatelessIterator)
                 {
-                    using (CosmosResponseMessage iterator =
-                        await setIterator.FetchNextSetAsync(this.cancellationToken))
-                    {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(iterator.Content).Data;
-                        foreach (ToDoActivity toDoActivity in response)
-                        {
-                            if (itemIds.Contains(toDoActivity.id))
-                            {
-                                itemIds.Remove(toDoActivity.id);
-                            }
-                        }
-
-                    }
-
+                    setIterator = this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
                 }
-            }
-            finally
-            {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
-            }
 
-            Assert.AreEqual(itemIds.Count, 0);
-        }
-
-        [TestMethod]
-        public async Task ItemIterator()
-        {
-            IList<ToDoActivity> deleteList = null;
-            HashSet<string> itemIds = null;
-            try
-            {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
-                itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
-                CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.GetItemIterator<ToDoActivity>();
-                while (setIterator.HasMoreResults)
+                using (CosmosResponseMessage responseMessage =
+                    await setIterator.FetchNextSetAsync(this.cancellationToken))
                 {
-                    foreach (ToDoActivity toDoActivity in await setIterator.FetchNextSetAsync(this.cancellationToken))
+                    lastContinuationToken = responseMessage.Headers.Continuation;
+
+                    Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
+                    foreach (ToDoActivity toDoActivity in response)
                     {
                         if (itemIds.Contains(toDoActivity.id))
                         {
                             itemIds.Remove(toDoActivity.id);
                         }
                     }
+
                 }
+
             }
-            finally
+
+            Assert.IsNull(lastContinuationToken);
+            Assert.AreEqual(itemIds.Count, 0);
+        }
+
+        [TestMethod]
+        public async Task ItemIterator()
+        {
+            IList<ToDoActivity> deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+            CosmosResultSetIterator<ToDoActivity> setIterator =
+                this.Container.Items.GetItemIterator<ToDoActivity>();
+            while (setIterator.HasMoreResults)
             {
-                foreach (ToDoActivity delete in deleteList)
+                foreach (ToDoActivity toDoActivity in await setIterator.FetchNextSetAsync(this.cancellationToken))
                 {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
+                    if (itemIds.Contains(toDoActivity.id))
+                    {
+                        itemIds.Remove(toDoActivity.id);
+                    }
                 }
             }
 
             Assert.AreEqual(itemIds.Count, 0);
         }
 
-        [TestMethod]
-        public async Task QueryStreamSingleItem()
-        {
-            await ItemSinglePartitionQueryStream(1, 1);
-        }
-
-        [TestMethod]
-        public async Task QueryStreamMultipleItem()
-        {
-            await ItemSinglePartitionQueryStream(5, 5);
-        }
-
-        [TestMethod]
-        public async Task QueryStreamMultipleItemWithMaxItemCount()
-        {
-            await ItemSinglePartitionQueryStream(6, 2);
-        }
-
-        internal async Task ItemSinglePartitionQueryStream(int perPKItemCount, int maxItemCount)
+        [DataRow(1, 1)]
+        [DataRow(5, 5)]
+        [DataRow(6, 2)]
+        [DataTestMethod]
+        public async Task QuerySinglePartitionItemStreamTest(int perPKItemCount, int maxItemCount)
         {
             IList<ToDoActivity> deleteList = deleteList = await CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
             ToDoActivity find = deleteList.First();
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetIterator setIterator = this.Container.Items
-                .CreateItemQueryAsStream(sql, 1, find.status, maxItemCount);
 
             int iterationCount = 0;
             int totalReadItem = 0;
             int expectedIterationCount = perPKItemCount / maxItemCount;
             string lastContinuationToken = null;
 
-            while (setIterator.HasMoreResults && expectedIterationCount > iterationCount)
+            do
             {
                 iterationCount++;
+                CosmosResultSetIterator setIterator = this.Container.Items
+                    .CreateItemQueryAsStream(sql, 1, find.status, 
+                        maxItemCount: maxItemCount, 
+                        continuationToken: lastContinuationToken,
+                        requestOptions: new CosmosQueryRequestOptions());
 
                 using (CosmosQueryResponse response = await setIterator.FetchNextSetAsync())
                 {
@@ -340,12 +318,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
+            while (lastContinuationToken != null);
 
             Assert.AreEqual(expectedIterationCount, iterationCount);
             Assert.AreEqual(perPKItemCount, totalReadItem);
-
-            //Assert.IsNull(lastContinuationToken);
-            //Assert.IsFalse(setIterator.HasMoreResults);
         }
 
 
@@ -355,37 +331,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionQuery()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+
+            ToDoActivity find = deleteList.First();
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
+
+            CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
             {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+                MaxBufferedItemCount = 10,
+                ResponseContinuationTokenLimitInKb = 500
+            };
 
-                ToDoActivity find = deleteList.First();
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
-
-                CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
-                {
-                    MaxBufferedItemCount = 10,
-                    ResponseContinuationTokenLimitInKb = 500
-                };
-
-                CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
-                while (setIterator.HasMoreResults)
-                {
-                    CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
-                    Assert.AreEqual(1, iter.Count());
-                    ToDoActivity response = iter.First();
-                    Assert.AreEqual(find.id, response.id);
-                }
-            }
-            finally
+            CosmosResultSetIterator<ToDoActivity> setIterator =
+                this.Container.Items.CreateItemQuery<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
+            while (setIterator.HasMoreResults)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
+                Assert.AreEqual(1, iter.Count());
+                ToDoActivity response = iter.First();
+                Assert.AreEqual(find.id, response.id);
             }
         }
 
@@ -395,56 +359,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionOrderByQueryStream()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await CreateRandomItems(300, randomPartitionKey: true);
+
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
+
+            CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
             {
-                deleteList = await CreateRandomItems(300, randomPartitionKey: true);
-                
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
+                MaxBufferedItemCount = 10,
+                ResponseContinuationTokenLimitInKb = 500
+            };
 
-                CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
+            List<ToDoActivity> resultList = new List<ToDoActivity>();
+            double totalRequstCharge = 0;
+            CosmosResultSetIterator setIterator =
+                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
+            while (setIterator.HasMoreResults)
+            {
+                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                 {
-                    MaxBufferedItemCount = 10,
-                    ResponseContinuationTokenLimitInKb = 500
-                };
+                    Assert.IsTrue(iter.IsSuccess);
+                    Assert.IsNull(iter.ErrorMessage);
+                    Assert.IsTrue(iter.Count <= 5);
+                    totalRequstCharge += iter.RequestCharge;
 
-                List<ToDoActivity> resultList = new List<ToDoActivity>();
-                double totalRequstCharge = 0;
-                CosmosResultSetIterator setIterator =
-                    this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
-                while (setIterator.HasMoreResults)
-                {
-                    using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
-                    {
-                        Assert.IsTrue(iter.IsSuccess);
-                        Assert.IsNull(iter.ErrorMessage);
-                        Assert.IsTrue(iter.Count <= 5);
-                        totalRequstCharge += iter.RequestCharge;
-
-                        ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
-                        Assert.AreEqual(1, activities.Length);
-                        ToDoActivity response = activities.First();
-                        resultList.Add(response);
-                    }
-                }
-
-                Assert.AreEqual(deleteList.Count, resultList.Count);
-                Assert.IsTrue(totalRequstCharge > 0);
-
-                List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-                for(int i = 0; i < verifiedOrderBy.Count(); i++)
-                {
-                    Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
-                    Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
+                    ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                    Assert.AreEqual(1, activities.Length);
+                    ToDoActivity response = activities.First();
+                    resultList.Add(response);
                 }
             }
-            finally
+
+            Assert.AreEqual(deleteList.Count, resultList.Count);
+            Assert.IsTrue(totalRequstCharge > 0);
+
+            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
+            for (int i = 0; i < verifiedOrderBy.Count(); i++)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
+                Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
             }
         }
 
@@ -454,48 +406,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionQueryStream()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await CreateRandomItems(101, randomPartitionKey: true);
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
+
+            List<ToDoActivity> resultList = new List<ToDoActivity>();
+            double totalRequstCharge = 0;
+            CosmosResultSetIterator setIterator =
+                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5);
+            while (setIterator.HasMoreResults)
             {
-                deleteList = await CreateRandomItems(101, randomPartitionKey: true);
-
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
-
-                List<ToDoActivity> resultList = new List<ToDoActivity>();
-                double totalRequstCharge = 0;
-                CosmosResultSetIterator setIterator =
-                    this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5);
-                while (setIterator.HasMoreResults)
+                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                 {
-                    using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
-                    {
-                        Assert.IsTrue(iter.IsSuccess);
-                        Assert.IsNull(iter.ErrorMessage);
-                        Assert.IsTrue(iter.Count <= 5);
-                        totalRequstCharge += iter.RequestCharge;
-                        ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
-                        resultList.AddRange(response);
-                    }
-                }
-
-                Assert.AreEqual(deleteList.Count, resultList.Count);
-                Assert.IsTrue(totalRequstCharge > 0);
-
-                List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-                resultList = resultList.OrderBy(x => x.taskNum).ToList();
-                for (int i = 0; i < verifiedOrderBy.Count(); i++)
-                {
-                    Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
-                    Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
+                    Assert.IsTrue(iter.IsSuccess);
+                    Assert.IsNull(iter.ErrorMessage);
+                    Assert.IsTrue(iter.Count <= 5);
+                    totalRequstCharge += iter.RequestCharge;
+                    ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                    resultList.AddRange(response);
                 }
             }
-            finally
+
+            Assert.AreEqual(deleteList.Count, resultList.Count);
+            Assert.IsTrue(totalRequstCharge > 0);
+
+            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
+            resultList = resultList.OrderBy(x => x.taskNum).ToList();
+            for (int i = 0; i < verifiedOrderBy.Count(); i++)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
+                Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
             }
         }
 
@@ -573,61 +512,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemQueryStreamSerializationSetting()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await CreateRandomItems(101, randomPartitionKey: true);
+
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
+            CosmosSerializationOptions options = new CosmosSerializationOptions(
+                ContentSerializationFormat.CosmosBinary.ToString(),
+                (content) => JsonNavigator.Create(content),
+                () => JsonWriter.Create(JsonSerializationFormat.Binary));
+
+            CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
             {
-                deleteList = await CreateRandomItems(101, randomPartitionKey: true);
+                CosmosSerializationOptions = options
+            };
 
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
-                CosmosSerializationOptions options = new CosmosSerializationOptions(
-                    ContentSerializationFormat.CosmosBinary.ToString(),
-                    (content) => JsonNavigator.Create(content),
-                    () => JsonWriter.Create(JsonSerializationFormat.Binary));
-
-                CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
+            List<ToDoActivity> resultList = new List<ToDoActivity>();
+            double totalRequstCharge = 0;
+            CosmosResultSetIterator setIterator =
+                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
+            while (setIterator.HasMoreResults)
+            {
+                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                 {
-                    CosmosSerializationOptions = options
-                };
-
-                List<ToDoActivity> resultList = new List<ToDoActivity>();
-                double totalRequstCharge = 0;
-                CosmosResultSetIterator setIterator =
-                    this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
-                while (setIterator.HasMoreResults)
-                {
-                    using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
-                    {
-                        Assert.IsTrue(iter.IsSuccess);
-                        Assert.IsNull(iter.ErrorMessage);
-                        Assert.IsTrue(iter.Count <= 5);
-                        totalRequstCharge += iter.RequestCharge;
-                        IJsonReader reader = JsonReader.Create(iter.Content);
-                        IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                        textWriter.WriteAll(reader);
-                        string json = Encoding.UTF8.GetString(textWriter.GetResult());
-                        Assert.IsNotNull(json);
-                        ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
-                        resultList.AddRange(responseActivities);
-                    }
-                }
-
-                Assert.AreEqual(deleteList.Count, resultList.Count);
-                Assert.IsTrue(totalRequstCharge > 0);
-
-                List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-                for (int i = 0; i < verifiedOrderBy.Count(); i++)
-                {
-                    Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
-                    Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
+                    Assert.IsTrue(iter.IsSuccess);
+                    Assert.IsNull(iter.ErrorMessage);
+                    Assert.IsTrue(iter.Count <= 5);
+                    totalRequstCharge += iter.RequestCharge;
+                    IJsonReader reader = JsonReader.Create(iter.Content);
+                    IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                    textWriter.WriteAll(reader);
+                    string json = Encoding.UTF8.GetString(textWriter.GetResult());
+                    Assert.IsNotNull(json);
+                    ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
+                    resultList.AddRange(responseActivities);
                 }
             }
-            finally
+
+            Assert.AreEqual(deleteList.Count, resultList.Count);
+            Assert.IsTrue(totalRequstCharge > 0);
+
+            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
+            for (int i = 0; i < verifiedOrderBy.Count(); i++)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
+                Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
             }
         }
 
@@ -638,42 +565,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateMaxItemCountOnItemQuery()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            HashSet<string> itemIds = new HashSet<string>();
-            try
+            IList<ToDoActivity> deleteList = await CreateRandomItems(6, randomPartitionKey: false);
+
+            ToDoActivity toDoActivity = deleteList.First();
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
+                "select * from toDoActivity t where t.status = @status")
+                .UseParameter("@status", toDoActivity.status);
+
+            // Test max size at 1
+            CosmosResultSetIterator<ToDoActivity> setIterator =
+                this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
+            while (setIterator.HasMoreResults)
             {
-                deleteList = await CreateRandomItems(6, randomPartitionKey: false);
-
-                ToDoActivity toDoActivity = deleteList.First();
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
-                    "select * from toDoActivity t where t.status = @status")
-                    .UseParameter("@status", toDoActivity.status);
-
-                // Test max size at 1
-                CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
-                while (setIterator.HasMoreResults)
-                {
-                    CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
-                    Assert.AreEqual(1, iter.Count());
-                }
-
-                // Test max size at 2
-                CosmosResultSetIterator<ToDoActivity> setIteratorMax2 =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
-                while (setIteratorMax2.HasMoreResults)
-                {
-                    CosmosQueryResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
-                    Assert.AreEqual(2, iter.Count());
-                }
+                CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
+                Assert.AreEqual(1, iter.Count());
             }
-            finally
+
+            // Test max size at 2
+            CosmosResultSetIterator<ToDoActivity> setIteratorMax2 =
+                this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
+            while (setIteratorMax2.HasMoreResults)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                CosmosQueryResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
+                Assert.AreEqual(2, iter.Count());
             }
         }
 
