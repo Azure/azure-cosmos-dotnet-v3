@@ -891,9 +891,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
-        [DataTestMethod]
+        [Ignore]
+        ////[DataRow(true)]
+        ////[DataRow(false)]
+        ////[DataTestMethod]
         public async Task TestRoutToSpecificPartition(bool useGateway)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway);
