@@ -5,10 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.IO;
+    using System.Linq;
+    using System.Reflection;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
+
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosDatabaseSettings), "Id");
         }
 
         [TestMethod]
@@ -37,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
+
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedureSettings), "Id", "Body");
         }
 
         [TestMethod]
@@ -271,6 +275,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = Guid.NewGuid().ToString();
             string pkPath = "/partitionKey";
 
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerSettings), "Id", "UniqueKeyPolicy", "DefaultTimeToLive", "IndexingPolicy");
+
             // Two equivalent definitions 
             CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath);
 
@@ -346,6 +352,32 @@ namespace Microsoft.Azure.Cosmos.Tests
                 using (StreamReader sr = new StreamReader(ms))
                 {
                     return sr.ReadToEnd();
+                }
+            }
+        }
+
+        private static void TypeAccessorGuard(Type input, params string[] publicSettable)
+        {
+            // All properties are public readable only de-defualt
+            PropertyInfo[] allProperties = input.GetProperties(BindingFlags.Instance|BindingFlags.Public);
+            foreach (PropertyInfo pInfo in allProperties)
+            {
+                MethodInfo[] accessors = pInfo.GetAccessors();
+                foreach (MethodInfo m in accessors)
+                {
+                    if (m.ReturnType == typeof(void))
+                    {
+                        // Set accessor 
+                        bool publicSetAllowed = publicSettable.Where(e => m.Name.EndsWith("_" + e)).Any();
+                        Assert.AreEqual(publicSetAllowed, m.IsPublic, m.ToString());
+                        Assert.AreEqual(publicSetAllowed, m.IsVirtual, m.ToString());
+                    }
+                    else
+                    {
+                        // get accessor 
+                        Assert.IsTrue(m.IsPublic, m.ToString());
+                        Assert.IsTrue(m.IsVirtual, m.ToString());
+                    }
                 }
             }
         }

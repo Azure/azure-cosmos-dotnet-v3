@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The body of the stored procedure.</value>
         /// <remarks>Must be a valid JavaScript function. For e.g. "function () { getContext().getResponse().setBody('Hello World!'); }"</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public string Body { get; set; }
+        public virtual string Body { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
