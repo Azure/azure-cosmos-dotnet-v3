@@ -35,6 +35,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task SprocContractTest()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = "function() { { var x = 42; } }";
+
+            CosmosStoredProcedureResponse storedProcedureResponse =
+                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
+
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            Assert.IsTrue(storedProcedureResponse.RequestCharge > 0);
+
+            CosmosStoredProcedureSettings sprocSettings = storedProcedureResponse;
+            Assert.AreEqual(sprocId, sprocSettings.Id);
+            Assert.IsNotNull(sprocSettings.ResourceId);
+            Assert.IsNotNull(sprocSettings.ETag);
+            Assert.IsTrue(sprocSettings.LastModified.HasValue);
+
+            Assert.IsTrue(sprocSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), sprocSettings.LastModified.Value.ToString());
+        }
+
+        [TestMethod]
         public async Task CRUDTest()
         {
             string sprocId = Guid.NewGuid().ToString();
