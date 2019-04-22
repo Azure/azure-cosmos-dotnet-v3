@@ -46,6 +46,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ContainerContractTest()
+        {
+            CosmosContainerResponse response = await this.cosmosDatabase.Containers.CreateContainerAsync(new Guid().ToString(), "/id");
+            Assert.IsNotNull(response);
+            Assert.IsTrue(response.RequestCharge > 0);
+            Assert.IsNotNull(response.Headers);
+            Assert.IsNotNull(response.Headers.ActivityId);
+
+            CosmosContainerSettings containerSettings = response.Resource;
+            Assert.IsNotNull(containerSettings.Id);
+            Assert.IsNotNull(containerSettings.ResourceId);
+            Assert.IsNotNull(containerSettings.ETag);
+            Assert.IsTrue(containerSettings.LastModified.HasValue);
+
+            Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
+        }
+
+        [TestMethod]
         public async Task PartitionedCRUDTest()
         {
             string containerName = Guid.NewGuid().ToString();

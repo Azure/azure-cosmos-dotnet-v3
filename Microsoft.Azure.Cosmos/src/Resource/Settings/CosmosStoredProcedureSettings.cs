@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using System;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -67,6 +67,14 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
         public virtual string ETag { get; protected internal set; }
+
+        /// <summary>
+        /// Gets the last modified timestamp associated with <see cref="CosmosStoredProcedureSettings" /> from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The last modified timestamp associated with the resource.</value>
+        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.

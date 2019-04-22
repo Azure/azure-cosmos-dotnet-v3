@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Globalization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents a database in the Azure Cosmos DB account.
@@ -58,8 +60,6 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="CosmosContainerSettings"/>
     public class CosmosDatabaseSettings
     {
-        private static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosDatabaseSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -74,7 +74,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
         /// When working with document resources, they too have this settable Id property. 
@@ -107,9 +106,9 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the last modified timestamp associated with <see cref="CosmosDatabaseSettings" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        public virtual DateTime? LastModified { get; }
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
