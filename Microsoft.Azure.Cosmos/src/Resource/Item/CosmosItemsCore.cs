@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
             this.container = container;
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
-            this.queryClient = queryClient ?? new CosmosQueryClientCore(this.clientContext, new DocumentQueryClient(this.clientContext.DocumentClient), container);
+            this.queryClient = queryClient ?? new CosmosQueryClientCore(this.clientContext, container);
         }
 
         internal readonly CosmosContainerCore container;
