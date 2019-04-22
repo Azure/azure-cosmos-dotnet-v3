@@ -2,26 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Linq;
-using Microsoft.Azure.Documents;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document collection in the Azure Cosmos DB service. A collection is a named logical container for documents. 
@@ -197,6 +183,14 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
         public virtual string ETag { get; protected internal set; }
+
+        /// <summary>
+        /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The last modified timestamp associated with the resource.</value>
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonConverter(typeof(UnixDateTimeConverter))]
+        public virtual DateTime? LastModified { get; }
 
         /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
