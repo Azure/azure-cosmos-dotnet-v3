@@ -326,11 +326,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             {
                                 this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage);
                                 cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
-                            },
-                            requestOptionsEnricher: (queryRequestOptions) =>
-                            {
-                                queryRequestOptions.MaxItemCount = pageSize;
-                                queryRequestOptions.RequestContinuation = this.BackendContinuationToken;
+                                CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.BackendContinuationToken);
+                                CosmosQueryRequestOptions.FillMaxItemCount(cosmosRequestMessage, pageSize);
                             });
 
                         this.fetchExecutionRangeAccumulator.EndFetchRange(

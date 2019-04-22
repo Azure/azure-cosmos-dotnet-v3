@@ -206,9 +206,9 @@ namespace Microsoft.Azure.Cosmos
         /// a value for partition key. The constant selection is based on whether the collection is migrated
         /// or user partitioned
         /// </remarks>
-        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue()
+        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync();
+            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
             return containerSettings.GetNoneValue();
         }
 
