@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -297,6 +298,26 @@ namespace Microsoft.Azure.Cosmos
         /// The partition key path in the collection definition for migrated collections
         /// </summary>
         public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
+
+        /// <summary>
+        /// The function selects the right partition key constant mapping for <see cref="NonePartitionKeyValue"/>
+        /// </summary>
+        internal PartitionKeyInternal GetNoneValue()
+        {
+            if (this.PartitionKey == null)
+            {
+                throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
+            }
+
+            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey))
+            {
+                return PartitionKeyInternal.Empty;
+            }
+            else
+            {
+                return PartitionKeyInternal.Undefined;
+            }
+        }
 
         /// <summary>
         /// Gets or sets <see cref="PartitionKeyDefinition"/> object in the Azure Cosmos DB service.
