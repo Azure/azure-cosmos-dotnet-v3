@@ -35,9 +35,9 @@
             return double1 == double2;
         }
 
-        public bool Equals(CosmosTypedElement typedElement, CosmosTypedElement string2)
+        public bool Equals(CosmosTypedElement typedElement, CosmosTypedElement typedElement2)
         {
-            return typedElement.Equals(string2);
+            return typedElement.Equals(typedElement2);
         }
 
         public bool Equals(CosmosBoolean bool1, CosmosBoolean bool2)
