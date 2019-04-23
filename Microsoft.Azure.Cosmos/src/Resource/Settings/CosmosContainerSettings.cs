@@ -56,6 +56,12 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public partial class CosmosContainerSettings
     {
+        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
+        private IndexingPolicy indexingPolicyInternal;
+
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
+        private UniqueKeyPolicy uniqueKeyPolicyInternal;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -107,8 +113,26 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in container in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
-        public virtual UniqueKeyPolicy UniqueKeyPolicy { get; set; }
+        [JsonIgnore]
+        public virtual UniqueKeyPolicy UniqueKeyPolicy
+        {
+            get
+            {
+                if (this.uniqueKeyPolicyInternal == null)
+                {
+                    this.uniqueKeyPolicyInternal = new UniqueKeyPolicy();
+                }
+
+                return this.uniqueKeyPolicyInternal;
+            }
+
+            set
+            {
+                if (value == null) throw new ArgumentNullException($"{nameof(value)}");
+
+                this.uniqueKeyPolicyInternal = value;
+            }
+        }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -136,8 +160,26 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The indexing policy associated with the container.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
-        public virtual IndexingPolicy IndexingPolicy { get; set; }
+        [JsonIgnore]
+        public virtual IndexingPolicy IndexingPolicy
+        {
+            get
+            {
+                if (this.indexingPolicyInternal == null)
+                {
+                    this.indexingPolicyInternal = new IndexingPolicy();
+                }
+
+                return this.indexingPolicyInternal;
+            }
+
+            set
+            {
+                if (value == null) throw new ArgumentNullException($"{nameof(value)}");
+
+                this.indexingPolicyInternal = value;
+            }
+        }
 
         /// <summary>
         /// JSON path used for containers partitioning
@@ -297,7 +339,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Internal property used as a helper to convert to the back-end type int?
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive)]
         internal int? InternalTimeToLive { get; set; }
 
         /// <summary>
@@ -332,14 +374,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(PartitionKey));
             }
 
-            // HACK: Till service can handle the defaults 
+            // HACK: Till service can handle the defaults (self-mutation)
             // If indexing mode is not 'none' and not paths are set, set them to the defaults
-            if (this.IndexingPolicy != null 
-                && this.IndexingPolicy.IndexingMode != IndexingMode.None
-                && this.IndexingPolicy.IncludedPaths.Count == 0
-                && this.IndexingPolicy.ExcludedPaths.Count == 0)
+            if (this.indexingPolicyInternal != null 
+                && this.indexingPolicyInternal.IndexingMode != IndexingMode.None
+                && this.indexingPolicyInternal.IncludedPaths.Count == 0
+                && this.indexingPolicyInternal.ExcludedPaths.Count == 0)
             {
-                this.IndexingPolicy.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
+                this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
             }
         }
     }

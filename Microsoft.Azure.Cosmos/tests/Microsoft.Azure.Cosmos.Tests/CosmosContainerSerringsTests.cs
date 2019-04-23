@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using System.Diagnostics;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -67,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         public void DefaultIncludesPopulated()
         {
             CosmosContainerSettings containerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
-            Assert.IsNull(containerSettings.IndexingPolicy);
+            Assert.IsNotNull(containerSettings.IndexingPolicy);
 
             containerSettings.IndexingPolicy = new IndexingPolicy();
             Assert.AreEqual(0, containerSettings.IndexingPolicy.IncludedPaths.Count);
@@ -85,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
         public void DefaultIncludesShouldNotBePopulated()
         {
             CosmosContainerSettings containerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
-            Assert.IsNull(containerSettings.IndexingPolicy);
+            Assert.IsNotNull(containerSettings.IndexingPolicy);
 
             // Any exclude path should not auto-generate default indexing
             containerSettings.IndexingPolicy = new IndexingPolicy();
@@ -206,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
             JObject containerJObject = JObject.Parse(containerSerialized);
             JObject collectionJObject = JObject.Parse(collectionSerialized);
 
-            Assert.AreEqual(JsonConvert.SerializeObject(OrderProeprties(containerJObject)), JsonConvert.SerializeObject(OrderProeprties(collectionJObject)));
+            Assert.AreEqual(JsonConvert.SerializeObject(OrderProeprties(collectionJObject)), JsonConvert.SerializeObject(OrderProeprties(containerJObject)));
         }
 
         private static JObject OrderProeprties(JObject input)
