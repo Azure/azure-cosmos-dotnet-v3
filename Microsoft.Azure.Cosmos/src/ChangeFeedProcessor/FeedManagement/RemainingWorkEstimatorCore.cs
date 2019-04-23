@@ -14,33 +14,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
     internal sealed class RemainingWorkEstimatorCore : RemainingWorkEstimator
     {
+        public delegate CosmosFeedResultSetIterator RemainingWorkEstimatorFeedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning);
+
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosDefaultJsonSerializer();
-        private readonly CosmosContainer container;
+        private readonly RemainingWorkEstimatorFeedCreator feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            CosmosContainer container,
+            RemainingWorkEstimatorFeedCreator feedCreator,
             int degreeOfParallelism)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (container == null) throw new ArgumentNullException(nameof(container));
+            if (feedCreator == null) throw new ArgumentNullException(nameof(feedCreator));
             if (degreeOfParallelism < 1) throw new ArgumentException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
 
             this.leaseContainer = leaseContainer;
-            this.container = container;
+            this.feedCreator = feedCreator;
             this.degreeOfParallelism = degreeOfParallelism;
         }
 
@@ -118,13 +118,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = existingLease.CurrentLeaseToken;
-            CosmosChangeFeedPartitionKeyResultSetIteratorCore iterator = ResultSetIteratorUtils.BuildResultSetIterator(
-                partitionKeyRangeId: partitionKeyRangeId,
-                continuationToken: existingLease.ContinuationToken,
-                maxItemCount: 1,
-                cosmosContainer: (CosmosContainerCore)this.container,
-                startTime: null,
-                startFromBeginning: string.IsNullOrEmpty(existingLease.ContinuationToken));
+            CosmosFeedResultSetIterator iterator = this.feedCreator(
+                partitionKeyRangeId,
+                existingLease.ContinuationToken,
+                string.IsNullOrEmpty(existingLease.ContinuationToken));
 
             try
             {
@@ -161,8 +158,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 return null;
             }
-
-
 
             if (item.TryGetValue(LSNPropertyName, StringComparison.OrdinalIgnoreCase, out JToken property))
             {

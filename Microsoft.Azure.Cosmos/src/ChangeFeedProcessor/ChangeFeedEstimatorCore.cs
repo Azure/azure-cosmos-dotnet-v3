@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using static Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement.RemainingWorkEstimatorCore;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
@@ -110,9 +111,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (this.remainingWorkEstimator == null)
             {
+                RemainingWorkEstimatorFeedCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+                {
+                    return ResultSetIteratorUtils.BuildResultSetIterator(
+                        partitionKeyRangeId: partitionKeyRangeId,
+                        continuationToken: continuationToken,
+                        maxItemCount: 1,
+                        cosmosContainer: (CosmosContainerCore) this.monitoredContainer,
+                        startTime: null,
+                        startFromBeginning: string.IsNullOrEmpty(continuationToken));
+                };
+
                 this.remainingWorkEstimator = new RemainingWorkEstimatorCore(
                    this.documentServiceLeaseStoreManager.LeaseContainer,
-                   this.monitoredContainer,
+                   feedCreator,
                    this.monitoredContainer.Client.Configuration?.MaxConnectionLimit ?? 1);
             }
 
