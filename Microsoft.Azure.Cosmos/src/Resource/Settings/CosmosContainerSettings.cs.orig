@@ -81,6 +81,44 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+<<<<<<< HEAD
+=======
+        /// Only collection cache needs this contract. None are expected to use it. 
+        /// </summary>
+        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
+        {
+            if(string.IsNullOrEmpty(resoruceId))
+            {
+                throw new ArgumentNullException(nameof(resoruceId));
+            }
+
+            return new CosmosContainerSettings()
+            {
+                ResourceId = resoruceId,
+            };
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
+        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            this.Id = id;
+            this.PartitionKey = partitionKeyDefinition;
+
+            ValidateRequiredProperties();
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in collection in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
+        public virtual UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
+
+        /// <summary>
+>>>>>>> master
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
@@ -108,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in container in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
-        public virtual UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
+        public UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -237,6 +275,17 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
 
         /// <summary>
+<<<<<<< HEAD
+        /// </summary>
+        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
+        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            this.Id = id;
+            this.PartitionKey = partitionKeyDefinition;
+
+            ValidateRequiredProperties();
+=======
         /// The function selects the right partition key constant mapping for <see cref="NonePartitionKeyValue"/>
         /// </summary>
         internal PartitionKeyInternal GetNoneValue()
@@ -254,35 +303,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return PartitionKeyInternal.Undefined;
             }
-        }
-
-        /// <summary>
-        /// Only collection cache needs this contract. None are expected to use it. 
-        /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
-        {
-            if (string.IsNullOrEmpty(resoruceId))
-            {
-                throw new ArgumentNullException(nameof(resoruceId));
-            }
-
-            return new CosmosContainerSettings()
-            {
-                ResourceId = resoruceId,
-            };
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
-        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
-        {
-            this.Id = id;
-            this.PartitionKey = partitionKeyDefinition;
-
-            ValidateRequiredProperties();
+>>>>>>> master
         }
 
         /// <summary>

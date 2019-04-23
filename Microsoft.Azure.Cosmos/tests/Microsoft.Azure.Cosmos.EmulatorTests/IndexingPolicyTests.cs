@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         private static readonly CosmosDatabase database = cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString()).Result;
 
-        private static readonly Cosmos.IndexingPolicy.IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new Cosmos.IndexingPolicy.IndexingPolicyEqualityComparer();
+        private static readonly IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new IndexingPolicyEqualityComparer();
 
         private static readonly Dictionary<Version, Assembly> documentClientAssemblyDictionary = new Dictionary<Version, Assembly>();
 
