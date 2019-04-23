@@ -8,16 +8,12 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// Accumlator that acts as a builder of FetchExecutionRanges
     /// </summary>
     internal sealed class FetchExecutionRangeAccumulator
     {
-        private readonly string partitionKeyRangeId;
         private readonly DateTime constructionTime;
         private readonly Stopwatch stopwatch;
         private List<FetchExecutionRange> fetchExecutionRanges;
@@ -28,10 +24,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the FetchExecutionRangeStopwatch class.
         /// </summary>
-        /// <param name="partitionKeyRangeId">The partitionId the stopwatch is monitoring</param>
-        public FetchExecutionRangeAccumulator(string partitionKeyRangeId)
+        public FetchExecutionRangeAccumulator()
         {
-            this.partitionKeyRangeId = partitionKeyRangeId;
             this.constructionTime = DateTime.UtcNow;
             // This stopwatch is always running and is only used to calculate deltas that are synchronized with the construction time.
             this.stopwatch = Stopwatch.StartNew();
@@ -65,20 +59,21 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Updates the most recent end time internally and constructs a new FetchExecutionRange
         /// </summary>
+        /// <param name="partitionIdentifier">The identifier for the partition.</param>
         /// <param name="activityId">The activity of the fetch.</param>
         /// <param name="numberOfDocuments">The number of documents that were fetched for this range.</param>
         /// <param name="retryCount">The number of times we retried for this fetch execution range.</param>
-        public void EndFetchRange(string activityId, long numberOfDocuments, long retryCount)
+        public void EndFetchRange(string partitionIdentifier, string activityId, long numberOfDocuments, long retryCount)
         {
             if (this.isFetching)
             {
                 // Calculating the end time as the construction time and the stopwatch as a delta.
                 this.endTime = this.constructionTime.Add(this.stopwatch.Elapsed);
                 FetchExecutionRange fetchExecutionRange = new FetchExecutionRange(
+                    partitionIdentifier,
                     activityId,
                     this.startTime,
                     this.endTime,
-                    this.partitionKeyRangeId,
                     numberOfDocuments,
                     retryCount);
                 this.fetchExecutionRanges.Add(fetchExecutionRange);

@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
             }
 
-            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey))
+            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey.HasValue && this.PartitionKey.IsSystemKey.Value))
             {
                 return PartitionKeyInternal.Empty;
             }
@@ -354,7 +354,10 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
+
         internal virtual string ResourceId { get; private set; }
+
+        internal bool HasPartitionKey => this.PartitionKey != null;
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.

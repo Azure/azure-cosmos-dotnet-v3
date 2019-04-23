@@ -5,40 +5,20 @@
 namespace Microsoft.Azure.Cosmos.Common
 {
     using System;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     internal sealed class AsyncLazy<T> : Lazy<Task<T>>
     {
-        public AsyncLazy(Func<T> valueFactory, CancellationToken cancellationToken) :
-            base(() => Task.Factory.StartNew(valueFactory, cancellationToken)) { }
-
-        public AsyncLazy(Func<Task<T>> taskFactory, CancellationToken cancellationToken) :
-            base(() => Task.Factory.StartNew(taskFactory, cancellationToken).Unwrap()) { }
-
-        /// <summary>
-        /// True if value initialization failed or was cancelled.
-        /// </summary>
-        public bool IsFaultedOrCancelled 
+        public AsyncLazy(Func<T> valueFactory, CancellationToken cancellationToken)
+            : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(valueFactory, cancellationToken)) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
         {
-            get
-            {
-                return this.Value.IsCanceled || this.Value.IsFaulted;
-            }
         }
 
-        /// <summary>
-        /// True if value is initialized - either successfully or unsuccessfully.
-        /// </summary>
-        public bool IsCompleted
+        public AsyncLazy(Func<Task<T>> taskFactory, CancellationToken cancellationToken)
+            : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(taskFactory, cancellationToken).Unwrap()) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
         {
-            get
-            {
-                return this.Value.IsCompleted;
-            }
         }
-
-        public TaskAwaiter<T> GetAwaiter() { return this.Value.GetAwaiter(); }
     }
 }

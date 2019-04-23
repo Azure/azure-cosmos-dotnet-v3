@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public LineString(IList<Position> coordinates, GeometryParams geometryParams)
-            : base(GeometryShape.LineString, geometryParams)
+            : base(GeometryType.LineString, geometryParams)
         {
             if (coordinates == null)
             {
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal LineString() : base(GeometryShape.LineString, new GeometryParams())
+        internal LineString() : base(GeometryType.LineString, new GeometryParams())
         {
         }
 

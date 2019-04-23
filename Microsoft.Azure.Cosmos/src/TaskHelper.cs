@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    return Task.Run ( () => BackoffRetryUtility<TResult>.ExecuteAsync(() =>
+                    return Task.Run(() => BackoffRetryUtility<TResult>.ExecuteAsync(() =>
                     {
                         return function();
                     }, retryPolicy, cancellationToken));

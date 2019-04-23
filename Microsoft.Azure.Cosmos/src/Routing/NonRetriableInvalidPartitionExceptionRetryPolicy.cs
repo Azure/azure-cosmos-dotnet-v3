@@ -6,11 +6,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal class NonRetriableInvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
@@ -38,15 +36,21 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+            Exception exception,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             DocumentClientException clientException = exception as DocumentClientException;
-            return this.ShouldRetryAsyncInternal(clientException?.StatusCode,
+            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
+                clientException?.StatusCode,
                 clientException?.GetSubStatus(),
-                clientException?.ResourceAddress,
-                () => this.nextPolicy.ShouldRetryAsync(exception, cancellationToken));
+                clientException?.ResourceAddress);
+            if (shouldRetryResult != null)
+            {
+                return Task.FromResult(shouldRetryResult);
+            }
+
+            return this.nextPolicy.ShouldRetryAsync(exception, cancellationToken);
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
@@ -62,16 +66,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.nextPolicy.OnBeforeSendRequest(request);
         }
 
-        private Task<ShouldRetryResult> ShouldRetryAsyncInternal(
-            HttpStatusCode? statusCode, 
-            SubStatusCodes? subStatusCode, 
-            string resourceIdOrFullName, 
-            Func<Task<ShouldRetryResult>> continueIfNotHandled)
+        private ShouldRetryResult ShouldRetryInternal(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            string resourceIdOrFullName)
         {
             if (!statusCode.HasValue
-                && !subStatusCode.HasValue)
+                && (!subStatusCode.HasValue
+                || subStatusCode.Value == SubStatusCodes.Unknown))
             {
-                return continueIfNotHandled();
+                return null;
             }
 
             if (statusCode == HttpStatusCode.Gone
@@ -82,10 +86,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.clientCollectionCache.Refresh(resourceIdOrFullName);
                 }
 
-                return Task.FromResult(ShouldRetryResult.NoRetry(new NotFoundException()));
+                return ShouldRetryResult.NoRetry(new NotFoundException());
             }
 
-            return continueIfNotHandled();
+            return null;
         }
     }
 }
