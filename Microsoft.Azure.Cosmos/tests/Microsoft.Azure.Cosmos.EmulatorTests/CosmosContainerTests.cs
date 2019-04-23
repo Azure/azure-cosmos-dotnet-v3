@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = containerName,
                 PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
-                DefaultTimeToLive = timeToLive
+                DefaultTimeToLive = (int)timeToLive.TotalSeconds,
             };
 
             CosmosContainerResponse containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
@@ -365,11 +365,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer cosmosContainer = containerResponse;
             CosmosContainerSettings responseSettings = containerResponse;
 
-            Assert.AreEqual(timeToLive.TotalSeconds, responseSettings.DefaultTimeToLive.Value.TotalSeconds);
+            Assert.AreEqual(timeToLive.TotalSeconds, responseSettings.DefaultTimeToLive);
 
             CosmosContainerResponse readResponse = await cosmosContainer.ReadAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.AreEqual(timeToLive.TotalSeconds, readResponse.Resource.DefaultTimeToLive.Value.TotalSeconds);
+            Assert.AreEqual(timeToLive.TotalSeconds, readResponse.Resource.DefaultTimeToLive);
 
             JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
             CosmosItemResponse<JObject> createResponse = await cosmosContainer.Items.CreateItemAsync<JObject>(partitionKey: itemTest["users"].ToString(), item: itemTest);
