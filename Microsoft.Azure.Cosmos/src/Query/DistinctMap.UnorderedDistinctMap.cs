@@ -174,7 +174,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     case CosmosElementType.Number:
                         CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                        added = this.AddCosmosNumber(cosmosNumber);
+                        double number;
+                        if (cosmosNumber.IsFloatingPoint)
+                        {
+                            number = cosmosNumber.AsFloatingPoint().Value;
+                        }
+                        else
+                        {
+                            number = cosmosNumber.AsInteger().Value;
+                        }
+
+                        added = this.AddNumberValue(number);
                         break;
 
                     case CosmosElementType.Object:
@@ -182,40 +192,13 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.String:
-                        added = this.AddStringValue((cosmosElement as CosmosTypedElement<string>).Value);
-                        break;
-
-                    case CosmosElementType.Int8:
-                    case CosmosElementType.Int16:
-                    case CosmosElementType.Int32:
-                    case CosmosElementType.Int64:
-                    case CosmosElementType.UInt32:
-                    case CosmosElementType.Float32:
-                    case CosmosElementType.Float64:
-                        added = this.AddCosmosNumber((cosmosElement as CosmosTypedElement).AsCosmosNumber());
+                        added = this.AddStringValue((cosmosElement as CosmosString).Value);
                         break;
 
                     default:
                         throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElementType}");
                 }
-
-                return added;
-            }
-
-            private bool AddCosmosNumber(CosmosNumber cosmosNumber)
-            {
-                bool added;
-                double number;
-                if (cosmosNumber.IsFloatingPoint)
-                {
-                    number = cosmosNumber.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    number = cosmosNumber.AsInteger().Value;
-                }
-
-                added = this.AddNumberValue(number);
+                
                 return added;
             }
 

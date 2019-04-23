@@ -6,7 +6,9 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
+    using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global sum from the local sum of multiple partitions and continuations.
@@ -33,16 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
             else
             {
-                CosmosNumber cosmosNumber;
-                if (localSum is CosmosTypedElement typedElement)
-                {
-                    cosmosNumber = typedElement.AsCosmosNumber();
-                }
-                else if (localSum is CosmosNumber)
-                {
-                    cosmosNumber = (CosmosNumber)localSum;
-                }
-                else
+                if (!(localSum is CosmosNumber cosmosNumber))
                 {
                     throw new ArgumentException("localSum must be a number.");
                 }
@@ -63,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// </summary>
         /// <returns>The current sum.</returns>
         public CosmosElement GetResult()
-        {
+        {   
             if (double.IsNaN(this.globalSum))
             {
                 return null;
