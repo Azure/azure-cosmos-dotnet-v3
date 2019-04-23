@@ -321,7 +321,20 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             DocumentServiceRequest request = CreateDocumentServiceRequest(requestHeaders, querySpec);
 
+            StringBuilder serializedRequest = new StringBuilder();
+            serializedRequest.Append("Headers:{");
+            serializedRequest.Append(
+                string.Join(",", request.Headers.AllKeys().Select(x => "k:'" + x + "', v: '" + request.Headers[x] + "'")));
+            serializedRequest.Append("}");
+            serializedRequest.Append("Content: { '");
+            serializedRequest.Append(Encoding.UTF8.GetString(((MemoryStream)request.Body).ToArray()));
+            serializedRequest.Append("}");
+
             PopulatePartitionKeyRangeInfo(request, targetRange, collectionRid);
+            serializedRequest.Append(request.PartitionKeyRangeIdentity);
+
+            Console.WriteLine("Query Request " + serializedRequest);
+
             request.Properties = this.feedOptions.Properties;
             return request;
         }
