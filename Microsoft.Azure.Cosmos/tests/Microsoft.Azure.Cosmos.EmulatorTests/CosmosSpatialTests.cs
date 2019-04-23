@@ -180,7 +180,7 @@
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
-        public class SpatialItem
+        internal class SpatialItem
         {
             [JsonProperty("name")]
             public string Name { get; set; }

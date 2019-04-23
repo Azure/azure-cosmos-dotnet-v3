@@ -242,6 +242,7 @@ namespace Microsoft.Azure.Cosmos
                 queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
             return new CosmosResultSetIteratorCore(
@@ -291,6 +292,7 @@ namespace Microsoft.Azure.Cosmos
                 queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
             return new CosmosDefaultResultSetIterator<T>(
@@ -338,6 +340,7 @@ namespace Microsoft.Azure.Cosmos
                 queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
             return new CosmosDefaultResultSetIterator<T>(

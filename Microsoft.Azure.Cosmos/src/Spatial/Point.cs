@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public Point(Position position, GeometryParams geometryParams)
-            : base(GeometryShape.Point, geometryParams)
+            : base(GeometryType.Point, geometryParams)
         {
             if (position == null)
             {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal Point() : base(GeometryShape.Point, new GeometryParams())
+        internal Point() : base(GeometryType.Point, new GeometryParams())
         {
         }
 

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="type">
         /// CRS type.
         /// </param>
-        protected Crs(CoordinateReferenceScheme type)
+        protected Crs(CrsType type)
         {
             this.Type = type;
         }
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Type of CRS.
         /// </value>
-        public CoordinateReferenceScheme Type { get; private set; }
+        public CrsType Type { get; private set; }
 
         /// <summary>
         /// Creates named CRS with the name specified in the Azure Cosmos DB service.

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static bool CanBeEvaluated(Expression expression)
         {
-            var constantExpression = expression as ConstantExpression;
+            ConstantExpression constantExpression = expression as ConstantExpression;
             if (constantExpression != null)
             {
                 if (constantExpression.Value is IQueryable)
@@ -45,10 +45,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            var methodCallExpression = expression as MethodCallExpression;
+            MethodCallExpression methodCallExpression = expression as MethodCallExpression;
             if (methodCallExpression != null)
             {
-                var type = methodCallExpression.Method.DeclaringType;
+                Type type = methodCallExpression.Method.DeclaringType;
                 if (type == typeof(Enumerable) || type == typeof(Queryable) || type == typeof(UserDefinedFunctionProvider))
                 {
                     return false;

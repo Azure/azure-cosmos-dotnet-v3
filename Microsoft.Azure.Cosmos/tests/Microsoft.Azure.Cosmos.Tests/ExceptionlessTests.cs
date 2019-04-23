@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class ExceptionlessTests
@@ -314,6 +315,7 @@ namespace Microsoft.Azure.Cosmos
                 TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
+                new JsonSerializerSettings(),
                 new UserAgentContainer(),
                 ApiType.None,
                 messageHandler);

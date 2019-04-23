@@ -140,7 +140,6 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<bool>(),
                             It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
@@ -148,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
             var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
-            this.Session = sessionContainer;
+            this.sessionContainer = sessionContainer;
         }
     }
 }

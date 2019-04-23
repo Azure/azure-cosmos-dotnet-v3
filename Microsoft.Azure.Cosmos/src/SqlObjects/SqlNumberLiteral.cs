@@ -23,26 +23,15 @@ namespace Microsoft.Azure.Cosmos.Sql
             .Range(-Capacity, Capacity)
             .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
 
-        private readonly Lazy<string> toStringValue;
-
         private SqlNumberLiteral(Number64 value)
             : base(SqlObjectKind.NumberLiteral)
         {
             this.Value = value;
-            this.toStringValue = new Lazy<string>(() => 
-            {
-                return this.Value.ToString();
-            });
         }
 
         public Number64 Value
         {
             get;
-        }
-
-        public override string ToString()
-        {
-            return this.toStringValue.Value;
         }
 
         public static SqlNumberLiteral Create(double number)

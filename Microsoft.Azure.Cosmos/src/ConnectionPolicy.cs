@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -23,14 +22,12 @@ namespace Microsoft.Azure.Cosmos
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
 
-        private static ConnectionPolicy defaultPolicy;
-
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
-        /// </summary> 
+        /// </summary>
         public ConnectionPolicy()
         {
             this.connectionProtocol = Protocol.Https;
@@ -60,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
-            
+
             if(proximityBasedPreferredLocations != null)
             {
                 this.preferredLocations.Clear();
@@ -93,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the media request timeout in seconds when connecting to the Azure Cosmos DB service.  
+        /// Gets or sets the media request timeout in seconds when connecting to the Azure Cosmos DB service.
         /// The number specifies the time to wait for response to come back from network peer for attachment content (a.k.a. media) operations.
         /// </summary>
         /// <value>
@@ -162,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets whether to allow for reads to go to multiple regions configured on an account of Azure Cosmos DB service. 
+        /// Gets or sets whether to allow for reads to go to multiple regions configured on an account of Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// Default value is null.
@@ -173,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
         /// This property only has effect if the following conditions are satisifed:
         /// 1. <see cref="EnableEndpointDiscovery"/> is true
         /// 2. the Azure Cosmos DB account has more than one region
-        /// </remarks> 
+        /// </remarks>
         public bool? EnableReadRequestsFallback
         {
             get;
@@ -184,17 +181,13 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the default connection policy used to connect to the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// Refer to the default values for the individual properties of <see cref="ConnectionPolicy"/> that determine the default connection policy. 
+        /// Refer to the default values for the individual properties of <see cref="ConnectionPolicy"/> that determine the default connection policy.
         /// </value>
         public static ConnectionPolicy Default
         {
             get
             {
-                if (ConnectionPolicy.defaultPolicy == null)
-                {
-                    ConnectionPolicy.defaultPolicy = new ConnectionPolicy();
-                }
-                return ConnectionPolicy.defaultPolicy;
+                return new ConnectionPolicy();
             }
         }
 
@@ -217,18 +210,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets and sets the preferred locations (regions) for geo-replicated database accounts in the Azure Cosmos DB service. 
+        /// Gets and sets the preferred locations (regions) for geo-replicated database accounts in the Azure Cosmos DB service.
         /// For example, "East US" as the preferred location.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// When <see cref="EnableEndpointDiscovery"/> is true and the value of this property is non-empty, 
+        /// When <see cref="EnableEndpointDiscovery"/> is true and the value of this property is non-empty,
         /// the SDK uses the locations in the collection in the order they are specified to perform operations,
-        /// otherwise if the value of this property is not specified, 
+        /// otherwise if the value of this property is not specified,
         /// the SDK uses the write region as the preferred location for all operations.
         /// </para>
         /// <para>
-        /// If <see cref="EnableEndpointDiscovery"/> is set to false, the value of this property is ignored. 
+        /// If <see cref="EnableEndpointDiscovery"/> is set to false, the value of this property is ignored.
         /// </para>
         /// </remarks>
         public Collection<string> PreferredLocations
@@ -258,15 +251,15 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the flag to enable writes on any locations (regions) for geo-replicated database accounts in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// When the value of this property is true, the SDK will direct write operations to 
-        /// available writable locations of geo-replicated database account. Writable locations 
+        /// When the value of this property is true, the SDK will direct write operations to
+        /// available writable locations of geo-replicated database account. Writable locations
         /// are ordered by <see cref="PreferredLocations"/> property. Setting the property value
         /// to true has no effect until <see cref="CosmosAccountSettings.EnableMultipleWriteLocations"/> 
         /// is also set to true.
-        /// <value>Default value is false indicating that writes are only directed to 
+        /// <value>Default value is false indicating that writes are only directed to
         /// first region in <see cref="PreferredLocations"/> property.</value>
         /// </remarks>
-        internal bool UseMultipleWriteLocations
+        public bool UseMultipleWriteLocations
         {
             get;
             set;
@@ -294,8 +287,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="RetryOptions"/>
         /// <example>
-        /// The example below creates a new <see cref="DocumentClient"/> and sets the <see cref="ConnectionPolicy"/> 
-        /// using the <see cref="RetryOptions"/> property. 
+        /// The example below creates a new <see cref="DocumentClient"/> and sets the <see cref="ConnectionPolicy"/>
+        /// using the <see cref="RetryOptions"/> property.
         /// <para>
         /// <see cref="Cosmos.RetryOptions.MaxRetryAttemptsOnThrottledRequests"/> is set to 3, so in this case, if a request operation is rate limited by exceeding the reserved 
         /// throughput for the collection, the request operation retries 3 times before throwing the exception to the application.
@@ -320,6 +313,82 @@ namespace Microsoft.Azure.Cosmos
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
         /// </remarks>
         public RetryOptions RetryOptions
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
+        /// </summary>
+        /// <value>
+        /// By default, idle connections are kept open indefinitely. Value must be greater than or equal to 10 minutes. Recommended values are between 20 minutes and 24 hours.
+        /// </value>
+        /// <remarks>
+        /// Mainly useful for sparse infrequent access to a large database account.
+        /// </remarks>
+        public TimeSpan? IdleTcpConnectionTimeout
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
+        /// </summary>
+        /// <value>
+        /// The default timeout is 5 seconds. Recommended values are greater than or equal to 5 seconds.
+        /// </value>
+        /// <remarks>
+        /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// </remarks>
+        public TimeSpan? OpenTcpConnectionTimeout
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
+        /// </summary>
+        /// <value>
+        /// The default settings allow 30 simultaneous requests per connection.
+        /// Do not set this value lower than 4 requests per connection or higher than 50-100 requests per connection. 
+        /// The former can lead to a large number of connections to be created. 
+        /// The latter can lead to head of line blocking, high latency and timeouts.
+        /// </value>
+        /// <remarks>
+        /// Applications with a very high degree of parallelism per connection, with large requests or responses, or with very tight latency requirements might get better performance with 8-16 requests per connection.
+        /// </remarks>
+        public int? MaxRequestsPerTcpConnection
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
+        /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
+        /// </summary>
+        /// <value>
+        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// </value>
+        public int? MaxTcpConnectionsPerEndpoint
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// (Direct/TCP) This is an advanced setting that controls the number of TCP connections that will be opened eagerly to each Cosmos DB back-end.
+        /// </summary>
+        /// <value>
+        /// Default value is 1. Applications with extreme performance requirements can set this value to 2.
+        /// </value>
+        /// <remarks>
+        /// This setting must be used with caution. When used improperly, it can lead to client machine ephemeral port exhaustion <see href="https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections">Azure SNAT port exhaustion</see>.
+        /// </remarks>
+        internal int? MaxTcpPartitionCount
         {
             get;
             set;

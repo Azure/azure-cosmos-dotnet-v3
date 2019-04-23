@@ -8,28 +8,10 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Documents;
 
     internal static class DocumentQueryEvaluator
     {
         private const string SQLMethod = "AsSQL";
-        private static readonly string[] LinqSupportedMethods =
-            new string[] 
-            {
-                "Any",
-                "Average",
-                "Count",
-                "Max",
-                "Min",
-                "OrderBy",
-                "OrderByDescending",
-                "Select",
-                "SelectMany",
-                "Sum",
-                "Take",
-                "Distinct",
-                "Where"
-            };
 
         public static SqlQuerySpec Evaluate(Expression expression)
         {
@@ -50,12 +32,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                         ClientResources.BadQuery_InvalidExpression,
                         expression.ToString()));
             }
-        }
-
-        public static bool IsSupportedMethod(MethodCallExpression expression)
-        {
-            return (expression.Method.DeclaringType == typeof(Queryable) &&
-                    LinqSupportedMethods.Contains(expression.Method.Name));
         }
 
         public static bool IsTransformExpression(Expression expression)
@@ -83,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             Type expressionValueType = expression.Value.GetType();
-            if (!expressionValueType.IsGenericType() || expressionValueType.GetGenericTypeDefinition() != typeof(DocumentQuery<bool>).GetGenericTypeDefinition())
+            if (!expressionValueType.IsGenericType || expressionValueType.GetGenericTypeDefinition() != typeof(DocumentQuery<bool>).GetGenericTypeDefinition())
             {
                 throw new DocumentQueryException(
                     string.Format(CultureInfo.CurrentUICulture,
@@ -111,15 +87,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            if (DocumentQueryEvaluator.IsSupportedMethod(expression))
-            {
-                return SqlTranslator.TranslateQuery(expression);
-            }
-
-            throw new DocumentQueryException(
-                string.Format(CultureInfo.CurrentUICulture,
-                ClientResources.BadQuery_InvalidExpression,
-                expression.ToString()));
+            return SqlTranslator.TranslateQuery(expression);
         }
 
         /// <summary>

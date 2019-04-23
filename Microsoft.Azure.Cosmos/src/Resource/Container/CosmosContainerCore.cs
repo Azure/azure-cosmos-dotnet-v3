@@ -57,8 +57,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosClientContext ClientContext { get; }
 
-        private PartitionKeyInternal nonePartitionKeyValue { get; set; }
-
         public override Task<CosmosContainerResponse> ReadAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -186,11 +184,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
-        internal Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken)
+        internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.Client.DocumentClient.GetCollectionCacheAsync()
-                .ContinueWith(collectionCacheTask => collectionCacheTask.Result.ResolveByNameAsync(this.LinkUri.OriginalString, cancellationToken), cancellationToken)
-                .Unwrap();
+            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+            return await collectionCache.GetByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
         }
 
         // Name based look-up, needs re-computation and can't be cached
@@ -214,21 +211,10 @@ namespace Microsoft.Azure.Cosmos
         /// a value for partition key. The constant selection is based on whether the collection is migrated
         /// or user partitioned
         /// </remarks>
-        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue()
+        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.nonePartitionKeyValue == null)
-            {
-                PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
-                if (partitionKeyDefinition.Paths.Count == 0 || partitionKeyDefinition.IsSystemKey)
-                {
-                    this.nonePartitionKeyValue = PartitionKeyInternal.Empty;
-                }
-                else
-                {
-                    this.nonePartitionKeyValue = PartitionKeyInternal.Undefined;
-                }
-            }
-            return this.nonePartitionKeyValue;
+            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
+            return containerSettings.GetNoneValue();
         }
 
         internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
@@ -248,7 +234,6 @@ namespace Microsoft.Azure.Cosmos
                             collectionRID,
                             null,
                             null,
-                            false,
                             cancellationToken);
                 })
                 .Unwrap();

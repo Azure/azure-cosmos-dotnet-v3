@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (IsConstant(left) && inputExpression.NodeType == ExpressionType.Coalesce)
             {
-                var leftValue = ExpressionSimplifier.Evaluate(left);
+                object leftValue = ExpressionSimplifier.Evaluate(left);
                 if (leftValue == null)
                 {
                     resultExpression = right;
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (IsConstant(test))
             {
-                var value = ExpressionSimplifier.Evaluate(test);
+                object value = ExpressionSimplifier.Evaluate(test);
                 bool bValue = (bool)value;
 
                 if (bValue) 
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return resultExpression;
             }
 
-            foreach (var arg in args)
+            foreach (Expression arg in args)
             {
                 if (!IsConstant(arg))
                 {
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             // lambdas are constant
 #endif
-            foreach (var arg in args)
+            foreach (Expression arg in args)
             {
                 if (!IsConstant(arg))
                 {

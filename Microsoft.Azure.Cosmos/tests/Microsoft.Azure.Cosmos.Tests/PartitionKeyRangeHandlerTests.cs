@@ -157,10 +157,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             routingMapProvider.Verify();
 
             //Forward
-            routingMapProvider.Setup(m => m.TryGetRangeByEffectivePartitionKey(
+            routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
-                It.Is<string>(x => x == range.Min)
-            )).Returns(Task.FromResult(overlappingRanges.First())).Verifiable();
+                It.Is<Range<string>>(x => x.Min == range.Min),
+                It.IsAny<bool>()
+            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
             resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
                 providedRanges,
                 routingMapProvider.Object,
@@ -196,10 +197,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 new PartitionKeyRange { Id = "1", MinInclusive = "B", MaxExclusive = "C" }
             }.AsReadOnly();
             Mock<IRoutingMapProvider> routingMapProvider = new Mock<IRoutingMapProvider>();
-            routingMapProvider.Setup(m => m.TryGetRangeByEffectivePartitionKey(
+            routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
-                It.Is<string>(x => x == range.Min)
-            )).Returns(Task.FromResult(overlappingRanges.First())).Verifiable();
+                It.Is<Range<string>>(x => x.Min == range.Min),
+                It.IsAny<bool>()
+            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
@@ -241,10 +243,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             }.AsReadOnly();
             IReadOnlyList<PartitionKeyRange> replacedRanges = overlappingRanges.Take(2).ToList().AsReadOnly();
             Mock<IRoutingMapProvider> routingMapProvider = new Mock<IRoutingMapProvider>();
-            routingMapProvider.Setup(m => m.TryGetRangeByEffectivePartitionKey(
+            routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
-                It.Is<string>(x => x == rangeFromContinuationToken.Min)
-            )).Returns(Task.FromResult(overlappingRanges.First())).Verifiable();
+                It.Is<Range<string>>(x => x.Min == rangeFromContinuationToken.Min),
+                It.Is<bool>(x => x == false)
+            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
             routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Range<string>>(x => x.Min == rangeFromContinuationToken.Min && x.Max == rangeFromContinuationToken.Max),
@@ -339,10 +342,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             Assert.AreEqual(expectedContinuationToken, headers.Get(HttpConstants.HttpHeaders.Continuation));
 
             //Forward
-            routingMapProvider.Setup(m => m.TryGetRangeByEffectivePartitionKey(
+            routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
-                It.Is<string>(x => x == currentPartitionKeyRange.ResolvedRange.MaxExclusive)
-            )).Returns(Task.FromResult(overlappingRanges.Last())).Verifiable();
+                It.IsAny<Range<string>>(),
+                It.IsAny<bool>()
+            )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Skip(2).ToList())).Verifiable();
             headers = new StringKeyValueCollection();
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
                  headers,
@@ -485,10 +489,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             overlappingRanges = new List<PartitionKeyRange> {
                 new PartitionKeyRange { Id = "0", MinInclusive = "A", MaxExclusive = "D"},
             }.AsReadOnly();
-            routingMapProvider.Setup(m => m.TryGetRangeByEffectivePartitionKey(
+            routingMapProvider.Setup(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
-                It.Is<string>(x => x == currentPartitionKeyRange.ResolvedRange.MaxExclusive)
-            )).Returns(Task.FromResult(overlappingRanges.Last()));
+                It.IsAny<Range<string>>(),
+                It.IsAny<bool>()
+            )).Returns(Task.FromResult(overlappingRanges));
             headers = new StringKeyValueCollection();
 
             result = await partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
@@ -501,9 +506,10 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
              );
 
             Assert.IsTrue(result);
-            routingMapProvider.Verify(m => m.TryGetRangeByEffectivePartitionKey(
+            routingMapProvider.Verify(m => m.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
-                It.Is<string>(x => x == currentPartitionKeyRange.ResolvedRange.MaxExclusive)
+                It.Is<Range<string>>(e => e.IsMaxInclusive),
+                It.IsAny<bool>()
             ), Times.Never);
             expectedContinuationToken = JsonConvert.SerializeObject(new CompositeContinuationToken
             {
@@ -514,33 +520,90 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         }
 
         [TestMethod]
-        public async Task PartitionKeyRangeGoneRetryPolicyNextRetryPolicyDoesNotReturnNull()
+        public async Task PartitionKeyRangeGoneRetryPolicyWithNextRetryPolicy()
         {
             Mock<IDocumentClientRetryPolicy> nextRetryPolicyMock = new Mock<IDocumentClientRetryPolicy>();
-            nextRetryPolicyMock.Setup(m => m.ShouldRetryAsync(It.IsAny<CosmosResponseMessage>(), It.IsAny<CancellationToken>())).Returns<Task<ShouldRetryResult>>(null);
-            Mock<PartitionKeyRangeGoneRetryPolicy> retryPolicyMock = new Mock<PartitionKeyRangeGoneRetryPolicy>(null, null, null, nextRetryPolicyMock.Object);
+            nextRetryPolicyMock
+                .Setup(m => m.ShouldRetryAsync(It.IsAny<CosmosResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult<ShouldRetryResult>(ShouldRetryResult.RetryAfter(TimeSpan.FromDays(1))))
+                .Verifiable();
 
-            ShouldRetryResult exceptionResult = await retryPolicyMock.Object.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
+            nextRetryPolicyMock
+                .Setup(m => m.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult<ShouldRetryResult>(ShouldRetryResult.RetryAfter(TimeSpan.FromDays(1))))
+                .Verifiable();
+
+            PartitionKeyRangeGoneRetryPolicy retryPolicy = new PartitionKeyRangeGoneRetryPolicy(null, null, null, nextRetryPolicyMock.Object);
+
+            ShouldRetryResult exceptionResult = await retryPolicy.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
             Assert.IsNotNull(exceptionResult);
+            Assert.IsTrue(exceptionResult.ShouldRetry);
+            Assert.AreEqual(TimeSpan.FromDays(1), exceptionResult.BackoffTime);
 
-            ShouldRetryResult messageResult = await retryPolicyMock.Object.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
-            Assert.IsNotNull(messageResult);
+            ShouldRetryResult messageResult = await retryPolicy.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+            Assert.IsTrue(exceptionResult.ShouldRetry);
+            Assert.AreEqual(TimeSpan.FromDays(1), exceptionResult.BackoffTime);
         }
 
         [TestMethod]
-        public async Task InvalidPartitionRetryPolicyNextRetryPolicyDoesNotReturnNull()
+        public async Task PartitionKeyRangeGoneRetryPolicyWithoutNextRetryPolicy()
         {
-            Mock<CollectionCache> cache = new Mock<CollectionCache>();
-            Mock<IDocumentClientRetryPolicy> nextRetryPolicyMock = new Mock<IDocumentClientRetryPolicy>();
-            nextRetryPolicyMock.Setup(m => m.ShouldRetryAsync(It.IsAny<CosmosResponseMessage>(), It.IsAny<CancellationToken>())).Returns<Task<ShouldRetryResult>>(null);
-            Mock<InvalidPartitionExceptionRetryPolicy> retryPolicyMock = new Mock<InvalidPartitionExceptionRetryPolicy>(cache.Object, nextRetryPolicyMock.Object);
+            PartitionKeyRangeGoneRetryPolicy retryPolicy = new PartitionKeyRangeGoneRetryPolicy(null, null, null, null);
 
-            ShouldRetryResult exceptionResult = await retryPolicyMock.Object.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
+            ShouldRetryResult exceptionResult = await retryPolicy.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
             Assert.IsNotNull(exceptionResult);
+            Assert.IsFalse(exceptionResult.ShouldRetry);
 
-            retryPolicyMock = new Mock<InvalidPartitionExceptionRetryPolicy>(cache.Object, null);
-            ShouldRetryResult messageResult = await retryPolicyMock.Object.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
-            Assert.IsNotNull(messageResult);
+            ShouldRetryResult messageResult = await retryPolicy.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+            Assert.IsFalse(exceptionResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task InvalidPartitionRetryPolicyWithNextRetryPolicy()
+        {
+            Mock<CollectionCache> cacheMock = new Mock<CollectionCache>();
+            Mock<IDocumentClientRetryPolicy> nextRetryPolicyMock = new Mock<IDocumentClientRetryPolicy>();
+
+            nextRetryPolicyMock
+                .Setup(m => m.ShouldRetryAsync(It.IsAny<CosmosResponseMessage>(), It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult<ShouldRetryResult>(ShouldRetryResult.RetryAfter(TimeSpan.FromDays(1))))
+                .Verifiable();
+
+            nextRetryPolicyMock
+                .Setup(m => m.ShouldRetryAsync(It.IsAny<Exception>(), It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult<ShouldRetryResult>(ShouldRetryResult.RetryAfter(TimeSpan.FromDays(1))))
+                .Verifiable();
+
+            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy(cacheMock.Object, nextRetryPolicyMock.Object);
+
+            ShouldRetryResult exceptionResult = await retryPolicyMock.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+            Assert.IsTrue(exceptionResult.ShouldRetry);
+            Assert.AreEqual(TimeSpan.FromDays(1), exceptionResult.BackoffTime);
+
+            ShouldRetryResult messageResult = await retryPolicyMock.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+            Assert.IsTrue(exceptionResult.ShouldRetry);
+            Assert.AreEqual(TimeSpan.FromDays(1), exceptionResult.BackoffTime);
+        }
+
+        [TestMethod]
+        public async Task InvalidPartitionRetryPolicyWithoutNextRetryPolicy()
+        {
+            Mock<CollectionCache> cacheMock = new Mock<CollectionCache>();
+
+            CollectionCache cache = cacheMock.Object;
+            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy(cache, null);
+
+            ShouldRetryResult exceptionResult = await retryPolicyMock.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+            Assert.IsFalse(exceptionResult.ShouldRetry);
+
+            ShouldRetryResult messageResult = await retryPolicyMock.ShouldRetryAsync(new CosmosResponseMessage(), CancellationToken.None);
+            Assert.IsNotNull(exceptionResult);
+            Assert.IsFalse(exceptionResult.ShouldRetry);
         }
 
         private Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock()
