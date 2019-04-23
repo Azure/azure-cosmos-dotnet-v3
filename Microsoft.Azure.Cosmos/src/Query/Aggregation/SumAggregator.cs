@@ -6,9 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global sum from the local sum of multiple partitions and continuations.
@@ -35,66 +33,27 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
             else
             {
-                switch (localSum)
+                CosmosNumber cosmosNumber;
+                if (localSum is CosmosTypedElement typedElement)
                 {
-                    case CosmosNumber cosmosNumber:
-                    {
-                        if (cosmosNumber.IsFloatingPoint)
-                        {
-                            this.globalSum += cosmosNumber.AsFloatingPoint().Value;
-                        }
-                        else
-                        {
-                            this.globalSum += cosmosNumber.AsInteger().Value;
-                        }
+                    cosmosNumber = typedElement.AsCosmosNumber();
+                }
+                else if (localSum is CosmosNumber)
+                {
+                    cosmosNumber = (CosmosNumber)localSum;
+                }
+                else
+                {
+                    throw new ArgumentException("localSum must be a number.");
+                }
 
-                        break;
-                    }
-
-                    case CosmosTypedElement<sbyte> int8number:
-                    {
-                        this.globalSum += int8number.Value;
-                        break;
-                    }
-
-                    case CosmosTypedElement<short> number:
-                    {
-                        this.globalSum += number.Value;
-                        break;
-                    }
-
-                    case CosmosTypedElement<int> number:
-                    {
-                        this.globalSum += number.Value;
-                        break;
-                    }
-
-                    case CosmosTypedElement<long> number:
-                    {
-                        this.globalSum += number.Value;
-                        break;
-                    }
-
-                    case CosmosTypedElement<uint> number:
-                    {
-                        this.globalSum += number.Value;
-                        break;
-                    }
-
-                    case CosmosTypedElement<float> number:
-                    {
-                        this.globalSum += number.Value;
-                        break;
-                    }
-
-                    case CosmosTypedElement<double> number:
-                    {
-                        this.globalSum += number.Value;
-                        break;
-                    }
-
-                    default:
-                        throw new ArgumentException("localSum must be a number.");
+                if (cosmosNumber.IsFloatingPoint)
+                {
+                    this.globalSum += cosmosNumber.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    this.globalSum += cosmosNumber.AsInteger().Value;
                 }
             }
         }

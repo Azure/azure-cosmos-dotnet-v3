@@ -187,26 +187,28 @@ namespace Microsoft.Azure.Cosmos.Query
                 case CosmosElementType.String:
                     order = 3;
                     break;
+                // order = 4 reserved for guid
+                // order = 5 reserved for binary
                 case CosmosElementType.Int8:
-                    order = 4;
-                    break;
-                case CosmosElementType.Int16:
-                    order = 5;
-                    break;
-                case CosmosElementType.Int32:
                     order = 6;
                     break;
-                case CosmosElementType.Int64:
+                case CosmosElementType.Int16:
                     order = 7;
                     break;
-                case CosmosElementType.UInt32:
+                case CosmosElementType.Int32:
                     order = 8;
                     break;
-                case CosmosElementType.Float32:
+                case CosmosElementType.Int64:
                     order = 9;
                     break;
-                case CosmosElementType.Float64:
+                case CosmosElementType.UInt32:
                     order = 10;
+                    break;
+                case CosmosElementType.Float32:
+                    order = 11;
+                    break;
+                case CosmosElementType.Float64:
+                    order = 12;
                     break;
                 default:
                     throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {cosmosElementType}");

@@ -26,29 +26,27 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// <param name="localCount">The count to add.</param>
         public void Aggregate(CosmosElement localCount)
         {
-            if (localCount is CosmosTypedElement<double> doubleValue)
+            CosmosNumber cosmosNumber;
+            if (localCount is CosmosTypedElement typedElement)
             {
-                this.globalCount += (long)doubleValue.Value;
+                cosmosNumber = typedElement.AsCosmosNumber();
             }
-            else if (localCount is CosmosTypedElement<long> longValue)
+            else if (!(localCount is CosmosNumber))
             {
-                this.globalCount += (long)longValue.Value;
+                throw new ArgumentException($"{nameof(localCount)} must be a number.");
             }
             else
             {
-                if (!(localCount is CosmosNumber cosmosNumber))
-                {
-                    throw new ArgumentException($"{nameof(localCount)} must be a number.");
-                }
+                cosmosNumber = (CosmosNumber)localCount;
+            }
 
-                if (cosmosNumber.IsFloatingPoint)
-                {
-                    this.globalCount += (long)cosmosNumber.AsFloatingPoint().Value;
-                }
-                else
-                {
-                    this.globalCount += cosmosNumber.AsInteger().Value;
-                }
+            if (cosmosNumber.IsFloatingPoint)
+            {
+                this.globalCount += (long)cosmosNumber.AsFloatingPoint().Value;
+            }
+            else
+            {
+                this.globalCount += cosmosNumber.AsInteger().Value;
             }
         }
 

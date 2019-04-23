@@ -183,17 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     case CosmosElementType.Number:
                         CosmosNumber cosmosNumber = (cosmosElement as CosmosNumber);
-                        double number;
-                        if (cosmosNumber.IsFloatingPoint)
-                        {
-                            number = cosmosNumber.AsFloatingPoint().Value;
-                        }
-                        else
-                        {
-                            number = cosmosNumber.AsInteger().Value;
-                        }
-
-                        hash = this.GetNumberHash(number, seed);
+                        hash = this.GetHashfromNumber(cosmosNumber, seed);
                         break;
 
                     case CosmosElementType.Object:
@@ -205,37 +195,36 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.Int8:
-                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<sbyte>).Value, seed);
-                        break;
-
                     case CosmosElementType.Int16:
-                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<short>).Value, seed);
-                        break;
-
                     case CosmosElementType.Int32:
-                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<int>).Value, seed);
-                        break;
-
                     case CosmosElementType.Int64:
-                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<long>).Value, seed);
-                        break;
-
                     case CosmosElementType.UInt32:
-                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<uint>).Value, seed);
-                        break;
-
                     case CosmosElementType.Float32:
-                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<float>).Value, seed);
-                        break;
-
                     case CosmosElementType.Float64:
-                        hash = this.GetNumberHash((cosmosElement as CosmosTypedElement<double>).Value, seed);
+                        hash = this.GetHashfromNumber((cosmosElement as CosmosTypedElement<sbyte>).AsCosmosNumber(), seed);
                         break;
 
                     default:
                         throw new ArgumentException($"Unexpected {nameof(CosmosElementType)} : {cosmosElementType}");
                 }
 
+                return hash;
+            }
+
+            private UInt192 GetHashfromNumber(CosmosNumber cosmosNumber, UInt192 seed)
+            {
+                UInt192 hash;
+                double number;
+                if (cosmosNumber.IsFloatingPoint)
+                {
+                    number = cosmosNumber.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    number = cosmosNumber.AsInteger().Value;
+                }
+
+                hash = this.GetNumberHash(number, seed);
                 return hash;
             }
 

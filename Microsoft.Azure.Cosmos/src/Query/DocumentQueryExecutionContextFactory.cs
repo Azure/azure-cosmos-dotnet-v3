@@ -123,7 +123,12 @@ namespace Microsoft.Azure.Cosmos.Query
                     isContinuationExpected,
                     token);
 
-                if (true)
+                if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(
+                        resourceTypeEnum,
+                        feedOptions,
+                        partitionedQueryExecutionInfo,
+                        partitionKeyDefinition,
+                        isContinuationExpected))
                 {
                     List<PartitionKeyRange> targetRanges;
                     if (!string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId))
