@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Client;
 
     /// <summary>
-    /// AddressCache implementation for client SDK. Supports cross region address routing based on 
+    /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
     internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly HttpMessageHandler messageHandler;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
+        private readonly TimeSpan requestTimeout;
         private readonly ApiType apiType;
 
         public GlobalAddressResolver(
@@ -56,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.routingMapProvider = routingMapProvider;
             this.serviceConfigReader = serviceConfigReader;
             this.messageHandler = messageHandler;
+            this.requestTimeout = connectionPolicy.RequestTimeout;
             this.apiType = apiType;
 
             int maxBackupReadEndpoints =
@@ -83,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CancellationToken cancellationToken)
         {
             CollectionRoutingMap routingMap =
-                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, false, cancellationToken);
+                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken);
 
             if (routingMap == null)
             {
@@ -123,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return this.GetOrAddEndpoint(endpoint).AddressResolver;
         }
-        
+
         public void Dispose()
         {
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
@@ -144,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.tokenProvider,
                         this.userAgentContainer,
                         this.serviceConfigReader,
+                        this.requestTimeout,
                         messageHandler: this.messageHandler,
                         apiType: this.apiType);
 
@@ -161,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (this.addressCacheByEndpoint.Count > this.maxEndpoints)
             {
                 IEnumerable<Uri> allEndpoints = this.endpointManager.WriteEndpoints.Union(this.endpointManager.ReadEndpoints);
-                Queue<Uri> endpoints = new Queue<Uri>(allEndpoints.Reverse());                
+                Queue<Uri> endpoints = new Queue<Uri>(allEndpoints.Reverse());
 
                 while (this.addressCacheByEndpoint.Count > this.maxEndpoints)
                 {

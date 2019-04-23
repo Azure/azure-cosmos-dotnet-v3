@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Geometry which is comprised of multiple polygons.
     /// </summary>
     /// <seealso cref="Polygon"/>
-    public sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
+    internal sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPolygon"/> class.
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// </param>
         /// <param name="geometryParams">Additional geometry parameters.</param>
         public MultiPolygon(IList<PolygonCoordinates> polygons, GeometryParams geometryParams)
-            : base(GeometryShape.MultiPolygon, geometryParams)
+            : base(GeometryType.MultiPolygon, geometryParams)
         {
             if (polygons == null)
             {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal MultiPolygon() : base(GeometryShape.MultiPolygon, new GeometryParams())
+        internal MultiPolygon() : base(GeometryType.MultiPolygon, new GeometryParams())
         {
         }
 

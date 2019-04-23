@@ -26,7 +26,5 @@ namespace Microsoft.Azure.Cosmos.Routing
         Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false);
 
         Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId, bool forceRefresh = false);
-
-        Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(string collectionResourceId, string effectivePartitionKey);
     }
 }

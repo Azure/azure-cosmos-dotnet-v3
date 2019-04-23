@@ -892,16 +892,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [Ignore]
-        [TestMethod]
-        public async Task TestRouteToSpecificPartition()
+        ////[DataRow(true)]
+        ////[DataRow(false)]
+        ////[DataTestMethod]
+        public async Task TestRoutToSpecificPartition(bool useGateway)
         {
-            await this.TestRoutToSpecificPartition(false);
-            await this.TestRoutToSpecificPartition(true);
-        }
-
-        private async Task TestRoutToSpecificPartition(bool useGateway)
-        {
-            const int partitionCount = 5;
             DocumentClient client = TestCommon.CreateClient(useGateway);
 
             string guid = Guid.NewGuid().ToString();
@@ -930,7 +925,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(partitionCount, ranges.Count());
+            Assert.IsTrue(ranges.Count() > 1);
 
             Document document = new Document { Id = "id1" };
             document.SetPropertyValue("key", "hello");
@@ -957,7 +952,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryMultiplePartitions(bool useGateway)
         {
-            const int partitionCount = 5;
             Trace.TraceInformation(
                 "Start TestQueryMultiplePartitions in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
@@ -995,7 +989,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(partitionCount, ranges.Count());
+            Assert.IsTrue(ranges.Count() > 1);
 
             DateTime startTime = DateTime.Now;
             IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
@@ -1017,7 +1011,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await client.DeleteDatabaseAsync(database);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestQueryForRoutingMapSanity()
         {
@@ -1048,7 +1041,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(5, ranges.Count);
+            Assert.IsTrue(ranges.Count > 1);
 
             // Query Number 1, that failed before
             List<string> expected = new List<string> { "documentId123", "documentId124", "documentId125" };
@@ -1911,7 +1904,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Guid guid = Guid.NewGuid();
             List<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>
             {
-                new FetchExecutionRange(guid.ToString(), new DateTime(), new DateTime(), null, 5, 5)
+                new FetchExecutionRange("0", guid.ToString(), new DateTime(), new DateTime(), 5, 5)
             };
 
             QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics("totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.01;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.05;userFunctionExecuteTimeInMs=0.07;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",

@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Name identifying a coordinate reference system.
         /// </param>
         internal NamedCrs(string name)
-            : base(CoordinateReferenceScheme.Named)
+            : base(CrsType.Named)
         {
             if (name == null)
             {

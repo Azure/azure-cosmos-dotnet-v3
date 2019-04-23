@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1L, multiLineString.AdditionalProperties["extra"]);
 
             var geom = JsonConvert.DeserializeObject<Geometry>(json);
-            Assert.AreEqual(GeometryShape.MultiLineString, geom.Type);
+            Assert.AreEqual(GeometryType.MultiLineString, geom.Type);
 
             Assert.AreEqual(geom, multiLineString);
 
@@ -68,11 +68,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var multiLineString2 = new MultiLineString(
                 new[]
@@ -81,11 +81,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var multiLineString3 = new MultiLineString(
                 new[]
@@ -94,11 +94,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var multiLineString4 = new MultiLineString(
                 new[]
@@ -107,11 +107,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var multiLineString5 = new MultiLineString(
                 new[]
@@ -120,11 +120,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var multiLineString6 = new MultiLineString(
                 new[]
@@ -133,11 +133,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs1")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs1")
+                });
 
             Assert.AreEqual(multiLineString1, multiLineString2);
             Assert.AreEqual(multiLineString1.GetHashCode(), multiLineString2.GetHashCode());
@@ -178,11 +178,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                         new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             Assert.AreEqual(new Position(20, 30), multiLineString.LineStrings[0].Positions[0]);
 

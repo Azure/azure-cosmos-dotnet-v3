@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="geometryParams">
         /// Coordinate reference system, additional properties etc.
         /// </param>
-        protected Geometry(GeometryShape type, GeometryParams geometryParams)
+        protected Geometry(GeometryType type, GeometryParams geometryParams)
         {
             if (geometryParams == null)
             {
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// </value>
         [JsonProperty("type", Required = Required.Always, Order = 0)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public GeometryShape Type { get; private set; }
+        public GeometryType Type { get; private set; }
 
         /// <summary>
         /// Gets bounding box for this geometry in the Azure Cosmos DB service.

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal class InvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
@@ -35,40 +34,53 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+            Exception exception,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             DocumentClientException clientException = exception as DocumentClientException;
-            return this.ShouldRetryAsyncInternal(clientException?.StatusCode,
+            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
+                clientException?.StatusCode,
                 clientException?.GetSubStatus(),
-                clientException?.ResourceAddress,
-                () => this.nextPolicy?.ShouldRetryAsync(exception, cancellationToken));
+                clientException?.ResourceAddress);
+            if (shouldRetryResult != null)
+            {
+                return Task.FromResult(shouldRetryResult);
+            }
+
+            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(exception, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage httpResponseMessage, 
+            CosmosResponseMessage httpResponseMessage,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(this.nextPolicy == null);
-            return this.ShouldRetryAsyncInternal(
+            ShouldRetryResult shouldRetryResult =  this.ShouldRetryInternal(
                 httpResponseMessage.StatusCode,
                 httpResponseMessage.Headers.SubStatusCode,
-                httpResponseMessage.GetResourceAddress(),
+                httpResponseMessage.GetResourceAddress());
 
-                // In the new OM, retries are chained by handlers, not by chaining retry policies. Consequently, the next policy should be null here.
-                continueIfNotHandled: null);
+            if (shouldRetryResult != null)
+            {
+                return Task.FromResult(shouldRetryResult);
+            }
+
+            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
         }
 
-        private Task<ShouldRetryResult> ShouldRetryAsyncInternal(
-            HttpStatusCode? statusCode, 
-            SubStatusCodes? subStatusCode, 
-            string resourceIdOrFullName, 
-            Func<Task<ShouldRetryResult>> continueIfNotHandled)
+        private ShouldRetryResult ShouldRetryInternal(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            string resourceIdOrFullName)
         {
-            if (statusCode.HasValue
-                && subStatusCode.HasValue
-                && statusCode == HttpStatusCode.Gone
+            if (!statusCode.HasValue
+                && (!subStatusCode.HasValue
+                || subStatusCode.Value == SubStatusCodes.Unknown))
+            {
+                return null;
+            }
+
+            if (statusCode == HttpStatusCode.Gone
                 && subStatusCode == SubStatusCodes.NameCacheIsStale)
             {
                 if (!this.retried)
@@ -79,27 +91,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
 
                     this.retried = true;
-                    return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
                 else
                 {
-                    return Task.FromResult(ShouldRetryResult.NoRetry());
+                    return ShouldRetryResult.NoRetry();
                 }
             }
 
-            if (continueIfNotHandled != null)
-            {
-                return continueIfNotHandled().ContinueWith(x => x.Result ?? ShouldRetryResult.NoRetry());
-            }
-            else
-            {
-                return Task.FromResult(ShouldRetryResult.NoRetry());
-            }
+            return null;
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
             this.nextPolicy.OnBeforeSendRequest(request);
-        }        
+        }
     }
 }

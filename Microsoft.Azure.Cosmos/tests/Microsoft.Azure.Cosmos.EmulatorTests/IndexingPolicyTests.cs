@@ -218,7 +218,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task CompositeIndex()
         {

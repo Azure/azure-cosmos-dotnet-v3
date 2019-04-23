@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Common
 {
     using System;
@@ -8,43 +9,77 @@ namespace Microsoft.Azure.Cosmos.Common
     using System.Collections.Generic;
     using System.Globalization;
     using System.Text;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
-    using System.Threading;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using System.Threading;
 
     internal sealed class SessionContainer : ISessionContainer
     {
-        // TODO, devise a mechanism to handle cache coherency during resource id collision
-        private readonly string hostName;
-
-        private readonly ReaderWriterLockSlim rwlock = new ReaderWriterLockSlim();
-        private readonly ConcurrentDictionary<string, ulong> collectionNameByResourceId = new ConcurrentDictionary<string, ulong>();
-        private readonly ConcurrentDictionary<ulong, string> collectionResourceIdByName = new ConcurrentDictionary<ulong, string>();
-        // Map of Collection Rid to map of partitionkeyrangeid to SessionToken.
-        private readonly ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>> sessionTokensRIDBased = new ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>>();
+        private volatile SessionContainerState state;
 
         public SessionContainer(string hostName)
         {
-            this.hostName = hostName;
+            this.state = new SessionContainerState(hostName);
         }
 
-        ~SessionContainer()
+        // State may be replaced (from a different thread) during an execution of an instance method so in a straightforward
+        // implementation the method may acquire lock on the initial state but release it on an replaced state resulting in an 
+        // error. To avoid this situation a method reads state into a local variable then it works only with the variable; also
+        // it explicitly passes it to the utility methods. We put all logic in static methods since static methods don't have
+        // access to instance members it eliminates the problem of accidental accessing state the second time.
+        public void ReplaceCurrrentStateWithStateOf(SessionContainer comrade)
         {
-            if (this.rwlock != null)
-            {
-                this.rwlock.Dispose();
-            }
+            this.state = comrade.state;
         }
 
         public string HostName
         {
-            get { return this.hostName; }
+            get { return this.state.hostName; }
         }
 
         public string GetSessionToken(string collectionLink)
+        {
+            return SessionContainer.GetSessionToken(this.state, collectionLink);
+        }
+
+        public string ResolveGlobalSessionToken(DocumentServiceRequest request)
+        {
+            return SessionContainer.ResolveGlobalSessionToken(this.state, request);
+        }
+
+        public ISessionToken ResolvePartitionLocalSessionToken(DocumentServiceRequest request, string partitionKeyRangeId)
+        {
+            return SessionContainer.ResolvePartitionLocalSessionToken(this.state, request, partitionKeyRangeId);
+        }
+
+        public void ClearTokenByCollectionFullname(string collectionFullname)
+        {
+            SessionContainer.ClearTokenByCollectionFullname(this.state, collectionFullname);
+        }
+
+        public void ClearTokenByResourceId(string resourceId)
+        {
+            SessionContainer.ClearTokenByResourceId(this.state, resourceId);
+        }
+
+        public void SetSessionToken(string collectionRid, string collectionFullname, INameValueCollection responseHeaders)
+        {
+            SessionContainer.SetSessionToken(this.state, collectionRid, collectionFullname, responseHeaders);
+        }
+
+        public void SetSessionToken(DocumentServiceRequest request, INameValueCollection responseHeaders)
+        {
+            SessionContainer.SetSessionToken(this.state, request, responseHeaders);
+        }
+
+        // used in unit tests to check if two SessionContainer are equal
+        // a.MakeSnapshot().Equals(b.MakeSnapshot())
+        public object MakeSnapshot()
+        {
+            return SessionContainer.MakeSnapshot(this.state);
+        }
+
+        private static string GetSessionToken(SessionContainerState self, string collectionLink)
         {
             bool isNameBased;
             bool isFeed;
@@ -63,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Common
                     string collectionName = PathsHelper.GetCollectionPath(resourceIdOrFullName);
 
                     ulong rid;
-                    if (this.collectionNameByResourceId.TryGetValue(collectionName, out rid))
+                    if (self.collectionNameByResourceId.TryGetValue(collectionName, out rid))
                     {
                         maybeRID = rid;
                     }
@@ -79,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
                 if (maybeRID.HasValue)
                 {
-                    this.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out partitionKeyRangeIdToTokenMap);
+                    self.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out partitionKeyRangeIdToTokenMap);
                 }
             }
 
@@ -91,9 +126,9 @@ namespace Microsoft.Azure.Cosmos.Common
             return SessionContainer.GetSessionTokenString(partitionKeyRangeIdToTokenMap);
         }
 
-        public string ResolveGlobalSessionToken(DocumentServiceRequest request)
+        private static string ResolveGlobalSessionToken(SessionContainerState self, DocumentServiceRequest request)
         {
-            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = this.GetPartitionKeyRangeIdToTokenMap(request);
+            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request);
             if (partitionKeyRangeIdToTokenMap != null)
             {
                 return SessionContainer.GetSessionTokenString(partitionKeyRangeIdToTokenMap);
@@ -102,40 +137,40 @@ namespace Microsoft.Azure.Cosmos.Common
             return string.Empty;
         }
 
-        public ISessionToken ResolvePartitionLocalSessionToken(DocumentServiceRequest request, string partitionKeyRangeId)
+        private static ISessionToken ResolvePartitionLocalSessionToken(SessionContainerState self, DocumentServiceRequest request, string partitionKeyRangeId)
         {
-            return SessionTokenHelper.ResolvePartitionLocalSessionToken(request, partitionKeyRangeId, this.GetPartitionKeyRangeIdToTokenMap(request));
+            return SessionTokenHelper.ResolvePartitionLocalSessionToken(request, partitionKeyRangeId, SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request));
         }
 
-        public void ClearTokenByCollectionFullname(string collectionFullname)
+        private static void ClearTokenByCollectionFullname(SessionContainerState self, string collectionFullname)
         {
             if (!string.IsNullOrEmpty(collectionFullname))
             {
                 string collectionName = PathsHelper.GetCollectionPath(collectionFullname);
 
-                this.rwlock.EnterWriteLock();
+                self.rwlock.EnterWriteLock();
                 try
                 {
-                    if (collectionNameByResourceId.ContainsKey(collectionName))
+                    if (self.collectionNameByResourceId.ContainsKey(collectionName))
                     {
                         string ignoreString;
                         ulong ignoreUlong;
 
-                        ulong rid = this.collectionNameByResourceId[collectionName];
+                        ulong rid = self.collectionNameByResourceId[collectionName];
                         ConcurrentDictionary<string, ISessionToken> ignored;
-                        this.sessionTokensRIDBased.TryRemove(rid, out ignored);
-                        this.collectionResourceIdByName.TryRemove(rid, out ignoreString);
-                        this.collectionNameByResourceId.TryRemove(collectionName, out ignoreUlong);
+                        self.sessionTokensRIDBased.TryRemove(rid, out ignored);
+                        self.collectionResourceIdByName.TryRemove(rid, out ignoreString);
+                        self.collectionNameByResourceId.TryRemove(collectionName, out ignoreUlong);
                     }
                 }
                 finally
                 {
-                    this.rwlock.ExitWriteLock();
+                    self.rwlock.ExitWriteLock();
                 }
             }
         }
 
-        public void ClearTokenByResourceId(string resourceId)
+        private static void ClearTokenByResourceId(SessionContainerState self, string resourceId)
         {
             if (!string.IsNullOrEmpty(resourceId))
             {
@@ -144,41 +179,41 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     ulong rid = resource.UniqueDocumentCollectionId;
 
-                    this.rwlock.EnterWriteLock();
+                    self.rwlock.EnterWriteLock();
                     try
                     {
-                        if (this.collectionResourceIdByName.ContainsKey(rid))
+                        if (self.collectionResourceIdByName.ContainsKey(rid))
                         {
                             string ignoreString;
                             ulong ignoreUlong;
 
-                            string collectionName = this.collectionResourceIdByName[rid];
+                            string collectionName = self.collectionResourceIdByName[rid];
                             ConcurrentDictionary<string, ISessionToken> ignored;
-                            this.sessionTokensRIDBased.TryRemove(rid, out ignored);
-                            this.collectionResourceIdByName.TryRemove(rid, out ignoreString);
-                            this.collectionNameByResourceId.TryRemove(collectionName, out ignoreUlong);
+                            self.sessionTokensRIDBased.TryRemove(rid, out ignored);
+                            self.collectionResourceIdByName.TryRemove(rid, out ignoreString);
+                            self.collectionNameByResourceId.TryRemove(collectionName, out ignoreUlong);
                         }
                     }
                     finally
                     {
-                        this.rwlock.ExitWriteLock();
+                        self.rwlock.ExitWriteLock();
                     }
                 }
             }
         }
 
-        public void SetSessionToken(string collectionRid, string collectionFullname, INameValueCollection responseHeaders)
+        private static void SetSessionToken(SessionContainerState self, string collectionRid, string collectionFullname, INameValueCollection responseHeaders)
         {
             ResourceId resourceId = ResourceId.Parse(collectionRid);
             string collectionName = PathsHelper.GetCollectionPath(collectionFullname);
             string token = responseHeaders[HttpConstants.HttpHeaders.SessionToken];
             if (!string.IsNullOrEmpty(token))
             {
-                this.SetSessionToken(resourceId, collectionName, token);
+                SessionContainer.SetSessionToken(self, resourceId, collectionName, token);
             }
         }
 
-        public void SetSessionToken(DocumentServiceRequest request, INameValueCollection responseHeaders)
+        private static void SetSessionToken(SessionContainerState self, DocumentServiceRequest request, INameValueCollection responseHeaders)
         {
             string token = responseHeaders[HttpConstants.HttpHeaders.SessionToken];
 
@@ -189,27 +224,25 @@ namespace Microsoft.Azure.Cosmos.Common
 
                 if (SessionContainer.ShouldUpdateSessionToken(request, responseHeaders, out resourceId, out collectionName))
                 {
-                    this.SetSessionToken(resourceId, collectionName, token);
+                    SessionContainer.SetSessionToken(self, resourceId, collectionName, token);
                 }
             }
         }
 
-        // used in unit tests to check if two SessionContainer are equal
-        // a.ExportState().Equals(b.ExportState())
-        public SessionContainerState ExportState()
+        private static SessionContainerSnapshot MakeSnapshot(SessionContainerState self)
         {
-            rwlock.EnterReadLock();
+            self.rwlock.EnterReadLock();
             try
             {
-                return new SessionContainerState(collectionNameByResourceId, collectionResourceIdByName, sessionTokensRIDBased);
+                return new SessionContainerSnapshot(self.collectionNameByResourceId, self.collectionResourceIdByName, self.sessionTokensRIDBased);
             }
             finally
             {
-                rwlock.ExitReadLock();
+                self.rwlock.ExitReadLock();
             }
         }
 
-        private ConcurrentDictionary<string, ISessionToken> GetPartitionKeyRangeIdToTokenMap(DocumentServiceRequest request)
+        private static ConcurrentDictionary<string, ISessionToken> GetPartitionKeyRangeIdToTokenMap(SessionContainerState self, DocumentServiceRequest request)
         {
             ulong? maybeRID = null;
 
@@ -218,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 string collectionName = PathsHelper.GetCollectionPath(request.ResourceAddress);
 
                 ulong rid;
-                if (this.collectionNameByResourceId.TryGetValue(collectionName, out rid))
+                if (self.collectionNameByResourceId.TryGetValue(collectionName, out rid))
                 {
                     maybeRID = rid;
                 }
@@ -239,13 +272,13 @@ namespace Microsoft.Azure.Cosmos.Common
 
             if (maybeRID.HasValue)
             {
-                this.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out partitionKeyRangeIdToTokenMap);
+                self.sessionTokensRIDBased.TryGetValue(maybeRID.Value, out partitionKeyRangeIdToTokenMap);
             }
 
             return partitionKeyRangeIdToTokenMap;
         }
 
-        private void SetSessionToken(ResourceId resourceId, string collectionName, string encodedToken)
+        private static void SetSessionToken(SessionContainerState self, ResourceId resourceId, string collectionName, string encodedToken)
         {
             string partitionKeyRangeId;
             ISessionToken token;
@@ -266,58 +299,58 @@ namespace Microsoft.Azure.Cosmos.Common
 
             bool isKnownCollection = false;
 
-            this.rwlock.EnterReadLock();
+            self.rwlock.EnterReadLock();
             try
             {
                 ulong resolvedCollectionResourceId;
                 string resolvedCollectionName;
 
-                isKnownCollection = this.collectionNameByResourceId.TryGetValue(collectionName, out resolvedCollectionResourceId) &&
-                                    this.collectionResourceIdByName.TryGetValue(resourceId.UniqueDocumentCollectionId, out resolvedCollectionName) &&
+                isKnownCollection = self.collectionNameByResourceId.TryGetValue(collectionName, out resolvedCollectionResourceId) &&
+                                    self.collectionResourceIdByName.TryGetValue(resourceId.UniqueDocumentCollectionId, out resolvedCollectionName) &&
                                     resolvedCollectionResourceId == resourceId.UniqueDocumentCollectionId &&
                                     resolvedCollectionName == collectionName;
 
                 if (isKnownCollection)
                 {
-                    this.AddSessionToken(resourceId.UniqueDocumentCollectionId, partitionKeyRangeId, token);
+                    SessionContainer.AddSessionToken(self, resourceId.UniqueDocumentCollectionId, partitionKeyRangeId, token);
                 }
             }
             finally
             {
-                this.rwlock.ExitReadLock();
+                self.rwlock.ExitReadLock();
             }
 
             if (!isKnownCollection)
             {
-                this.rwlock.EnterWriteLock();
+                self.rwlock.EnterWriteLock();
                 try
                 {
                     ulong resolvedCollectionResourceId;
 
-                    if (this.collectionNameByResourceId.TryGetValue(collectionName, out resolvedCollectionResourceId))
+                    if (self.collectionNameByResourceId.TryGetValue(collectionName, out resolvedCollectionResourceId))
                     {
                         string ignoreString;
 
                         ConcurrentDictionary<string, ISessionToken> ignored;
-                        this.sessionTokensRIDBased.TryRemove(resolvedCollectionResourceId, out ignored);
-                        this.collectionResourceIdByName.TryRemove(resolvedCollectionResourceId, out ignoreString);
+                        self.sessionTokensRIDBased.TryRemove(resolvedCollectionResourceId, out ignored);
+                        self.collectionResourceIdByName.TryRemove(resolvedCollectionResourceId, out ignoreString);
                     }
 
-                    this.collectionNameByResourceId[collectionName] = resourceId.UniqueDocumentCollectionId;
-                    this.collectionResourceIdByName[resourceId.UniqueDocumentCollectionId] = collectionName;
+                    self.collectionNameByResourceId[collectionName] = resourceId.UniqueDocumentCollectionId;
+                    self.collectionResourceIdByName[resourceId.UniqueDocumentCollectionId] = collectionName;
 
-                    this.AddSessionToken(resourceId.UniqueDocumentCollectionId, partitionKeyRangeId, token);
+                    SessionContainer.AddSessionToken(self, resourceId.UniqueDocumentCollectionId, partitionKeyRangeId, token);
                 }
                 finally
                 {
-                    this.rwlock.ExitWriteLock();
+                    self.rwlock.ExitWriteLock();
                 }
             }
         }
 
-        private void AddSessionToken(ulong rid, string partitionKeyRangeId, ISessionToken token)
+        private static void AddSessionToken(SessionContainerState self, ulong rid, string partitionKeyRangeId, ISessionToken token)
         {
-            this.sessionTokensRIDBased.AddOrUpdate(
+            self.sessionTokensRIDBased.AddOrUpdate(
                 rid,
                 (ridKey) =>
                 {
@@ -424,13 +457,37 @@ namespace Microsoft.Azure.Cosmos.Common
             return false;
         }
 
-        public class SessionContainerState
+        private sealed class SessionContainerState
+        {
+            // TODO, devise a mechanism to handle cache coherency during resource id collision
+            public readonly string hostName;
+            public readonly ReaderWriterLockSlim rwlock = new ReaderWriterLockSlim();
+            public readonly ConcurrentDictionary<string, ulong> collectionNameByResourceId = new ConcurrentDictionary<string, ulong>();
+            public readonly ConcurrentDictionary<ulong, string> collectionResourceIdByName = new ConcurrentDictionary<ulong, string>();
+            // Map of Collection Rid to map of partitionkeyrangeid to SessionToken.
+            public readonly ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>> sessionTokensRIDBased = new ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>>();
+
+            public SessionContainerState(string hostName)
+            {
+                this.hostName = hostName;
+            }
+
+            ~SessionContainerState()
+            {
+                if (this.rwlock != null)
+                {
+                    this.rwlock.Dispose();
+                }
+            }
+        }
+
+        private sealed class SessionContainerSnapshot
         {
             private readonly Dictionary<string, ulong> collectionNameByResourceId;
             private readonly Dictionary<ulong, string> collectionResourceIdByName;
             private readonly Dictionary<ulong, Dictionary<string, ISessionToken>> sessionTokensRIDBased;
 
-            public SessionContainerState(ConcurrentDictionary<string, ulong> collectionNameByResourceId, ConcurrentDictionary<ulong, string> collectionResourceIdByName, ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>> sessionTokensRIDBased)
+            public SessionContainerSnapshot(ConcurrentDictionary<string, ulong> collectionNameByResourceId, ConcurrentDictionary<ulong, string> collectionResourceIdByName, ConcurrentDictionary<ulong, ConcurrentDictionary<string, ISessionToken>> sessionTokensRIDBased)
             {
                 this.collectionNameByResourceId = new Dictionary<string, ulong>(collectionNameByResourceId);
                 this.collectionResourceIdByName = new Dictionary<ulong, string>(collectionResourceIdByName);
@@ -454,7 +511,7 @@ namespace Microsoft.Azure.Cosmos.Common
                     return false;
                 }
 
-                SessionContainerState sibling = (SessionContainerState)obj;
+                SessionContainerSnapshot sibling = (SessionContainerSnapshot)obj;
 
                 if (!AreDictionariesEqual(collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
                 if (!AreDictionariesEqual(collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;

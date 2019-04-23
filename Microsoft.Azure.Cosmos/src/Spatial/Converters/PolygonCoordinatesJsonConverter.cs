@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
         /// <param name="serializer">The calling serializer.</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var coordinates = (PolygonCoordinates)value;
+            PolygonCoordinates coordinates = (PolygonCoordinates)value;
 
             writer.WriteStartArray();
             foreach (LinearRing linearRing in coordinates.Rings)
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
             object existingValue,
             JsonSerializer serializer)
         {
-            var coordinates = serializer.Deserialize<Position[][]>(reader);
+            Position[][] coordinates = serializer.Deserialize<Position[][]>(reader);
 
             return new PolygonCoordinates(coordinates.Select(c => new LinearRing(c)).ToList());
         }
