@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Cosmos
         /// Includes a unique key on that enforces uniqueness constraint on documents in the collection in the Azure Cosmos DB service.
         /// </summary>
         /// <seealso cref="UniqueKey"/>
-        public CosmosContainerSettings IncludeUniqueKey(params string[] uniquePaths)
+        [IgnoreForUnitTest]
+        public CosmosContainerSettings WithUniqueKey(params string[] uniquePaths)
         {
             if (uniquePaths == null)
             {
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// Specifies the indexing mode to be used.
         /// </summary>
         /// <seealso cref="IndexingMode"/>
+        [IgnoreForUnitTest]
         public CosmosContainerSettings WithIndexingMode(IndexingMode indexingMode)
         {
             this.IndexingPolicy.IndexingMode = indexingMode;
@@ -60,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// Set the default TTL for the container
         /// </summary>
         /// <seealso cref="CosmosContainerSettings.DefaultTimeToLive"/>
+        [IgnoreForUnitTest]
         public CosmosContainerSettings WithDefaultTimeToLive(TimeSpan defaultTtl)
         {
             this.DefaultTimeToLive = defaultTtl;
@@ -70,7 +73,8 @@ namespace Microsoft.Azure.Cosmos
         /// Specifies the path of item to be indexed
         /// </summary>
         /// <seealso cref="IndexingPolicy.IncludedPaths"/>
-        public CosmosContainerSettings IncludeIndexPath(string path)
+        [IgnoreForUnitTest]
+        public CosmosContainerSettings WithIncludeIndexPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -91,7 +95,8 @@ namespace Microsoft.Azure.Cosmos
         /// Path to be excluded for indexing
         /// </summary>
         /// <seealso cref="IndexingPolicy.ExcludedPaths"/>
-        public CosmosContainerSettings ExcludeIndexPath(string path)
+        [IgnoreForUnitTest]
+        public CosmosContainerSettings WithExcludeIndexPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -111,8 +116,9 @@ namespace Microsoft.Azure.Cosmos
         /// Includes the given additional composite index
         /// </summary>
         /// <seealso cref="IndexingPolicy.CompositeIndexes"/>
-        /// <seealso cref="CompositePath"/>
-        public CosmosContainerSettings IncludeCompositeIndex(params string[] compositeIndexPaths)
+        /// <seealso cref="CompositePathDefinition"/>
+        [IgnoreForUnitTest]
+        public CosmosContainerSettings WithCompositeIndex(params string[] compositeIndexPaths)
         {
             if (compositeIndexPaths == null)
             {
@@ -124,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(compositeIndexPaths));
             }
 
-            CompositePath[] compositeSpecs = new CompositePath[compositeIndexPaths.Length];
+            CompositePathDefinition[] compositeSpecs = new CompositePathDefinition[compositeIndexPaths.Length];
             for (int i = 0; i < compositeIndexPaths.Length; i++)
             {
                 if (string.IsNullOrEmpty(compositeIndexPaths[i]))
@@ -132,22 +138,23 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"{nameof(compositeIndexPaths)} has null or empty entry at position {i}");
                 }
 
-                compositeSpecs[i] = new CompositePath()
+                compositeSpecs[i] = new CompositePathDefinition()
                 {
                     Path = compositeIndexPaths[i],
                     Order = CompositePathSortOrder.Ascending,
                 };
             }
 
-            return this.IncludeCompositeIndex(compositeSpecs);
+            return this.WithCompositeIndex(compositeSpecs);
         }
 
         /// <summary>
         /// Includes the given additional composite index
         /// </summary>
         /// <seealso cref="IndexingPolicy.CompositeIndexes"/>
-        /// <seealso cref="CompositePath"/>
-        public CosmosContainerSettings IncludeCompositeIndex(params CompositePath[] compositeIndexPaths)
+        /// <seealso cref="CompositePathDefinition"/>
+        [IgnoreForUnitTest]
+        public CosmosContainerSettings WithCompositeIndex(params CompositePathDefinition[] compositeIndexPaths)
         {
             if (compositeIndexPaths == null)
             {
@@ -159,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(compositeIndexPaths));
             }
 
-            Collection<CompositePath> compositePathsCollection = new Collection<CompositePath>();
+            Collection<CompositePathDefinition> compositePathsCollection = new Collection<CompositePathDefinition>();
             for (int i=0; i < compositeIndexPaths.Length; i++)
             {
                 if (compositeIndexPaths[i] == null || String.IsNullOrEmpty(compositeIndexPaths[i].Path))
@@ -177,16 +184,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Include spatial index 
         /// </summary>
-        /// <seealso cref="SpatialSpec"/>
+        /// <seealso cref="SpatialIndexDefinition"/>
         /// <seealso cref="SpatialType"/>
-        public CosmosContainerSettings IncludeSpatialIndex(string path, params SpatialType[] spatialTypes)
+        [IgnoreForUnitTest]
+        public CosmosContainerSettings WithSpatialIndex(string path, params SpatialType[] spatialTypes)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
                 throw new ArgumentNullException(nameof(path));
             }
 
-            SpatialSpec spatialSpec = new SpatialSpec();
+            SpatialIndexDefinition spatialSpec = new SpatialIndexDefinition();
             spatialSpec.Path = path;
 
             foreach(SpatialType spatialType in spatialTypes)

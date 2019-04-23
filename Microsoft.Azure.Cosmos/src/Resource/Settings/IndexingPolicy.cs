@@ -63,55 +63,84 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the collection containing <see cref="IncludedPath"/> objects in the Azure Cosmos DB service.
         /// </summary>
-        /// <value>
-        /// The collection containing <see cref="IncludedPath"/> objects.
-        /// </value>
+        /// <example>
+        /// The example below creates a new container by specifying only to exclude specfic paths for indexing
+        /// in ascending order (default)
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosContainerSettings containerSettings =
+        ///     new CosmosContainerSettings("TestContainer", "/partitionKey")
+        ///        .IncludeIndexPath("/excludepath1")
+        ///        .IncludeIndexPath("/excludepath2");
+        /// ]]>
+        /// </code>
+        /// </example>
         [JsonProperty(PropertyName = Constants.Properties.IncludedPaths)]
         public Collection<IncludedPath> IncludedPaths { get; set; } = new Collection<IncludedPath>();
 
         /// <summary>
         /// Gets or sets the collection containing <see cref="ExcludedPath"/> objects in the Azure Cosmos DB service.
         /// </summary>
-        /// <value>
-        /// The collection containing <see cref="ExcludedPath"/> objects.
-        /// </value>
+        /// <example>
+        /// The example below creates a new container by specifying to exclude paths from indexing
+        /// in ascending order (default)
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosContainerSettings containerSettings =
+        ///     new CosmosContainerSettings("TestContainer", "/partitionKey")
+        ///        .ExcludeIndexPath("/excludepath1")
+        ///        .ExcludeIndexPath("/excludepath2");
+        /// ]]>
+        /// </code>
+        /// </example>
         [JsonProperty(PropertyName = Constants.Properties.ExcludedPaths)]
         public Collection<ExcludedPath> ExcludedPaths { get; set; } = new Collection<ExcludedPath>();
 
         /// <summary>
-        /// Gets or sets the composite indexes for additional indexes
+        /// Gets or sets the additional composite indexes 
         /// </summary>
         /// <example>
+        /// The example below creates a new container with composite index on (property1, property2)
+        /// in ascending order (default)
+        /// <code language="c#">
         /// <![CDATA[
-        ///   "composite": [
-        ///      [
-        ///         {
-        ///            "path": "/joining_year",
-        ///            "order": "ascending"
-        ///         },
-        ///         {
-        ///            "path": "/level",
-        ///            "order": "descending"
-        ///         }
-        ///      ],
-        ///      [
-        ///         {
-        ///            "path": "/country"
-        ///         },
-        ///         {
-        ///            "path": "/city"
-        ///         }
-        ///      ]
-        ///   ]
+        /// CosmosContainerSettings containerSettings =
+        ///     new CosmosContainerSettings("TestContainer", "/partitionKey")
+        ///         .IncludeCompositeIndex("/compPath1", "/property2");
         /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The example below creates a new container with composite index on (property1, property2)
+        /// in descending order
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosContainerSettings containerSettings =
+        ///     new CosmosContainerSettings("TestContainer", "/partitionKey")
+        ///         .IncludeCompositeIndex(
+        ///            CompositePathDefinition.Create("/property1", CompositePathSortOrder.Descending),
+        ///            CompositePathDefinition.Create("/property2", CompositePathSortOrder.Descending));
+        /// ]]>
+        /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
-        public Collection<Collection<CompositePath>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePath>>();
+        public Collection<Collection<CompositePathDefinition>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePathDefinition>>();
 
         /// <summary>
-        /// 
+        /// Collection of spatial index definitions to be used
         /// </summary>
+        /// <example>
+        /// The example below creates a new container with spatial index on property1
+        /// in descending order
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosContainerSettings containerSettings =
+        ///     new CosmosContainerSettings("TestContainer", "/partitionKey")
+        ///         .IncludeSpatialIndex("/property1", SpatialType.Point);
+        /// ]]>
+        /// </code>
+        /// </example>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        public Collection<SpatialSpec> SpatialIndexes { get; set; } = new Collection<SpatialSpec>();
+        public Collection<SpatialIndexDefinition> SpatialIndexes { get; set; } = new Collection<SpatialIndexDefinition>();
     }
 }

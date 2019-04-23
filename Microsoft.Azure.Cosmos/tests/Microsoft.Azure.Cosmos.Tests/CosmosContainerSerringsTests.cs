@@ -4,27 +4,27 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosContainerSerringsTests
+    public class CosmosContainerSettingsTests
     {
         [TestMethod]
         public void DefaultSerialization()
         {
             CosmosContainerSettings containerSettings =
                 new CosmosContainerSettings("TestContainer", "/partitionKey")
-                .IncludeIndexPath("/includepath1")
-                .IncludeIndexPath("/includepath2")
-                .ExcludeIndexPath("/excludepath1")
-                .ExcludeIndexPath("/excludepath2")
-                .IncludeCompositeIndex("/compPath1", "/compPath2")
-                .IncludeUniqueKey("/uniqueueKey1", "/uniqueueKey2")
-                .IncludeSpatialIndex("/spatialPath", SpatialType.Point);
+                .WithIncludeIndexPath("/includepath1")
+                .WithIncludeIndexPath("/includepath2")
+                .WithExcludeIndexPath("/excludepath1")
+                .WithExcludeIndexPath("/excludepath2")
+                .WithCompositeIndex("/compPath1", "/compPath2")
+                .WithCompositeIndex(CompositePathDefinition.Create("/property1", CompositePathSortOrder.Descending),
+                    CompositePathDefinition.Create("/property2", CompositePathSortOrder.Descending))
+                .WithUniqueKey("/uniqueueKey1", "/uniqueueKey2")
+                .WithSpatialIndex("/spatialPath", SpatialType.Point);
         }
 
         [TestMethod]
@@ -34,12 +34,12 @@ namespace Microsoft.Azure.Cosmos
             ip.IncludedPaths.Add(new IncludedPath() { Path = "/includepath1", Indexes = CosmosContainerSettings.DefaultIndexes});
             ip.ExcludedPaths.Add(new ExcludedPath() { Path = "/excludepath1" });
 
-            Collection<CompositePath> compositePath = new Collection<CompositePath>();
-            compositePath.Add(new CompositePath() { Path = "/compositepath1", Order = CompositePathSortOrder.Ascending });
-            compositePath.Add(new CompositePath() { Path = "/compositepath2", Order = CompositePathSortOrder.Ascending });
+            Collection<CompositePathDefinition> compositePath = new Collection<CompositePathDefinition>();
+            compositePath.Add(new CompositePathDefinition() { Path = "/compositepath1", Order = CompositePathSortOrder.Ascending });
+            compositePath.Add(new CompositePathDefinition() { Path = "/compositepath2", Order = CompositePathSortOrder.Ascending });
             ip.CompositeIndexes.Add(compositePath);
 
-            SpatialSpec spatialSpec = new SpatialSpec();
+            SpatialIndexDefinition spatialSpec = new SpatialIndexDefinition();
             spatialSpec.Path = "/spatialpath1";
             spatialSpec.SpatialTypes = new Collection<SpatialType>();
             spatialSpec.SpatialTypes.Add(SpatialType.Point);
@@ -55,6 +55,37 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerSettings testContainerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
             testContainerSettings.IndexingPolicy = ip;
             testContainerSettings.UniqueKeyPolicy = uniqueKeyPolicy;
+        }
+
+        [TestMethod]
+        public void ValidationTests()
+        {
+            CosmosContainerSettings containerSettings =
+                new CosmosContainerSettings("TestContainer", "/partitionKey");
+
+            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => containerSettings.WithIncludeIndexPath(null));
+            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => containerSettings.WithIncludeIndexPath(string.Empty));
+
+            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => containerSettings.WithExcludeIndexPath(null));
+            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => containerSettings.WithExcludeIndexPath(string.Empty));
+
+            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => containerSettings.WithSpatialIndex(null));
+            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => CompositePathDefinition.Create("ABC", CompositePathSortOrder.Descending));
+
+            CosmosContainerSettingsTests.AssertException<ArgumentOutOfRangeException>(() => containerSettings.WithCompositeIndex(string.Empty));
+            CosmosContainerSettingsTests.AssertException<ArgumentOutOfRangeException>(() => containerSettings.WithCompositeIndex("abc", null));
+            CosmosContainerSettingsTests.AssertException<ArgumentOutOfRangeException>(() => containerSettings.WithCompositeIndex(null, CompositePathDefinition.Create("ABC", CompositePathSortOrder.Descending)));
+        }
+
+        public static void AssertException<T>(Action action) where T : Exception
+        {
+            try
+            {
+                action();
+            }
+            catch(T)
+            {
+            }
         }
     }
 }

@@ -36,8 +36,25 @@ namespace Microsoft.Azure.Cosmos
     /// For example if you want to run a query like "SELECT * FROM c ORDER BY c.age, c.height",
     /// then you need to add "/age" and "/height" as composite paths to your composite index.
     /// </summary>
-    public sealed class CompositePath 
+    public sealed class CompositePathDefinition 
     {
+        /// <summary>
+        /// Creates a new instance of CompositePathDefinition with given path and sort-order
+        /// </summary>
+        public static CompositePathDefinition Create(string path, CompositePathSortOrder sortOrder)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException($"{nameof(path)}");
+            }
+
+            return new CompositePathDefinition()
+            {
+                Path = path,
+                Order = sortOrder,
+            };
+        }
+
         /// <summary>
         /// Gets or sets the full path in a document used for composite indexing.
         /// We do not support wildcards in the path.

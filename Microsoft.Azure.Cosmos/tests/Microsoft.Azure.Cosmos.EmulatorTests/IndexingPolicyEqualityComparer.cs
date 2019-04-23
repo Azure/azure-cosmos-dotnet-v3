@@ -9,11 +9,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
 
     #region EqualityComparers
-    internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
+    internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePathDefinition>
     {
         public static readonly CompositePathEqualityComparer Singleton = new CompositePathEqualityComparer();
 
-        public bool Equals(CompositePath compositePath1, CompositePath compositePath2)
+        public bool Equals(CompositePathDefinition compositePath1, CompositePathDefinition compositePath2)
         {
             if (Object.ReferenceEquals(compositePath1, compositePath2))
             {
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        public int GetHashCode(CompositePath compositePath)
+        public int GetHashCode(CompositePathDefinition compositePath)
         {
             if (compositePath == null)
             {
@@ -44,11 +44,11 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 
-    internal sealed class CompositePathsEqualityComparer : IEqualityComparer<HashSet<CompositePath>>
+    internal sealed class CompositePathsEqualityComparer : IEqualityComparer<HashSet<CompositePathDefinition>>
     {
         public static readonly CompositePathsEqualityComparer Singleton = new CompositePathsEqualityComparer();
         private static readonly CompositePathEqualityComparer compositePathEqualityComparer = new CompositePathEqualityComparer();
-        public bool Equals(HashSet<CompositePath> compositePaths1, HashSet<CompositePath> compositePaths2)
+        public bool Equals(HashSet<CompositePathDefinition> compositePaths1, HashSet<CompositePathDefinition> compositePaths2)
         {
             if (Object.ReferenceEquals(compositePaths1, compositePaths2))
             {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             return compositePaths1.SetEquals(compositePaths2);
         }
 
-        public int GetHashCode(HashSet<CompositePath> obj)
+        public int GetHashCode(HashSet<CompositePathDefinition> obj)
         {
             if (obj == null)
             {
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             int hashCode = 0;
-            foreach (CompositePath compositePath in obj)
+            foreach (CompositePathDefinition compositePath in obj)
             {
                 hashCode ^= compositePathEqualityComparer.GetHashCode(compositePath);
             }
@@ -80,12 +80,12 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 
-    internal sealed class CompositeIndexesEqualityComparer : IEqualityComparer<Collection<Collection<CompositePath>>>
+    internal sealed class CompositeIndexesEqualityComparer : IEqualityComparer<Collection<Collection<CompositePathDefinition>>>
     {
         private static readonly CompositePathEqualityComparer compositePathEqualityComparer = new CompositePathEqualityComparer();
         private static readonly CompositePathsEqualityComparer compositePathsEqualityComparer = new CompositePathsEqualityComparer();
 
-        public bool Equals(Collection<Collection<CompositePath>> compositeIndexes1, Collection<Collection<CompositePath>> compositeIndexes2)
+        public bool Equals(Collection<Collection<CompositePathDefinition>> compositeIndexes1, Collection<Collection<CompositePathDefinition>> compositeIndexes2)
         {
             if (Object.ReferenceEquals(compositeIndexes1, compositeIndexes2))
             {
@@ -97,30 +97,30 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            HashSet<HashSet<CompositePath>> hashedCompositeIndexes1 = new HashSet<HashSet<CompositePath>>(compositePathsEqualityComparer);
-            HashSet<HashSet<CompositePath>> hashedCompositeIndexes2 = new HashSet<HashSet<CompositePath>>(compositePathsEqualityComparer);
+            HashSet<HashSet<CompositePathDefinition>> hashedCompositeIndexes1 = new HashSet<HashSet<CompositePathDefinition>>(compositePathsEqualityComparer);
+            HashSet<HashSet<CompositePathDefinition>> hashedCompositeIndexes2 = new HashSet<HashSet<CompositePathDefinition>>(compositePathsEqualityComparer);
 
-            foreach (Collection<CompositePath> compositePaths in compositeIndexes1)
+            foreach (Collection<CompositePathDefinition> compositePaths in compositeIndexes1)
             {
-                HashSet<CompositePath> hashedCompositePaths = new HashSet<CompositePath>(compositePaths, compositePathEqualityComparer);
+                HashSet<CompositePathDefinition> hashedCompositePaths = new HashSet<CompositePathDefinition>(compositePaths, compositePathEqualityComparer);
                 hashedCompositeIndexes1.Add(hashedCompositePaths);
             }
 
-            foreach (Collection<CompositePath> compositePaths in compositeIndexes2)
+            foreach (Collection<CompositePathDefinition> compositePaths in compositeIndexes2)
             {
-                HashSet<CompositePath> hashedCompositePaths = new HashSet<CompositePath>(compositePaths, compositePathEqualityComparer);
+                HashSet<CompositePathDefinition> hashedCompositePaths = new HashSet<CompositePathDefinition>(compositePaths, compositePathEqualityComparer);
                 hashedCompositeIndexes2.Add(hashedCompositePaths);
             }
 
             return hashedCompositeIndexes1.SetEquals(hashedCompositeIndexes2);
         }
 
-        public int GetHashCode(Collection<Collection<CompositePath>> compositeIndexes)
+        public int GetHashCode(Collection<Collection<CompositePathDefinition>> compositeIndexes)
         {
             int hashCode = 0;
-            foreach (Collection<CompositePath> compositePaths in compositeIndexes)
+            foreach (Collection<CompositePathDefinition> compositePaths in compositeIndexes)
             {
-                HashSet<CompositePath> hashedCompositePaths = new HashSet<CompositePath>(compositePaths, compositePathEqualityComparer);
+                HashSet<CompositePathDefinition> hashedCompositePaths = new HashSet<CompositePathDefinition>(compositePaths, compositePathEqualityComparer);
                 hashCode = hashCode ^ compositePathsEqualityComparer.GetHashCode(hashedCompositePaths);
             }
 
@@ -128,11 +128,11 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 
-    internal sealed class SpatialSpecEqualityComparer : IEqualityComparer<SpatialSpec>
+    internal sealed class SpatialSpecEqualityComparer : IEqualityComparer<SpatialIndexDefinition>
     {
         public static readonly SpatialSpecEqualityComparer Singleton = new SpatialSpecEqualityComparer();
 
-        public bool Equals(SpatialSpec spatialSpec1, SpatialSpec spatialSpec2)
+        public bool Equals(SpatialIndexDefinition spatialSpec1, SpatialIndexDefinition spatialSpec2)
         {
             if (object.ReferenceEquals(spatialSpec1, spatialSpec2))
             {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public int GetHashCode(SpatialSpec spatialSpec)
+        public int GetHashCode(SpatialIndexDefinition spatialSpec)
         {
             int hashCode = 0;
             hashCode ^= spatialSpec.Path.GetHashCode();
@@ -173,11 +173,11 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 
-    internal sealed class AdditionalSpatialIndexesEqualityComparer : IEqualityComparer<Collection<SpatialSpec>>
+    internal sealed class AdditionalSpatialIndexesEqualityComparer : IEqualityComparer<Collection<SpatialIndexDefinition>>
     {
         private static readonly SpatialSpecEqualityComparer spatialSpecEqualityComparer = new SpatialSpecEqualityComparer();
 
-        public bool Equals(Collection<SpatialSpec> additionalSpatialIndexes1, Collection<SpatialSpec> additionalSpatialIndexes2)
+        public bool Equals(Collection<SpatialIndexDefinition> additionalSpatialIndexes1, Collection<SpatialIndexDefinition> additionalSpatialIndexes2)
         {
             if (object.ReferenceEquals(additionalSpatialIndexes1, additionalSpatialIndexes2))
             {
@@ -189,16 +189,16 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            HashSet<SpatialSpec> hashedAdditionalSpatialIndexes1 = new HashSet<SpatialSpec>(additionalSpatialIndexes1, spatialSpecEqualityComparer);
-            HashSet<SpatialSpec> hashedAdditionalSpatialIndexes2 = new HashSet<SpatialSpec>(additionalSpatialIndexes2, spatialSpecEqualityComparer);
+            HashSet<SpatialIndexDefinition> hashedAdditionalSpatialIndexes1 = new HashSet<SpatialIndexDefinition>(additionalSpatialIndexes1, spatialSpecEqualityComparer);
+            HashSet<SpatialIndexDefinition> hashedAdditionalSpatialIndexes2 = new HashSet<SpatialIndexDefinition>(additionalSpatialIndexes2, spatialSpecEqualityComparer);
 
             return hashedAdditionalSpatialIndexes1.SetEquals(additionalSpatialIndexes2);
         }
 
-        public int GetHashCode(Collection<SpatialSpec> additionalSpatialIndexes)
+        public int GetHashCode(Collection<SpatialIndexDefinition> additionalSpatialIndexes)
         {
             int hashCode = 0;
-            foreach (SpatialSpec spatialSpec in additionalSpatialIndexes)
+            foreach (SpatialIndexDefinition spatialSpec in additionalSpatialIndexes)
             {
                 hashCode = hashCode ^ spatialSpecEqualityComparer.GetHashCode(spatialSpec);
             }
