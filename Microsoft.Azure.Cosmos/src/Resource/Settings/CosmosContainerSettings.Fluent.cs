@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
             Collection<CompositePathDefinition> compositePathsCollection = new Collection<CompositePathDefinition>();
             for (int i=0; i < compositeIndexPaths.Length; i++)
             {
-                if (compositeIndexPaths[i] == null || String.IsNullOrEmpty(compositeIndexPaths[i].Path))
+                if (string.IsNullOrEmpty(compositeIndexPaths[i]?.Path))
                 {
                     throw new ArgumentOutOfRangeException($"{nameof(compositeIndexPaths)} has null or empty path at position {i}");
                 }
