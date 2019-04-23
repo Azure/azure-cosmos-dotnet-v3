@@ -39,10 +39,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     long estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
                     await this.dispatcher.DispatchEstimation(estimation, cancellationToken);
                 }
-                catch (DocumentClientException clientException)
+                catch (CosmosException clientException)
                 {
                     this.logger.WarnException("exception within estimator", clientException);
-                    DocDbError docDbError = ExceptionClassifier.ClassifyClientException(clientException);
+                    DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(clientException.StatusCode, (SubStatusCodes)clientException.SubStatusCode);
                     switch (docDbError)
                     {
                         case DocDbError.Undefined:
@@ -50,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         case DocDbError.PartitionNotFound:
                         case DocDbError.PartitionSplit:
                         case DocDbError.TransientError:
-                            // Retry on transient (429) errors
                             break;
                         default:
                             this.logger.Fatal($"Unrecognized DocDbError enum value {docDbError}");
@@ -58,8 +57,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                             throw;
                     }
 
-                    if (clientException.RetryAfter != TimeSpan.Zero)
-                        delay = clientException.RetryAfter;
+                    if (clientException.TryGetHeader(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfterString))
+                    {
+                        TimeSpan? retryAfter = CosmosResponseMessageHeaders.GetRetryAfter(retryAfterString);
+                        if (retryAfter != TimeSpan.Zero)
+                        {
+                            delay = retryAfter.Value;
+                        }
+                    }
                 }
                 catch (TaskCanceledException canceledException)
                 {

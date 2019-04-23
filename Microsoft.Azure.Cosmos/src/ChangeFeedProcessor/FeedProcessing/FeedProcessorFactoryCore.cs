@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
     {
@@ -52,27 +53,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 SessionToken = this.changeFeedProcessorOptions.SessionToken,
             };
 
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions();
-
-            if (settings.StartTime != null)
-            {
-                requestOptions.StartTime = settings.StartTime;
-            }
-            else if (settings.StartFromBeginning)
-            {
-                requestOptions.StartTime = DateTime.MinValue;
-            }
-
-            // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = lease.CurrentLeaseToken;
 
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
-            CosmosChangeFeedPartitionKeyResultSetIteratorCore iterator = new CosmosChangeFeedPartitionKeyResultSetIteratorCore(
+            CosmosChangeFeedPartitionKeyResultSetIteratorCore iterator = ResultSetIteratorUtils.BuildResultSetIterator(
                 partitionKeyRangeId: partitionKeyRangeId,
                 continuationToken: settings.StartContinuation,
                 maxItemCount: settings.MaxItemCount,
                 cosmosContainer: (CosmosContainerCore)this.container,
-                options: requestOptions);
+                startTime: settings.StartTime,
+                startFromBeginning: settings.StartFromBeginning);
+
             return new FeedProcessorCore<T>(observer, iterator, settings, checkpointer, this.cosmosJsonSerializer);
         }
     }
