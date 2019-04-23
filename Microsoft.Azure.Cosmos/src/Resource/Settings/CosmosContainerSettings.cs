@@ -107,8 +107,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in container in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
-        public virtual UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        public virtual UniqueKeyPolicy UniqueKeyPolicy { get; set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         /// The indexing policy associated with the container.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
-        public virtual IndexingPolicy IndexingPolicy { get; set; } = new IndexingPolicy();
+        public virtual IndexingPolicy IndexingPolicy { get; set; }
 
         /// <summary>
         /// JSON path used for containers partitioning
@@ -330,6 +330,16 @@ namespace Microsoft.Azure.Cosmos
             if (this.PartitionKey == null || this.PartitionKey.Paths.Count == 0)
             {
                 throw new ArgumentNullException(nameof(PartitionKey));
+            }
+
+            // HACK: Till service can handle the defaults 
+            // If indexing mode is not 'none' and not paths are set, set them to the defaults
+            if (this.IndexingPolicy != null 
+                && this.IndexingPolicy.IndexingMode != IndexingMode.None
+                && this.IndexingPolicy.IncludedPaths.Count == 0
+                && this.IndexingPolicy.ExcludedPaths.Count == 0)
+            {
+                this.IndexingPolicy.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
             }
         }
     }
