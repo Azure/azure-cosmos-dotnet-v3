@@ -157,8 +157,6 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
             CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
-            request.Headers.Continuation = this.RequestContinuation;
-
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
             {

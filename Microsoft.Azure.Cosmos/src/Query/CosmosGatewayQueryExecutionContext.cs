@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.queryContext = cosmosQueryContext;
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(SinglePartitionKeyId);
+            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator();
             this.retries = -1;
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (!string.IsNullOrEmpty(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
+                            CosmosGatewayQueryExecutionContext.SinglePartitionKeyId,
                             response.ActivityId,
                             response.Count,
                             this.retries);
@@ -146,10 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     requestEnricher: (cosmosRequestMessage) =>
                     {
                         cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.FalseString);
-                    },
-                    requestOptionsEnricher: (queryRequestOptions) =>
-                    {
-                        queryRequestOptions.RequestContinuation = this.ContinuationToken;
+                        CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.ContinuationToken);
                     });
             }
 
@@ -163,10 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     cosmosRequestMessage.UseGatewayMode = true;
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
-                },
-                requestOptionsEnricher: (queryRequestOptions) =>
-                {
-                    queryRequestOptions.RequestContinuation = this.ContinuationToken;
+                    CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.ContinuationToken);
                 });
         }
 

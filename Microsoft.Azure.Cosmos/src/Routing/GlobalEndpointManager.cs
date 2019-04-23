@@ -8,23 +8,26 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on 
-    /// avaialbility and preference list.
+    /// availability and preference list.
     /// </summary>
     /// Marking it as non-sealed in order to unit test it using Moq framework
     internal class GlobalEndpointManager : IDisposable
     {
-        private static int defaultbackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
+        private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
-        private int backgroundRefreshLocationTimeIntervalInMS = defaultbackgroundRefreshLocationTimeIntervalInMS;
+        private int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly LocationCache locationCache;
         private readonly Uri defaultEndpoint;
         private readonly ConnectionPolicy connectionPolicy;
@@ -32,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly object refreshLock;
         private readonly AsyncCache<string, CosmosAccountSettings> databaseAccountCache;
         private bool isRefreshing;
-        private bool isDisposed;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
         {
@@ -51,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
 
             this.isRefreshing = false;
-            this.isDisposed = false;
             this.refreshLock = new object();
 #if !(NETSTANDARD15 || NETSTANDARD16)
             string backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (!int.TryParse(backgroundRefreshLocationTimeIntervalInMSConfig, out this.backgroundRefreshLocationTimeIntervalInMS))
                 {
-                    this.backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.defaultbackgroundRefreshLocationTimeIntervalInMS;
+                    this.backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
                 }
             }
 #endif
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async static Task<CosmosAccountSettings> GetDatabaseAccountFromAnyLocationsAsync(
+        public static async Task<CosmosAccountSettings> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint, IList<string> locations, Func<Uri, Task<CosmosAccountSettings>> getDatabaseAccountFn)
         {
             try
@@ -154,11 +155,23 @@ namespace Microsoft.Azure.Cosmos.Routing
         public void Dispose()
         {
             this.connectionPolicy.PreferenceChanged -= this.OnPreferenceChanged;
-            this.isDisposed = true;
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                // This can cause task canceled exceptions if the user disposes of the object while awaiting an async call.
+                this.cancellationTokenSource.Cancel();
+                // The background timer task can hit a ObjectDisposedException but it's an async background task
+                // that is never awaited on so it will not be thrown back to the caller.
+                this.cancellationTokenSource.Dispose();
+            }
         }
 
         public async Task RefreshLocationAsync(CosmosAccountSettings databaseAccount, bool forceRefresh = false)
         {
+            if (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                return;
+            }
+
             if (forceRefresh)
             {
                 CosmosAccountSettings refreshedDatabaseAccount = await this.RefreshDatabaseAccountInternalAsync();
@@ -187,6 +200,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private async Task RefreshLocationPrivateAsync(CosmosAccountSettings databaseAccount)
         {
+            if (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                return;
+            }
+
             DefaultTrace.TraceInformation("RefreshLocationAsync() refreshing locations");
 
             if (databaseAccount != null)
@@ -210,18 +228,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.isRefreshing = false;
             }
-        }    
+        }
 
+        [SuppressMessage("", "AsyncFixer03", Justification = "Async start is by-design")]
         private async void StartRefreshLocationTimerAsync()
         {
-            if (this.isDisposed)
+            if (this.cancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
 
             try
             {
-                await Task.Delay(this.backgroundRefreshLocationTimeIntervalInMS);
+                await Task.Delay(this.backgroundRefreshLocationTimeIntervalInMS, this.cancellationTokenSource.Token);
 
                 DefaultTrace.TraceInformation("StartRefreshLocationTimerAsync() - Invoking refresh");
 
@@ -231,14 +250,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
+                if (this.cancellationTokenSource.IsCancellationRequested && (ex is TaskCanceledException || ex is ObjectDisposedException))
+                {
+                    return;
+                }
+
                 DefaultTrace.TraceCritical("StartRefreshLocationTimerAsync() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
+
                 this.StartRefreshLocationTimerAsync();
             }
         }
 
         private Task<CosmosAccountSettings> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
-            return this.owner.GetDatabaseAccountInternalAsync(serviceEndpoint);
+            return this.owner.GetDatabaseAccountInternalAsync(serviceEndpoint, this.cancellationTokenSource.Token);
         }
 
         private void OnPreferenceChanged(object sender, NotifyCollectionChangedEventArgs e)
@@ -249,16 +274,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private Task<CosmosAccountSettings> RefreshDatabaseAccountInternalAsync()
         {
-            this.databaseAccountCache.Refresh(
-                string.Empty,
-                () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync),
-                CancellationToken.None);
-
             return this.databaseAccountCache.GetAsync(
                 string.Empty,
                 null,
                 () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync),
-                CancellationToken.None);
+                this.cancellationTokenSource.Token,
+                forceRefresh: true);
         }
     }
 }

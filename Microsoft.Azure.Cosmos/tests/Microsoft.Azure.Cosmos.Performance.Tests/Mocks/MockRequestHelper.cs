@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (request.OperationType == OperationType.Create 
                 || request.OperationType == OperationType.Replace 
                 || request.OperationType == OperationType.Upsert 
-                || request.OperationType == OperationType.Update)
+                || request.OperationType == OperationType.Patch)
             {
                 response = new DocumentServiceResponse(
                         File.OpenRead("samplepayload.json"),
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (request.OperationType == OperationType.Create
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Upsert
-                || request.OperationType == OperationType.Update)
+                || request.OperationType == OperationType.Patch)
             {
                 response = new StoreResponse()
                 {

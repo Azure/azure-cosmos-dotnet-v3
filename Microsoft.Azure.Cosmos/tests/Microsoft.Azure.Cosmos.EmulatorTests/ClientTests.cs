@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.IO;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Internal;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -19,14 +19,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class ClientTests
     {
         [TestMethod]
-        public void ResourceResponseStreamingTest()
+        public async Task ResourceResponseStreamingTest()
         {
             using (DocumentClient client = TestCommon.CreateClient(true))
             {
 
-                Database db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-                DocumentCollection coll = TestCommon.CreateCollectionAsync(client, db, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
-                ResourceResponse<Document> doc = client.CreateDocumentAsync(coll.SelfLink, new Document() { Id = Guid.NewGuid().ToString() }).Result;
+                Database db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
+                DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, db, new DocumentCollection()
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            PartitionKey = new PartitionKeyDefinition()
+                            {
+                                Paths = new System.Collections.ObjectModel.Collection<string>() { "/id" }
+                            }
+                        });
+                ResourceResponse<Document> doc = await client.CreateDocumentAsync(coll.SelfLink, new Document() { Id = Guid.NewGuid().ToString() });
 
                 Assert.AreEqual(doc.ResponseStream.Position, 0);
 
@@ -48,64 +55,65 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void TestEtagOnUpsertOperationForHttpsClient()
+        public async Task TestEtagOnUpsertOperationForHttpsClient()
         {
-            using (DocumentClient client = TestCommon.CreateClient(false, Protocol.Https))
-            {
-                this.TestEtagOnUpsertOperation(client);
-            }
+            await this.TestEtagOnUpsertOperation(false, Protocol.Https);
         }
 
         [TestMethod]
-        public void TestEtagOnUpsertOperationForGatewayClient()
+        public async Task TestEtagOnUpsertOperationForGatewayClient()
         {
-            using (DocumentClient client = TestCommon.CreateClient(true))
-            {
-                this.TestEtagOnUpsertOperation(client);
-            }
+            await this.TestEtagOnUpsertOperation(true);
         }
 
         [TestMethod]
-        public void TestEtagOnUpsertOperationForDirectTCPClient()
+        public async Task TestEtagOnUpsertOperationForDirectTCPClient()
+        {
+            await this.TestEtagOnUpsertOperation(false, Protocol.Tcp);
+        }
+
+        internal async Task TestEtagOnUpsertOperation(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             using (DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp))
             {
-                this.TestEtagOnUpsertOperation(client);
-            }
-        }
+                Database db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
+                DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, db, new DocumentCollection()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PartitionKey = new PartitionKeyDefinition()
+                    {
+                        Paths = new System.Collections.ObjectModel.Collection<string>() { "/id" }
+                    }
+                });
 
-        internal void TestEtagOnUpsertOperation(DocumentClient client)
-        {
-            Database db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
-            DocumentCollection coll = TestCommon.CreateCollectionAsync(client, db, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
+                LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
+                myBook.Id = Guid.NewGuid().ToString();
+                myBook.Title = "Azure DocumentDB 101";
 
-            LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
-            myBook.Id = Guid.NewGuid().ToString();
-            myBook.Title = "Azure DocumentDB 101";
+                Document doc = (await client.CreateDocumentAsync(coll.SelfLink, myBook)).Resource;
 
-            Document doc = client.CreateDocumentAsync(coll.SelfLink, myBook).Result.Resource;
+                myBook.Title = "Azure DocumentDB 201";
+                await client.ReplaceDocumentAsync(doc.SelfLink, myBook);
 
-            myBook.Title = "Azure DocumentDB 201";
-            client.ReplaceDocumentAsync(doc.SelfLink, myBook).Wait();
+                AccessCondition condition = new AccessCondition();
+                condition.Type = AccessConditionType.IfMatch;
+                condition.Condition = doc.ETag;
 
-            AccessCondition condition = new AccessCondition();
-            condition.Type = AccessConditionType.IfMatch;
-            condition.Condition = doc.ETag;
+                RequestOptions requestOptions = new RequestOptions();
+                requestOptions.AccessCondition = condition;
 
-            RequestOptions requestOptions = new RequestOptions();
-            requestOptions.AccessCondition = condition;
+                myBook.Title = "Azure DocumentDB 301";
 
-            myBook.Title = "Azure DocumentDB 301";
-
-            try
-            {
-                client.UpsertDocumentAsync(coll.SelfLink, myBook, requestOptions).Wait();
-                Assert.Fail("Upsert Document should fail since the Etag is not matching.");
-            }
-            catch (Exception ex)
-            {
-                var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.PreconditionFailed, "Invalid status code");
+                try
+                {
+                    await client.UpsertDocumentAsync(coll.SelfLink, myBook, requestOptions);
+                    Assert.Fail("Upsert Document should fail since the Etag is not matching.");
+                }
+                catch (Exception ex)
+                {
+                    var innerException = ex as DocumentClientException;
+                    Assert.AreEqual(HttpStatusCode.PreconditionFailed, innerException.StatusCode, "Invalid status code");
+                }
             }
         }
 

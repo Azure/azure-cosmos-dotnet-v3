@@ -7,7 +7,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <ClientVersion>3.0.0.10-preview</ClientVersion>
-    <DirectVersion>3.0.0.22-preview</DirectVersion>	
+    <DirectVersion>3.0.0.25-preview</DirectVersion>	
     <Version Condition=" '$(IsNightly)' == '1' ">$(ClientVersion)-nightly$(CurrentDate)</Version>
     <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(ClientVersion)</Version>
     <FileVersion>$(VersionPrefix)</FileVersion>

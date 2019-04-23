@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A database link in the format of /dbs/{0}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/>
         /// </returns>
-        /// <remarks>Would be used when creating or deleting a <see cref="CosmosContainerSettings"/> or a <see cref="User"/> in Azure Cosmos DB.</remarks>
+        /// <remarks>Would be used when creating or deleting a <see cref="DocumentCollection"/> or a <see cref="User"/> in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateDatabaseUri(string databaseId)
         {
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A collection link in the format of /dbs/{0}/colls/{1}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/> and {1} being <paramref name="collectionId"/>
         /// </returns>
-        /// <remarks>Would be used when updating or deleting a <see cref="CosmosContainerSettings"/>, creating a <see cref="Document"/>, a <see cref="CosmosStoredProcedureSettings"/>, a <see cref="CosmosTriggerSettings"/>, a <see cref="CosmosUserDefinedFunctionSettings"/>, or when executing a query with CreateDocumentQuery in Azure Cosmos DB.</remarks>
+        /// <remarks>Would be used when updating or deleting a <see cref="DocumentCollection"/>, creating a <see cref="Document"/>, a <see cref="StoredProcedure"/>, a <see cref="Trigger"/>, a <see cref="UserDefinedFunction"/>, or when executing a query with CreateDocumentQuery in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         [Obsolete("CreateCollectionUri method is deprecated, please use CreateDocumentCollectionUri method instead.")]
         static public Uri CreateCollectionUri(string databaseId, string collectionId)
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A collection link in the format of /dbs/{0}/colls/{1}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/> and {1} being <paramref name="collectionId"/>
         /// </returns>
-        /// <remarks>Would be used when updating or deleting a <see cref="CosmosContainerSettings"/>, creating a <see cref="Document"/>, a <see cref="CosmosStoredProcedureSettings"/>, a <see cref="CosmosTriggerSettings"/>, a <see cref="CosmosUserDefinedFunctionSettings"/>, or when executing a query with CreateDocumentQuery in Azure Cosmos DB.</remarks>
+        /// <remarks>Would be used when updating or deleting a <see cref="DocumentCollection"/>, creating a <see cref="Document"/>, a <see cref="StoredProcedure"/>, a <see cref="Trigger"/>, a <see cref="UserDefinedFunction"/>, or when executing a query with CreateDocumentQuery in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateDocumentCollectionUri(string databaseId, string collectionId)
         {
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A stored procedure link in the format of /dbs/{0}/colls/{1}/sprocs/{2}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/>, {1} being <paramref name="collectionId"/> and {2} being the <paramref name="storedProcedureId"/>
         /// </returns>
-        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="CosmosStoredProcedureSettings"/> in Azure Cosmos DB.</remarks>
+        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="StoredProcedure"/> in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateStoredProcedureUri(string databaseId, string collectionId, string storedProcedureId)
         {
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A stored procedure link in the format of {0}/sprocs/{1}/ with {0} being <paramref name="documentCollectionLink"/> and {1} being <paramref name="storedProcedureId"/>
         /// </returns>
-        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="CosmosStoredProcedureSettings"/> in Azure DocumentDB.</remarks>
+        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="StoredProcedure"/> in Azure DocumentDB.</remarks>
         static internal Uri CreateStoredProcedureUri(string documentCollectionLink, string storedProcedureId)
         {
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}",
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A trigger link in the format of /dbs/{0}/colls/{1}/triggers/{2}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/>, {1} being <paramref name="collectionId"/> and {2} being the <paramref name="triggerId"/>
         /// </returns>
-        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="CosmosTriggerSettings"/> in Azure Cosmos DB.</remarks>
+        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="Trigger"/> in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateTriggerUri(string databaseId, string collectionId, string triggerId)
         {
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A udf link in the format of /dbs/{0}/colls/{1}/udfs/{2}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/>, {1} being <paramref name="collectionId"/> and {2} being the <paramref name="udfId"/>
         /// </returns>
-        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="CosmosUserDefinedFunctionSettings"/> in Azure Cosmos DB.</remarks>
+        /// <remarks>Would be used when replacing, executing, or deleting a <see cref="UserDefinedFunction"/> in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateUserDefinedFunctionUri(string databaseId, string collectionId, string udfId)
         {

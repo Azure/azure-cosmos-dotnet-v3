@@ -5,12 +5,17 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.Globalization;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// This retry policy is designed to work with in a pair with ClientRetryPolicy.
@@ -38,45 +43,46 @@ namespace Microsoft.Azure.Cosmos
             this.retryPolicy.OnBeforeSendRequest(request);
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
+        public async Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
+            ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(exception, cancellationToken);
+
             DocumentClientException clientException = exception as DocumentClientException;
 
-            return this.ShouldRetryInternalAsync(
+            return await this.ShouldRetryInternalAsync(
                 clientException?.StatusCode,
                 clientException?.GetSubStatus(),
-                this.retryPolicy.ShouldRetryAsync(exception, cancellationToken),
+                shouldRetry,
                 cancellationToken);
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
+            CosmosResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            return this.ShouldRetryInternalAsync(
+            ShouldRetryResult shouldRetryResult = await this.retryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+            return await this.ShouldRetryInternalAsync(
                 cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
-                this.retryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
+                shouldRetryResult,
                 cancellationToken);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
-            Task<ShouldRetryResult> chainedRetryTask,
+            ShouldRetryResult shouldRetryResult,
             CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetry = await chainedRetryTask;
-
             if (this.request == null)
             {
-                DefaultTrace.TraceCritical("Cannot apply RenameCollectionAwareClientRetryPolicy as OnBeforeSendRequest has not been called and there is no DocumentServiceRequest context. Status Code {0} Sub Status Code {1}", 
-                    statusCode.HasValue? statusCode.Value : 0,
-                    subStatusCode.HasValue ? subStatusCode.Value : SubStatusCodes.Unknown);
-                return shouldRetry;
+                // someone didn't call OnBeforeSendRequest - nothing we can do
+                DefaultTrace.TraceCritical("Cannot apply RenameCollectionAwareClientRetryPolicy as OnBeforeSendRequest has not been called and there is no DocumentServiceRequest context.");
+                return shouldRetryResult;
             }
 
-            if (!shouldRetry.ShouldRetry && !this.hasTriggered && statusCode.HasValue && subStatusCode.HasValue)
+            Debug.Assert(shouldRetryResult != null);
+            if (!shouldRetryResult.ShouldRetry && !this.hasTriggered && statusCode.HasValue && subStatusCode.HasValue)
             {
                 if (this.request.IsNameBased &&
                     statusCode.Value == HttpStatusCode.NotFound &&
@@ -120,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return shouldRetry;
+            return shouldRetryResult;
         }
     }
 }

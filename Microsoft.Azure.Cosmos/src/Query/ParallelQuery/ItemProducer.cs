@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(this.PartitionKeyRange.Id);
+            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator();
 
             this.HasMoreResults = true;
         }
@@ -326,14 +326,12 @@ namespace Microsoft.Azure.Cosmos.Query
                             {
                                 this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage);
                                 cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
-                            },
-                            requestOptionsEnricher: (queryRequestOptions) =>
-                            {
-                                queryRequestOptions.MaxItemCount = pageSize;
-                                queryRequestOptions.RequestContinuation = this.BackendContinuationToken;
+                                CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.BackendContinuationToken);
+                                CosmosQueryRequestOptions.FillMaxItemCount(cosmosRequestMessage, pageSize);
                             });
 
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
+                            this.PartitionKeyRange.Id,
                             feedResponse.ActivityId,
                             feedResponse.Count,
                             retries);

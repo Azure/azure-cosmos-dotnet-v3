@@ -46,6 +46,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ContainerContractTest()
+        {
+            CosmosContainerResponse response = await this.cosmosDatabase.Containers.CreateContainerAsync(new Guid().ToString(), "/id");
+            Assert.IsNotNull(response);
+            Assert.IsTrue(response.RequestCharge > 0);
+            Assert.IsNotNull(response.Headers);
+            Assert.IsNotNull(response.Headers.ActivityId);
+
+            CosmosContainerSettings containerSettings = response.Resource;
+            Assert.IsNotNull(containerSettings.Id);
+            Assert.IsNotNull(containerSettings.ResourceId);
+            Assert.IsNotNull(containerSettings.ETag);
+            Assert.IsTrue(containerSettings.LastModified.HasValue);
+
+            Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
+        }
+
+        [TestMethod]
         public async Task PartitionedCRUDTest()
         {
             string containerName = Guid.NewGuid().ToString();
@@ -270,8 +288,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
 
+            containerName = Guid.NewGuid().ToString();
+            containerResponse = await this.cosmosDatabase.Containers.CreateContainerAsync(containerName, partitionKeyPath);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+
             HashSet<string> containerIds = new HashSet<string>();
-            CosmosFeedResultSetIterator resultSet = this.cosmosDatabase.Containers.GetContainerStreamIterator();
+            CosmosFeedResultSetIterator resultSet = this.cosmosDatabase.Containers.GetContainerStreamIterator(
+                    maxItemCount:1,
+                    requestOptions: new CosmosQueryRequestOptions());
             while (resultSet.HasMoreResults)
             {
                 using (CosmosResponseMessage message = await resultSet.FetchNextSetAsync())

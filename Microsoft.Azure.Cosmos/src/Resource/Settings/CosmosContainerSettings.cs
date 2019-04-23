@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -119,7 +120,15 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; private set; }
+
+        /// <summary>
+        /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The last modified timestamp associated with the resource.</value>
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonConverter(typeof(UnixDateTimeConverter))]
+        public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service. 
@@ -128,13 +137,13 @@ namespace Microsoft.Azure.Cosmos
         /// The indexing policy associated with the container.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
-        public IndexingPolicy IndexingPolicy { get; set; } = new IndexingPolicy();
+        public virtual IndexingPolicy IndexingPolicy { get; set; } = new IndexingPolicy();
 
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public string PartitionKeyPath
+        public virtual string PartitionKeyPath
         {
             get
             {
@@ -197,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public TimeSpan? DefaultTimeToLive
+        public virtual TimeSpan? DefaultTimeToLive
         {
             get
             {
@@ -228,15 +237,23 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
 
         /// <summary>
+        /// The function selects the right partition key constant mapping for <see cref="NonePartitionKeyValue"/>
         /// </summary>
-        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
-        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
+        internal PartitionKeyInternal GetNoneValue()
         {
-            this.Id = id;
-            this.PartitionKey = partitionKeyDefinition;
+            if (this.PartitionKey == null)
+            {
+                throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
+            }
 
-            ValidateRequiredProperties();
+            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey.HasValue && this.PartitionKey.IsSystemKey.Value))
+            {
+                return PartitionKeyInternal.Empty;
+            }
+            else
+            {
+                return PartitionKeyInternal.Undefined;
+            }
         }
 
         /// <summary>
@@ -266,7 +283,10 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
+
         internal virtual string ResourceId { get; private set; }
+
+        internal bool HasPartitionKey => this.PartitionKey != null;
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.

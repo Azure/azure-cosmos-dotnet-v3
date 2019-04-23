@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 

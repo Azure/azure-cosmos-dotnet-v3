@@ -632,14 +632,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(collectionId, fullRange).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collectionId, ranges.First().Id));
 
-            var response = client.ReadFeedAsync(request).Result;
+            var response = client.ReadFeedAsync(request, null).Result;
             return response;
         }
 
         private DocumentServiceResponse ReadDatabaseFeedRequest(DocumentClient client, INameValueCollection headers)
         {
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.ReadFeed, null, ResourceType.Database, AuthorizationTokenType.PrimaryMasterKey, headers);
-            var response = client.ReadFeedAsync(request).Result;
+            var response = client.ReadFeedAsync(request, null).Result;
             return response;
         }
 
@@ -699,7 +699,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Create, collection.SelfLink, document, ResourceType.Document, AuthorizationTokenType.Invalid, headers, SerializationFormattingPolicy.None);
             PartitionKey partitionKey = new PartitionKey(document.Id);
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.InternalKey.ToJsonString());
-            var response = client.CreateAsync(request).Result;
+            var response = client.CreateAsync(request, null).Result;
             return response;
         }
 
@@ -751,7 +751,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, doc.SelfLink, AuthorizationTokenType.PrimaryMasterKey, headers);
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, (new PartitionKey(doc.Id)).InternalKey.ToJsonString());
-            var retrievedDocResponse = client.ReadAsync(request).Result;
+            var retrievedDocResponse = client.ReadAsync(request, null).Result;
             return retrievedDocResponse;
         }
     }

@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using System;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The body of the stored procedure.</value>
         /// <remarks>Must be a valid JavaScript function. For e.g. "function () { getContext().getResponse().setBody('Hello World!'); }"</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public string Body { get; set; }
+        public virtual string Body { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
@@ -66,7 +66,15 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; private set; }
+
+        /// <summary>
+        /// Gets the last modified timestamp associated with <see cref="CosmosStoredProcedureSettings" /> from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The last modified timestamp associated with the resource.</value>
+        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
