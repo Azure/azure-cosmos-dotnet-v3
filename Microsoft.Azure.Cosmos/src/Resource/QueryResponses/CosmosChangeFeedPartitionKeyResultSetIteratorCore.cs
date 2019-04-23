@@ -14,13 +14,13 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore : CosmosFeedResultSetIterator
     {
-        private readonly CosmosContainerCore cosmosContainer;
+        private readonly CosmosContainer cosmosContainer;
         private readonly CosmosChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
         private string partitionKeyRangeId;
 
         internal CosmosChangeFeedPartitionKeyResultSetIteratorCore(
-            CosmosContainerCore cosmosContainer,
+            CosmosContainer cosmosContainer,
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,

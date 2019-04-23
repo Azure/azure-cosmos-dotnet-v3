@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 partitionKeyRangeId: partitionKeyRangeId,
                 continuationToken: settings.StartContinuation,
                 maxItemCount: settings.MaxItemCount,
-                cosmosContainer: (CosmosContainerCore)this.container,
+                cosmosContainer: this.container,
                 startTime: settings.StartTime,
                 startFromBeginning: settings.StartFromBeginning);
 
