@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         };
 
         /// <summary>
-        /// Includes a unique key on that enforces uniqueness constraint on documents in the collection in the Azure Cosmos DB service.
+        /// Includes a unique key on that enforces uniqueness constraint on items in the container in the Azure Cosmos DB service.
         /// </summary>
         /// <seealso cref="UniqueKey"/>
         [IgnoreForUnitTest]
@@ -59,13 +59,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Set the default TTL for the container
+        /// <see cref="DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <seealso cref="CosmosContainerSettings.DefaultTimeToLive"/>
         [IgnoreForUnitTest]
-        public CosmosContainerSettings WithDefaultTimeToLive(TimeSpan defaultTtl)
+        public CosmosContainerSettings WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
-            this.DefaultTimeToLive = defaultTtl;
+            this.DefaultTimeToLive = (int)defaultTtlTimeSpan.TotalSeconds;
+            return this;
+        }
+
+        /// <summary>
+        /// <see cref="DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// The individual item could override the default time-to-live policy by setting its time to live.
+        /// </summary>
+        /// <seealso cref="CosmosContainerSettings.DefaultTimeToLive"/>
+        [IgnoreForUnitTest]
+        public CosmosContainerSettings WithDefaultTimeToLive(int defaulTtlInSeconds)
+        {
+            this.DefaultTimeToLive = defaulTtlInSeconds;
             return this;
         }
 
@@ -169,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
             Collection<CompositePathDefinition> compositePathsCollection = new Collection<CompositePathDefinition>();
             for (int i=0; i < compositeIndexPaths.Length; i++)
             {
-                if (compositeIndexPaths[i] == null || String.IsNullOrEmpty(compositeIndexPaths[i].Path))
+                if (String.IsNullOrEmpty(compositeIndexPaths[i].Path))
                 {
                     throw new ArgumentOutOfRangeException($"{nameof(compositeIndexPaths)} has null or empty path at position {i}");
                 }

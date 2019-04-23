@@ -248,18 +248,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual TimeSpan? DefaultTimeToLive
-        {
-            get
-            {
-                int? seconds = this.InternalTimeToLive;
-                return seconds != null && seconds.HasValue ? TimeSpan.FromSeconds(seconds.Value) : (TimeSpan?)null;
-            }
-            set
-            {
-                this.InternalTimeToLive = value != null && value.HasValue ? (int?)value.Value.TotalSeconds : (int?)null;
-            }
-        }
+        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive)]
+        public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents
@@ -335,12 +325,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
-
-        /// <summary>
-        /// Internal property used as a helper to convert to the back-end type int?
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive)]
-        internal int? InternalTimeToLive { get; set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.

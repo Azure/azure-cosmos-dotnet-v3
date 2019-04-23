@@ -33,6 +33,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void TestDefaultTtl()
+        {
+            CosmosContainerSettings containerSettings =
+                new CosmosContainerSettings("TestContainer", "/partitionKey")
+                .WithDefaultTimeToLive(TimeSpan.FromHours(1));
+
+            Assert.AreEqual(containerSettings.DefaultTimeToLive, TimeSpan.FromHours(1).TotalSeconds);
+
+            containerSettings =
+                new CosmosContainerSettings("TestContainer", "/partitionKey")
+                .WithDefaultTimeToLive(defaulTtlInSeconds: -1);
+
+            Assert.AreEqual(-1, TimeSpan.FromHours(1).TotalSeconds);
+        }
+
+        [TestMethod]
         public void V2Way()
         {
             IndexingPolicy ip = new IndexingPolicy();
