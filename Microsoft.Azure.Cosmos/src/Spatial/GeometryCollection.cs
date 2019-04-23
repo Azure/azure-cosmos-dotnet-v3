@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public GeometryCollection(IList<Geometry> geometries, GeometryParams geometryParams)
-            : base(GeometryShape.GeometryCollection, geometryParams)
+            : base(GeometryType.GeometryCollection, geometryParams)
         {
             if (geometries == null)
             {
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// This constructor is used only during deserialization.
         /// </remarks>
         internal GeometryCollection()
-            : base(GeometryShape.GeometryCollection, new GeometryParams())
+            : base(GeometryType.GeometryCollection, new GeometryParams())
         {
         }
 

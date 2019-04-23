@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -466,23 +467,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore /* TODO: This tests throws a "The read session is not available for the input session token" */]
-        public void CollectionDeleteAndCreateWithSameNameTest()
+        public async Task CollectionDeleteAndCreateWithSameNameTest()
         {
             // when collection name changes, the collectionName ->Id cache at the gateway need to get invalidated and refreshed.
             // This test is to verify this case is working well.
             DocumentClient client;
             client = TestCommon.CreateClient(true);
-            this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client).Wait();
+            await this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client);
 
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             client = TestCommon.CreateClient(false, Protocol.Https);
-            this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client).Wait();
+            await this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client);
             
 
             client = TestCommon.CreateClient(false, Protocol.Tcp);
-            this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client).Wait();
+            await this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client);
 #endif
         }
 
@@ -498,18 +498,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Create database and create collection
             Database database = await client.CreateDatabaseAsync(new Database() { Id = databaseId });
-            DocumentCollection coll1 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionId });
+            DocumentCollection collectionDef = new DocumentCollection()
+            {
+                Id = collectionId,
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string>() { "/id" }
+                }
+            };
+            DocumentCollection coll1 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), collectionDef);
             Document doc1 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc1Id });
             Document anotherdoc = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc2Id });
 
             // doing a read, which cause the gateway has name->Id cache.
-            Document docIgnore = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id));
+            Document docIgnore = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id), 
+                new RequestOptions() { PartitionKey = new PartitionKey(doc1Id) });
 
             // Now delete the collection:
             DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
 
             // now re-create the collection (same name, with different Rid)
-            DocumentCollection coll2 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionId });
+            DocumentCollection coll2 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), collectionDef);
             Assert.AreNotEqual(coll2.ResourceId, coll1.ResourceId);
             Assert.AreEqual(coll2.Id, coll1.Id);
 
@@ -520,13 +529,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection coll2Temp1 = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
             Assert.AreEqual(coll2Temp1.ResourceId, coll2.ResourceId);
 
-            Document doc2Temp1 = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id));
+            Document doc2Temp1 = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id),
+                    new RequestOptions() { PartitionKey = new PartitionKey(doc1Id) });
             Assert.AreEqual(doc2Temp1.ResourceId, doc2.ResourceId);
 
             //Read Document, it should fail with notFound
             try
             {
-                Document doc3 = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc2Id));
+                Document doc3 = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc2Id), 
+                    new RequestOptions() { PartitionKey = new PartitionKey(doc1Id) });
                 Assert.Fail("Should have thrown exception in here");
             }
             catch (DocumentClientException e)
@@ -1840,7 +1851,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
 
-                return new ResourceResponse<Document>(await client.CreateAsync(request));
+                return new ResourceResponse<Document>(await client.CreateAsync(request, null));
             }
         }
 

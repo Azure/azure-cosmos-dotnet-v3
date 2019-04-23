@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly byte[] keyBytes;
         private SecureString secureString;
 
-
         public StringHMACSHA256Hash(String base64EncodedKey)
         {
             this.base64EncodedKey = base64EncodedKey;
@@ -41,7 +40,11 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
-            // do nothing
+            if (this.secureString != null)
+            {
+                this.secureString.Dispose();
+                this.secureString = null;
+            }
         }
     }
 }

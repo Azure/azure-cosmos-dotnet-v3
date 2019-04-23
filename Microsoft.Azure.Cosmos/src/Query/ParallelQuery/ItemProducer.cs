@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(this.PartitionKeyRange.Id);
+            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator();
 
             this.HasMoreResults = true;
         }
@@ -331,6 +331,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             });
 
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
+                            this.PartitionKeyRange.Id,
                             feedResponse.ActivityId,
                             feedResponse.Count,
                             retries);

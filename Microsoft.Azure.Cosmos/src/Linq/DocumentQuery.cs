@@ -12,14 +12,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class DocumentQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
@@ -334,9 +331,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             return new Uri(this.client.ServiceEndpoint, this.documentsFeedOrDatabaseLink).ToString();
         }
 
-        private async Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(bool isContinuationExpected, CancellationToken cancellationToken)
+        private Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(bool isContinuationExpected, CancellationToken cancellationToken)
         {
-            return await DocumentQueryExecutionContextFactory.CreateDocumentQueryExecutionContextAsync(
+            return DocumentQueryExecutionContextFactory.CreateDocumentQueryExecutionContextAsync(
                 this.client,
                 this.resourceTypeEnum,
                 this.resourceType,
@@ -352,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             List<T> result = new List<T>();
             using (IDocumentQueryExecutionContext localQueryExecutionContext =
-                await TaskHelper.InlineIfPossible(async () => await this.CreateDocumentQueryExecutionContextAsync(false, cancellationToken), null, cancellationToken))
+                await TaskHelper.InlineIfPossible(() => this.CreateDocumentQueryExecutionContextAsync(false, cancellationToken), null, cancellationToken))
             {
                 while (!localQueryExecutionContext.IsDone)
                 {

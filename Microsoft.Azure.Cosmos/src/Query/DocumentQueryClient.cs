@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Routing;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
 
     internal sealed class DocumentQueryClient : IDocumentQueryClient
@@ -108,14 +108,14 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.queryPartitionProvider;
         }
 
-        public async Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            return await this.innerClient.ExecuteQueryAsync(request, cancellationToken);
+            return this.innerClient.ExecuteQueryAsync(request, retryPolicyInstance, cancellationToken);
         }
 
-        public async Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            return await this.innerClient.ReadFeedAsync(request, cancellationToken);
+            return this.innerClient.ReadFeedAsync(request, retryPolicyInstance, cancellationToken);
         }
 
         public async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
@@ -123,9 +123,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return (ConsistencyLevel)await this.innerClient.GetDefaultConsistencyLevelAsync();
         }
 
-        public async Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
+        public Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
-            return await this.innerClient.GetDesiredConsistencyLevelAsync();
+            return this.innerClient.GetDesiredConsistencyLevelAsync();
         }
 
         public Task EnsureValidOverwrite(ConsistencyLevel requestedConsistencyLevel)
@@ -134,9 +134,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return CompletedTask.Instance;
         }
 
-        public async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
+        public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
         {
-            return await this.innerClient.GetPartitionKeyRangeCacheAsync();
+            return this.innerClient.GetPartitionKeyRangeCacheAsync();
         }
     }
 }
