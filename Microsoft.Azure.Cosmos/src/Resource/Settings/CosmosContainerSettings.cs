@@ -194,14 +194,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
-        /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>The last modified timestamp associated with the resource.</value>
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
-        [JsonConverter(typeof(UnixDateTimeConverter))]
-        public virtual DateTime? LastModified { get; }
-
-        /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
