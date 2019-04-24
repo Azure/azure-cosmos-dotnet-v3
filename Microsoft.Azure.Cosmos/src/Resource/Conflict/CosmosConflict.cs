@@ -19,23 +19,10 @@ namespace Microsoft.Azure.Cosmos
     public abstract class CosmosConflict : CosmosIdentifier
     {
         /// <summary>
-        /// Gets the operation that resulted in the conflict in the Azure Cosmos DB service.
-        /// </summary>
-        public abstract OperationKind OperationKind { get; }
-
-        /// <summary>
-        /// Gets the type of the conflicting resource in the Azure Cosmos DB service.
-        /// </summary>
-        public abstract Type ResourceType { get; }
-
-        /// <summary>
         /// Deletes the current conflict instance
         /// </summary>
-        /// <param name="requestOptions"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public override Task<CosmosUserDefinedFunctionResponse> DeleteAsync(
-            CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<CosmosConflictResponse> DeleteAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }

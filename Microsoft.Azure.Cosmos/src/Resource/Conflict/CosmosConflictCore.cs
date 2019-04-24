@@ -4,20 +4,42 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     internal class CosmosConflictCore : CosmosConflict
     {
-        /// <summary>
-        /// Gets the operation that resulted in the conflict in the Azure Cosmos DB service.
-        /// </summary>
-        public override OperationKind OperationKind { get; }
+        private readonly CosmosContainerCore container;
 
-        /// <summary>
-        /// Gets the type of the conflicting resource in the Azure Cosmos DB service.
-        /// </summary>
-        public override Type ResourceType { get; }
+        protected internal CosmosConflictCore(
+            CosmosContainerCore container,
+            string conflictId)
+        {
+            this.Id = conflictId;
+            this.container = container;
+            base.Initialize(
+               client: container.Client,
+               parentLink: container.LinkUri.OriginalString,
+               uriPathSegment: Documents.Paths.ConflictsPathSegment);
+        }
 
         public override string Id { get; }
+
+        public override Task<CosmosConflictResponse> DeleteAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
+                client: this.Client,
+                resourceUri: this.LinkUri,
+                resourceType: Documents.ResourceType.Conflict,
+                operationType: Documents.OperationType.Delete,
+                requestOptions: null,
+                cosmosContainerCore: this.container,
+                partitionKey: null,
+                streamPayload: null,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
+
+            return this.Client.ResponseFactory.CreateConflictResponse(this, response);
+        }
     }
 }

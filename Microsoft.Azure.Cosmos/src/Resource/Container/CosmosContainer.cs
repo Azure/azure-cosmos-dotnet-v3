@@ -57,6 +57,23 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosStoredProcedures StoredProcedures { get; }
 
         /// <summary>
+        /// Operations for reading/querying all conflicts
+        /// </summary>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosResultSetIterator conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
+        /// do
+        /// {
+        ///     CosmosQueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
+        /// }
+        /// while (conflictIterator.HasMoreResults);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract CosmosConflicts Conflicts { get; }
+
+        /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>

@@ -125,6 +125,21 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<CosmosConflictResponse> CreateConflictResponse(
+            CosmosConflict conflict,
+            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                CosmosConflictSettings settings = this.ToObjectInternal<CosmosConflictSettings>(cosmosResponseMessage);
+                return new CosmosConflictResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    settings,
+                    conflict);
+            });
+        }
+
         internal Task<T> MessageHelper<T>(Task<CosmosResponseMessage> cosmosResponseTask, Func<CosmosResponseMessage, T> createResponse)
         {
             return cosmosResponseTask.ContinueWith((action) =>

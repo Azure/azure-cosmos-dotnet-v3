@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient = this.Client.DocumentClient;
             this.Triggers = new CosmosTriggers(this);
             this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this);
+            this.Conflicts = new CosmosConflictsCore(this);
         }
 
         public override string Id { get; }
@@ -45,6 +46,8 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosItems Items { get; }
 
         public override CosmosStoredProcedures StoredProcedures { get; }
+
+        public override CosmosConflicts Conflicts { get; }
 
         internal CosmosTriggers Triggers { get; }
 
