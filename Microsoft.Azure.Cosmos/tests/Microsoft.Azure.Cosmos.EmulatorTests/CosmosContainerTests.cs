@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private CosmosDatabase cosmosDatabase = null;
+        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - (new DateTime(1970, 1, 1))).TotalSeconds;
 
         [TestInitialize]
         public async Task TestInit()
@@ -440,6 +441,68 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             cosmosContainerSettings = containerResponse;
             Assert.IsNotNull(cosmosContainer);
             Assert.IsNull(cosmosContainerSettings);
+        }
+
+        /// <summary>
+        /// This test verifies that we are able to set the ttl property path correctly using SDK.
+        /// Also this test will successfully read active item based on its TimeToLivePropertyPath value.
+        /// </summary>
+        [TestMethod]
+        public async Task TimeToLivePropertyPath()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/user";
+            TimeSpan timeToLive = TimeSpan.FromSeconds(10);
+            CosmosContainerSettings setting = new CosmosContainerSettings()
+            {
+                Id = containerName,
+                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                TimeToLivePropertyPath = "/creationDate",
+            };
+
+            CosmosContainerResponse containerResponse = null;
+            try
+            {
+                containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
+                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
+            }
+            catch (CosmosException exeption)
+            {
+                // expected because DefaultTimeToLive was not specified
+                Assert.AreEqual(HttpStatusCode.BadRequest, exeption.StatusCode);
+            }
+
+            // Verify the container content.
+            setting.DefaultTimeToLive = timeToLive;
+            containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
+            CosmosContainer cosmosContainer = containerResponse;
+            Assert.AreEqual(timeToLive, containerResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual("/creationDate", containerResponse.Resource.TimeToLivePropertyPath);
+
+            //verify removing the ttl property path
+            setting.TimeToLivePropertyPath = null;
+            containerResponse = await cosmosContainer.ReplaceAsync(setting);
+            cosmosContainer = containerResponse;
+            Assert.AreEqual(timeToLive, containerResponse.Resource.DefaultTimeToLive);
+            Assert.IsNull(containerResponse.Resource.TimeToLivePropertyPath);
+
+            //adding back the ttl property path
+            setting.TimeToLivePropertyPath = "/creationDate";
+            containerResponse = await cosmosContainer.ReplaceAsync(setting);
+            cosmosContainer = containerResponse;
+            Assert.AreEqual(containerResponse.Resource.TimeToLivePropertyPath, "/creationDate");
+
+            //Creating an item and reading before expiration
+            var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
+            CosmosItemResponse<dynamic> createItemResponse = await cosmosContainer.Items.CreateItemAsync<dynamic>(payload.user, payload);
+            Assert.IsNotNull(createItemResponse.Resource);
+            Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
+            CosmosItemResponse<dynamic> readItemResponse = await cosmosContainer.Items.ReadItemAsync<dynamic>(payload.user, payload.id);
+            Assert.IsNotNull(readItemResponse.Resource);
+            Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
+
+            containerResponse = await cosmosContainer.DeleteAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
     }
 }
