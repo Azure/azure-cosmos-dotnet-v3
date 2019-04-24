@@ -179,11 +179,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
-        internal Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken)
+        internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.DocumentClient.GetCollectionCacheAsync()
-                .ContinueWith(collectionCacheTask => collectionCacheTask.Result.ResolveByNameAsync(this.LinkUri.OriginalString, cancellationToken), cancellationToken)
-                .Unwrap();
+            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+            return await collectionCache.GetByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
         }
 
         // Name based look-up, needs re-computation and can't be cached
@@ -230,7 +229,6 @@ namespace Microsoft.Azure.Cosmos
                             collectionRID,
                             null,
                             null,
-                            false,
                             cancellationToken);
                 })
                 .Unwrap();

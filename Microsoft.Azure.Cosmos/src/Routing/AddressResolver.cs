@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -68,27 +67,31 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.ResolvedPartitionKeyRange = result.TargetPartitionKeyRange;
             request.RequestContext.RegionName = this.location;
 
-            if (request.RequestContext.LastResolvedTargetIdentity != null &&
-                request.RequestContext.TargetIdentity != null &&
-                !string.Equals(
-                    request.RequestContext.LastResolvedTargetIdentity.FederationId,
-                    request.RequestContext.TargetIdentity.FederationId,
-                    StringComparison.OrdinalIgnoreCase))
+            if (request.RequestContext.TargetIdentity != null)
             {
-                DefaultTrace.TraceInformation(
-                    "AddressResolver.ResolveAsync RequestAuthorizationTokenType = {0}, LastResolvedTargetIdentity = {1}, " +
-                    "TargetIdentity = {2}, forceRefreshPartitionAddresses = {3}, ForceCollectionRoutingMapRefresh = {4}, " +
-                    "ForceMasterRefresh = {5}, OperationType = {6}, ResourceType = {7}",
-                    request.RequestAuthorizationTokenType,
-                    request.RequestContext.LastResolvedTargetIdentity,
-                    request.RequestContext.TargetIdentity,
-                    forceRefreshPartitionAddresses,
-                    request.ForceCollectionRoutingMapRefresh,
-                    request.ForceMasterRefresh,
-                    request.OperationType,
-                    request.ResourceType);
+                ServiceIdentity lastResolvedTargetIdentity = request.RequestContext.GetAndUpdateLastResolvedTargetIdentity();
 
-                await this.requestSigner.ReauthorizeSystemKeySignedRequestAsync(request, cancellationToken);
+                if (lastResolvedTargetIdentity != null &&
+                    !string.Equals(
+                        lastResolvedTargetIdentity.FederationId,
+                        request.RequestContext.TargetIdentity.FederationId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    DefaultTrace.TraceInformation(
+                        "AddressResolver.ResolveAsync RequestAuthorizationTokenType = {0}, LastResolvedTargetIdentity = {1}, " +
+                        "TargetIdentity = {2}, forceRefreshPartitionAddresses = {3}, ForceCollectionRoutingMapRefresh = {4}, " +
+                        "ForceMasterRefresh = {5}, OperationType = {6}, ResourceType = {7}",
+                        request.RequestAuthorizationTokenType,
+                        lastResolvedTargetIdentity,
+                        request.RequestContext.TargetIdentity,
+                        forceRefreshPartitionAddresses,
+                        request.ForceCollectionRoutingMapRefresh,
+                        request.ForceMasterRefresh,
+                        request.OperationType,
+                        request.ResourceType);
+
+                    await this.requestSigner.ReauthorizeSystemKeySignedRequestAsync(request, cancellationToken);
+                }
             }
 
             await this.requestSigner.SignRequestAsync(request, cancellationToken);
@@ -247,9 +250,18 @@ namespace Microsoft.Azure.Cosmos
 
             bool collectionRoutingMapCacheIsUptoDate = false;
 
-            var collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId, null, request, request.ForceCollectionRoutingMapRefresh, cancellationToken);
+                collection.ResourceId, null, request, cancellationToken);
+
+            if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
+            {
+                DefaultTrace.TraceInformation(
+                    "AddressResolver.ResolveAddressesAndIdentityAsync ForceCollectionRoutingMapRefresh collection.ResourceId = {0}",
+                    collection.ResourceId);
+
+                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken);
+            }
 
             if (request.ForcePartitionKeyRangeRefresh)
             {
@@ -257,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
                 request.ForcePartitionKeyRangeRefresh = false;
                 if (routingMap != null)
                 {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, false, cancellationToken);
+                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken);
                 }
             }
 
@@ -272,8 +284,7 @@ namespace Microsoft.Azure.Cosmos
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: null,
-                        request:request,
-                        forceRefreshCollectionRoutingMap: false,
+                        request: request,
                         cancellationToken: cancellationToken);
             }
 
@@ -306,20 +317,18 @@ namespace Microsoft.Azure.Cosmos
                         routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                             collection.ResourceId,
                             previousValue: null,
-                            request:request,
-                            forceRefreshCollectionRoutingMap: false,
+                            request: request,
                             cancellationToken: cancellationToken);
                     }
                 }
-                
+
                 if (!collectionRoutingMapCacheIsUptoDate)
                 {
                     collectionRoutingMapCacheIsUptoDate = true;
                     routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: routingMap,
-                        request:request,
-                        forceRefreshCollectionRoutingMap: false,
+                        request: request,
                         cancellationToken: cancellationToken);
                 }
 
@@ -427,6 +436,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRange range;
             string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
 
+            object effectivePartitionKeyStringObject = null;
             if (partitionKeyString != null)
             {
                 range = this.TryResolveServerPartitionByPartitionKey(
@@ -438,10 +448,10 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (request.Properties != null && request.Properties.TryGetValue(
                 WFConstants.BackendHeaders.EffectivePartitionKeyString,
-                out object effectivePartitionKeyStringObject))
+                out effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
-                if (! (collection.PartitionKey != null && collection.PartitionKey.IsSystemKey))
+                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
                 {
                     throw new ArgumentOutOfRangeException(nameof(collection));
                 }
@@ -466,7 +476,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-                ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
+            ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
 
             PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
                 request,
@@ -481,8 +491,8 @@ namespace Microsoft.Azure.Cosmos
                     "Could not resolve addresses for identity {0}/{1}. Potentially collection cache or routing map cache is outdated. Return null - upper logic will refresh and retry. ",
                     new PartitionKeyRangeIdentity(collection.ResourceId, range.Id),
                     serviceIdentity);
-            return null;
-        }
+                return null;
+            }
 
             return new ResolutionResult(range, addresses, serviceIdentity);
         }

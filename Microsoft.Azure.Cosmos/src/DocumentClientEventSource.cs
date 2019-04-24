@@ -1,19 +1,30 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics.Tracing;
     using System.Net.Http.Headers;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     [EventSource(Name = "DocumentDBClient", Guid = "f832a342-0a53-5bab-b57b-d5bc65319768")]
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class DocumentClientEventSource : EventSource, ICommunicationEventSource
     {
-        public DocumentClientEventSource() : base()
+        private static Lazy<DocumentClientEventSource> documentClientEventSourceInstance 
+            = new Lazy<DocumentClientEventSource>(() => new DocumentClientEventSource());
+
+        public static DocumentClientEventSource Instance
+        {
+            get
+            {
+                return DocumentClientEventSource.documentClientEventSourceInstance.Value;
+            }
+        }
+
+        internal DocumentClientEventSource() : base()
         {
         }
 

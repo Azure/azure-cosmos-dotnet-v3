@@ -21,10 +21,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests serialization of 'unspecified' CRS.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         public void UnspecifiedCrsSerialization()
         {
             Crs crs = JsonConvert.DeserializeObject<Crs>(@"null");
-            Assert.AreEqual(CoordinateReferenceScheme.Unspecified, crs.Type);
+            Assert.AreEqual(CrsType.Unspecified, crs.Type);
             Assert.AreEqual(Crs.Unspecified, crs);
 
             string json = JsonConvert.SerializeObject(crs);
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests construction of linked CRS.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         public void LinkedCrsConstructor()
         {
             LinkedCrs crs = Crs.Linked("http://foo.com");
@@ -51,11 +53,12 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests serialization of linked CRS.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         public void LinkedCrsSerialization()
         {
             LinkedCrs linkedCrs = (LinkedCrs)JsonConvert.DeserializeObject<Crs>(@"{'type':'link', 'properties':{'href':'http://foo', 'type':'link'}}");
             Assert.AreEqual("http://foo", linkedCrs.Href);
-            Assert.AreEqual(CoordinateReferenceScheme.Linked, linkedCrs.Type);
+            Assert.AreEqual(CrsType.Linked, linkedCrs.Type);
 
             string json = JsonConvert.SerializeObject(linkedCrs);
             LinkedCrs linkedCrs1 = (LinkedCrs)JsonConvert.DeserializeObject<Crs>(json);
@@ -66,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests deserialization of linked CRS when HREF is absent.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         [ExpectedException(typeof(JsonSerializationException))]
         public void LinkedCrsSerializationNoHref()
         {
@@ -76,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests equality/hash code of linked CRS.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         public void LinkedCrsEquals()
         {
             LinkedCrs namedCrs1 = Crs.Linked("AName", "type");
@@ -101,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests constructor exceptions of linked CRS.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         [ExpectedException(typeof(ArgumentNullException))]
         public void LinkedCrsConstructorException()
         {
@@ -111,6 +117,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests named CRS construction.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         public void NamedCrsConstructor()
         {
             NamedCrs namedCrs = Crs.Named("NamedCrs");
@@ -121,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests named CRS serialization.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         public void NamedCrsSerialization()
         {
             NamedCrs namedCrs = (NamedCrs)JsonConvert.DeserializeObject<Crs>(@"{'type':'name', 'properties':{'name':'AName'}}");
@@ -135,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests named CRS equality and hash code.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         public void NamedCrsEquals()
         {
             NamedCrs namedCrs1 = Crs.Named("AName");
@@ -151,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         /// Tests named CRS constructor exceptions.
         /// </summary>
         [TestMethod]
+        [Owner("laviswa")]
         [ExpectedException(typeof(ArgumentNullException))]
         public void NamedCrsConstructorException()
         {

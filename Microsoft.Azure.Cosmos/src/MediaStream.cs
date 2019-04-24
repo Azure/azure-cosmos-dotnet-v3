@@ -125,20 +125,17 @@ namespace Microsoft.Azure.Cosmos
             this.contentStream.EndWrite(asyncResult);
         }
 
-        #region MarshalByRefObject members
-
-#if !NETSTANDARD20
-        public override System.Runtime.Remoting.ObjRef CreateObjRef(Type requestedType)
-        {
-            return this.contentStream.CreateObjRef(requestedType);
-        }
-#endif
-
         public override object InitializeLifetimeService()
         {
             return this.contentStream.InitializeLifetimeService();
         }
-        #endregion
+#endif
+
+#if !(NETSTANDARD16 || NETSTANDARD20)
+        public override System.Runtime.Remoting.ObjRef CreateObjRef(Type requestedType)
+        {
+            return this.contentStream.CreateObjRef(requestedType);
+        }
 #endif
 
         public override int Read(byte[] buffer, int offset, int count)

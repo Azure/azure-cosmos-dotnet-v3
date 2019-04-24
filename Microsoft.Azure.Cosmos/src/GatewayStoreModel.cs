@@ -6,18 +6,15 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
@@ -31,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ISessionContainer sessionContainer;
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
-        private HttpClient httpClient;
+        private GatewayStoreClient gatewayStoreClient;
         private CookieContainer cookieJar;
 
         public GatewayStoreModel(
@@ -40,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan requestTimeout,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
+            JsonSerializerSettings SerializerSettings,
             UserAgentContainer userAgent,
             ApiType apiType = ApiType.None,
             HttpMessageHandler messageHandler = null)
@@ -47,30 +45,33 @@ namespace Microsoft.Azure.Cosmos
             // CookieContainer is not really required, but is helpful in debugging.
             this.cookieJar = new CookieContainer();
             this.endpointManager = endpointManager;
-            this.httpClient = new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar });
+            HttpClient httpClient = new HttpClient(messageHandler ?? new HttpClientHandler { CookieContainer = this.cookieJar });
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
 
             // Use max of client specified and our own request timeout value when sending
             // requests to gateway. Otherwise, we will have gateway's transient
             // error hiding retries are of no use.
-            this.httpClient.Timeout = (requestTimeout > this.requestTimeout) ? requestTimeout : this.requestTimeout;
-            this.httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
-            
-            this.httpClient.AddUserAgentHeader(userAgent);
-            this.httpClient.AddApiTypeHeader(apiType);
+            httpClient.Timeout = (requestTimeout > this.requestTimeout) ? requestTimeout : this.requestTimeout;
+            httpClient.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue { NoCache = true };
+
+            httpClient.AddUserAgentHeader(userAgent);
+            httpClient.AddApiTypeHeader(apiType);
 
             // Set requested API version header that can be used for
             // version enforcement.
-            this.httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version,
                 HttpConstants.Versions.CurrentVersion);
 
-            this.httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Accept, RuntimeConstants.MediaTypes.Json);
 
             this.eventSource = eventSource;
+            this.gatewayStoreClient = new GatewayStoreClient(
+                httpClient,
+                this.eventSource,
+                SerializerSettings);
+            
         }
-
-        internal JsonSerializerSettings SerializerSettings { get; set; }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -79,7 +80,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceResponse response;
             try
             {
-                response = await this.InvokeAsync(request, request.ResourceType, cancellationToken);
+                Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
+                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
             }
             catch (DocumentClientException exception)
             {
@@ -97,13 +99,13 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<CosmosAccountSettings> GetDatabaseAccountAsync(HttpRequestMessage requestMessage)
+        public virtual async Task<CosmosAccountSettings> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosAccountSettings databaseAccount = null;
 
             // Get the ServiceDocumentResource from the gateway.
             using (HttpResponseMessage responseMessage =
-                await this.httpClient.SendHttpAsync(requestMessage))
+                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
@@ -167,44 +169,6 @@ namespace Microsoft.Azure.Cosmos
             GC.SuppressFinalize(this);
         }
 
-        public static bool IsFeedRequest(OperationType requestOperationType)
-        {
-            return requestOperationType == OperationType.Create ||
-                requestOperationType == OperationType.Upsert ||
-                requestOperationType == OperationType.ReadFeed ||
-                requestOperationType == OperationType.Query ||
-                requestOperationType == OperationType.SqlQuery;
-        }
-
-        internal static bool IsAllowedRequestHeader(string headerName)
-        {
-            if (!headerName.StartsWith("x-ms", StringComparison.OrdinalIgnoreCase))
-            {
-                switch (headerName)
-                {
-                    //Just flow the header which are settable at RequestMessage level and the one we care.
-                    case HttpConstants.HttpHeaders.Authorization:
-                    case HttpConstants.HttpHeaders.Accept:
-                    case HttpConstants.HttpHeaders.ContentType:
-                    case HttpConstants.HttpHeaders.Host:
-                    case HttpConstants.HttpHeaders.IfMatch:
-                    case HttpConstants.HttpHeaders.IfModifiedSince:
-                    case HttpConstants.HttpHeaders.IfNoneMatch:
-                    case HttpConstants.HttpHeaders.IfRange:
-                    case HttpConstants.HttpHeaders.IfUnmodifiedSince:
-                    case HttpConstants.HttpHeaders.UserAgent:
-                    case HttpConstants.HttpHeaders.Prefer:
-                    case HttpConstants.HttpHeaders.Query:
-                    case HttpConstants.HttpHeaders.A_IM:
-                        return true;
-
-                    default:
-                        return false;
-                }
-            }
-            return true;
-        }
-
         private void CaptureSessionToken(DocumentServiceRequest request, INameValueCollection responseHeaders)
         {
             if (request.ResourceType == ResourceType.Collection && request.OperationType == OperationType.Delete)
@@ -265,11 +229,11 @@ namespace Microsoft.Azure.Cosmos
         {
             if (disposing)
             {
-                if (this.httpClient != null)
+                if (this.gatewayStoreClient != null)
                 {
                     try
                     {
-                        this.httpClient.Dispose();
+                        this.gatewayStoreClient.Dispose();
                     }
                     catch (Exception exception)
                     {
@@ -277,119 +241,9 @@ namespace Microsoft.Azure.Cosmos
                             exception);
                     }
 
-                    this.httpClient = null;
+                    this.gatewayStoreClient = null;
                 }
             }
-        }
-
-        async private Task<DocumentServiceResponse> InvokeAsync(DocumentServiceRequest request, ResourceType resourceType, CancellationToken cancellationToken)
-        {
-            Func<Task<DocumentServiceResponse>> funcDelegate = async () =>
-            {
-                using (HttpRequestMessage requestMessage = await this.PrepareRequestMessageAsync(request))
-                {
-                    DateTime sendTimeUtc = DateTime.UtcNow;
-                    Guid localGuid = Guid.NewGuid();  // For correlating HttpRequest and HttpResponse Traces
-
-                    this.eventSource.Request(
-                        Guid.Empty,
-                        localGuid,
-                        requestMessage.RequestUri.ToString(),
-                        resourceType.ToResourceTypeString(),
-                        requestMessage.Headers);
-
-                    using (HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken))
-                    {
-                        DateTime receivedTimeUtc = DateTime.UtcNow;
-                        double durationInMilliSeconds = (receivedTimeUtc - sendTimeUtc).TotalMilliseconds;
-
-                        IEnumerable<string> headerValues;
-                        Guid activityId = Guid.Empty;
-                        if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.ActivityId, out headerValues) &&
-                            headerValues.Count() != 0)
-                        {
-                            activityId = new Guid(headerValues.First());
-                        }
-
-                        this.eventSource.Response(
-                            activityId,
-                            localGuid,
-                            (short)responseMessage.StatusCode,
-                            durationInMilliSeconds,
-                            responseMessage.Headers);
-
-                        return await ClientExtensions.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
-                    }
-                }
-            };
-
-            return await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(funcDelegate, new WebExceptionRetryPolicy(), cancellationToken);
-        }
-
-        [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        private async Task<HttpRequestMessage> PrepareRequestMessageAsync(DocumentServiceRequest request)
-        {
-            HttpMethod httpMethod = HttpMethod.Head;
-            if (request.OperationType == OperationType.Create ||
-                request.OperationType == OperationType.Upsert ||
-                request.OperationType == OperationType.Query ||
-                request.OperationType == OperationType.SqlQuery ||
-                request.OperationType == OperationType.ExecuteJavaScript)
-            {
-                httpMethod = HttpMethod.Post;
-            }
-            else if (request.OperationType == OperationType.Read ||
-                request.OperationType == OperationType.ReadFeed)
-            {
-                httpMethod = HttpMethod.Get;
-            }
-            else if (request.OperationType == OperationType.Replace)
-            {
-                httpMethod = HttpMethod.Put;
-            }
-            else if (request.OperationType == OperationType.Delete)
-            {
-                httpMethod = HttpMethod.Delete;
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
-
-            HttpRequestMessage requestMessage = new HttpRequestMessage(httpMethod,
-                GatewayStoreModel.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request));
-
-            // The StreamContent created below will own and dispose its underlying stream, but we may need to reuse the stream on the 
-            // DocumentServiceRequest for future requests. Hence we need to clone without incurring copy cost, so that when
-            // HttpRequestMessage -> StreamContent -> MemoryStream all get disposed, the original stream will be left open.
-            if (request.Body != null)
-            {
-                await request.EnsureBufferedBodyAsync();
-                MemoryStream clonedStream = new MemoryStream();
-                // WriteTo doesn't use and update Position of source stream. No point in setting/restoring it.
-                request.CloneableBody.WriteTo(clonedStream);
-                clonedStream.Position = 0;
-
-                requestMessage.Content = new StreamContent(clonedStream);
-            }
-            if (request.Headers != null)
-            {
-                foreach (string key in request.Headers)
-                {
-                    if (GatewayStoreModel.IsAllowedRequestHeader(key))
-                    {
-                        if (key.Equals(HttpConstants.HttpHeaders.ContentType, StringComparison.OrdinalIgnoreCase))
-                        {
-                            requestMessage.Content.Headers.ContentType = new MediaTypeHeaderValue(request.Headers[key]);
-                        }
-                        else
-                        {
-                            requestMessage.Headers.TryAddWithoutValidation(key, request.Headers[key]);
-                        }
-                    }
-                }
-            }
-            return requestMessage;
         }
 
         private Uri GetEntityUri(DocumentServiceRequest entity)

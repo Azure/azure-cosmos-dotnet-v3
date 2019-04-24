@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public SqlQuerySpec SqlQuerySpec { get; }
         public CosmosQueryRequestOptions QueryRequestOptions { get; }
         public bool IsContinuationExpected { get; }
+        public bool AllowNonValueAggregateQuery { get; }
         public Uri ResourceLink { get; }
         public string ContainerResourceId { get; set; }
         public Guid CorrelatedActivityId { get; }
@@ -54,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool getLazyFeedResponse,
             Guid correlatedActivityId,
             bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
             string containerResourceId = null)
         {
             if (client == null)
@@ -90,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.ResourceLink = resourceLink;
             this.ContainerResourceId = containerResourceId;
             this.IsContinuationExpected = isContinuationExpected;
+            this.AllowNonValueAggregateQuery = allowNonValueAggregateQuery;
             this.CorrelatedActivityId = correlatedActivityId;
         }
 

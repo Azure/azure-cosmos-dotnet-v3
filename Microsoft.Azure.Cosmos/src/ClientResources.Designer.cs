@@ -72,6 +72,51 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, member {0} of type {1} is invalid..
+        /// </summary>
+        internal static string BadQuery_IllegalMemberAccess {
+            get {
+                return ResourceManager.GetString("BadQuery_IllegalMemberAccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are MemberAccess and ArrayIndex..
+        /// </summary>
+        internal static string BadQuery_InvalidArrayIndexExpression {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidArrayIndexExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type {0} for an array index parameter is invalid. Array index parameter must be int..
+        /// </summary>
+        internal static string BadQuery_InvalidArrayIndexType {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidArrayIndexType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, expression {0} must either have LHS or RHS as constant..
+        /// </summary>
+        internal static string BadQuery_InvalidComparison {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidComparison", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, expression {0} of type {1} cannot be used in this context..
+        /// </summary>
+        internal static string BadQuery_InvalidComparisonType {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidComparisonType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Query expression is invalid, expression {0} is unsupported. Supported expressions are &apos;Queryable.Where&apos;, &apos;Queryable.Select&apos; &amp; &apos;Queryable.SelectMany&apos;.
         /// </summary>
         internal static string BadQuery_InvalidExpression {
@@ -79,7 +124,70 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("BadQuery_InvalidExpression", resourceCulture);
             }
         }
-
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, expression {0} is not allowed in this context..
+        /// </summary>
+        internal static string BadQuery_InvalidLeftExpression {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidLeftExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are parameter reference, array index and property reference..
+        /// </summary>
+        internal static string BadQuery_InvalidMemberAccessExpression {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidMemberAccessExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, method call {0} is not allowed at this context. Allowed methods are {1}..
+        /// </summary>
+        internal static string BadQuery_InvalidMethodCall {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidMethodCall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to QueryType {0} is not supported..
+        /// </summary>
+        internal static string BadQuery_InvalidQueryType {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidQueryType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, expression return type {0} is unsupported. Query must evaluate to IEnumerable..
+        /// </summary>
+        internal static string BadQuery_InvalidReturnType {
+            get {
+                return ResourceManager.GetString("BadQuery_InvalidReturnType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Query expression is invalid, expression {0} contains too many arguments. .
+        /// </summary>
+        internal static string BadQuery_TooManySelectManyArguments {
+            get {
+                return ResourceManager.GetString("BadQuery_TooManySelectManyArguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An error occured while evaluating the transform expression {0}..
+        /// </summary>
+        internal static string BadQuery_TransformQueryException {
+            get {
+                return ResourceManager.GetString("BadQuery_TransformQueryException", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   Looks up a localized string similar to Session object retrieved from client with endpoint {0} cannot be used on a client initialized to endpoint {1}..
         /// </summary>
@@ -95,6 +203,15 @@ namespace Microsoft.Azure.Cosmos {
         internal static string BinaryOperatorNotSupported {
             get {
                 return ResourceManager.GetString("BinaryOperatorNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Constant of type &apos;{0}&apos; is not supported..
+        /// </summary>
+        internal static string ConstantTypeIsNotSupported {
+            get {
+                return ResourceManager.GetString("ConstantTypeIsNotSupported", resourceCulture);
             }
         }
         
@@ -169,13 +286,33 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("InvalidRangeError", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to The count value provided for a Skip expression must be an integer..
+        /// </summary>
+        internal static string InvalidSkipValue
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidSkipValue", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to The count value provided for a Take expression must be an integer..
         /// </summary>
         internal static string InvalidTakeValue {
             get {
                 return ResourceManager.GetString("InvalidTakeValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method &apos;{0}&apos; can not be invoked for type &apos;{1}&apos;. Supported types are &apos;[{2}]&apos;..
+        /// </summary>
+        internal static string InvalidTypesForMethod {
+            get {
+                return ResourceManager.GetString("InvalidTypesForMethod", resourceCulture);
             }
         }
         
@@ -225,11 +362,56 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unable to extract partition key from document. Ensure that you have provided a valid PartitionKeyValueExtractor function..
+        /// </summary>
+        internal static string PartitionKeyExtractError {
+            get {
+                return ResourceManager.GetString("PartitionKeyExtractError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Partition property not found in the document..
+        /// </summary>
+        internal static string PartitionPropertyNotFound {
+            get {
+                return ResourceManager.GetString("PartitionPropertyNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An IPartitionResolver already exists for this database.
+        /// </summary>
+        internal static string PartitionResolver_DatabaseAlreadyExist {
+            get {
+                return ResourceManager.GetString("PartitionResolver_DatabaseAlreadyExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No IPartitionResolver available for this database.
+        /// </summary>
+        internal static string PartitionResolver_DatabaseDoesntExist {
+            get {
+                return ResourceManager.GetString("PartitionResolver_DatabaseDoesntExist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Only path expressions are supported for SelectMany..
         /// </summary>
         internal static string PathExpressionsOnly {
             get {
                 return ResourceManager.GetString("PathExpressionsOnly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A containing range for {0} doesn&apos;t exist in the partition map..
+        /// </summary>
+        internal static string RangeNotFoundError {
+            get {
+                return ResourceManager.GetString("RangeNotFoundError", resourceCulture);
             }
         }
         
@@ -270,11 +452,38 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unexpected authorization token type &apos;({0})&apos;. Expected &apos;{1}&apos;..
+        /// </summary>
+        internal static string UnexpectedAuthTokenType {
+            get {
+                return ResourceManager.GetString("UnexpectedAuthTokenType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unexpected token type: {0}.
         /// </summary>
         internal static string UnexpectedTokenType {
             get {
                 return ResourceManager.GetString("UnexpectedTokenType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unsupported type {0} for partitionKey..
+        /// </summary>
+        internal static string UnsupportedPartitionKey {
+            get {
+                return ResourceManager.GetString("UnsupportedPartitionKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Instantiation of only value types, anonymous types and spatial types are supported..
+        /// </summary>
+        internal static string ValueAndAnonymousTypesAndGeometryOnly {
+            get {
+                return ResourceManager.GetString("ValueAndAnonymousTypesAndGeometryOnly", resourceCulture);
             }
         }
     }
