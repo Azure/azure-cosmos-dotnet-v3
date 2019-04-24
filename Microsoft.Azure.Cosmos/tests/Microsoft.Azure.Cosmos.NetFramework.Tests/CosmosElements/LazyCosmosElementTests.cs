@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             {
                 get
                 {
-                    return (this.cosmosObject[nameof(Person.Name)] as CosmosString).Value;
+                    return (this.cosmosObject[nameof(Person.Name)] as CosmosTypedElement<string>).Value;
                 }
             }
 
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             switch (CosmosElement.Type)
             {
                 case CosmosElementType.String:
-                    LazyCosmosElementTests.VisitCosmosString(CosmosElement as CosmosString, jsonWriter);
+                    LazyCosmosElementTests.VisitCosmosString(CosmosElement as CosmosTypedElement<string>, jsonWriter);
                     break;
 
                 case CosmosElementType.Number:
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             switch (CosmosElement.Type)
             {
                 case CosmosElementType.String:
-                    LazyCosmosElementTests.VisitCosmosString(CosmosElement as CosmosString, jsonWriter);
+                    LazyCosmosElementTests.VisitCosmosString(CosmosElement as CosmosTypedElement<string>, jsonWriter);
                     break;
 
                 case CosmosElementType.Number:
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             }
         }
 
-        private static void VisitCosmosString(CosmosString cosmosString, IJsonWriter jsonWriter)
+        private static void VisitCosmosString(CosmosTypedElement<string> cosmosString, IJsonWriter jsonWriter)
         {
             jsonWriter.WriteStringValue(cosmosString.Value);
         }
