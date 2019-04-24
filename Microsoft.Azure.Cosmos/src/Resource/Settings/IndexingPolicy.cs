@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
-        public Collection<Collection<CompositePathDefinition>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePathDefinition>>();
+        public Collection<Collection<CompositePath>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
         /// Collection of spatial index definitions to be used
@@ -143,6 +143,6 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        public Collection<SpatialIndexDefinition> SpatialIndexes { get; set; } = new Collection<SpatialIndexDefinition>();
+        public Collection<SpatialIndex> SpatialIndexes { get; set; } = new Collection<SpatialIndex>();
     }
 }

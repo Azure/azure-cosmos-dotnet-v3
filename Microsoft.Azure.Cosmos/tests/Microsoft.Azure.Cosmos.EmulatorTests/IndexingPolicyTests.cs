@@ -259,16 +259,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
                 IndexingMode = Cosmos.IndexingMode.Consistent,
-                CompositeIndexes = new Collection<Collection<Cosmos.CompositePathDefinition>>()
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
-                    new Collection<Cosmos.CompositePathDefinition>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new  Cosmos.CompositePathDefinition()
+                        new  Cosmos.CompositePath()
                         {
                             Path = "/name",
                             Order =  Cosmos.CompositePathSortOrder.Ascending
                         },
-                        new  Cosmos.CompositePathDefinition()
+                        new  Cosmos.CompositePath()
                         {
                             Path = "/age",
                             Order =  Cosmos.CompositePathSortOrder.Descending

@@ -1979,16 +1979,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 },
 
-                CompositeIndexes = new Collection<Collection<Cosmos.CompositePathDefinition>>()
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
                     // Simple
-                    new Collection<Cosmos.CompositePathDefinition>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/_ts",
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/_etag",
                         }
@@ -2894,17 +2894,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
-                CompositeIndexes = new Collection<Collection<Cosmos.CompositePathDefinition>>()
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
                     // Simple
-                    new Collection<Cosmos.CompositePathDefinition>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
                             Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
                             Order = Cosmos.CompositePathSortOrder.Descending,
@@ -2912,24 +2912,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
 
                     // Max Columns
-                    new Collection<Cosmos.CompositePathDefinition>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
                             Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
                             Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField2),
                             Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField2),
                             Order = Cosmos.CompositePathSortOrder.Ascending,
@@ -2937,24 +2937,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
 
                     // All primitive values
-                    new Collection<Cosmos.CompositePathDefinition>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NumberField),
                             Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
                             Order = Cosmos.CompositePathSortOrder.Ascending,
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.BoolField),
                             Order = Cosmos.CompositePathSortOrder.Descending,
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.NullField),
                             Order = Cosmos.CompositePathSortOrder.Ascending,
@@ -2983,21 +2983,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //},
 
                     // Long strings
-                    new Collection<Cosmos.CompositePathDefinition>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.StringField),
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.ShortStringField),
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.MediumStringField),
                         },
-                        new Cosmos.CompositePathDefinition()
+                        new Cosmos.CompositePath()
                         {
                             Path = "/" + nameof(MultiOrderByDocument.LongStringField),
                         }
@@ -3089,7 +3089,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosContainerSettings containerSettings = await container.ReadAsync();
             // For every composite index
-            foreach (Collection<Cosmos.CompositePathDefinition> compositeIndex in containerSettings.IndexingPolicy.CompositeIndexes)
+            foreach (Collection<Cosmos.CompositePath> compositeIndex in containerSettings.IndexingPolicy.CompositeIndexes)
             {
                 // for every order
                 foreach (bool invert in new bool[] { false, true })
@@ -3102,7 +3102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             List<string> orderByItems = new List<string>();
                             List<string> selectItems = new List<string>();
                             bool isDesc;
-                            foreach (Cosmos.CompositePathDefinition compositePath in compositeIndex)
+                            foreach (Cosmos.CompositePath compositePath in compositeIndex)
                             {
                                 isDesc = compositePath.Order == Cosmos.CompositePathSortOrder.Descending ? true : false;
                                 if (invert)
@@ -3149,7 +3149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             }
 
                             IOrderedEnumerable<MultiOrderByDocument> oracle;
-                            Cosmos.CompositePathDefinition firstCompositeIndex = compositeIndex.First();
+                            Cosmos.CompositePath firstCompositeIndex = compositeIndex.First();
 
                             isDesc = firstCompositeIndex.Order == Cosmos.CompositePathSortOrder.Descending ? true : false;
                             if (invert)
@@ -3166,7 +3166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 oracle = castedDocuments.OrderBy(x => x.GetType().GetProperty(firstCompositeIndex.Path.Replace("/", "")).GetValue(x, null));
                             }
 
-                            foreach (Cosmos.CompositePathDefinition compositePath in compositeIndex.Skip(1))
+                            foreach (Cosmos.CompositePath compositePath in compositeIndex.Skip(1))
                             {
                                 isDesc = compositePath.Order == Cosmos.CompositePathSortOrder.Descending ? true : false;
                                 if (invert)
@@ -3188,7 +3188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             foreach (MultiOrderByDocument document in oracle)
                             {
                                 List<object> projectedItems = new List<object>();
-                                foreach (Cosmos.CompositePathDefinition compositePath in compositeIndex)
+                                foreach (Cosmos.CompositePath compositePath in compositeIndex)
                                 {
                                     projectedItems.Add(typeof(MultiOrderByDocument).GetProperty(compositePath.Path.Replace("/", "")).GetValue(document, null));
                                 }

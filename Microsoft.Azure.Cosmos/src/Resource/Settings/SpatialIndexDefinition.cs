@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Spatial index specification 
     /// </summary>
-    public sealed class SpatialIndexDefinition
+    public sealed class SpatialIndex
     {
         /// <summary>
         /// Path of the Item which is spatial
