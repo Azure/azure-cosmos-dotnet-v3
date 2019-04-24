@@ -90,7 +90,6 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="CosmosDatabaseSettings"/>
     public class CosmosContainerSettings
     {
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
