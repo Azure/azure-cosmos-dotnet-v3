@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 response.EnsureSuccessStatusCodeOrNotModified();
 
                 long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
-                System.Collections.ObjectModel.Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
+                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
                 long lastQueryLSN = items.Count > 0
                     ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
                     : parsedLSNFromSessionToken;
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
         }
 
-        private static string GetFirstItemLSN(System.Collections.ObjectModel.Collection<JObject> items)
+        private static string GetFirstItemLSN(Collection<JObject> items)
         {
             JObject item = RemainingWorkEstimatorCore.GetFirstItem(items);
             if (item == null)
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return null;
         }
 
-        private static JObject GetFirstItem(System.Collections.ObjectModel.Collection<JObject> response)
+        private static JObject GetFirstItem(Collection<JObject> response)
         {
             using (IEnumerator<JObject> e = response.GetEnumerator())
             {
