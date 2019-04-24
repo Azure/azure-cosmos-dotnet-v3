@@ -192,13 +192,13 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.String:
-                        added = this.AddStringValue((cosmosElement as CosmosString).Value);
+                        added = this.AddStringValue((cosmosElement as CosmosTypedElement<string>).Value);
                         break;
 
                     default:
                         throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElementType}");
                 }
-                
+
                 return added;
             }
 

@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.String:
-                        hash = this.GetStringHash((cosmosElement as CosmosString).Value, seed);
+                        hash = this.GetStringHash((cosmosElement as CosmosTypedElement<string>).Value, seed);
                         break;
 
                     default:
