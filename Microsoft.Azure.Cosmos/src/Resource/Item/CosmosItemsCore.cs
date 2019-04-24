@@ -236,6 +236,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.PartitionKey = partitionKey;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+                documentClient: this.client.DocumentClient,
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -286,6 +287,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxItemCount = maxItemCount;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+                documentClient: this.client.DocumentClient,
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
@@ -334,6 +336,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.MaxConcurrency = maxConcurrency;
 
             IDocumentQueryExecutionContext documentQueryExecution = new CosmosQueryExecutionContextFactory(
+                documentClient: this.client.DocumentClient,
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
