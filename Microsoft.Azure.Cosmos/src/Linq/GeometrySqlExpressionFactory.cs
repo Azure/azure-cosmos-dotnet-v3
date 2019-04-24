@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <summary>
     /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.
     /// </summary>
-    internal static class GeometrySqlExpressionFactory
+    internal static class GeometrySqlExpressionFactory 
     {
         /// <summary>
         /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             try
             {
-                var le = Expression.Lambda<Func<Geometry>>(geometryExpression);
+                Expression<Func<Geometry>> le = Expression.Lambda<Func<Geometry>>(geometryExpression);
                 Func<Geometry> compiledExpression = le.Compile();
                 geometry = compiledExpression();
             }
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 case JTokenType.Object:
 
-                    var properties =
+                    SqlObjectProperty[] properties =
                         ((JObject)jToken).Properties()
                             .Select(
                                 p =>

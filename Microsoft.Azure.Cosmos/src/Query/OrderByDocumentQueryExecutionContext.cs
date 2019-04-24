@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using Newtonsoft.Json;
     using ParallelQuery;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
@@ -224,10 +223,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 await currentDocumentProducerTree.MoveNextAsync(cancellationToken);
 
-                if (currentDocumentProducerTree.HasMoreResults)
-                {
-                    this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
-                }
+                this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
             }
 
             return new FeedResponse<CosmosElement>(

@@ -130,8 +130,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     long responseLengthInBytes = response.ResponseBody.Length;
                     int itemCount = 0;
-                    var feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
-                    var feedResponse = new FeedResponse<dynamic>(
+                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
+                    FeedResponse<dynamic> feedResponse = new FeedResponse<dynamic>(
                         feedResource,
                         itemCount,
                         response.Headers,
@@ -203,17 +203,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 resourceType,
                 headers))
             {
-                if (retryPolicyInstance != null)
-                {
-                    retryPolicyInstance.OnBeforeSendRequest(request);
-                }
-
                 if (resourceType.IsPartitioned() && this.feedOptions.PartitionKeyRangeId != null)
                 {
                     request.RouteTo(new PartitionKeyRangeIdentity(this.feedOptions.PartitionKeyRangeId));
                 }
 
-                return await this.client.ReadFeedAsync(request, cancellationToken);
+                return await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken);
             }
         }
 

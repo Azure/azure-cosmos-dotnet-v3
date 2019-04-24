@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Geometry consisting of several points.
     /// </summary>
     /// <seealso cref="Point"/>.
-    public sealed class MultiPoint : Geometry, IEquatable<MultiPoint>
+    internal sealed class MultiPoint : Geometry, IEquatable<MultiPoint>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiPoint" /> class.
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public MultiPoint(IList<Position> points, GeometryParams geometryParams)
-            : base(GeometryShape.MultiPoint, geometryParams)
+            : base(GeometryType.MultiPoint, geometryParams)
         {
             if (points == null)
             {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal MultiPoint() : base(GeometryShape.MultiPoint, new GeometryParams())
+        internal MultiPoint() : base(GeometryType.MultiPoint, new GeometryParams())
         {
         }
 

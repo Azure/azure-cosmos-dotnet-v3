@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Additional geometry parameters.
         /// </param>
         public Polygon(IList<LinearRing> rings, GeometryParams geometryParams)
-            : base(GeometryShape.Polygon, geometryParams)
+            : base(GeometryType.Polygon, geometryParams)
         {
             if (rings == null)
             {
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal Polygon() : base(GeometryShape.Polygon, new GeometryParams())
+        internal Polygon() : base(GeometryType.Polygon, new GeometryParams())
         {
         }
 

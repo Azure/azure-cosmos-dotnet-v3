@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal partial class DocumentClient
@@ -88,9 +87,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<Database> CreateDatabaseChangeFeedQuery(ChangeFeedOptions feedOptions)
         {
-            throw new NotImplementedException();
-            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            ////return new Document.ChangeFeedQuery<Database>(this, ResourceType.Database, null, feedOptions);
+            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            return new ChangeFeedQuery<Database>(this, ResourceType.Database, null, feedOptions);
         }
 
         /// <summary>
@@ -171,14 +169,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<DocumentCollection> CreateDocumentCollectionChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
         {
-            throw new NotImplementedException();
-            ////if(string.IsNullOrEmpty(databaseLink))
-            ////{
-            ////    throw new ArgumentException(nameof(databaseLink));
-            ////}
+            if(string.IsNullOrEmpty(databaseLink))
+            {
+                throw new ArgumentException(nameof(databaseLink));
+            }
 
-            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            ////return new ChangeFeedQuery<DocumentCollection>(this, ResourceType.Collection, databaseLink, feedOptions);
+            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            return new ChangeFeedQuery<DocumentCollection>(this, ResourceType.Collection, databaseLink, feedOptions);
         }
 
         /// <summary>
@@ -941,9 +938,6 @@ namespace Microsoft.Azure.Cosmos
         /// This example below queries for offers
         /// <code language="c#">
         /// <![CDATA[
-        /// // Find the first collection with the S3 offer type
-        /// Offer offer = client.CreateOfferQuery().Where(o => o.OfferType == "S3").AsEnumerable().FirstOrDefault();
-        /// 
         /// // Find the offer for the collection by SelfLink
         /// Offer offer = client.CreateOfferQuery().Where(o => o.Resource == collectionSelfLink).AsEnumerable().FirstOrDefault();
         /// ]]>
@@ -967,9 +961,6 @@ namespace Microsoft.Azure.Cosmos
         /// This example below queries for offers
         /// <code language="c#">
         /// <![CDATA[
-        /// // Find the first collection with the S3 offer type
-        /// Offer offer = client.CreateOfferQuery("SELECT * FROM offers o WHERE o.offerType = 'S3'").AsEnumerable().FirstOrDefault();
-        /// 
         /// // Find the offer for the collection by SelfLink
         /// Offer offer = client.CreateOfferQuery(
         ///     string.Format("SELECT * FROM offers o WHERE o.resource = '{0}'", collectionSelfLink)).AsEnumerable().FirstOrDefault();
@@ -995,9 +986,9 @@ namespace Microsoft.Azure.Cosmos
         /// This example below queries for offers
         /// <code language="c#">
         /// <![CDATA[
-        /// // Find the first collection with the S3 offer type
-        /// Offer offer = client.CreateOfferQuery("SELECT * FROM offers o WHERE o.offerType = @offerType",
-        /// new SqlParameterCollection(new SqlParameter[] { new SqlParameter { Name = "@offerType", Value = "S3" }}))
+        /// // Find the offer for the collection by SelfLink
+        /// Offer offer = client.CreateOfferQuery("SELECT * FROM offers o WHERE o.resource = @collectionSelfLink",
+        /// new SqlParameterCollection(new SqlParameter[] { new SqlParameter { Name = "@collectionSelfLink", Value = collection.SelfLink }}))
         /// .AsEnumerable().FirstOrDefault();
         /// 
         /// ]]>
@@ -1092,14 +1083,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<UserDefinedType> CreateUserDefinedTypeChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
         {
-            throw new NotImplementedException();
-            ////if (string.IsNullOrEmpty(databaseLink))
-            ////{
-            ////    throw new ArgumentException(nameof(databaseLink));
-            ////}
+            if (string.IsNullOrEmpty(databaseLink))
+            {
+                throw new ArgumentException(nameof(databaseLink));
+            }
 
-            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            ////return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink, feedOptions);
+            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink, feedOptions);
         }
         #endregion Query Methods
 

@@ -30,22 +30,21 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tests to make sure OpenAsync should fail fast with bad url.
         /// </summary>
-        [Ignore]
         [TestMethod]
         public async Task TestOpenAsyncFailFast()
         {
             Stopwatch watch = new Stopwatch();
-            watch.Start();
 
             string accountEndpoint = "https://veryrandomurl123456789.documents.azure.com:443/";
 
             try
             {
                 DocumentClient myclient = new DocumentClient(new Uri(accountEndpoint), "base64encodedurl",
-                    (HttpMessageHandler)null,
                     new ConnectionPolicy
                     {
                     });
+
+                watch.Start();
 
                 await myclient.OpenAsync();
             }
@@ -60,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             double totalms = watch.Elapsed.TotalMilliseconds;
 
             // it should fail fast and not into the retry logic.
-            Assert.IsTrue(totalms < 400, string.Format($"Actual time : {totalms} expected: 400"));
+            Assert.IsTrue(totalms < 400, $"time {totalms}ms is greater than 400ms, expected it to fail fast with no retries");
         }
 
         /// <summary>
@@ -90,9 +89,8 @@ namespace Microsoft.Azure.Cosmos
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-            DocumentClientEventSource envetSource = new DocumentClientEventSource();
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
-            DocumentClientEventSource eventSource = new DocumentClientEventSource();
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
@@ -100,20 +98,24 @@ namespace Microsoft.Azure.Cosmos
                 TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 eventSource,
+                null,
                 new UserAgentContainer(),
                 ApiType.None,
                 messageHandler);
 
-            using (DocumentServiceRequest request =
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
-                    OperationType.Query,
-                    ResourceType.Document,
+                    Documents.OperationType.Query,
+                    Documents.ResourceType.Document,
                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                     new MemoryStream(Encoding.UTF8.GetBytes("content1")),
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
-            {
-                await storeModel.ProcessMessageAsync(request);
+                {
+                    await storeModel.ProcessMessageAsync(request);
+                }
             }
 
             Assert.IsTrue(run > 0);
@@ -121,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Tests that empty session token is sent for operations on Session Consistent resources like 
+        /// Tests that empty session token is sent for operations on Session Consistent resources like
         /// Databases, Collections, Users, Permissions, PartitionKeyRanges, DatabaseAccounts and Offers
         /// </summary>
         [TestMethod]
@@ -131,8 +133,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
-                    OperationType.Read,
-                    ResourceType.Collection,
+                    Documents.OperationType.Read,
+                    Documents.ResourceType.Collection,
                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                     new MemoryStream(Encoding.UTF8.GetBytes("collection")),
                     AuthorizationTokenType.PrimaryMasterKey,
@@ -143,8 +145,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Tests that non-empty session token is sent for operations on Session inconsistent resources like 
-        /// Documents, Sprocs, UDFs, Triggers 
+        /// Tests that non-empty session token is sent for operations on Session inconsistent resources like
+        /// Documents, Sprocs, UDFs, Triggers
         /// </summary>
         [TestMethod]
         public async Task TestSessionTokenForSessionInconsistentResourceType()
@@ -228,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
                         sessionToken = singleToken;
                         break;
                     }
-                    Assert.AreEqual(sessionToken, "0:1#100#1=20#2=5#3=30");
+                    Assert.AreEqual(sessionToken, "range_0:1#9#4=8#5=7");
                 }
                 else
                 {
@@ -248,9 +250,9 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.SetSessionToken(
                     ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
                     "dbs/db1/colls/coll1",
-                    new DictionaryNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "0:1#100#1=20#2=5#3=30" } });
+                    new DictionaryNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_0:1#9#4=8#5=7" } });
 
-            DocumentClientEventSource eventSource = new DocumentClientEventSource();
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler httpMessageHandler = new MockMessageHandler(messageHandler);
 
             GatewayStoreModel storeModel = new GatewayStoreModel(
@@ -259,6 +261,7 @@ namespace Microsoft.Azure.Cosmos
                TimeSpan.FromSeconds(50),
                ConsistencyLevel.Session,
                eventSource,
+               null,
                new UserAgentContainer(),
                ApiType.None,
                httpMessageHandler);
@@ -268,11 +271,14 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task TestGatewayStoreModelProcessMessageAsync(GatewayStoreModel storeModel, DocumentServiceRequest request)
         {
-            request.Headers["x-ms-session-token"] = "0:1#100#1=20#2=5#3=30";
-            await storeModel.ProcessMessageAsync(request);
-            request.Headers.Remove("x-ms-session-token");
-            request.Headers["x-ms-consistency-level"] = "Session";
-            await storeModel.ProcessMessageAsync(request);
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                request.Headers["x-ms-session-token"] = "range_0:1#9#4=8#5=7";
+                await storeModel.ProcessMessageAsync(request);
+                request.Headers.Remove("x-ms-session-token");
+                request.Headers["x-ms-consistency-level"] = "Session";
+                await storeModel.ProcessMessageAsync(request);
+            }
         }
     }
 }

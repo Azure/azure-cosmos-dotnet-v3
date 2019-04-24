@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("userDefinedTypeUri");
             }
 
-            IDocumentClientRetryPolicy retryPolicyInstance = this.retryPolicy.GetRequestPolicy();
+            IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceUserDefinedTypePrivateAsync(userDefinedType, options, retryPolicyInstance, userDefinedTypeUri.OriginalString), retryPolicyInstance);
         }
         #endregion

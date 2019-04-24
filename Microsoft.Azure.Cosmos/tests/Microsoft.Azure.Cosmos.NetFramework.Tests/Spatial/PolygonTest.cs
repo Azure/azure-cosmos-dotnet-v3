@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1L, polygon.AdditionalProperties["extra"]);
 
             var geom = JsonConvert.DeserializeObject<Geometry>(json);
-            Assert.AreEqual(GeometryShape.Polygon, geom.Type);
+            Assert.AreEqual(GeometryType.Polygon, geom.Type);
 
             Assert.AreEqual(geom, polygon);
 
@@ -76,11 +76,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                     })
                         },
                     new GeometryParams
-                        {
-                            AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                            BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                            Crs = Crs.Named("SomeCrs")
-                        });
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
 
             var polygon2 = new Polygon(
                 new[]
@@ -96,11 +96,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                 })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var polygon3 = new Polygon(
                 new[]
@@ -116,11 +116,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                 })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var polygon4 = new Polygon(
                 new[]
@@ -136,11 +136,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                 })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var polygon5 = new Polygon(
                 new[]
@@ -156,11 +156,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                 })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var polygon6 = new Polygon(
                 new[]
@@ -176,11 +176,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                 })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs1")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs1")
+                });
 
             Assert.AreEqual(polygon1, polygon2);
             Assert.AreEqual(polygon1.GetHashCode(), polygon2.GetHashCode());
@@ -228,11 +228,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                                 })
                     },
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             Assert.AreEqual(new Position(20, 20), polygon.Rings[0].Positions[0]);
 

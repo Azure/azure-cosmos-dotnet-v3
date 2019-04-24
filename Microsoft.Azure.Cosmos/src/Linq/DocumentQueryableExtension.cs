@@ -7,7 +7,6 @@
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -536,7 +535,7 @@
 
         private static MethodInfo GetMethodInfoOf<T>(Expression<Func<T>> expression)
         {
-            var body = (MethodCallExpression)expression.Body;
+            MethodCallExpression body = (MethodCallExpression)expression.Body;
             return body.Method;
         }
 
