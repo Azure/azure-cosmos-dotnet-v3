@@ -39,23 +39,6 @@ namespace Microsoft.Azure.Cosmos
     public sealed class CompositePath 
     {
         /// <summary>
-        /// Creates a new instance of CompositePathDefinition with given path and sort-order
-        /// </summary>
-        public static CompositePath Create(string path, CompositePathSortOrder sortOrder)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentNullException($"{nameof(path)}");
-            }
-
-            return new CompositePath()
-            {
-                Path = path,
-                Order = sortOrder,
-            };
-        }
-
-        /// <summary>
         /// Gets or sets the full path in a document used for composite indexing.
         /// We do not support wildcards in the path.
         /// </summary>

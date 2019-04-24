@@ -1,22 +1,18 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using System;
+    using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System;
 
     /// <summary>
-    /// Specifies an instance of the <see cref="SpatialIndex"/> class in the Azure Cosmos DB service.
+    /// Spatial index specification 
     /// </summary>
-    /// <remarks>
-    /// Can be used to serve spatial queries.
-    /// </remarks>
-    public sealed class SpatialIndex : Index
+    internal sealed class SpatialIndex : Index, ICloneable
     {
         internal SpatialIndex()
             : base(IndexKind.Spatial)
@@ -52,5 +48,14 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.DataType)]
         [JsonConverter(typeof(StringEnumConverter))]
         public DataType DataType { get; set; }
+
+        /// <summary>
+        /// Creates a copy of the spatial index for the Azure Cosmos DB service.
+        /// </summary>
+        /// <returns>A clone of the spatial index.</returns>
+        public object Clone()
+        {
+            return new SpatialIndex(this.DataType);
+        }
     }
 }

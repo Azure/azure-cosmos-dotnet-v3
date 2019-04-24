@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-
     using System;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
@@ -54,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
-    public partial class CosmosContainerSettings
+    public class CosmosContainerSettings
     {
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
         private IndexingPolicy indexingPolicyInternal;
