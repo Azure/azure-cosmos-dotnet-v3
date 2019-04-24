@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines the target data type of an index path specification in the Azure Cosmos DB service.
     /// </summary>
-    internal enum SpatialType
+    public enum SpatialType
     {
         /// <summary>
         /// Represent a point data type.
