@@ -212,6 +212,47 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ContainerSettingsWithConflictResolution()
+        {
+            string id = Guid.NewGuid().ToString();
+            string pkPath = "/partitionKey";
+
+            // Two equivalent definitions 
+            CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath)
+            {
+                ConflictResolutionPolicy = new Cosmos.ConflictResolutionPolicy()
+                {
+                    Mode = Cosmos.ConflictResolutionMode.Custom,
+                    ConflictResolutionPath = "/path",
+                    ConflictResolutionProcedure = "sp"
+                }
+            };
+
+            DocumentCollection collection = new DocumentCollection()
+            {
+                Id = id,
+                ConflictResolutionPolicy = new ConflictResolutionPolicy()
+                {
+                    Mode = ConflictResolutionMode.Custom,
+                    ConflictResolutionPath = "/path",
+                    ConflictResolutionProcedure = "sp"
+                }
+            };
+
+            string cosmosSerialized = SettingsContractTests.CosmosSerialize(cosmosContainerSettings);
+            string directSerialized = SettingsContractTests.DirectSerialize(collection);
+
+            // Swap de-serialize and validate 
+            CosmosContainerSettings containerDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosContainerSettings>(directSerialized);
+            DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
+
+            Assert.AreEqual(cosmosContainerSettings.Id, collectionDeser.Id);
+            Assert.AreEqual((int)cosmosContainerSettings.ConflictResolutionPolicy.Mode, (int)collectionDeser.ConflictResolutionPolicy.Mode);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath, collectionDeser.ConflictResolutionPolicy.ConflictResolutionPath);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure, collectionDeser.ConflictResolutionPolicy.ConflictResolutionProcedure);
+        }
+
+        [TestMethod]
         public void ContainerSettingsWithIndexingPolicyTest()
         {
             string id = Guid.NewGuid().ToString();
@@ -275,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = Guid.NewGuid().ToString();
             string pkPath = "/partitionKey";
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerSettings), "Id", "UniqueKeyPolicy", "DefaultTimeToLive", "IndexingPolicy");
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerSettings), "Id", "UniqueKeyPolicy", "DefaultTimeToLive", "IndexingPolicy", "ConflictResolutionPolicy");
 
             // Two equivalent definitions 
             CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath);
@@ -289,6 +330,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(cosmosContainerSettings.DefaultTimeToLive);
 
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy);
+            Assert.IsNull(cosmosContainerSettings.ConflictResolutionPolicy);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy, cosmosContainerSettings.IndexingPolicy));
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy.IncludedPaths);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy.IncludedPaths, cosmosContainerSettings.IndexingPolicy.IncludedPaths));
