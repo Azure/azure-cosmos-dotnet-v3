@@ -5,13 +5,10 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
-    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Documents;
 
     internal sealed class FeedEstimatorCore : FeedEstimator
     {
@@ -38,33 +35,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     long estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
                     await this.dispatcher.DispatchEstimation(estimation, cancellationToken);
-                }
-                catch (CosmosException clientException)
-                {
-                    this.logger.WarnException("exception within estimator", clientException);
-                    DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(clientException.StatusCode, (SubStatusCodes)clientException.SubStatusCode);
-                    switch (docDbError)
-                    {
-                        case DocDbError.Undefined:
-                            throw;
-                        case DocDbError.PartitionNotFound:
-                        case DocDbError.PartitionSplit:
-                        case DocDbError.TransientError:
-                            break;
-                        default:
-                            this.logger.Fatal($"Unrecognized DocDbError enum value {docDbError}");
-                            Debug.Fail($"Unrecognized DocDbError enum value {docDbError}");
-                            throw;
-                    }
-
-                    if (clientException.TryGetHeader(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfterString))
-                    {
-                        TimeSpan? retryAfter = CosmosResponseMessageHeaders.GetRetryAfter(retryAfterString);
-                        if (retryAfter != TimeSpan.Zero)
-                        {
-                            delay = retryAfter.Value;
-                        }
-                    }
                 }
                 catch (TaskCanceledException canceledException)
                 {

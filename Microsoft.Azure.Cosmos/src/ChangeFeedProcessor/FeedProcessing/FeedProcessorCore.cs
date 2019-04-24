@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using System.Collections.ObjectModel;
+    using System.Net;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
@@ -51,15 +52,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
-                        if (!response.IsSuccessStatusCode)
+                        CosmosResponseMessage response;
+                        try
                         {
-                            this.logger.WarnFormat("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
-                            this.HandleFailedRequest(response, lastContinuation);
+                            response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                            response.EnsureSuccessStatusCodeOrNotModified();
+                        }
+                        catch (CosmosException cosmosException)
+                        {
+                            this.logger.WarnFormat("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, cosmosException.StatusCode, cosmosException.SubStatusCode);
+                            this.HandleFailedRequest(cosmosException.StatusCode, cosmosException.SubStatusCode, lastContinuation);
 
-                            if (response.Headers.RetryAfter != null)
+                            if (cosmosException.TryGetHeader(Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfterString))
                             {
-                                delay = response.Headers.RetryAfter.Value;
+                                TimeSpan? retryAfter = CosmosResponseMessageHeaders.GetRetryAfter(retryAfterString);
+                                if (retryAfter.HasValue)
+                                {
+                                    delay = retryAfter.Value;
+                                }
                             }
 
                             // Out of the loop for a retry
@@ -91,24 +101,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         }
 
         private void HandleFailedRequest(
-            CosmosResponseMessage response, 
+            HttpStatusCode statusCode,
+            int subStatusCode,
             string lastContinuation)
         {
-            DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(response.StatusCode, response.Headers.SubStatusCode);
+            DocDbError docDbError = ExceptionClassifier.ClassifyStatusCodes(statusCode, subStatusCode);
             switch (docDbError)
             {
-                case DocDbError.PartitionNotFound:
-                    throw new FeedNotFoundException("Partition not found.", lastContinuation);
                 case DocDbError.PartitionSplit:
                     throw new FeedSplitException("Partition split.", lastContinuation);
                 case DocDbError.Undefined:
-                    throw new InvalidOperationException($"Undefined DocDbError for status code {response.StatusCode} and substatus code {response.Headers.SubStatusCode}");
-                case DocDbError.TransientError:
-                    break;
+                    throw new InvalidOperationException($"Undefined DocDbError for status code {statusCode} and substatus code {subStatusCode}");
                 default:
                     this.logger.Fatal($"Unrecognized DocDbError enum value {docDbError}");
                     Debug.Fail($"Unrecognized DocDbError enum value {docDbError}");
-                    throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {response.StatusCode} and substatus code {response.Headers.SubStatusCode}");
+                    throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {statusCode} and substatus code {subStatusCode}");
             }
         }
 

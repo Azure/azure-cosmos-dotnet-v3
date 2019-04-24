@@ -11,21 +11,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors
     {
         public static DocDbError ClassifyStatusCodes(
             HttpStatusCode statusCode, 
-            SubStatusCodes subStatusCode)
+            int subStatusCode)
         {
-            if (statusCode == HttpStatusCode.NotFound && subStatusCode != SubStatusCodes.ReadSessionNotAvailable)
-            {
-                return DocDbError.PartitionNotFound;
-            }
-
-            if (statusCode == HttpStatusCode.Gone && (subStatusCode == SubStatusCodes.PartitionKeyRangeGone || subStatusCode == SubStatusCodes.CompletingSplit))
+            if (statusCode == HttpStatusCode.Gone && (subStatusCode == (int)SubStatusCodes.PartitionKeyRangeGone || subStatusCode == (int)SubStatusCodes.CompletingSplit))
             {
                 return DocDbError.PartitionSplit;
-            }
-
-            if (statusCode == HttpStatusCode.NotModified || statusCode == (HttpStatusCode)StatusCodes.TooManyRequests || statusCode >= HttpStatusCode.InternalServerError)
-            {
-                return DocDbError.TransientError;
             }
 
             return DocDbError.Undefined;

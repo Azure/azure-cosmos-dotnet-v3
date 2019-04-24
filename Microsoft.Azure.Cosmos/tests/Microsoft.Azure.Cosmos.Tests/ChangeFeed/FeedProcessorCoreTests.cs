@@ -8,16 +8,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -99,23 +96,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosDefaultJsonSerializer());
 
             await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
-        }
-
-        [TestMethod]
-        public async Task ThrowOnPartitionGone()
-        {
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
-
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
-
-            Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
-            Mock<CosmosFeedResultSetIterator> mockIterator = new Mock<CosmosFeedResultSetIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(GetResponse(HttpStatusCode.NotFound, false));
-
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosDefaultJsonSerializer());
-
-            await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
 
         private static CosmosResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)

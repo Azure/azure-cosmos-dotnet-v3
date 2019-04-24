@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
     using System.Threading;
@@ -19,25 +20,34 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
     internal sealed class RemainingWorkEstimatorCore : RemainingWorkEstimator
     {
-        public delegate CosmosFeedResultSetIterator RemainingWorkEstimatorFeedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning);
-
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosDefaultJsonSerializer();
-        private readonly RemainingWorkEstimatorFeedCreator feedCreator;
+        private readonly Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            RemainingWorkEstimatorFeedCreator feedCreator,
+            Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator,
             int degreeOfParallelism)
         {
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (feedCreator == null) throw new ArgumentNullException(nameof(feedCreator));
-            if (degreeOfParallelism < 1) throw new ArgumentException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            if (feedCreator == null)
+            {
+                throw new ArgumentNullException(nameof(feedCreator));
+            }
+
+            if (degreeOfParallelism < 1)
+            {
+                throw new ArgumentException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
+            }
 
             this.leaseContainer = leaseContainer;
             this.feedCreator = feedCreator;
@@ -46,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellationToken)
         {
-            var leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
+            IReadOnlyList<RemainingLeaseTokenWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
             if (leaseTokens.Count == 0) return 1;
 
             return leaseTokens.Sum(leaseToken => leaseToken.RemainingWork);
@@ -126,10 +136,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             try
             {
                 CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
-                if (response.StatusCode != System.Net.HttpStatusCode.NotModified)
-                {
-                    response.EnsureSuccessStatusCode();
-                }
+                response.EnsureSuccessStatusCodeOrNotModified();
 
                 long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
                 System.Collections.ObjectModel.Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
@@ -164,7 +171,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return property.Value<string>();
             }
 
-            throw new InvalidOperationException("Change Feed response item does not include LSN.");
+            Logger.Warn("Change Feed response item does not include LSN.");
+            return null;
         }
 
         private static JObject GetFirstItem(System.Collections.ObjectModel.Collection<JObject> response)
@@ -192,11 +200,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return parsed;
         }
 
-        private static System.Collections.ObjectModel.Collection<JObject> GetItemsFromResponse(CosmosResponseMessage response)
+        private static Collection<JObject> GetItemsFromResponse(CosmosResponseMessage response)
         {
             if (response.Content == null)
             {
-                return new System.Collections.ObjectModel.Collection<JObject>();
+                return new Collection<JObject>();
             }
 
             return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponse<JObject>>(response.Content).Data;

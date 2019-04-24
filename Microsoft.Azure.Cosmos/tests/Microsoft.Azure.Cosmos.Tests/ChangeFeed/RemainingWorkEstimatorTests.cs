@@ -2,6 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -12,7 +13,6 @@ using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json.Linq;
-using static Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement.RemainingWorkEstimatorCore;
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             List<string> requestedPKRanges = new List<string>();
 
-            RemainingWorkEstimatorFeedCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 requestedPKRanges.Add(partitionKeyRangeId);
                 return mockIterator.Object;
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            RemainingWorkEstimatorFeedCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 return mockIterator.Object;
             };
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            RemainingWorkEstimatorFeedCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 if (partitionKeyRangeId == "0")
                 {
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            RemainingWorkEstimatorFeedCreator feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+            Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
             {
                 if (partitionKeyRangeId == "0")
                 {
