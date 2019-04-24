@@ -11,43 +11,42 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Represents a container in the Azure Cosmos DB service. A container is a named logical container for items. 
+    /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents. 
     /// </summary>
     /// <remarks>
-    /// A database may contain zero or more named containers and each container consists of zero or more JSON items. 
-    /// Being schema-free, the items in a container do not need to share the same structure or fields. Since containers are application resources, 
+    /// A database may contain zero or more named containers and each container consists of zero or more JSON documents. 
+    /// Being schema-free, the documents in a container do not need to share the same structure or fields. Since containers are application resources, 
     /// they can be authorized using either the master key or resource keys.
-    /// Refer to <see>http://azure.microsoft.com/documentation/articles/documentdb-resources/#containers</see> for more details on containers.
+    /// Refer to <see>http://azure.microsoft.com/documentation/articles/documentdb-resources/#collections</see> for more details on containers.
     /// </remarks>
     /// <example>
     /// The example below creates a new partitioned container with 50000 Request-per-Unit throughput.
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync("testcontainer", "/country", 50000);
-    /// CosmosContainerSettings containerSettings = containerCreateResponse.Container;
+    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     CosmosContainerSettings containerSettings = container.Resource;
     /// ]]>
     /// </code>
     /// </example>
     /// <example>
-    /// The example below creates a new container with uniqueue indexing policy and Default-TTL
+    /// The example below creates a new container with a custom indexing policy.
     /// <code language="c#">
     /// <![CDATA[
-    /// CosmosContainerSettings containerSettings = 
-    ///             new CosmosContainerSettings("testcontainer", "/country")
-    ///             .WithDefaultTimeToLive(TimeSpan.FromMinutes(10))
-    ///             .IncludeUniqueKey("/firstName", "/lastName");
-    ///                 
-    /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
-    /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
+    ///     CosmosContainerSettings collectionsettings = new CosmosContainerSettings("MyCollection", "/country");
+    ///     collectionsettings.IndexingPolicy.Automatic = true;
+    ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
+    ///     
+    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync(collectionsettings);
     /// ]]>
     /// </code>
     /// </example>
     /// <example>
-    /// The example below deletes this container.
+    /// The example below deletes this collection.
     /// <code language="c#">
     /// <![CDATA[
-    /// await container.DeleteContainerAsync();
+    ///     CosmosContainer container = client.Databases["dbName"].Containers["MyCollection"];
+    ///     await container.DeleteAsync();
     /// ]]>
     /// </code>
     /// </example>
@@ -260,7 +259,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive)]
-        public int? DefaultTimeToLive { get; set; }
+        public virtual int? DefaultTimeToLive { get; set; }
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using System.IO;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [Ignore]
     [TestClass]
     public class JsonPerformanceTests
     {

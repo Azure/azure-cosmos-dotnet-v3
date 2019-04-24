@@ -353,12 +353,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
-            TimeSpan timeToLive = TimeSpan.FromSeconds(1);
+            int timeToLiveInSeconds = 10;
             CosmosContainerSettings setting = new CosmosContainerSettings()
             {
                 Id = containerName,
                 PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
-                DefaultTimeToLive = (int)timeToLive.TotalSeconds,
+                DefaultTimeToLive = timeToLiveInSeconds,
             };
 
             CosmosContainerResponse containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
@@ -366,11 +366,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer cosmosContainer = containerResponse;
             CosmosContainerSettings responseSettings = containerResponse;
 
-            Assert.AreEqual(timeToLive.TotalSeconds, responseSettings.DefaultTimeToLive);
+            Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
 
             CosmosContainerResponse readResponse = await cosmosContainer.ReadAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.AreEqual(timeToLive.TotalSeconds, readResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLive);
 
             JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
             CosmosItemResponse<JObject> createResponse = await cosmosContainer.Items.CreateItemAsync<JObject>(partitionKey: itemTest["users"].ToString(), item: itemTest);
@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/user";
-            TimeSpan timeToLive = TimeSpan.FromSeconds(10);
+            int timeToLivetimeToLiveInSeconds = 10;
             CosmosContainerSettings setting = new CosmosContainerSettings()
             {
                 Id = containerName,
@@ -473,17 +473,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Verify the container content.
-            setting.DefaultTimeToLive = timeToLive;
+            setting.DefaultTimeToLive = timeToLivetimeToLiveInSeconds;
             containerResponse = await this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(setting);
             CosmosContainer cosmosContainer = containerResponse;
-            Assert.AreEqual(timeToLive, containerResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
             Assert.AreEqual("/creationDate", containerResponse.Resource.TimeToLivePropertyPath);
 
             //verify removing the ttl property path
             setting.TimeToLivePropertyPath = null;
             containerResponse = await cosmosContainer.ReplaceAsync(setting);
             cosmosContainer = containerResponse;
-            Assert.AreEqual(timeToLive, containerResponse.Resource.DefaultTimeToLive);
+            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
             Assert.IsNull(containerResponse.Resource.TimeToLivePropertyPath);
 
             //adding back the ttl property path
