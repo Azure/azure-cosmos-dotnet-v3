@@ -69,6 +69,11 @@ namespace Microsoft.Azure.Cosmos
     {
         private Lazy<CosmosOffers> offerSet;
 
+        static CosmosClient()
+        {
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+        }
+
         /// <summary>
         /// Create a new CosmosClient with the connection
         /// </summary>
@@ -137,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException(nameof(cosmosClientConfiguration));
             }
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+
             DocumentClient documentClient = new DocumentClient(
                 cosmosClientConfiguration.AccountEndPoint,
                 cosmosClientConfiguration.AccountKey,
