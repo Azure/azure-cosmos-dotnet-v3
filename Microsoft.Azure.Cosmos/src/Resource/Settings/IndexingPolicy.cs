@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
-        public Collection<Collection<CompositePathDefinition>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePathDefinition>>();
+        public Collection<Collection<CompositePath>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
         /// Collection of spatial index definitions to be used
@@ -143,6 +143,6 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        public Collection<SpatialIndexDefinition> SpatialIndexes { get; set; } = new Collection<SpatialIndexDefinition>();
+        public Collection<SpatialSpec> SpatialIndexes { get; set; } = new Collection<SpatialSpec>();
     }
 }
