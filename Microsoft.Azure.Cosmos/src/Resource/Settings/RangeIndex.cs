@@ -4,12 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using System;
+    using System.Globalization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System;
-    using System.Globalization;
 
     /// <summary>
     /// Specifies an instance of the <see cref="RangeIndex"/> class in the Azure Cosmos DB service.
@@ -17,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Can be used to serve queries like: SELECT * FROM docs d WHERE d.prop > 5.
     /// </remarks>
-    public sealed class RangeIndex : Index, ICloneable
+    internal sealed class RangeIndex : Index, ICloneable
     {
         internal RangeIndex()
             : base(IndexKind.Range)

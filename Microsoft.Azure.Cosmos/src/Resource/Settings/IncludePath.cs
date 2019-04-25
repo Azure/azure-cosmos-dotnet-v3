@@ -37,6 +37,6 @@ namespace Microsoft.Azure.Cosmos
         /// The collection of the <see cref="Index"/> objects to be applied for this included path.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.Indexes)]
-        public Collection<Index> Indexes { get; set; } = new Collection<Index>();
+        internal Collection<Index> Indexes { get; set; } = new Collection<Index>();
     }
 }
