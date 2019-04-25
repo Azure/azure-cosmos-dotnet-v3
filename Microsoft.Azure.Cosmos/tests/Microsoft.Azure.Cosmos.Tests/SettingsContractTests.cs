@@ -102,6 +102,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void PartitionKeyDefinitionVersionValuesTest()
+        {
+            string[] allCosmosEntries = Enum.GetNames(typeof(PartitionKeyDefinitionVersion));
+            string[] allDocumentsEntries = Enum.GetNames(typeof(Documents.PartitionKeyDefinitionVersion));
+
+            CollectionAssert.AreEqual(allCosmosEntries, allDocumentsEntries);
+
+            foreach(string entry in allCosmosEntries)
+            {
+                
+                Enum.TryParse<PartitionKeyDefinitionVersion>(entry, out PartitionKeyDefinitionVersion cosmosVersion);
+                Enum.TryParse<Documents.PartitionKeyDefinitionVersion>(entry, out Documents.PartitionKeyDefinitionVersion documentssVersion);
+
+                Assert.AreEqual(documentssVersion, cosmosVersion);
+            }
+        }
+
+        [TestMethod]
         public void ContainerSettingsWithIndexingPolicyTest()
         {
             string id = Guid.NewGuid().ToString();

@@ -77,12 +77,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerResponse = await cosmosContainer.ReadAsync();
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(PartitionKeyDefinitionVersion.V2, containerResponse.Resource.PartitionKeyDefinitionVersion);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
             Assert.AreEqual(Cosmos.IndexingMode.None, containerResponse.Resource.IndexingPolicy.IndexingMode);
             Assert.IsFalse(containerResponse.Resource.IndexingPolicy.Automatic);
 
             containerResponse = await containerResponse.Container.DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateHashV1Container()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+
+            CosmosContainerSettings settings = new CosmosContainerSettings(containerName, partitionKeyPath);
+            settings.PartitionKeyDefinitionVersion = Cosmos.PartitionKeyDefinitionVersion.V1;
+
+            CosmosContainerResponse cosmosContainerResponse = await this.cosmosDatabase.Containers.CreateContainerAsync(settings);
+
+            Assert.AreEqual(HttpStatusCode.Created, cosmosContainerResponse.StatusCode);
+
+            Assert.AreEqual(PartitionKeyDefinitionVersion.V1, cosmosContainerResponse.Resource.PartitionKeyDefinitionVersion);
         }
 
         [TestMethod]
