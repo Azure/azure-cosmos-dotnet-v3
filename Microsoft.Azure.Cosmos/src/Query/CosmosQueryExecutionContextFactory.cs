@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly DocumentClient documentClient;
         private readonly AsyncLazy<IDocumentQueryExecutionContext> innerExecutionContext;
 
+        public static bool TestFlag = true;
+
         public CosmosQueryExecutionContextFactory(
             DocumentClient documentClient,
             CosmosQueryClient client,
@@ -167,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.cosmosQueryContext.ContainerResourceId = containerSettings.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            if (this.cosmosQueryContext.QueryClient.ByPassQueryParsing())
+            if (this.cosmosQueryContext.QueryClient.ByPassQueryParsing() && TestFlag)
             {
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                 // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this

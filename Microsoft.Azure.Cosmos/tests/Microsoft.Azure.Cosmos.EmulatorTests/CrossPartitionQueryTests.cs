@@ -1050,6 +1050,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestQueryPlanGatewayAndServiceInterop()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
+            IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
+
+            bool originalTestFlag = CosmosQueryExecutionContextFactory.TestFlag;
+
+            foreach (bool testFlag in new bool[] { true, false})
+            {
+                try
+                {
+                    CosmosQueryExecutionContextFactory.TestFlag = testFlag;
+                    await this.CreateIngestQueryDelete(
+                        ConnectionModes.Direct,
+                        documents,
+                        this.TestQueryPlanGatewayAndServiceInteropHelper);
+                }
+                finally
+                {
+                    CosmosQueryExecutionContextFactory.TestFlag = originalTestFlag;
+                }
+            }
+        }
+
+        private async Task TestQueryPlanGatewayAndServiceInteropHelper(
+            CosmosContainer container,
+            IEnumerable<Document> documents)
+        {
+            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+            {
+                foreach (int maxItemCount in new int[] { 10, 100 })
+                {
+                    CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                    {
+                        EnableCrossPartitionQuery = true,
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = maxDegreeOfParallelism
+                    };
+
+                    List<JToken> actualFromQueryWithoutContinutionTokens;
+                    actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
+                        container,
+                        "SELECT * FROM c ORDER BY c._ts",
+                        maxItemCount,
+                        feedOptions);
+
+                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctions()
         {
             AggregateTestArgs aggregateTestArgs = new AggregateTestArgs()
