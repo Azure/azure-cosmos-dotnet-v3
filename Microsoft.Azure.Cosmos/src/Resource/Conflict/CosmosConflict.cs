@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -21,8 +20,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Deletes the current conflict instance
         /// </summary>
-        /// <param name="cancellationToken"></param>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns></returns>
-        public abstract Task<CosmosConflictResponse> DeleteAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<CosmosConflictResponse> DeleteAsync(object partitionKey, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

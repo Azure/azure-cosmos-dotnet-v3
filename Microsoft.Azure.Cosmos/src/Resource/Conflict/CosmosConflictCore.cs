@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        public override Task<CosmosConflictResponse> DeleteAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<CosmosConflictResponse> DeleteAsync(object partitionKey, CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
                 client: this.Client,
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: null,
                 cosmosContainerCore: this.container,
-                partitionKey: null,
+                partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
