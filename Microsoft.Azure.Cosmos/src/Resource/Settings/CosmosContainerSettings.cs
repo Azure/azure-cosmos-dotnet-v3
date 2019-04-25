@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the <see cref="ConflictResolutionPolicy" />
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
-        public virtual ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
+        public virtual ConflictResolutionPolicy ConflictResolutionPolicy { get; set; } = new ConflictResolutionPolicy();
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
