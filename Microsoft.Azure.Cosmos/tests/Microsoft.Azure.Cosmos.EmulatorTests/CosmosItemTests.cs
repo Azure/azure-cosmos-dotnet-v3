@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosContainer Container = null;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
+        private CosmosContainerSettings containerSettings = null;
 
         private static CosmosContainer fixedContainer = null;
         private static readonly string utc_date = DateTime.UtcNow.ToString("r");
@@ -44,8 +45,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
+            this.containerSettings = new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                this.containerSettings,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -438,11 +440,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task EpkPointReadTest()
+        {
+            string pk = Guid.NewGuid().ToString();
+            string epk = new PartitionKey(pk)
+                            .InternalKey
+                            .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
+
+            CosmosItemRequestOptions itemRequestOptions = new CosmosItemRequestOptions();
+            itemRequestOptions.Properties = new Dictionary<string, object>();
+            itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
+
+            CosmosResponseMessage response = await this.Container.Items.ReadItemStreamAsync(
+                null,
+                Guid.NewGuid().ToString(),
+                itemRequestOptions);
+
+            // Ideally it should be NotFound
+            // BadReqeust bcoz collection is regular and not binary 
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
         /// <summary>
         /// Validate that if the EPK is set in the options that only a single range is selected.
         /// </summary>
         [TestMethod]
-        public async Task ItemEpkQueryValidation()
+        public async Task ItemEpkQuerySingleKeyRangeValidation()
         {
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
             CosmosContainer container = null;
