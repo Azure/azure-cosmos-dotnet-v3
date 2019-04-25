@@ -41,14 +41,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a new instance of CompositePathDefinition with given path and sort-order
         /// </summary>
-        public static CompositePathDefinition Create(string path, CompositePathSortOrder sortOrder)
+        public static CompositePath Create(string path, CompositePathSortOrder sortOrder)
         {
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentNullException($"{nameof(path)}");
             }
 
-            return new CompositePathDefinition()
+            return new CompositePath()
             {
                 Path = path,
                 Order = sortOrder,

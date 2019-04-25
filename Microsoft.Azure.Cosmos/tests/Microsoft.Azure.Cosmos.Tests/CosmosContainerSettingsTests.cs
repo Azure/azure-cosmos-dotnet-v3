@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos
                 .WithExcludeIndexPath("/excludepath1")
                 .WithExcludeIndexPath("/excludepath2")
                 .WithCompositeIndex("/compPath1", "/compPath2")
-                .WithCompositeIndex(CompositePathDefinition.Create("/property1", CompositePathSortOrder.Descending),
-                    CompositePathDefinition.Create("/property2", CompositePathSortOrder.Descending))
+                .WithCompositeIndex(CompositePath.Create("/property1", CompositePathSortOrder.Descending),
+                    CompositePath.Create("/property2", CompositePathSortOrder.Descending))
                 .WithUniqueKey("/uniqueueKey1", "/uniqueueKey2")
                 .WithSpatialIndex("/spatialPath", SpatialType.Point);
         }
@@ -55,12 +55,12 @@ namespace Microsoft.Azure.Cosmos
             ip.IncludedPaths.Add(new IncludedPath() { Path = "/includepath1", Indexes = CosmosContainerSettings.DefaultIndexes});
             ip.ExcludedPaths.Add(new ExcludedPath() { Path = "/excludepath1" });
 
-            Collection<CompositePathDefinition> compositePath = new Collection<CompositePathDefinition>();
-            compositePath.Add(new CompositePathDefinition() { Path = "/compositepath1", Order = CompositePathSortOrder.Ascending });
-            compositePath.Add(new CompositePathDefinition() { Path = "/compositepath2", Order = CompositePathSortOrder.Ascending });
+            Collection<CompositePath> compositePath = new Collection<CompositePath>();
+            compositePath.Add(new CompositePath() { Path = "/compositepath1", Order = CompositePathSortOrder.Ascending });
+            compositePath.Add(new CompositePath() { Path = "/compositepath2", Order = CompositePathSortOrder.Ascending });
             ip.CompositeIndexes.Add(compositePath);
 
-            SpatialIndexDefinition spatialSpec = new SpatialIndexDefinition();
+            SpatialSpec spatialSpec = new SpatialSpec();
             spatialSpec.Path = "/spatialpath1";
             spatialSpec.SpatialTypes = new Collection<SpatialType>();
             spatialSpec.SpatialTypes.Add(SpatialType.Point);
@@ -173,11 +173,11 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => containerSettings.WithExcludeIndexPath(string.Empty));
 
             CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => containerSettings.WithSpatialIndex(null));
-            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => CompositePathDefinition.Create("ABC", CompositePathSortOrder.Descending));
+            CosmosContainerSettingsTests.AssertException<ArgumentNullException>(() => CompositePath.Create("ABC", CompositePathSortOrder.Descending));
 
             CosmosContainerSettingsTests.AssertException<ArgumentOutOfRangeException>(() => containerSettings.WithCompositeIndex(string.Empty));
             CosmosContainerSettingsTests.AssertException<ArgumentOutOfRangeException>(() => containerSettings.WithCompositeIndex("abc", null));
-            CosmosContainerSettingsTests.AssertException<ArgumentOutOfRangeException>(() => containerSettings.WithCompositeIndex(null, CompositePathDefinition.Create("ABC", CompositePathSortOrder.Descending)));
+            CosmosContainerSettingsTests.AssertException<ArgumentOutOfRangeException>(() => containerSettings.WithCompositeIndex(null, CompositePath.Create("ABC", CompositePathSortOrder.Descending)));
         }
 
         public static void AssertException<T>(Action action) where T : Exception
