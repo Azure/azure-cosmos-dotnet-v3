@@ -2574,7 +2574,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("brchon")]
         public async Task TestQueryCrossPartitionOffsetLimit()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
