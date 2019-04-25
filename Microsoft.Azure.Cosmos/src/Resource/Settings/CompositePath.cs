@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines the target data type of an index path specification in the Azure Cosmos DB service.
     /// </summary>
-    internal enum CompositePathSortOrder
+    public enum CompositePathSortOrder
     {
         /// <summary>
         /// Ascending sort order for composite paths.
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
     /// For example if you want to run a query like "SELECT * FROM c ORDER BY c.age, c.height",
     /// then you need to add "/age" and "/height" as composite paths to your composite index.
     /// </summary>
-    internal sealed class CompositePath 
+    public sealed class CompositePath 
     {
         /// <summary>
         /// Gets or sets the full path in a document used for composite indexing.

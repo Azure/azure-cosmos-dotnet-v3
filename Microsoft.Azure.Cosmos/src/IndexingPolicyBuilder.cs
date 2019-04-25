@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public sealed class SpatialIndex
+        internal sealed class SpatialIndex
         {
             [JsonProperty(PropertyName = Constants.Properties.Path)]
             public string Path { get; }

@@ -1,22 +1,18 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using System;
+    using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System;
 
     /// <summary>
-    /// Specifies an instance of the <see cref="SpatialIndex"/> class in the Azure Cosmos DB service.
+    /// Specifies an instance of the <see cref="SpatialIndex"/> class in the Azure Cosmos DB service. 
     /// </summary>
-    /// <remarks>
-    /// Can be used to serve spatial queries.
-    /// </remarks>
-    public sealed class SpatialIndex : Index
+    internal sealed class SpatialIndex : Index
     {
         internal SpatialIndex()
             : base(IndexKind.Spatial)
