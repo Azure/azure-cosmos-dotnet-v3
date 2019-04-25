@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(cosmosContainerSettings.DefaultTimeToLive);
 
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy);
-            Assert.IsNull(cosmosContainerSettings.ConflictResolutionPolicy);
+            Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy, cosmosContainerSettings.IndexingPolicy));
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy.IncludedPaths);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy.IncludedPaths, cosmosContainerSettings.IndexingPolicy.IncludedPaths));
