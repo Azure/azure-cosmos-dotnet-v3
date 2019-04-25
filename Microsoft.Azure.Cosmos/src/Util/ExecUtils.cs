@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (client == null)
             {
-                throw new ArgumentException(nameof(client));
+                throw new ArgumentNullException(nameof(client));
             }
 
             return ExecUtils.ProcessResourceOperationAsync(

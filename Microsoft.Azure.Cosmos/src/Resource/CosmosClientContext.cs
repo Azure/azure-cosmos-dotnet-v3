@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             string uriPathSegment,
             string id);
 
-        internal abstract void ValidateResource(string resourceId);
+        internal abstract void ValidateResource(string id);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 

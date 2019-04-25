@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     public abstract class CosmosStoredProcedure
     {
         /// <summary>
-        /// The Id of the cosmos resource
+        /// The Id of the Cosmos stored procedure
         /// </summary>
         public abstract string Id { get; }
 

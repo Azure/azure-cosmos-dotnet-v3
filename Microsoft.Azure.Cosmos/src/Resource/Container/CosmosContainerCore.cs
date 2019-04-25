@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
         internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+            ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             return await collectionCache.GetByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
         }
 

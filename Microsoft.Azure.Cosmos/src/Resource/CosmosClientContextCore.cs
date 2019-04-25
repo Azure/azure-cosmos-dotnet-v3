@@ -14,8 +14,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosClientContextCore : CosmosClientContext
     {
-        private static readonly char[] InvalidCharacters = new char[] { '/', '\\', '?', '#' };
-
         internal CosmosClientContextCore(
             CosmosClient client,
             CosmosClientConfiguration clientConfiguration,

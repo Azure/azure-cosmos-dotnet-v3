@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     public abstract class CosmosContainer
     {
         /// <summary>
-        /// The Id of the cosmos resource
+        /// The Id of the Cosmos container
         /// </summary>
         public abstract string Id { get; }
 
