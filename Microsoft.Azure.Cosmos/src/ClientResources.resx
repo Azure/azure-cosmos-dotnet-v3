@@ -120,14 +120,53 @@
   <data name="AuthTokenNotFound" xml:space="preserve">
     <value>The client does not have any valid token for the requested resource {0}.</value>
   </data>
+  <data name="BadQuery_IllegalMemberAccess" xml:space="preserve">
+    <value>Query expression is invalid, member {0} of type {1} is invalid.</value>
+  </data>
+  <data name="BadQuery_InvalidArrayIndexExpression" xml:space="preserve">
+    <value>Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are MemberAccess and ArrayIndex.</value>
+  </data>
+  <data name="BadQuery_InvalidArrayIndexType" xml:space="preserve">
+    <value>Type {0} for an array index parameter is invalid. Array index parameter must be int.</value>
+  </data>
+  <data name="BadQuery_InvalidComparison" xml:space="preserve">
+    <value>Query expression is invalid, expression {0} must either have LHS or RHS as constant.</value>
+  </data>
+  <data name="BadQuery_InvalidComparisonType" xml:space="preserve">
+    <value>Query expression is invalid, expression {0} of type {1} cannot be used in this context.</value>
+  </data>
   <data name="BadQuery_InvalidExpression" xml:space="preserve">
     <value>Query expression is invalid, expression {0} is unsupported. Supported expressions are 'Queryable.Where', 'Queryable.Select' &amp; 'Queryable.SelectMany'</value>
+  </data>
+  <data name="BadQuery_InvalidLeftExpression" xml:space="preserve">
+    <value>Query expression is invalid, expression {0} is not allowed in this context.</value>
+  </data>
+  <data name="BadQuery_InvalidMemberAccessExpression" xml:space="preserve">
+    <value>Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are parameter reference, array index and property reference.</value>
+  </data>
+  <data name="BadQuery_InvalidMethodCall" xml:space="preserve">
+    <value>Query expression is invalid, method call {0} is not allowed at this context. Allowed methods are {1}.</value>
+  </data>
+  <data name="BadQuery_InvalidQueryType" xml:space="preserve">
+    <value>QueryType {0} is not supported.</value>
+  </data>
+  <data name="BadQuery_InvalidReturnType" xml:space="preserve">
+    <value>Query expression is invalid, expression return type {0} is unsupported. Query must evaluate to IEnumerable.</value>
+  </data>
+  <data name="BadQuery_TooManySelectManyArguments" xml:space="preserve">
+    <value>Query expression is invalid, expression {0} contains too many arguments. </value>
+  </data>
+  <data name="BadQuery_TransformQueryException" xml:space="preserve">
+    <value>An error occured while evaluating the transform expression {0}.</value>
   </data>
   <data name="BadSession" xml:space="preserve">
     <value>Session object retrieved from client with endpoint {0} cannot be used on a client initialized to endpoint {1}.</value>
   </data>
   <data name="BinaryOperatorNotSupported" xml:space="preserve">
     <value>Binary operator '{0}' is not supported.</value>
+  </data>
+  <data name="ConstantTypeIsNotSupported" xml:space="preserve">
+    <value>Constant of type '{0}' is not supported.</value>
   </data>
   <data name="ConstructorInvocationNotSupported" xml:space="preserve">
     <value>Constructor invocation is not supported.</value>
@@ -153,8 +192,14 @@
   <data name="InvalidRangeError" xml:space="preserve">
     <value>Range low value must be less than or equal the high value.</value>
   </data>
+  <data name="InvalidSkipValue" xml:space="preserve">
+    <value>The count value provided for a Skip expression must be a non-negative integer.</value>
+  </data>
   <data name="InvalidTakeValue" xml:space="preserve">
-    <value>The count value provided for a Take expression must be an integer.</value>
+    <value>The count value provided for a Take expression must be a non-negative integer.</value>
+  </data>
+  <data name="InvalidTypesForMethod" xml:space="preserve">
+    <value>Method '{0}' can not be invoked for type '{1}'. Supported types are '[{2}]'.</value>
   </data>
   <data name="MediaLinkInvalid" xml:space="preserve">
     <value>MediaLink is invalid</value>
@@ -171,8 +216,23 @@
   <data name="OnlyLINQMethodsAreSupported" xml:space="preserve">
     <value>Method '{0}' is not supported. Only LINQ Methods are supported.</value>
   </data>
+  <data name="PartitionKeyExtractError" xml:space="preserve">
+    <value>Unable to extract partition key from document. Ensure that you have provided a valid PartitionKeyValueExtractor function.</value>
+  </data>
+  <data name="PartitionPropertyNotFound" xml:space="preserve">
+    <value>Partition property not found in the document.</value>
+  </data>
+  <data name="PartitionResolver_DatabaseAlreadyExist" xml:space="preserve">
+    <value>An IPartitionResolver already exists for this database</value>
+  </data>
+  <data name="PartitionResolver_DatabaseDoesntExist" xml:space="preserve">
+    <value>No IPartitionResolver available for this database</value>
+  </data>
   <data name="PathExpressionsOnly" xml:space="preserve">
     <value>Only path expressions are supported for SelectMany.</value>
+  </data>
+  <data name="RangeNotFoundError" xml:space="preserve">
+    <value>A containing range for {0} doesn't exist in the partition map.</value>
   </data>
   <data name="StringCompareToInvalidConstant" xml:space="preserve">
     <value>The right hand side of string.CompareTo() comparison must be constant '0'</value>
@@ -186,7 +246,16 @@
   <data name="UnaryOperatorNotSupported" xml:space="preserve">
     <value>Unary operator '{0}' is not supported.</value>
   </data>
+  <data name="UnexpectedAuthTokenType" xml:space="preserve">
+    <value>Unexpected authorization token type '({0})'. Expected '{1}'.</value>
+  </data>
   <data name="UnexpectedTokenType" xml:space="preserve">
     <value>Unexpected token type: {0}</value>
+  </data>
+  <data name="UnsupportedPartitionKey" xml:space="preserve">
+    <value>Unsupported type {0} for partitionKey.</value>
+  </data>
+  <data name="ValueAndAnonymousTypesAndGeometryOnly" xml:space="preserve">
+    <value>Instantiation of only value types, anonymous types and spatial types are supported.</value>
   </data>
 </root>

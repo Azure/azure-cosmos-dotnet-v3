@@ -30,34 +30,39 @@ namespace Microsoft.Azure.Cosmos.Query
             None = 0x0000,
 
             /// <summary>
+            /// Undefined JSON Value.
+            /// </summary>
+            Undefined = 0x0001,
+
+            /// <summary>
             /// Null JSON Value.
             /// </summary>
-            Null = 0x0001,
+            Null = 0x0002,
 
             /// <summary>
             /// False JSON Value.
             /// </summary>
-            False = 0x0002,
+            False = 0x0004,
 
             /// <summary>
             /// True JSON Value.
             /// </summary>
-            True = 0x0004,
+            True = 0x0008,
 
             /// <summary>
             /// Empty String.
             /// </summary>
-            EmptyString = 0x0008,
+            EmptyString = 0x0010,
 
             /// <summary>
             /// Empty Array.
             /// </summary>
-            EmptyArray = 0x0010,
+            EmptyArray = 0x0020,
 
             /// <summary>
             /// Empty Object.
             /// </summary>
-            EmptyObject = 0x0020,
+            EmptyObject = 0x0040,
         }
 
         /// <summary>

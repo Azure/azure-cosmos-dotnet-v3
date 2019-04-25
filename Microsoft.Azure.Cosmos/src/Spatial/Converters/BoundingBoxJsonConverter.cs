@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
         /// <param name="serializer">The calling serializer.</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var boundingBox = (BoundingBox)value;
+            BoundingBox boundingBox = (BoundingBox)value;
             serializer.Serialize(writer, boundingBox.Min.Coordinates.Concat(boundingBox.Max.Coordinates));
         }
 
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
             object existingValue,
             JsonSerializer serializer)
         {
-            var coordinates = serializer.Deserialize<double[]>(reader);
+            double[] coordinates = serializer.Deserialize<double[]>(reader);
             if (coordinates == null)
             {
                 return null;

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal partial class DocumentClient
@@ -88,9 +87,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<Database> CreateDatabaseChangeFeedQuery(ChangeFeedOptions feedOptions)
         {
-            throw new NotImplementedException();
-            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            ////return new Document.ChangeFeedQuery<Database>(this, ResourceType.Database, null, feedOptions);
+            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            return new ChangeFeedQuery<Database>(this, ResourceType.Database, null, feedOptions);
         }
 
         /// <summary>
@@ -171,14 +169,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<DocumentCollection> CreateDocumentCollectionChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
         {
-            throw new NotImplementedException();
-            ////if(string.IsNullOrEmpty(databaseLink))
-            ////{
-            ////    throw new ArgumentException(nameof(databaseLink));
-            ////}
+            if(string.IsNullOrEmpty(databaseLink))
+            {
+                throw new ArgumentException(nameof(databaseLink));
+            }
 
-            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            ////return new ChangeFeedQuery<DocumentCollection>(this, ResourceType.Collection, databaseLink, feedOptions);
+            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            return new ChangeFeedQuery<DocumentCollection>(this, ResourceType.Collection, databaseLink, feedOptions);
         }
 
         /// <summary>
@@ -400,7 +397,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Conflict"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<Conflict> CreateConflictQuery(string collectionLink, FeedOptions feedOptions = null)
         {
@@ -424,7 +420,6 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Conflict"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateConflictQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -449,7 +444,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateConflictQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
@@ -516,7 +511,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<T> CreateDocumentQuery<T>(string collectionLink, FeedOptions feedOptions = null)
         {
@@ -604,7 +599,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -706,7 +701,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<T> CreateDocumentQuery<T>(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
@@ -756,7 +751,7 @@ namespace Microsoft.Azure.Cosmos
         /// This overload should be used when the schema of the queried documents is unknown or when querying by ID and replacing/deleting documents.
         /// Since Document is a DynamicObject, it can be dynamically cast back to the original C# object.
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<Document> CreateDocumentQuery(string collectionLink, FeedOptions feedOptions = null)
 
@@ -802,7 +797,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentQuery(string collectionLink, string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -852,7 +847,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Document"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateDocumentQuery(string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
@@ -923,7 +918,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery{T}"/>
         /// <seealso cref="ChangeFeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.PartitionKeyRange"/>
+        /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         public IDocumentQuery<Document> CreateDocumentChangeFeedQuery(string collectionLink, ChangeFeedOptions feedOptions)
         {
             if (collectionLink == null)
@@ -943,16 +938,13 @@ namespace Microsoft.Azure.Cosmos
         /// This example below queries for offers
         /// <code language="c#">
         /// <![CDATA[
-        /// // Find the first collection with the S3 offer type
-        /// Offer offer = client.CreateOfferQuery().Where(o => o.OfferType == "S3").AsEnumerable().FirstOrDefault();
-        /// 
         /// // Find the offer for the collection by SelfLink
         /// Offer offer = client.CreateOfferQuery().Where(o => o.Resource == collectionSelfLink).AsEnumerable().FirstOrDefault();
         /// ]]>
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Offer"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<Offer> CreateOfferQuery(FeedOptions feedOptions = null)
         {
@@ -969,9 +961,6 @@ namespace Microsoft.Azure.Cosmos
         /// This example below queries for offers
         /// <code language="c#">
         /// <![CDATA[
-        /// // Find the first collection with the S3 offer type
-        /// Offer offer = client.CreateOfferQuery("SELECT * FROM offers o WHERE o.offerType = 'S3'").AsEnumerable().FirstOrDefault();
-        /// 
         /// // Find the offer for the collection by SelfLink
         /// Offer offer = client.CreateOfferQuery(
         ///     string.Format("SELECT * FROM offers o WHERE o.resource = '{0}'", collectionSelfLink)).AsEnumerable().FirstOrDefault();
@@ -979,7 +968,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Offer"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateOfferQuery(string sqlExpression, FeedOptions feedOptions = null)
         {
@@ -997,16 +986,16 @@ namespace Microsoft.Azure.Cosmos
         /// This example below queries for offers
         /// <code language="c#">
         /// <![CDATA[
-        /// // Find the first collection with the S3 offer type
-        /// Offer offer = client.CreateOfferQuery("SELECT * FROM offers o WHERE o.offerType = @offerType",
-        /// new SqlParameterCollection(new SqlParameter[] { new SqlParameter { Name = "@offerType", Value = "S3" }}))
+        /// // Find the offer for the collection by SelfLink
+        /// Offer offer = client.CreateOfferQuery("SELECT * FROM offers o WHERE o.resource = @collectionSelfLink",
+        /// new SqlParameterCollection(new SqlParameter[] { new SqlParameter { Name = "@collectionSelfLink", Value = collection.SelfLink }}))
         /// .AsEnumerable().FirstOrDefault();
         /// 
         /// ]]>
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Internal.Offer"/>
+        /// <seealso cref="Microsoft.Azure.Documents.Offer"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IQueryable<dynamic> CreateOfferQuery(SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
@@ -1094,14 +1083,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<UserDefinedType> CreateUserDefinedTypeChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
         {
-            throw new NotImplementedException();
-            ////if (string.IsNullOrEmpty(databaseLink))
-            ////{
-            ////    throw new ArgumentException(nameof(databaseLink));
-            ////}
+            if (string.IsNullOrEmpty(databaseLink))
+            {
+                throw new ArgumentException(nameof(databaseLink));
+            }
 
-            ////ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            ////return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink, feedOptions);
+            ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
+            return new ChangeFeedQuery<UserDefinedType>(this, ResourceType.UserDefinedType, databaseLink, feedOptions);
         }
         #endregion Query Methods
 

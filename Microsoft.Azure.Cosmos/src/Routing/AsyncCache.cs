@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.Common
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cache which supports asynchronous value initialization.
@@ -42,7 +44,21 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public void Set(TKey key, TValue value)
         {
-            this.values[key] = new AsyncLazy<TValue>(() => value, CancellationToken.None);
+            AsyncLazy<TValue> lazyValue = new AsyncLazy<TValue>(() => value, CancellationToken.None);
+
+            // Access it to mark as created+completed, so that further calls to getasync do not overwrite.
+            TValue x = lazyValue.Value.Result;
+
+            this.values.AddOrUpdate(key, lazyValue, (k, existingValue) =>
+            {
+                // Observe all exceptions thrown for existingValue.
+                if (existingValue.IsValueCreated)
+                {
+                    Task unused = existingValue.Value.ContinueWith(c => c.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                }
+
+                return lazyValue;
+            });
         }
 
         /// <summary>
@@ -65,60 +81,116 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <param name="obsoleteValue">Value which is obsolete and needs to be refreshed.</param>
         /// <param name="singleValueInitFunc">Initialization function.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="forceRefresh">Skip cached value and generate new value.</param>
         /// <returns>Cached value or value returned by initialization function.</returns>
         public async Task<TValue> GetAsync(
            TKey key,
            TValue obsoleteValue,
            Func<Task<TValue>> singleValueInitFunc,
-           CancellationToken cancellationToken)
+           CancellationToken cancellationToken,
+           bool forceRefresh = false)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             AsyncLazy<TValue> initialLazyValue;
-            if (this.values.TryGetValue(key, out initialLazyValue) && !initialLazyValue.IsFaultedOrCancelled)
+
+            // Check if we have a generator for that value and it's running/ran.
+            // If not, we prefer to the use the generator passed-in, to let old closures go.
+            if (this.values.TryGetValue(key, out initialLazyValue) && initialLazyValue.IsValueCreated)
             {
-                try
+                // If we're currently computing a value, then return it...
+                if (!initialLazyValue.Value.IsCompleted)
                 {
-                    if (!initialLazyValue.IsCompleted || !this.valueEqualityComparer.Equals(await initialLazyValue.Value, obsoleteValue))
+                    try
                     {
                         return await initialLazyValue.Value;
                     }
+
+                    // It does not matter to us if this instance of the task throws - the lambda that failed was provided by a different caller.
+                    // The exception that we see here will be handled/logged by whatever caller provided the failing lambda, if any. Our part is catching and observing it.
+                    // As such, we discard this exception and will retry with our own lambda below, for which we will let exception bubble up.
+                    catch
+                    {
+                    }
                 }
-                // another thread failed and caused the cached task to fail as well.
-                // re-enqueue our task.
-                catch
+
+                // Don't check Task if there's an exception or it's been canceled. Accessing Task.Exception marks it as observed, which we want.
+                else if (initialLazyValue.Value.Exception == null && !initialLazyValue.Value.IsCanceled)
                 {
+                    TValue cachedValue = await initialLazyValue.Value;
+
+                    // If not forcing refresh or obsolete value, use cached value.
+                    if (!forceRefresh && !this.valueEqualityComparer.Equals(cachedValue, obsoleteValue))
+                    {
+                        return cachedValue;
+                    }
                 }
             }
 
             AsyncLazy<TValue> newLazyValue = new AsyncLazy<TValue>(singleValueInitFunc, cancellationToken);
 
-            // Update the new task in the cache, 
+            // Update the new task in the cache - compare-and-swap style.
             AsyncLazy<TValue> actualValue = this.values.AddOrUpdate(
                 key,
                 newLazyValue,
                 (existingKey, existingValue) => object.ReferenceEquals(existingValue, initialLazyValue) ? newLazyValue : existingValue);
 
-            return await actualValue.Value;
+            // Task starts running here.
+            Task<TValue> generator = actualValue.Value;
+
+            // Even if the current thread goes away, all exceptions will be observed.
+            Task unused = generator.ContinueWith(c => c.Exception, TaskContinuationOptions.OnlyOnFaulted);
+
+            return await generator;
         }
 
         public void Remove(TKey key)
         {
             AsyncLazy<TValue> initialLazyValue;
-            this.values.TryRemove(key, out initialLazyValue);
+
+            if (this.values.TryRemove(key, out initialLazyValue) && initialLazyValue.IsValueCreated)
+            {
+                // Observe all exceptions thrown.
+                Task unused = initialLazyValue.Value.ContinueWith(c => c.Exception, TaskContinuationOptions.OnlyOnFaulted);
+            }
+        }
+
+        public bool TryRemoveIfCompleted(TKey key)
+        {
+            AsyncLazy<TValue> initialLazyValue;
+
+            if (this.values.TryGetValue(key, out initialLazyValue) && initialLazyValue.IsValueCreated && initialLazyValue.Value.IsCompleted)
+            {
+                // Accessing Exception marks as observed.
+                Exception e = initialLazyValue.Value.Exception;
+
+                // This is a nice trick to do "atomic remove if value not changed".
+                // ConcurrentDictionary inherits from ICollection<KVP<..>>, which allows removal of specific key value pair, instead of removal just by key.
+                ICollection<KeyValuePair<TKey, AsyncLazy<TValue>>> valuesAsCollection = this.values as ICollection<KeyValuePair<TKey, AsyncLazy<TValue>>>;
+                Debug.Assert(valuesAsCollection != null, "Values collection expected to implement ICollection<KVP<TKey, AsyncLazy<TValue>>.");
+                return valuesAsCollection?.Remove(new KeyValuePair<TKey, AsyncLazy<TValue>>(key, initialLazyValue)) ?? false;
+            }
+
+            return false;
         }
 
         /// <summary>
-        /// Remove value from cache and return it if present
+        /// Remove value from cache and return it if present.
         /// </summary>
         /// <param name="key"></param>
-        /// <returns>Value if present, default value if not present</returns>
+        /// <returns>Value if present, default value if not present.</returns>
         public async Task<TValue> RemoveAsync(TKey key)
         {
             AsyncLazy<TValue> initialLazyValue;
-            if (this.values.TryRemove(key, out initialLazyValue) && !initialLazyValue.IsFaultedOrCancelled)
+            if (this.values.TryRemove(key, out initialLazyValue))
             {
-                return await initialLazyValue.Value;
+                try
+                {
+                    return await initialLazyValue.Value;
+                }
+                catch
+                {
+                }
             }
 
             return default(TValue);
@@ -126,28 +198,51 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public void Clear()
         {
+            // Ensure all tasks are observed.
+            foreach (AsyncLazy<TValue> value in this.values.Values)
+            {
+                if (value.IsValueCreated)
+                {
+                    Task unused = value.Value.ContinueWith(c => c.Exception, TaskContinuationOptions.OnlyOnFaulted);
+                }
+            }
+
             this.values.Clear();
         }
 
         /// <summary>
-        /// Forces refresh of the cached item if it is not being refreshed at the moment.
+        /// Runs a background task that will started refreshing the cached value for a given key.
+        /// This observes the same logic as GetAsync - a running value will still take precedence over a call to this.
         /// </summary>
-        public void Refresh(
-            TKey key,
-            Func<Task<TValue>> singleValueInitFunc,
-            CancellationToken cancellationToken)
+        /// <param name="key">Key.</param>
+        /// <param name="singleValueInitFunc">Generator function.</param>
+        public void BackgroundRefreshNonBlocking(TKey key, Func<Task<TValue>> singleValueInitFunc)
         {
-            AsyncLazy<TValue> initialLazyValue;
-            if (this.values.TryGetValue(key, out initialLazyValue) && initialLazyValue.IsCompleted)
+            // Trigger background refresh of cached value.
+            // Fire and forget.
+            Task unused = Task.Factory.StartNewOnCurrentTaskSchedulerAsync(async () =>
             {
-                AsyncLazy<TValue> newLazyValue = new AsyncLazy<TValue>(singleValueInitFunc, cancellationToken);
+                try
+                {
+                    AsyncLazy<TValue> initialLazyValue;
 
-                // Update the new task in the cache, 
-                AsyncLazy<TValue> actualValue = this.values.AddOrUpdate(
-                    key,
-                    newLazyValue,
-                    (existingKey, existingValue) => object.ReferenceEquals(existingValue, initialLazyValue) ? newLazyValue : existingValue);
-            }
+                    // If we don't have a value, or we have one that has completed running (i.e. if a value is currently being generated, we do nothing).
+                    if (!this.values.TryGetValue(key, out initialLazyValue) || (initialLazyValue.IsValueCreated && initialLazyValue.Value.IsCompleted))
+                    {
+                        // Use GetAsync to trigger the generation of a value.
+                        await this.GetAsync(
+                            key,
+                            default(TValue), // obsolete value unused since forceRefresh: true
+                            singleValueInitFunc,
+                            CancellationToken.None,
+                            forceRefresh: true);
+                    }
+                }
+                catch
+                {
+                    // Observe all exceptions.
+                }
+            }).Unwrap();
         }
     }
 }

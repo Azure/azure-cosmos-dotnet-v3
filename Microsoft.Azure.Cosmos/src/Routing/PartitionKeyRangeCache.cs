@@ -13,10 +13,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
 
@@ -49,11 +48,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             Debug.Assert(ResourceId.TryParse(collectionRid, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionRid, null, null, false, CancellationToken.None);
+                await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None);
 
             if (forceRefresh && routingMap != null)
             {
-                routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, false, CancellationToken.None);
+                routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, CancellationToken.None);
             }
 
             if (routingMap == null)
@@ -74,11 +73,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             Debug.Assert(ResourceId.TryParse(collectionResourceId, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionResourceId, null, null, false, CancellationToken.None);
+                await this.TryLookupAsync(collectionResourceId, null, null, CancellationToken.None);
 
             if (forceRefresh && routingMap != null)
             {
-                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, null, false, CancellationToken.None);
+                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, null, CancellationToken.None);
             }
 
             if (routingMap == null)
@@ -94,15 +93,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            bool forceRefreshCollectionRoutingMap,
             CancellationToken cancellationToken)
         {
             try
             {
                 return await this.routingMapCache.GetAsync(
-                        collectionRid,
-                        previousValue,
-                        () => this.GetRoutingMapForCollectionAsync(collectionRid, previousValue, cancellationToken),
+                    collectionRid,
+                    previousValue,
+                    () => this.GetRoutingMapForCollectionAsync(collectionRid, previousValue, cancellationToken),
                     CancellationToken.None);
             }
             catch (DocumentClientException ex)
@@ -132,9 +130,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 CollectionRoutingMap routingMap = await this.routingMapCache.GetAsync(
-                        collectionRid,
-                        null,
-                        () => this.GetRoutingMapForCollectionAsync(collectionRid, null, CancellationToken.None),
+                    collectionRid,
+                    null,
+                    () => this.GetRoutingMapForCollectionAsync(collectionRid, null, CancellationToken.None),
                     CancellationToken.None);
 
                 return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
@@ -148,15 +146,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 throw;
             }
-        }
-
-        public async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(string collectionResourceId, string effectivePartitionKey)
-        {
-            IReadOnlyList<PartitionKeyRange> ranges = await this.TryGetOverlappingRangesAsync(
-                collectionResourceId,
-                Range<string>.GetPointRange(effectivePartitionKey));
-
-            return ranges?.Single();
         }
 
         private async Task<CollectionRoutingMap> GetRoutingMapForCollectionAsync(
@@ -232,12 +221,35 @@ namespace Microsoft.Azure.Cosmos.Routing
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                string authorizationToken = this.authorizationTokenProvider.GetUserAuthorizationToken(
-                            request.ResourceAddress,
-                            PathsHelper.GetResourcePath(request.ResourceType),
-                            HttpConstants.HttpMethods.Get,
-                            request.Headers,
-                            AuthorizationTokenType.PrimaryMasterKey);
+                string authorizationToken = null;
+                try
+                {
+                    authorizationToken =
+                        this.authorizationTokenProvider.GetUserAuthorizationToken(
+                    request.ResourceAddress,
+                    PathsHelper.GetResourcePath(request.ResourceType),
+                    HttpConstants.HttpMethods.Get,
+                    request.Headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+                }
+                catch (UnauthorizedException)
+                {
+                }
+
+                if (authorizationToken == null)
+                {
+                    // User doesn't have rid based resource token. Maybe he has name based.
+                    throw new NotSupportedException("Resoruce tokens are not supported");
+
+                    ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                    ////authorizationToken =
+                    ////    this.authorizationTokenProvider.GetUserAuthorizationToken(
+                    ////        collection.AltLink,
+                    ////        PathsHelper.GetResourcePath(request.ResourceType),
+                    ////        HttpConstants.HttpMethods.Get,
+                    ////        request.Headers,
+                    ////        AuthorizationTokenType.PrimaryMasterKey);
+                }
 
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 

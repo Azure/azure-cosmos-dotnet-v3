@@ -6,21 +6,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Documents.RntbdConstants;
 
     internal class PartitionRoutingHelper
@@ -52,10 +47,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             PartitionedQueryExecutionInfo queryExecutionInfo = null;
             queryExecutionInfo = queryPartitionProvider.GetPartitionedQueryExecutionInfo(
-                    querySpec,
-                    partitionKeyDefinition,
-                    VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
-                isContinuationExpected);
+                querySpec: querySpec,
+                partitionKeyDefinition: partitionKeyDefinition,
+                requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: false);
 
             if (queryExecutionInfo == null ||
                 queryExecutionInfo.QueryRanges == null ||
@@ -67,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             bool isSinglePartitionQuery = queryExecutionInfo.QueryRanges.Count == 1 && queryExecutionInfo.QueryRanges[0].IsSingleValue;
 
-            if (partitionKeyDefinition.Paths.Count > 0 && !isSinglePartitionQuery)
+            bool queryFansOutToMultiplePartitions = partitionKeyDefinition.Paths.Count > 0 && !isSinglePartitionQuery;
+            if (queryFansOutToMultiplePartitions)
             {
                 if (!enableCrossPartitionQuery)
                 {
@@ -75,8 +72,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 else
                 {
-                    if (parallelizeCrossPartitionQuery ||
-                        (queryExecutionInfo.QueryInfo != null && (queryExecutionInfo.QueryInfo.HasTop || queryExecutionInfo.QueryInfo.HasOrderBy || queryExecutionInfo.QueryInfo.HasAggregates)))
+                    bool queryNotServiceableByGateway = parallelizeCrossPartitionQuery ||
+                        queryExecutionInfo.QueryInfo.HasTop ||
+                        queryExecutionInfo.QueryInfo.HasOrderBy ||
+                        queryExecutionInfo.QueryInfo.HasAggregates ||
+                        queryExecutionInfo.QueryInfo.HasDistinct ||
+                        queryExecutionInfo.QueryInfo.HasOffset ||
+                        queryExecutionInfo.QueryInfo.HasLimit;
+
+                    if (queryNotServiceableByGateway)
                     {
                         if (!IsSupportedPartitionedQueryExecutionInfo(queryExecutionInfo, clientApiVersion))
                         {
@@ -99,23 +103,39 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
-            // For single partition query with aggregate functions and no continuation expected, 
-            // we would try to accumulate the results for them on the SDK, if supported.
-            else if (queryExecutionInfo.QueryInfo.HasAggregates && !isContinuationExpected)
+            else
             {
-                if (IsAggregateSupportedApiVersion(clientApiVersion))
+                if (queryExecutionInfo.QueryInfo.HasAggregates && !isContinuationExpected)
                 {
+                    // For single partition query with aggregate functions and no continuation expected, 
+                    // we would try to accumulate the results for them on the SDK, if supported.
+
+                    if (IsAggregateSupportedApiVersion(clientApiVersion))
+                    {
+                        DocumentClientException exception = new DocumentClientException(
+                            RMResources.UnsupportedQueryWithFullResultAggregate,
+                            HttpStatusCode.BadRequest,
+                            SubStatusCodes.CrossPartitionQueryNotServable);
+
+                        exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                        throw exception;
+                    }
+                    else
+                    {
+                        throw new BadRequestException(RMResources.UnsupportedQueryWithFullResultAggregate);
+                    }
+                }
+                else if (queryExecutionInfo.QueryInfo.HasDistinct)
+                {
+                    // If the query has distinct then we have to reject it since the backend only returns
+                    // elements that are distinct within a page and we need the client to do post distinct processing
                     DocumentClientException exception = new DocumentClientException(
-                        RMResources.UnsupportedQueryWithFullResultAggregate,
+                        RMResources.UnsupportedCrossPartitionQuery,
                         HttpStatusCode.BadRequest,
                         SubStatusCodes.CrossPartitionQueryNotServable);
 
                     exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
                     throw exception;
-                }
-                else
-                {
-                    throw new BadRequestException(RMResources.UnsupportedQueryWithFullResultAggregate);
                 }
             }
 
@@ -165,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         lastPartitionKeyRange,
                         suppliedTokens);
                 }
-                
+
                 Range<string> minimumRange = PartitionRoutingHelper.Min(
                 providedPartitionKeyRanges,
                 Range<string>.MinComparer.Instance);
@@ -186,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 // Cannot find target range. Either collection was resolved incorrectly or the range was split
                 List<PartitionKeyRange> replacedRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, rangeFromContinuationToken, true)).ToList();
-                
+
                 if (replacedRanges == null || replacedRanges.Count < 1)
                 {
                     return new ResolvedRangeInfo(null, null);
@@ -405,10 +425,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         private static string AddPartitionKeyRangeToContinuationToken(string continuationToken, PartitionKeyRange partitionKeyRange)
         {
             return JsonConvert.SerializeObject(new CompositeContinuationToken
-                {
-                    Token = continuationToken,
-                    Range = partitionKeyRange.ToRange(),
-                });
+            {
+                Token = continuationToken,
+                Range = partitionKeyRange.ToRange(),
+            });
         }
 
         private static bool IsSupportedPartitionedQueryExecutionInfo(
@@ -446,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return min;
         }
-        
+
         private static T MinAfter<T>(IReadOnlyList<T> values, T minValue, IComparer<T> comparer) where T : class
         {
             if (values.Count == 0)

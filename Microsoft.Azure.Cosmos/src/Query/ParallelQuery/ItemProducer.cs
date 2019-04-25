@@ -110,9 +110,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
+        /// <param name="queryContext">request context</param>
+        /// <param name="querySpecForInit">query spec for initialization</param>
         /// <param name="partitionKeyRange">The partition key range.</param>
-        /// <param name="createRequestFunc">The callback to create a request.</param>
-        /// <param name="executeRequestFunc">The callback to execute the request.</param>
         /// <param name="createRetryPolicyFunc">The callback to create the retry policy.</param>
         /// <param name="produceAsyncCompleteCallback">The callback to call once you are done fetching.</param>
         /// <param name="equalityComparer">The comparer to use to determine whether the producer has seen a new document.</param>
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
             this.fetchSchedulingMetrics.Ready();
-            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator(this.PartitionKeyRange.Id);
+            this.fetchExecutionRangeAccumulator = new FetchExecutionRangeAccumulator();
 
             this.HasMoreResults = true;
         }
@@ -326,14 +326,12 @@ namespace Microsoft.Azure.Cosmos.Query
                             {
                                 this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage);
                                 cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
-                            },
-                            requestOptionsEnricher: (queryRequestOptions) =>
-                            {
-                                queryRequestOptions.MaxItemCount = pageSize;
-                                queryRequestOptions.RequestContinuation = this.BackendContinuationToken;
+                                CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.BackendContinuationToken);
+                                CosmosQueryRequestOptions.FillMaxItemCount(cosmosRequestMessage, pageSize);
                             });
 
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
+                            this.PartitionKeyRange.Id,
                             feedResponse.ActivityId,
                             feedResponse.Count,
                             retries);

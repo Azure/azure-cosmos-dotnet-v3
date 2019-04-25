@@ -10,10 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-
     /// <summary>
     /// Client policy is combination of endpoint change retry + throttling retry.
     /// </summary>
@@ -33,20 +31,24 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
 
+        private ClientSideRequestStatistics sharedStatistics;
+
         public ClientRetryPolicy(
-            GlobalEndpointManager globalEndpointManager, 
-            bool enableEndpointDiscovery, 
+            GlobalEndpointManager globalEndpointManager,
+            bool enableEndpointDiscovery,
             RetryOptions retryOptions)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
                 retryOptions.MaxRetryWaitTimeInSeconds);
-            
+
             this.globalEndpointManager = globalEndpointManager;
             this.failoverRetryCount = 0;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
+
+            this.sharedStatistics = new ClientSideRequestStatistics();
         }
 
         /// <summary> 
@@ -55,8 +57,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="exception">Exception that occured when the operation was tried</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
-        public Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
+            Exception exception,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -67,13 +69,25 @@ namespace Microsoft.Azure.Cosmos
             if (httpException != null)
             {
                 DefaultTrace.TraceWarning("Endpoint not reachable. Refresh cache and retry");
-                return this.ShouldRetryOnEndpointFailureAsync(this.isReadRequest, false);
+                return await this.ShouldRetryOnEndpointFailureAsync(this.isReadRequest, false);
             }
 
             DocumentClientException clientException = exception as DocumentClientException;
-            return this.ShouldRetryInternalAsync(clientException?.StatusCode,
-                clientException?.GetSubStatus(),
-                () => this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken));
+
+            if (clientException?.RequestStatistics != null)
+            {
+                this.sharedStatistics = clientException.RequestStatistics;
+            }
+
+            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                clientException?.StatusCode,
+                clientException?.GetSubStatus());
+            if (shouldRetryResult != null)
+            {
+                return shouldRetryResult;
+            }
+
+            return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
         }
 
         /// <summary> 
@@ -82,16 +96,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
-        public Task<ShouldRetryResult> ShouldRetryAsync(
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             this.retryContext = null;
 
-            return this.ShouldRetryInternalAsync(cosmosResponseMessage?.StatusCode,
-                cosmosResponseMessage?.Headers.SubStatusCode,
-                () => this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken));
+            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    cosmosResponseMessage?.StatusCode,
+                cosmosResponseMessage?.Headers.SubStatusCode);
+            if (shouldRetryResult != null)
+            {
+                return shouldRetryResult;
+            }
+
+            return await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
         }
 
         /// <summary>
@@ -103,6 +123,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+
+            request.RequestContext.ClientRequestStatistics = this.sharedStatistics;
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();
@@ -119,42 +141,41 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.RouteToLocation(this.locationEndpoint);
         }
 
-        private Task<ShouldRetryResult> ShouldRetryInternalAsync(
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
-            SubStatusCodes? subStatusCode,
-            Func<Task<ShouldRetryResult>> throttlingRetry)
+            SubStatusCodes? subStatusCode)
         {
             if (!statusCode.HasValue
                 && (!subStatusCode.HasValue
                 || subStatusCode.Value == SubStatusCodes.Unknown))
             {
-                return throttlingRetry();
+                return null;
             }
 
             // Received 403.3 on write region, initiate the endpoint rediscovery
-            if (statusCode == HttpStatusCode.Forbidden 
+            if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
                 DefaultTrace.TraceWarning("Endpoint not writable. Refresh cache and retry");
-                return this.ShouldRetryOnEndpointFailureAsync(false, true);
+                return await this.ShouldRetryOnEndpointFailureAsync(false, true);
             }
 
             // Regional endpoint is not available yet for reads (e.g. add/ online of region is in progress)
-            if (statusCode == HttpStatusCode.Forbidden 
+            if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.DatabaseAccountNotFound
                 && (this.isReadRequest || this.canUseMultipleWriteLocations))
             {
                 DefaultTrace.TraceWarning("Endpoint not available for reads. Refresh cache and retry");
-                return this.ShouldRetryOnEndpointFailureAsync(true, false);
+                return await this.ShouldRetryOnEndpointFailureAsync(true, false);
             }
 
-            if (statusCode == HttpStatusCode.NotFound 
+            if (statusCode == HttpStatusCode.NotFound
                 && subStatusCode == SubStatusCodes.ReadSessionNotAvailable)
             {
-                return Task.FromResult(this.ShouldRetryOnSessionNotAvailable());
+                return this.ShouldRetryOnSessionNotAvailable();
             }
 
-            return throttlingRetry();
+            return null;
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(bool isReadRequest, bool forceRefresh)
@@ -182,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan retryDelay = TimeSpan.Zero;
             if (!isReadRequest)
             {
-                DefaultTrace.TraceInformation("Failover happening. retryCount {0}",  this.failoverRetryCount);
+                DefaultTrace.TraceInformation("Failover happening. retryCount {0}", this.failoverRetryCount);
 
                 if (this.failoverRetryCount > 1)
                 {
