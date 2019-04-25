@@ -44,6 +44,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ConflictsSettingsDefaults()
+        {
+            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+
+            Assert.IsNull(conflictSettings.ResourceType);
+            Assert.AreEqual(Cosmos.OperationKind.Invalid, conflictSettings.OperationKind);
+            Assert.IsNull(conflictSettings.Id);
+
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosConflictSettings), "Id", "OperationKind", "ResourceType");
+        }
+
+        [TestMethod]
         public void DatabaseStreamDeserialzieTest()
         {
             string dbId = "946ad017-14d9-4cee-8619-0cbc62414157";
@@ -345,6 +357,59 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Cosmos.UniqueKey uk = new Cosmos.UniqueKey();
             Assert.IsNotNull(uk.Paths);
+        }
+
+        [TestMethod]
+        public void ConflictSettingsSerializeTest()
+        {
+            string id = Guid.NewGuid().ToString();
+
+            CosmosConflictSettings conflictSettings = new CosmosConflictSettings()
+            {
+                Id = id,
+                OperationKind = Cosmos.OperationKind.Create,
+                ResourceType = typeof(CosmosStoredProcedure)
+            };
+
+            Conflict conflict = new Conflict()
+            {
+                Id = id,
+                OperationKind = OperationKind.Create,
+                ResourceType = typeof(StoredProcedure)
+            };
+
+            string cosmosSerialized = SettingsContractTests.CosmosSerialize(conflictSettings);
+            string directSerialized = SettingsContractTests.DirectSerialize(conflict);
+
+            // Swap de-serialize and validate 
+            CosmosConflictSettings conflictDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosConflictSettings>(directSerialized);
+            Conflict conflictDeser = SettingsContractTests.DirectDeSerialize<Conflict>(cosmosSerialized);
+
+            Assert.AreEqual(conflictDeserSettings.Id, conflictDeser.Id);
+            Assert.AreEqual((int)conflictDeserSettings.OperationKind, (int)conflictDeser.OperationKind);
+            Assert.AreEqual(typeof(StoredProcedure), conflictDeser.ResourceType);
+            Assert.AreEqual(typeof(CosmosStoredProcedure), conflictDeserSettings.ResourceType);
+            Assert.AreEqual(conflictDeserSettings.Id, conflict.Id);
+        }
+
+        [TestMethod]
+        public void ConflictSettingsDeSerializeTest()
+        {
+            string conflictResponsePayload = @"{
+                 id: 'Conflict1',
+                 operationType: 'Replace',
+                 resourceType: 'trigger'
+                }";
+
+            CosmosConflictSettings conflictSettings = SettingsContractTests.CosmosDeserialize<CosmosConflictSettings>(conflictResponsePayload);
+            Conflict conflict = SettingsContractTests.DirectDeSerialize<Conflict>(conflictResponsePayload);
+
+            Assert.AreEqual(conflict.Id, conflictSettings.Id);
+            Assert.AreEqual((int)conflictSettings.OperationKind, (int)conflict.OperationKind);
+            Assert.AreEqual(typeof(Trigger), conflict.ResourceType);
+            Assert.AreEqual(typeof(CosmosTrigger), conflictSettings.ResourceType);
+
+            Assert.AreEqual("Conflict1", conflictSettings.Id);
         }
 
         private static T CosmosDeserialize<T>(string payload)

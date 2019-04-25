@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Globalization;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a conflict in the Azure Cosmos DB service.
@@ -41,13 +43,79 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.OperationType)]
-        public OperationKind OperationKind { get; set; }
+        public virtual OperationKind OperationKind { get; set; }
 
         /// <summary>
         /// Gets or sets the type of the conflicting resource in the Azure Cosmos DB service.
         /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]
-        public Type ResourceType { get; set; }
+        public virtual Type ResourceType { get; set; }
+
+        private class ConflictResourceTypeJsonConverter : JsonConverter
+        {
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                string resourceType = null;
+                Type valueAsType = (Type)value;
+                if (valueAsType == typeof(Newtonsoft.Json.Linq.JObject))
+                {
+                    resourceType = Documents.Constants.Properties.ResourceTypeDocument;
+                }
+                else if (valueAsType == typeof(CosmosStoredProcedure))
+                {
+                    resourceType = Documents.Constants.Properties.ResourceTypeStoredProcedure;
+                }
+                else if (valueAsType == typeof(CosmosTrigger))
+                {
+                    resourceType = Documents.Constants.Properties.ResourceTypeTrigger;
+                }
+                else if (valueAsType == typeof(CosmosUserDefinedFunction))
+                {
+                    resourceType = Documents.Constants.Properties.ResourceTypeUserDefinedFunction;
+                }
+                else
+                {
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentUICulture, "Unsupported resource type {0}", value.ToString()));
+                }
+
+                writer.WriteValue(resourceType);
+            }
+
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            {
+                if (reader.Value == null)
+                {
+                    return null;
+                }
+
+                string resourceType = reader.Value.ToString();
+
+                if (string.Equals(Documents.Constants.Properties.ResourceTypeDocument, resourceType, StringComparison.OrdinalIgnoreCase))
+                {
+                    return typeof(Newtonsoft.Json.Linq.JObject);
+                }
+                else if (string.Equals(Documents.Constants.Properties.ResourceTypeStoredProcedure, resourceType, StringComparison.OrdinalIgnoreCase))
+                {
+                    return typeof(CosmosStoredProcedure);
+                }
+                else if (string.Equals(Documents.Constants.Properties.ResourceTypeTrigger, resourceType, StringComparison.OrdinalIgnoreCase))
+                {
+                    return typeof(CosmosTrigger);
+                }
+                else if (string.Equals(Documents.Constants.Properties.ResourceTypeUserDefinedFunction, resourceType, StringComparison.OrdinalIgnoreCase))
+                {
+                    return typeof(CosmosUserDefinedFunction);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            public override bool CanRead => true;
+
+            public override bool CanConvert(Type objectType) => true;
+        }
     }
 }
