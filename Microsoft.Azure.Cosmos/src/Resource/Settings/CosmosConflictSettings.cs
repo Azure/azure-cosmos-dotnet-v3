@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a conflict in the Azure Cosmos DB service.

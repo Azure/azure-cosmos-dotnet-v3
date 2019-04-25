@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using System;
+    using System.IO;
     using System.Linq;
     using System.Net.Http;
     using System.Threading;
@@ -122,6 +123,48 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             mockClient.RequestHandler.InnerHandler = testHandler;
             response = await setIterator.FetchNextSetAsync();
+        }
+
+        [TestMethod]
+        public async Task CosmosConflictsIteratorBuildsSettings()
+        {
+            string conflictResponsePayload = @"{ 'Data':[{
+                 id: 'Conflict1',
+                 operationType: 'Replace',
+                 resourceType: 'trigger'
+                }]}";
+
+            CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
+
+            CosmosContainer container = mockClient.Databases["database"].Containers["container"];
+            CosmosResultSetIterator<CosmosConflictSettings> setIterator = container.Conflicts.GetConflictsIterator();
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+                Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
+                Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
+                CosmosResponseMessage handlerResponse = TestHandler.ReturnSuccess().Result;
+                MemoryStream stream = new MemoryStream();
+                StreamWriter writer = new StreamWriter(stream);
+                writer.Write(conflictResponsePayload);
+                writer.Flush();
+                stream.Position = 0;
+
+                handlerResponse.Content = stream;
+                return Task.FromResult(handlerResponse);
+            });
+
+            mockClient.RequestHandler.InnerHandler = testHandler;
+            CosmosQueryResponse<CosmosConflictSettings> response = await setIterator.FetchNextSetAsync();
+
+            Assert.AreEqual(1, response.Count());
+
+            CosmosConflictSettings responseSettings = response.FirstOrDefault();
+            Assert.IsNotNull(responseSettings);
+
+            Assert.AreEqual("Conflict1", responseSettings.Id);
+            Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
+            Assert.AreEqual(typeof(CosmosTrigger), responseSettings.ResourceType);
         }
 
         private Task<CosmosResponseMessage> NextResultSetDelegate(
