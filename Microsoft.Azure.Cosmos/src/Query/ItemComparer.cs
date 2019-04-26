@@ -6,11 +6,8 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -158,6 +155,18 @@ namespace Microsoft.Azure.Cosmos.Query
                         cmp = string.CompareOrdinal(
                             string1.Value,
                             string2.Value);
+                        break;
+
+                    case CosmosElementType.Guid:
+                        CosmosGuid guid1 = element1 as CosmosGuid;
+                        CosmosGuid guid2 = element2 as CosmosGuid;
+                        cmp = guid1.Value.CompareTo(guid2.Value);
+                        break;
+
+                    case CosmosElementType.Binary:
+                        CosmosBinary binary1 = element1 as CosmosBinary;
+                        CosmosBinary binary2 = element2 as CosmosBinary;
+                        cmp = binary1.CompareTo(binary2);
                         break;
 
                     default:

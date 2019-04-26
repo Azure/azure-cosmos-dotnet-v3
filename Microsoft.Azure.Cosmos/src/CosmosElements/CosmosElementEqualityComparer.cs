@@ -53,6 +53,16 @@
             return string1.Value.Equals(string2.Value);
         }
 
+        public bool Equals(CosmosGuid guid1, CosmosGuid guid2)
+        {
+            return guid1.Value.Equals(guid2.Value);
+        }
+
+        public bool Equals(CosmosBinary binary1, CosmosBinary binary2)
+        {
+            return binary1.Value.SequenceEqual(binary2.Value);
+        }
+
         public bool Equals(CosmosBoolean bool1, CosmosBoolean bool2)
         {
             return bool1.Value == bool2.Value;
@@ -153,6 +163,16 @@
                     return this.Equals(
                         (cosmosElement1 as CosmosString),
                         (cosmosElement2 as CosmosString));
+
+                case CosmosElementType.Guid:
+                    return this.Equals(
+                        (cosmosElement1 as CosmosGuid),
+                        (cosmosElement2 as CosmosGuid));
+
+                case CosmosElementType.Binary:
+                    return this.Equals(
+                        (cosmosElement1 as CosmosBinary),
+                        (cosmosElement2 as CosmosBinary));
 
                 default:
                     throw new ArgumentException();
