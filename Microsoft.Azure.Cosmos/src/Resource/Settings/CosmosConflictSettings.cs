@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.IO;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -51,13 +52,55 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]
         public virtual Type ResourceType { get; set; }
 
+        /// <summary>
+        /// Gets the resource ID for the conflict in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Documents.Constants.Properties.SourceResourceId)]
+        public string SourceResourceId { get; set; }
+
+        /// <summary>
+        /// Gets the conflicting resource in the Azure Cosmos DB service.
+        /// </summary>
+        /// <typeparam name="T">The returned type of conflicting resource.</typeparam>
+        /// <param name="cosmosJsonSerializer">(Optional) <see cref="CosmosJsonSerializer"/> to use while parsing the content.</param>
+        /// <returns></returns>
+        public T GetResource<T>(CosmosJsonSerializer cosmosJsonSerializer = null)
+        {
+            if (!string.IsNullOrEmpty(this.Content))
+            {
+                if (cosmosJsonSerializer == null)
+                {
+                    cosmosJsonSerializer = new CosmosDefaultJsonSerializer();
+                }
+
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    using (StreamWriter writer = new StreamWriter(stream))
+                    {
+                        writer.Write(this.Content);
+                        writer.Flush();
+                        stream.Position = 0;
+                        return cosmosJsonSerializer.FromStream<T>(stream);
+                    }
+                }
+            }
+
+            return default(T);
+        }
+
+        [JsonProperty(PropertyName = Documents.Constants.Properties.Content)]
+        internal string Content { get; set; }
+
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictLSN)]
+        internal long ConflictLSN { get; set; }
+
         private class ConflictResourceTypeJsonConverter : JsonConverter
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
                 string resourceType = null;
                 Type valueAsType = (Type)value;
-                if (valueAsType == typeof(Newtonsoft.Json.Linq.JObject))
+                if (valueAsType == typeof(CosmosElements.CosmosElement))
                 {
                     resourceType = Documents.Constants.Properties.ResourceTypeDocument;
                 }
@@ -92,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (string.Equals(Documents.Constants.Properties.ResourceTypeDocument, resourceType, StringComparison.OrdinalIgnoreCase))
                 {
-                    return typeof(Newtonsoft.Json.Linq.JObject);
+                    return typeof(CosmosElements.CosmosElement);
                 }
                 else if (string.Equals(Documents.Constants.Properties.ResourceTypeStoredProcedure, resourceType, StringComparison.OrdinalIgnoreCase))
                 {
