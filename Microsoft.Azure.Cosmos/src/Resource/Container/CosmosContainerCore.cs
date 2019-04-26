@@ -20,23 +20,29 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosContainerCore : CosmosContainer
     {
+        /// <summary>
+        /// Only used for unit testing
+        /// </summary>
+        internal CosmosContainerCore() {}
+
         internal CosmosContainerCore(
-            CosmosDatabase database,
+            CosmosClientContext clientContext,
+            CosmosDatabaseCore database,
             string containerId)
         {
             this.Id = containerId;
-            base.Initialize(
-                client: database.Client,
+            this.ClientContext = clientContext;
+            this.LinkUri = clientContext.CreateLink(
                 parentLink: database.LinkUri.OriginalString,
-                uriPathSegment: Paths.CollectionsPathSegment);
+                uriPathSegment: Paths.CollectionsPathSegment,
+                id: containerId);
 
             this.Database = database;
-            this.Items = new CosmosItemsCore(this);
-            this.StoredProcedures = new CosmosStoredProceduresCore(this);
-            this.DocumentClient = this.Client.DocumentClient;
-            this.Triggers = new CosmosTriggers(this);
-            this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this);
-            this.Conflicts = new CosmosConflictsCore(this);
+            this.Items = new CosmosItemsCore(this.ClientContext, this);
+            this.StoredProcedures = new CosmosStoredProceduresCore(this.ClientContext, this);
+            this.Triggers = new CosmosTriggers(this.ClientContext, this);
+            this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this.ClientContext, this);
+            this.Conflicts = new CosmosConflictsCore(this.ClientContext, this);
         }
 
         public override string Id { get; }
@@ -49,11 +55,13 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosConflicts Conflicts { get; }
 
+        internal virtual Uri LinkUri { get; }
+
         internal CosmosTriggers Triggers { get; }
 
         internal CosmosUserDefinedFunctions UserDefinedFunctions { get; }
 
-        internal DocumentClient DocumentClient { get; private set; }
+        internal virtual CosmosClientContext ClientContext { get; }
 
         public override Task<CosmosContainerResponse> ReadAsync(
             CosmosContainerRequestOptions requestOptions = null,
@@ -63,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateContainerResponse(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         public override Task<CosmosContainerResponse> ReplaceAsync(
@@ -71,14 +79,14 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.Client.DocumentClient.ValidateResource(containerSettings.Id);
+            this.ClientContext.ValidateResource(containerSettings.Id);
 
             Task<CosmosResponseMessage> response = this.ReplaceStreamAsync(
                 streamPayload: CosmosResource.ToStream(containerSettings),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateContainerResponse(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         public override Task<CosmosContainerResponse> DeleteAsync(
@@ -89,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateContainerResponse(this, response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
         }
 
         public override async Task<int?> ReadProvisionedThroughputAsync(
@@ -162,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                             subStatusCode: (int)SubStatusCodes.Unknown,
                             activityId: null,
                             requestCharge: 0))) :
-                    this.Database.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken),
+                    this.ClientContext.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken),
                     cancellationToken)
                 .Unwrap();
         }
@@ -172,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetRID(cancellationToken)
-                 .ContinueWith(task => this.Database.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
+                 .ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
                  .Unwrap();
         }
 
@@ -184,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
         internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+            ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             return await collectionCache.GetByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
         }
 
@@ -222,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
                 .ContinueWith(ridTask =>
                 {
                     collectionRID = ridTask.Result;
-                    return this.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    return this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 })
                 .Unwrap()
                 .ContinueWith(partitionKeyRangeCachetask =>
@@ -243,11 +251,11 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-              client: this.Client,
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: this.LinkUri,
               resourceType: ResourceType.Collection,
               operationType: operationType,
+              cosmosContainerCore: null,
               partitionKey: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,

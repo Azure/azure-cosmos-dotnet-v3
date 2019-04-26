@@ -18,22 +18,26 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDatabaseCore : CosmosDatabase
     {
+        private readonly CosmosClientContext clientContext;
+
         internal CosmosDatabaseCore(
-            CosmosClient client,
+            CosmosClientContext clientContext,
             string databaseId)
         {
             this.Id = databaseId;
-            base.Initialize(
-                client: client,
+            this.clientContext = clientContext;
+            this.LinkUri = clientContext.CreateLink(
                 parentLink: null,
-                uriPathSegment: Paths.DatabasesPathSegment);
+                uriPathSegment: Paths.DatabasesPathSegment,
+                id: databaseId);
 
-            this.Containers = new CosmosContainersCore(this);
+            this.Containers = new CosmosContainersCore(clientContext, this);
         }
 
+        public override string Id { get; }
         public override CosmosContainers Containers { get; }
 
-        public override string Id { get; }
+        internal virtual Uri LinkUri { get; }
 
         public override Task<CosmosDatabaseResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,
@@ -43,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateDatabaseResponse(this, response);
+            return this.clientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
         public override Task<CosmosDatabaseResponse> DeleteAsync(
@@ -54,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateDatabaseResponse(this, response);
+            return this.clientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
         public override async Task<int?> ReadProvisionedThroughputAsync(
@@ -104,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetRID(cancellationToken)
-                .ContinueWith(task => this.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
+                .ContinueWith(task => this.clientContext.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 
@@ -113,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<string> rid = this.GetRID(cancellationToken);
-            return rid.ContinueWith(task => this.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
+            return rid.ContinueWith(task => this.clientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 
@@ -132,12 +136,12 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-                client: this.Client,
+            return this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
                 resourceType: ResourceType.Database,
                 operationType: operationType,
                 requestOptions: requestOptions,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: null,

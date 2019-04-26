@@ -228,17 +228,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
 
-        private static CosmosContainer GetMockedContainer(string containerName = "myColl")
+        private static CosmosContainerCore GetMockedContainer(string containerName = null)
         {
-            Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
-            mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
-            mockedContainer.Setup(c => c.Client).Returns(ChangeFeedProcessorBuilderTests.GetMockedClient());
+            Mock<CosmosContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             return mockedContainer.Object;
-        }
-
-        private static CosmosClient GetMockedClient()
-        {
-            return MockDocumentClient.CreateMockCosmosClient();
         }
 
         private static ChangeFeedProcessor GetMockedProcessor()

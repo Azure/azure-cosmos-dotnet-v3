@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task VerifyCosmosDefaultResultSetStreamIteratorOperationType()
         {
-            CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient(
+            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosQueryResponse response = await setIterator.FetchNextSetAsync();
 
             //Test gateway mode
-            mockClient = MockDocumentClient.CreateMockCosmosClient(
+            mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeGateway());
             container = mockClient.Databases["database"].Containers["container"];
             setIterator = container.Items.CreateItemQueryAsStream(
