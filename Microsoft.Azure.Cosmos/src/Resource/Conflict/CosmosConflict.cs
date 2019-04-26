@@ -15,8 +15,13 @@ namespace Microsoft.Azure.Cosmos
     /// The conflicting resource is persisted as a Conflict resource.  
     /// Inspecting Conflict resources will allow you to determine which operations and resources resulted in conflicts.
     /// </remarks>
-    public abstract class CosmosConflict : CosmosIdentifier
+    public abstract class CosmosConflict
     {
+        /// <summary>
+        /// The Id of the Cosmos conflict
+        /// </summary>
+        public abstract string Id { get; }
+
         /// <summary>
         /// Deletes the current conflict instance
         /// </summary>

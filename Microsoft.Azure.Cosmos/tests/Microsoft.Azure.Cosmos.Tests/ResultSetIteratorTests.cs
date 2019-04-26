@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  resourceType: 'trigger'
                 }]}";
 
-            CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient(
+            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];

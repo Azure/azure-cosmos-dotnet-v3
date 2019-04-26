@@ -4,31 +4,37 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     internal class CosmosConflictCore : CosmosConflict
     {
         private readonly CosmosContainerCore container;
+        private readonly CosmosClientContext clientContext;
 
         protected internal CosmosConflictCore(
+            CosmosClientContext clientContext,
             CosmosContainerCore container,
             string conflictId)
         {
-            this.Id = conflictId;
+            this.clientContext = clientContext;
             this.container = container;
-            base.Initialize(
-               client: container.Client,
-               parentLink: container.LinkUri.OriginalString,
-               uriPathSegment: Documents.Paths.ConflictsPathSegment);
+            this.Id = conflictId;
+            this.LinkUri = clientContext.CreateLink(
+                 parentLink: container.LinkUri.OriginalString,
+                 uriPathSegment: Paths.StoredProceduresPathSegment,
+                 id: conflictId);
         }
 
         public override string Id { get; }
 
+        internal Uri LinkUri { get; }
+
         public override Task<CosmosConflictResponse> DeleteAsync(object partitionKey, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                client: this.Client,
+            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
                 resourceType: Documents.ResourceType.Conflict,
                 operationType: Documents.OperationType.Delete,
@@ -39,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateConflictResponse(this, response);
+            return this.clientContext.ResponseFactory.CreateConflictResponse(this, response);
         }
     }
 }
