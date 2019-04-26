@@ -286,11 +286,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             });
         }
 
-        private static CosmosContainer GetMockedContainer(CosmosItems mockedItems)
+        private static CosmosContainerCore GetMockedContainer(CosmosItems mockedItems)
         {
-            Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
+            Mock<CosmosContainerCore> mockedContainer = new Mock<CosmosContainerCore>();
             mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/myColl", UriKind.Relative));
-            mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseUpdaterCosmosTests.GetMockedClient());
+            //mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseUpdaterCosmosTests.GetMockedClient());
             mockedContainer.Setup(c => c.Items).Returns(mockedItems);
             return mockedContainer.Object;
         }

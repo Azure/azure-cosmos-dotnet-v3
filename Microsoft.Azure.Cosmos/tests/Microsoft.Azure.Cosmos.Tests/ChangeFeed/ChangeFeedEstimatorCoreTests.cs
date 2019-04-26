@@ -151,17 +151,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             return new ChangeFeedEstimatorCore(estimationDelegate, TimeSpan.FromSeconds(5), remainingWorkEstimator.Object);
         }
 
-        private static CosmosContainer GetMockedContainer(string containerName = "myColl")
+        private static CosmosContainerCore GetMockedContainer(string containerName = null)
         {
-            Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
-            mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
-            mockedContainer.Setup(c => c.Client).Returns(ChangeFeedEstimatorCoreTests.GetMockedClient());
+            Mock<CosmosContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
+            mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedEstimatorCoreTests.GetMockedClientContext());
             return mockedContainer.Object;
         }
 
-        private static CosmosClient GetMockedClient()
+        private static CosmosClientContext GetMockedClientContext()
         {
-            return MockDocumentClient.CreateMockCosmosClient();
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientConfiguration).Returns(MockCosmosUtil.GetDefaultConfiguration());
+            //mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            return mockContext.Object;
         }
     }
 }

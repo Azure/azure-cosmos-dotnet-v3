@@ -86,6 +86,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the Partitioning scheme version used. <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
+        /// </summary>
+        [JsonIgnore]
+        public virtual PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
+        {
+            get
+            {
+                return (Cosmos.PartitionKeyDefinitionVersion?)this.PartitionKey?.Version;
+            }
+
+            set
+            {
+                if (this.PartitionKey == null)
+                {
+                    throw new ArgumentOutOfRangeException($"PartitionKey is not defined for container");
+                }
+
+                this.PartitionKey.Version = (Documents.PartitionKeyDefinitionVersion)value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
