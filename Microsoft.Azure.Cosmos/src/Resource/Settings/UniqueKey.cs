@@ -33,4 +33,38 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
         public Collection<string> Paths { get; set; } = new Collection<string>();
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public sealed class UniqueueKeyBuilder
+    {
+        private Collection<string> Paths { get; set; } = new Collection<string>();
+        private CosmosContainerBuilder Root { get; }
+
+        internal UniqueueKeyBuilder(CosmosContainerBuilder root)
+        {
+            this.Root = root;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public UniqueueKeyBuilder Path(string name)
+        {
+            this.Paths.Add(name);
+            return this;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public CosmosContainerBuilder Attach()
+        {
+            return this.Root;
+        }
+    }
 }

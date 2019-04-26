@@ -273,5 +273,7 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null);
+
+        public abstract CosmosContainerBuilder Define(string name);
     }
 }

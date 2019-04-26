@@ -32,6 +32,11 @@ namespace Microsoft.Azure.Cosmos
             this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
         }
 
+        public override CosmosContainerBuilder Define(string name)
+        {
+            return new CosmosContainerBuilder(this, name);
+        }
+
         public override Task<CosmosContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,

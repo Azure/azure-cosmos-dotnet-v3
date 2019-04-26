@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     /// </remarks>
     /// <seealso cref="CosmosContainerSettings"/>
-    public sealed class IndexingPolicy 
+    public sealed class IndexingPolicy
     {
         internal const string DefaultPath = "/*";
 
@@ -144,5 +145,141 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialSpec> SpatialIndexes { get; set; } = new Collection<SpatialSpec>();
+    }
+
+    public class IndexingPolicyBuilder
+    {
+        private List<CompositeIndexBuilder> compositeIndexBuilders = new List<CompositeIndexBuilder>();
+        private PathsBuilder includedPathsBuilder;
+        private PathsBuilder excludedPathsBuilder;
+        private IndexingMode indexingMode;
+
+        private CosmosContainerBuilder containerSettingsBuilder { get; }
+
+        public IndexingPolicyBuilder(CosmosContainerBuilder containerSettings)
+        {
+            this.containerSettingsBuilder = containerSettings;
+        }
+
+        public IndexingPolicyBuilder WithIndexingMode(IndexingMode indexingMode)
+        {
+            this.indexingMode = indexingMode;
+            return this;
+        }
+
+        public PathsBuilder IncludedPaths()
+        {
+            if (this.includedPathsBuilder == null)
+            {
+                this.includedPathsBuilder = new PathsBuilder(this);
+            }
+            return this.includedPathsBuilder;
+        }
+
+        public PathsBuilder ExcludedPaths()
+        {
+            if (this.excludedPathsBuilder == null)
+            {
+                this.excludedPathsBuilder = new PathsBuilder(this);
+            }
+            return this.excludedPathsBuilder;
+        }
+
+        public CompositeIndexBuilder WithCompositeIndex()
+        {
+            var newBuilder = new CompositeIndexBuilder(this);
+            this.compositeIndexBuilders.Add(newBuilder);
+
+            return newBuilder;
+        }
+
+        public CosmosContainerBuilder Attach()
+        {
+            return this.containerSettingsBuilder;
+        }
+    }
+
+    public class PathsBuilder
+    {
+        private List<string> includedPaths = new List<string>();
+        private IndexingPolicyBuilder indexingPolicyBuilder;
+
+        public PathsBuilder(IndexingPolicyBuilder indexingPolicyBuilder)
+        {
+            this.indexingPolicyBuilder = indexingPolicyBuilder;
+        }
+
+        public PathsBuilder Path(string path)
+        {
+            this.includedPaths.Add(path);
+            return this;
+        }
+
+        public IndexingPolicyBuilder Attach()
+        {
+            return this.indexingPolicyBuilder;
+        }
+    }
+
+    public class CompositeIndexBuilder
+    {
+        private Collection<CompositePath> compositePaths = new Collection<CompositePath>();
+        private IndexingPolicyBuilder indexingPolicyBuilder;
+
+        public CompositeIndexBuilder(IndexingPolicyBuilder indexingPolicyBuilder)
+        {
+            this.indexingPolicyBuilder = indexingPolicyBuilder;
+        }
+
+        public CompositeIndexBuilder Path(string path)
+        {
+            this.compositePaths.Add(new CompositePath() { Path = path });
+            return this;
+        }
+
+        public CompositeIndexBuilder Path(string path, CompositePathSortOrder sortOrder)
+        {
+            this.compositePaths.Add(new CompositePath() { Path = path, Order = sortOrder });
+            return this;
+        }
+
+        public IndexingPolicyBuilder Attach()
+        {
+            return this.indexingPolicyBuilder;
+        }
+    }
+
+    public class SpatialIndexBuilder
+    {
+        private SpatialSpec spatialSpec = new SpatialSpec();
+        private IndexingPolicyBuilder indexingPolicyBuilder;
+
+        public SpatialIndexBuilder(IndexingPolicyBuilder indexingPolicyBuilder)
+        {
+            this.indexingPolicyBuilder = indexingPolicyBuilder;
+        }
+
+        public SpatialIndexBuilder WithPath(string path)
+        {
+            this.spatialSpec.Path = path;
+            return this;
+        }
+
+        public SpatialIndexBuilder WithPath(string path, params SpatialType[] spatialTypes)
+        {
+            this.spatialSpec.Path = path;
+
+            foreach (var e in spatialTypes)
+            {
+                this.spatialSpec.SpatialTypes.Add(e);
+            }
+
+            return this;
+        }
+
+        public IndexingPolicyBuilder Attach()
+        {
+            return this.indexingPolicyBuilder;
+        }
     }
 }

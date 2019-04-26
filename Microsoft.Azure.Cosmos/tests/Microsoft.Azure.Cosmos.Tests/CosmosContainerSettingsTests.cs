@@ -17,19 +17,183 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosContainerSettingsTests
     {
         [TestMethod]
-        public void DefaultSerialization()
+        public async Task DefaultSerialization()
         {
-            CosmosContainerSettings containerSettings =
-                new CosmosContainerSettings("TestContainer", "/partitionKey")
+            CosmosDatabase db = null; // 
+
+            // Multi level nesting is not great         -> .Attch().Attach()
+            // Builder mgiht not be just for settings   -> Verbs should be implemented 
+            //          -> Overloads can be removed? (CreateIfNotExists, CTOR overloads)
+            //
+            // Always single argument vs co-exisitng ones: ("/root/leaf2", CompositePathSortOrder.Descending)
+            //      Preferred later to avoid unnecesasry nesting 
+            //
+            // *Settings -> 
+            //      Its too long any other alternatives
+            //      Not used for nested structure
+            //      
+            //  With*: With prefix is also used in azure management SDK's. Not Aws.
+            //
+            // Cosmos prefix to all: 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            // V2 WAY: 
+            IndexingPolicy ip = new IndexingPolicy();
+            ip.IncludedPaths.Add(new IncludedPath() { Path = "/includepath1" });
+            ip.ExcludedPaths.Add(new ExcludedPath() { Path = "/excludepath1" });
+
+            Collection<CompositePath> compositePath = new Collection<CompositePath>();
+            compositePath.Add(new CompositePath() { Path = "/compositepath1", Order = CompositePathSortOrder.Ascending });
+            compositePath.Add(new CompositePath() { Path = "/compositepath2", Order = CompositePathSortOrder.Ascending });
+            ip.CompositeIndexes.Add(compositePath);
+
+            SpatialSpec spatialSpec = new SpatialSpec();
+            spatialSpec.Path = "/spatialpath1";
+            spatialSpec.SpatialTypes = new Collection<SpatialType>();
+            spatialSpec.SpatialTypes.Add(SpatialType.Point);
+            ip.SpatialIndexes.Add(spatialSpec);
+
+            UniqueKeyPolicy uniqueKeyPolicy = new UniqueKeyPolicy();
+            UniqueKey uniqueKey = new UniqueKey();
+            uniqueKey.Paths = new Collection<string>();
+            uniqueKey.Paths.Add("/uniqueuekey1");
+            uniqueKey.Paths.Add("/uniqueuekey2");
+            uniqueKeyPolicy.UniqueKeys.Add(uniqueKey);
+
+            CosmosContainerSettings testContainerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
+            testContainerSettings.IndexingPolicy = ip;
+            testContainerSettings.UniqueKeyPolicy = uniqueKeyPolicy;
+
+            // TODO: Create container
+            this.
+
+
+
+
+            // Last model
+            var containerSettigns = new CosmosContainerSettings("TestContainer", "/partitionKey")
                 .WithIncludeIndexPath("/includepath1")
                 .WithIncludeIndexPath("/includepath2")
                 .WithExcludeIndexPath("/excludepath1")
                 .WithExcludeIndexPath("/excludepath2")
                 .WithCompositeIndex("/compPath1", "/compPath2")
-                .WithCompositeIndex(CompositePath.Create("/property1", CompositePathSortOrder.Descending),
-                    CompositePath.Create("/property2", CompositePathSortOrder.Descending))
+                .WithCompositeIndex(
+                    CompositePath.Create("/property1", CompositePathSortOrder.Descending),
+                    CompositePath.Create("/property2", CompositePathSortOrder.Ascending)
+                    )
                 .WithUniqueKey("/uniqueueKey1", "/uniqueueKey2")
                 .WithSpatialIndex("/spatialPath", SpatialType.Point);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            // Almost Full nested builers
+            CosmosContainerResponse container = await db.Containers.Define("TestContainer")
+                .WithPartitionKeyPath("/partitionKey")
+                .WithThroughput(5000)
+                .WithPartitionKeyDefinitionV2()
+                .WithUniqueKey()
+                    .Path("/path1")
+                    .Path("/path2")
+                    .Attach()
+                .WithIndexingPolicy()
+                    .WithIndexingMode(IndexingMode.Consistent)
+                    .IncludedPaths()
+                        .Path("/includepath1")
+                        .Path("/includepath2")
+                        .Attach()
+                    .ExcludedPaths()
+                        .Path("/excludepath1")
+                        .Path("/excludepath2")
+                        .Attach()
+                    .WithCompositeIndex()
+                        .Path("/root/leaf1")
+                        .Path("/root/leaf2", CompositePathSortOrder.Descending)
+                        .Attach()
+                    .WithCompositeIndex()
+                        .Path("/root/leaf3")
+                        .Path("/root/leaf4")
+                        .Attach()
+                    .Attach()
+                .CreateAsync();                 // Unit testing: virtaul ???
+
+
+
+            // 1. Defien vs Create (Create!! -> Apply), (DefineNewContainer)
+            // 2. Non-create changes model (Replace)
+            // 3. Last Attach return *Settings
+            // Reduced nesting 
+            var container2 = await db.Containers.Define("TestContainer")
+                .WithPartitionKeyPath("/partitionKey")
+                .WithPartitionKeyDefinitionV2()            // -> Options payload
+                .WithThroughput(5000)                      // -> Non setting payload
+                .WithUniqueKey()
+                    .Path("/path1")
+                    .Path("/path2")
+                    .Attach()
+                .WithIndexingMode(IndexingMode.Consistent)
+                .IncludedPaths()
+                    .Path("/includepath1")
+                    .Path("/includepath2")
+                    .Attach()
+                .ExcludedPaths()
+                    .Path("/excludepath1")
+                    .Path("/excludepath2")
+                    .Attach()
+                .WithCompositeIndex()
+                    .Path("/root/leaf1")
+                    .Path("/root/leaf2", CompositePathSortOrder.Descending) // Multi argument builder
+                    .Attach()
+                .WithCompositeIndex()
+                    .Path("/root/leaf3")
+                    .Path("/root/leaf4")
+                    .Attach()
+                .CreateAsync();                     // !! Create async 
+
+
+
+
+
         }
 
         [TestMethod]
