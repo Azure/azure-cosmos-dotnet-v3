@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             { }
 
             Assert.AreEqual(HttpConstants.Versions.v2018_12_31, HttpConstants.Versions.CurrentVersion);
-            Assert.IsTrue(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2018_12_31).SequenceEqual(HttpConstants.Versions.CurrentVersionUTF8));
+            CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2018_12_31), HttpConstants.Versions.CurrentVersionUTF8);
         }
 
         [TestMethod]
