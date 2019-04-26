@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
@@ -78,11 +79,65 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteNullValue();
 
         /// <summary>
+        /// Writes an single signed byte integer to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteInt8Value(sbyte value);
+
+        /// <summary>
+        /// Writes an signed 2-byte integer to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteInt16Value(short value);
+
+        /// <summary>
+        /// Writes an signed 4-byte integer to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteInt32Value(int value);
+
+        /// <summary>
+        /// Writes an signed 8-byte integer to the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteInt64Value(long value);
+
+        /// <summary>
+        /// Writes a single precision floating point number into the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteFloat32Value(float value);
+
+        /// <summary>
+        /// Writes a double precision floating point number into the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteFloat64Value(double value);
+
+        /// <summary>
+        /// Writes a 4 byte unsigned integer into the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the integer to write.</param>
+        void WriteUInt32Value(uint value);
+
+        /// <summary>
+        /// Writes a Guid value into the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the guid to write.</param>
+        void WriteGuidValue(Guid value);
+
+        /// <summary>
+        /// Writes a Binary value into the internal buffer.
+        /// </summary>
+        /// <param name="value">The value of the bytes to write.</param>
+        void WriteBinaryValue(byte[] value);
+
+        /// <summary>
         /// Writes current token from a json reader to the internal buffer.
         /// </summary>
         /// <param name="jsonReader">The JsonReader to the get the current token from.</param>
         void WriteCurrentToken(IJsonReader jsonReader);
-        
+
         /// <summary>
         /// Writes every token from the JsonReader to the internal buffer.
         /// </summary>

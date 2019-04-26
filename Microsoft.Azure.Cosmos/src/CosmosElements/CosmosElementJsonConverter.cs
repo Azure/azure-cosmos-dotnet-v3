@@ -19,6 +19,7 @@
             typeof(int),
             typeof(short),
             typeof(byte),
+            typeof(uint),
             typeof(CosmosNumber),
         };
 

@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosNumber : CosmosElement
+    internal abstract partial class CosmosNumber64 : CosmosNumber
     {
-        private sealed class LazyCosmosNumber : CosmosNumber
+        private sealed class LazyCosmosNumber64 : CosmosNumber64
         {
             private const long MaxSafeInteger = 2 ^ 53 - 1;
             private readonly IJsonNavigator jsonNavigator;
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             // TODO: replace this with Number64 when the time comes.
             private readonly Lazy<double> lazyNumber;
 
-            public LazyCosmosNumber(
+            public LazyCosmosNumber64(
                 IJsonNavigator jsonNavigator,
                 IJsonNavigatorNode jsonNavigatorNode)
             {

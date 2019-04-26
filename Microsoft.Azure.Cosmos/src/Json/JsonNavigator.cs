@@ -88,6 +88,36 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>The string value from the node.</returns>
         public abstract string GetStringValue(IJsonNavigatorNode stringNode);
 
+        /// <inheritdoc />
+        public abstract sbyte GetInt8Value(IJsonNavigatorNode numberNode);
+
+        /// <inheritdoc />
+        public abstract short GetInt16Value(IJsonNavigatorNode numberNode);
+
+        /// <inheritdoc />
+        public abstract int GetInt32Value(IJsonNavigatorNode numberNode);
+
+        /// <inheritdoc />
+        public abstract long GetInt64Value(IJsonNavigatorNode numberNode);
+
+        /// <inheritdoc />
+        public abstract float GetFloat32Value(IJsonNavigatorNode numberNode);
+
+        /// <inheritdoc />
+        public abstract double GetFloat64Value(IJsonNavigatorNode numberNode);
+
+        /// <inheritdoc />
+        public abstract uint GetUInt32Value(IJsonNavigatorNode numberNode);
+
+        /// <inheritdoc />
+        public abstract Guid GetGuidValue(IJsonNavigatorNode guidNode);
+
+        /// <inheritdoc />
+        public abstract byte[] GetBinaryValue(IJsonNavigatorNode binaryNode);
+
+        /// <inheritdoc />
+        public abstract bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue);
+
         /// <summary>
         /// Gets the number of elements in an array node.
         /// </summary>

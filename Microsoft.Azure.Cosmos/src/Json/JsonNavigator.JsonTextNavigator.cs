@@ -132,6 +132,56 @@ namespace Microsoft.Azure.Cosmos.Json
                 return stringValueNode.Value;
             }
 
+            public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override short GetInt16Value(IJsonNavigatorNode numberNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override int GetInt32Value(IJsonNavigatorNode numberNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override long GetInt64Value(IJsonNavigatorNode numberNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override float GetFloat32Value(IJsonNavigatorNode numberNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override double GetFloat64Value(IJsonNavigatorNode numberNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override uint GetUInt32Value(IJsonNavigatorNode numberNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Guid GetGuidValue(IJsonNavigatorNode guidNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override byte[] GetBinaryValue(IJsonNavigatorNode binaryNode)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue)
+            {
+                throw new NotImplementedException();
+            }
+
             /// <summary>
             /// Gets the number of elements in an array node.
             /// </summary>

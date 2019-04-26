@@ -12,27 +12,40 @@
 
         public bool Equals(CosmosNumber number1, CosmosNumber number2)
         {
-            double double1;
-            if (number1.IsFloatingPoint)
+            if (number1.NumberType != number2.NumberType)
             {
-                double1 = number1.AsFloatingPoint().Value;
+                return false;
+            }
+            else if (number1.NumberType == CosmosNumberType.Number64
+                     || number1.NumberType == CosmosNumberType.Float32
+                     || number1.NumberType == CosmosNumberType.Float64)
+            {
+                double double1;
+                if (number1.IsFloatingPoint)
+                {
+                    double1 = number1.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    double1 = number1.AsInteger().Value;
+                }
+
+                double double2;
+                if (number2.IsFloatingPoint)
+                {
+                    double2 = number2.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    double2 = number2.AsInteger().Value;
+                }
+
+                return double1 == double2;
             }
             else
             {
-                double1 = number1.AsInteger().Value;
+                return number1.AsInteger() == number2.AsInteger();
             }
-
-            double double2;
-            if (number2.IsFloatingPoint)
-            {
-                double2 = number2.AsFloatingPoint().Value;
-            }
-            else
-            {
-                double2 = number2.AsInteger().Value;
-            }
-
-            return double1 == double2;
         }
 
         public bool Equals(CosmosString string1, CosmosString string2)
