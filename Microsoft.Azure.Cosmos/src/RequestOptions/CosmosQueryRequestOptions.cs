@@ -208,7 +208,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKey = this.PartitionKey,
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
-                Properties = this.Properties
+                Properties = this.Properties,
+                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake
             };
 
             return queryRequestOptions;
@@ -227,6 +228,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 Properties = this.Properties,
+                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
             };
         }
 
@@ -249,5 +251,10 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
+
+        /// <summary>
+        /// Gets or sets the flag that enables skip take across partitions.
+        /// </summary>
+        internal bool EnableCrossPartitionSkipTake { get; set; }
     }
 }
