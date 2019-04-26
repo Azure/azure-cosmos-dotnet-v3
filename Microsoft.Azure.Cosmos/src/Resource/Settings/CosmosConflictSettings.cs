@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the resource ID for the conflict in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Documents.Constants.Properties.SourceResourceId)]
-        public string SourceResourceId { get; set; }
+        public virtual string SourceResourceId { get; set; }
 
         /// <summary>
         /// Gets the conflicting resource in the Azure Cosmos DB service.
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="T">The returned type of conflicting resource.</typeparam>
         /// <param name="cosmosJsonSerializer">(Optional) <see cref="CosmosJsonSerializer"/> to use while parsing the content.</param>
         /// <returns></returns>
-        public T GetResource<T>(CosmosJsonSerializer cosmosJsonSerializer = null)
+        public virtual T GetResource<T>(CosmosJsonSerializer cosmosJsonSerializer = null)
         {
             if (!string.IsNullOrEmpty(this.Content))
             {

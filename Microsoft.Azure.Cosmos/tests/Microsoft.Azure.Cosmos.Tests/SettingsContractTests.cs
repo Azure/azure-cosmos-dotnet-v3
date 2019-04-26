@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(Cosmos.OperationKind.Invalid, conflictSettings.OperationKind);
             Assert.IsNull(conflictSettings.Id);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosConflictSettings), "Id", "OperationKind", "ResourceType");
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosConflictSettings), "Id", "OperationKind", "ResourceType", "SourceResourceId");
         }
 
         [TestMethod]
