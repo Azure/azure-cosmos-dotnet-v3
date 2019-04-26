@@ -67,6 +67,13 @@ namespace Microsoft.Azure.Cosmos.Query
             set;
         }
 
+        [JsonProperty("hasSelectValue")]
+        public bool HasSelectValue
+        {
+            get;
+            set;
+        }
+
         public bool HasDistinct
         {
             get

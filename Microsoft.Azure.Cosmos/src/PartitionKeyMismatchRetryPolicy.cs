@@ -7,11 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal sealed class PartitionKeyMismatchRetryPolicy : IDocumentClientRetryPolicy
@@ -48,15 +46,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+            Exception exception,
             CancellationToken cancellationToken)
         {
             DocumentClientException clientException = exception as DocumentClientException;
 
-            return this.ShouldRetryAsyncInternal(clientException?.StatusCode,
+            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
+                clientException?.StatusCode,
                 clientException?.GetSubStatus(),
-                clientException?.ResourceAddress,
-                () => this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken));
+                clientException?.ResourceAddress);
+
+            if (shouldRetryResult != null)
+            {
+                return Task.FromResult(shouldRetryResult);
+            }
+
+            return this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
         }
 
         /// <summary> 
@@ -66,13 +71,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
+            CosmosResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            return this.ShouldRetryAsyncInternal(cosmosResponseMessage?.StatusCode,
+            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
-                cosmosResponseMessage?.GetResourceAddress(),
-                () => this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken));
+                cosmosResponseMessage?.GetResourceAddress());
+            if (shouldRetryResult != null)
+            {
+                return Task.FromResult(shouldRetryResult);
+            }
+
+            return this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
         }
 
         /// <summary>
@@ -85,16 +95,16 @@ namespace Microsoft.Azure.Cosmos
             this.nextRetryPolicy.OnBeforeSendRequest(request);
         }
 
-        private Task<ShouldRetryResult> ShouldRetryAsyncInternal(
-            HttpStatusCode? statusCode, 
-            SubStatusCodes? subStatusCode, 
-            string resourceIdOrFullName, 
-            Func<Task<ShouldRetryResult>> continueIfNotHandled)
+        private ShouldRetryResult ShouldRetryInternal(
+            HttpStatusCode? statusCode,
+            SubStatusCodes? subStatusCode,
+            string resourceIdOrFullName)
         {
             if (!statusCode.HasValue
-                && !subStatusCode.HasValue)
+                && (!subStatusCode.HasValue
+                || subStatusCode.Value == SubStatusCodes.Unknown))
             {
-                return continueIfNotHandled();
+                return null;
             }
 
             if (statusCode == HttpStatusCode.BadRequest
@@ -110,10 +120,10 @@ namespace Microsoft.Azure.Cosmos
 
                 this.retriesAttempted++;
 
-                return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
+                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
             }
 
-            return continueIfNotHandled();
+            return null;
         }
     }
 }

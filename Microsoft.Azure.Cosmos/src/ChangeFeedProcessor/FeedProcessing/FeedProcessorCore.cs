@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using System.Collections.ObjectModel;
     using System.Net;
@@ -83,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         }
                     }
                     while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
+                    }
                 }
                 catch (TaskCanceledException canceledException)
                 {

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
         /// <param name="serializer">The calling serializer.</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var coordinates = (LineStringCoordinates)value;
+            LineStringCoordinates coordinates = (LineStringCoordinates)value;
             serializer.Serialize(writer, coordinates.Positions);
         }
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
             object existingValue,
             JsonSerializer serializer)
         {
-            var coordinates = serializer.Deserialize<Position[]>(reader);
+            Position[] coordinates = serializer.Deserialize<Position[]>(reader);
 
             return new LineStringCoordinates(coordinates);
         }

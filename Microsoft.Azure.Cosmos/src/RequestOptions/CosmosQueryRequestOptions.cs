@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// In some scenarios you need to manage this Session yourself;
         /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="ResourceResponse{T}"/> of the write action on one node
+        /// you would have to send the SessionToken from <see cref="CosmosQueryResponse{T}"/> of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
         /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
         /// the read could potentially land on a different node to the write request, where the session was created.
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         internal int? MaxConcurrency { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="PartitionKey"/> for the current request in the Azure Cosmos DB service.
+        /// Gets or sets the <see cref="Microsoft.Azure.Documents.PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
         internal object PartitionKey { get; set; }
 
@@ -156,8 +156,6 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
             CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
-
-            request.Headers.Continuation = this.RequestContinuation;
 
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
@@ -210,7 +208,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKey = this.PartitionKey,
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
-                Properties = this.Properties
+                Properties = this.Properties,
+                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake
             };
 
             return queryRequestOptions;
@@ -229,6 +228,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 Properties = this.Properties,
+                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
             };
         }
 
@@ -251,5 +251,10 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
+
+        /// <summary>
+        /// Gets or sets the flag that enables skip take across partitions.
+        /// </summary>
+        internal bool EnableCrossPartitionSkipTake { get; set; }
     }
 }

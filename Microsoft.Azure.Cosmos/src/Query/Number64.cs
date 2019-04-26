@@ -83,10 +83,32 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}",
-                this.IsDouble ? Number64.ToDouble(this).ToString() : Number64.ToLong(this).ToString());
+            return this.ToString(format: null, formatProvider: CultureInfo.CurrentCulture);
+        }
+
+        public string ToString(string format)
+        {
+            return this.ToString(format: format, formatProvider: CultureInfo.CurrentCulture);
+        }
+
+        public string ToString(IFormatProvider formatProvider)
+        {
+            return this.ToString(format: null, formatProvider: formatProvider);
+        }
+
+        public string ToString(string format, IFormatProvider formatProvider)
+        {
+            string toString;
+            if (this.IsDouble)
+            {
+                toString = Number64.ToDouble(this).ToString(format, formatProvider);
+            }
+            else
+            {
+                toString = Number64.ToLong(this).ToString(format, formatProvider);
+            }
+
+            return toString;
         }
 
         #region Static Operators

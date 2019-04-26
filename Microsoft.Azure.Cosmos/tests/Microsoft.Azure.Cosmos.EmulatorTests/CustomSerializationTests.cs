@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Serialization;
 
     [TestClass]
-    [Ignore]
     public abstract class CustomSerializationTests
     {
         private const string PartitionKeyProperty = "pk";
@@ -34,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Uri databaseUri;
         private Uri collectionUri;
         private Uri partitionedCollectionUri;
+        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         internal abstract DocumentClient CreateDocumentClient(
             Uri hostUri,
@@ -66,14 +66,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Database database = documentClient.CreateDatabaseIfNotExistsAsync(new Database() { Id = databaseName }).Result.Resource;
 
-            DocumentCollection newCollection = new DocumentCollection() { Id = collectionName };
+            DocumentCollection newCollection = new DocumentCollection() { Id = collectionName, PartitionKey = defaultPartitionKeyDefinition };
             try
             {
                 documentClient.CreateDocumentCollectionAsync(databaseUri, newCollection, new RequestOptions { OfferThroughput = 400 }).Wait();
             }
             catch (DocumentClientException ex)
             {
-                if(ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                if (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
                 {
                     // Emulator con sometimes fail under load, so we retry
                     Task.Delay(1000);
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = partitionedCollectionName,
                 PartitionKey = new PartitionKeyDefinition()
                 {
-                    Paths = new Collection<string> {"/pk"},
+                    Paths = new Collection<string> { "/pk" },
                 }
             };
 
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Document originalDocument,
             string jsonProperty)
         {
-            requestOptions.PartitionKey = targetCollectionUri == this.partitionedCollectionUri ? new PartitionKey(originalDocument.GetPropertyValue<string>(PartitionKeyProperty)) : null;
+            requestOptions.PartitionKey = new PartitionKey(originalDocument.GetPropertyValue<string>(PartitionKeyProperty));
 
             Document readDocument = client.ReadDocumentAsync(createdDocument.SelfLink, requestOptions).Result.Resource;
             Assert.AreEqual(originalDocument.GetValue<string>(jsonProperty), createdDocument.GetValue<string>(jsonProperty));
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             SetupDateTimeScenario(serializerSettings, jsonProperty, out client, out originalDocument, out createdDocument, out partitionedDocument);
 
-            var options = ApplyFeedOptions(new FeedOptions() {EnableCrossPartitionQuery = true}, serializerSettings);
+            var options = ApplyFeedOptions(new FeedOptions() { EnableCrossPartitionQuery = true }, serializerSettings);
 
             // Verify with query 
             string selectFromCOrderByCTs = "select * from c order by c._ts";
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 } ";
 
             RequestOptions applyRequestOptions = this.ApplyRequestOptions(new RequestOptions(), serializerSettings);
-
+            applyRequestOptions.PartitionKey = new PartitionKey("test");
             this.AssertPropertyOnStoredProc(client, this.collectionUri, storedProcedure, applyRequestOptions, originalDocument, jsonProperty);
             this.AssertPropertyOnStoredProc(client, this.partitionedCollectionUri, storedProcedure, applyRequestOptions, originalDocument, jsonProperty);
         }
@@ -250,10 +250,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                await client.ExecuteStoredProcedureAsync<SprocTestPayload>(sproc.SelfLink);
+                await client.ExecuteStoredProcedureAsync<SprocTestPayload>(sproc.SelfLink, new RequestOptions { PartitionKey = new PartitionKey("value") });
                 Assert.Fail();
             }
-            catch(SerializationException e)
+            catch (SerializationException e)
             {
                 Assert.IsTrue(e.Message.Contains("Could not find member 'id' on object of type"));
             }
@@ -426,7 +426,7 @@ function bulkImport(docs) {
 
             var args = new dynamic[] { new dynamic[] { doc } };
 
-            RequestOptions requestOptions = ApplyRequestOptions(new RequestOptions(), serializerSettings);
+            RequestOptions requestOptions = ApplyRequestOptions(new RequestOptions { PartitionKey = new PartitionKey("value") }, serializerSettings);
 
             StoredProcedureResponse<int> scriptResult = client.ExecuteStoredProcedureAsync<int>(
                 sproc.SelfLink,
@@ -516,7 +516,7 @@ function bulkImport(docs) {
             Document originalDocument,
             string jsonProperty)
         {
-            requestOptions.PartitionKey = targetCollectionUri == this.partitionedCollectionUri ? new PartitionKey(originalDocument.GetPropertyValue<string>(CustomSerializationTests.PartitionKeyProperty)) : null;
+            requestOptions.PartitionKey = new PartitionKey(originalDocument.GetPropertyValue<string>(CustomSerializationTests.PartitionKeyProperty));
 
             StoredProcedure sproc = client.CreateStoredProcedureAsync(targetCollectionUri, storedProcedure).Result;
 
@@ -566,8 +566,8 @@ function bulkImport(docs) {
                 defaultConsistencyLevel);
             originalDocument = new Document();
             originalDocument.SetPropertyValue(jsonPropertyName, "2017-05-18T17:17:32.7514920Z");
-            outputDocument = client.CreateDocumentAsync(this.collectionUri, originalDocument, ApplyRequestOptions(new RequestOptions(), serializerSettings), disableAutomaticIdGeneration: false).Result.Resource;
             originalDocument.SetPropertyValue(PartitionKeyProperty, "value");
+            outputDocument = client.CreateDocumentAsync(this.collectionUri, originalDocument, ApplyRequestOptions(new RequestOptions(), serializerSettings), disableAutomaticIdGeneration: false).Result.Resource;
             outputPartitionedDocument = client.CreateDocumentAsync(this.partitionedCollectionUri, originalDocument, ApplyRequestOptions(new RequestOptions(), serializerSettings), disableAutomaticIdGeneration: false).Result.Resource;
         }
 
@@ -716,9 +716,10 @@ function bulkImport(docs) {
                     try
                     {
                         type = this._nameToTypeMapping[typeName];
-                    }catch(Exception e)
+                    }
+                    catch (Exception e)
                     {
-                        if(e != null)
+                        if (e != null)
                         {
                             throw;
                         }
@@ -893,6 +894,7 @@ function bulkImport(docs) {
         class MyObject
         {
             public string id { get; set; }
+            public string pk { get; set; }
             public int NumberField { get; set; }
             public bool IsTrue { get; set; }
             public Guid Guid { get; set; }
@@ -901,6 +903,7 @@ function bulkImport(docs) {
             public MyObject(int i)
             {
                 id = i.ToString();
+                pk = "value";
                 Guid = Guid.NewGuid();
                 IsTrue = i < 5;
                 NumberField = i;

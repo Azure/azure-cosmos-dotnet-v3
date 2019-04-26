@@ -8,12 +8,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Net;
     using System.Reflection;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -29,18 +27,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// The document client stored for all the tests.
         /// </summary>
-        private static readonly DocumentClient documentClient = TestCommon.CreateClient(
-            true,
-            defaultConsistencyLevel: ConsistencyLevel.Session);
+        private static readonly CosmosClient cosmosClient = TestCommon.CreateCosmosClient(true);
 
         /// <summary>
         /// The database used for all the tests.
         /// </summary>
-        private static readonly Database database = TestCommon.CreateDatabase(
-            IndexingPolicyTests.documentClient,
-            Guid.NewGuid().ToString());
+        private static readonly CosmosDatabase database = cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString()).Result;
 
-        private static readonly IndexingPolicy.IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new IndexingPolicy.IndexingPolicyEqualityComparer();
+        private static readonly Cosmos.IndexingPolicy.IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new Cosmos.IndexingPolicy.IndexingPolicyEqualityComparer();
 
         private static readonly Dictionary<Version, Assembly> documentClientAssemblyDictionary = new Dictionary<Version, Assembly>();
 
@@ -97,26 +91,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestCommon.DeleteAllDatabasesAsync();
         }
 
+        private static async Task RetryOnNonAssertFailure(Func<Task> function, int retryCount = 5)
+        {
+            while (retryCount-- > 0)
+            {
+                try
+                {
+                    await function();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.GetType() == typeof(AssertFailedException))
+                    {
+                        throw;
+                    }
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
+        }
+
         [TestMethod]
         public async Task DefaultIndexingPolicy()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy);
         }
 
         [TestMethod]
         public async Task RangeHash()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>()
             {
-                new IncludedPath()
+                new Cosmos.IncludedPath()
                 {
                     Path = DefaultPath,
-                    Indexes = new Collection<Index>()
+                    Indexes = new Collection<Cosmos.Index>()
                     {
-                        new RangeIndex(DataType.Number, -1),
-                        new HashIndex(DataType.String, 3),
+                        new Cosmos.RangeIndex(Cosmos.DataType.Number, -1),
+                        new Cosmos.HashIndex(Cosmos.DataType.String, 3),
                     }
                 }
             };
@@ -127,16 +142,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task RangeRange()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>()
             {
-                new IncludedPath()
+                new Cosmos.IncludedPath()
                 {
                     Path = DefaultPath,
-                    Indexes = new Collection<Index>()
+                    Indexes = new Collection<Cosmos.Index>()
                     {
-                        new RangeIndex(DataType.Number, -1),
-                        new RangeIndex(DataType.String, -1),
+                        new Cosmos.RangeIndex(Cosmos.DataType.Number, -1),
+                        new Cosmos.RangeIndex(Cosmos.DataType.String, -1),
                     }
                 }
             };
@@ -147,16 +162,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task HashHash()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>()
             {
-                new IncludedPath()
+                new Cosmos.IncludedPath()
                 {
                     Path = DefaultPath,
-                    Indexes = new Collection<Index>()
+                    Indexes = new Collection<Cosmos.Index>()
                     {
-                        new HashIndex(DataType.Number, -1),
-                        new HashIndex(DataType.String, -1),
+                        new Cosmos.HashIndex(Cosmos.DataType.Number, -1),
+                        new Cosmos.HashIndex(Cosmos.DataType.String, -1),
                     }
                 }
             };
@@ -167,16 +182,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task HashRange()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>()
             {
-                new IncludedPath()
+                new Cosmos.IncludedPath()
                 {
                     Path = DefaultPath,
-                    Indexes = new Collection<Index>()
+                    Indexes = new Collection<Cosmos.Index>()
                     {
-                        new HashIndex(DataType.Number, 3),
-                        new RangeIndex(DataType.String, -1),
+                        new Cosmos.HashIndex(Cosmos.DataType.Number, 3),
+                        new Cosmos.RangeIndex(Cosmos.DataType.String, -1),
                     }
                 }
             };
@@ -187,15 +202,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task SpatialIndex()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>()
             {
-                new IncludedPath()
+                new Cosmos.IncludedPath()
                 {
                     Path = DefaultPath,
-                    Indexes = new Collection<Index>()
+                    Indexes = new Collection<Cosmos.Index>()
                     {
-                        new SpatialIndex(DataType.Point),
+                        new Cosmos.SpatialIndex(Cosmos.DataType.Point),
                     }
                 }
             };
@@ -206,17 +221,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GeoFencingIndex()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>()
             {
-                new IncludedPath()
+                new  Cosmos.IncludedPath()
                 {
                     Path = DefaultPath,
-                    Indexes = new Collection<Index>()
+                    Indexes = new Collection<Cosmos.Index>()
                     {
-                        new SpatialIndex(DataType.LineString),
-                        new SpatialIndex(DataType.Point),
-                        new SpatialIndex(DataType.Polygon),
+                        new  Cosmos.SpatialIndex(Cosmos.DataType.LineString),
+                        new  Cosmos.SpatialIndex(Cosmos.DataType.Point),
+                        new  Cosmos.SpatialIndex(Cosmos.DataType.Polygon),
                     }
                 }
             };
@@ -224,35 +239,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task CompositeIndex()
         {
-            IndexingPolicy indexingPolicy = new IndexingPolicy()
+            await RetryOnNonAssertFailure(this.CompositeIndexImplementation);
+        }
+
+        private async Task CompositeIndexImplementation()
+        { 
+            Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
                 Automatic = true,
-                IncludedPaths = new Collection<IncludedPath>()
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
                 {
-                    new IncludedPath()
+                    new  Cosmos.IncludedPath()
                     {
                         Path = DefaultPath,
                     }
                 },
-                ExcludedPaths = new Collection<ExcludedPath>(),
-                IndexingMode = IndexingMode.Consistent,
-                CompositeIndexes = new Collection<Collection<CompositePath>>()
+                ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                IndexingMode = Cosmos.IndexingMode.Consistent,
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                 {
-                    new Collection<CompositePath>()
+                    new Collection<Cosmos.CompositePath>()
                     {
-                        new CompositePath()
+                        new  Cosmos.CompositePath()
                         {
                             Path = "/name",
-                            Order = CompositePathSortOrder.Ascending
+                            Order =  Cosmos.CompositePathSortOrder.Ascending
                         },
-                        new CompositePath()
+                        new  Cosmos.CompositePath()
                         {
                             Path = "/age",
-                            Order = CompositePathSortOrder.Descending
+                            Order =  Cosmos.CompositePathSortOrder.Descending
                         }
                     }
                 }
@@ -264,11 +283,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ExcludeAll()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>();
-            indexingPolicy.ExcludedPaths = new Collection<ExcludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>();
+            indexingPolicy.ExcludedPaths = new Collection<Cosmos.ExcludedPath>()
             {
-                new ExcludedPath()
+                new Cosmos.ExcludedPath()
                 {
                     Path = "/*",
                 }
@@ -280,17 +299,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ExcludedPaths()
         {
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            indexingPolicy.IncludedPaths = new Collection<IncludedPath>()
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            indexingPolicy.IncludedPaths = new Collection<Cosmos.IncludedPath>()
             {
-                new IncludedPath()
+                new  Cosmos.IncludedPath()
                 {
                     Path = "/*",
                 }
             };
-            indexingPolicy.ExcludedPaths = new Collection<ExcludedPath>()
+            indexingPolicy.ExcludedPaths = new Collection<Cosmos.ExcludedPath>()
             {
-                new ExcludedPath()
+                new  Cosmos.ExcludedPath()
                 {
                     Path = "/nonIndexedContent/*",
                 }
@@ -302,9 +321,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task DoubleRoundTrip()
         {
-            await IndexingPolicyTests.documentClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database);
-            IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            DocumentCollection documentCollectionToCreate = new DocumentCollection()
+            await cosmosClient.Databases.CreateDatabaseIfNotExistsAsync(database.Id);
+            Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
+            CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
@@ -313,17 +332,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await IndexingPolicyTests.RoundTripWithLocal(indexingPolicy);
         }
 
-        private static async Task RoundTripWithLocal(IndexingPolicy indexingPolicy)
+        private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy)
         {
-            DocumentCollection documentCollection = new DocumentCollection()
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+            CosmosContainerSettings containerSetting = new CosmosContainerSettings()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
+                PartitionKey = partitionKeyDefinition
             };
 
-            await IndexingPolicyTests.documentClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database);
-            ResourceResponse<DocumentCollection> documentCollectionCreated = await IndexingPolicyTests.documentClient.CreateDocumentCollectionAsync(UriFactory.CreateDatabaseUri(IndexingPolicyTests.database.Id), documentCollection);
-            Assert.IsTrue(IndexingPolicyTests.indexingPolicyEqualityComparer.Equals(indexingPolicy, documentCollection.IndexingPolicy));
+            CosmosDatabase cosmosDatabase = await cosmosClient.Databases.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
+            CosmosContainerResponse cosmosContainerResponse = await cosmosDatabase.Containers.CreateContainerAsync(containerSetting);
+
+            Assert.IsTrue(IndexingPolicyTests.indexingPolicyEqualityComparer.Equals(indexingPolicy, containerSetting.IndexingPolicy));
         }
 
         private static IndexingPolicy GetIndexingPolicyFromAssembly(Assembly assembly, object indexingPolicy)
@@ -372,25 +394,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createdType;
         }
 
-        private static IndexingPolicy CreateDefaultIndexingPolicy()
+        private static Cosmos.IndexingPolicy CreateDefaultIndexingPolicy()
         {
-            return new IndexingPolicy()
+            return new Cosmos.IndexingPolicy()
             {
                 Automatic = true,
-                IncludedPaths = new Collection<IncludedPath>()
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
                 {
-                    new IncludedPath()
+                    new  Cosmos.IncludedPath()
                     {
                         Path = DefaultPath,
-                        Indexes = new Collection<Index>()
+                        Indexes = new Collection<Cosmos.Index>()
                         {
-                            new RangeIndex(DataType.Number, -1),
-                            new RangeIndex(DataType.String, -1),
+                            new  Cosmos.RangeIndex( Cosmos.DataType.Number, -1),
+                            new  Cosmos.RangeIndex( Cosmos.DataType.String, -1),
                         }
                     }
                 },
-                ExcludedPaths = new Collection<ExcludedPath>(),
-                IndexingMode = IndexingMode.Consistent,
+                ExcludedPaths = new Collection<Cosmos.ExcludedPath>(),
+                IndexingMode = Cosmos.IndexingMode.Consistent,
             };
         }
 

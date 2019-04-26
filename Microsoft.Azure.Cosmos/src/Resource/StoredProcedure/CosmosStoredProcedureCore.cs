@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,24 +17,30 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosStoredProcedureCore : CosmosStoredProcedure
     {
+        private readonly CosmosClientContext clientContext;
+
         internal CosmosStoredProcedureCore(
-            CosmosContainer container,
+            CosmosClientContext clientContext,
+            CosmosContainerCore container,
             string storedProcedureId)
         {
+            this.clientContext = clientContext;
             this.Id = storedProcedureId;
-            base.Initialize(
-                client: container.Client,
-                parentLink: container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment);
+            this.LinkUri = clientContext.CreateLink(
+                 parentLink: container.LinkUri.OriginalString,
+                 uriPathSegment: Paths.StoredProceduresPathSegment,
+                 id: storedProcedureId);
         }
 
         public override string Id { get; }
+
+        internal Uri LinkUri { get; }
 
         public override Task<CosmosStoredProcedureResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessAsync(
+            return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: null,
                 operationType: OperationType.Read,
@@ -59,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
                 Body = body,
             };
 
-            return ProcessAsync(
+            return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 operationType: OperationType.Replace,
@@ -71,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessAsync(
+            return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: null,
                 operationType: OperationType.Delete,
@@ -90,25 +95,25 @@ namespace Microsoft.Azure.Cosmos
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)
             {
-                parametersStream = this.Client.CosmosJsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
+                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
             }
             else
             {
-                parametersStream = this.Client.CosmosJsonSerializer.ToStream<TInput>(input);
+                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput>(input);
             }
 
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.Client,
-                this.LinkUri,
-                ResourceType.StoredProcedure,
-                OperationType.ExecuteJavaScript,
-                requestOptions,
-                partitionKey,
-                parametersStream,
-                null,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: OperationType.ExecuteJavaScript,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
+                partitionKey: partitionKey,
+                streamPayload: parametersStream,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateItemResponse<TOutput>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<TOutput>(response);
         }
 
         internal Task<CosmosStoredProcedureResponse> ProcessAsync(
@@ -118,18 +123,19 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.Client,
-                this.LinkUri,
-                ResourceType.StoredProcedure,
-                operationType,
-                requestOptions,
-                partitionKey,
-                streamPayload,
-                null,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateStoredProcedureResponse(this, response);
+            return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this, response);
         }
+        internal CosmosContainerCore container { get; }
     }
 }

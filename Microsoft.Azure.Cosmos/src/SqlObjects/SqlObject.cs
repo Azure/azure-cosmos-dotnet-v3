@@ -27,9 +27,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override string ToString()
         {
-            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer();
-            this.Accept(sqlObjectTextSerializer);
-            return sqlObjectTextSerializer.ToString();
+            return this.Serialize(prettyPrint: false);
         }
 
         public override int GetHashCode()
@@ -37,10 +35,22 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Accept(SqlObjectHasher.Singleton);
         }
 
+        public string PrettyPrint()
+        {
+            return this.Serialize(prettyPrint: true);
+        }
+
         public SqlObject GetObfuscatedObject()
         {
             SqlObjectObfuscator sqlObjectObfuscator = new SqlObjectObfuscator();
             return this.Accept(sqlObjectObfuscator);
+        }
+
+        private string Serialize(bool prettyPrint)
+        {
+            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint);
+            this.Accept(sqlObjectTextSerializer);
+            return sqlObjectTextSerializer.ToString();
         }
     }
 }

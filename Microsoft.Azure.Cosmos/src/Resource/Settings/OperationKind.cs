@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Internal
     /// These are the operation types resulted in a version conflict on a resource. 
     /// </summary>
     /// <remarks>
-    /// When a version conflict occurs during an async operation, retrieving the <see cref="Conflict"/> instance will allow you 
+    /// When a version conflict occurs during an async operation, retrieving the <see cref="Microsoft.Azure.Documents.Conflict"/> instance will allow you 
     /// to determine which resource and operation caause the conflict.
     /// </remarks>
     internal enum OperationKind

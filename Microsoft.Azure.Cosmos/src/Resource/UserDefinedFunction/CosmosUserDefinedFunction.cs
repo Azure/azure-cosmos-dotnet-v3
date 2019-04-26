@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -15,11 +16,14 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosUserDefinedFunctions"/> for creating new user defined functions, and reading/querying all user defined functions;
     /// </summary>
-    internal class CosmosUserDefinedFunction : CosmosIdentifier
+    internal class CosmosUserDefinedFunction
     {
+        private readonly CosmosClientContext clientContext;
+
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunction"/>
         /// </summary>
+        /// <param name="clientContext">The client context</param>
         /// <param name="container">The <see cref="CosmosContainer"/></param>
         /// <param name="userDefinedFunctionId">The cosmos user defined function id.</param>
         /// <remarks>
@@ -27,17 +31,22 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosUserDefinedFunction(
-            CosmosContainer container,
+            CosmosClientContext clientContext,
+            CosmosContainerCore container,
             string userDefinedFunctionId)
         {
             this.Id = userDefinedFunctionId;
-            base.Initialize(
-               client: container.Client,
+            this.clientContext = clientContext;
+            this.container = container;
+            this.LinkUri = this.clientContext.CreateLink(
                parentLink: container.LinkUri.OriginalString,
-               uriPathSegment: Paths.UserDefinedFunctionsPathSegment);
+               uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
+               id: userDefinedFunctionId);
         }
 
-        public override string Id { get; }
+        public string Id { get; }
+
+        internal Uri LinkUri { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -180,18 +189,19 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.Client,
-                this.LinkUri,
-                ResourceType.UserDefinedFunction,
-                operationType,
-                requestOptions,
-                partitionKey,
-                streamPayload,
-                null,
-                cancellationToken);
+            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.UserDefinedFunction,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
 
-            return this.Client.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
+            return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
         }
+        internal CosmosContainerCore container { get; }
     }
 }

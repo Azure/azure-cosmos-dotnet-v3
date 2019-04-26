@@ -571,9 +571,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (documentCollections.Count == 0)
             {
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
                 DocumentCollection documentCollection1 = new DocumentCollection
                 {
-                    Id = Guid.NewGuid().ToString("N")
+                    Id = Guid.NewGuid().ToString("N"),
+                    PartitionKey = partitionKeyDefinition
                 };
 
                 return TestCommon.CreateCollectionAsync(client, database, documentCollection1,
@@ -783,7 +785,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
                 }
 
-                DocumentServiceResponse response = client.ReadAsync(request).Result;
+                DocumentServiceResponse response = client.ReadAsync(request, null).Result;
                 responseHeaders = response.Headers;
                 return response.GetResource<T>();
             }
@@ -822,7 +824,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     request.Headers[HttpConstants.HttpHeaders.PartitionKey] = resource.Id;//PartitionKeyInternal.Empty.ToJsonString();
                 }
 
-                DocumentServiceResponse response = client.ReadAsync(request).Result;
+                DocumentServiceResponse response = client.ReadAsync(request, null).Result;
                 responseHeaders = response.Headers;
                 return response.GetResource<T>();
             }
@@ -931,10 +933,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (request.ResourceType.IsPartitioned())
                 {
-                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
+                    PartitionKey partitionKey = new PartitionKey("test");
+                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = partitionKey.ToString();
                 }
 
-                return client.CreateAsync(request).Result.GetResource<T>();
+                return client.CreateAsync(request, null).Result.GetResource<T>();
             }
             catch (AggregateException aggregatedException)
             {
@@ -971,10 +974,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (request.ResourceType.IsPartitioned())
                 {
-                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
+                    PartitionKey partitionKey = new PartitionKey("test");
+                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = partitionKey.ToString();
                 }
 
-                return client.UpsertAsync(request).Result.GetResource<T>();
+                return client.UpsertAsync(request, null).Result.GetResource<T>();
             }
             catch (AggregateException aggregatedException)
             {
@@ -1012,10 +1016,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (request.ResourceType.IsPartitioned())
                 {
-                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
+                    PartitionKey partitionKey = new PartitionKey("test");
+                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = partitionKey.ToString();
                 }
 
-                DocumentServiceResponse response = client.UpdateAsync(request).Result;
+                DocumentServiceResponse response = client.UpdateAsync(request, null).Result;
                 return response.GetResource<T>();
             }
             catch (AggregateException aggregatedException)
@@ -1055,10 +1060,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (request.ResourceType.IsPartitioned())
                 {
-                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();
+                    PartitionKey partitionKey = new PartitionKey("test");
+                    request.Headers[HttpConstants.HttpHeaders.PartitionKey] = partitionKey.ToString();
                 }
 
-                return client.DeleteAsync(request).Result;
+                return client.DeleteAsync(request, null).Result;
             }
             catch (AggregateException aggregatedException)
             {
@@ -1121,7 +1127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, overlappingRanges.Single().Id));
                 }
 
-                DocumentServiceResponse result = client.ReadFeedAsync(request).Result;
+                DocumentServiceResponse result = client.ReadFeedAsync(request, null).Result;
                 responseHeaders = result.Headers;
                 FeedResource<T> feedResource = result.GetResource<FeedResource<T>>();
 

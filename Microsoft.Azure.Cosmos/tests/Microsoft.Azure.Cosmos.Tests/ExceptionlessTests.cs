@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class ExceptionlessTests
@@ -216,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             };
 
             // This is needed because in order to Mock a TransportClient we previously need an instance of CosmosClient
-            CosmosClient internalClient = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient internalClient = MockCosmosUtil.CreateMockCosmosClient();
             internalClient.DocumentClient.GatewayStoreModel = MockGatewayStoreModel(sendFunc);
             internalClient.DocumentClient.StoreModel = MockServerStoreModel(internalClient.DocumentClient.Session, sendDirectFunc);
 
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
             RetryHandler retryHandler = new RetryHandler(internalClient.DocumentClient.ResetSessionTokenRetryPolicy);
             MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
 
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient(
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => {
                     builder
                         .AddCustomHandlers(retryHandler, transportHandler);
@@ -314,6 +315,7 @@ namespace Microsoft.Azure.Cosmos
                 TimeSpan.FromSeconds(5),
                 ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
+                new JsonSerializerSettings(),
                 new UserAgentContainer(),
                 ApiType.None,
                 messageHandler);

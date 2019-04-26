@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net;
     using Microsoft.Azure.Documents;
 
-
     /// <summary>
     /// Implements the abstraction to resolve target location for geo-replicated DatabaseAccount
     /// with multiple writable and readable locations.
@@ -114,9 +113,23 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// For the defaultEndPoint, we will return the first available write location.
         /// Returns null, in other cases.
         /// </summary>
+        /// <remarks>
+        /// Today we return null for defaultEndPoint if multiple write locations can be used.
+        /// This needs to be modifed to figure out proper location in such case.
+        /// </remarks>
         public string GetLocation(Uri endpoint)
         {
-            return this.locationInfo.GetLocation(endpoint, this.CanUseMultipleWriteLocations());
+            string location = this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
+
+            if (location == null && endpoint == this.defaultEndpoint && !this.CanUseMultipleWriteLocations())
+            {
+                if (this.locationInfo.AvailableWriteEndpointByLocation.Any())
+                {
+                    return this.locationInfo.AvailableWriteEndpointByLocation.First().Key;
+                }
+            }
+
+            return location;
         }
 
         /// <summary>
@@ -149,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Invoked when <see cref="Microsoft.Azure.Cosmos.ConnectionPolicy.PreferredLocations"/> changes
+        /// Invoked when <see cref="ConnectionPolicy.PreferredLocations"/> changes
         /// </summary>
         /// <param name="preferredLocations"></param>
         public void OnLocationPreferenceChanged(ReadOnlyCollection<string> preferredLocations)
@@ -170,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         ///             Endpoint of first write location in <see cref="CosmosAccountSettings.WritableLocations"/> is the only endpoint that supports
         ///             write operation on all resource types (except during that region's failover). 
         ///             Only during manual failover, client would retry write on second write location in <see cref="CosmosAccountSettings.WritableLocations"/>.
-        ///    (b) Else resolve the request to first write endpoint in <see cref="CosmosAccountSettings.WritableLocations"/> OR 
+        ///    (b) Else resolve the request to first write endpoint in <see cref="CosmosAccountSettings.writeLocations"/> OR 
         ///        second write endpoint in <see cref="CosmosAccountSettings.WritableLocations"/> in case of manual failover of that location.
         /// 2. Else resolve the request to most preferred available read endpoint (automatic failover for read requests)
         /// </summary>
@@ -185,6 +198,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             int locationIndex = request.RequestContext.LocationIndexToRoute.GetValueOrDefault(0);
 
+            Uri locationEndpointToRoute = this.defaultEndpoint; 
+
             if (!request.RequestContext.UsePreferredLocations.GetValueOrDefault(true) // Should not use preferred location ?
                 || (request.OperationType.IsWriteOperation() && !this.CanUseMultipleWriteLocations(request)))
             {
@@ -197,18 +212,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     locationIndex = Math.Min(locationIndex % 2, currentLocationInfo.AvailableWriteLocations.Count - 1);
                     string writeLocation = currentLocationInfo.AvailableWriteLocations[locationIndex];
-                    return currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
-                }
-                else
-                {
-                    return this.defaultEndpoint;
+                    locationEndpointToRoute = currentLocationInfo.AvailableWriteEndpointByLocation[writeLocation];
                 }
             }
             else
             {
                 ReadOnlyCollection<Uri> endpoints = request.OperationType.IsWriteOperation() ? this.WriteEndpoints : this.ReadEndpoints;
-                return endpoints[locationIndex % endpoints.Count];
+                locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
+
+            request.RequestContext.RouteToLocation(locationEndpointToRoute);
+            return locationEndpointToRoute;
         }
 
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)
@@ -224,10 +238,21 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // Refresh if client opts-in to useMultipleWriteLocations but server-side setting is disabled
                 bool shouldRefresh = this.useMultipleWriteLocations && !this.enableMultipleWriteLocations;
 
+                ReadOnlyCollection<Uri> readLocationEndpoints = currentLocationInfo.ReadEndpoints;
+
+                if (this.IsEndpointUnavailable(readLocationEndpoints[0], OperationType.Read))
+                {
+                    canRefreshInBackground = readLocationEndpoints.Count > 1;
+                    DefaultTrace.TraceInformation("ShouldRefreshEndpoints = true since the first read endpoint {0} is not available for read. canRefreshInBackground = {1}",
+                        readLocationEndpoints[0],
+                        canRefreshInBackground);
+
+                    return true;
+                }
+
                 if (!string.IsNullOrEmpty(mostPreferredLocation))
                 {
                     Uri mostPreferredReadEndpoint;
-                    ReadOnlyCollection<Uri> readLocationEndpoints = currentLocationInfo.ReadEndpoints;
 
                     if (currentLocationInfo.AvailableReadEndpointByLocation.TryGetValue(mostPreferredLocation, out mostPreferredReadEndpoint))
                     {
@@ -467,6 +492,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (endpoints.Count == 0)
                     {
                         endpoints.Add(fallbackEndpoint);
+                        unavailableEndpoints.Remove(fallbackEndpoint);
                     }
 
                     endpoints.AddRange(unavailableEndpoints);
@@ -543,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             public DatabaseAccountLocationsInfo(ReadOnlyCollection<string> preferredLocations, Uri defaultEndpoint)
             {
-                this.PreferredLocations = preferredLocations;                
+                this.PreferredLocations = preferredLocations;
                 this.AvailableWriteLocations = new List<string>().AsReadOnly();
                 this.AvailableReadLocations = new List<string>().AsReadOnly();
                 this.AvailableWriteEndpointByLocation = new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase));
@@ -570,30 +596,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             public ReadOnlyDictionary<string, Uri> AvailableReadEndpointByLocation { get; set; }
             public ReadOnlyCollection<Uri> WriteEndpoints { get; set; }
             public ReadOnlyCollection<Uri> ReadEndpoints { get; set; }
-
-            /// <summary>
-            /// Returns the location corresponding to the endpoint if location specific endpoint is provided.
-            /// For the defaultEndPoint, we will return the first available write location.
-            /// Returns null, in other cases.
-            /// </summary>
-            /// <remarks>
-            /// Today we return null for defaultEndPoint if multiple write locations can be used.
-            /// This needs to be modifed to figure out proper location in such case.
-            /// </remarks>
-            public string GetLocation(Uri endpoint, bool canUseMultipleWriteLocations)
-            {
-                string location = this.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
-
-                if (location == null && endpoint == this.WriteEndpoints.First() && !canUseMultipleWriteLocations)
-                {
-                    if (this.AvailableWriteEndpointByLocation.Any())
-                    {
-                        return this.AvailableWriteEndpointByLocation.First().Key;
-                    }
-                }
-
-                return location;
-            }
         }
 
         [Flags]

@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="ConnectionPolicy"/>
-    /// <seealso cref="Internal.Protocol"/>
     public enum ConnectionMode
     {
         /// <summary>

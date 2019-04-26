@@ -13,10 +13,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
-    using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// ParallelDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -150,10 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 await currentDocumentProducerTree.MoveNextAsync(token);
             }
 
-            if (currentDocumentProducerTree.HasMoreResults)
-            {
-                this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
-            }
+            this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
 
             // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
             return new FeedResponse<CosmosElement>(
@@ -176,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="requestContinuation">The continuation token to resume from.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private async Task InitializeAsync(
+        private Task InitializeAsync(
             string collectionRid,
             List<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
@@ -236,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);
             }
 
-            await base.InitializeAsync(
+            return base.InitializeAsync(
                 collectionRid,
                 filteredPartitionKeyRanges,
                 initialPageSize,
@@ -300,6 +296,17 @@ namespace Microsoft.Azure.Cosmos.Query
                     return 0;
                 }
 
+                if (documentProducerTree1.HasMoreResults && !documentProducerTree2.HasMoreResults)
+                {
+                    return -1;
+                }
+
+                if (!documentProducerTree1.HasMoreResults && documentProducerTree2.HasMoreResults)
+                {
+                    return 1;
+                }
+
+                // Either both don't have results or both do.
                 PartitionKeyRange partitionKeyRange1 = documentProducerTree1.PartitionKeyRange;
                 PartitionKeyRange partitionKeyRange2 = documentProducerTree2.PartitionKeyRange;
                 return string.CompareOrdinal(

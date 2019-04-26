@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1L, point.AdditionalProperties["extra"]);
 
             var geom = JsonConvert.DeserializeObject<Geometry>(json);
-            Assert.AreEqual(GeometryShape.Point, geom.Type);
+            Assert.AreEqual(GeometryType.Point, geom.Type);
 
             Assert.AreEqual(geom, point);
 
@@ -62,56 +62,56 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             var point1 = new Point(
                 new Position(20, 30),
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var point2 = new Point(
                 new Position(20, 30),
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var point3 = new Point(
                 new Position(20, 31),
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var point4 = new Point(
                 new Position(20, 31),
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var point5 = new Point(
                 new Position(20, 30),
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             var point6 = new Point(
                 new Position(20, 30),
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs1")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs1")
+                });
 
             Assert.AreEqual(point1, point2);
             Assert.AreEqual(point1.GetHashCode(), point2.GetHashCode());
@@ -148,11 +148,11 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             var point = new Point(
                 new Position(20, 30),
                 new GeometryParams
-                    {
-                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
-                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
-                        Crs = Crs.Named("SomeCrs")
-                    });
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Named("SomeCrs")
+                });
 
             Assert.AreEqual(20, point.Position.Longitude);
             Assert.AreEqual(30, point.Position.Latitude);
