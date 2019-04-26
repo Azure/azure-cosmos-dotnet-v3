@@ -83,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
-            mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
-            mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseContainerCosmosTests.GetMockedClient());
+            //mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
+            //mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseContainerCosmosTests.GetMockedClient());
             mockedContainer.Setup(c => c.Items).Returns(mockedItems.Object);
             return mockedContainer.Object;
         }

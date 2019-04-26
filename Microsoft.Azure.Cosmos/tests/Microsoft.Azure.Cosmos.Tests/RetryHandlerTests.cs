@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetryHandlerDoesNotRetryOnSuccess()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
             int handlerCalls = 0;
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetryHandlerRetriesOn429()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
             int handlerCalls = 0;
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(Exception))]
         public async Task RetryHandlerDoesNotRetryOnException()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
             int handlerCalls = 0;
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
             RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
             retryHandler.InnerHandler = testHandler;
 
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task InvalidPartitionExceptionRetryHandlerDoesNotRetryOnSuccess()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
             int handlerCalls = 0;
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task InvalidPartitionExceptionRetryHandlerDoesNotRetryOn410()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
             int handlerCalls = 0;
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task PartitionKeyRangeGoneRetryHandlerOnSuccess()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(client);
             int handlerCalls = 0;
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task PartitionKeyRangeGoneRetryHandlerOn410()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             int handlerCalls = 0;
             TestHandler testHandler = new TestHandler((request, response) => {
