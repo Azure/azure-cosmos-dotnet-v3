@@ -775,7 +775,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.Created, createResponseWithPk.StatusCode);
                 Assert.AreEqual(itemWithPK.id, createResponseWithPk.Resource.id);
 
-                //Quering items on fixed container.
+                //Quering items on fixed container with cross partition enabled.
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
                 CosmosResultSetIterator<dynamic> setIterator = fixedContainer.Items
                     .CreateItemQuery<dynamic>(sql, maxConcurrency: 1,maxItemCount:10, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
@@ -784,6 +784,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     CosmosQueryResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
                     Assert.AreEqual(3, queryResponse.Count());
                 }
+
+                //Quering items on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                setIterator = fixedContainer.Items
+                    .CreateItemQuery<dynamic>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: 10);
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosQueryResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(2, queryResponse.Count());
+                }
+
+                //Quering items on fixed container with non-none PK.
+                setIterator = fixedContainer.Items
+                    .CreateItemQuery<dynamic>(sql, partitionKey: itemWithPK.status, maxItemCount: 10);
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosQueryResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(1, queryResponse.Count());
+                }
+
+                //Deleting item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                CosmosItemResponse<ToDoActivity> deleteResponseWithoutPk = await fixedContainer.Items.DeleteItemAsync<ToDoActivity>(
+                 partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
+                 id: itemWithoutPK.id);
+
+                Assert.IsNull(deleteResponseWithoutPk.Resource);
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponseWithoutPk.StatusCode);
+
+                //Deleting item from fixed container with non-none PK.
+                CosmosItemResponse<ToDoActivityAfterMigration> deleteResponseWithPk = await fixedContainer.Items.DeleteItemAsync<ToDoActivityAfterMigration>(
+                 partitionKey: itemWithPK.status,
+                 id: itemWithPK.id);
+
+                Assert.IsNull(deleteResponseWithPk.Resource);
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponseWithPk.StatusCode);
 
                 //Reading item from partitioned container with CosmosContainerSettings.NonePartitionKeyValue.
                 CosmosItemResponse<ToDoActivity> undefinedItemResponse = await Container.Items.ReadItemAsync<ToDoActivity>(
