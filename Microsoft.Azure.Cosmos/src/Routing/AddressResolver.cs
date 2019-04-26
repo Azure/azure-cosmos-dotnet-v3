@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException("parent");
             }
-
+            
             if (newlyResolved == null)
             {
                 return false;
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
                     request.ForceNameCacheRefresh = true;
                     collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                    if (collection.ResourceId != routingMap.CollectionUniqueId)
+                    if(collection.ResourceId != routingMap.CollectionUniqueId)
                     {
                         // Collection cache was stale. We resolved to new Rid. routing map cache is potentially stale
                         // for this new collection rid. Mark it as such.
@@ -422,7 +422,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!request.ResourceType.IsPartitioned() &&
                !(request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.ExecuteJavaScript) &&
-               // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
+                // Collection head is sent internally for strong consistency given routing hints from original requst, which is for partitioned resource.
                !(request.ResourceType == ResourceType.Collection && request.OperationType == OperationType.Head))
             {
                 DefaultTrace.TraceCritical(
@@ -625,8 +625,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new BadRequestException(
                     string.Format(CultureInfo.InvariantCulture, RMResources.InvalidPartitionKey, partitionKeyString),
-                    ex)
-                { ResourceAddress = request.ResourceAddress };
+                    ex) { ResourceAddress = request.ResourceAddress };
             }
 
             if (partitionKey == null)
