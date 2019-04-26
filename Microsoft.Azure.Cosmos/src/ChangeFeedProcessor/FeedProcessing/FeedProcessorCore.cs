@@ -6,15 +6,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using System.Collections.ObjectModel;
-    using System.Net;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
@@ -82,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         }
                     }
                     while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
-                    }
                 }
                 catch (TaskCanceledException canceledException)
                 {

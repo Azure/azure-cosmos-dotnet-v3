@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
-            CosmosContainer cosmosContainer,
+            CosmosContainerCore cosmosContainer,
             DateTime? startTime,
             bool startFromBeginning
             )
@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 partitionKeyRangeId: partitionKeyRangeId,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,
+                clientContext: cosmosContainer.ClientContext,
                 cosmosContainer: cosmosContainer,
                 options: requestOptions);
         }

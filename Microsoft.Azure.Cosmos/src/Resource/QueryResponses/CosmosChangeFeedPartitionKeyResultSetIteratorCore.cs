@@ -14,13 +14,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore : CosmosFeedResultSetIterator
     {
-        private readonly CosmosContainer cosmosContainer;
+        private readonly CosmosClientContext clientContext;
+        private readonly CosmosContainerCore cosmosContainer;
         private readonly CosmosChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
         private string partitionKeyRangeId;
 
         internal CosmosChangeFeedPartitionKeyResultSetIteratorCore(
-            CosmosContainer cosmosContainer,
+            CosmosClientContext clientContext,
+            CosmosContainerCore cosmosContainer,
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
@@ -29,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
             if (partitionKeyRangeId == null) throw new ArgumentNullException(nameof(partitionKeyRangeId));
 
+            this.clientContext = clientContext;
             this.cosmosContainer = cosmosContainer;
             this.changeFeedOptions = options;
             this.MaxItemCount = maxItemCount;
@@ -70,8 +73,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
-            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
-                client: this.cosmosContainer.Database.Client,
+            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
+                cosmosContainerCore: this.cosmosContainer,
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
