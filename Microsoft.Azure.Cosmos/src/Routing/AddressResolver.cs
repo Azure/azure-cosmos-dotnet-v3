@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
                 out effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
-                if (! (collection.HasPartitionKey && collection.PartitionKey.IsSystemKey.GetValueOrDefault(false)))
+                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
                 {
                     throw new ArgumentOutOfRangeException(nameof(collection));
                 }
@@ -476,7 +476,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-                ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
+            ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
 
             PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
                 request,
@@ -491,8 +491,8 @@ namespace Microsoft.Azure.Cosmos
                     "Could not resolve addresses for identity {0}/{1}. Potentially collection cache or routing map cache is outdated. Return null - upper logic will refresh and retry. ",
                     new PartitionKeyRangeIdentity(collection.ResourceId, range.Id),
                     serviceIdentity);
-            return null;
-        }
+                return null;
+            }
 
             return new ResolutionResult(range, addresses, serviceIdentity);
         }
