@@ -238,6 +238,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
         internal string QueryEngineConfiurationString { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
         internal bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
