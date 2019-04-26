@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>

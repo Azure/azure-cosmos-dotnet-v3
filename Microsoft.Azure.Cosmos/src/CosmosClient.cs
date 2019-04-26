@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB database account.
@@ -67,6 +68,11 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClient : IDisposable
     {
         private Lazy<CosmosOffers> offerSet;
+
+        static CosmosClient()
+        {
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+        }
 
         /// <summary>
         /// Create a new CosmosClient with the connection
@@ -227,10 +233,10 @@ namespace Microsoft.Azure.Cosmos
             );
 
             // DocumentClient is not initialized with any consistency overrides so default is backend consistency
-            this.AccountConsistencyLevel = this.DocumentClient.ConsistencyLevel;
+            this.AccountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
 
             this.RequestHandler = clientPipelineBuilder.Build();
-            this.Databases = new CosmosDatabases(this);
+            this.Databases = new CosmosDatabasesCore(this);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 

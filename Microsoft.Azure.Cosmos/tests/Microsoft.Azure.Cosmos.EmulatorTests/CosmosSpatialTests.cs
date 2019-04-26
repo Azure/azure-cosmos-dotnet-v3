@@ -33,7 +33,7 @@
             this.database = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
 
-            this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
+            this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: Documents.ConsistencyLevel.Session);
 
             string PartitionKey = "/partitionKey";
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
@@ -92,7 +92,7 @@
             Assert.IsNotNull(readResponse.Resource.multiPolygon);
 
             IOrderedQueryable<SpatialItem> multipolygonQuery =
-              this.documentClient.CreateDocumentQuery<SpatialItem>(this.Container.Link, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
+              this.documentClient.CreateDocumentQuery<SpatialItem>(this.Container.LinkUri.OriginalString, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
             SpatialItem[] withinQuery = multipolygonQuery
               .Where(f =>  f.multiPolygon.Within(GetMultiPoygon()) && f.multiPolygon.IsValid())
               .ToArray();
@@ -181,7 +181,7 @@
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
-        public class SpatialItem
+        internal class SpatialItem
         {
             [JsonProperty("name")]
             public string Name { get; set; }

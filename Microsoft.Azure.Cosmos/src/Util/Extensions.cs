@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     internal static class Extensions
     {
@@ -64,6 +65,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             cosmosResponse.ErrorMessage = reasonPhraseString;
+            cosmosResponse.Error = dce.Error;
 
             if (dce.Headers != null)
             {

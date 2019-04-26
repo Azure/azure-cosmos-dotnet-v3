@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     internal static class IRoutingMapProviderExtensions
     {
@@ -40,6 +42,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
+        }
+
+        public static async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(
+            this IRoutingMapProvider routingMapProvider,
+            string collectionResourceId,
+            string effectivePartitionKey)
+        {
+            IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                collectionResourceId,
+                Range<string>.GetPointRange(effectivePartitionKey));
+
+            if (ranges == null)
+            {
+                return null;
+            }
+
+            return ranges.Single();
         }
 
         public static async Task<List<PartitionKeyRange>> TryGetOverlappingRangesAsync(

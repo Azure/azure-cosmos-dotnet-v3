@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     internal static class StreamExtension
     {

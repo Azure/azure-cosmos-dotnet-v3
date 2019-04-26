@@ -12,10 +12,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for <see cref="CancellationToken"/>  scenarios.
@@ -51,9 +52,8 @@ namespace Microsoft.Azure.Cosmos
                 mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
                 GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-                DocumentClientEventSource envetSource = new DocumentClientEventSource();
                 ISessionContainer sessionContainer = new SessionContainer(string.Empty);
-                DocumentClientEventSource eventSource = new DocumentClientEventSource();
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
                 HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
                 GatewayStoreModel storeModel = new GatewayStoreModel(
                     endpointManager,
@@ -61,20 +61,24 @@ namespace Microsoft.Azure.Cosmos
                     TimeSpan.FromSeconds(5),
                     ConsistencyLevel.Eventual,
                     eventSource,
+                    null,
                     new UserAgentContainer(),
                     ApiType.None,
                     messageHandler);
 
-                using (DocumentServiceRequest request =
+                using (new ActivityScope(Guid.NewGuid()))
+                {
+                    using (DocumentServiceRequest request =
                     DocumentServiceRequest.Create(
-                        Cosmos.Internal.OperationType.Query,
-                        Cosmos.Internal.ResourceType.Document,
+                        Documents.OperationType.Query,
+                        Documents.ResourceType.Document,
                         new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                         new MemoryStream(Encoding.UTF8.GetBytes("content1")),
                         AuthorizationTokenType.PrimaryMasterKey,
                         null))
-                {
-                    await storeModel.ProcessMessageAsync(request, cancellationToken);
+                    {
+                        await storeModel.ProcessMessageAsync(request, cancellationToken);
+                    }
                 }
 
                 Assert.Fail();
@@ -105,9 +109,8 @@ namespace Microsoft.Azure.Cosmos
                 mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
                 GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-                DocumentClientEventSource envetSource = new DocumentClientEventSource();
                 ISessionContainer sessionContainer = new SessionContainer(string.Empty);
-                DocumentClientEventSource eventSource = new DocumentClientEventSource();
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
                 HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
                 GatewayStoreModel storeModel = new GatewayStoreModel(
                     endpointManager,
@@ -115,22 +118,25 @@ namespace Microsoft.Azure.Cosmos
                     TimeSpan.FromSeconds(5),
                     ConsistencyLevel.Eventual,
                     eventSource,
+                    null,
                     new UserAgentContainer(),
                     ApiType.None,
                     messageHandler);
 
-                using (DocumentServiceRequest request =
+                using (new ActivityScope(Guid.NewGuid()))
+                {
+                    using (DocumentServiceRequest request =
                     DocumentServiceRequest.Create(
-                        Cosmos.Internal.OperationType.Query,
-                        Cosmos.Internal.ResourceType.Document,
+                        Documents.OperationType.Query,
+                        Documents.ResourceType.Document,
                         new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                         new MemoryStream(Encoding.UTF8.GetBytes("content1")),
                         AuthorizationTokenType.PrimaryMasterKey,
                         null))
-                {
-                    await storeModel.ProcessMessageAsync(request, cancellationToken);
+                    {
+                        await storeModel.ProcessMessageAsync(request, cancellationToken);
+                    }
                 }
-
                 Assert.Fail();
             }
         }

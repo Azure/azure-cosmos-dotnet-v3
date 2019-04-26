@@ -4,10 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
     /// Operations for reading or deleting an existing database.
@@ -20,36 +18,15 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
-    public class CosmosDatabase : CosmosIdentifier
+    public abstract class CosmosDatabase : CosmosIdentifier
     {
-        /// <summary>
-        /// Create a <see cref="CosmosDatabase"/>
-        /// </summary>
-        /// <param name="client">The <see cref="CosmosClient"/></param>
-        /// <param name="databaseId">The database id.</param>
-        /// <remarks>
-        /// Note that the database must be explicitly created, if it does not already exist, before
-        /// you can read from it or write to it.
-        /// </remarks>
-        protected internal CosmosDatabase(
-            CosmosClient client,
-            string databaseId) :
-            base(client,
-                null,
-                databaseId)
-        {
-            this.Containers = new CosmosContainers(this);
-        }
-
         /// <summary>
         /// An object to create a Cosmos Container or to iterate over all containers
         /// </summary>
         /// <remarks>
         /// Use Containers to access a <see cref="CosmosContainer"/>
         /// </remarks>
-        public virtual CosmosContainers Containers { get; private set; }
-
-        internal override string UriPathSegment => Paths.DatabasesPathSegment;
+        public abstract CosmosContainers Containers { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -87,16 +64,9 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the Database. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        public virtual Task<CosmosDatabaseResponse> ReadAsync(
+        public abstract Task<CosmosDatabaseResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<CosmosResponseMessage> response = this.ReadStreamAsync(
-                        requestOptions: requestOptions,
-                        cancellationToken: cancellationToken);
-
-            return this.Client.ResponseFactory.CreateDatabaseResponse(this, response);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Delete a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -123,16 +93,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosDatabaseResponse> DeleteAsync(
+        public abstract Task<CosmosDatabaseResponse> DeleteAsync(
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
-                        requestOptions: requestOptions,
-                        cancellationToken: cancellationToken);
-
-            return this.Client.ResponseFactory.CreateDatabaseResponse(this, response);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Gets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
@@ -154,17 +117,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual async Task<int?> ReadProvisionedThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
-            if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
-            {
-                return offerResult.Throughput;
-            }
-
-            throw offerResult.CosmosException;
-        }
+        public abstract Task<int?> ReadProvisionedThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
@@ -187,89 +141,30 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual async Task ReplaceProvisionedThroughputAsync(
+        public abstract Task ReplaceProvisionedThroughputAsync(
             int throughput,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(throughput, cancellationToken);
-            if (offerResult.StatusCode != HttpStatusCode.OK)
-            {
-                throw offerResult.CosmosException;
-            }
-        }
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        internal virtual Task<CosmosResponseMessage> ReadStreamAsync(
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
+        /// </returns>
+        public abstract Task<CosmosResponseMessage> ReadStreamAsync(
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessAsync(
-                OperationType.Read,
-                requestOptions,
-                cancellationToken);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Delete a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        internal virtual Task<CosmosResponseMessage> DeleteStreamAsync(
+        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
+        public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessAsync(
-                OperationType.Delete,
-                requestOptions,
-                cancellationToken);
-        }
-
-        internal virtual Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.GetRID(cancellationToken)
-                .ContinueWith(task => this.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
-                .Unwrap();
-        }
-
-        internal virtual Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
-            int targetThroughput,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<string> rid = this.GetRID(cancellationToken);
-            return rid.ContinueWith(task => this.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
-                .Unwrap();
-        }
-
-        internal Task<string> GetRID(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ReadAsync(cancellationToken: cancellationToken)
-                .ContinueWith(task =>
-                {
-                    CosmosDatabaseResponse response = task.Result;
-                    return response.Resource.ResourceId;
-                }, cancellationToken);
-        }
-
-        private Task<CosmosResponseMessage> ProcessAsync(
-            OperationType operationType,
-            CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-                client: this.Client,
-                resourceUri: this.LinkUri,
-                resourceType: ResourceType.Database,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: null,
-                cancellationToken: cancellationToken);
-        }
+                    CancellationToken cancellationToken = default(CancellationToken));
     }
 }

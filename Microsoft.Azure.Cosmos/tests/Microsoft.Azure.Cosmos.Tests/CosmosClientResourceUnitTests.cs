@@ -9,8 +9,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.IO;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -27,20 +26,20 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string udfId = "udf9003";
 
             CosmosClient mockClient = MockDocumentClient.CreateMockCosmosClient();
-            CosmosDatabase db = new CosmosDatabase(mockClient, databaseId);
-            Assert.AreEqual(db.Link, "/dbs/" + databaseId);
+            CosmosDatabaseCore db = new CosmosDatabaseCore(mockClient, databaseId);
+            Assert.AreEqual(db.LinkUri.OriginalString, "/dbs/" + databaseId);
 
-            CosmosContainer container = new CosmosContainer(db, crId);
-            Assert.AreEqual(container.Link, "/dbs/" + databaseId + "/colls/" + crId);
+            CosmosContainerCore container = new CosmosContainerCore(db, crId);
+            Assert.AreEqual(container.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId);
 
-            CosmosStoredProcedure sp = new CosmosStoredProcedure(container, spId);
-            Assert.AreEqual(sp.Link, "/dbs/" + databaseId + "/colls/" + crId + "/sprocs/" + spId);
+            CosmosStoredProcedureCore sp = new CosmosStoredProcedureCore(container, spId);
+            Assert.AreEqual(sp.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/sprocs/" + spId);
 
             CosmosTrigger tr = new CosmosTrigger(container, trId);
-            Assert.AreEqual(tr.Link, "/dbs/" + databaseId + "/colls/" + crId + "/triggers/" + trId);
+            Assert.AreEqual(tr.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/triggers/" + trId);
 
             CosmosUserDefinedFunction udf = new CosmosUserDefinedFunction(container, udfId);
-            Assert.AreEqual(udf.Link, "/dbs/" + databaseId + "/colls/" + crId + "/udfs/" + udfId);
+            Assert.AreEqual(udf.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/udfs/" + udfId);
         }
 
         [TestMethod]

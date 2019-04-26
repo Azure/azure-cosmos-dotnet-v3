@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Stored partition key ranges in an efficient way with some additional information and provides
@@ -88,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public string CollectionUniqueId { get; private set; }
 
         public string ChangeFeedNextIfNoneMatch { get; private set; }
-        
+
         /// <summary>
         /// Partition key ranges in increasing order.
         /// </summary>
@@ -99,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return this.orderedPartitionKeyRanges;
             }
         }
-        
+
         public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(Range<string> range)
         {
             return this.GetOverlappingRanges(new[] { range });
@@ -203,6 +205,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             foreach (Tuple<PartitionKeyRange, ServiceIdentity> tuple in ranges.Where(tuple => !newGoneRanges.Contains(tuple.Item1.Id)))
             {
                 newRangeById[tuple.Item1.Id] = tuple;
+
+                DefaultTrace.TraceInformation(
+                    "CollectionRoutingMap.TryCombine newRangeById[{0}] = {1}",
+                    tuple.Item1.Id, tuple);
             }
 
             List<Tuple<PartitionKeyRange, ServiceIdentity>> sortedRanges = newRangeById.Values.ToList();

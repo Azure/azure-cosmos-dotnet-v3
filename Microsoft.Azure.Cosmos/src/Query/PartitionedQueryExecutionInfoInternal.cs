@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     // Note: We also return this to client when query execution is disallowed by Gateway

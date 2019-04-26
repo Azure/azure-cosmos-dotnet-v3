@@ -15,12 +15,15 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Linq;
     using System.Globalization;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Provides interface for historical change feed.
     /// </summary>
     /// <typeparam name="TResource">Source Resource Type (e.g. Document)</typeparam>
-    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource> where TResource : CosmosResource, new()
+    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource> where TResource : new()
     {
         #region Fields
         private const string IfNoneMatchAllHeaderValue = "*";   // This means start from current.
@@ -127,8 +130,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     long responseLengthInBytes = response.ResponseBody.Length;
                     int itemCount = 0;
-                    var feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
-                    var feedResponse = new FeedResponse<dynamic>(
+                    IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
+                    FeedResponse<dynamic> feedResponse = new FeedResponse<dynamic>(
                         feedResource,
                         itemCount,
                         response.Headers,
@@ -200,17 +203,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 resourceType,
                 headers))
             {
-                if (retryPolicyInstance != null)
-                {
-                    retryPolicyInstance.OnBeforeSendRequest(request);
-                }
-
                 if (resourceType.IsPartitioned() && this.feedOptions.PartitionKeyRangeId != null)
                 {
                     request.RouteTo(new PartitionKeyRangeIdentity(this.feedOptions.PartitionKeyRangeId));
                 }
 
-                return await this.client.ReadFeedAsync(request, cancellationToken);
+                return await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken);
             }
         }
 

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The helper function relates to the async Task.
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    return Task.Run ( () => BackoffRetryUtility<TResult>.ExecuteAsync(() =>
+                    return Task.Run(() => BackoffRetryUtility<TResult>.ExecuteAsync(() =>
                     {
                         return function();
                     }, retryPolicy, cancellationToken));

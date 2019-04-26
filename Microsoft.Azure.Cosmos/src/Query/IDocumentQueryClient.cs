@@ -5,13 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     internal interface IDocumentQueryClient : IDisposable
     {
@@ -31,15 +30,15 @@ namespace Microsoft.Azure.Cosmos.Query
 
         Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken);
 
-        Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, CancellationToken cancellationToken);
+        Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken);
 
-        Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, CancellationToken cancellationToken);
+        Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken);
 
-        Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync();
+        Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
 
-        Task<ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
+        Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
 
-        Task EnsureValidOverwrite(ConsistencyLevel desiredConsistencyLevel);
+        Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel);
 
         Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache();
     }

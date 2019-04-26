@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
         public QueryOracle(Uri gatewayUri, string masterKey, string collectionLink, bool enableRetries,
                            int targetNumberOfQueriesToValidate = Int32.MaxValue)
             : this(
-                new DocumentClient(gatewayUri, masterKey, desiredConsistencyLevel: ConsistencyLevel.Session),
+                new DocumentClient(gatewayUri, masterKey, desiredConsistencyLevel: Documents.ConsistencyLevel.Session, handler: null),
                 collectionLink, enableRetries, targetNumberOfQueriesToValidate)
         {
         }
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             string cont = null;
             do
             {
-                FeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = cont, MaxItemCount = 1000 })).Result;
+                FeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = cont, MaxItemCount = 1000 , EnableCrossPartitionQuery = true})).Result;
 
                 Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", response.Count);
 
@@ -209,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                                            resultCount / (double)numberOfQueries, numberOfQueries);
                 }
 
-                IDocumentQuery<dynamic> docQuery = client.CreateDocumentQuery(collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize }).AsDocumentQuery();
+                IDocumentQuery<dynamic> docQuery = client.CreateDocumentQuery(collectionLink, query, feedOptions: new FeedOptions { MaxItemCount = pageSize , EnableCrossPartitionQuery = true}).AsDocumentQuery();
                 while (docQuery.HasMoreResults)
                 {
                     DateTime startTime = DateTime.Now;

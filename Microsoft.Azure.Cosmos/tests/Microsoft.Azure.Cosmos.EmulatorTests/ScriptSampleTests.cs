@@ -7,7 +7,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -15,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class ScriptSampleTests
     {
         private DocumentClient client;
-        private CosmosDatabaseSettings database;
-        private CosmosContainerSettings collection;
+        private Database database;
+        private DocumentCollection collection;
         private string triggerName;
 
         [TestInitialize]
@@ -24,12 +25,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.client = TestCommon.CreateClient(true);
             this.database = TestCommon.CreateOrGetDatabase(this.client);
-            this.collection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString() };
+            PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            this.collection = new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition };
             this.collection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
             try
             {
-                this.collection = this.client.CreateDocumentCollectionAsync(this.database, this.collection).Result;
+                this.collection = this.client.CreateDocumentCollectionAsync(this.database.SelfLink, this.collection).Result;
             }
             catch (DocumentClientException exception)
             {
@@ -38,29 +40,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.triggerName = "uniqueConstraint_" + Guid.NewGuid().ToString("N");
             string triggerContent = File.ReadAllText("ScriptSampleTests_UniqueConstraint.js");
-            CosmosTriggerSettings triggerResource = new CosmosTriggerSettings
+            Trigger triggerResource = new Trigger
             {
                 Id = this.triggerName,
                 Body = triggerContent,
                 TriggerOperation = TriggerOperation.All,
                 TriggerType = TriggerType.Pre
             };
-            CosmosTriggerSettings trigger = this.client.CreateTriggerAsync(this.collection.SelfLink, triggerResource).Result;
+            Trigger trigger = this.client.CreateTriggerAsync(this.collection.SelfLink, triggerResource).Result;
         }
 
         [TestCleanup]
         public void TestCleanup()
         {
-            this.client.DeleteDatabaseAsync(this.database).Wait();
+            this.client.DeleteDatabaseAsync(this.database.SelfLink).Wait();
         }
 
         [TestMethod]
         public void TestUniqueConstraintSample()
         {
-            var triggerRequestOptions = new RequestOptions { PreTriggerInclude = new List<string> { this.triggerName } };
+
 
             // 1. Create.
             var doc = new UidDocument { Id = "TestUniqueConstraintSample_1", Uid = "mic" };
+            doc.SetPropertyValue("pk", "test");
+            PartitionKey partitionKey = new PartitionKey("test");
+            var triggerRequestOptions = new RequestOptions { PreTriggerInclude = new List<string> { this.triggerName }, PartitionKey = partitionKey };
             doc = (dynamic)this.client.CreateDocumentAsync(this.collection.SelfLink, doc, triggerRequestOptions).Result.Resource;
 
             // 2. Create with same uid -- conflict.
@@ -102,14 +107,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // 9. Delete 1st doc (uid = cam).
             doc.Id = "TestUniqueConstraintSample_2";
-            this.client.DeleteDocumentAsync(doc, triggerRequestOptions).Wait();
+            this.client.DeleteDocumentAsync(doc.SelfLink, triggerRequestOptions).Wait();
 
             ValidateReadMetadoc("lion");
         }
 
         private void ValidateReadMetadoc(string expectedUid)
         {
-            var query = this.client.CreateDocumentQuery<Document>(this.collection, "SELECT * FROM root r WHERE r.isMetadata = true");
+            var query = this.client.CreateDocumentQuery<Document>(this.collection.SelfLink, "SELECT * FROM root r WHERE r.isMetadata = true", feedOptions: new FeedOptions { EnableCrossPartitionQuery = true });
             foreach (var metaDoc in query)
             {
                 string id = metaDoc.GetPropertyValue<string>("id");

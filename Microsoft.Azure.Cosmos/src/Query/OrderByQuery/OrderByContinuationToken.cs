@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -178,6 +179,29 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary> 
         [JsonProperty("skipCount")]
         public int SkipCount
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets: We use the filter to rewrite the OrderBy query when resuming from a continuation token. 
+        /// </summary>
+        /// <example>
+        /// <para>
+        /// In this example snippet below the filter string indicates that the query was an OrderBy query 
+        /// and when the query was paused it had already output all the values value greater than 1. 
+        /// And when the query resumes it only needs to fetch value greater than 1. 
+        /// </para>
+        /// <para>
+        /// Note that, if any value less than 1 that was inserted after the query started won't be delivered as a 
+        /// part of the result. 
+        /// <![CDATA[
+        ///  "filter":"r.key > 1"
+        /// ]]>
+        /// </para>
+        /// </example>
+        [JsonProperty("filter")]
+        public string Filter
         {
             get;
         }

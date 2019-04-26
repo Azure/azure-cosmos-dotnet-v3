@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Runtime.InteropServices;
     using System.Security;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     internal static class Base64Helper
     {

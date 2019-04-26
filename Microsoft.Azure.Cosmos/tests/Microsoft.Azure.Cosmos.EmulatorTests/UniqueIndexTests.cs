@@ -9,7 +9,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -18,7 +19,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class UniqueIndexTests
     {
         private DocumentClient client;  // This is only used for housekeeping this.database.
-        private CosmosDatabaseSettings database;
+        private Database database;
+        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         [TestInitialize]
         public void TestInitialize()
@@ -36,28 +38,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void InsertWithUniqueIndex()
         {
-            var collectionSpec = new CosmosContainerSettings {
+            var collectionSpec = new DocumentCollection
+            {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
-                UniqueKeyPolicy = new UniqueKeyPolicy {
+                PartitionKey = defaultPartitionKeyDefinition,
+                UniqueKeyPolicy = new UniqueKeyPolicy
+                {
                     UniqueKeys = new Collection<UniqueKey> {
                         new UniqueKey {
                             Paths = new Collection<string> { "/name", "/address" }
                         }
                     }
                 },
-                IndexingPolicy = new IndexingPolicy {
+                IndexingPolicy = new IndexingPolicy
+                {
                     IndexingMode = IndexingMode.Consistent,
-                    IncludedPaths = new Collection<IncludedPath> { 
+                    IncludedPaths = new Collection<IncludedPath> {
                         new IncludedPath { Path = "/name/?", Indexes = new Collection<Index> { new HashIndex(DataType.String, 7) } },
                         new IncludedPath { Path = "/address/?", Indexes = new Collection<Index> { new HashIndex(DataType.String, 7) } },
                     },
-                    ExcludedPaths = new Collection<ExcludedPath> { 
+                    ExcludedPaths = new Collection<ExcludedPath> {
                         new ExcludedPath { Path = "/*" }
                     }
                 }
             };
 
-            Func<DocumentClient, CosmosContainerSettings, Task> testFunction = async (DocumentClient client, CosmosContainerSettings collection) =>
+            Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
             {
                 var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
                 var doc2 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 640000\"}");
@@ -96,24 +102,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ReplaceAndDeleteWithUniqueIndex()
         {
-            var collectionSpec = new CosmosContainerSettings
+            var collectionSpec = new DocumentCollection
             {
                 Id = "InsertWithUniqueIndexConstraint_" + Guid.NewGuid(),
+                PartitionKey = defaultPartitionKeyDefinition,
                 UniqueKeyPolicy = new UniqueKeyPolicy
                 {
                     UniqueKeys = new Collection<UniqueKey> { new UniqueKey { Paths = new Collection<string> { "/name", "/address" } } }
                 }
             };
-
-            Func<DocumentClient, CosmosContainerSettings, Task> testFunction = async (DocumentClient client, CosmosContainerSettings collection) =>
+            RequestOptions requestOptions = new RequestOptions();
+            requestOptions.PartitionKey = new PartitionKey("test");
+            Func<DocumentClient, DocumentCollection, Task> testFunction = async (DocumentClient client, DocumentCollection collection) =>
             {
-                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 630090\"}");
-                var doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"address\":\"Russia 630090\"}");
-                var doc3 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"address\":\"Russia 640000\"}");
+                var doc1 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
+                var doc2 = JObject.Parse("{\"name\":\"Mihkail Lermontov\",\"pk\":\"test\",\"address\":\"Russia 630090\"}");
+                var doc3 = JObject.Parse("{\"name\":\"Alexander Pushkin\",\"pk\":\"test\",\"address\":\"Russia 640000\"}");
 
                 Document doc1Inserted = await client.CreateDocumentAsync(collection, doc1);
 
-                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc1Inserted);     // Replace with same values -- OK.
+                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc1Inserted, requestOptions);     // Replace with same values -- OK.
 
                 Document doc2Inserted = await client.CreateDocumentAsync(collection, doc2);
                 var doc2Replacement = JObject.Parse(JsonConvert.SerializeObject(doc1Inserted));
@@ -121,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 try
                 {
-                    await client.ReplaceDocumentAsync(doc2Inserted.SelfLink, doc2Replacement); // Replace doc2 with values from doc1 -- Conflict.
+                    await client.ReplaceDocumentAsync(doc2Inserted.SelfLink, doc2Replacement, requestOptions); // Replace doc2 with values from doc1 -- Conflict.
                     Assert.Fail("Did not throw due to unique constraint");
                 }
                 catch (DocumentClientException ex)
@@ -130,9 +138,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 doc3["id"] = doc1Inserted.Id;
-                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc3);             // Replace with values from doc3 -- OK.
+                await client.ReplaceDocumentAsync(doc1Inserted.SelfLink, doc3, requestOptions);             // Replace with values from doc3 -- OK.
 
-                await client.DeleteDocumentAsync(doc1Inserted.SelfLink);
+                await client.DeleteDocumentAsync(doc1Inserted.SelfLink, requestOptions);
                 await client.CreateDocumentAsync(collection, doc1);
             };
 
@@ -151,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestGloballyUniqueFieldForPartitionedCollectionHelperAsync(DocumentClient client)
         {
-            var collectionSpec = new CosmosContainerSettings
+            var collectionSpec = new DocumentCollection
             {
                 Id = "TestGloballyUniqueFieldForPartitionedCollection_" + Guid.NewGuid(),
                 PartitionKey = new PartitionKeyDefinition
@@ -168,18 +176,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 IndexingPolicy = new IndexingPolicy
                 {
                     IndexingMode = IndexingMode.Consistent,
-                    IncludedPaths = new Collection<IncludedPath> { 
+                    IncludedPaths = new Collection<IncludedPath> {
                         new IncludedPath { Path = "/name/?", Indexes = new Collection<Index> { new HashIndex(DataType.String, 7) } },
                     },
-                    ExcludedPaths = new Collection<ExcludedPath> { 
+                    ExcludedPaths = new Collection<ExcludedPath> {
                         new ExcludedPath { Path = "/*" }
                     }
                 }
             };
 
             var collection = await client.CreateDocumentCollectionAsync(
-                this.database, 
-                collectionSpec, 
+                this.database,
+                collectionSpec,
                 new RequestOptions { OfferThroughput = 20000 });
 
             const int partitionCount = 50;
@@ -208,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private void TestForEachClient(CosmosContainerSettings collectionSpec, Func<DocumentClient, CosmosContainerSettings, Task> testFunction, string scenarioName)
+        private void TestForEachClient(DocumentCollection collectionSpec, Func<DocumentClient, DocumentCollection, Task> testFunction, string scenarioName)
         {
             Func<DocumentClient, DocumentClientType, Task<int>> wrapperFunction = async (DocumentClient client, DocumentClientType clientType) =>
             {

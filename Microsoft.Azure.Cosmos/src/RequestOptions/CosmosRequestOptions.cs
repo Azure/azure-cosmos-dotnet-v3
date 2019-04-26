@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The default cosmos request options
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public virtual void FillRequestOptions(CosmosRequestMessage request)
-        {            
+        {
             if (this.Properties != null)
             {
                 foreach (KeyValuePair<string, object> property in this.Properties)
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                         HttpConstants.HttpHeaders.IfMatch : HttpConstants.HttpHeaders.IfNoneMatch;
 
                 request.Headers.Add(accessConditionHeaderName, this.AccessCondition.Condition);
-            }                     
+            }
         }
 
         /// <summary>
@@ -96,5 +97,5 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
             }
         }
-    }                     
+    }
 }

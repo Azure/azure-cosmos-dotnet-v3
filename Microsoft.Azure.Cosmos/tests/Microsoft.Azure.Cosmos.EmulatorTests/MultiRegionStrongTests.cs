@@ -9,10 +9,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents;
+    using System.Net.Http;
 
     [TestClass]
     public sealed class MultiRegionStrongTests
@@ -56,13 +58,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             write2.LockClient(2);
         }
 
-        private async Task<CosmosContainerSettings> SetupSingleCollectionScenario()
+        private async Task<DocumentCollection> SetupSingleCollectionScenario()
         {
             DocumentClient client = TestCommon.CreateClient(true);
-            TestCommon.DeleteAllDatabasesAsync(client).Wait();
+            await TestCommon.DeleteAllDatabasesAsync();
 
-            CosmosDatabaseSettings database = (await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = this.DatabaseName })).Resource;
-            CosmosContainerSettings collection = (await client.CreateDocumentCollectionIfNotExistsAsync(database.SelfLink, new CosmosContainerSettings { Id = this.CollectionName }, new RequestOptions { OfferThroughput = 10000 })).Resource;
+            Database database = (await client.CreateDatabaseAsync(new Database { Id = this.DatabaseName })).Resource;
+            DocumentCollection collection = (await client.CreateDocumentCollectionIfNotExistsAsync(database.SelfLink, new DocumentCollection { Id = this.CollectionName }, new RequestOptions { OfferThroughput = 10000 })).Resource;
 
             //   await Task.Delay(30000);
 
@@ -80,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
+                (HttpMessageHandler)null,
                 connectionPolicy);
         }
 

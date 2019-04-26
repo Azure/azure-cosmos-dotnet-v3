@@ -6,11 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Runtime.InteropServices;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     internal sealed class QueryPartitionProvider : IDisposable
@@ -20,13 +23,13 @@ namespace Microsoft.Azure.Cosmos.Query
         private static readonly PartitionedQueryExecutionInfoInternal DefaultInfoInternal = new PartitionedQueryExecutionInfoInternal
         {
             QueryInfo = new QueryInfo(),
-            QueryRanges = new List<Range<PartitionKeyInternal>> 
-                    { 
+            QueryRanges = new List<Range<PartitionKeyInternal>>
+                    {
                         new Range<PartitionKeyInternal>(
                             PartitionKeyInternal.InclusiveMinimum,
-                            PartitionKeyInternal.ExclusiveMaximum, 
-                            true, 
-                            false) 
+                            PartitionKeyInternal.ExclusiveMaximum,
+                            true,
+                            false)
                     }
         };
 
@@ -100,13 +103,15 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
-            bool isContinuationExpected)
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery)
         {
             PartitionedQueryExecutionInfoInternal queryInfoInternal = this.GetPartitionedQueryExecutionInfoInternal(
                 querySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
-                isContinuationExpected);
+                isContinuationExpected,
+                allowNonValueAggregateQuery);
 
             return this.ConvertPartitionedQueryExecutionInfo(queryInfoInternal, partitionKeyDefinition);
         }
@@ -138,7 +143,8 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
-            bool isContinuationExpected)
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery)
         {
             if (querySpec == null || partitionKeyDefinition == null)
             {
@@ -175,6 +181,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         queryText,
                         requireFormattableOrderByQuery,
                         isContinuationExpected,
+                        allowNonValueAggregateQuery,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
@@ -193,6 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 queryText,
                                 requireFormattableOrderByQuery,
                                 isContinuationExpected,
+                                allowNonValueAggregateQuery,
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
@@ -217,9 +225,12 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =
-                JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
-                    serializedQueryExecutionInfo,
-                    new JsonSerializerSettings { DateParseHandling = DateParseHandling.None });
+               JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
+                   serializedQueryExecutionInfo,
+                   new JsonSerializerSettings
+                   {
+                       DateParseHandling = DateParseHandling.None
+                   });
 
             return queryInfoInternal;
         }

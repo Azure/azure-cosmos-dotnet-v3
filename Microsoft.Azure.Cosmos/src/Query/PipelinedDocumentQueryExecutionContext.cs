@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -212,6 +213,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasOffset)
             {
+                if (!constructorParams.FeedOptions.EnableCrossPartitionSkipTake)
+                {
+                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
+                }
+
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
@@ -224,6 +230,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasLimit)
             {
+                if (!constructorParams.FeedOptions.EnableCrossPartitionSkipTake)
+                {
+                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
+                }
+
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {

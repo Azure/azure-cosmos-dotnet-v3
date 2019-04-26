@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing triggers by id.
@@ -27,15 +27,18 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosTrigger(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string triggerId)
-            : base(container.Client,
-                container.Link,
-                triggerId)
         {
+            this.Id = triggerId;
+            this.container = container;
+            base.Initialize(
+                client: container.Client,
+                parentLink: container.LinkUri.OriginalString,
+                uriPathSegment: Paths.TriggersPathSegment);
         }
 
-        internal override string UriPathSegment => Paths.TriggersPathSegment;
+        public override string Id { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -131,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: triggerSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(triggerSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -194,6 +197,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Trigger,
                 operationType,
                 requestOptions,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -201,5 +205,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.Client.ResponseFactory.CreateTriggerResponse(this, response);
         }
+
+        internal CosmosContainerCore container { get; }
     }
 }

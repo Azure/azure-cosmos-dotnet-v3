@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal static class TypeSystem
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (type == typeof(Enumerable)) return true;
             if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) return true;
 
-            var types = type.GetInterfaces().Where(interfaceType => interfaceType.IsGenericType() && interfaceType.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            IEnumerable<Type> types = type.GetInterfaces().Where(interfaceType => interfaceType.IsGenericType() && interfaceType.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             return (types.FirstOrDefault() != null);
         }
 

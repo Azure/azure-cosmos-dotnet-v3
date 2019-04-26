@@ -11,8 +11,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Moq;
 
     internal class MockDocumentClient : DocumentClient, IAuthorizationTokenProvider
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             await Task.Yield();
         }
 
-        public override ConsistencyLevel ConsistencyLevel => ConsistencyLevel.Session;
+        public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
@@ -75,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(new CosmosContainerSettings { ResourceId = "test" }));
+                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test")));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
@@ -83,7 +85,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<bool>(),
                             It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));

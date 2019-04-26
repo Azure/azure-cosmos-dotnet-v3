@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
     /// <summary>

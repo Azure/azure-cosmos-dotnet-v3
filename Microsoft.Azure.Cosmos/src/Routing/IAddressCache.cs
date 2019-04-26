@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Common
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     internal interface IAddressCache
     {

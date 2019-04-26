@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
     using System;
     using System.Globalization;
     using System.Threading;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 // Validate the request consistency compatibility with account consistency
                 // Type based access context for requested consistency preferred for performance
-                ConsistencyLevel? consistencyLevel = null;
+                Cosmos.ConsistencyLevel? consistencyLevel = null;
                 if (promotedRequestOptions is CosmosItemRequestOptions)
                 {
                     consistencyLevel = (promotedRequestOptions as CosmosItemRequestOptions).ConsistencyLevel;

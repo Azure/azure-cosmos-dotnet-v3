@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Documents;
 
     internal struct AggregateItem
     {

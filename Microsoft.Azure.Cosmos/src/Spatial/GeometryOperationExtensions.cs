@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations supported on <see cref="Geometry" /> type in the Azure Cosmos DB service. These operations are to be used in LINQ expressions only
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="to">Second <see cref="Geometry"/>.</param>
         /// <returns>Returns distance in meters between two geometries.</returns>
         /// <remarks>
-        /// Today this function support only geometries of <see cref="GeometryShape.Point"/> type.
+        /// Today this function support only geometries of <see cref="GeometryType.Point"/> type.
         /// </remarks>
         /// <example>
         /// <code>
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <c>false</c> otherwise.
         /// </returns>
         /// <remarks>
-        /// Currently this function supports <paramref name="inner"/> geometry of type <see cref="GeometryShape.Point"/> and outer geometry of type <see cref="GeometryShape.Polygon"/>.
+        /// Currently this function supports <paramref name="inner"/> geometry of type <see cref="GeometryType.Point"/> and outer geometry of type <see cref="GeometryType.Polygon"/>.
         /// </remarks>
         /// <example>
         /// <code>
@@ -78,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="geometry">The geometry to check for validity.</param>
         /// <returns><c>true</c> if geometry is valid. <c>false</c> otherwise.</returns>
         /// <remarks>
-        /// Currently this function supports <paramref name="geometry"/> of type <see cref="GeometryShape.Point"/> and <see cref="GeometryShape.Polygon"/>.
+        /// Currently this function supports <paramref name="geometry"/> of type <see cref="GeometryType.Point"/> and <see cref="GeometryType.Polygon"/>.
         /// </remarks>
         /// <example>
         /// <para>
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="geometry">The geometry to check for validity.</param>
         /// <returns>Instance of <see cref="GeometryValidationResult"/>.</returns>
         /// <remarks>
-        /// Currently this function supports <paramref name="geometry"/> of type <see cref="GeometryShape.Point"/> and <see cref="GeometryShape.Polygon"/>.
+        /// Currently this function supports <paramref name="geometry"/> of type <see cref="GeometryType.Point"/> and <see cref="GeometryType.Polygon"/>.
         /// </remarks>
         /// <example>
         /// <para>

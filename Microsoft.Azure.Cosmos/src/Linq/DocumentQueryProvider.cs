@@ -5,12 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Documents;
 
     internal interface IDocumentQueryProvider : IQueryProvider
     {
@@ -126,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.partitionKey);
             this.onExecuteScalarQueryCallback?.Invoke(documentQuery);
 
-            var result = await documentQuery.ExecuteAllAsync();
+            List<TResult> result = await documentQuery.ExecuteAllAsync();
             return result.FirstOrDefault();
         }
     }

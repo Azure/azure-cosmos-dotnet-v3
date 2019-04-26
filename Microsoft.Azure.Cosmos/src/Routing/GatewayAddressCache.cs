@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -17,6 +18,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.Routing;
 
     internal class GatewayAddressCache : IAddressCache, IDisposable
     {
@@ -49,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IAuthorizationTokenProvider tokenProvider,
             UserAgentContainer userAgent,
             IServiceConfigurationReader serviceConfigReader,
+            TimeSpan requestTimeout,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             HttpMessageHandler messageHandler = null,
             ApiType apiType = ApiType.None)
@@ -65,7 +71,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.suboptimalPartitionForceRefreshIntervalInSeconds = suboptimalPartitionForceRefreshIntervalInSeconds;
 
             this.httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
-            this.protocolFilter = 
+            if(requestTimeout != null)
+            {
+                this.httpClient.Timeout = requestTimeout;
+            }
+            this.protocolFilter =
                 string.Format(CultureInfo.InvariantCulture,
                 GatewayAddressCache.protocolFilterFormat,
                 Constants.Properties.Protocol,
@@ -87,7 +97,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        [SuppressMessage("", "AsyncFixer02", Justification = "Multi task completed with await")]
+        [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
         public async Task OpenAsync(
+            string databaseName,
             CosmosContainerSettings collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
             CancellationToken cancellationToken)
@@ -103,12 +116,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 #endif
 
+            string collectionAltLink = string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseName),
+                Paths.CollectionsPathSegment, Uri.EscapeUriString(collection.Id));
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
-                OperationType.Read, 
-                collection.AltLink, 
-                ResourceType.Collection, 
+                OperationType.Read,
+                collectionAltLink,
+                ResourceType.Collection,
                 AuthorizationTokenType.PrimaryMasterKey))
-            { 
+            {
                 for (int i = 0; i < partitionKeyRangeIdentities.Count; i += batchSize)
                 {
                     tasks.Add(this.GetServerAddressesViaGatewayAsync(
@@ -171,30 +186,35 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
 
+                PartitionAddressInformation addresses;
                 if (forceRefreshPartitionAddresses || request.ForceCollectionRoutingMapRefresh)
                 {
-                    this.serverPartitionAddressCache.Refresh(
+                    addresses = await this.serverPartitionAddressCache.GetAsync(
                         partitionKeyRangeIdentity,
-                        async () => await this.GetAddressesForRangeId(
-                        request,
-                        partitionKeyRangeIdentity.CollectionRid,
-                        partitionKeyRangeIdentity.PartitionKeyRangeId,
-                        forceRefresh: forceRefreshPartitionAddresses),
-                        cancellationToken);
+                        null,
+                        () => this.GetAddressesForRangeId(
+                            request,
+                            partitionKeyRangeIdentity.CollectionRid,
+                            partitionKeyRangeIdentity.PartitionKeyRangeId,
+                            forceRefresh: forceRefreshPartitionAddresses),
+                        cancellationToken,
+                        forceRefresh: true);
 
                     DateTime ignoreDateTime;
                     this.suboptimalServerPartitionTimestamps.TryRemove(partitionKeyRangeIdentity, out ignoreDateTime);
                 }
-
-                PartitionAddressInformation addresses = await this.serverPartitionAddressCache.GetAsync(
+                else
+                {
+                    addresses = await this.serverPartitionAddressCache.GetAsync(
                         partitionKeyRangeIdentity,
                         null,
-                        async () => await this.GetAddressesForRangeId(
+                        () => this.GetAddressesForRangeId(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
                         cancellationToken);
+                }
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
                 if (addresses.AllAddresses.Count() < targetReplicaSetSize)
@@ -240,8 +260,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 (masterAddressAndRange != null &&
                 masterAddressAndRange.Item2.AllAddresses.Count() < targetReplicaSetSize &&
                 DateTime.UtcNow.Subtract(this.suboptimalMasterPartitionTimestamp) > TimeSpan.FromSeconds(this.suboptimalPartitionForceRefreshIntervalInSeconds));
-            
-            if (forceRefresh || this.masterPartitionAddressCache == null)
+
+            if (forceRefresh || request.ForceCollectionRoutingMapRefresh || this.masterPartitionAddressCache == null)
             {
                 string entryUrl = PathsHelper.GeneratePath(
                    ResourceType.Database,
@@ -331,6 +351,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 headers.Set(HttpConstants.HttpHeaders.UseMasterCollectionResolver, bool.TrueString);
             }
 
+            if (request.ForceCollectionRoutingMapRefresh)
+            {
+                headers.Set(HttpConstants.HttpHeaders.ForceCollectionRoutingMapRefresh, bool.TrueString);
+            }
+                 
             addressQuery.Add(HttpConstants.QueryStrings.Filter, this.protocolFilter);
 
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);

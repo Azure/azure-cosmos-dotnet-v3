@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing user defined functions by id.
@@ -26,15 +27,18 @@ namespace Microsoft.Azure.Cosmos
         /// you can read from it or write to it.
         /// </remarks>
         protected internal CosmosUserDefinedFunction(
-            CosmosContainer container,
+            CosmosContainerCore container,
             string userDefinedFunctionId)
-            : base(container.Client,
-                container.Link,
-                userDefinedFunctionId)
         {
+            this.Id = userDefinedFunctionId;
+            this.container = container;
+            base.Initialize(
+               client: container.Client,
+               parentLink: container.LinkUri.OriginalString,
+               uriPathSegment: Paths.UserDefinedFunctionsPathSegment);
         }
 
-        internal override string UriPathSegment => Paths.UserDefinedFunctionsPathSegment;
+        public override string Id { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -120,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: userDefinedFunctionSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -183,6 +187,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.UserDefinedFunction,
                 operationType,
                 requestOptions,
+                this.container,
                 partitionKey,
                 streamPayload,
                 null,
@@ -190,5 +195,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.Client.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
         }
+        internal CosmosContainerCore container { get; }
     }
 }

@@ -26,8 +26,7 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="AccessConditionType"/>
-    /// <seealso cref="RequestOptions"/>
-    /// <seealso cref="CosmosResource"/>
+    /// <seealso cref="CosmosRequestOptions"/>
     public sealed class AccessCondition
     {
         /// <summary>
@@ -44,7 +43,6 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The value of the condition. For <see cref="AccessConditionType"/> IfMatch and IfNotMatch, this is the ETag that has to be compared to.
         /// </value>
-        /// <seealso cref="CosmosResource"/>
         public string Condition { get; set; }
     }
 }

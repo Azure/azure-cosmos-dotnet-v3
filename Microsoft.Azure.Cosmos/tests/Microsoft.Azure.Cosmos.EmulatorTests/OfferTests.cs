@@ -12,16 +12,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class OfferTests
     {
+
+        private PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+
         private struct TestCase
         {
             public int? offerThroughput;
@@ -104,24 +107,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             using (var client = TestCommon.CreateClient(true))
             {
-                TestCommon.DeleteAllDatabasesAsync(client).Wait();
+                TestCommon.DeleteAllDatabasesAsync().Wait();
             }
         }
 
         [TestMethod]
+        [Ignore] //Not a valid scenerio for V3 SDK onwards
         public async Task ValidateOfferCreateNegative_1()
         {
             DocumentClient client = TestCommon.CreateClient(false);
 
-            CosmosDatabaseSettings database = (await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") })).Resource;
+            Database database = (await client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString("N") })).Resource;
 
             // create collection with partition key (1 partition) and single partition throughput.
             // Difference from the test ValidateOfferReplaceNegative_2 is the usage of throughput rather than offertype.
             try
             {
-                CosmosContainerSettings collection = await client.CreateDocumentCollectionAsync(
+                DocumentCollection collection = await client.CreateDocumentCollectionAsync(
                             database.SelfLink,
-                            new CosmosContainerSettings { Id = Guid.NewGuid().ToString("N") },
+                            new DocumentCollection { Id = Guid.NewGuid().ToString("N"), PartitionKey = partitionKeyDefinition },
                             new RequestOptions { OfferThroughput = 12000 }); // provision > 1 partition with no PK, not allowed
                 Assert.Fail();
             }
@@ -136,11 +140,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(false);
 
-            CosmosDatabaseSettings database = (await client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") })).Resource;
+            Database database = (await client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString("N") })).Resource;
             string collectionId = Guid.NewGuid().ToString("N");
-            CosmosContainerSettings collection = await client.CreateDocumentCollectionAsync(
+            DocumentCollection collection = await client.CreateDocumentCollectionAsync(
                 database.SelfLink,
-                new CosmosContainerSettings { Id = collectionId });
+                new DocumentCollection { Id = collectionId, PartitionKey = partitionKeyDefinition });
 
             Offer offer = (await client.ReadOffersFeedAsync()).Single(o => o.ResourceLink == collection.SelfLink);
 
@@ -155,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 collectionId = Guid.NewGuid().ToString("N");
                 collection = await client.CreateDocumentCollectionAsync(
                     database.SelfLink,
-                    new CosmosContainerSettings { Id = collectionId });
+                    new DocumentCollection { Id = collectionId, PartitionKey = partitionKeyDefinition });
                 offer = (await client.ReadOffersFeedAsync()).Single(o => o.ResourceLink == collection.SelfLink);
             }
 
@@ -177,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<string> collectionsLink = new List<string>();
                 List<Tuple<string, OfferV2>> offerList = new List<Tuple<string, OfferV2>>();
 
-                ResourceResponse<CosmosDatabaseSettings> dbResponse = await client.CreateDatabaseAsync(new CosmosDatabaseSettings
+                ResourceResponse<Database> dbResponse = await client.CreateDatabaseAsync(new Database
                 {
                     Id = Guid.NewGuid().ToString("N")
                 });
@@ -189,10 +193,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 for (var i = 0; i < numCollections; ++i)
                 {
                     // Create collections.
-                    ResourceResponse<CosmosContainerSettings> collResponse =
-                        await client.CreateDocumentCollectionAsync(databaseLink, new CosmosContainerSettings
+                    ResourceResponse<DocumentCollection> collResponse =
+                        await client.CreateDocumentCollectionAsync(databaseLink, new DocumentCollection
                         {
-                            Id = Guid.NewGuid().ToString("N")
+                            Id = Guid.NewGuid().ToString("N"),
+                            PartitionKey = partitionKeyDefinition
                         },
                         new RequestOptions
                         {
@@ -235,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Func<DocumentClient, DocumentClientType, Task> testFunc = async (DocumentClient client, DocumentClientType clientType) =>
             {
-                ResourceResponse<CosmosDatabaseSettings> dbResponse = await client.CreateDatabaseAsync(new CosmosDatabaseSettings
+                ResourceResponse<Database> dbResponse = await client.CreateDatabaseAsync(new Database
                 {
                     Id = Guid.NewGuid().ToString("N")
                 });
@@ -247,11 +252,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 INameValueCollection headers = new StringKeyValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
-                CosmosContainerSettings[] collections = (from index in Enumerable.Range(1, 1)
-                                                    select client.Create<CosmosContainerSettings>(dbResponse.Resource.ResourceId,
-                                                        new CosmosContainerSettings
+                DocumentCollection[] collections = (from index in Enumerable.Range(1, 1)
+                                                    select client.Create<DocumentCollection>(dbResponse.Resource.ResourceId,
+                                                        new DocumentCollection
                                                         {
-                                                            Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collPrefix, index)
+                                                            Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collPrefix, index),
+                                                            PartitionKey = partitionKeyDefinition
                                                         }, headers)).ToArray();
 
                 List<Offer> queryResults = new List<Offer>();
@@ -299,8 +305,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 const int numDatabases = 1;
                 const int numCollections = 1;
 
-                CosmosDatabaseSettings[] databases = (from index in Enumerable.Range(1, numDatabases)
-                                        select client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings
+                Database[] databases = (from index in Enumerable.Range(1, numDatabases)
+                                        select client.Create<Database>(null, new Database
                                         {
                                             Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index)
                                         })).ToArray();
@@ -311,14 +317,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 INameValueCollection headers = new StringKeyValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
-                List<CosmosContainerSettings> collections = new List<CosmosContainerSettings>();
+                List<DocumentCollection> collections = new List<DocumentCollection>();
                 foreach (var db in databases)
                 {
                     collections.AddRange((from index in Enumerable.Range(1, numCollections)
-                                          select client.Create<CosmosContainerSettings>(db.ResourceId,
-                                              new CosmosContainerSettings
+                                          select client.Create<DocumentCollection>(db.ResourceId,
+                                              new DocumentCollection
                                               {
-                                                  Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index)
+                                                  Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index),
+                                                  PartitionKey = partitionKeyDefinition
                                               }, headers)).ToArray());
                 }
 
@@ -382,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 const int numCollections = 1;
                 List<string> collectionsLink = new List<string>();
 
-                ResourceResponse<CosmosDatabaseSettings> dbResponse = await client.CreateDatabaseAsync(new CosmosDatabaseSettings
+                ResourceResponse<Database> dbResponse = await client.CreateDatabaseAsync(new Database
                 {
                     Id = Guid.NewGuid().ToString("N")
                 });
@@ -394,10 +401,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 for (var i = 0; i < numCollections; ++i)
                 {
                     // Create collections.
-                    ResourceResponse<CosmosContainerSettings> collResponse =
-                        await client.CreateDocumentCollectionAsync(databaseLink, new CosmosContainerSettings
+                    ResourceResponse<DocumentCollection> collResponse =
+                        await client.CreateDocumentCollectionAsync(databaseLink, new DocumentCollection
                         {
-                            Id = Guid.NewGuid().ToString("N")
+                            Id = Guid.NewGuid().ToString("N"),
+                            PartitionKey = partitionKeyDefinition
                         });
                     Assert.AreEqual(HttpStatusCode.Created, collResponse.StatusCode);
                     collectionsLink.Add(collResponse.Resource.SelfLink);
@@ -514,12 +522,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Func<DocumentClient, DocumentClientType, Task> testFunc = async (DocumentClient client, DocumentClientType clientType) =>
             {
                 RequestOptions options = new RequestOptions { OfferThroughput = 50000 };
-                ResourceResponse<CosmosDatabaseSettings> dbResponse;
+                ResourceResponse<Database> dbResponse;
 
                 if (bSharedThroughput)
                 {
                     dbResponse = await client.CreateDatabaseAsync(
-                    new CosmosDatabaseSettings
+                    new Database
                     {
                         Id = Guid.NewGuid().ToString("N")
                     },
@@ -528,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 else
                 {
                     dbResponse = await client.CreateDatabaseAsync(
-                    new CosmosDatabaseSettings
+                    new Database
                     {
                         Id = Guid.NewGuid().ToString("N")
                     });
@@ -541,11 +549,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (var i = 0; i < numCollections; ++i)
                 {
-                    ResourceResponse<CosmosContainerSettings> collResponse;
+                    ResourceResponse<DocumentCollection> collResponse;
 
                     if (bSharedThroughput)
                     {
-                        collResponse = await client.CreateDocumentCollectionAsync(databaseLink, new CosmosContainerSettings
+                        collResponse = await client.CreateDocumentCollectionAsync(databaseLink, new DocumentCollection
                         {
                             Id = Guid.NewGuid().ToString("N"),
                             PartitionKey = new PartitionKeyDefinition
@@ -559,9 +567,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     else
                     {
                         // Create two collections.
-                        collResponse = await client.CreateDocumentCollectionAsync(databaseLink, new CosmosContainerSettings
+                        collResponse = await client.CreateDocumentCollectionAsync(databaseLink, new DocumentCollection
                         {
-                            Id = Guid.NewGuid().ToString("N")
+                            Id = Guid.NewGuid().ToString("N"),
+                            PartitionKey = partitionKeyDefinition
                         });
 
                         Assert.AreEqual(HttpStatusCode.Created, collResponse.StatusCode);
@@ -702,22 +711,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 const int numDatabases = 1;
                 const int numCollections = 1;
 
-                CosmosDatabaseSettings[] databases = (from index in Enumerable.Range(1, numDatabases)
-                                        select client.Create<CosmosDatabaseSettings>(null, new CosmosDatabaseSettings
+                Database[] databases = (from index in Enumerable.Range(1, numDatabases)
+                                        select client.Create<Database>(null, new Database
                                         {
                                             Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index)
                                         })).ToArray();
 
                 dbprefix = Guid.NewGuid().ToString("N");
 
-                List<CosmosContainerSettings> collections = new List<CosmosContainerSettings>();
+                List<DocumentCollection> collections = new List<DocumentCollection>();
                 foreach (var db in databases)
                 {
                     collections.AddRange((from index in Enumerable.Range(1, numCollections)
-                                          select client.Create<CosmosContainerSettings>(db.ResourceId,
-                                              new CosmosContainerSettings
+                                          select client.Create<DocumentCollection>(db.ResourceId,
+                                              new DocumentCollection
                                               {
-                                                  Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index)
+                                                  Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index),
+                                                  PartitionKey = partitionKeyDefinition
                                               })).ToArray());
                 }
 
@@ -787,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 foreach (Offer offer in queryResults)
                 {
-                    CosmosContainerSettings collection =
+                    DocumentCollection collection =
                         collections.SingleOrDefault(coll => coll.SelfLink == offer.ResourceLink);
                     if (collection != null)
                     {
@@ -863,18 +873,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Func<DocumentClient, DocumentClientType, Task> testFunc = async (DocumentClient client, DocumentClientType clientType) =>
             {
-                ResourceResponse<CosmosDatabaseSettings> dbResponse = await client.CreateDatabaseAsync(new CosmosDatabaseSettings
+                ResourceResponse<Database> dbResponse = await client.CreateDatabaseAsync(new Database
                 {
                     Id = Guid.NewGuid().ToString("N")
                 });
                 Assert.AreEqual(HttpStatusCode.Created, dbResponse.StatusCode);
 
                 string collPrefix = Guid.NewGuid().ToString("N");
-                CosmosContainerSettings[] collections = (from index in Enumerable.Range(1, 1)
-                                                    select client.Create<CosmosContainerSettings>(dbResponse.Resource.ResourceId,
-                                                        new CosmosContainerSettings
+                DocumentCollection[] collections = (from index in Enumerable.Range(1, 1)
+                                                    select client.Create<DocumentCollection>(dbResponse.Resource.ResourceId,
+                                                        new DocumentCollection
                                                         {
-                                                            Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collPrefix, index)
+                                                            Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collPrefix, index),
+                                                            PartitionKey = partitionKeyDefinition
                                                         })).ToArray();
 
                 List<Offer> queryResults = new List<Offer>();
@@ -991,7 +1002,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {"S3", 3.0}
                     };
 
-                ResourceResponse<CosmosDatabaseSettings> dbResponse = await client.CreateDatabaseAsync(new CosmosDatabaseSettings
+                ResourceResponse<Database> dbResponse = await client.CreateDatabaseAsync(new Database
                 {
                     Id = Guid.NewGuid().ToString("N")
                 });
@@ -1004,10 +1015,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 for (var i = 0; i < numCollections; ++i)
                 {
                     // Create collections.
-                    ResourceResponse<CosmosContainerSettings> collResponse =
-                        await client.CreateDocumentCollectionAsync(databaseLink, new CosmosContainerSettings
+                    ResourceResponse<DocumentCollection> collResponse =
+                        await client.CreateDocumentCollectionAsync(databaseLink, new DocumentCollection
                         {
-                            Id = Guid.NewGuid().ToString("N")
+                            Id = Guid.NewGuid().ToString("N"),
+                            PartitionKey = partitionKeyDefinition
                         });
 
                     Assert.AreEqual(HttpStatusCode.Created, collResponse.StatusCode);
@@ -1036,10 +1048,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     for (var i = 0; i < numCollections; ++i)
                     {
                         // Create collections.
-                        ResourceResponse<CosmosContainerSettings> collResponse =
-                            await client.CreateDocumentCollectionAsync(databaseLink, new CosmosContainerSettings
+                        ResourceResponse<DocumentCollection> collResponse =
+                            await client.CreateDocumentCollectionAsync(databaseLink, new DocumentCollection
                             {
-                                Id = Guid.NewGuid().ToString("N")
+                                Id = Guid.NewGuid().ToString("N"),
+                                PartitionKey = partitionKeyDefinition
                             }, new RequestOptions
                             {
                                 OfferType = offer
@@ -1093,7 +1106,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             return exception.Message.Contains("Request rate is large") &&
                 substatuscode == 3204;
-        }private async Task ReplaceOfferAsync(DocumentClient client, Offer offerToReplace, string expectedCollLink, string expectedOfferType = null)
+        }
+        private async Task ReplaceOfferAsync(DocumentClient client, Offer offerToReplace, string expectedCollLink, string expectedOfferType = null)
         {
             ResourceResponse<Offer> replaceResponse = await client.ReplaceOfferAsync(offerToReplace);
             OfferTests.ValidateOfferResponseBody(replaceResponse.Resource, expectedCollLink, expectedOfferType);

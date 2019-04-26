@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for creating new user defined function, and reading/querying all user defined functions
@@ -17,14 +18,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosUserDefinedFunctions
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly CosmosClient client;
 
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunctions"/>
         /// </summary>
         /// <param name="container">The <see cref="CosmosContainer"/> the user defined function set is related to.</param>
-        protected internal CosmosUserDefinedFunctions(CosmosContainer container)
+        protected internal CosmosUserDefinedFunctions(CosmosContainerCore container)
         {
             this.container = container;
             this.client = container.Client;
@@ -100,8 +101,9 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.UserDefinedFunction,
                 OperationType.Create,
                 requestOptions,
+                this.container,
                 partitionKey: null,
-                streamPayload: userDefinedFunctionSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

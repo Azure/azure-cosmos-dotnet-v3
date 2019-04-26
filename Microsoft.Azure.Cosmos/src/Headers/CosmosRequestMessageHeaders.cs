@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Http headers in a <see cref="CosmosRequestMessage"/>.
@@ -30,6 +31,12 @@ namespace Microsoft.Azure.Cosmos
 
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.OfferThroughput)]
         internal string OfferThroughput { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IfNoneMatch)]
+        internal string IfNoneMatch { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PageSize)]
+        internal string PageSize { get; set; }
 
         private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<CosmosRequestMessageHeaders>();
 

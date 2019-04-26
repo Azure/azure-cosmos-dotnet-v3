@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Operations for creating new trigger, and reading/querying all triggers
@@ -17,14 +18,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosTriggers
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly CosmosClient client;
 
         /// <summary>
         /// Create a <see cref="CosmosTriggers"/>
         /// </summary>
         /// <param name="container">The <see cref="CosmosContainer"/> the triggers set is related to.</param>
-        protected internal CosmosTriggers(CosmosContainer container)
+        protected internal CosmosTriggers(CosmosContainerCore container)
         {
             this.container = container;
             this.client = container.Client;
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 partitionKey: null,
-                streamPayload: triggerSettings.GetResourceStream(),
+                streamPayload: CosmosResource.ToStream(triggerSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

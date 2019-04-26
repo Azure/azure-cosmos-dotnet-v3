@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
 
     internal sealed class IndexingPolicyBuilder
     {
@@ -209,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public sealed class SpatialIndex
+        internal sealed class SpatialIndex
         {
             [JsonProperty(PropertyName = Constants.Properties.Path)]
             public string Path { get; }

@@ -8,11 +8,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private Mock<IDocumentClientInternal> mockedClient;
 
         [TestMethod]
+        [Owner("atulk")]
         public void ValidateWriteEndpointOrderWithClientSideDisableMultipleWriteLocation()
         {
             this.Initialize(false, true, false);
@@ -53,6 +54,29 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("atulk")]
+        public void ValidateGetLocation()
+        {
+            this.Initialize(
+                useMultipleWriteLocations: false,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: true);
+
+            Assert.AreEqual(this.databaseAccount.WriteLocationsInternal.First().Name, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
+
+            foreach (CosmosAccountLocation databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
+            {
+                Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.DatabaseAccountEndpoint)));
+            }
+
+            foreach (CosmosAccountLocation databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
+            {
+                Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.DatabaseAccountEndpoint)));
+            }
+        }
+
+        [TestMethod]
+        [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryDisabled()
         {
             await this.ValidateRetryOnSessionNotAvailabeWithEndpointDiscoveryDisabled(false, false, false);
@@ -117,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("atulk")]
         public async Task ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryEnabled()
         {
             await this.ValidateRetryOnSessionNotAvailabeWithDisableMultipleWriteLocationsAndEndpointDiscoveryEnabledAsync(true);
@@ -171,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             StringKeyValueCollection headers = new StringKeyValueCollection();
                             headers[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.ReadSessionNotAvailable).ToString();
                             DocumentClientException notFoundException = new NotFoundException(RMResources.NotFound, headers);
-                            
+
 
                             throw notFoundException;
                         },
@@ -188,6 +213,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("atulk")]
         public async Task ValidateRetryOnReadSessionNotAvailabeWithEnableMultipleWriteLocationsAndEndpointDiscoveryEnabled()
         {
             await this.ValidateRetryOnReadSessionNotAvailabeWithEnableMultipleWriteLocationsAsync();
@@ -339,6 +365,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("atulk")]
         public async Task ValidateRetryOnWriteForbiddenExceptionAsync()
         {
             this.Initialize(
@@ -375,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         }
                         else if (retryCount == 2)
                         {
-                            this.mockedClient.Verify(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>()), Times.Once);
+                            this.mockedClient.Verify(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()), Times.Once);
 
                             // Next request must go to next preferred endpoint
                             Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
@@ -395,6 +422,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        [Owner("atulk")]
         public async Task ValidateRetryOnDatabaseAccountNotFoundAsync()
         {
             await this.ValidateRetryOnDatabaseAccountNotFoundAsync(enableMultipleWriteLocations: false, isReadRequest: false);
@@ -467,12 +495,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         Assert.Fail();
                     }
                 }
-                
+
                 Assert.AreEqual(expectedRetryCount, retryCount);
             }
         }
 
         [TestMethod]
+        [Owner("atulk")]
         public async Task ValidateAsync()
         {
             for (int i = 0; i < 8; i++)
@@ -508,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         private void Initialize(
             bool useMultipleWriteLocations,
-            bool enableEndpointDiscovery, 
+            bool enableEndpointDiscovery,
             bool isPreferredLocationsListEmpty)
         {
             this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(useMultipleWriteLocations);
@@ -531,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             this.mockedClient = new Mock<IDocumentClientInternal>();
             mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(LocationCacheTests.DefaultEndpoint);
-            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>())).ReturnsAsync(this.databaseAccount);
+            mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -597,7 +626,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         endpointDiscoveryEnabled,
                         preferredAvailableWriteEndpoints,
                         preferredAvailableReadEndpoints,
-                        writeLocationIndex > 0);
+                        writeLocationIndex > 0,
+                        readLocationIndex > 0 &&
+                        currentReadEndpoints[0] != LocationCacheTests.DefaultEndpoint,
+                        currentWriteEndpoints.Count > 1,
+                        currentReadEndpoints.Count > 1);
 
                     await this.ValidateGlobalEndpointLocationCacheRefreshAsync();
 
@@ -620,17 +653,20 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
-        private void ValidateEndpointRefresh(            
+        private void ValidateEndpointRefresh(
             bool useMultipleWriteLocations,
             bool endpointDiscoveryEnabled,
             Uri[] preferredAvailableWriteEndpoints,
             Uri[] preferredAvailableReadEndpoints,
-            bool isFirstWriteEndpointUnavailable)
+            bool isFirstWriteEndpointUnavailable,
+            bool isFirstReadEndpointUnavailable,
+            bool hasMoreThanOneWriteEndpoints,
+            bool hasMoreThanOneReadEndpoints)
         {
             bool canRefreshInBackground = false;
             bool shouldRefreshEndpoints = this.cache.ShouldRefreshEndpoints(out canRefreshInBackground);
 
-            bool isMostPreferredLocationUnavailableForRead = false;
+            bool isMostPreferredLocationUnavailableForRead = isFirstReadEndpointUnavailable;
             bool isMostPreferredLocationUnavailableForWrite = useMultipleWriteLocations ? false : isFirstWriteEndpointUnavailable;
             if (this.preferredLocations.Count > 0)
             {
@@ -644,7 +680,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 if (useMultipleWriteLocations)
                 {
                     isMostPreferredLocationUnavailableForWrite = preferredAvailableWriteEndpoints.Length == 0 ? true : (preferredAvailableWriteEndpoints[0] != mostPreferredWriteEndpoint);
-                }         
+                }
             }
 
             if (!endpointDiscoveryEnabled)
@@ -658,7 +694,14 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             if (shouldRefreshEndpoints)
             {
-                Assert.AreEqual(true, canRefreshInBackground);
+                if (isMostPreferredLocationUnavailableForRead)
+                {
+                    Assert.AreEqual(hasMoreThanOneReadEndpoints, canRefreshInBackground);
+                }
+                else if (isMostPreferredLocationUnavailableForWrite)
+                {
+                    Assert.AreEqual(hasMoreThanOneWriteEndpoints, canRefreshInBackground);
+                }
             }
         }
 
@@ -668,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             await Task.WhenAll(refreshLocations);
 
-            this.mockedClient.Verify(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>()), Times.AtMostOnce);
+            this.mockedClient.Verify(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()), Times.AtMostOnce);
 
             this.mockedClient.ResetCalls();
 
@@ -677,7 +720,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 await task;
             }
 
-            this.mockedClient.Verify(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>()), Times.AtMostOnce);
+            this.mockedClient.Verify(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()), Times.AtMostOnce);
         }
 
         private void ValidateRequestEndpointResolution(
@@ -720,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             Uri firstAvailableReadEndpoint;
 
-            if(!endpointDiscoveryEnabled)
+            if (!endpointDiscoveryEnabled)
             {
                 firstAvailableReadEndpoint = LocationCacheTests.DefaultEndpoint;
             }

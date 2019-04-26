@@ -9,16 +9,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
     [TestClass]
     public class SpatialTest
     {
+        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+
         private class SpatialSampleClass
         {
             [JsonProperty(PropertyName = "id")]
@@ -44,10 +44,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestIsValid()
         {
-            CosmosDatabaseSettings database = await this.client.CreateDatabaseAsync(
-                new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") });
+            Database database = await this.client.CreateDatabaseAsync(
+                new Database { Id = Guid.NewGuid().ToString("N") });
 
-            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N") };
+            DocumentCollection collectionDefinition = new DocumentCollection() { Id = Guid.NewGuid().ToString("N"), PartitionKey = defaultPartitionKeyDefinition };
             collectionDefinition.IndexingPolicy = new IndexingPolicy()
             {
                 IncludedPaths = new Collection<IncludedPath>()
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
             };
 
-            CosmosContainerSettings collection = await this.client.CreateDocumentCollectionAsync(
+            DocumentCollection collection = await this.client.CreateDocumentCollectionAsync(
                 database.SelfLink,
                 collectionDefinition);
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.client.CreateDocumentAsync(collection.SelfLink, validGeometry);
 
             IOrderedQueryable<SpatialSampleClass> sampleClasses =
-                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { });
+                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableCrossPartitionQuery = true });
 
             SpatialSampleClass[] distanceQuery = sampleClasses
                 .Where(f => f.Location.Distance(new Point(20, 180)) < 20000)
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(invalidGeometry.Location, isNotValidQuery[0].Location);
 
             IOrderedQueryable<SpatialSampleClass> invalidDetailed =
-                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { });
+                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableCrossPartitionQuery = true });
 
             var query = invalidDetailed
                 .Where(f => !f.Location.IsValid()).Select(f => f.Location.IsValidDetailed());
@@ -126,14 +126,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestDistanceAndWithin(false);
         }
 
-        private  async Task TestDistanceAndWithin(bool allowScan)
+        private async Task TestDistanceAndWithin(bool allowScan)
         {
-            CosmosDatabaseSettings database = await this.client.CreateDatabaseAsync(new CosmosDatabaseSettings { Id = Guid.NewGuid().ToString("N") });
+            Database database = await this.client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString("N") });
 
-            CosmosContainerSettings collectionDefinition = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString("N") };
+            DocumentCollection collectionDefinition = new DocumentCollection() { Id = Guid.NewGuid().ToString("N"), PartitionKey = defaultPartitionKeyDefinition };
 
-            CosmosContainerSettings collection;
-            if(allowScan)
+            DocumentCollection collection;
+            if (allowScan)
             {
                 collection = await this.client.CreateDocumentCollectionAsync(database.SelfLink, collectionDefinition);
             }
@@ -162,21 +162,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             var class1 = new SpatialSampleClass
-                         {
-                             Location = new Point(20, 20),
-                             Id = Guid.NewGuid().ToString()
-                         };
+            {
+                Location = new Point(20, 20),
+                Id = Guid.NewGuid().ToString()
+            };
             await this.client.CreateDocumentAsync(collection.SelfLink, class1);
 
             var class2 = new SpatialSampleClass
-                         {
-                             Location = new Point(100, 100),
-                             Id = Guid.NewGuid().ToString()
-                         };
+            {
+                Location = new Point(100, 100),
+                Id = Guid.NewGuid().ToString()
+            };
             await this.client.CreateDocumentAsync(collection.SelfLink, class2);
 
             IOrderedQueryable<SpatialSampleClass> sampleClasses =
-                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableScanInQuery = allowScan });
+                this.client.CreateDocumentQuery<SpatialSampleClass>(collection.DocumentsLink, new FeedOptions() { EnableScanInQuery = allowScan, EnableCrossPartitionQuery = true });
 
             SpatialSampleClass[] distanceQuery = sampleClasses
                 .Where(f => f.Location.Distance(new Point(20.1, 20)) < 20000)
@@ -202,9 +202,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void CleanUp()
         {
-            IEnumerable<CosmosDatabaseSettings> allDatabases = from database in this.client.CreateDatabaseQuery() select database;
+            IEnumerable<Database> allDatabases = from database in this.client.CreateDatabaseQuery() select database;
 
-            foreach (CosmosDatabaseSettings database in allDatabases)
+            foreach (Database database in allDatabases)
             {
                 this.client.DeleteDatabaseAsync(database.SelfLink).Wait();
             }

@@ -29,12 +29,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // DeclaredOnly flag gets only the properties declared in the current class. 
                 // This ignores inherited properties to prevent duplicate findings.
                 IEnumerable<Tuple<string, string>> allProps = publiClass.GetProperties(BindingFlags.DeclaredOnly)
-                    .Where(x => !x.GetGetMethod().IsVirtual && x.GetGetMethod().IsPublic)
+                    .Where(x => !x.GetGetMethod().IsVirtual && x.GetGetMethod().IsPublic && !x.CanWrite)
                     .Select(x => new Tuple<string, string>(publiClass.FullName, x.Name));
                 nonVirtualPublic.AddRange(allProps);
 
                 IEnumerable<Tuple<string, string>> allMethods = publiClass.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                    .Where(x => !x.IsVirtual && x.IsPublic)
+                    .Where(x => !x.IsVirtual && x.IsPublic && !x.IsSpecialName)
+                    .Where(x => x.GetCustomAttribute<IgnoreForUnitTest>(false) == null)
                     .Select(x => new Tuple<string, string>(publiClass.FullName, x.Name));
                 nonVirtualPublic.AddRange(allMethods);
             }

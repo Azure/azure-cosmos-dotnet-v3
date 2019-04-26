@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client
