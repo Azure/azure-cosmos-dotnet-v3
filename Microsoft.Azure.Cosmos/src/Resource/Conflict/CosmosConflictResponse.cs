@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
 
     /// <summary>
-    /// The cosmos user defined function response
+    /// The cosmos conflict response
     /// </summary>
     public class CosmosConflictResponse : CosmosResponse<CosmosConflictSettings>
     {

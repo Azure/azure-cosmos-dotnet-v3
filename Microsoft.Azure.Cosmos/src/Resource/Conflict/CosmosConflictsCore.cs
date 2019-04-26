@@ -27,12 +27,47 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 null,
-                this.ContainerFeedRequestExecutor);
+                this.ConflictsFeedRequestExecutor);
+        }
+
+        public override CosmosFeedResultSetIterator GetConflictsStreamIterator(
+            int? maxItemCount = null,
+            string continuationToken = null)
+        {
+            return new CosmosFeedResultSetIteratorCore(
+                maxItemCount,
+                continuationToken,
+                null,
+                this.ConflictsFeedStreamRequestExecutor);
         }
 
         public override CosmosConflict this[string id] => new CosmosConflictCore(this.clientContext, this.container, id);
 
-        private Task<CosmosQueryResponse<CosmosConflictSettings>> ContainerFeedRequestExecutor(
+        private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutor(
+            int? maxItemCount,
+            string continuationToken,
+            CosmosRequestOptions options,
+            object state,
+            CancellationToken cancellationToken)
+        {
+            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
+                resourceUri: this.container.LinkUri,
+                resourceType: Documents.ResourceType.Conflict,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: options,
+                requestEnricher: request =>
+                {
+                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                },
+                responseCreator: response => response,
+                cosmosContainerCore: this.container,
+                partitionKey: null,
+                streamPayload: null,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<CosmosQueryResponse<CosmosConflictSettings>> ConflictsFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
