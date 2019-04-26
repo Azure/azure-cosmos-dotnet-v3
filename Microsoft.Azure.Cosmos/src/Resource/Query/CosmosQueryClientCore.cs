@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClientContext clientContext;
         private readonly CosmosContainerCore cosmosContainerCore;
-        internal readonly Lazy<IDocumentQueryClient> DocumentQueryClient;
+        internal readonly IDocumentQueryClient DocumentQueryClient;
 
         internal CosmosQueryClientCore(
             CosmosClientContext clientContext,
@@ -31,27 +31,27 @@ namespace Microsoft.Azure.Cosmos
         {
             this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
             this.cosmosContainerCore = cosmosContainerCore ?? throw new ArgumentException(nameof(cosmosContainerCore));
-            this.DocumentQueryClient = new Lazy<IDocumentQueryClient>(() => new DocumentQueryClient(this.clientContext.DocumentClient));
+            this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
         internal override IDocumentClientRetryPolicy GetRetryPolicy()
         {
-            return this.DocumentQueryClient.Value.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            return this.DocumentQueryClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
         }
 
         internal override Task<CollectionCache> GetCollectionCacheAsync()
         {
-            return this.DocumentQueryClient.Value.GetCollectionCacheAsync();
+            return this.DocumentQueryClient.GetCollectionCacheAsync();
         }
 
         internal override Task<IRoutingMapProvider> GetRoutingMapProviderAsync()
         {
-            return this.DocumentQueryClient.Value.GetRoutingMapProviderAsync();
+            return this.DocumentQueryClient.GetRoutingMapProviderAsync();
         }
 
         internal override Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken)
         {
-            return this.DocumentQueryClient.Value.GetQueryPartitionProviderAsync(cancellationToken);
+            return this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
         }
 
         internal override async Task<FeedResponse<CosmosElement>> ExecuteItemQueryAsync(
@@ -79,22 +79,22 @@ namespace Microsoft.Azure.Cosmos
 
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            return this.DocumentQueryClient.Value.GetDefaultConsistencyLevelAsync();
+            return this.DocumentQueryClient.GetDefaultConsistencyLevelAsync();
         }
 
         internal override Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
-            return this.DocumentQueryClient.Value.GetDesiredConsistencyLevelAsync();
+            return this.DocumentQueryClient.GetDesiredConsistencyLevelAsync();
         }
 
         internal override Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
         {
-            return this.DocumentQueryClient.Value.EnsureValidOverwrite(desiredConsistencyLevel);
+            return this.DocumentQueryClient.EnsureValidOverwrite(desiredConsistencyLevel);
         }
 
         internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
         {
-            return this.DocumentQueryClient.Value.GetPartitionKeyRangeCache();
+            return this.DocumentQueryClient.GetPartitionKeyRangeCache();
         }
 
         internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(

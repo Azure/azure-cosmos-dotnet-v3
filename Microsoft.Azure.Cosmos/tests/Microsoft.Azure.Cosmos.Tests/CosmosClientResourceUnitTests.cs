@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.IO;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 cosmosJsonSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null);
+                documentClient: null,
+                documentQueryClient: new Mock<IDocumentQueryClient>().Object);
 
             CosmosDatabaseCore db = new CosmosDatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "/dbs/" + databaseId);

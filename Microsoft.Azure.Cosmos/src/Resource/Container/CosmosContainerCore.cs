@@ -20,6 +20,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosContainerCore : CosmosContainer
     {
+        /// <summary>
+        /// Only used for unit testing
+        /// </summary>
         internal CosmosContainerCore() {}
 
         internal CosmosContainerCore(

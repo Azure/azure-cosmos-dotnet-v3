@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -24,6 +25,8 @@ namespace Microsoft.Azure.Cosmos
         internal abstract CosmosClient Client { get; }
 
         internal abstract DocumentClient DocumentClient { get; }
+
+        internal abstract IDocumentQueryClient DocumentQueryClient { get; }
 
         internal abstract CosmosJsonSerializer JsonSerializer { get; }
 
