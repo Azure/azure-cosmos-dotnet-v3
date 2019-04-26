@@ -741,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id: nonPartitionItemId);
 
                 Assert.IsNotNull(response.Resource);
-                Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
+                Assert.AreEqual(response.StatusCode, HttpStatusCode.OK);
                 Assert.AreEqual(response.Resource.id, nonPartitionItemId);
 
                 //Adding item to fixed container with CosmosContainerSettings.NonePartitionKeyValue.
@@ -752,7 +752,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsNotNull(createResponseWithoutPk.Resource);
                 Assert.AreEqual(createResponseWithoutPk.StatusCode, HttpStatusCode.Created);
-                Assert.IsNotNull(createResponseWithoutPk.Resource.id == itemWithoutPK.id);
+                Assert.AreEqual(createResponseWithoutPk.Resource.id, itemWithoutPK.id);
 
                 //Updating item on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 itemWithoutPK.status = "updatedStatus";
@@ -763,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsNotNull(updateResponseWithoutPk.Resource);
                 Assert.AreEqual(updateResponseWithoutPk.StatusCode, HttpStatusCode.OK);
-                Assert.IsNotNull(updateResponseWithoutPk.Resource.id == itemWithoutPK.id);
+                Assert.AreEqual(updateResponseWithoutPk.Resource.id, itemWithoutPK.id);
 
                 //Adding item to fixed container with non-none PK.
                 ToDoActivityAfterMigration itemWithPK = CreateRandomToDoActivityAfterMigration("TestPk");
@@ -773,7 +773,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsNotNull(createResponseWithPk.Resource);
                 Assert.AreEqual(createResponseWithPk.StatusCode, HttpStatusCode.Created);
-                Assert.IsNotNull(createResponseWithPk.Resource.id == itemWithPK.id);
+                Assert.AreEqual(createResponseWithPk.Resource.id, itemWithPK.id);
 
                 //Quering items on fixed container.
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
@@ -786,13 +786,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 //Reading item from partitioned container with CosmosContainerSettings.NonePartitionKeyValue.
-                CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
+                CosmosItemResponse<ToDoActivity> undefinedItemResponse = await Container.Items.ReadItemAsync<ToDoActivity>(
                     partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                     id: undefinedPartitionItemId);
 
                 Assert.IsNotNull(undefinedItemResponse.Resource);
                 Assert.AreEqual(undefinedItemResponse.StatusCode, HttpStatusCode.OK);
-                Assert.IsNotNull(undefinedItemResponse.Resource.id == undefinedPartitionItemId);
+                Assert.AreEqual(undefinedItemResponse.Resource.id, undefinedPartitionItemId);
             }
             finally
             {
