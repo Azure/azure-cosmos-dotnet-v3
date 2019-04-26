@@ -234,7 +234,6 @@ namespace Microsoft.Azure.Cosmos
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 Properties = this.Properties,
-                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
             };
         }
 
@@ -257,10 +256,5 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
-
-        /// <summary>
-        /// Gets or sets the flag that enables skip take across partitions.
-        /// </summary>
-        internal bool EnableCrossPartitionSkipTake { get; set; }
     }
 }
