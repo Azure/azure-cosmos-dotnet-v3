@@ -2573,6 +2573,116 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey);
         }
 
+        [TestMethod]
+        public async Task TestQueryCrossPartitionOffsetLimit()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+
+            Random rand = new Random(seed);
+            List<Person> people = new List<Person>();
+
+            for (int i = 0; i < numberOfDocuments; i++)
+            {
+                Person person = GetRandomPerson(rand);
+                for (int j = 0; j < rand.Next(0, 4); j++)
+                {
+                    people.Add(person);
+                }
+            }
+
+            List<string> documents = new List<string>();
+            people = people.OrderBy((person) => Guid.NewGuid()).ToList();
+            foreach (Person person in people)
+            {
+                documents.Add(JsonConvert.SerializeObject(person));
+            }
+
+            await CreateIngestQueryDelete(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                documents,
+                this.TestQueryCrossPartitionOffsetLimit,
+                "/id");
+        }
+
+        private async Task TestQueryCrossPartitionOffsetLimit(
+            CosmosContainer container,
+            IEnumerable<Document> documents)
+        {
+            // Check error on skip take for partitioned collection.
+            try
+            {
+                CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions()
+                {
+                    EnableCrossPartitionQuery = true,
+                    MaxItemCount = 3,
+                    MaxBufferedItemCount = 1000,
+                    EnableCrossPartitionSkipTake = false,
+                };
+
+                string query = "SELECT * FROM c OFFSET 10 LIMIT 10";
+                List<JToken> actualFromQueryWithContinutionToken = await QueryWithoutContinuationTokens<JToken>(
+                    container,
+                    query,
+                    3,
+                    queryRequestOptions);
+
+                Assert.Fail("Expected exception for Cross Partition OFFSET LIMIT");
+            }
+            catch (Exception ex)
+            {
+                if (!(ex.Message.Contains("Cross Partition OFFSET / LIMIT is not supported.")))
+                {
+                    Assert.Fail("Wrong exception");
+                }
+            }
+
+            foreach (int offsetCount in new int[] { 0, 1, 10, 100, documents.Count() })
+            {
+                foreach (int limitCount in new int[] { 0, 1, 10, 100, documents.Count() })
+                {
+                    foreach (int pageSize in new int[] { 1, 10, 100, documents.Count() })
+                    {
+                        string query = $@"
+                            SELECT VALUE c.guid
+                            FROM c
+                            ORDER BY c.guid
+                            OFFSET {offsetCount} LIMIT {limitCount}";
+
+                        CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions()
+                        {
+                            MaxItemCount = 3,
+                            MaxBufferedItemCount = 1000,
+                            EnableCrossPartitionSkipTake = true,
+                        };
+
+                        IEnumerable<JToken> expectedResults = documents.Select(document => document.propertyBag);
+                        // ORDER BY
+                        expectedResults = expectedResults.OrderBy(x => x["guid"].Value<string>(), StringComparer.Ordinal);
+
+                        // SELECT VALUE c.name
+                        expectedResults = expectedResults.Select(document => document["guid"]);
+
+                        // SKIP TAKE
+                        expectedResults = expectedResults.Skip(offsetCount);
+                        expectedResults = expectedResults.Take(limitCount);
+
+                        List<JToken> actualFromQueryWithoutContinutionToken = await QueryWithoutContinuationTokens<JToken>(
+                            container,
+                            query,
+                            3,
+                            queryRequestOptions);
+                        Assert.IsTrue(
+                            expectedResults.SequenceEqual(actualFromQueryWithoutContinutionToken, JsonTokenEqualityComparer.Value),
+                            $@"
+                                {query} (without continuations) didn't match
+                                expected: {JsonConvert.SerializeObject(expectedResults)}
+                                actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionToken)}");
+                    }
+                }
+            }
+        }
+
         private async Task TestQueryCrossPartitionTopHelper(CosmosContainer container, IEnumerable<Document> documents)
         {
             List<string> queryFormats = new List<string>()
