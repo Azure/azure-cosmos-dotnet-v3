@@ -12,12 +12,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
     {
-        private readonly CosmosContainer container;
+        private readonly CosmosContainerCore container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
 
         public FeedProcessorFactoryCore(
-            CosmosContainer container,
+            CosmosContainerCore container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             DocumentServiceLeaseCheckpointer leaseCheckpointer)
         {

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void HandlerOrder()
         {
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             Type[] types = new Type[]
             {
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestPreProcessingHandler()
         {
             CosmosRequestHandler preProcessHandler = new PreProcessingTestHandler();
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
 
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
             Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = testHandler;
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient();
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = testHandler;

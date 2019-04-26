@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -153,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
                 enableCpuMonitor: cosmosClientConfiguration.EnableCpuMonitor,
                 storeClientFactory: cosmosClientConfiguration.StoreClientFactory);
 
-            Init(
+            this.Init(
                 cosmosClientConfiguration,
                 documentClient);
         }
@@ -175,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(documentClient));
             }
 
-            Init(cosmosClientConfiguration, documentClient);
+            this.Init(cosmosClientConfiguration, documentClient);
         }
 
         /// <summary>
@@ -236,7 +237,17 @@ namespace Microsoft.Azure.Cosmos
             this.AccountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
 
             this.RequestHandler = clientPipelineBuilder.Build();
-            this.Databases = new CosmosDatabasesCore(this);
+
+            CosmosClientContext clientContext = new CosmosClientContextCore(
+                this,
+                this.Configuration,
+                this.CosmosJsonSerializer,
+                this.ResponseFactory,
+                this.RequestHandler,
+                this.DocumentClient,
+                new DocumentQueryClient(this.DocumentClient));
+
+            this.Databases = new CosmosDatabasesCore(clientContext);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 
@@ -258,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
+            this.Dispose(true);
             GC.SuppressFinalize(this);
         }
     }
