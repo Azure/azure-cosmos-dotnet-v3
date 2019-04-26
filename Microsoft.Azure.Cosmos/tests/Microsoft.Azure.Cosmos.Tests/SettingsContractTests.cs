@@ -329,6 +329,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(uk.Paths);
         }
 
+        [TestMethod]
+        public void CosmosAccountSettingsSerializationTest()
+        {
+            CosmosAccountSettings cosmosAccountSettings = new CosmosAccountSettings();
+            cosmosAccountSettings.Id = "someId";
+            cosmosAccountSettings.EnableMultipleWriteLocations = true;
+            cosmosAccountSettings.ResourceId = "/uri";
+            cosmosAccountSettings.ETag = "etag";
+            cosmosAccountSettings.WriteLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name="region1", DatabaseAccountEndpoint = "endpoint1" } };
+            cosmosAccountSettings.ReadLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name = "region2", DatabaseAccountEndpoint = "endpoint2" } };
+            cosmosAccountSettings.AddressesLink = "link";
+            cosmosAccountSettings.ConsistencySetting = new CosmosConsistencySettings() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
+            cosmosAccountSettings.ReplicationPolicy = new ReplicationPolicy() { AsyncReplication = true };
+            cosmosAccountSettings.ReadPolicy = new ReadPolicy() { PrimaryReadCoefficient = 10 };
+
+            string cosmosSerialized = SettingsContractTests.CosmosSerialize(cosmosAccountSettings);
+
+            CosmosAccountSettings accountDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosAccountSettings>(cosmosSerialized);
+
+            Assert.AreEqual(cosmosAccountSettings.Id, accountDeserSettings.Id);
+            Assert.AreEqual(cosmosAccountSettings.EnableMultipleWriteLocations, accountDeserSettings.EnableMultipleWriteLocations);
+            Assert.AreEqual(cosmosAccountSettings.ResourceId, accountDeserSettings.ResourceId);
+            Assert.AreEqual(cosmosAccountSettings.ETag, accountDeserSettings.ETag);
+            Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].Name, accountDeserSettings.WriteLocationsInternal[0].Name);
+            Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].DatabaseAccountEndpoint, accountDeserSettings.WriteLocationsInternal[0].DatabaseAccountEndpoint);
+            Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].Name, accountDeserSettings.ReadLocationsInternal[0].Name);
+            Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].DatabaseAccountEndpoint, accountDeserSettings.ReadLocationsInternal[0].DatabaseAccountEndpoint);
+            Assert.AreEqual(cosmosAccountSettings.AddressesLink, accountDeserSettings.AddressesLink);
+            Assert.AreEqual(cosmosAccountSettings.ConsistencySetting.DefaultConsistencyLevel, accountDeserSettings.ConsistencySetting.DefaultConsistencyLevel);
+            Assert.AreEqual(cosmosAccountSettings.ReplicationPolicy.AsyncReplication, accountDeserSettings.ReplicationPolicy.AsyncReplication);
+            Assert.AreEqual(cosmosAccountSettings.ReadPolicy.PrimaryReadCoefficient, accountDeserSettings.ReadPolicy.PrimaryReadCoefficient);
+        }
+
         private static T CosmosDeserialize<T>(string payload)
         {
             using (MemoryStream ms = new MemoryStream())
