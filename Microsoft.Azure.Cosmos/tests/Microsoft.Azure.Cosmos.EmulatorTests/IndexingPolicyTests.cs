@@ -91,6 +91,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestCommon.DeleteAllDatabasesAsync();
         }
 
+        private static async Task RetryOnNonAssertFailure(Func<Task> function, int retryCount = 5)
+        {
+            while (retryCount-- > 0)
+            {
+                try
+                {
+                    await function();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (ex.GetType() == typeof(AssertFailedException))
+                    {
+                        throw;
+                    }
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(10));
+            }
+        }
+
         [TestMethod]
         public async Task DefaultIndexingPolicy()
         {
@@ -221,6 +242,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CompositeIndex()
         {
+            await RetryOnNonAssertFailure(this.CompositeIndexImplementation);
+        }
+
+        private async Task CompositeIndexImplementation()
+        { 
             Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
                 Automatic = true,

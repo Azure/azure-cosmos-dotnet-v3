@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Can be used to serve queries like: SELECT * FROM docs d WHERE d.prop = 5.
     /// </remarks>
-    public sealed class HashIndex : Index, ICloneable
+    internal sealed class HashIndex : Index, ICloneable
     {
         internal HashIndex()
             : base(IndexKind.Hash)
