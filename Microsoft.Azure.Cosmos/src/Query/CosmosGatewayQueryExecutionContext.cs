@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<FeedResponse<CosmosElement>> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            if(this.queryContext.QueryRequestOptions.PartitionKey != null || !this.queryContext.ResourceTypeEnum.IsPartitioned())
+            if(this.LogicalPartitionKeyProvided())
             {
                 return await this.queryContext.ExecuteQueryAsync(
                     this.queryContext.SqlQuerySpec,
@@ -163,6 +163,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
                     CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.ContinuationToken);
                 });
+        }
+
+        private bool LogicalPartitionKeyProvided()
+        {
+            return this.queryContext.QueryRequestOptions.PartitionKey != null || !this.queryContext.ResourceTypeEnum.IsPartitioned();
         }
 
         public void Dispose()

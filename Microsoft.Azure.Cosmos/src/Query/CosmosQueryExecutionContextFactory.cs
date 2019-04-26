@@ -110,6 +110,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     collection = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
                 }
+
+                if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
+                {
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
+                }
             }
 
             if(collection == null)
