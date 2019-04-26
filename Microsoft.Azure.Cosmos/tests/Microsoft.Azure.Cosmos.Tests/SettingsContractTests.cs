@@ -293,7 +293,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = Guid.NewGuid().ToString();
             string pkPath = "/partitionKey";
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerSettings), "Id", "UniqueKeyPolicy", "DefaultTimeToLive", "IndexingPolicy", "TimeToLivePropertyPath");
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerSettings), 
+                "Id", 
+                "UniqueKeyPolicy", 
+                "DefaultTimeToLive", 
+                "IndexingPolicy", 
+                "TimeToLivePropertyPath",
+                "PartitionKeyDefinitionVersion");
 
             // Two equivalent definitions 
             CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath);
