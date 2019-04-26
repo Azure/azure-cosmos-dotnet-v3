@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the Partitioning scheme version used. <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         /// </summary>
+        [JsonIgnore]
         public virtual PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
         {
             get
