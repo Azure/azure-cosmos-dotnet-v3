@@ -114,6 +114,21 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
                 return 0;
             }
 
+            if (producer1.HasMoreResults && !producer2.HasMoreResults)
+            {
+                return -1;
+            }
+
+            if (!producer1.HasMoreResults && producer2.HasMoreResults)
+            {
+                return 1;
+            }
+
+            if (!producer1.HasMoreResults && !producer2.HasMoreResults)
+            {
+                return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
+            }
+           
             OrderByQueryResult result1 = new OrderByQueryResult(producer1.Current);
             OrderByQueryResult result2 = new OrderByQueryResult(producer2.Current);
 
@@ -127,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 
             // If there is a tie, then break the tie by picking the one from the left most partition.
             return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
+           
         }
 
         /// <summary>

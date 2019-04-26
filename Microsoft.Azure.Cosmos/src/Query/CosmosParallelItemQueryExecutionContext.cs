@@ -147,10 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 await currentItemProducerTree.MoveNextAsync(token);
             }
 
-            if (currentItemProducerTree.HasMoreResults)
-            {
-                this.PushCurrentItemProducerTree(currentItemProducerTree);
-            }
+            this.PushCurrentItemProducerTree(currentItemProducerTree);
 
             // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
             return new FeedResponse<CosmosElement>(
@@ -299,6 +296,17 @@ namespace Microsoft.Azure.Cosmos.Query
                     return 0;
                 }
 
+                if (documentProducerTree1.HasMoreResults && !documentProducerTree2.HasMoreResults)
+                {
+                    return -1;
+                }
+
+                if (!documentProducerTree1.HasMoreResults && documentProducerTree2.HasMoreResults)
+                {
+                    return 1;
+                }
+
+                // Either both don't have results or both do.
                 PartitionKeyRange partitionKeyRange1 = documentProducerTree1.PartitionKeyRange;
                 PartitionKeyRange partitionKeyRange2 = documentProducerTree2.PartitionKeyRange;
                 return string.CompareOrdinal(
