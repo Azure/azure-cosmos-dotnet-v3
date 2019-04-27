@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract Guid GetGuidValue(IJsonNavigatorNode guidNode);
 
         /// <inheritdoc />
-        public abstract byte[] GetBinaryValue(IJsonNavigatorNode binaryNode);
+        public abstract IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode);
 
         /// <inheritdoc />
         public abstract bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue);

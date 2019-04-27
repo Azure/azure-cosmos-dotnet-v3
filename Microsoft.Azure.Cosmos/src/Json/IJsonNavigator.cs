@@ -82,14 +82,14 @@ namespace Microsoft.Azure.Cosmos.Json
         long GetInt64Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
-        /// Gets the numeric value for a node as a single precision number if the number is expressed as a double.
+        /// Gets the numeric value for a node as a single precision number if the number is expressed as a floating point.
         /// </summary>
         /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
         float GetFloat32Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
-        /// Gets the numeric value for a node as double precision number if the number is expressed as a double.
+        /// Gets the numeric value for a node as double precision number if the number is expressed as a floating point.
         /// </summary>
         /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="binaryNode">The <see cref="IJsonNavigatorNode"/> of the node to get the binary value from.</param>
         /// <returns>The binary value from the node</returns>
-        byte[] GetBinaryValue(IJsonNavigatorNode binaryNode);
+        IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode);
 
         /// <summary>
         /// Tries to get the buffered binary value from a node.

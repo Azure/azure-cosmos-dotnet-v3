@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new NotImplementedException();
             }
 
-            public override void WriteBinaryValue(byte[] value)
+            public override void WriteBinaryValue(IReadOnlyList<byte> value)
             {
                 throw new NotImplementedException();
             }

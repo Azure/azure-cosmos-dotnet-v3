@@ -14,14 +14,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public static CosmosNumber Create(
+        public static CosmosNumber64 Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
         {
             return new LazyCosmosNumber64(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosNumber Create(Number64 number)
+        public static CosmosNumber64 Create(Number64 number)
         {
             return new EagerCosmosNumber64(number);
         }

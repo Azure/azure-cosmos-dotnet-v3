@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class LazyCosmosGuid : CosmosGuid
         {
-            private readonly Lazy<Guid> lazyString;
+            private readonly Lazy<Guid> lazyGuid;
 
             public LazyCosmosGuid(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentOutOfRangeException($"{nameof(jsonNavigatorNode)} must be a {JsonNodeType.Guid} node. Got {type} instead.");
                 }
 
-                this.lazyString = new Lazy<Guid>(() =>
+                this.lazyGuid = new Lazy<Guid>(() =>
                 {
                     return jsonNavigator.GetGuidValue(jsonNavigatorNode);
                 });
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 get
                 {
-                    return this.lazyString.Value;
+                    return this.lazyGuid.Value;
                 }
             }
         }

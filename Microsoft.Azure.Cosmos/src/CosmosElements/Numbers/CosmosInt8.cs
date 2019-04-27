@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosUInt32.cs" company="Microsoft Corporation">
+// <copyright file="CosmosInt8.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosUInt32 : CosmosNumber
+    internal abstract partial class CosmosInt8 : CosmosNumber
     {
-        protected CosmosUInt32()
-            : base(CosmosNumberType.UInt32)
+        protected CosmosInt8()
+            : base(CosmosNumberType.Int8)
         {
         }
 
@@ -19,16 +19,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool IsInteger => true;
 
-        public static CosmosNumber Create(
+        public static CosmosInt8 Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
         {
-            return new LazyCosmosUInt32(jsonNavigator, jsonNavigatorNode);
+            return new LazyCosmosInt8(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosNumber Create(uint number)
+        public static CosmosInt8 Create(sbyte number)
         {
-            return new EagerCosmosUInt32(number);
+            return new EagerCosmosInt8(number);
         }
 
         public override double? AsFloatingPoint()
@@ -48,9 +48,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 throw new ArgumentNullException($"{nameof(jsonWriter)}");
             }
 
-            jsonWriter.WriteUInt32Value(this.GetValue());
+            jsonWriter.WriteInt8Value(this.GetValue());
         }
 
-        protected abstract uint GetValue();
+        protected abstract sbyte GetValue();
     }
 }

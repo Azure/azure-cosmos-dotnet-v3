@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using Microsoft.Azure.Cosmos.Json;
+
     internal abstract class CosmosNumber : CosmosElement
     {
         protected CosmosNumber(CosmosNumberType cosmosNumberType)

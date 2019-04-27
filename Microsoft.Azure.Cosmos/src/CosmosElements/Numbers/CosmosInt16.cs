@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosFloat32.cs" company="Microsoft Corporation">
+// <copyright file="CosmosInt16.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
@@ -8,37 +8,37 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosFloat32 : CosmosNumber
+    internal abstract partial class CosmosInt16 : CosmosNumber
     {
-        protected CosmosFloat32()
-            : base(CosmosNumberType.Float32)
+        protected CosmosInt16()
+            : base(CosmosNumberType.Int16)
         {
         }
 
-        public override bool IsFloatingPoint => true;
+        public override bool IsFloatingPoint => false;
 
-        public override bool IsInteger => false;
+        public override bool IsInteger => true;
 
-        public static CosmosNumber Create(
+        public static CosmosInt16 Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
         {
-            return new LazyCosmosFloat32(jsonNavigator, jsonNavigatorNode);
+            return new LazyCosmosInt16(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosNumber Create(float number)
+        public static CosmosInt16 Create(short number)
         {
-            return new EagerCosmosFloat32(number);
+            return new EagerCosmosInt16(number);
         }
 
         public override double? AsFloatingPoint()
         {
-            return this.GetValue();
+            return (double)this.GetValue();
         }
 
         public override long? AsInteger()
         {
-            return Convert.ToInt64(this.GetValue());
+            return this.GetValue();
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)
@@ -48,9 +48,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 throw new ArgumentNullException($"{nameof(jsonWriter)}");
             }
 
-            jsonWriter.WriteFloat32Value(this.GetValue());
+            jsonWriter.WriteInt16Value(this.GetValue());
         }
 
-        protected abstract float GetValue();
+        protected abstract short GetValue();
     }
 }

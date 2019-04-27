@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosFloat64.cs" company="Microsoft Corporation">
+// <copyright file="CosmosFloat32.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosFloat64 : CosmosNumber
+    internal abstract partial class CosmosFloat32 : CosmosNumber
     {
-        protected CosmosFloat64()
-            : base(CosmosNumberType.Float64)
+        protected CosmosFloat32()
+            : base(CosmosNumberType.Float32)
         {
         }
 
@@ -19,16 +19,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool IsInteger => false;
 
-        public static CosmosNumber Create(
+        public static CosmosFloat32 Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
         {
-            return new LazyCosmosFloat64(jsonNavigator, jsonNavigatorNode);
+            return new LazyCosmosFloat32(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosNumber Create(float number)
+        public static CosmosFloat32 Create(float number)
         {
-            return new EagerCosmosFloat64(number);
+            return new EagerCosmosFloat32(number);
         }
 
         public override double? AsFloatingPoint()
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override long? AsInteger()
         {
-            return Convert.ToInt64(this.GetValue());
+            return null;
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)
@@ -48,9 +48,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 throw new ArgumentNullException($"{nameof(jsonWriter)}");
             }
 
-            jsonWriter.WriteFloat64Value(this.GetValue());
+            jsonWriter.WriteFloat32Value(this.GetValue());
         }
 
-        protected abstract double GetValue();
+        protected abstract float GetValue();
     }
 }

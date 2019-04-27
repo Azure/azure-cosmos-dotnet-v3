@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes a Binary value into the internal buffer.
         /// </summary>
         /// <param name="value">The value of the bytes to write.</param>
-        void WriteBinaryValue(byte[] value);
+        void WriteBinaryValue(IReadOnlyList<byte> value);
 
         /// <summary>
         /// Writes current token from a json reader to the internal buffer.

@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteGuidValue(Guid value);
 
         /// <inheritdoc />
-        public abstract void WriteBinaryValue(byte[] value);
+        public abstract void WriteBinaryValue(IReadOnlyList<byte> value);
 
         /// <summary>
         /// Writes current token from a json reader to the internal buffer.
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         }
                         else
                         {
-                            byte[] value = jsonNavigator.GetBinaryValue(jsonNavigatorNode);
+                            IReadOnlyList<byte> value = jsonNavigator.GetBinaryValue(jsonNavigatorNode);
                             this.WriteBinaryValue(value);
                         }
 

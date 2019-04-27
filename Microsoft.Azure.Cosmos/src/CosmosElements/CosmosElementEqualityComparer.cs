@@ -16,9 +16,7 @@
             {
                 return false;
             }
-            else if (number1.NumberType == CosmosNumberType.Number64
-                     || number1.NumberType == CosmosNumberType.Float32
-                     || number1.NumberType == CosmosNumberType.Float64)
+            else if (number1.NumberType == CosmosNumberType.Number64)
             {
                 double double1;
                 if (number1.IsFloatingPoint)
@@ -41,6 +39,10 @@
                 }
 
                 return double1 == double2;
+            }
+            else if (number1.IsFloatingPoint)
+            {
+                return number1.AsFloatingPoint() == number2.AsFloatingPoint();
             }
             else
             {

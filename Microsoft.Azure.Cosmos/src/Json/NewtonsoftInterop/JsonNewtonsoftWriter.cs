@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class JsonNewtonsoftWriter :  Microsoft.Azure.Cosmos.Json.JsonWriter
     {
@@ -123,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
             throw new NotImplementedException();
         }
 
-        public override void WriteBinaryValue(byte[] value)
+        public override void WriteBinaryValue(IReadOnlyList<byte> value)
         {
             throw new NotImplementedException();
         }

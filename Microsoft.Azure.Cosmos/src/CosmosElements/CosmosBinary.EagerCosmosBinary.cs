@@ -6,13 +6,14 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosBinary : CosmosElement
     {
         private sealed class EagerCosmosBinary : CosmosBinary
         {
-            public EagerCosmosBinary(byte[] value)
+            public EagerCosmosBinary(IReadOnlyList<byte> value)
             {
                 if (value == null)
                 {
@@ -22,10 +23,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.Value = value;
             }
 
-            public override byte[] Value
-            {
-                get;
-            }
+            public override IReadOnlyList<byte> Value { get; }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {

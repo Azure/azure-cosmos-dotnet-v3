@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new NotImplementedException();
             }
 
-            public override byte[] GetBinaryValue(IJsonNavigatorNode binaryNode)
+            public override IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
             {
                 throw new NotImplementedException();
             }

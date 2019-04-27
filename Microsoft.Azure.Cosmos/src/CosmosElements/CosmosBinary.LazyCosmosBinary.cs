@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract partial class CosmosBinary : CosmosElement
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
-            private readonly Lazy<byte[]> lazyBytes;
+            private readonly Lazy<IReadOnlyList<byte>> lazyBytes;
 
             public LazyCosmosBinary(IJsonNavigator jsonNavigator, IJsonNavigatorNode jsonNavigatorNode)
             {
@@ -36,13 +37,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
-                this.lazyBytes = new Lazy<byte[]>(() =>
+                this.lazyBytes = new Lazy<IReadOnlyList<byte>>(() =>
                 {
                     return this.jsonNavigator.GetBinaryValue(this.jsonNavigatorNode);
                 });
             }
 
-            public override byte[] Value
+            public override IReadOnlyList<byte> Value
             {
                 get
                 {

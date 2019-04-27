@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return new NewtonsoftNode(jArray[index], this.JTokenToJsonNodeType(jArray[index]));
         }
 
+        public bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue)
+        {
+            throw new NotImplementedException();
+        }
+
         public int GetArrayItemCount(IJsonNavigatorNode arrayNode)
         {
             JArray jArray = ((NewtonsoftNode)arrayNode).JToken as JArray;
@@ -129,6 +134,51 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public string GetStringValue(IJsonNavigatorNode stringNode)
         {
             return (string)((NewtonsoftNode)stringNode).JToken;
+        }
+
+        public sbyte GetInt8Value(IJsonNavigatorNode numberNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public short GetInt16Value(IJsonNavigatorNode numberNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int GetInt32Value(IJsonNavigatorNode numberNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public long GetInt64Value(IJsonNavigatorNode numberNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public float GetFloat32Value(IJsonNavigatorNode numberNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public double GetFloat64Value(IJsonNavigatorNode numberNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public uint GetUInt32Value(IJsonNavigatorNode numberNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Guid GetGuidValue(IJsonNavigatorNode guidNode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
+        {
+            throw new NotImplementedException();
         }
 
         public bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out IReadOnlyList<byte> bufferedStringValue)
