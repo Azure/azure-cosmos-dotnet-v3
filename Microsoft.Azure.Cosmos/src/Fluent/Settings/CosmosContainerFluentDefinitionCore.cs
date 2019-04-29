@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private int? defaultTimeToLive;
         private IndexingPolicy indexingPolicy;
         private int throughput;
+        private string timeToLivePropertyPath;
 
         public CosmosContainerFluentDefinitionCore(
             CosmosContainers cosmosContainers,
@@ -37,6 +38,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
             }
 
             this.throughput = throughput;
+            return this;
+        }
+
+        public override CosmosContainerFluentDefinition WithTimeToLivePropertyPath(string propertyPath)
+        {
+            if (string.IsNullOrEmpty(propertyPath))
+            {
+                throw new ArgumentNullException(nameof(propertyPath));
+            }
+
+            this.timeToLivePropertyPath = propertyPath;
             return this;
         }
 
@@ -109,6 +121,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             if (this.defaultTimeToLive.HasValue)
             {
                 settings.DefaultTimeToLive = this.defaultTimeToLive.Value;
+            }
+
+            if (this.timeToLivePropertyPath != null)
+            {
+                settings.TimeToLivePropertyPath = timeToLivePropertyPath;
             }
 
             switch (this.fluentSettingsOperation)
