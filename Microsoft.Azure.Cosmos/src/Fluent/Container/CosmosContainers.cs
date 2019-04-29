@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    using System;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -22,6 +23,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string name,
             string partitionKeyPath)
         {
+            if (string.IsNullOrEmpty(partitionKeyPath))
+            {
+                throw new ArgumentNullException(nameof(partitionKeyPath));
+            }
+
             return new CosmosContainerFluentDefinitionCore(cosmosContainers, name, FluentSettingsOperation.Create, partitionKeyPath);
         }
 
