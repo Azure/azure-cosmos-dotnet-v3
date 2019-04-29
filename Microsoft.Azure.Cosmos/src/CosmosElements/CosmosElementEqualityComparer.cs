@@ -12,32 +12,57 @@
 
         public bool Equals(CosmosNumber number1, CosmosNumber number2)
         {
-            double double1;
-            if (number1.IsFloatingPoint)
+            if (number1.NumberType != number2.NumberType)
             {
-                double1 = number1.AsFloatingPoint().Value;
+                return false;
+            }
+            else if (number1.NumberType == CosmosNumberType.Number64)
+            {
+                double double1;
+                if (number1.IsFloatingPoint)
+                {
+                    double1 = number1.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    double1 = number1.AsInteger().Value;
+                }
+
+                double double2;
+                if (number2.IsFloatingPoint)
+                {
+                    double2 = number2.AsFloatingPoint().Value;
+                }
+                else
+                {
+                    double2 = number2.AsInteger().Value;
+                }
+
+                return double1 == double2;
+            }
+            else if (number1.IsFloatingPoint)
+            {
+                return number1.AsFloatingPoint() == number2.AsFloatingPoint();
             }
             else
             {
-                double1 = number1.AsInteger().Value;
+                return number1.AsInteger() == number2.AsInteger();
             }
-
-            double double2;
-            if (number2.IsFloatingPoint)
-            {
-                double2 = number2.AsFloatingPoint().Value;
-            }
-            else
-            {
-                double2 = number2.AsInteger().Value;
-            }
-
-            return double1 == double2;
         }
 
         public bool Equals(CosmosString string1, CosmosString string2)
         {
             return string1.Value.Equals(string2.Value);
+        }
+
+        public bool Equals(CosmosGuid guid1, CosmosGuid guid2)
+        {
+            return guid1.Value.Equals(guid2.Value);
+        }
+
+        public bool Equals(CosmosBinary binary1, CosmosBinary binary2)
+        {
+            return binary1.Value.SequenceEqual(binary2.Value);
         }
 
         public bool Equals(CosmosBoolean bool1, CosmosBoolean bool2)
@@ -140,6 +165,16 @@
                     return this.Equals(
                         (cosmosElement1 as CosmosString),
                         (cosmosElement2 as CosmosString));
+
+                case CosmosElementType.Guid:
+                    return this.Equals(
+                        (cosmosElement1 as CosmosGuid),
+                        (cosmosElement2 as CosmosGuid));
+
+                case CosmosElementType.Binary:
+                    return this.Equals(
+                        (cosmosElement1 as CosmosBinary),
+                        (cosmosElement2 as CosmosBinary));
 
                 default:
                     throw new ArgumentException();
