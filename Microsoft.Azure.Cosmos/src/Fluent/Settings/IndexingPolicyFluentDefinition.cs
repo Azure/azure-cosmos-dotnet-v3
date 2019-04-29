@@ -3,69 +3,33 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
-    using System.Collections.Generic;
-
     /// <summary>
     /// <see cref="IndexingPolicy"/> fluent definition.
     /// </summary>
-    public class IndexingPolicyFluentDefinition : FluentSettings<CosmosContainerFluentDefinition>
+    public abstract class IndexingPolicyFluentDefinition : FluentSettings<CosmosContainerFluentDefinition>
     {
-        private readonly List<CompositeIndexFluentDefinition> compositeIndexBuilders = new List<CompositeIndexFluentDefinition>();
-        private PathsFluentDefinition includedPathsBuilder;
-        private PathsFluentDefinition excludedPathsBuilder;
-        private IndexingMode indexingMode;
-
-        internal IndexingPolicyFluentDefinition(CosmosContainerFluentDefinition containerSettings) : base(containerSettings)
-        {
-        }
-
         /// <summary>
-        /// Defines the <see cref="CosmosContainer"/> <see cref="IndexingMode"/>.
+        /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingMode"/>.
         /// </summary>
         /// <param name="indexingMode">An <see cref="IndexingMode"/></param>
         /// <remarks>
         /// If multiple calls are made to this method within the same <see cref="IndexingPolicyFluentDefinition"/>, the last one will apply.
         /// </remarks>
-        public virtual IndexingPolicyFluentDefinition WithIndexingMode(IndexingMode indexingMode)
-        {
-            this.indexingMode = indexingMode;
-            return this;
-        }
+        public abstract IndexingPolicyFluentDefinition WithIndexingMode(IndexingMode indexingMode);
 
         /// <summary>
         /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingPolicy.IncludedPaths"/>.
         /// </summary>
-        public virtual PathsFluentDefinition IncludedPaths()
-        {
-            if (this.includedPathsBuilder == null)
-            {
-                this.includedPathsBuilder = new PathsFluentDefinition(this);
-            }
-
-            return this.includedPathsBuilder;
-        }
+        public abstract PathsFluentDefinition IncludedPaths();
 
         /// <summary>
-        /// Defines the <see cref="CosmosContainer"/> <see cref="IndexingPolicy.ExcludedPaths"/>.
+        /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingPolicy.ExcludedPaths"/>.
         /// </summary>
-        public virtual PathsFluentDefinition ExcludedPaths()
-        {
-            if (this.excludedPathsBuilder == null)
-            {
-                this.excludedPathsBuilder = new PathsFluentDefinition(this);
-            }
-
-            return this.excludedPathsBuilder;
-        }
+        public abstract PathsFluentDefinition ExcludedPaths();
 
         /// <summary>
-        /// Defines a Composite Index in the current <see cref="CosmosContainer"/> definition.
+        /// Defines a Composite Index in the current <see cref="CosmosContainer"/>'s definition.
         /// </summary>
-        public virtual CompositeIndexFluentDefinition WithCompositeIndex()
-        {
-            CompositeIndexFluentDefinition newBuilder = new CompositeIndexFluentDefinition(this);
-            this.compositeIndexBuilders.Add(newBuilder);
-            return newBuilder;
-        }
+        public abstract CompositeIndexFluentDefinition WithCompositeIndex();
     }
 }

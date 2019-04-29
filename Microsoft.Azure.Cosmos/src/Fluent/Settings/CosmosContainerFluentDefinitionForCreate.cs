@@ -3,36 +3,22 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
-    using System.Collections.Generic;
-
     /// <summary>
     /// <see cref="CosmosContainer"/> fluent definition for creation flows.
     /// </summary>
-    public class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition
+    public abstract class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition
     {
-        private readonly List<UniqueKeyFluentDefinition> uniqueueKeyBuilders = new List<UniqueKeyFluentDefinition>();
-
         /// <summary>
-        /// Empty constructor that can be used for unit testing
+        /// Sets the throughput provisioned for the Azure Cosmos container in measurement of Requests-per-Unit in the Azure Cosmos DB service.
         /// </summary>
-        public CosmosContainerFluentDefinitionForCreate() { }
-
-        internal CosmosContainerFluentDefinitionForCreate(
-            CosmosContainers cosmosContainers, 
-            string name, 
-            string partitionKeyPath)
-            : base (cosmosContainers, name, FluentSettingsOperation.Create)
-        {
-        }
+        /// <remarks>
+        /// If multiple calls are made to this method within the same <see cref="CosmosContainerFluentDefinition"/>, the last one will apply.
+        /// </remarks>
+        public abstract CosmosContainerFluentDefinition WithThroughput(int throughput);
 
         /// <summary>
         /// Defines a Unique Key policy for this Azure Cosmos container.
         /// </summary>
-        public virtual UniqueKeyFluentDefinition WithUniqueKey()
-        {
-            UniqueKeyFluentDefinition newBuilder = new UniqueKeyFluentDefinition(this);
-            this.uniqueueKeyBuilders.Add(newBuilder);
-            return newBuilder;
-        }
+        public abstract UniqueKeyFluentDefinition WithUniqueKey();
     }
 }

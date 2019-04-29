@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="name">Azure Cosmos container name to create.</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
         /// <returns>A fluent definition of an Azure Cosmos container.</returns>
-        public static CosmosContainerFluentDefinition Create(
+        public static CosmosContainerFluentDefinitionForCreate Create(
             this CosmosContainers cosmosContainers, 
             string name,
             string partitionKeyPath)
         {
-            return new CosmosContainerFluentDefinitionForCreate(cosmosContainers, name, partitionKeyPath);
+            return new CosmosContainerFluentDefinitionCore(cosmosContainers, name, FluentSettingsOperation.Create, partitionKeyPath);
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this CosmosContainers cosmosContainers,
             string name)
         {
-            return new CosmosContainerFluentDefinition(cosmosContainers, name, FluentSettingsOperation.Replace);
+            return new CosmosContainerFluentDefinitionCore(cosmosContainers, name, FluentSettingsOperation.Replace);
         }
     }
 }
