@@ -242,12 +242,30 @@ namespace Microsoft.Azure.Cosmos.Query
             IReadOnlyList<Range<string>> providedRanges;
             if (!this.providedRangesCache.TryGetValue(collection.ResourceId, out providedRanges))
             {
-                if (this.ShouldExecuteQueryRequest)
+                if (request.Properties.TryGetValue(
+                    WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                    out object effectivePartitionKey))
+                {
+                    if (effectivePartitionKey is string effectivePartitionKeyString)
+                    {
+                        providedRanges = new List<Range<string>>()
+                        {
+                            Range<string>.GetPointRange(effectivePartitionKeyString),
+                        };
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            "EffectivePartitionKey must be a string",
+                            WFConstants.BackendHeaders.EffectivePartitionKeyString);
+                    }
+                }
+                else if (this.ShouldExecuteQueryRequest)
                 {
                     FeedOptions feedOptions = this.GetFeedOptions(null);
                     PartitionKeyDefinition partitionKeyDefinition;
                     object partitionKeyDefinitionObject;
-                    if (feedOptions.Properties.TryGetValue(DocumentQueryExecutionContextFactory.InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                    if (feedOptions.Properties != null && feedOptions.Properties.TryGetValue(DocumentQueryExecutionContextFactory.InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
                     {
                         if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
                         {

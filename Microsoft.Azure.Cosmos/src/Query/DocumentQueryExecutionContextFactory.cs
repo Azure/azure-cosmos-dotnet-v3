@@ -144,7 +144,25 @@ namespace Microsoft.Azure.Cosmos.Query
                     else
                     {
                         List<Range<string>> queryRanges = partitionedQueryExecutionInfo.QueryRanges;
-                        if (feedOptions.PartitionKey != null)
+                        if (feedOptions.Properties.TryGetValue(
+                            WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                            out object effectivePartitionKey))
+                        {
+                            if (effectivePartitionKey is string effectivePartitionKeyString)
+                            {
+                                queryRanges = new List<Range<string>>()
+                                {
+                                    Range<string>.GetPointRange(effectivePartitionKeyString),
+                                };
+                            }
+                            else
+                            {
+                                throw new ArgumentException(
+                                    "EffectivePartitionKey must be a string",
+                                    WFConstants.BackendHeaders.EffectivePartitionKeyString);
+                            }
+                        }
+                        else if (feedOptions.PartitionKey != null)
                         {
                             queryRanges = new List<Range<string>>
                             {
@@ -157,8 +175,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         targetRanges =
                             await queryExecutionContext.GetTargetPartitionKeyRanges(collection.ResourceId, queryRanges);
                     }
-
-
 
                     return await CreateSpecializedDocumentQueryExecutionContext(
                         constructorParams,
@@ -274,6 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             return resourceTypeEnum.IsPartitioned()
                 && (feedOptions.PartitionKey == null && feedOptions.EnableCrossPartitionQuery)
+                && (!(feedOptions.Properties?.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString) ?? false) && feedOptions.EnableCrossPartitionQuery)
                 && (partitionKeyDefinition.Paths.Count > 0)
                 && !(partitionedQueryExecutionInfo.QueryRanges.Count == 1 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
         }
