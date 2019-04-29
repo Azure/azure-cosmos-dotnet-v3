@@ -874,6 +874,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateNonPartitionContainerItem()
         {
+            await CreateNonPartitionedContainer();
+            await CreateItemInNonPartitionedContainer(nonPartitionItemId);
+        }
+
+        private async Task CreateNonPartitionedContainer()
+        {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
@@ -893,20 +899,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StringContent containerContent = new StringContent(containerDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), containerContent);
+        }
 
+        private async Task CreateItemInNonPartitionedContainer(string itemId)
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             //Creating non partition Container item.
-            verb = "POST";
-            resourceType = "docs";
-            resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
-            resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
-            authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            HttpClient client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "docs";
+            string resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
+            string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
+            string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
-            client.DefaultRequestHeaders.Remove("authorization");
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
-            string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: nonPartitionItemId));
+            string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: itemId));
             StringContent itemContent = new StringContent(itemDefinition);
-            requestUri = new Uri(baseUri, resourceLink);
+            Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), itemContent);
         }
 
