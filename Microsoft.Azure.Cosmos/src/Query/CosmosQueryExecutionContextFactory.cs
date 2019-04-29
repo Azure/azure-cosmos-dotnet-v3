@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
             Guid correlatedActivityId)
         {
             if(client == null)
@@ -89,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query
                   resourceLink: resourceLink,
                   getLazyFeedResponse: isContinuationExpected,
                   isContinuationExpected: isContinuationExpected,
+                  allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                   correlatedActivityId: correlatedActivityId);
         }
 
@@ -107,6 +109,11 @@ namespace Microsoft.Azure.Cosmos.Query
                         AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
                 {
                     collection = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                }
+
+                if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
+                {
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
                 }
             }
 
@@ -141,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyDefinition: collection.PartitionKey,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: true,
+                allowNonValueAggregateQuery: this.cosmosQueryContext.AllowNonValueAggregateQuery,
                 cancellationToken: cancellationToken);
 
             List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
@@ -277,12 +285,17 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
             CancellationToken cancellationToken)
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
 
             QueryPartitionProvider queryPartitionProvider = await queryClient.GetQueryPartitionProviderAsync(cancellationToken);
-            return queryPartitionProvider.GetPartitionedQueryExecutionInfo(sqlQuerySpec, partitionKeyDefinition, requireFormattableOrderByQuery, isContinuationExpected);
+            return queryPartitionProvider.GetPartitionedQueryExecutionInfo(sqlQuerySpec, 
+                partitionKeyDefinition, 
+                requireFormattableOrderByQuery, 
+                isContinuationExpected, 
+                allowNonValueAggregateQuery);
         }
 
 

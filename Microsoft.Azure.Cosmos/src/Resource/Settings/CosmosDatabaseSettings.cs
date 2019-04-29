@@ -4,10 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using System;
+    using System.Globalization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using System;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents a database in the Azure Cosmos DB account.
@@ -73,7 +74,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
         /// When working with document resources, they too have this settable Id property. 
@@ -91,20 +91,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual string Id { get; set; }
 
         /// <summary>
-        /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The Resource Id associated with the resource.
-        /// </value>
-        /// <remarks>
-        /// A Resource Id is the unique, immutable, identifier assigned to each Azure Cosmos DB 
-        /// resource whether that is a database, a collection or a document.
-        /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
-        /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
-        public virtual string ResourceId { get; private set; }
-
-        /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -115,5 +101,27 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
         public virtual string ETag { get; private set; }
+
+        /// <summary>
+        /// Gets the last modified timestamp associated with <see cref="CosmosDatabaseSettings" /> from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The last modified timestamp associated with the resource.</value>
+        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        public virtual DateTime? LastModified { get; private set; }
+
+        /// <summary>
+        /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The Resource Id associated with the resource.
+        /// </value>
+        /// <remarks>
+        /// A Resource Id is the unique, immutable, identifier assigned to each Azure Cosmos DB 
+        /// resource whether that is a database, a collection or a document.
+        /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        internal virtual string ResourceId { get; private set; }
     }
 }

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections.Generic;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ComparableTaskScheduler : IDisposable
     {
@@ -155,12 +156,19 @@ namespace Microsoft.Azure.Cosmos
         {
             await this.canRunTaskSemaphoreSlim.WaitAsync(this.CancellationToken);
 
-            // Using Task.Run to force this task to start on another thread.
 #pragma warning disable 4014
-            Task.Run(() => comparableTask.StartAsync(this.CancellationToken).ContinueWith((antecendent) =>
-            {
-                this.canRunTaskSemaphoreSlim.Release();
-            }));
+            // Schedule execution on current .NET task scheduler.
+            // Compute gateway uses custom task scheduler to track tenant resource utilization.
+            // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
+            // Task.Factory.StartNew() allows specifying task scheduler to use.
+            Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
+                comparableTask.StartAsync(this.CancellationToken)
+                    .ContinueWith((antecendent) =>
+                    {
+                        this.canRunTaskSemaphoreSlim.Release();
+                    },
+                    TaskScheduler.Current),
+                this.CancellationToken);
 #pragma warning restore 4014
         }
     }

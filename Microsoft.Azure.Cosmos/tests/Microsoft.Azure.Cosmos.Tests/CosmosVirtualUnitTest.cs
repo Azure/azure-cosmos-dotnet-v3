@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 IEnumerable<Tuple<string, string>> allMethods = publiClass.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
                     .Where(x => !x.IsVirtual && x.IsPublic && !x.IsSpecialName)
+                    .Where(x => x.GetCustomAttribute<IgnoreForUnitTest>(false) == null)
                     .Select(x => new Tuple<string, string>(publiClass.FullName, x.Name));
                 nonVirtualPublic.AddRange(allMethods);
             }

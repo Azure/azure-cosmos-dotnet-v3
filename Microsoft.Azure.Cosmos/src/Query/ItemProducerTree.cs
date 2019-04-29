@@ -210,6 +210,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     // If the partition has split and there are are no more results in the parent buffer
                     // then just pull from the highest priority child (with recursive decent).
+
+                    // Need to pop push to force an update in priority
+                    this.children.Enqueue(this.children.Dequeue());
                     return this.children.Peek().CurrentItemProducerTree;
                 }
                 else
@@ -438,9 +441,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreDocuments(CancellationToken token)
+        public Task BufferMoreDocuments(CancellationToken token)
         {
-            await this.ExecuteWithSplitProofing(
+            return this.ExecuteWithSplitProofing(
                 function:this.BufferMoreDocumentsImplementation,
                 functionNeedsBeReexecuted: true,
                 cancellationToken: token);
@@ -588,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (this.HasSplit)
             {
-                return false;
+                return Task.FromResult<dynamic>(false);
             }
 
             return await this.MoveNextAsyncImplementation(token);

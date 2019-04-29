@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             //Setup mock owner "document client"
             Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
             mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
-            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>())).ReturnsAsync(databaseAccount);
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(databaseAccount);
 
             //Create connection policy and populate preferred locations
             ConnectionPolicy connectionPolicy = new ConnectionPolicy();
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
             //Setup mock owner "document client"
             Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
             mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
-            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>())).ReturnsAsync(databaseAccount);
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(databaseAccount);
 
             //Create connection policy and populate preferred locations
             ConnectionPolicy connectionPolicy = new ConnectionPolicy();

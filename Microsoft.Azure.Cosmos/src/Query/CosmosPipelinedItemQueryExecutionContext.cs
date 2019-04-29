@@ -213,7 +213,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasOffset)
             {
-                Func<string, Task<CosmosQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                if (!constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake)
+                {
+                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
+                }
+
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await SkipItemQueryExecutionComponent.CreateAsync(
@@ -225,7 +230,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasLimit)
             {
-                Func<string, Task<CosmosQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                if (!constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake)
+                {
+                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
+                }
+
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await TakeItemQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(

@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosContainer Container = null;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
+        private CosmosContainerSettings containerSettings = null;
 
         private static CosmosContainer fixedContainer = null;
         private static readonly string utc_date = DateTime.UtcNow.ToString("r");
@@ -44,8 +45,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
+            this.containerSettings = new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                this.containerSettings,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -63,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             CosmosItemResponse<ToDoActivity> response = await this.Container.Items.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.MaxResourceQuota);
@@ -92,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemStreamTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 using (CosmosResponseMessage response = await this.Container.Items.CreateItemStreamAsync(partitionKey: testItem.status, streamPayload: stream))
@@ -117,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task UpsertItemStreamTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Create the object
@@ -152,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReplaceItemStreamTest()
         {
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Replace a non-existing item. It should fail, and not throw an exception.
@@ -195,116 +197,94 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        public async Task ItemStreamIterator()
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task ItemStreamIterator(bool useStatelessIterator)
         {
-            IList<ToDoActivity> deleteList = null;
-            HashSet<string> itemIds = null;
-            try
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+
+            string lastContinuationToken = null;
+            int pageSize = 1;
+            CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
+            CosmosFeedResultSetIterator setIterator =
+                this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+
+            while (setIterator.HasMoreResults)
             {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
-                itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
-                CosmosFeedResultSetIterator setIterator =
-                    this.Container.Items.GetItemStreamIterator();
-                while (setIterator.HasMoreResults)
+                if (useStatelessIterator)
                 {
-                    using (CosmosResponseMessage iterator =
-                        await setIterator.FetchNextSetAsync(this.cancellationToken))
-                    {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(iterator.Content).Data;
-                        foreach (ToDoActivity toDoActivity in response)
-                        {
-                            if (itemIds.Contains(toDoActivity.id))
-                            {
-                                itemIds.Remove(toDoActivity.id);
-                            }
-                        }
-
-                    }
-
+                    setIterator = this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
                 }
-            }
-            finally
-            {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
-            }
 
-            Assert.AreEqual(itemIds.Count, 0);
-        }
-
-        [TestMethod]
-        public async Task ItemIterator()
-        {
-            IList<ToDoActivity> deleteList = null;
-            HashSet<string> itemIds = null;
-            try
-            {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
-                itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
-                CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.GetItemIterator<ToDoActivity>();
-                while (setIterator.HasMoreResults)
+                using (CosmosResponseMessage responseMessage =
+                    await setIterator.FetchNextSetAsync(this.cancellationToken))
                 {
-                    foreach (ToDoActivity toDoActivity in await setIterator.FetchNextSetAsync(this.cancellationToken))
+                    lastContinuationToken = responseMessage.Headers.Continuation;
+
+                    Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
+                    foreach (ToDoActivity toDoActivity in response)
                     {
                         if (itemIds.Contains(toDoActivity.id))
                         {
                             itemIds.Remove(toDoActivity.id);
                         }
                     }
+
                 }
+
             }
-            finally
+
+            Assert.IsNull(lastContinuationToken);
+            Assert.AreEqual(itemIds.Count, 0);
+        }
+
+        [TestMethod]
+        public async Task ItemIterator()
+        {
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+            CosmosResultSetIterator<ToDoActivity> setIterator =
+                this.Container.Items.GetItemIterator<ToDoActivity>();
+            while (setIterator.HasMoreResults)
             {
-                foreach (ToDoActivity delete in deleteList)
+                foreach (ToDoActivity toDoActivity in await setIterator.FetchNextSetAsync(this.cancellationToken))
                 {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
+                    if (itemIds.Contains(toDoActivity.id))
+                    {
+                        itemIds.Remove(toDoActivity.id);
+                    }
                 }
             }
 
             Assert.AreEqual(itemIds.Count, 0);
         }
 
-        [TestMethod]
-        public async Task QueryStreamSingleItem()
+        [DataRow(1, 1)]
+        [DataRow(5, 5)]
+        [DataRow(6, 2)]
+        [DataTestMethod]
+        public async Task QuerySinglePartitionItemStreamTest(int perPKItemCount, int maxItemCount)
         {
-            await ItemSinglePartitionQueryStream(1, 1);
-        }
-
-        [TestMethod]
-        public async Task QueryStreamMultipleItem()
-        {
-            await ItemSinglePartitionQueryStream(5, 5);
-        }
-
-        [TestMethod]
-        public async Task QueryStreamMultipleItemWithMaxItemCount()
-        {
-            await ItemSinglePartitionQueryStream(6, 2);
-        }
-
-        internal async Task ItemSinglePartitionQueryStream(int perPKItemCount, int maxItemCount)
-        {
-            IList<ToDoActivity> deleteList = deleteList = await CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
+            IList<ToDoActivity> deleteList = deleteList = await this.CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
             ToDoActivity find = deleteList.First();
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetIterator setIterator = this.Container.Items
-                .CreateItemQueryAsStream(sql, 1, find.status, maxItemCount);
 
             int iterationCount = 0;
             int totalReadItem = 0;
             int expectedIterationCount = perPKItemCount / maxItemCount;
             string lastContinuationToken = null;
 
-            while (setIterator.HasMoreResults && expectedIterationCount > iterationCount)
+            do
             {
                 iterationCount++;
+                CosmosResultSetIterator setIterator = this.Container.Items
+                    .CreateItemQueryAsStream(sql, 1, find.status,
+                        maxItemCount: maxItemCount,
+                        continuationToken: lastContinuationToken,
+                        requestOptions: new CosmosQueryRequestOptions());
 
                 CosmosQueryResponse response = await setIterator.FetchNextSetAsync();
                 lastContinuationToken = response.ResponseContinuation;
@@ -335,15 +315,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Assert.AreEqual(expectedSerialized, readSerialized);
 
-                    Assert.AreEqual(maxItemCount, expectedTodoActivities.Length);
+                        Assert.AreEqual(maxItemCount, expectedTodoActivities.Length);
+                    }
                 }
             }
+            while (lastContinuationToken != null);
 
             Assert.AreEqual(expectedIterationCount, iterationCount);
             Assert.AreEqual(perPKItemCount, totalReadItem);
-
-            //Assert.IsNull(lastContinuationToken);
-            //Assert.IsFalse(setIterator.HasMoreResults);
         }
 
 
@@ -353,37 +332,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionQuery()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
+
+            ToDoActivity find = deleteList.First();
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
+
+            CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
             {
-                deleteList = await CreateRandomItems(3, randomPartitionKey: true);
+                MaxBufferedItemCount = 10,
+                ResponseContinuationTokenLimitInKb = 500
+            };
 
-                ToDoActivity find = deleteList.First();
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
-
-                CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
-                {
-                    MaxBufferedItemCount = 10,
-                    ResponseContinuationTokenLimitInKb = 500
-                };
-
-                CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
-                while (setIterator.HasMoreResults)
-                {
-                    CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
-                    Assert.AreEqual(1, iter.Count());
-                    ToDoActivity response = iter.First();
-                    Assert.AreEqual(find.id, response.id);
-                }
-            }
-            finally
+            CosmosResultSetIterator<ToDoActivity> setIterator =
+                this.Container.Items.CreateItemQuery<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
+            while (setIterator.HasMoreResults)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
+                Assert.AreEqual(1, iter.Count());
+                ToDoActivity response = iter.First();
+                Assert.AreEqual(find.id, response.id);
             }
         }
 
@@ -393,26 +360,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionOrderByQueryStream()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(300, randomPartitionKey: true);
+
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
+
+            CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
             {
-                deleteList = await CreateRandomItems(300, randomPartitionKey: true);
+                MaxBufferedItemCount = 10,
+                ResponseContinuationTokenLimitInKb = 500
+            };
 
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
-
-                CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
+            List<ToDoActivity> resultList = new List<ToDoActivity>();
+            double totalRequstCharge = 0;
+            CosmosResultSetIterator setIterator =
+                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
+            while (setIterator.HasMoreResults)
+            {
+                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                 {
-                    MaxBufferedItemCount = 10,
-                    ResponseContinuationTokenLimitInKb = 500
-                };
-
-                List<ToDoActivity> resultList = new List<ToDoActivity>();
-                double totalRequstCharge = 0;
-                CosmosResultSetIterator setIterator =
-                    this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
-                while (setIterator.HasMoreResults)
-                {
-                    CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
                     Assert.IsTrue(iter.IsSuccess);
                     Assert.IsNull(iter.ErrorMessage);
                     Assert.IsTrue(iter.Count <= 5);
@@ -423,24 +388,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ToDoActivity response = activities.First();
                     resultList.Add(response);
                 }
-
-                Assert.AreEqual(deleteList.Count, resultList.Count);
-                Assert.IsTrue(totalRequstCharge > 0);
-
-                List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-                for (int i = 0; i < verifiedOrderBy.Count(); i++)
-                {
-                    Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
-                    Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
-                }
             }
-            finally
+
+            Assert.AreEqual(deleteList.Count, resultList.Count);
+            Assert.IsTrue(totalRequstCharge > 0);
+
+            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
+            for (int i = 0; i < verifiedOrderBy.Count(); i++)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
+                Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
             }
         }
 
@@ -450,20 +407,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionQueryStream()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(101, randomPartitionKey: true);
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
+
+            List<ToDoActivity> resultList = new List<ToDoActivity>();
+            double totalRequstCharge = 0;
+            CosmosResultSetIterator setIterator =
+                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5);
+            while (setIterator.HasMoreResults)
             {
-                deleteList = await CreateRandomItems(101, randomPartitionKey: true);
-
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
-
-                List<ToDoActivity> resultList = new List<ToDoActivity>();
-                double totalRequstCharge = 0;
-                CosmosResultSetIterator setIterator =
-                    this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5);
-                while (setIterator.HasMoreResults)
+                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                 {
-                    CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
                     Assert.IsTrue(iter.IsSuccess);
                     Assert.IsNull(iter.ErrorMessage);
                     Assert.IsTrue(iter.Count <= 5);
@@ -471,40 +425,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
                     resultList.AddRange(response);
                 }
-
-                Assert.AreEqual(deleteList.Count, resultList.Count);
-                Assert.IsTrue(totalRequstCharge > 0);
-
-                List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-                resultList = resultList.OrderBy(x => x.taskNum).ToList();
-                for (int i = 0; i < verifiedOrderBy.Count(); i++)
-                {
-                    Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
-                    Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
-                }
             }
-            finally
+
+            Assert.AreEqual(deleteList.Count, resultList.Count);
+            Assert.IsTrue(totalRequstCharge > 0);
+
+            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
+            resultList = resultList.OrderBy(x => x.taskNum).ToList();
+            for (int i = 0; i < verifiedOrderBy.Count(); i++)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
+                Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
             }
+        }
+
+        [TestMethod]
+        public async Task EpkPointReadTest()
+        {
+            string pk = Guid.NewGuid().ToString();
+            string epk = new PartitionKey(pk)
+                            .InternalKey
+                            .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
+
+            CosmosItemRequestOptions itemRequestOptions = new CosmosItemRequestOptions();
+            itemRequestOptions.Properties = new Dictionary<string, object>();
+            itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
+
+            CosmosResponseMessage response = await this.Container.Items.ReadItemStreamAsync(
+                null,
+                Guid.NewGuid().ToString(),
+                itemRequestOptions);
+
+            // Ideally it should be NotFound
+            // BadReqeust bcoz collection is regular and not binary 
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         /// <summary>
         /// Validate that if the EPK is set in the options that only a single range is selected.
         /// </summary>
         [TestMethod]
-        public async Task ItemEpkQueryValidation()
+        public async Task ItemEpkQuerySingleKeyRangeValidation()
         {
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
             CosmosContainer container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions
-                var containerResponse = await this.database.Containers.CreateContainerAsync(
+                CosmosContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk",
                     throughput: 15000);
@@ -537,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     typeof(object),
                     expression,
                     options,
-                    container.LinkUri.OriginalString,
+                    ((CosmosContainerCore)container).LinkUri.OriginalString,
                     false,
                     Guid.NewGuid());
 
@@ -567,29 +535,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemQueryStreamSerializationSetting()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            try
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(101, randomPartitionKey: true);
+
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
+            CosmosSerializationOptions options = new CosmosSerializationOptions(
+                ContentSerializationFormat.CosmosBinary.ToString(),
+                (content) => JsonNavigator.Create(content),
+                () => JsonWriter.Create(JsonSerializationFormat.Binary));
+
+            CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
             {
-                deleteList = await CreateRandomItems(101, randomPartitionKey: true);
+                CosmosSerializationOptions = options
+            };
 
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
-                CosmosSerializationOptions options = new CosmosSerializationOptions(
-                    ContentSerializationFormat.CosmosBinary.ToString(),
-                    (content) => JsonNavigator.Create(content),
-                    () => JsonWriter.Create(JsonSerializationFormat.Binary));
-
-                CosmosQueryRequestOptions requestOptions = new CosmosQueryRequestOptions()
+            List<ToDoActivity> resultList = new List<ToDoActivity>();
+            double totalRequstCharge = 0;
+            CosmosResultSetIterator setIterator =
+                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
+            while (setIterator.HasMoreResults)
+            {
+                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
                 {
-                    CosmosSerializationOptions = options
-                };
-
-                List<ToDoActivity> resultList = new List<ToDoActivity>();
-                double totalRequstCharge = 0;
-                CosmosResultSetIterator setIterator =
-                    this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
-                while (setIterator.HasMoreResults)
-                {
-                    CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
                     Assert.IsTrue(iter.IsSuccess);
                     Assert.IsNull(iter.ErrorMessage);
                     Assert.IsTrue(iter.Count <= 5);
@@ -602,24 +568,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
                     resultList.AddRange(responseActivities);
                 }
-
-                Assert.AreEqual(deleteList.Count, resultList.Count);
-                Assert.IsTrue(totalRequstCharge > 0);
-
-                List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
-                for (int i = 0; i < verifiedOrderBy.Count(); i++)
-                {
-                    Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
-                    Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
-                }
             }
-            finally
+
+            Assert.AreEqual(deleteList.Count, resultList.Count);
+            Assert.IsTrue(totalRequstCharge > 0);
+
+            List<ToDoActivity> verifiedOrderBy = deleteList.OrderBy(x => x.taskNum).ToList();
+            for (int i = 0; i < verifiedOrderBy.Count(); i++)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                Assert.AreEqual(verifiedOrderBy[i].taskNum, resultList[i].taskNum);
+                Assert.AreEqual(verifiedOrderBy[i].id, resultList[i].id);
             }
         }
 
@@ -630,42 +588,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateMaxItemCountOnItemQuery()
         {
-            IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            HashSet<string> itemIds = new HashSet<string>();
-            try
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(6, randomPartitionKey: false);
+
+            ToDoActivity toDoActivity = deleteList.First();
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
+                "select * from toDoActivity t where t.status = @status")
+                .UseParameter("@status", toDoActivity.status);
+
+            // Test max size at 1
+            CosmosResultSetIterator<ToDoActivity> setIterator =
+                this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
+            while (setIterator.HasMoreResults)
             {
-                deleteList = await CreateRandomItems(6, randomPartitionKey: false);
-
-                ToDoActivity toDoActivity = deleteList.First();
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
-                    "select * from toDoActivity t where t.status = @status")
-                    .UseParameter("@status", toDoActivity.status);
-
-                // Test max size at 1
-                CosmosResultSetIterator<ToDoActivity> setIterator =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
-                while (setIterator.HasMoreResults)
-                {
-                    CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
-                    Assert.AreEqual(1, iter.Count());
-                }
-
-                // Test max size at 2
-                CosmosResultSetIterator<ToDoActivity> setIteratorMax2 =
-                    this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
-                while (setIteratorMax2.HasMoreResults)
-                {
-                    CosmosQueryResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
-                    Assert.AreEqual(2, iter.Count());
-                }
+                CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
+                Assert.AreEqual(1, iter.Count());
             }
-            finally
+
+            // Test max size at 2
+            CosmosResultSetIterator<ToDoActivity> setIteratorMax2 =
+                this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
+            while (setIteratorMax2.HasMoreResults)
             {
-                foreach (ToDoActivity delete in deleteList)
-                {
-                    CosmosResponseMessage deleteResponse = await this.Container.Items.DeleteItemStreamAsync(delete.status, delete.id);
-                    deleteResponse.Dispose();
-                }
+                CosmosQueryResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
+                Assert.AreEqual(2, iter.Count());
             }
         }
 
@@ -676,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task NegativeQueryTest()
         {
-            IList<ToDoActivity> items = await CreateRandomItems(pkCount: 10, perPKItemCount: 20, randomPartitionKey: true);
+            IList<ToDoActivity> items = await this.CreateRandomItems(pkCount: 10, perPKItemCount: 20, randomPartitionKey: true);
 
             try
             {
@@ -737,7 +682,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemRequestOptionAccessConditionTest()
         {
             // Create an item
-            ToDoActivity testItem = (await CreateRandomItems(1, randomPartitionKey: true)).First();
+            ToDoActivity testItem = (await this.CreateRandomItems(1, randomPartitionKey: true)).First();
 
             // Create an access condition that will fail because the etag will be different
             AccessCondition accessCondition = new AccessCondition
@@ -781,9 +726,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                await CreateNonPartitionContainerItem();
-                await CreateUndefinedPartitionItem();
-                fixedContainer = database.Containers[nonPartitionContainerId];
+                await this.CreateNonPartitionContainerItem();
+                await this.CreateUndefinedPartitionItem();
+                fixedContainer = this.database.Containers[nonPartitionContainerId];
 
                 CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
                 Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
@@ -799,7 +744,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
                 CosmosResultSetIterator<ToDoActivity> setIterator = fixedContainer.Items
-                    .CreateItemQuery<ToDoActivity>(sql, partitionKey :CosmosContainerSettings.NonePartitionKeyValue, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+                    .CreateItemQuery<ToDoActivity>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
                 while (setIterator.HasMoreResults)
                 {
                     CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
@@ -808,7 +753,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(nonPartitionItemId, toDoActivity.id);
                 }
 
-                CosmosItemResponse<dynamic> undefinedItemResponse = await Container.Items.ReadItemAsync<dynamic>(
+                CosmosItemResponse<dynamic> undefinedItemResponse = await this.Container.Items.ReadItemAsync<dynamic>(
                     partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                     id: undefinedPartitionItemId);
 
@@ -840,7 +785,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (int j = 0; j < perPKItemCount; j++)
                 {
-                    ToDoActivity temp = CreateRandomToDoActivity(pk);
+                    ToDoActivity temp = this.CreateRandomToDoActivity(pk);
 
                     createdList.Add(temp);
 
@@ -856,7 +801,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
-            var client = new System.Net.Http.HttpClient();
+            HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(endpoint);
             string verb = "POST";
             string resourceType = "colls";
@@ -865,10 +810,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
             client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
 
-            string authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Add("authorization", authHeader);
-            String containerDefinition = "{\n  \"id\": \"" + nonPartitionContainerId + "\"\n}";
+            string containerDefinition = "{\n  \"id\": \"" + nonPartitionContainerId + "\"\n}";
             StringContent containerContent = new StringContent(containerDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), containerContent);
@@ -878,12 +823,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             resourceType = "docs";
             resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
             resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
-            authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Remove("authorization");
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
-            String itemDefinition = JsonConvert.SerializeObject(CreateRandomToDoActivity(id: nonPartitionItemId));
+            string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: nonPartitionItemId));
             StringContent itemContent = new StringContent(itemDefinition);
             requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), itemContent);
@@ -894,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             //Creating undefined partition key  item, rest api used instead of .NET SDK api as it is not supported anymore.
-            var client = new System.Net.Http.HttpClient();
+            HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(endpoint);
             string verb = "POST";
             string resourceType = "colls";
@@ -909,13 +854,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             resourceType = "docs";
             resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, this.Container.Id);
             resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, this.Container.Id);
-            string authHeader = GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Remove("authorization");
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
             var payload = new { id = undefinedPartitionItemId, user = undefinedPartitionItemId };
-            String itemDefinition = JsonConvert.SerializeObject(payload);
+            string itemDefinition = JsonConvert.SerializeObject(payload);
             StringContent itemContent = new StringContent(itemDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), itemContent);
@@ -923,7 +868,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private string GenerateMasterKeyAuthorizationSignature(string verb, string resourceId, string resourceType, string key, string keyType, string tokenVersion)
         {
-            var hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
+            System.Security.Cryptography.HMACSHA256 hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
 
             string payLoad = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}\n{1}\n{2}\n{3}\n{4}\n",
                     verb.ToLowerInvariant(),
@@ -936,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             byte[] hashPayLoad = hmacSha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payLoad));
             string signature = Convert.ToBase64String(hashPayLoad);
 
-            return System.Web.HttpUtility.UrlEncode(String.Format(System.Globalization.CultureInfo.InvariantCulture, "type={0}&ver={1}&sig={2}",
+            return System.Web.HttpUtility.UrlEncode(string.Format(System.Globalization.CultureInfo.InvariantCulture, "type={0}&ver={1}&sig={2}",
                 keyType,
                 tokenVersion,
                 signature));

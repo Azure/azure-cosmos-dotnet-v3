@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <summary>
         /// Initializes a new instance of the <see cref="UnspecifiedCrs"/> class.
         /// </summary>
-        public UnspecifiedCrs() : base(CoordinateReferenceScheme.Unspecified)
+        public UnspecifiedCrs() : base(CrsType.Unspecified)
         {
         }
 

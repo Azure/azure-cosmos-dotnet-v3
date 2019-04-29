@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemChangeFeedTests : BaseCosmosClientHelper
     {
-        private CosmosContainer Container = null;
+        private CosmosContainerCore Container = null;
         private CosmosDefaultJsonSerializer jsonSerializer = null;
 
         [TestInitialize]
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = response;
+            this.Container = (CosmosContainerCore)response;
             this.jsonSerializer = new CosmosDefaultJsonSerializer();
         }
 
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Documents.Routing.Range<string> previousRange = null;
             Documents.Routing.Range<string> currentRange = null;
 
-            int pkRangesCount = (await this.Container.Client.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri)).Count;
+            int pkRangesCount = (await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri)).Count;
             int visitedPkRanges = 0;
 
             await this.CreateRandomItems(batchSize, randomPartitionKey: true);
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StandByFeedIterator_NoFetchNext()
         {
-            FeedResponse<Documents.PartitionKeyRange> pkRanges = await this.Container.Client.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+            var pkRanges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
             int expected = 25;
             int iterations = 0;
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StandByFeedIterator_VerifyRefreshIsCalledOnSplit()
         {
-            CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock((CosmosContainerCore)this.Container, "", 100, new CosmosChangeFeedRequestOptions());
+            CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(this.Container, "", 100, new CosmosChangeFeedRequestOptions());
             using (CosmosResponseMessage responseMessage =
                     await iterator.FetchNextSetAsync(this.cancellationToken))
             {
@@ -311,7 +311,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosContainerCore cosmosContainer,
                 string continuationToken,
                 int? maxItemCount,
-                CosmosChangeFeedRequestOptions options) : base(cosmosContainer, continuationToken, maxItemCount, options)
+                CosmosChangeFeedRequestOptions options) : base(
+                    clientContext: cosmosContainer.ClientContext,
+                    cosmosContainer: cosmosContainer,
+                    continuationToken: continuationToken,
+                    maxItemCount: maxItemCount,
+                    options: options)
             {
                 List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>()
                 {

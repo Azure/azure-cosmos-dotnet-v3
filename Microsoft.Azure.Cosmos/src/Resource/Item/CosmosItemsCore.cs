@@ -29,21 +29,19 @@ namespace Microsoft.Azure.Cosmos
         /// This allows only a single con-cat operation instead of building the full URI string each time.
         /// </summary>
         private string cachedUriSegmentWithoutId { get; }
-        private CosmosJsonSerializer cosmosJsonSerializer { get; }
-        private CosmosClient client { get; }
 
-        private CosmosQueryClient queryClient { get; }
-
+        private readonly CosmosClientContext clientContext;
+        private readonly CosmosQueryClient queryClient;
 
         internal CosmosItemsCore(
-            CosmosContainerCore container, 
-            CosmosQueryClient cosmosQueryClient = null)
+            CosmosClientContext clientContext,
+            CosmosContainerCore container,
+            CosmosQueryClient queryClient = null)
         {
+            this.clientContext = clientContext;
             this.container = container;
-            this.cosmosJsonSerializer = this.container.Client.CosmosJsonSerializer;
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
-            this.client = container.Client;
-            this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.client, new DocumentQueryClient(this.client.DocumentClient), container);
+            this.queryClient = queryClient ?? new CosmosQueryClientCore(this.clientContext, container);
         }
 
         internal readonly CosmosContainerCore container;
@@ -71,11 +69,11 @@ namespace Microsoft.Azure.Cosmos
         {
             Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
                 partitionKey: partitionKey,
-                streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
+                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.client.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> ReadItemStreamAsync(
@@ -105,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.client.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> UpsertItemStreamAsync(
@@ -131,11 +129,11 @@ namespace Microsoft.Azure.Cosmos
         {
             Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(
                 partitionKey: partitionKey,
-                streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
+                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.client.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> ReplaceItemStreamAsync(
@@ -164,11 +162,11 @@ namespace Microsoft.Azure.Cosmos
             Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(
                partitionKey: partitionKey,
                id: id,
-               streamPayload: this.cosmosJsonSerializer.ToStream<T>(item),
+               streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.client.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> DeleteItemStreamAsync(
@@ -198,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.client.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override CosmosResultSetIterator<T> GetItemIterator<T>(
@@ -244,6 +242,7 @@ namespace Microsoft.Azure.Cosmos
                 queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
             return new CosmosResultSetIteratorCore(
@@ -293,6 +292,7 @@ namespace Microsoft.Azure.Cosmos
                 queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
             return new CosmosDefaultResultSetIterator<T>(
@@ -340,6 +340,7 @@ namespace Microsoft.Azure.Cosmos
                 queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
             return new CosmosDefaultResultSetIterator<T>(
@@ -381,7 +382,11 @@ namespace Microsoft.Azure.Cosmos
 
             ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
             ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
-            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedProcessor, changeFeedProcessor.ApplyBuildConfiguration);
+            return new ChangeFeedProcessorBuilder(
+                workflowName: workflowName,
+                cosmosContainer: this.container,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
@@ -400,7 +405,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
-            return new ChangeFeedProcessorBuilder(workflowName, this.container, changeFeedEstimatorCore, changeFeedEstimatorCore.ApplyBuildConfiguration);
+            return new ChangeFeedProcessorBuilder(
+                workflowName: workflowName,
+                cosmosContainer: this.container,
+                changeFeedProcessor: changeFeedEstimatorCore,
+                applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
         internal CosmosFeedResultSetIterator GetStandByFeedIterator(
@@ -412,6 +421,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
 
             return new CosmosChangeFeedResultSetIteratorCore(
+                clientContext: this.clientContext,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,
                 cosmosContainer: this.container,
@@ -431,9 +441,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosQueryResponse feedResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
                 return CosmosQueryResponse<T>.CreateResponse<T>(
-                    cosmosQueryResponse: feedResponse,
-                    jsonSerializer: this.cosmosJsonSerializer,
-                    hasMoreResults: !cosmosQueryExecution.IsDone,
+                    feedResponse: feedResponse,
+                    jsonSerializer: this.clientContext.JsonSerializer,
+                    hasMoreResults: !documentQueryExecution.IsDone,
                     resourceType: ResourceType.Document);
             }
             catch (DocumentClientException exception)
@@ -458,8 +468,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-                this.container.Database.Client,
+            return this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri,
                 ResourceType.Document,
                 operationType,
@@ -479,8 +488,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
-                client: this.container.Database.Client,
+            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
@@ -505,8 +513,7 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return ExecUtils.ProcessResourceOperationAsync<CosmosQueryResponse<T>>(
-                client: this.container.Database.Client,
+            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<T>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
@@ -516,7 +523,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.client.ResponseFactory.CreateResultSetQueryResponse<T>(response),
+                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
                 cosmosContainerCore: this.container,
                 partitionKey: null,
                 streamPayload: null,

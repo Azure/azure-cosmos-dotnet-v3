@@ -38,16 +38,6 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken token,
             Guid correlatedActivityId)
         {
-            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(
-                client,
-                resourceTypeEnum,
-                resourceType,
-                expression,
-                feedOptions,
-                resourceLink,
-                false,
-                correlatedActivityId);
-
             CosmosContainerSettings collection = null;
             if (resourceTypeEnum.IsCollectionChild())
             {
@@ -61,7 +51,22 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     collection = await collectionCache.ResolveCollectionAsync(request, token);
                 }
+
+                if (feedOptions != null && feedOptions.PartitionKey != null && feedOptions.PartitionKey.Equals(PartitionKey.None))
+                {
+                    feedOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
+                }
             }
+
+            DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(
+                client,
+                resourceTypeEnum,
+                resourceType,
+                expression,
+                feedOptions,
+                resourceLink,
+                false,
+                correlatedActivityId);
 
             // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
             // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
@@ -99,10 +104,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 //if collection is deleted/created with same name.
                 //need to make it not rely on information from collection cache.
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await queryExecutionContext.GetPartitionedQueryExecutionInfoAsync(
-                    collection.PartitionKey,
-                    true,
-                    isContinuationExpected,
-                    token);
+                    partitionKeyDefinition: collection.PartitionKey,
+                    requireFormattableOrderByQuery: true,
+                    isContinuationExpected: isContinuationExpected,
+                    allowNonValueAggregateQuery: false,
+                    cancellationToken: token);
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(
                         resourceTypeEnum,

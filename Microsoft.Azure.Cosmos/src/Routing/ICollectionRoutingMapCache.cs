@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Common
 {
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -16,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Common
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            bool forceRefreshCollectionRoutingMap,
             CancellationToken cancellationToken);
     }
 }

@@ -25,14 +25,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyRangeId">The partitionkeyrangeid from which you are fetching for.</param>
         /// <param name="numberOfDocuments">The number of documents that were fetched in the particular execution range.</param>
         /// <param name="retryCount">The number of times we retried for this fetch execution range.</param>
-        public FetchExecutionRange(string activityId, DateTime startTime, DateTime endTime, string partitionKeyRangeId, long numberOfDocuments, long retryCount)
+        public FetchExecutionRange(string partitionKeyRangeId, string activityId, DateTime startTime, DateTime endTime, long numberOfDocuments, long retryCount)
         {
+            this.PartitionId = partitionKeyRangeId;
             this.ActivityId = activityId;
             this.StartTime = startTime;
             this.EndTime = endTime;
-            this.PartitionId = partitionKeyRangeId;
             this.NumberOfDocuments = numberOfDocuments;
             this.RetryCount = retryCount;
+        }
+
+        /// <summary>
+        /// Gets the partition id that was fetched from.
+        /// </summary>
+        public string PartitionId
+        {
+            get;
         }
 
         /// <summary>
@@ -55,14 +63,6 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the end time of the fetch.
         /// </summary>
         public DateTime EndTime
-        {
-            get;
-        }
-
-        /// <summary>
-        /// Gets the partition id that was fetched from.
-        /// </summary>
-        public string PartitionId
         {
             get;
         }

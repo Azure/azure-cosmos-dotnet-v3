@@ -11,70 +11,33 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Represents a document collection in the Azure Cosmos DB service. A collection is a named logical container for documents. 
+    /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents. 
     /// </summary>
     /// <remarks>
-    /// A database may contain zero or more named collections and each collection consists of zero or more JSON documents. 
-    /// Being schema-free, the documents in a collection do not need to share the same structure or fields. Since collections are application resources, 
+    /// A database may contain zero or more named containers and each container consists of zero or more JSON documents. 
+    /// Being schema-free, the documents in a container do not need to share the same structure or fields. Since containers are application resources, 
     /// they can be authorized using either the master key or resource keys.
-    /// Refer to <see>http://azure.microsoft.com/documentation/articles/documentdb-resources/#collections</see> for more details on collections.
+    /// Refer to <see>http://azure.microsoft.com/documentation/articles/documentdb-resources/#collections</see> for more details on containers.
     /// </remarks>
     /// <example>
-    /// The example below creates a new partitioned collection with 50000 Request-per-Unit throughput.
-    /// The partition key is the first level 'country' property in all the documents within this collection.
+    /// The example below creates a new partitioned container with 50000 Request-per-Unit throughput.
+    /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    /// DocumentCollection collection = await client.CreateDocumentCollectionAsync(
-    ///     databaseLink,
-    ///     new DocumentCollection 
-    ///     { 
-    ///         Id = "MyCollection",
-    ///         PartitionKey = new PartitionKeyDefinition
-    ///         {
-    ///             Paths = new Collection<string> { "/country" }
-    ///         }
-    ///     }, 
-    ///     new RequestOptions { OfferThroughput = 50000} ).Result;
+    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     CosmosContainerSettings containerSettings = container.Resource;
     /// ]]>
     /// </code>
     /// </example>
     /// <example>
-    /// The example below creates a new collection with OfferThroughput set to 10000.
+    /// The example below creates a new container with a custom indexing policy.
     /// <code language="c#">
     /// <![CDATA[
-    /// DocumentCollection collection = await client.CreateDocumentCollectionAsync(
-    ///     databaseLink,
-    ///     new DocumentCollection { Id = "MyCollection" }, 
-    ///     new RequestOptions { OfferThroughput = 10000} ).Result;
-    /// ]]>
-    /// </code>
-    /// </example>
-    /// <example>
-    /// The example below creates a new collection with a custom indexing policy.
-    /// <code language="c#">
-    /// <![CDATA[
-    /// DocumentCollection collectionSpec = new DocumentCollection { Id ="MyCollection" };
-    /// collectionSpec.IndexingPolicy.Automatic = true;
-    /// collectionSpec.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-    /// collection = await client.CreateDocumentCollectionAsync(database.SelfLink, collectionSpec);
-    /// ]]>
-    /// </code>
-    /// </example>
-    /// <example>
-    /// The example below creates a document of type Book inside this collection.
-    /// <code language="c#">
-    /// <![CDATA[
-    /// Document doc = await client.CreateDocumentAsync(collection.SelfLink, new Book { Title = "War and Peace" });
-    /// ]]>
-    /// </code>
-    /// </example>
-    /// <example>
-    /// The example below queries for a Database by Id to retrieve the SelfLink.
-    /// <code language="c#">
-    /// <![CDATA[
-    /// using Microsoft.Azure.Cosmos.Linq;
-    /// DocumentCollection collection = client.CreateDocumentCollectionQuery(databaseLink).Where(c => c.Id == "myColl").AsEnumerable().FirstOrDefault();
-    /// string collectionLink = collection.SelfLink;
+    ///     CosmosContainerSettings collectionsettings = new CosmosContainerSettings("MyCollection", "/country");
+    ///     collectionsettings.IndexingPolicy.Automatic = true;
+    ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
+    ///     
+    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync(collectionsettings);
     /// ]]>
     /// </code>
     /// </example>
@@ -82,14 +45,22 @@ namespace Microsoft.Azure.Cosmos
     /// The example below deletes this collection.
     /// <code language="c#">
     /// <![CDATA[
-    /// await client.DeleteDocumentCollectionAsync(collection.SelfLink);
+    ///     CosmosContainer container = client.Databases["dbName"].Containers["MyCollection"];
+    ///     await container.DeleteAsync();
     /// ]]>
     /// </code>
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
     /// <seealso cref="CosmosDatabaseSettings"/>
+    /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
+        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
+        private IndexingPolicy indexingPolicyInternal;
+
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
+        private UniqueKeyPolicy uniqueKeyPolicyInternal;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -117,39 +88,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Only collection cache needs this contract. None are expected to use it. 
+        /// Gets the Partitioning scheme version used. <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
+        [JsonIgnore]
+        public virtual PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
         {
-            if (string.IsNullOrEmpty(resoruceId))
+            get
             {
-                throw new ArgumentNullException(nameof(resoruceId));
+                return (Cosmos.PartitionKeyDefinitionVersion?)this.PartitionKey?.Version;
             }
 
-            return new CosmosContainerSettings()
+            set
             {
-                ResourceId = resoruceId,
-            };
+                if (this.PartitionKey == null)
+                {
+                    throw new ArgumentOutOfRangeException($"PartitionKey is not defined for container");
+                }
+
+                this.PartitionKey.Version = (Documents.PartitionKeyDefinitionVersion)value;
+            }
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
-        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
-        {
-            this.Id = id;
-            this.PartitionKey = partitionKeyDefinition;
-
-            this.ValidateRequiredProperties();
-        }
-
-        /// <summary>
-        /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in collection in the Azure Cosmos DB service.
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
-        public UniqueKeyPolicy UniqueKeyPolicy { get; set; } = new UniqueKeyPolicy();
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
@@ -176,6 +134,30 @@ namespace Microsoft.Azure.Cosmos
         public virtual string Id { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in container in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonIgnore]
+        public virtual UniqueKeyPolicy UniqueKeyPolicy
+        {
+            get
+            {
+                if (this.uniqueKeyPolicyInternal == null)
+                {
+                    this.uniqueKeyPolicyInternal = new UniqueKeyPolicy();
+                }
+
+                return this.uniqueKeyPolicyInternal;
+            }
+
+            set
+            {
+                if (value == null) throw new ArgumentNullException($"{nameof(value)}");
+
+                this.uniqueKeyPolicyInternal = value;
+            }
+        }
+
+        /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -185,22 +167,66 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the <see cref="IndexingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The last modified timestamp associated with the resource.</value>
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonConverter(typeof(UnixDateTimeConverter))]
+        public virtual DateTime? LastModified { get; private set; }
+
+        /// <summary>
+        /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
-        /// The indexing policy associated with the collection.
+        /// The indexing policy associated with the container.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
-        public IndexingPolicy IndexingPolicy { get; set; } = new IndexingPolicy();
+        [JsonIgnore]
+        public virtual IndexingPolicy IndexingPolicy
+        {
+            get
+            {
+                if (this.indexingPolicyInternal == null)
+                {
+                    this.indexingPolicyInternal = new IndexingPolicy();
+                }
+
+                return this.indexingPolicyInternal;
+            }
+
+            set
+            {
+                if (value == null) throw new ArgumentNullException($"{nameof(value)}");
+
+                this.indexingPolicyInternal = value;
+            }
+        }
 
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public string PartitionKeyPath => this.PartitionKey?.Paths[0];
+        public virtual string PartitionKeyPath
+        {
+            get
+            {
+                return this.PartitionKey?.Paths[0];
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the time to live base timestamp property path.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// This property should be only present when DefaultTimeToLive is set. When this property is present, time to live
+        /// for a item is decided based on the value of this property in item.
+        /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.TimeToLivePropertyPath, NullValueHandling = NullValueHandling.Ignore)]
+        public virtual string TimeToLivePropertyPath { get; set; }
 
         /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
@@ -257,15 +283,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public TimeSpan? DefaultTimeToLive
-        {
-            get
-            {
-                int? seconds = this.InternalTimeToLive;
-                return seconds != null && seconds.HasValue ? TimeSpan.FromSeconds(seconds.Value) : (TimeSpan?)null;
-            }
-            set => this.InternalTimeToLive = value != null && value.HasValue ? (int?)value.Value.TotalSeconds : null;
-        }
+        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive)]
+        public virtual int? DefaultTimeToLive { get; set; }
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents
@@ -285,6 +304,55 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
 
         /// <summary>
+        /// The function selects the right partition key constant mapping for <see cref="NonePartitionKeyValue"/>
+        /// </summary>
+        internal PartitionKeyInternal GetNoneValue()
+        {
+            if (this.PartitionKey == null)
+            {
+                throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
+            }
+
+            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey.HasValue && this.PartitionKey.IsSystemKey.Value))
+            {
+                return PartitionKeyInternal.Empty;
+            }
+            else
+            {
+                return PartitionKeyInternal.Undefined;
+            }
+        }
+
+        /// <summary>
+        /// Only collection cache needs this contract. None are expected to use it. 
+        /// </summary>
+        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
+        {
+            if (string.IsNullOrEmpty(resoruceId))
+            {
+                throw new ArgumentNullException(nameof(resoruceId));
+            }
+
+            return new CosmosContainerSettings()
+            {
+                ResourceId = resoruceId,
+            };
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
+        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            this.Id = id;
+            this.PartitionKey = partitionKeyDefinition;
+
+            ValidateRequiredProperties();
+        }
+
+        /// <summary>
         /// Gets or sets <see cref="PartitionKeyDefinition"/> object in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -294,12 +362,6 @@ namespace Microsoft.Azure.Cosmos
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
-        /// Internal property used as a helper to convert to the back-end type int?
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
-        internal int? InternalTimeToLive { get; set; }
-
-        /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -307,23 +369,14 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// A Resource Id is the unique, immutable, identifier assigned to each Azure Cosmos DB 
-        /// resource whether that is a database, a collection or a document.
+        /// resource whether that is a database, a container or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
+
         internal virtual string ResourceId { get; private set; }
 
-        internal static PartitionKeyInternal GetNonePartitionKeyInternal(PartitionKeyDefinition partitionKeyDefinition)
-        {
-            if (partitionKeyDefinition.Paths.Count == 0 || partitionKeyDefinition.IsSystemKey)
-            {
-                return PartitionKeyInternal.Empty;
-            }
-            else
-            {
-                return PartitionKeyInternal.Undefined;
-            }
-        }
+        internal bool HasPartitionKey => this.PartitionKey != null;
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.
@@ -338,6 +391,16 @@ namespace Microsoft.Azure.Cosmos
             if (this.PartitionKey == null || this.PartitionKey.Paths.Count == 0)
             {
                 throw new ArgumentNullException(nameof(this.PartitionKey));
+            }
+
+            // HACK: Till service can handle the defaults (self-mutation)
+            // If indexing mode is not 'none' and not paths are set, set them to the defaults
+            if (this.indexingPolicyInternal != null 
+                && this.indexingPolicyInternal.IndexingMode != IndexingMode.None
+                && this.indexingPolicyInternal.IncludedPaths.Count == 0
+                && this.indexingPolicyInternal.ExcludedPaths.Count == 0)
+            {
+                this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
             }
         }
     }
