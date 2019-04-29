@@ -311,10 +311,10 @@ namespace Microsoft.Azure.Cosmos.Query
                     });
 
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
-                            this.PartitionKeyRange.Id,
-                            feedResponse.ActivityId,
-                            feedResponse.Count,
-                            -1);
+                            partitionIdentifier: this.PartitionKeyRange.Id,
+                            activityId: feedResponse.ActivityId,
+                            numberOfDocuments: feedResponse.Count,
+                            retryCount: -1);
 
                         this.fetchSchedulingMetrics.Stop();
                         this.hasStartedFetching = true;
@@ -336,8 +336,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
                 {
                     queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                        feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
-                        new ClientSideMetrics(
+                        delimitedString: feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
+                        clientSideMetrics: new ClientSideMetrics(
                             -1,
                             feedResponse.RequestCharge,
                             this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
@@ -347,8 +347,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!this.HasMoreBackendResults)
                 {
                     queryMetrics = QueryMetrics.CreateWithSchedulingMetrics(
-                        queryMetrics,
-                        new List<Tuple<string, SchedulingTimeSpan>>
+                        queryMetrics: queryMetrics,
+                        partitionSchedulingTimeSpans: new List<Tuple<string, SchedulingTimeSpan>>
                         {
                                         new Tuple<string, SchedulingTimeSpan>(
                                             this.PartitionKeyRange.Id,

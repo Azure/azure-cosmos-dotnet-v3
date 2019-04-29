@@ -78,13 +78,11 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             if (!string.IsNullOrEmpty(partitionKeyPath))
             {
-                this.PartitionKey = new PartitionKeyDefinition
-                {
-                    Paths = new Collection<string>() { partitionKeyPath }
-                };
+                this.PartitionKey = new PartitionKeyDefinition();
+                this.PartitionKey.Paths = new Collection<string>() { partitionKeyPath };
             }
 
-            this.ValidateRequiredProperties();
+            ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -385,17 +383,17 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.Id == null)
             {
-                throw new ArgumentNullException(nameof(this.Id));
+                throw new ArgumentNullException(nameof(Id));
             }
 
             if (this.PartitionKey == null || this.PartitionKey.Paths.Count == 0)
             {
-                throw new ArgumentNullException(nameof(this.PartitionKey));
+                throw new ArgumentNullException(nameof(PartitionKey));
             }
 
             // HACK: Till service can handle the defaults (self-mutation)
             // If indexing mode is not 'none' and not paths are set, set them to the defaults
-            if (this.indexingPolicyInternal != null 
+            if (this.indexingPolicyInternal != null
                 && this.indexingPolicyInternal.IndexingMode != IndexingMode.None
                 && this.indexingPolicyInternal.IncludedPaths.Count == 0
                 && this.indexingPolicyInternal.ExcludedPaths.Count == 0)

@@ -230,6 +230,8 @@ namespace Microsoft.Azure.Cosmos
                     result: cosmosArray,
                     count: itemCount,
                     responseHeaders: cosmosResponseMessage.Headers,
+                    useETagAsContinuation: false,
+                    disallowContinuationTokenMessage: null,
                     responseLengthBytes: responseLengthBytes);
             }
         }

@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<CosmosElement> result,
             int count,
             CosmosResponseMessageHeaders responseHeaders,
-            bool useETagAsContinuation = false,
-            string disallowContinuationTokenMessage = null,
-            long responseLengthBytes = 0)
+            bool useETagAsContinuation,
+            string disallowContinuationTokenMessage,
+            long responseLengthBytes)
         {
             this.StatusCode = HttpStatusCode.Accepted;
             this.IsSuccess = true;
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
     /// <typeparam name="T"></typeparam>
     public class CosmosQueryResponse<T> : IEnumerable<T>
     {
-        private readonly CosmosResponseMessageHeaders responseHeaders = null;
+        private readonly CosmosResponseMessageHeaders responseHeaders;
         private IEnumerable<T> resources;
         private bool hasMoreResults;
 
