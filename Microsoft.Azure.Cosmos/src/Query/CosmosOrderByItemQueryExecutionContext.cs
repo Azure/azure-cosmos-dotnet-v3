@@ -199,17 +199,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
                 ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
-                if(!currentItemProducerTree.CurrentResponseContent.IsSuccess)
-                {
-                    return currentItemProducerTree.CurrentResponseContent;
-                }
 
                 OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
 
                 // Only add the payload, since other stuff is garbage from the caller's perspective.
                 results.Add(orderByQueryResult.Payload);
 
-                // If we are at the begining of the page and seeing an rid from the previous page we should increment the skip count
+                // If we are at the beginning of the page and seeing an rid from the previous page we should increment the skip count
                 // due to the fact that JOINs can make a document appear multiple times and across continuations, so we don't want to
                 // surface this more than needed. More information can be found in the continuation token docs.
                 if (this.ShouldIncrementSkipCount(currentItemProducerTree.CurrentItemProducerTree.Root))
@@ -223,7 +219,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                await currentItemProducerTree.MoveNextAsync(cancellationToken);
+                (bool isSuccess, CosmosQueryResponse failureResponse) moveNextResponse = await currentItemProducerTree.MoveNextAsync(cancellationToken);
+                if(!moveNextResponse.isSuccess && moveNextResponse.failureResponse != null)
+                {
+                    return moveNextResponse.failureResponse;
+                }
 
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
             }
@@ -434,11 +434,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             foreach (ItemProducerTree tree in producer)
             {
-                if (!tree.CurrentResponseContent.IsSuccess)
-                {
-                    return;
-                }
-
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
                     this.TraceWarning(string.Format(
@@ -526,7 +521,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    if (!await tree.MoveNextAsync(cancellationToken))
+                    (bool isSuccess, CosmosQueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
+                    if (!moveNextResponse.isSuccess)
                     {
                         break;
                     }

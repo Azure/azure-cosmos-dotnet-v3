@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await resultSet.FetchNextSetAsync();
                 Assert.Fail("Expected query to fail");
             }
-            catch (AggregateException e)
+            catch (Exception e)
             {
                 CosmosException exception = e.InnerException as CosmosException;
 

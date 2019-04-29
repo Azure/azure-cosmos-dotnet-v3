@@ -386,19 +386,24 @@ namespace Microsoft.Azure.Cosmos.Query
             try
             {
                 List<CosmosElement> dynamics = new List<CosmosElement>();
-                CosmosQueryResponse feedResponse = await this.component.DrainAsync(this.actualPageSize, token);
-                foreach (CosmosElement element in feedResponse.CosmosElements)
+                CosmosQueryResponse queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
+                if (!queryResponse.IsSuccess)
+                {
+                    return queryResponse;
+                }
+
+                foreach (CosmosElement element in queryResponse.CosmosElements)
                 {
                     dynamics.Add(element);
                 }
 
                 return new CosmosQueryResponse(
                     dynamics,
-                    feedResponse.Count,
-                    feedResponse.Headers,
-                    feedResponse.UseETagAsContinuation,
-                    feedResponse.DisallowContinuationTokenMessage,
-                    feedResponse.ResponseLengthBytes);
+                    queryResponse.Count,
+                    queryResponse.Headers,
+                    queryResponse.UseETagAsContinuation,
+                    queryResponse.DisallowContinuationTokenMessage,
+                    queryResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {

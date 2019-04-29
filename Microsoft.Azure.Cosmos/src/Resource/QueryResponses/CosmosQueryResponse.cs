@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the request charge for this request from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// The request charge measured in reqest units.
+        /// The request charge measured in request units.
         /// </value>
         public virtual double RequestCharge => this.Headers.RequestCharge;
 
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the session token for use in sesssion consistency reads from the Azure Cosmos DB service.
+        /// Gets the session token for use in session consistency reads from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The session token for use in session consistency.

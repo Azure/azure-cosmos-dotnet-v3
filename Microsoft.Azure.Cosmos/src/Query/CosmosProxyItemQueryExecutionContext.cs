@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // If the query failed because of cross partition query not servable then parse the query plan that is returned in the error
             // and create the correct context to execute it. For all other responses just return it since there is no query plan to parse.
-            if (response.StatusCode != HttpStatusCode.BadRequest && response.Headers.SubStatusCode != SubStatusCodes.CrossPartitionQueryNotServable)
+            if (response.StatusCode != HttpStatusCode.BadRequest || response.Headers.SubStatusCode != SubStatusCodes.CrossPartitionQueryNotServable)
             {
                 return response;
             }

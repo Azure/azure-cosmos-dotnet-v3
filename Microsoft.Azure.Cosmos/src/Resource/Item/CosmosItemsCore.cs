@@ -437,6 +437,7 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
             CosmosQueryResponse feedResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
+            feedResponse.EnsureSuccessStatusCode();
 
             return CosmosQueryResponse<T>.CreateResponse<T>(
                 cosmosQueryResponse: feedResponse,

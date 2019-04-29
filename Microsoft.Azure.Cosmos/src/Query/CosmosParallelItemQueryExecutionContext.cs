@@ -134,21 +134,25 @@ namespace Microsoft.Azure.Cosmos.Query
             // This might be the first time we have seen this document producer tree so we need to buffer documents
             if (currentItemProducerTree.Current == null)
             {
-                await currentItemProducerTree.MoveNextAsync(token);
+                (bool isSuccess, CosmosQueryResponse failureResponse) moveNextResponse = await currentItemProducerTree.MoveNextAsync(token);
+                if (!moveNextResponse.isSuccess && moveNextResponse.failureResponse != null)
+                {
+                    return moveNextResponse.failureResponse;
+                }
             }
 
             int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
-            if (!currentItemProducerTree.CurrentResponseContent.IsSuccess)
-            {
-                return currentItemProducerTree.CurrentResponseContent;
-            }
 
             // Only drain full pages or less if this is a top query.
             List<CosmosElement> results = new List<CosmosElement>();
             for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
             {
                 results.Add(currentItemProducerTree.Current);
-                await currentItemProducerTree.MoveNextAsync(token);
+                (bool isSuccess, CosmosQueryResponse failureResponse) moveNextResponse = await currentItemProducerTree.MoveNextAsync(token);
+                if (!moveNextResponse.isSuccess && moveNextResponse.failureResponse != null)
+                {
+                    return moveNextResponse.failureResponse;
+                }
             }
 
             this.PushCurrentItemProducerTree(currentItemProducerTree);

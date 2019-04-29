@@ -239,22 +239,27 @@ namespace Microsoft.Azure.Cosmos.Query
         public CosmosElement Current { get; private set; }
 
         /// <summary>
-        /// Gets the current document in this producer.
+        /// A static object representing that the move next operation succeeded, and was able to load the next page
         /// </summary>
-        public CosmosQueryResponse CurrentElementResponse { get; private set; }
+        internal static readonly (bool isSuccess, CosmosQueryResponse failureResponse) IsSuccessResponse = (true, null);
+
+        /// <summary>
+        /// A static object representing that there is no more pages to load. 
+        /// </summary>
+        internal static readonly (bool isSuccess, CosmosQueryResponse failureResponse) IsDoneResponse = (false, null);
 
         /// <summary>
         /// Moves to the next document in the producer.
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document.</returns>
-        public async Task<bool> MoveNextAsync(CancellationToken token)
+        public async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             CosmosElement originalCurrent = this.Current;
-            bool movedNext = await this.MoveNextAsyncImplementation(token);
-            if (!movedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
+            (bool isSuccess, CosmosQueryResponse failureResponse) movedNext = await this.MoveNextAsyncImplementation(token);
+            if (!movedNext.isSuccess || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
                 this.IsActive = false;
             }
@@ -336,8 +341,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
                 {
                     queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                        delimitedString: feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
-                        clientSideMetrics: new ClientSideMetrics(
+                        feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
+                        new ClientSideMetrics(
                             -1,
                             feedResponse.RequestCharge,
                             this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
@@ -398,13 +403,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
-        private async Task<bool> MoveNextAsyncImplementation(CancellationToken token)
+        private async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> MoveNextAsyncImplementation(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             if (!this.HasMoreResults)
             {
-                return false;
+                return ItemProducer.IsDoneResponse;
             }
 
             await this.BufferMoreIfEmpty(token);
@@ -413,15 +418,13 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 // First time calling move next async so we are just going to call movenextpage to get the ball rolling
                 this.hasInitialized = true;
-                if (await this.MoveNextPage(token))
-                {
-                    return true;
-                }
-                else
+                (bool isSuccess, CosmosQueryResponse failureResponse) response = await this.TryMoveNextPage(token);
+                if (!response.isSuccess)
                 {
                     this.HasMoreResults = false;
-                    return false;
                 }
+
+                return response;
             }
 
             Interlocked.Decrement(ref this.bufferedItemCount);
@@ -432,20 +435,18 @@ namespace Microsoft.Azure.Cosmos.Query
             if (this.MoveNextDocumentWithinCurrentPage())
             {
                 this.Current = this.CurrentPage.Current;
-                return true;
+                return ItemProducer.IsSuccessResponse;
             }
             else
             {
                 // We might be at a continuation boundary so we need to move to the next page
-                if (await this.MoveNextPage(token))
-                {
-                    return true;
-                }
-                else
+                (bool isSuccess, CosmosQueryResponse failureResponse) response = await this.TryMoveNextPage(token);
+                if (!response.isSuccess)
                 {
                     this.HasMoreResults = false;
-                    return false;
                 }
+
+                return response;
             }
         }
 
@@ -469,13 +470,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether the operation was successful.</returns>
-        private async Task<bool> MoveNextPage(CancellationToken token)
+        private async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> TryMoveNextPage(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             if (this.bufferedPages.Count == 0)
             {
-                return false;
+                return ItemProducer.IsDoneResponse;
             }
 
             if (this.ItemsLeftInCurrentPage != 0)
@@ -483,26 +484,25 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
-            CosmosQueryResponse feedResponse = await this.bufferedPages.TakeAsync(token);
+            CosmosQueryResponse queryResponse = await this.bufferedPages.TakeAsync(token);
             this.PreviousContinuationToken = this.currentContinuationToken;
-            this.currentContinuationToken = feedResponse.ResponseContinuation;
-            this.CurrentPage = feedResponse.CosmosElements.GetEnumerator();
-            this.itemsLeftInCurrentPage = feedResponse.Count;
-            this.CurrentElementResponse = feedResponse;
+            this.currentContinuationToken = queryResponse.ResponseContinuation;
+            this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
+            this.itemsLeftInCurrentPage = queryResponse.Count;
 
-            if (!feedResponse.IsSuccess)
+            if (!queryResponse.IsSuccess)
             {
-                return false;
+                return (false, queryResponse);
             }
 
             if (this.MoveNextDocumentWithinCurrentPage())
             {
                 this.IsAtBeginningOfPage = true;
-                return true;
+                return ItemProducer.IsSuccessResponse;
             }
             else
             {
-                return false;
+                return ItemProducer.IsDoneResponse;
             }
         }
     }
