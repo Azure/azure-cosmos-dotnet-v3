@@ -3,10 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
+    using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Represents a unique key on that enforces uniqueness constraint on documents in the collection in the Azure Cosmos DB service.
@@ -32,39 +31,5 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.Paths)]
         public Collection<string> Paths { get; set; } = new Collection<string>();
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public sealed class UniqueueKeyBuilder
-    {
-        private Collection<string> Paths { get; set; } = new Collection<string>();
-        private CosmosContainerBuilder Root { get; }
-
-        internal UniqueueKeyBuilder(CosmosContainerBuilder root)
-        {
-            this.Root = root;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
-        public UniqueueKeyBuilder Path(string name)
-        {
-            this.Paths.Add(name);
-            return this;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public CosmosContainerBuilder Attach()
-        {
-            return this.Root;
-        }
     }
 }

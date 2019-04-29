@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
@@ -30,11 +29,6 @@ namespace Microsoft.Azure.Cosmos
             this.database = database;
             this.client = database.Client;
             this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
-        }
-
-        public override CosmosContainerBuilder Define(string name)
-        {
-            return new CosmosContainerBuilder(this, name);
         }
 
         public override Task<CosmosContainerResponse> CreateContainerAsync(
