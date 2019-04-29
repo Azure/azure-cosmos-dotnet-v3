@@ -785,6 +785,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(3, queryResponse.Count());
                 }
 
+                //Reading all items on fixed container.
+                setIterator = fixedContainer.Items
+                    .GetItemIterator<dynamic>(maxItemCount: 10);
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosQueryResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(3, queryResponse.Count());
+                }
+
                 //Quering items on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 setIterator = fixedContainer.Items
                     .CreateItemQuery<dynamic>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: 10);
