@@ -61,9 +61,9 @@ namespace Microsoft.Azure.Cosmos.Query
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
 
-        internal override bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
+        public override bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
-        internal override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

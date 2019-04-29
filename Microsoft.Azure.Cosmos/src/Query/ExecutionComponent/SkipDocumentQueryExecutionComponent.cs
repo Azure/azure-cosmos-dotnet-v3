@@ -58,21 +58,23 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
-            FeedResponse<CosmosElement> sourcePage = await base.DrainAsync(maxElements, token);
+            CosmosQueryResponse sourcePage = await base.DrainAsync(maxElements, token);
+            if (!sourcePage.IsSuccess)
+            {
+                return sourcePage;
+            }
 
             // skip the documents but keep all the other headers
-            List<CosmosElement> documentsAfterSkip = sourcePage.Skip(this.skipCount).ToList();
-            FeedResponse<CosmosElement> offsetPage = new FeedResponse<CosmosElement>(
-                    documentsAfterSkip,
-                    documentsAfterSkip.Count(),
-                    sourcePage.Headers,
-                    sourcePage.UseETagAsContinuation,
-                    sourcePage.QueryMetrics,
-                    sourcePage.RequestStatistics,
-                    sourcePage.DisallowContinuationTokenMessage,
-                    sourcePage.ResponseLengthBytes);
+            List<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
+            CosmosQueryResponse offsetPage = new CosmosQueryResponse(
+                    result: documentsAfterSkip,
+                    count: documentsAfterSkip.Count(),
+                    responseHeaders: sourcePage.Headers,
+                    useETagAsContinuation: sourcePage.UseETagAsContinuation,
+                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    responseLengthBytes: sourcePage.ResponseLengthBytes);
 
             int numberOfDocumentsSkipped = sourcePage.Count - documentsAfterSkip.Count;
             this.skipCount -= numberOfDocumentsSkipped;

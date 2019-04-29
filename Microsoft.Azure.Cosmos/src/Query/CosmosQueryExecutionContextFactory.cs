@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private const int PageSizeFactorForTop = 5;
 
-        internal override bool IsDone => this.innerExecutionContext == null ? false : this.innerExecutionContext.IsDone;
+        public override bool IsDone => this.innerExecutionContext == null ? false : this.innerExecutionContext.IsDone;
 
         public CosmosQueryExecutionContextFactory(
             CosmosQueryClient client,
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
-            return await CosmosPipelinedItemQueryExecutionContext.CreateAsync(
+            return await PipelinedDocumentQueryExecutionContext.CreateAsync(
                 cosmosQueryContext,
                 collectionRid,
                 partitionedQueryExecutionInfo,
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return false;
         }
 
-        internal override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.innerExecutionContext == null)
             {

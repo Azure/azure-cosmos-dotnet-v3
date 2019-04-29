@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        internal override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation toke for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first

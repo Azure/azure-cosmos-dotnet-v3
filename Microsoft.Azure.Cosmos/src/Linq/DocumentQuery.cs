@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    FeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
+                    FeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(CancellationToken.None), null).Result;
                     FeedResponse<T> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<T>(
                         feedResponse, 
                         this.resourceTypeEnum,
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    FeedResponse<T> partialResult = await (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(cancellationToken), null, cancellationToken);
+                    FeedResponse<T> partialResult = await (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken), null, cancellationToken);
                     result.AddRange(partialResult);
                 }
             }
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
             }
 
-            FeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
+            FeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken);
             FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
                 response, 
                 this.resourceTypeEnum,

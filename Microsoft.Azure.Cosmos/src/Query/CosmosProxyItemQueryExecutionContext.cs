@@ -46,14 +46,14 @@ namespace Microsoft.Azure.Cosmos.Query
             this.containerSettings = containerSettings;
         }
 
-        internal override bool IsDone => this.innerExecutionContext.IsDone;
+        public override bool IsDone => this.innerExecutionContext.IsDone;
 
         public override void Dispose()
         {
             this.innerExecutionContext.Dispose();
         }
 
-        internal override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.IsDone)
             {

@@ -35,58 +35,58 @@ namespace Microsoft.Azure.Cosmos.Tests
                 AggregateOperator.Sum
             };
 
-            (Func<string, Task<CosmosQueryExecutionComponent>>, CosmosQueryResponse) setupContext = this.SetupBaseContextToVerifyFailureScenario();
-            ItemQueryExecutionComponentBase executionContext = await AggregateItemQueryExecutionComponent.CreateAsync(
+            (Func<string, Task<IDocumentQueryExecutionComponent>> func, CosmosQueryResponse response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
+            DocumentQueryExecutionComponentBase executionContext = await AggregateDocumentQueryExecutionComponent.CreateAsync(
                 operators.ToArray(),
                 null,
-                setupContext.Item1);
+                setupContext.func);
 
            CosmosQueryResponse response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.Item2, response);
+            Assert.AreEqual(setupContext.response, response);
 
-             executionContext = await DistinctItemQueryExecutionComponent.CreateAsync(
+             executionContext = await DistinctDocumentQueryExecutionComponent.CreateAsync(
                       null,
-                      setupContext.Item1,
+                      setupContext.func,
                       DistinctQueryType.Ordered);
 
             response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.Item2, response);
+            Assert.AreEqual(setupContext.response, response);
 
-            executionContext = await SkipItemQueryExecutionComponent.CreateAsync(
+            executionContext = await SkipDocumentQueryExecutionComponent.CreateAsync(
                        5,
                        null,
-                       setupContext.Item1);
+                       setupContext.func);
 
             response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.Item2, response);
+            Assert.AreEqual(setupContext.response, response);
 
-            executionContext = await TakeItemQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
+            executionContext = await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
                       5,
                       null,
-                      setupContext.Item1);
+                      setupContext.func);
 
             response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.Item2, response);
+            Assert.AreEqual(setupContext.response, response);
 
-            executionContext = await TakeItemQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
+            executionContext = await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
                        5,
                        null,
-                       setupContext.Item1);
+                       setupContext.func);
 
             response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.Item2, response);
+            Assert.AreEqual(setupContext.response, response);
         }
 
-        private (Func<string, Task<CosmosQueryExecutionComponent>>, CosmosQueryResponse) SetupBaseContextToVerifyFailureScenario()
+        private (Func<string, Task<IDocumentQueryExecutionComponent>>, CosmosQueryResponse) SetupBaseContextToVerifyFailureScenario()
         {
             Mock<CosmosQueryResponse> mockResponseMessage = new Mock<CosmosQueryResponse>();
             mockResponseMessage.Setup(x => x.IsSuccess).Returns(false);
             // Throw an exception if the context accesses the CosmosElements array
             mockResponseMessage.Setup(x => x.CosmosElements).Throws(new ArgumentException("Context tried to access the Cosmos Elements of a failed response. Context should just return failed response."));
 
-            Mock<CosmosQueryExecutionComponent> baseContext = new Mock<CosmosQueryExecutionComponent>();
+            Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<CosmosQueryResponse>(mockResponseMessage.Object));
-            Func<string, Task<CosmosQueryExecutionComponent>> callBack = x => Task.FromResult<CosmosQueryExecutionComponent>(baseContext.Object);
+            Func<string, Task<IDocumentQueryExecutionComponent>> callBack = x => Task.FromResult<IDocumentQueryExecutionComponent>(baseContext.Object);
             return (callBack, mockResponseMessage.Object);
         }
     }

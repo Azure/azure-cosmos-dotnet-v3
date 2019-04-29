@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <summary>
         /// Gets a value indicating whether this component is done draining documents.
         /// </summary>
-        internal abstract bool IsDone { get; }
+        public abstract bool IsDone { get; }
 
         /// <summary>
         /// Drains documents from this component.
@@ -28,18 +28,18 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="token">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        internal abstract Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token);
+        public abstract Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Stops this document query execution component.
         /// </summary>
-        internal abstract void Stop();
+        public abstract void Stop();
 
         /// <summary>
         /// Gets the QueryMetrics from this component.
         /// </summary>
         /// <returns>The QueryMetrics from this component.</returns>
-        internal abstract IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics();
+        public abstract IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics();
 
         public abstract void Dispose();
     }

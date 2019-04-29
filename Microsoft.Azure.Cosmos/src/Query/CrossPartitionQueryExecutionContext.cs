@@ -259,10 +259,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the response headers for the context.
         /// </summary>
         /// <returns>The response headers for the context.</returns>
-        public INameValueCollection GetResponseHeaders()
+        public CosmosResponseMessageHeaders GetResponseHeaders()
         {
-            StringKeyValueCollection responseHeaders = new StringKeyValueCollection();
-            responseHeaders[HttpConstants.HttpHeaders.Continuation] = this.ContinuationToken;
+            CosmosResponseMessageHeaders responseHeaders = new CosmosResponseMessageHeaders();
+            responseHeaders.Continuation = this.ContinuationToken;
             if (this.ContinuationToken == "[]")
             {
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
@@ -278,9 +278,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 .ToDelimitedString();
             }
 
-            responseHeaders[HttpConstants.HttpHeaders.RequestCharge] = this.requestChargeTracker
-                .GetAndResetCharge()
-                .ToString(CultureInfo.InvariantCulture);
+            responseHeaders.RequestCharge = this.requestChargeTracker
+                .GetAndResetCharge();
 
             return responseHeaders;
         }
@@ -390,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements to drain (you might get less).</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task that when awaited on will return a feed response.</returns>
-        public abstract Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token);
+        public abstract Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.

@@ -315,8 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Assert.AreEqual(expectedSerialized, readSerialized);
 
-                        Assert.AreEqual(maxItemCount, expectedTodoActivities.Length);
-                    }
+                    Assert.AreEqual(maxItemCount, expectedTodoActivities.Length);
                 }
             }
             while (lastContinuationToken != null);
@@ -324,7 +323,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(expectedIterationCount, iterationCount);
             Assert.AreEqual(perPKItemCount, totalReadItem);
         }
-
 
         /// <summary>
         /// Validate multiple partition query
@@ -376,18 +374,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
             while (setIterator.HasMoreResults)
             {
-                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
-                {
-                    Assert.IsTrue(iter.IsSuccess);
-                    Assert.IsNull(iter.ErrorMessage);
-                    Assert.IsTrue(iter.Count <= 5);
-                    totalRequstCharge += iter.RequestCharge;
+                CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
+                Assert.IsTrue(iter.IsSuccess);
+                Assert.IsNull(iter.ErrorMessage);
+                Assert.IsTrue(iter.Count <= 5);
+                totalRequstCharge += iter.RequestCharge;
 
-                    ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
-                    Assert.AreEqual(1, activities.Length);
-                    ToDoActivity response = activities.First();
-                    resultList.Add(response);
-                }
+                ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                Assert.AreEqual(1, activities.Length);
+                ToDoActivity response = activities.First();
+                resultList.Add(response);
             }
 
             Assert.AreEqual(deleteList.Count, resultList.Count);
@@ -416,15 +412,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5);
             while (setIterator.HasMoreResults)
             {
-                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
-                {
-                    Assert.IsTrue(iter.IsSuccess);
-                    Assert.IsNull(iter.ErrorMessage);
-                    Assert.IsTrue(iter.Count <= 5);
-                    totalRequstCharge += iter.RequestCharge;
-                    ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
-                    resultList.AddRange(response);
-                }
+                CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
+                Assert.IsTrue(iter.IsSuccess);
+                Assert.IsNull(iter.ErrorMessage);
+                Assert.IsTrue(iter.Count <= 5);
+                totalRequstCharge += iter.RequestCharge;
+                ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                resultList.AddRange(response);
             }
 
             Assert.AreEqual(deleteList.Count, resultList.Count);
@@ -554,20 +548,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
             while (setIterator.HasMoreResults)
             {
-                using (CosmosQueryResponse iter = await setIterator.FetchNextSetAsync())
-                {
-                    Assert.IsTrue(iter.IsSuccess);
-                    Assert.IsNull(iter.ErrorMessage);
-                    Assert.IsTrue(iter.Count <= 5);
-                    totalRequstCharge += iter.RequestCharge;
-                    IJsonReader reader = JsonReader.Create(iter.Content);
-                    IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-                    textWriter.WriteAll(reader);
-                    string json = Encoding.UTF8.GetString(textWriter.GetResult());
-                    Assert.IsNotNull(json);
-                    ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
-                    resultList.AddRange(responseActivities);
-                }
+                CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
+                Assert.IsTrue(iter.IsSuccess);
+                Assert.IsNull(iter.ErrorMessage);
+                Assert.IsTrue(iter.Count <= 5);
+                totalRequstCharge += iter.RequestCharge;
+                IJsonReader reader = JsonReader.Create(iter.Content);
+                IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                textWriter.WriteAll(reader);
+                string json = Encoding.UTF8.GetString(textWriter.GetResult());
+                Assert.IsNotNull(json);
+                ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
+                resultList.AddRange(responseActivities);
             }
 
             Assert.AreEqual(deleteList.Count, resultList.Count);

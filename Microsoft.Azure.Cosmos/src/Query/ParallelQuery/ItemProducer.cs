@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// We buffer TryMonad of FeedResponse of T, since we want to buffer exceptions,
         /// so that the exception is thrown on the consumer thread (instead of the background producer thread), thus observing the exception.
         /// </summary>
-        private readonly AsyncCollection<TryMonad<FeedResponse<CosmosElement>>> bufferedPages;
+        private readonly AsyncCollection<CosmosQueryResponse> bufferedPages;
 
         /// <summary>
         /// The document producer can only be fetching one page at a time.
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            this.bufferedPages = new AsyncCollection<TryMonad<FeedResponse<CosmosElement>>>();
+            this.bufferedPages = new AsyncCollection<CosmosQueryResponse>();
 
             // We use a binary semaphore to get the behavior of a mutex,
             // since fetching documents from the backend using a continuation token is a critical section.
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.PartitionKeyRange.Id,
                             feedResponse.ActivityId,
                             feedResponse.Count,
-                            retries);
+                            -1);
 
                         this.fetchSchedulingMetrics.Stop();
                         this.hasStartedFetching = true;
@@ -503,53 +503,6 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 return false;
-            }
-        }
-
-        private struct TryMonad<TResult>
-        {
-            private readonly TResult result;
-            private readonly ExceptionDispatchInfo exceptionDispatchInfo;
-            private readonly bool succeeded;
-
-            private TryMonad(
-                TResult result,
-                ExceptionDispatchInfo exceptionDispatchInfo,
-                bool succeeded)
-            {
-                this.result = result;
-                this.exceptionDispatchInfo = exceptionDispatchInfo;
-                this.succeeded = succeeded;
-            }
-
-            public static TryMonad<TResult> FromResult(TResult result)
-            {
-                return new TryMonad<TResult>(
-                    result: result,
-                    exceptionDispatchInfo: default(ExceptionDispatchInfo),
-                    succeeded: true);
-            }
-
-            public static TryMonad<TResult> FromException(Exception exception)
-            {
-                return new TryMonad<TResult>(
-                    result: default(TResult),
-                    exceptionDispatchInfo: ExceptionDispatchInfo.Capture(exception),
-                    succeeded: false);
-            }
-
-            public TOutput Match<TOutput>(
-                Func<TResult, TOutput> onSuccess,
-                Func<ExceptionDispatchInfo, TOutput> onError)
-            {
-                if (this.succeeded)
-                {
-                    return onSuccess(this.result);
-                }
-                else
-                {
-                    return onError(this.exceptionDispatchInfo);
-                }
             }
         }
     }

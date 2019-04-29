@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether or not the context is done serving documents.
         /// </summary>
-        internal abstract bool IsDone
+        public abstract bool IsDone
         {
             get;
         }
@@ -30,6 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on, which in return provides a FeedResponse of documents.</returns>
-        internal abstract Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token);
+        public abstract Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token);
     }
 }

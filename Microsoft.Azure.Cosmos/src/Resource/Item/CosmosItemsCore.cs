@@ -436,25 +436,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
+            CosmosQueryResponse feedResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
 
-            try
-            {
-                CosmosQueryResponse feedResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
-                return CosmosQueryResponse<T>.CreateResponse<T>(
-                    feedResponse: feedResponse,
-                    jsonSerializer: this.clientContext.JsonSerializer,
-                    hasMoreResults: !documentQueryExecution.IsDone,
-                    resourceType: ResourceType.Document);
-            }
-            catch (DocumentClientException exception)
-            {
-                throw new CosmosException(
-                    message: exception.Message,
-                    statusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
-                    subStatusCode: (int)exception.GetSubStatus(),
-                    activityId: exception.ActivityId,
-                    requestCharge: exception.RequestCharge);
-            }
+            return CosmosQueryResponse<T>.CreateResponse<T>(
+                cosmosQueryResponse: feedResponse,
+                jsonSerializer: this.clientContext.JsonSerializer,
+                hasMoreResults: !cosmosQueryExecution.IsDone,
+                resourceType: ResourceType.Document);
         }
 
         internal Task<CosmosResponseMessage> ProcessItemStreamAsync(

@@ -92,17 +92,20 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
-            FeedResponse<CosmosElement> results = await base.DrainAsync(maxElements, token);
-            List<CosmosElement> takedDocuments = results.Take(this.takeCount).ToList();
-            results = new FeedResponse<CosmosElement>(
+            CosmosQueryResponse results = await base.DrainAsync(maxElements, token);
+            if (!results.IsSuccess)
+            {
+                return results;
+            }
+
+            List<CosmosElement> takedDocuments = results.CosmosElements.Take(this.takeCount).ToList();
+            results = new CosmosQueryResponse(
                 takedDocuments,
                 takedDocuments.Count,
                 results.Headers,
                 results.UseETagAsContinuation,
-                results.QueryMetrics,
-                results.RequestStatistics,
                 results.DisallowContinuationTokenMessage,
                 results.ResponseLengthBytes);
 
@@ -129,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                             break;
 
                         default:
-                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {takeEnum}");
+                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
                     }
 
                     results.ResponseContinuation = takeContinuationToken.ToString();

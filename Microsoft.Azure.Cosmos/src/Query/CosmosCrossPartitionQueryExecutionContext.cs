@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This class is also responsible for prefetching documents if necessary using <see cref="ComparableTaskScheduler"/> whose ordering is also determined by the derived classes.
     /// This class also aggregated all metrics from sending queries to individual partitions.
     /// </summary>
-    internal abstract class CosmosCrossPartitionQueryExecutionContext : CosmosQueryExecutionComponent
+    internal abstract class CosmosCrossPartitionQueryExecutionContext : CosmosQueryExecutionComponent, IDocumentQueryExecutionComponent
     {
         private CosmosQueryContext queryContext;
 
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether this context is done having documents drained.
         /// </summary>
-        internal override bool IsDone
+        public override bool IsDone
         {
             get
             {
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the query metrics that are set in SetQueryMetrics
         /// </summary>
         /// <returns>The grouped query metrics.</returns>
-        internal override IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
+        public override IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
         {
             return new PartitionedQueryMetrics(this.groupedQueryMetrics);
         }
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Stops the execution context.
         /// </summary>
-        internal override void Stop()
+        public override void Stop()
         {
             this.comparableTaskScheduler.Stop();
         }
