@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly CosmosContainerFluentDefinitionCore parent;
         private PathsFluentDefinition includedPathsBuilder;
         private PathsFluentDefinition excludedPathsBuilder;
-        private IndexingMode indexingMode;
 
         public IndexingPolicyFluentDefinitionCore(CosmosContainerFluentDefinitionCore parent) 
         {
@@ -21,7 +20,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override IndexingPolicyFluentDefinition WithIndexingMode(IndexingMode indexingMode)
         {
-            this.indexingMode = indexingMode;
+            this.indexingPolicy.IndexingMode = indexingMode;
+            return this;
+        }
+
+        public override IndexingPolicyFluentDefinition WithoutAutomaticIndexing()
+        {
+            this.indexingPolicy.Automatic = false;
             return this;
         }
 

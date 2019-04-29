@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    using System;
     using System.Collections.ObjectModel;
 
     internal sealed class UniqueKeyFluentDefinitionCore : UniqueKeyFluentDefinition
@@ -17,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override UniqueKeyFluentDefinition Path(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
             this.paths.Add(path);
             return this;
         }

@@ -1,6 +1,8 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+using System;
+
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     internal sealed class SpatialIndexFluentDefinitionCore : SpatialIndexFluentDefinition
@@ -15,6 +17,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override SpatialIndexFluentDefinition WithPath(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
             this.spatialSpec.Path = path;
             return this;
         }
@@ -23,6 +30,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string path, 
             params SpatialType[] spatialTypes)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
+            if (spatialTypes == null)
+            {
+                throw new ArgumentNullException(nameof(spatialTypes));
+            }
+
+
             this.spatialSpec.Path = path;
 
             foreach (SpatialType spatialType in spatialTypes)

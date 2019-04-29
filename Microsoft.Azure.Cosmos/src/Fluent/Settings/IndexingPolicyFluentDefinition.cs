@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public abstract IndexingPolicyFluentDefinition WithIndexingMode(IndexingMode indexingMode);
 
         /// <summary>
+        /// Turns off the <see cref="CosmosContainer"/>'s automatic indexing.
+        /// </summary>
+        public abstract IndexingPolicyFluentDefinition WithoutAutomaticIndexing();
+
+        /// <summary>
         /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingPolicy.IncludedPaths"/>.
         /// </summary>
         public abstract PathsFluentDefinition IncludedPaths();

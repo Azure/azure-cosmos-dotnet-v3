@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly CosmosContainers CosmosContainers;
         private readonly string partitionKeyPath;
         private UniqueKeyPolicy uniqueKeyPolicy;
-        private int defaultTimeToLive;
+        private int? defaultTimeToLive;
         private IndexingPolicy indexingPolicy;
         private int throughput;
 
@@ -31,6 +31,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override CosmosContainerFluentDefinition WithThroughput(int throughput)
         {
+            if (throughput <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(throughput));
+            }
+
             this.throughput = throughput;
             return this;
         }
@@ -42,12 +47,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override CosmosContainerFluentDefinition WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
+            if (defaultTtlTimeSpan == null)
+            {
+                throw new ArgumentNullException(nameof(defaultTtlTimeSpan));
+            }
+
             this.defaultTimeToLive = (int)defaultTtlTimeSpan.TotalSeconds;
             return this;
         }
 
         public override CosmosContainerFluentDefinition WithDefaultTimeToLive(int defaulTtlInSeconds)
         {
+            if (defaulTtlInSeconds < -1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(defaulTtlInSeconds));
+            }
+
             this.defaultTimeToLive = defaulTtlInSeconds;
             return this;
         }
@@ -80,16 +95,28 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override Task<CosmosContainerResponse> ApplyAsync()
         {
-            // TODO: Populate the settigns & options
-            CosmosContainerSettings settings = new CosmosContainerSettings();
-            CosmosContainerRequestOptions containerRequestOptions = new CosmosContainerRequestOptions();
+            CosmosContainerSettings settings = new CosmosContainerSettings(id: this.containerName, partitionKeyPath: this.partitionKeyPath );
+            if (this.indexingPolicy != null)
+            {
+                settings.IndexingPolicy = this.indexingPolicy;
+            }
+
+            if (this.uniqueKeyPolicy != null)
+            {
+                settings.UniqueKeyPolicy = this.uniqueKeyPolicy;
+            }
+
+            if (this.defaultTimeToLive.HasValue)
+            {
+                settings.DefaultTimeToLive = this.defaultTimeToLive.Value;
+            }
 
             switch (this.fluentSettingsOperation)
             {
                 case FluentSettingsOperation.Create:
-                    return this.CosmosContainers.CreateContainerAsync(settings, this.throughput, containerRequestOptions);
+                    return this.CosmosContainers.CreateContainerAsync(settings, this.throughput);
                 case FluentSettingsOperation.Replace:
-                    return this.CosmosContainers[this.containerName].ReplaceAsync(settings, containerRequestOptions);
+                    return this.CosmosContainers[this.containerName].ReplaceAsync(settings);
             }
 
             throw new NotImplementedException();

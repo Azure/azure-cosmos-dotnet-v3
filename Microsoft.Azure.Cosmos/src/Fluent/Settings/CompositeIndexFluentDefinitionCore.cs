@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    using System;
     using System.Collections.ObjectModel;
 
     internal sealed class CompositeIndexFluentDefinitionCore : CompositeIndexFluentDefinition
@@ -17,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override CompositeIndexFluentDefinition Path(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
             this.compositePaths.Add(new CompositePath() { Path = path });
             return this;
         }
@@ -25,6 +31,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string path, 
             CompositePathSortOrder sortOrder)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
+
             this.compositePaths.Add(new CompositePath() { Path = path, Order = sortOrder });
             return this;
         }
