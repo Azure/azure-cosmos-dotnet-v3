@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -3138,18 +3137,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            await this.RunWithApiVersion(
-                HttpConstants.Versions.v2018_09_17,
-                async () =>
-                {
-                    await this.CreateIngestQueryDelete(
-                        ConnectionModes.Direct,
-                        documents,
-                        this.TestMultiOrderByQueriesHelper,
-                        "/" + nameof(MultiOrderByDocument.PartitionKey),
-                        indexingPolicy,
-                        this.CreateNewCosmosClient);
-                });
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                documents,
+                this.TestMultiOrderByQueriesHelper,
+                "/" + nameof(MultiOrderByDocument.PartitionKey),
+                indexingPolicy,
+                this.CreateNewCosmosClient);
         }
 
         private sealed class MultiOrderByDocument
