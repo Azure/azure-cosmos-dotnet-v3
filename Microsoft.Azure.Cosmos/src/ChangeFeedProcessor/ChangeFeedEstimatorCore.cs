@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using static Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement.RemainingWorkEstimatorCore;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
