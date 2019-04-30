@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private PathsFluentDefinition includedPathsBuilder;
         private PathsFluentDefinition excludedPathsBuilder;
 
-
         public IndexingPolicyFluentDefinitionCore(
             CosmosContainerFluentDefinition parent,
             Action<IndexingPolicy> attachCallback) 
