@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -432,15 +431,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TestBadQueriesOverMultiplePartitions()
-        {
-            await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CrossPartitionQueryTests.NoDocuments,
-                this.TestBadQueriesOverMultiplePartitionsHelper);
-        }
-
-        [TestMethod]
         public void TestContinuationTokenSerialization()
         {
             CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
@@ -477,6 +467,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(orderByContinuationToken.SkipCount, deserializedOrderByContinuationToken.SkipCount);
         }
 
+        [TestMethod]
+        public async Task TestBadQueriesOverMultiplePartitions()
+        {
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CrossPartitionQueryTests.NoDocuments,
+                this.TestBadQueriesOverMultiplePartitionsHelper);
+        }
+
         private async Task TestBadQueriesOverMultiplePartitionsHelper(CosmosContainer container, IEnumerable<Document> documents)
         {
             await CrossPartitionQueryTests.NoOp();
@@ -488,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await resultSetIterator.FetchNextSetAsync();
 
-                Assert.Fail("Expected CosmosException");
+                Assert.Fail($"Expected {nameof(CosmosException)}");
             }
             catch (AggregateException e)
             {
@@ -504,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     throw e;
                 }
 
-                if (!exception.Message.StartsWith("Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {\"errors\":[{\"severity\":\"Error\",\"location\":{\"start\":27,\"end\":28},\"code\":\"SC2001\",\"message\":\"Identifier 'a' could not be resolved.\"}]}"))
+                if (!exception.Message.Contains(@"{""errors"":[{""severity"":""Error"",""location"":{""start"":27,""end"":28},""code"":""SC2001"",""message"":""Identifier 'a' could not be resolved.""}]}"))
                 {
                     throw e;
                 }
