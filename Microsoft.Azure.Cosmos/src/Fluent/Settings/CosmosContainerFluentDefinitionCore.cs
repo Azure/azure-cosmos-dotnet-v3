@@ -134,6 +134,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 settings.TimeToLivePropertyPath = timeToLivePropertyPath;
             }
 
+            settings.ValidateRequiredProperties();
+
             switch (this.fluentSettingsOperation)
             {
                 case FluentSettingsOperation.Create:
