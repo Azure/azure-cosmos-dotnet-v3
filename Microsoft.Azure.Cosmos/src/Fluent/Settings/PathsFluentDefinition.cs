@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Adds a path to the current <see cref="PathsFluentDefinition"/>.
         /// </summary>
-        /// <param name="path">Property path for the current definition. Example: /property</param>
+        /// <param name="path">Property path for the current definition. Example: /path/*</param>
         public abstract PathsFluentDefinition Path(string path);
     }
 }

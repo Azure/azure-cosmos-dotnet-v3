@@ -8,11 +8,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
     internal sealed class SpatialIndexFluentDefinitionCore : SpatialIndexFluentDefinition
     {
         private readonly SpatialSpec spatialSpec = new SpatialSpec();
-        private readonly IndexingPolicyFluentDefinitionCore parent;
+        private readonly IndexingPolicyFluentDefinition parent;
+        private readonly Action<SpatialSpec> attachCallback;
 
-        public SpatialIndexFluentDefinitionCore(IndexingPolicyFluentDefinitionCore parent)
+        public SpatialIndexFluentDefinitionCore(
+            IndexingPolicyFluentDefinition parent,
+            Action<SpatialSpec> attachCallback)
         {
             this.parent = parent;
+            this.attachCallback = attachCallback;
         }
 
         public override SpatialIndexFluentDefinition WithPath(string path)
@@ -53,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override IndexingPolicyFluentDefinition Attach()
         {
-            this.parent.WithSpatialIndex(this.spatialSpec);
+            this.attachCallback(this.spatialSpec);
             return this.parent;
         }
     }

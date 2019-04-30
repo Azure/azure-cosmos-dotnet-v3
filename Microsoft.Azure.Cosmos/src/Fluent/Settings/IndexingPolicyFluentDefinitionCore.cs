@@ -3,19 +3,25 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
 
     internal sealed class IndexingPolicyFluentDefinitionCore : IndexingPolicyFluentDefinition
     {
         private readonly IndexingPolicy indexingPolicy = new IndexingPolicy();
-        private readonly CosmosContainerFluentDefinitionCore parent;
+        private readonly CosmosContainerFluentDefinition parent;
+        private readonly Action<IndexingPolicy> attachCallback;
         private PathsFluentDefinition includedPathsBuilder;
         private PathsFluentDefinition excludedPathsBuilder;
 
-        public IndexingPolicyFluentDefinitionCore(CosmosContainerFluentDefinitionCore parent) 
+
+        public IndexingPolicyFluentDefinitionCore(
+            CosmosContainerFluentDefinition parent,
+            Action<IndexingPolicy> attachCallback) 
         {
             this.parent = parent;
+            this.attachCallback = attachCallback;
         }
 
         public override IndexingPolicyFluentDefinition WithIndexingMode(IndexingMode indexingMode)
@@ -34,7 +40,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             if (this.includedPathsBuilder == null)
             {
-                this.includedPathsBuilder = new PathsFluentDefinitionCore(this, PathsFluentDefinitionType.Included);
+                this.includedPathsBuilder = new PathsFluentDefinitionCore(
+                    this, 
+                    (paths) => this.WithIncludedPaths(paths));
             }
 
             return this.includedPathsBuilder;
@@ -44,7 +52,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             if (this.excludedPathsBuilder == null)
             {
-                this.excludedPathsBuilder = new PathsFluentDefinitionCore(this, PathsFluentDefinitionType.Excluded);
+                this.excludedPathsBuilder = new PathsFluentDefinitionCore(
+                    this,
+                    (paths) => this.WithExcludedPaths(paths));
             }
 
             return this.excludedPathsBuilder;
@@ -52,26 +62,35 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override CompositeIndexFluentDefinition WithCompositeIndex()
         {
-            return new CompositeIndexFluentDefinitionCore(this);
+            return new CompositeIndexFluentDefinitionCore(
+                this,
+                (compositePaths) => this.WithCompositePaths(compositePaths));
+        }
+
+        public override SpatialIndexFluentDefinition WithSpatialIndex()
+        {
+            return new SpatialIndexFluentDefinitionCore(
+                this,
+                (spatialIndex) => this.WithSpatialIndex(spatialIndex));
         }
 
         public override CosmosContainerFluentDefinition Attach()
         {
-            this.parent.WithIndexingPolicy(this.indexingPolicy);
+            this.attachCallback(this.indexingPolicy);
             return this.parent;
         }
 
-        public void WithCompositePaths(Collection<CompositePath> compositePaths)
+        private void WithCompositePaths(Collection<CompositePath> compositePaths)
         {
             this.indexingPolicy.CompositeIndexes.Add(compositePaths);
         }
 
-        public void WithSpatialIndex(SpatialSpec spatialSpec)
+        private void WithSpatialIndex(SpatialSpec spatialSpec)
         {
             this.indexingPolicy.SpatialIndexes.Add(spatialSpec);
         }
 
-        public void WithIncludedPaths(List<string> paths)
+        private void WithIncludedPaths(IEnumerable<string> paths)
         {
             foreach (string path in paths)
             {
@@ -79,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             }
         }
 
-        public void WithExcludedPaths(List<string> paths)
+        private void WithExcludedPaths(IEnumerable<string> paths)
         {
             foreach (string path in paths)
             {

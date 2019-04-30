@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="UniqueKeyPolicy"/> fluent definition.
     /// </summary>
-    public abstract class UniqueKeyFluentDefinition : FluentSettings<CosmosContainerFluentDefinitionForCreate>
+    public abstract class UniqueKeyFluentDefinition : FluentSettings<CosmosContainerFluentDefinition>
     {
         /// <summary>
         /// Adds a path to the current <see cref="UniqueKeyFluentDefinition"/>.

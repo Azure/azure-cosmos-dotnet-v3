@@ -9,11 +9,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
     internal sealed class UniqueKeyFluentDefinitionCore : UniqueKeyFluentDefinition
     {
         private readonly Collection<string> paths = new Collection<string>();
-        private readonly CosmosContainerFluentDefinitionCore parent;
+        private readonly CosmosContainerFluentDefinition parent;
+        private readonly Action<UniqueKey> attachCallback;
 
-        public UniqueKeyFluentDefinitionCore(CosmosContainerFluentDefinitionCore parent) 
+        public UniqueKeyFluentDefinitionCore(
+            CosmosContainerFluentDefinition parent,
+            Action<UniqueKey> attachCallback) 
         {
             this.parent = parent;
+            this.attachCallback = attachCallback;
         }
 
         public override UniqueKeyFluentDefinition Path(string path)
@@ -27,13 +31,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
-        public override CosmosContainerFluentDefinitionForCreate Attach()
+        public override CosmosContainerFluentDefinition Attach()
         {
-            this.parent.WithUniqueKey(
-                new UniqueKey()
-                {
-                    Paths = this.paths
-                });
+            this.attachCallback(new UniqueKey()
+            {
+                Paths = this.paths
+            });
 
             return this.parent;
         }

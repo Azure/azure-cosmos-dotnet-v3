@@ -3,33 +3,26 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    using System;
     using System.Collections.Generic;
 
     internal sealed class PathsFluentDefinitionCore : PathsFluentDefinition
     {
         private readonly List<string> paths = new List<string>();
-        private readonly IndexingPolicyFluentDefinitionCore parent;
-        private readonly PathsFluentDefinitionType type;
+        private readonly IndexingPolicyFluentDefinition parent;
+        private readonly Action<IEnumerable<string>> attachCallback;
 
         public PathsFluentDefinitionCore(
-            IndexingPolicyFluentDefinitionCore parent,
-            PathsFluentDefinitionType type)
+            IndexingPolicyFluentDefinition parent,
+            Action<IEnumerable<string>> attachCallback)
         {
             this.parent = parent;
-            this.type = type;
+            this.attachCallback = attachCallback;
         }
 
         public override IndexingPolicyFluentDefinition Attach()
         {
-            if (PathsFluentDefinitionType.Included.Equals(this.type))
-            {
-                this.parent.WithIncludedPaths(this.paths);
-            }
-            else
-            {
-                this.parent.WithExcludedPaths(this.paths);
-            }
-
+            this.attachCallback(this.paths);
             return this.parent;
         }
 

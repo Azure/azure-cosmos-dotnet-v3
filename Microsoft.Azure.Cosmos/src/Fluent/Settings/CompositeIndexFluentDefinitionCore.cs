@@ -9,11 +9,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
     internal sealed class CompositeIndexFluentDefinitionCore : CompositeIndexFluentDefinition
     {
         private readonly Collection<CompositePath> compositePaths = new Collection<CompositePath>();
-        private readonly IndexingPolicyFluentDefinitionCore parent;
+        private readonly IndexingPolicyFluentDefinition parent;
+        private readonly Action<Collection<CompositePath>> attachCallback;
 
-        public CompositeIndexFluentDefinitionCore(IndexingPolicyFluentDefinitionCore parent)
+        public CompositeIndexFluentDefinitionCore(
+            IndexingPolicyFluentDefinition parent,
+            Action<Collection<CompositePath>> attachCallback)
         {
             this.parent = parent;
+            this.attachCallback = attachCallback;
         }
 
         public override CompositeIndexFluentDefinition Path(string path)
@@ -42,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override IndexingPolicyFluentDefinition Attach()
         {
-            this.parent.WithCompositePaths(this.compositePaths);
+            this.attachCallback(this.compositePaths);
             return this.parent;
         }
     }

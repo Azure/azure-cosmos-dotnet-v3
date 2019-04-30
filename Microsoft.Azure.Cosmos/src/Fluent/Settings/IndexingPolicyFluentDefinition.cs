@@ -36,5 +36,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines a Composite Index in the current <see cref="CosmosContainer"/>'s definition.
         /// </summary>
         public abstract CompositeIndexFluentDefinition WithCompositeIndex();
+
+        /// <summary>
+        /// Defines a <see cref="SpatialIndex"/> in the current <see cref="CosmosContainer"/>'s definition.
+        /// </summary>
+        /// <returns></returns>
+        public abstract SpatialIndexFluentDefinition WithSpatialIndex();
     }
 }

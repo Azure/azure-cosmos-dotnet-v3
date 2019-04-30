@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     {
         private readonly string containerName;
         private readonly FluentSettingsOperation fluentSettingsOperation;
-        private readonly CosmosContainers CosmosContainers;
+        private readonly CosmosContainers cosmosContainers;
         private string partitionKeyPath;
         private UniqueKeyPolicy uniqueKeyPolicy;
         private int? defaultTimeToLive;
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string partitionKeyPath = null)
         {
             this.containerName = name;
-            this.CosmosContainers = cosmosContainers;
+            this.cosmosContainers = cosmosContainers;
             this.fluentSettingsOperation = fluentSettingsOperation;
             this.partitionKeyPath = partitionKeyPath;
         }
@@ -54,7 +54,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override UniqueKeyFluentDefinition WithUniqueKey()
         {
-            return new UniqueKeyFluentDefinitionCore(this);
+            return new UniqueKeyFluentDefinitionCore(
+                this, 
+                (uniqueKey) => this.WithUniqueKey(uniqueKey));
         }
 
         public override CosmosContainerFluentDefinition WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
@@ -87,15 +89,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new NotSupportedException();
             }
 
-            return new IndexingPolicyFluentDefinitionCore(this);
+            return new IndexingPolicyFluentDefinitionCore(
+                this,
+                (indexingPolicy) => this.WithIndexingPolicy(indexingPolicy));
         }
 
-        public void WithIndexingPolicy(IndexingPolicy indexingPolicy)
+        private void WithIndexingPolicy(IndexingPolicy indexingPolicy)
         {
             this.indexingPolicy = indexingPolicy;
         }
 
-        public void WithUniqueKey(UniqueKey uniqueKey)
+        private void WithUniqueKey(UniqueKey uniqueKey)
         {
             if (this.uniqueKeyPolicy == null)
             {
@@ -109,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             if (this.partitionKeyPath == null)
             {
-                CosmosContainerSettings currentConfiguration = await this.CosmosContainers[this.containerName].ReadAsync();
+                CosmosContainerSettings currentConfiguration = await this.cosmosContainers[this.containerName].ReadAsync();
                 this.partitionKeyPath = currentConfiguration.PartitionKeyPath;
             }
 
@@ -139,9 +143,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
             switch (this.fluentSettingsOperation)
             {
                 case FluentSettingsOperation.Create:
-                    return await this.CosmosContainers.CreateContainerAsync(settings, this.throughput);
+                    return await this.cosmosContainers.CreateContainerAsync(settings, this.throughput);
                 case FluentSettingsOperation.Replace:
-                    return await this.CosmosContainers[this.containerName].ReplaceAsync(settings);
+                    return await this.cosmosContainers[this.containerName].ReplaceAsync(settings);
             }
 
             throw new NotImplementedException();
