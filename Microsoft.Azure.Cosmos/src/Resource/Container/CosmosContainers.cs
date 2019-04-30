@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
@@ -273,5 +274,22 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Create an Azure Cosmos container through a Fluent API.
+        /// </summary>
+        /// <param name="name">Azure Cosmos container name to create.</param>
+        /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
+        /// <returns>A fluent definition of an Azure Cosmos container.</returns>
+        public abstract CosmosContainerFluentDefinitionForCreate Create(
+            string name,
+            string partitionKeyPath);
+
+        /// <summary>
+        /// Replace an Azure Cosmos container through a Fluent API.
+        /// </summary>
+        /// <param name="name">Azure Cosmos container name to replace.</param>
+        /// <returns>A fluent definition of an Azure Cosmos container.</returns>
+        public abstract CosmosContainerFluentDefinition Replace(string name);
     }
 }

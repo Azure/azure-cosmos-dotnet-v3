@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -150,6 +151,23 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 this.ContainerStreamFeedRequestExecutor);
+        }
+
+        public override CosmosContainerFluentDefinitionForCreate Create(
+            string name,
+            string partitionKeyPath)
+        {
+            if (string.IsNullOrEmpty(partitionKeyPath))
+            {
+                throw new ArgumentNullException(nameof(partitionKeyPath));
+            }
+
+            return new CosmosContainerFluentDefinitionCore(this, name, FluentSettingsOperation.Create, partitionKeyPath);
+        }
+
+        public override CosmosContainerFluentDefinition Replace(string name)
+        {
+            return new CosmosContainerFluentDefinitionCore(this, name, FluentSettingsOperation.Replace);
         }
 
         internal void ValidateContainerSettings(CosmosContainerSettings containerSettings)

@@ -44,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new ArgumentNullException(nameof(spatialTypes));
             }
 
-
             this.spatialSpec.Path = path;
 
             foreach (SpatialType spatialType in spatialTypes)
