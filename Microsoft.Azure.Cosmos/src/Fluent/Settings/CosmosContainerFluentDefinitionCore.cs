@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override async Task<CosmosContainerResponse> ApplyAsync()
         {
-            if (this.partitionKeyPath == null)
+            if (this.partitionKeyPath == null && this.fluentSettingsOperation != FluentSettingsOperation.Create)
             {
                 CosmosContainerSettings currentConfiguration = await this.cosmosContainers[this.containerName].ReadAsync();
                 this.partitionKeyPath = currentConfiguration.PartitionKeyPath;
