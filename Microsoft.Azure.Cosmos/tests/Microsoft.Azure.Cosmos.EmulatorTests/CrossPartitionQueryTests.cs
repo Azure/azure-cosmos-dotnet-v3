@@ -3137,7 +3137,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
                 documents,
