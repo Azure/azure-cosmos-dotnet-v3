@@ -96,13 +96,5 @@ namespace Microsoft.Azure.Cosmos
 
             return httpResponse;
         }
-
-        internal static void EnsureSuccessStatusCodeOrNotModified(this CosmosResponseMessage response)
-        {
-            if (response.StatusCode != System.Net.HttpStatusCode.NotModified)
-            {
-                response.EnsureSuccessStatusCode();
-            }
-        }
     }
 }

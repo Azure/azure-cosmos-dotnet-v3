@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                                 long result = await this.GetRemainingWorkAsync(item, cancellationToken);
                                 partialResults.Add(new RemainingLeaseTokenWork(item.CurrentLeaseToken, result));
                             }
-                            catch (DocumentClientException ex)
+                            catch (CosmosException ex)
                             {
                                 Logger.WarnException($"Getting estimated work for lease token {item.CurrentLeaseToken} failed!", ex);
                             }
@@ -136,7 +137,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             try
             {
                 CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
-                response.EnsureSuccessStatusCodeOrNotModified();
+                if (response.StatusCode != HttpStatusCode.NotModified)
+                {
+                    response.EnsureSuccessStatusCode();
+                }
 
                 long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
                 Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);

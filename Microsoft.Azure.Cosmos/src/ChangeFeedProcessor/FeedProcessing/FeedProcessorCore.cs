@@ -52,24 +52,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        CosmosResponseMessage response;
-                        try
+                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                        if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
-                            response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
-                            response.EnsureSuccessStatusCodeOrNotModified();
-                        }
-                        catch (CosmosException cosmosException)
-                        {
-                            this.logger.WarnFormat("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, cosmosException.StatusCode, cosmosException.SubStatusCode);
-                            this.HandleFailedRequest(cosmosException.StatusCode, cosmosException.SubStatusCode, lastContinuation);
+                            this.logger.WarnFormat("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
+                            this.HandleFailedRequest(response.StatusCode, (int)response.Headers.SubStatusCode, lastContinuation);
 
-                            if (cosmosException.TryGetHeader(Documents.HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfterString))
+                            if (response.Headers.RetryAfter.HasValue)
                             {
-                                TimeSpan? retryAfter = CosmosResponseMessageHeaders.GetRetryAfter(retryAfterString);
-                                if (retryAfter.HasValue)
-                                {
-                                    delay = retryAfter.Value;
-                                }
+                                delay = response.Headers.RetryAfter.Value;
                             }
 
                             // Out of the loop for a retry
