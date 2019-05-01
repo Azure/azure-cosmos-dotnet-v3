@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <returns>A FeedResponse of documents.</returns>
         public virtual Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
             return this.Source.DrainAsync(maxElements, token);
         }
 

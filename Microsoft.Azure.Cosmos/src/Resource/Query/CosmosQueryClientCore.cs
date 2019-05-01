@@ -165,7 +165,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
-                    return CosmosQueryResponse.CreateFailure(cosmosResponseMessage);
+                    return CosmosQueryResponse.CreateFailure(
+                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
+                        cosmosResponseMessage.StatusCode,
+                        cosmosResponseMessage.RequestMessage,
+                        cosmosResponseMessage.ErrorMessage,
+                        cosmosResponseMessage.Error);
                 }
 
                 // Execute the callback an each element of the page

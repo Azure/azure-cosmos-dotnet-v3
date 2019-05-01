@@ -333,11 +333,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccessStatusCode)
                 {
-                    // null out the backend continuation token, 
-                    // so that people stop trying to buffer more on this producer.
-                    this.hasStartedFetching = true;
-                    this.BackendContinuationToken = null;
-
                     // set this flag so that people stop trying to buffer more on this producer.
                     this.hitException = true;
                     return;

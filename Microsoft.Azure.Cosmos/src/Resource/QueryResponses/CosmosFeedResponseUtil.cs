@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// store the collection. Then the response object will use the Data property to
     /// access the collection. This prevents having a class for each different property.
     /// </summary>
-    internal class CosmosFeedResponseUtil<T>
+    internal sealed class CosmosFeedResponseUtil<T>
     {
         /// <summary>
         /// All the properties use this to store the collection.

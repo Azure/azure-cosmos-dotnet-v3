@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosQueryResponse : CosmosResponseMessage
     {
-        internal CosmosQueryResponse(
+        private CosmosQueryResponse(
             IEnumerable<CosmosElement> result,
             int count,
             long responseLengthBytes,
@@ -110,22 +110,32 @@ namespace Microsoft.Azure.Cosmos
             return cosmosQueryResponse;
         }
 
-        internal static CosmosQueryResponse CreateFailure(CosmosResponseMessage cosmosResponseMessage)
+        internal static CosmosQueryResponse CreateFailure(
+            CosmosQueryResponseMessageHeaders responseHeaders,
+            HttpStatusCode statusCode,
+            CosmosRequestMessage requestMessage,
+            string errorMessage,
+            Error error)
         {
-            if (cosmosResponseMessage == null)
+            if (responseHeaders == null)
             {
-                throw new ArgumentNullException(nameof(cosmosResponseMessage));
+                throw new ArgumentNullException(nameof(responseHeaders));
+            }
+
+            if (errorMessage == null)
+            {
+                throw new ArgumentNullException(nameof(errorMessage));
             }
 
             CosmosQueryResponse cosmosQueryResponse = new CosmosQueryResponse(
                 result: Enumerable.Empty<CosmosElement>(),
                 count: 0,
                 responseLengthBytes: 0,
-                responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
-                statusCode: cosmosResponseMessage.StatusCode,
-                errorMessage: cosmosResponseMessage.ErrorMessage,
-                error: cosmosResponseMessage.Error,
-                requestMessage: cosmosResponseMessage.RequestMessage);
+                responseHeaders: responseHeaders,
+                statusCode: statusCode,
+                errorMessage: errorMessage,
+                error: error,
+                requestMessage: requestMessage);
 
             return cosmosQueryResponse;
         }

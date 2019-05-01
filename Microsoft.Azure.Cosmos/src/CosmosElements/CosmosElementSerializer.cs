@@ -5,12 +5,10 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    using System;
-    using Microsoft.Azure.Cosmos.Json;
-    using System.Text;
-    using System.IO;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal static class CosmosElementSerializer
     {
@@ -63,26 +61,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return Enumerable.Empty<T>();
             }
 
-            IJsonWriter jsonWriter;
-            if (cosmosSerializationOptions != null)
-            {
-                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
-            }
-            else
-            {
-                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            }
-
-            jsonWriter.WriteArrayStart();
-
-            foreach (CosmosElement cosmosElement in cosmosElements)
-            {
-                cosmosElement.WriteTo(jsonWriter);
-            }
-
-            jsonWriter.WriteArrayEnd();
-            MemoryStream stream = new MemoryStream(jsonWriter.GetResult());
-            IEnumerable<T>  typedResults = jsonSerializer.FromStream<List<T>>(stream);
+            Stream stream = CosmosElementSerializer.ToStream(cosmosElements, cosmosSerializationOptions);
+            IEnumerable<T> typedResults = jsonSerializer.FromStream<List<T>>(stream);
 
             return typedResults;
         }

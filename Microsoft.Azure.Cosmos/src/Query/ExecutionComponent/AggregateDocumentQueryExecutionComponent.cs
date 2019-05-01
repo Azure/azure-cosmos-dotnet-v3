@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         }
 
         /// <summary>
-        /// Drains at most 'maxElements' documents from the AggregateItemQueryExecutionComponent.
+        /// Drains at most 'maxElements' documents from the <see cref="AggregateDocumentQueryExecutionComponent"/> .
         /// </summary>
         /// <param name="maxElements">This value is ignored, since the aggregates are aggregated for you.</param>
         /// <param name="token">The cancellation token.</param>
@@ -100,6 +100,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </remarks>
         public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+
             // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
             double requestCharge = 0;
             long responseLengthBytes = 0;
