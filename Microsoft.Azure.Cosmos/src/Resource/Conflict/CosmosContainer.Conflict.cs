@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflict"/>
-        public abstract Task<CosmosResponseMessage> ReadConflictItemAsync(
+        public abstract Task<CosmosResponseMessage> ReadConflictSourceItemAsync(
             object partitionKey,
             CosmosConflict cosmosConflict,
             CancellationToken cancellationToken = default(CancellationToken));
