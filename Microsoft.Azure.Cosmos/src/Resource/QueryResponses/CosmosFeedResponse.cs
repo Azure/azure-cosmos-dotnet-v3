@@ -14,23 +14,31 @@ namespace Microsoft.Azure.Cosmos
     /// The user contract for the various feed responses that serialized the responses to a type.
     /// To follow the .NET standard for typed responses any exceptions should be thrown to the user.
     /// </summary>
-    public abstract class CosmosFeedResponse<T> : IEnumerable<T>
+    public abstract class CosmosFeedResponse<T> : CosmosResponse<IEnumerable<T>>, IEnumerable<T>
     {
         /// <summary>
-        /// Gets the request charge for this request from the Azure Cosmos DB service.
+        /// Create an empty cosmos feed response for mock testing
         /// </summary>
-        /// <value>
-        /// The request charge measured in request units.
-        /// </value>
-        public abstract double RequestCharge { get; }
+        public CosmosFeedResponse()
+        {
+
+        }
 
         /// <summary>
-        /// Gets the activity ID for the request from the Azure Cosmos DB service.
+        /// Create a CosmosFeedResponse object with the default properties set
         /// </summary>
-        /// <value>
-        /// The activity ID for the request.
-        /// </value>
-        public virtual string ActivityId { get; }
+        /// <param name="httpStatusCode">The status code of the response</param>
+        /// <param name="headers">The headers of the response</param>
+        /// <param name="resource">The object from the response</param>
+        internal CosmosFeedResponse(
+            HttpStatusCode httpStatusCode,
+            CosmosResponseMessageHeaders headers,
+            IEnumerable<T> resource):base(
+                httpStatusCode,
+                headers,
+                resource)
+        {
+        }
 
         /// <summary>
         /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
@@ -39,19 +47,6 @@ namespace Microsoft.Azure.Cosmos
         /// The continuation token to be used for continuing enumeration.
         /// </value>
         public abstract string Continuation { get; }
-
-        /// <summary>
-        /// Gets the session token for use in session consistency reads from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The session token for use in session consistency.
-        /// </value>
-        public abstract string SessionToken { get; }
-
-        /// <summary>
-        /// The headers of the response
-        /// </summary>
-        public abstract CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
         /// The number of items in the stream.

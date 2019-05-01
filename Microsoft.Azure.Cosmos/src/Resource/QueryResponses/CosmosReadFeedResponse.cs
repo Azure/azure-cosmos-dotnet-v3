@@ -7,30 +7,24 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using Microsoft.Azure.Documents;
+    using System.Net;
 
     internal class CosmosReadFeedResponse<T> : CosmosFeedResponse<T>
     {
-        private readonly CosmosResponseMessageHeaders responseHeaders;
-        private IEnumerable<T> resources;
-
         protected CosmosReadFeedResponse(
+            IEnumerable<T> resource,
             CosmosResponseMessageHeaders responseMessageHeaders,
-            bool hasMoreResults)
+            bool hasMoreResults): base(
+                httpStatusCode: HttpStatusCode.Accepted,
+                headers: responseMessageHeaders,
+                resource: resource)
         {
-            this.responseHeaders = responseMessageHeaders ?? throw new ArgumentNullException(nameof(responseMessageHeaders));
             this.HasMoreResults = hasMoreResults;
         }
 
-        public override string Continuation => this.responseHeaders.Continuation;
-
-        public override double RequestCharge => this.responseHeaders.RequestCharge;
-
-        public override CosmosResponseMessageHeaders Headers { get; }
-
         public override int Count { get; }
 
-        public override string SessionToken => this.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SessionToken);
+        public override string Continuation => this.Headers.Continuation;
 
         internal override string InternalContinuationToken => this.Continuation;
 
@@ -38,12 +32,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IEnumerator<T> GetEnumerator()
         {
-            if (this.resources == null)
-            {
-                return Enumerable.Empty<T>().GetEnumerator();
-            }
-
-            return this.resources.GetEnumerator();
+            return this.Resource.GetEnumerator();
         }
 
         internal static CosmosReadFeedResponse<TInput> CreateResponse<TInput>(
@@ -54,11 +43,12 @@ namespace Microsoft.Azure.Cosmos
         {
             using (stream)
             {
+                IEnumerable<TInput> resources = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream).Data;
                 CosmosReadFeedResponse<TInput> readFeedResponse = new CosmosReadFeedResponse<TInput>(
+                    resource: resources,
                     responseMessageHeaders: responseMessageHeaders,
                     hasMoreResults: hasMoreResults);
 
-                readFeedResponse.InitializeResource(stream, jsonSerializer);
                 return readFeedResponse;
             }
         }
@@ -68,20 +58,12 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<TInput> resources,
             bool hasMoreResults)
         {
-
             CosmosReadFeedResponse<TInput> readFeedResponse = new CosmosReadFeedResponse<TInput>(
+                resource: resources,
                 responseMessageHeaders: responseMessageHeaders,
                 hasMoreResults: hasMoreResults);
 
-            readFeedResponse.resources = resources;
             return readFeedResponse;
-        }
-
-        private void InitializeResource(
-            Stream stream,
-            CosmosJsonSerializer jsonSerializer)
-        {
-            this.resources = jsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(stream).Data;
         }
     }
 }
