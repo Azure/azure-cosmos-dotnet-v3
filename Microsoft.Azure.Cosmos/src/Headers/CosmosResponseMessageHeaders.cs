@@ -64,6 +64,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the Continuation Token in the current <see cref="CosmosResponseMessage"/>.
         /// </summary>
+        /// <remarks>
+        /// The continuation token only affects the session result set.  It is not
+        /// possible to break out of the original query by tampering with the
+        /// token when continuing the enumeration.  From a security perspective,
+        /// it is safe to pass the token value to a client.
+        /// </remarks>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Continuation)]
         public virtual string Continuation { get; internal set; }
 
