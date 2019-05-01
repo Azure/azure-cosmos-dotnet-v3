@@ -61,40 +61,33 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             CosmosQueryResponse sourcePage = await base.DrainAsync(maxElements, token);
-            if (!sourcePage.IsSuccess)
+            if (!sourcePage.IsSuccessStatusCode)
             {
                 return sourcePage;
             }
 
             // skip the documents but keep all the other headers
             List<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
-            CosmosQueryResponse offsetPage = new CosmosQueryResponse(
-                    result: documentsAfterSkip,
-                    count: documentsAfterSkip.Count(),
-                    responseHeaders: sourcePage.Headers,
-                    useETagAsContinuation: sourcePage.UseETagAsContinuation,
-                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
-                    responseLengthBytes: sourcePage.ResponseLengthBytes);
 
             int numberOfDocumentsSkipped = sourcePage.Count - documentsAfterSkip.Count;
             this.skipCount -= numberOfDocumentsSkipped;
+            string updatedContinuationToken = null;
 
-            if (sourcePage.DisallowContinuationTokenMessage == null)
+            if (sourcePage.QueryHeaders.DisallowContinuationTokenMessage == null)
             {
                 if (!this.IsDone)
                 {
-                    string sourceContinuation = sourcePage.ResponseContinuation;
-                    offsetPage.ResponseContinuation = new OffsetContinuationToken(
+                    updatedContinuationToken = new OffsetContinuationToken(
                         this.skipCount,
-                        sourceContinuation).ToString();
-                }
-                else
-                {
-                    offsetPage.ResponseContinuation = null;
+                        sourcePage.Headers.Continuation).ToString();
                 }
             }
 
-            return offsetPage;
+            return new CosmosQueryResponse(
+                    result: documentsAfterSkip,
+                    count: documentsAfterSkip.Count(),
+                    responseHeaders: sourcePage.QueryHeaders.CloneKnownProperties(updatedContinuationToken, sourcePage.QueryHeaders.DisallowContinuationTokenMessage),
+                    responseLengthBytes: sourcePage.ResponseLengthBytes); ;
         }
 
         /// <summary>

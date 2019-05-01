@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private long retries;
         private CosmosQueryResponse lastPage;
-        private string ContinuationToken => this.lastPage == null ? this.queryContext.QueryRequestOptions.RequestContinuation : this.lastPage.ResponseContinuation;
+        private string ContinuationToken => this.lastPage == null ? this.queryContext.QueryRequestOptions.RequestContinuation : this.lastPage.Headers.Continuation;
         
 
         public CosmosGatewayQueryExecutionContext(
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
 
-        public override bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
+        public override bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.Headers.Continuation);
 
         public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
         {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
                             CosmosGatewayQueryExecutionContext.SinglePartitionKeyId,
-                            response.ActivityId,
+                            response.Headers.ActivityId,
                             response.Count,
                             this.retries);
                     }

@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private (Func<string, Task<IDocumentQueryExecutionComponent>>, CosmosQueryResponse) SetupBaseContextToVerifyFailureScenario()
         {
             Mock<CosmosQueryResponse> mockResponseMessage = new Mock<CosmosQueryResponse>();
-            mockResponseMessage.Setup(x => x.IsSuccess).Returns(false);
+            mockResponseMessage.Setup(x => x.IsSuccessStatusCode).Returns(false);
             // Throw an exception if the context accesses the CosmosElements array
             mockResponseMessage.Setup(x => x.CosmosElements).Throws(new ArgumentException("Context tried to access the Cosmos Elements of a failed response. Context should just return failed response."));
 

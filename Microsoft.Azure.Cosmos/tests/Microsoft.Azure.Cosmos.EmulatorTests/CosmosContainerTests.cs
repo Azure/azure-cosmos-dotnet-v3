@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
 
             HashSet<string> containerIds = new HashSet<string>();
-            CosmosFeedResultSetIterator resultSet = this.cosmosDatabase.Containers.GetContainerStreamIterator(
+            CosmosResultSetIterator resultSet = this.cosmosDatabase.Containers.GetContainerStreamIterator(
                     maxItemCount:1,
                     requestOptions: new CosmosQueryRequestOptions());
             while (resultSet.HasMoreResults)

@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosResultSetIterator<CosmosStoredProcedureSettings> iter = this.container.StoredProcedures.GetStoredProcedureIterator();
             while (iter.HasMoreResults)
             {
-                CosmosQueryResponse<CosmosStoredProcedureSettings> currentResultSet = await iter.FetchNextSetAsync();
+                CosmosFeedResponse<CosmosStoredProcedureSettings> currentResultSet = await iter.FetchNextSetAsync();
                 {
                     foreach (CosmosStoredProcedureSettings storedProcedureSettingsEntry in currentResultSet)
                     {

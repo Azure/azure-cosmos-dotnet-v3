@@ -3,75 +3,74 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.IO;
+    using System.Net;
 
     /// <summary>
-    /// This is a helper class that is used to get the query response collection.
-    /// Each resource type has a different property to access the array.
-    /// During JSON deserialization any one of the properties listed will be set.
-    /// For example Databases which will then use the base property Data to actually
-    /// store the collection. Then the response object will use the Data property to
-    /// access the collection. This prevents having a class for each different property.
+    /// The user contract for the various feed responses that serialized the responses to a type.
+    /// To follow the .NET standard for typed responses any exceptions should be thrown to the user.
     /// </summary>
-    internal class CosmosFeedResponse<T>
+    public abstract class CosmosFeedResponse<T> : IEnumerable<T>
     {
         /// <summary>
-        /// All the properties use this to store the collection.
+        /// Gets the request charge for this request from the Azure Cosmos DB service.
         /// </summary>
-        public Collection<T> Data { get; set; }
+        /// <value>
+        /// The request charge measured in request units.
+        /// </value>
+        public abstract double RequestCharge { get; }
 
-        public Collection<T> Attachments
+        /// <summary>
+        /// Gets the activity ID for the request from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The activity ID for the request.
+        /// </value>
+        public virtual string ActivityId { get; }
+
+        /// <summary>
+        /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The continuation token to be used for continuing enumeration.
+        /// </value>
+        public abstract string Continuation { get; }
+
+        /// <summary>
+        /// Gets the session token for use in session consistency reads from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The session token for use in session consistency.
+        /// </value>
+        public abstract string SessionToken { get; }
+
+        /// <summary>
+        /// The headers of the response
+        /// </summary>
+        public abstract CosmosResponseMessageHeaders Headers { get; }
+
+        /// <summary>
+        /// The number of items in the stream.
+        /// </summary>
+        public abstract int Count { get; }
+
+        /// <summary>
+        /// Get an enumerator of the object
+        /// </summary>
+        /// <returns></returns>
+        public abstract IEnumerator<T> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            get => this.Data;
-            set => this.Data = value;
+            return this.GetEnumerator();
         }
 
-        public Collection<T> DocumentCollections
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
+        internal abstract string InternalContinuationToken { get; }
 
-        public Collection<T> Databases
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
-
-        public Collection<T> Documents
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
-
-        public Collection<T> Offers
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
-
-        public Collection<T> Triggers
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
-
-        public Collection<T> UserDefinedFunctions
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
-
-        public Collection<T> UserDefinedTypes
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
-
-        public Collection<T> StoredProcedures
-        {
-            get => this.Data;
-            set => this.Data = value;
-        }
+        internal abstract bool HasMoreResults { get; }
     }
 }

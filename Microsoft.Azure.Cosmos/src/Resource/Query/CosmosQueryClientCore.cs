@@ -169,7 +169,8 @@ namespace Microsoft.Azure.Cosmos
                         statusCode: cosmosResponseMessage.StatusCode,
                         errorMessage: cosmosResponseMessage.ErrorMessage,
                         error: cosmosResponseMessage.Error,
-                        responseHeaders: cosmosResponseMessage.Headers);
+                        responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
+                        requestMessage: cosmosResponseMessage.RequestMessage);
                 }
 
                 // Execute the callback an each element of the page
@@ -229,9 +230,7 @@ namespace Microsoft.Azure.Cosmos
                 return new CosmosQueryResponse(
                     result: cosmosArray,
                     count: itemCount,
-                    responseHeaders: cosmosResponseMessage.Headers,
-                    useETagAsContinuation: false,
-                    disallowContinuationTokenMessage: null,
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
                     responseLengthBytes: responseLengthBytes);
             }
         }

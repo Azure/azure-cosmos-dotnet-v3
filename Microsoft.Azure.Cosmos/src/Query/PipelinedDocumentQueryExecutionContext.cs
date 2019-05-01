@@ -366,14 +366,14 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             CosmosQueryResponse feedResponse = await this.ExecuteNextAsync(token);
             return new FeedResponse<CosmosElement>(
-                feedResponse.CosmosElements,
-                feedResponse.Count,
-                feedResponse.Headers.CosmosMessageHeaders,
-                feedResponse.UseETagAsContinuation,
-                null,
-                feedResponse.RequestStatistics,
-                feedResponse.DisallowContinuationTokenMessage,
-                feedResponse.ResponseLengthBytes);
+                result: feedResponse.CosmosElements,
+                count: feedResponse.Count,
+                responseHeaders: feedResponse.Headers.CosmosMessageHeaders,
+                useETagAsContinuation: false,
+                queryMetrics: null,
+                requestStats: feedResponse.RequestStatistics,
+                disallowContinuationTokenMessage: feedResponse.QueryHeaders.DisallowContinuationTokenMessage,
+                responseLengthBytes: feedResponse.ResponseLengthBytes);
         }
 
         /// <summary>
@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 List<CosmosElement> dynamics = new List<CosmosElement>();
                 CosmosQueryResponse queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
-                if (!queryResponse.IsSuccess)
+                if (!queryResponse.IsSuccessStatusCode)
                 {
                     return queryResponse;
                 }
@@ -400,9 +400,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return new CosmosQueryResponse(
                     dynamics,
                     queryResponse.Count,
-                    queryResponse.Headers,
-                    queryResponse.UseETagAsContinuation,
-                    queryResponse.DisallowContinuationTokenMessage,
+                    queryResponse.QueryHeaders.CloneKnownProperties(),
                     queryResponse.ResponseLengthBytes);
             }
             catch (Exception)

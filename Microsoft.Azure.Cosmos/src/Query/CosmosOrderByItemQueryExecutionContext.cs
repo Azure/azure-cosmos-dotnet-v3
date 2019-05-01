@@ -232,8 +232,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 result: results,
                 count: results.Count,
                 responseHeaders: this.GetResponseHeaders(),
-                useETagAsContinuation: false,
-                disallowContinuationTokenMessage: null,
                 responseLengthBytes: this.GetAndResetResponseLengthBytes());
         }
 

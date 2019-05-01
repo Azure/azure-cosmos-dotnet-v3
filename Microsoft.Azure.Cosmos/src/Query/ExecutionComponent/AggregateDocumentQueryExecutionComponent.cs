@@ -110,12 +110,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             while (!this.IsDone)
             {
                 CosmosQueryResponse result = await base.DrainAsync(int.MaxValue, token);
-                if (!result.IsSuccess)
+                if (!result.IsSuccessStatusCode)
                 {
                     return result;
                 }
 
-                requestCharge += result.RequestCharge;
+                requestCharge += result.Headers.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
                 //partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
                 if (result.RequestStatistics != null)
@@ -156,12 +156,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             return new CosmosQueryResponse(
                 finalResult,
                 finalResult.Count,
-                new CosmosResponseMessageHeaders()
+                new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null)
                 {
                     RequestCharge = requestCharge
                 },
-                useETagAsContinuation: false,
-                disallowContinuationTokenMessage: null,
                 responseLengthBytes: responseLengthBytes);
         }
 

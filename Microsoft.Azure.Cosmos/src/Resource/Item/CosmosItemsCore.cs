@@ -210,12 +210,12 @@ namespace Microsoft.Azure.Cosmos
                 this.ItemFeedRequestExecutor<T>);
         }
 
-        public override CosmosFeedResultSetIterator GetItemStreamIterator(
+        public override CosmosResultSetIterator GetItemStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosItemRequestOptions requestOptions = null)
         {
-            return new CosmosFeedResultSetIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
+            return new CosmosResultSetIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
         }
 
         public override CosmosResultSetIterator CreateItemQueryAsStream(
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-        internal CosmosFeedResultSetIterator GetStandByFeedIterator(
+        internal CosmosResultSetIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
             CosmosChangeFeedRequestOptions requestOptions = null,
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos
                 options: cosmosQueryRequestOptions);
         }
 
-        internal async Task<CosmosQueryResponse<T>> NextResultSetAsync<T>(
+        internal async Task<CosmosFeedResponse<T>> NextResultSetAsync<T>(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -442,8 +442,7 @@ namespace Microsoft.Azure.Cosmos
             return CosmosQueryResponse<T>.CreateResponse<T>(
                 cosmosQueryResponse: feedResponse,
                 jsonSerializer: this.clientContext.JsonSerializer,
-                hasMoreResults: !cosmosQueryExecution.IsDone,
-                resourceType: ResourceType.Document);
+                hasMoreResults: !cosmosQueryExecution.IsDone);
         }
 
         internal Task<CosmosResponseMessage> ProcessItemStreamAsync(
@@ -494,7 +493,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosQueryResponse<T>> ItemFeedRequestExecutor<T>(
+        private Task<CosmosFeedResponse<T>> ItemFeedRequestExecutor<T>(
             int? maxItemCount,
            string continuationToken,
            CosmosRequestOptions options,
@@ -502,7 +501,7 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<T>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<T>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
@@ -519,15 +518,15 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosQueryResponse> QueryRequestExecutor(
+        private async Task<CosmosResponseMessage> QueryRequestExecutor(
+            int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions requestOptions,
+            CosmosRequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
             CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-            CosmosQueryRequestOptions queryRequestOptions = (CosmosQueryRequestOptions)requestOptions;
-            return cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
+            return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
         }
 
         internal Uri GetResourceUri(CosmosRequestOptions requestOptions, OperationType operationType, string itemId)

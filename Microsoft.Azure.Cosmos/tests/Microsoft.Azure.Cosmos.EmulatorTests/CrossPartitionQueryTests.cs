@@ -681,9 +681,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "SELECT * FROM c WHERE c.pk = 'doc5'",
                 partitionKey: "doc5");
 
-            CosmosQueryResponse<dynamic> response = await resultSetIterator.FetchNextSetAsync();
+            CosmosFeedResponse<dynamic> response = await resultSetIterator.FetchNextSetAsync();
             Assert.AreEqual(1, response.Count());
-            Assert.IsNull(response.ContinuationToken);
+            Assert.IsNull(response.Continuation);
 
             resultSetIterator = container.Items.CreateItemQuery<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'",
@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             response = await resultSetIterator.FetchNextSetAsync();
             Assert.AreEqual(0, response.Count());
-            Assert.IsNull(response.ContinuationToken);
+            Assert.IsNull(response.Continuation);
         }
 
         private struct QueryWithSpecialPartitionKeysArgs
@@ -998,7 +998,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             while (documentQuery.HasMoreResults)
             {
-                CosmosQueryResponse<int> response = await documentQuery.FetchNextSetAsync();
+                CosmosFeedResponse<int> response = await documentQuery.FetchNextSetAsync();
                 foreach (int item in response)
                 {
                     actualPartitionKeyValues.Add(item);
@@ -1275,7 +1275,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //}
 
                     // Make sure ExecuteNextAsync works for unsupported aggregate projection
-                    CosmosQueryResponse<dynamic> page = await container.Items.CreateItemQuery<dynamic>(query, maxConcurrency: 1).FetchNextSetAsync();
+                    CosmosFeedResponse<dynamic> page = await container.Items.CreateItemQuery<dynamic>(query, maxConcurrency: 1).FetchNextSetAsync();
                 }
             }
         }
@@ -1717,7 +1717,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     while (documentQueryWithoutDistinct.HasMoreResults)
                     {
-                        CosmosQueryResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.FetchNextSetAsync();
+                        CosmosFeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.FetchNextSetAsync();
                         foreach (JToken document in cosmosQueryResponse)
                         {
                             if (documentsSeen.Add(document, out UInt192? hash))
@@ -1738,7 +1738,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     while (documentQueryWithDistinct.HasMoreResults)
                     {
-                        CosmosQueryResponse<JToken> cosmosQueryResponse = await documentQueryWithDistinct.FetchNextSetAsync();
+                        CosmosFeedResponse<JToken> cosmosQueryResponse = await documentQueryWithDistinct.FetchNextSetAsync();
                         documentsFromWithDistinct.AddRange(cosmosQueryResponse);
                     }
 
@@ -1783,7 +1783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 while (documentQueryWithoutDistinct.HasMoreResults)
                 {
-                    CosmosQueryResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.FetchNextSetAsync();
+                    CosmosFeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.FetchNextSetAsync();
                     foreach (JToken jToken in cosmosQueryResponse)
                     {
                         documentsFromWithoutDistinct.Add(jToken);
@@ -1807,13 +1807,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             maxItemCount: 10,
                             maxConcurrency: 100);
 
-                        CosmosQueryResponse<JToken> cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
+                        CosmosFeedResponse<JToken> cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
                         foreach (JToken jToken in cosmosQueryResponse)
                         {
                             documentsFromWithDistinct.Add(jToken);
                         }
 
-                        continuationToken = cosmosQueryResponse.ContinuationToken;
+                        continuationToken = cosmosQueryResponse.Continuation;
 
                     }
                     while (continuationToken != null);
@@ -1854,7 +1854,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     while (documentQueryWithoutDistinct.HasMoreResults)
                     {
-                        CosmosQueryResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.FetchNextSetAsync();
+                        CosmosFeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.FetchNextSetAsync();
                         foreach (JToken document in cosmosQueryResponse)
                         {
                             if (documentsSeen.Add(document, out UInt192? hash))
@@ -1882,9 +1882,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                    maxItemCount: 1,
                                    continuationToken: continuationToken);
 
-                        CosmosQueryResponse<JToken> cosmosQueryResponse = await cosmosQuery.FetchNextSetAsync();
+                        CosmosFeedResponse<JToken> cosmosQueryResponse = await cosmosQuery.FetchNextSetAsync();
                         documentsFromWithDistinct.AddRange(cosmosQueryResponse);
-                        continuationToken = cosmosQueryResponse.ContinuationToken;
+                        continuationToken = cosmosQueryResponse.Continuation;
                     }
                     while (continuationToken != null);
 
@@ -2518,7 +2518,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                     while (query.HasMoreResults)
                                     {
-                                        CosmosQueryResponse<Document> response = await query.FetchNextSetAsync();
+                                        CosmosFeedResponse<Document> response = await query.FetchNextSetAsync();
                                         result.AddRange(response);
                                     }
 
@@ -2726,7 +2726,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             int numberOfDocuments = 0;
                             while (documentQuery.HasMoreResults)
                             {
-                                CosmosQueryResponse<dynamic> cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
+                                CosmosFeedResponse<dynamic> cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
 
                                 numberOfDocuments += cosmosQueryResponse.Count();
                                 //foreach (QueryMetrics queryMetrics in cosmosQueryResponse.QueryMetrics.Values)
@@ -2878,12 +2878,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             #endregion
 
-            CosmosQueryResponse<Document> responseWithEmptyContinuationExpected = await container.Items.CreateItemQuery<Document>(
+            CosmosFeedResponse<Document> responseWithEmptyContinuationExpected = await container.Items.CreateItemQuery<Document>(
                 string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
                     maxConcurrency: 10,
                     maxItemCount: -1).FetchNextSetAsync();
 
-            Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
+            Assert.AreEqual(null, responseWithEmptyContinuationExpected.Continuation);
 
             string[] queries = new[]
             {
@@ -2931,7 +2931,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             continuationToken: continuationToken,
                             requestOptions: feedOptions);
 
-                        CosmosQueryResponse<Document> response;
+                        CosmosFeedResponse<Document> response;
                         try
                         {
                             response = await documentQuery.FetchNextSetAsync();
@@ -2951,7 +2951,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             query,
                             continuationToken,
                             retrievedDocuments.Count));
-                        continuationToken = response.ContinuationToken;
+                        continuationToken = response.Continuation;
                         retrievedDocuments.AddRange(response);
 
                         hasMoreResults = documentQuery.HasMoreResults;
@@ -3505,7 +3505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //    CosmosResultSetIterator<dynamic> docQuery = coll.Items.CreateItemQuery<dynamic>(query, feedOptions);
         //        while (docQuery.HasMoreResults && (maxReadItemCount < 0 || maxReadItemCount > totalReadCount))
         //        {
-        //            CosmosQueryResponse<dynamic> response = await docQuery.FetchNextSetAsync();
+        //            CosmosFeedResponse<dynamic> response = await docQuery.FetchNextSetAsync();
 
         //            Console.WriteLine("{0} : CosmosQueryResponse: Query: {1}, ActivityId: {2}, OuterActivityId: {3}, RequestCharge: {4}, ResponseLength: {5}, ItemCount: {6}",
         //                DateTime.UtcNow,

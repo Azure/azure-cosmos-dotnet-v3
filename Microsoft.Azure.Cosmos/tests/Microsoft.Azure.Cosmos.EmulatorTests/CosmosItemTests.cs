@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string lastContinuationToken = null;
             int pageSize = 1;
             CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
-            CosmosFeedResultSetIterator setIterator =
+            CosmosResultSetIterator setIterator =
                 this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
 
             while (setIterator.HasMoreResults)
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     lastContinuationToken = responseMessage.Headers.Continuation;
 
-                    Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
+                    Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in response)
                     {
                         if (itemIds.Contains(toDoActivity.id))
@@ -286,8 +286,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         continuationToken: lastContinuationToken,
                         requestOptions: new CosmosQueryRequestOptions());
 
-                CosmosQueryResponse response = await setIterator.FetchNextSetAsync();
-                lastContinuationToken = response.ResponseContinuation;
+                CosmosResponseMessage response = await setIterator.FetchNextSetAsync();
+                lastContinuationToken = response.Headers.Continuation;
                 Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 JsonSerializer serializer = new JsonSerializer();
 
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQuery<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
             while (setIterator.HasMoreResults)
             {
-                CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
+                CosmosFeedResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
                 Assert.AreEqual(1, iter.Count());
                 ToDoActivity response = iter.First();
                 Assert.AreEqual(find.id, response.id);
@@ -374,11 +374,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
             while (setIterator.HasMoreResults)
             {
-                CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
-                Assert.IsTrue(iter.IsSuccess);
+                CosmosResponseMessage iter = await setIterator.FetchNextSetAsync();
+                Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
-                Assert.IsTrue(iter.Count <= 5);
-                totalRequstCharge += iter.RequestCharge;
+                totalRequstCharge += iter.Headers.RequestCharge;
 
                 ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
                 Assert.AreEqual(1, activities.Length);
@@ -412,12 +411,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5);
             while (setIterator.HasMoreResults)
             {
-                CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
-                Assert.IsTrue(iter.IsSuccess);
+                CosmosResponseMessage iter = await setIterator.FetchNextSetAsync();
+                Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
-                Assert.IsTrue(iter.Count <= 5);
-                totalRequstCharge += iter.RequestCharge;
+                totalRequstCharge += iter.Headers.RequestCharge;
                 ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                Assert.IsTrue(response.Length <= 5);
                 resultList.AddRange(response);
             }
 
@@ -548,17 +547,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
             while (setIterator.HasMoreResults)
             {
-                CosmosQueryResponse iter = await setIterator.FetchNextSetAsync();
-                Assert.IsTrue(iter.IsSuccess);
+                CosmosResponseMessage iter = await setIterator.FetchNextSetAsync();
+                Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
-                Assert.IsTrue(iter.Count <= 5);
-                totalRequstCharge += iter.RequestCharge;
+                totalRequstCharge += iter.Headers.RequestCharge;
                 IJsonReader reader = JsonReader.Create(iter.Content);
                 IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
                 textWriter.WriteAll(reader);
                 string json = Encoding.UTF8.GetString(textWriter.GetResult());
                 Assert.IsNotNull(json);
                 ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
+                Assert.IsTrue(responseActivities.Length <= 5);
                 resultList.AddRange(responseActivities);
             }
 
@@ -592,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
             while (setIterator.HasMoreResults)
             {
-                CosmosQueryResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
+                CosmosFeedResponse<ToDoActivity> iter = await setIterator.FetchNextSetAsync();
                 Assert.AreEqual(1, iter.Count());
             }
 
@@ -601,7 +600,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
             while (setIteratorMax2.HasMoreResults)
             {
-                CosmosQueryResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
+                CosmosFeedResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
                 Assert.AreEqual(2, iter.Count());
             }
         }
@@ -739,7 +738,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CreateItemQuery<ToDoActivity>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
                 while (setIterator.HasMoreResults)
                 {
-                    CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    CosmosFeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
                     Assert.AreEqual(1, queryResponse.Count());
                     ToDoActivity toDoActivity = queryResponse.First();
                     Assert.AreEqual(nonPartitionItemId, toDoActivity.id);

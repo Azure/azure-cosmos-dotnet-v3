@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            CosmosFeedResultSetIterator resultSetIterator = new CosmosFeedResultSetIteratorCore(
+            CosmosResultSetIterator resultSetIterator = new CosmosResultSetIteratorCore(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosQueryResponse response = await setIterator.FetchNextSetAsync();
+            CosmosResponseMessage response = await setIterator.FetchNextSetAsync();
 
             //Test gateway mode
             mockClient = MockCosmosUtil.CreateMockCosmosClient(

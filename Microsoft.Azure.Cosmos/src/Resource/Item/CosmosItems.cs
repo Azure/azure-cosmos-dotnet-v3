@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedResultSetIterator GetItemStreamIterator(
+        public abstract CosmosResultSetIterator GetItemStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosItemRequestOptions requestOptions = null);

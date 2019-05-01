@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
-                        CosmosQueryResponse<dynamic> items = await itemIterator.FetchNextSetAsync();
+                        CosmosFeedResponse<dynamic> items = await itemIterator.FetchNextSetAsync();
                         count += items.Count();
                     }
                     Assert.AreEqual(3, count);
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             partitionKey: doc1.Id);
                         while (docServiceQuery.HasMoreResults)
                         {
-                            CosmosQueryResponse<Document> r = await docServiceQuery.FetchNextSetAsync();
+                            CosmosFeedResponse<Document> r = await docServiceQuery.FetchNextSetAsync();
                             if (r.Count() == 1)
                             {
                                 bFound = true;
@@ -1889,7 +1889,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (iterator.HasMoreResults)
             {
-                CosmosQueryResponse<T> countiter = await iterator.FetchNextSetAsync();
+                CosmosFeedResponse<T> countiter = await iterator.FetchNextSetAsync();
                 count += countiter.Count();
 
             }

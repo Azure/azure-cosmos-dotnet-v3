@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         {
             List<CosmosElement> distinctResults = new List<CosmosElement>();
             CosmosQueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
-            if (!cosmosQueryResponse.IsSuccess)
+            if (!cosmosQueryResponse.IsSuccessStatusCode)
             {
                 return cosmosQueryResponse;
             }
@@ -117,25 +117,24 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
+            string updatedContinuationToken; 
             if (!this.IsDone)
             {
-                string sourceContinuationToken = cosmosQueryResponse.ResponseContinuation;
-                cosmosQueryResponse.ResponseContinuation = new DistinctContinuationToken(
+                updatedContinuationToken = new DistinctContinuationToken(
                     this.lastHash,
-                    sourceContinuationToken).ToString();
+                    cosmosQueryResponse.Headers.Continuation).ToString();
             }
             else
             {
                 this.Source.Stop();
-                cosmosQueryResponse.ResponseContinuation = null;
+                updatedContinuationToken = null;
             }
 
+            string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken;
             return new CosmosQueryResponse(
                 distinctResults,
                 distinctResults.Count,
-                cosmosQueryResponse.Headers,
-                cosmosQueryResponse.UseETagAsContinuation,
-                this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken,
+                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage),
                 cosmosQueryResponse.ResponseLengthBytes);
         }
 

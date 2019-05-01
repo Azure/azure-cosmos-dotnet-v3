@@ -259,15 +259,15 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the response headers for the context.
         /// </summary>
         /// <returns>The response headers for the context.</returns>
-        public CosmosResponseMessageHeaders GetResponseHeaders()
+        public CosmosQueryResponseMessageHeaders GetResponseHeaders()
         {
-            CosmosResponseMessageHeaders responseHeaders = new CosmosResponseMessageHeaders();
-            responseHeaders.Continuation = this.ContinuationToken;
-            if (this.ContinuationToken == "[]")
+            string continuationToken = this.ContinuationToken;
+            if (continuationToken == "[]")
             {
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
             }
 
+            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(continuationToken, null);
             this.SetQueryMetrics();
 
             IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics = this.GetQueryMetrics();
