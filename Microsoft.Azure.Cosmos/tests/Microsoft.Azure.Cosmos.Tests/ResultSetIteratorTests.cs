@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosResultSetIterator<CosmosConflict> setIterator = container.Conflicts.GetConflictsIterator();
+            CosmosResultSetIterator<CosmosConflict> setIterator = container.GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosFeedResultSetIterator setIterator = container.Conflicts.GetConflictsStreamIterator();
+            CosmosFeedResultSetIterator setIterator = container.GetConflictsStreamIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);

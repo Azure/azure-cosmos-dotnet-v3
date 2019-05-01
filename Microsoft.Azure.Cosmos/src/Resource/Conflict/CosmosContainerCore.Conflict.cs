@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -68,6 +69,76 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
+                cancellationToken: cancellationToken);
+        }
+
+        public override CosmosResultSetIterator<CosmosConflict> GetConflictsIterator(
+            int? maxItemCount = null,
+            string continuationToken = null)
+        {
+            return new CosmosDefaultResultSetIterator<CosmosConflict>(
+                maxItemCount,
+                continuationToken,
+                null,
+                this.ConflictsFeedRequestExecutor);
+        }
+
+        public override CosmosFeedResultSetIterator GetConflictsStreamIterator(
+            int? maxItemCount = null,
+            string continuationToken = null)
+        {
+            return new CosmosFeedResultSetIteratorCore(
+                maxItemCount,
+                continuationToken,
+                null,
+                this.ConflictsFeedStreamRequestExecutor);
+        }
+
+        private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutor(
+            int? maxItemCount,
+            string continuationToken,
+            CosmosRequestOptions options,
+            object state,
+            CancellationToken cancellationToken)
+        {
+            return this.ClientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
+                resourceUri: this.LinkUri,
+                resourceType: Documents.ResourceType.Conflict,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: options,
+                requestEnricher: request =>
+                {
+                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                },
+                responseCreator: response => response,
+                cosmosContainerCore: this,
+                partitionKey: null,
+                streamPayload: null,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<CosmosQueryResponse<CosmosConflict>> ConflictsFeedRequestExecutor(
+            int? maxItemCount,
+            string continuationToken,
+            CosmosRequestOptions options,
+            object state,
+            CancellationToken cancellationToken)
+        {
+            return this.ClientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosConflict>>(
+                resourceUri: this.LinkUri,
+                resourceType: Documents.ResourceType.Conflict,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: options,
+                cosmosContainerCore: this,
+                partitionKey: null,
+                streamPayload: null,
+                requestEnricher: request =>
+                {
+                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                },
+                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosConflict>(response),
                 cancellationToken: cancellationToken);
         }
     }

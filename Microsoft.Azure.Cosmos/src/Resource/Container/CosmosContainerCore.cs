@@ -42,7 +42,6 @@ namespace Microsoft.Azure.Cosmos
             this.StoredProcedures = new CosmosStoredProceduresCore(this.ClientContext, this);
             this.Triggers = new CosmosTriggers(this.ClientContext, this);
             this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this.ClientContext, this);
-            this.Conflicts = new CosmosConflictsCore(this.ClientContext, this);
         }
 
         public override string Id { get; }
@@ -52,8 +51,6 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosItems Items { get; }
 
         public override CosmosStoredProcedures StoredProcedures { get; }
-
-        public override CosmosConflicts Conflicts { get; }
 
         internal virtual Uri LinkUri { get; }
 

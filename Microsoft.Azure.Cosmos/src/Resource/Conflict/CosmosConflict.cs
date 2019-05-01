@@ -44,13 +44,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual OperationKind OperationKind { get; set; }
 
         /// <summary>
-        /// Gets or sets the type of the conflicting resource in the Azure Cosmos DB service.
-        /// </summary>
-        [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]
-        public virtual Type ResourceType { get; set; }
-
-        /// <summary>
         /// Gets the content of the Conflict resource in the Azure Cosmos DB service.
         /// </summary>
         /// <typeparam name="T">The type to use to deserialize the content.</typeparam>
@@ -79,6 +72,10 @@ namespace Microsoft.Azure.Cosmos
 
             return default(T);
         }
+
+        [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]
+        internal Type ResourceType { get; set; }
 
         [JsonProperty(PropertyName = Documents.Constants.Properties.SourceResourceId)]
         internal string SourceResourceId { get; set; }
