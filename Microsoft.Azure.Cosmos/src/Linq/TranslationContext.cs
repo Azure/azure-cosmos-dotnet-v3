@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new InvalidOperationException("First parameter already set");
             }
 
-            var newParam = Expression.Parameter(parameterType, parameterName);
+            ParameterExpression newParam = Expression.Parameter(parameterType, parameterName);
             inScope.Add(newParam);
             Binding def = new Binding(newParam, collection: null, isInCollection: false);
             this.ParameterDefinitions.Add(def);
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (last.isOuter)
             {
                 // substitute
-                var inputParam = this.currentQuery.GetInputParameterInContext(shouldBeOnNewQuery);
+                ParameterExpression inputParam = this.currentQuery.GetInputParameterInContext(shouldBeOnNewQuery);
                 this.substitutions.AddSubstitution(parameter, inputParam);
             }
             else
@@ -309,11 +309,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         public void PopCollection()
         {
             this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
-        }
-
-        public Collection PeekCollection()
-        {
-            return this.collectionStack.Count > 0 ? this.collectionStack[this.collectionStack.Count - 1] : null;
         }
 
         /// <summary>
@@ -390,6 +385,21 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 return this.subqueryBindingStack.Peek();
             }
+        }
+
+        /// <summary>
+        /// Create a new QueryUnderConstruction node if indicated as neccesary by the subquery binding 
+        /// </summary>
+        /// <returns>The current QueryUnderConstruction after the package query call if necessary</returns>
+        public QueryUnderConstruction PackageCurrentQueryIfNeccessary()
+        {
+            if (this.CurrentSubqueryBinding.ShouldBeOnNewQuery)
+            {
+                this.currentQuery = this.currentQuery.PackageQuery(this.InScope);
+                this.CurrentSubqueryBinding.ShouldBeOnNewQuery = false;
+            }
+
+            return this.currentQuery;
         }
 
         public class SubqueryBinding

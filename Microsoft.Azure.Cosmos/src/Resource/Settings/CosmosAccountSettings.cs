@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// When working with document resources, they too have this settable Id property. 
         /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
         /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> instance to true.
+        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
         /// This will prevent the SDK from generating new Ids. 
         /// </para>
         /// <para>
@@ -238,6 +238,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
         internal string QueryEngineConfiurationString { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
         internal bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()

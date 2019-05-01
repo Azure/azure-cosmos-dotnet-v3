@@ -6,77 +6,45 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.ObjectModel;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
-    internal sealed class SpatialSpec : JsonSerializable, ICloneable
+    /// <summary>
+    /// Spatial index specification
+    /// </summary>
+    public sealed class SpatialSpec
     {
-        private Collection<SpatialType> spatialTypes;
-
-        [JsonProperty(PropertyName = Constants.Properties.Path)]
-        public string Path
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Path);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Path, value);
-            }
-        }
-
         [JsonProperty(PropertyName = Constants.Properties.Types, ItemConverterType = typeof(StringEnumConverter))]
+        private Collection<SpatialType> spatialTypesInternal;
+
+        /// <summary>
+        /// Path in JSON document to index
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.Path)]
+        public string Path { get; set; }
+
+        /// <summary>
+        /// Path's spatial type
+        /// </summary>
         public Collection<SpatialType> SpatialTypes
         {
             get
             {
-                if (this.spatialTypes == null)
+                if (this.spatialTypesInternal == null)
                 {
-                    this.spatialTypes = base.GetValue<Collection<SpatialType>>(Constants.Properties.Types);
-
-                    if (this.spatialTypes == null)
-                    {
-                        this.spatialTypes = new Collection<SpatialType>();
-                    }
+                    this.spatialTypesInternal = new Collection<SpatialType>();
                 }
-
-                return this.spatialTypes;
+                return this.spatialTypesInternal;
             }
             set
             {
                 if (value == null)
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, RMResources.PropertyCannotBeNull, "SpatialTypes"));
+                    throw new ArgumentNullException();
                 }
 
-                this.spatialTypes = value;
-                base.SetValue(Constants.Properties.Types, value);
-            }
-        }
-
-        public object Clone()
-        {
-            SpatialSpec cloned = new SpatialSpec()
-            {
-                Path = this.Path
-            };
-
-            foreach (SpatialType spatialType in this.SpatialTypes)
-            {
-                cloned.SpatialTypes.Add(spatialType);
-            }
-
-            return cloned;
-        }
-
-        internal override void OnSave()
-        {
-            if (this.spatialTypes != null)
-            {
-                base.SetValue(Constants.Properties.Types, this.spatialTypes);
+                this.spatialTypesInternal = value;
             }
         }
     }

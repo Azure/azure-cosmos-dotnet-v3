@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (type == typeof(Enumerable)) return true;
             if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) return true;
 
-            var types = type.GetInterfaces().Where(interfaceType => interfaceType.IsGenericType() && interfaceType.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            IEnumerable<Type> types = type.GetInterfaces().Where(interfaceType => interfaceType.IsGenericType() && interfaceType.GetGenericTypeDefinition() == typeof(IEnumerable<>));
             return (types.FirstOrDefault() != null);
         }
 

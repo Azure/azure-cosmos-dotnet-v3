@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.Azure.Documents;
 
     internal static class ExecUtils
@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: requestEnricher,
@@ -52,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: null,
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: null,
@@ -83,7 +86,85 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Used internally by friends ensrue robust argument and 
+        /// Used internally by friends ensrue robust argument and
+        /// exception-less handling, with container information
+        /// </summary>
+        internal static Task<T> ProcessResourceOperationAsync<T>(
+            CosmosClient client,
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            CosmosRequestOptions requestOptions,
+            CosmosContainerCore cosmosContainerCore,
+            Object partitionKey,
+            Stream streamPayload,
+            Action<CosmosRequestMessage> requestEnricher,
+            Func<CosmosResponseMessage, T> responseCreator,
+            CancellationToken cancellationToken)
+        {
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            return ExecUtils.ProcessResourceOperationAsync(
+                requestHandler: client.RequestHandler,
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: requestEnricher,
+                responseCreator: responseCreator,
+                cancellationToken: cancellationToken);
+        }
+
+        internal static async Task<T> ProcessResourceOperationAsync<T>(
+            CosmosRequestHandler requestHandler,
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            CosmosRequestOptions requestOptions,
+            CosmosContainerCore cosmosContainerCore,
+            Object partitionKey,
+            Stream streamPayload,
+            Action<CosmosRequestMessage> requestEnricher,
+            Func<CosmosResponseMessage, T> responseCreator,
+            CancellationToken cancellationToken)
+        {
+            if (requestHandler == null)
+            {
+                throw new ArgumentException(nameof(requestHandler));
+            }
+
+            if (resourceUri == null)
+            {
+                throw new ArgumentNullException(nameof(resourceUri));
+            }
+
+            if (responseCreator == null)
+            {
+                throw new ArgumentNullException(nameof(responseCreator));
+            }
+
+            CosmosRequestMessage request = await ExecUtils.GenerateCosmosRequestMessage(
+                resourceUri,
+                resourceType,
+                operationType,
+                requestOptions,
+                cosmosContainerCore,
+                partitionKey,
+                streamPayload,
+                requestEnricher);
+
+            CosmosResponseMessage response = await requestHandler.SendAsync(request, cancellationToken);
+            return responseCreator(response);
+        }
+
+        /// <summary>
+        /// Used internally by friends ensure robust argument and
         /// exception-less handling
         /// </summary>
         internal static Task<T> ProcessResourceOperationAsync<T>(
@@ -98,67 +179,51 @@ namespace Microsoft.Azure.Cosmos
             Func<CosmosResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            if (client.RequestHandler == null)
-            {
-                throw new ArgumentException(nameof(client));
-            }
-
-            if (resourceUri == null)
-            {
-                throw new ArgumentNullException(nameof(resourceUri));
-            }
-
-            if (responseCreator == null)
-            {
-                throw new ArgumentNullException(nameof(responseCreator));
-            }
-
-            CosmosRequestMessage request = ExecUtils.GenerateCosmosRequestMessage(
-                resourceUri,
-                resourceType,
-                operationType,
-                requestOptions,
-                partitionKey,
-                streamPayload,
-                requestEnricher);
-
-            return client.RequestHandler.SendAsync(request, cancellationToken)
-                     .ContinueWith(task => responseCreator(task.Result), cancellationToken);
+            return ProcessResourceOperationAsync(
+                requestHandler: client.RequestHandler,
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: null,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: requestEnricher,
+                responseCreator: responseCreator,
+                cancellationToken: cancellationToken);
         }
 
-        internal static Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
-            CosmosClient client,
+        internal static async Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+            CosmosRequestHandler requestHandler,
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
+            CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            CosmosRequestMessage request = ExecUtils.GenerateCosmosRequestMessage(
+            CosmosRequestMessage request = await ExecUtils.GenerateCosmosRequestMessage(
                 resourceUri,
                 resourceType,
                 operationType,
                 requestOptions,
+                cosmosContainerCore,
                 partitionKey,
                 streamPayload,
                 requestEnricher);
 
-            return client.RequestHandler.SendAsync(request, cancellationToken);
+            return await requestHandler.SendAsync(request, cancellationToken);
         }
 
-        private static CosmosRequestMessage GenerateCosmosRequestMessage(
+        private static async Task<CosmosRequestMessage> GenerateCosmosRequestMessage(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
+            CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher)
@@ -173,8 +238,20 @@ namespace Microsoft.Azure.Cosmos
 
             if (partitionKey != null)
             {
-                PartitionKey pk = new PartitionKey(partitionKey);
-                request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
+                if (cosmosContainerCore == null && partitionKey.Equals(PartitionKey.None))
+                {
+                    throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                }
+                else if (partitionKey.Equals(PartitionKey.None))
+                {
+                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValue();
+                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                }
+                else
+                {
+                    PartitionKey pk = new PartitionKey(partitionKey);
+                    request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
+                }
             }
 
             if (operationType == OperationType.Upsert)

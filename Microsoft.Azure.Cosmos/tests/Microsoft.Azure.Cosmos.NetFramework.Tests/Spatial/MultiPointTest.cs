@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
 
             Assert.AreEqual(new Position(20, 30), multiPoint.Points[0]);
             Assert.AreEqual(new Position(30, 40), multiPoint.Points[1]);
-            
+
             Assert.AreEqual(new Position(20, 20), multiPoint.BoundingBox.Min);
             Assert.AreEqual(new Position(30, 30), multiPoint.BoundingBox.Max);
             Assert.AreEqual("hello", ((NamedCrs)multiPoint.Crs).Name);
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1L, multiPoint.AdditionalProperties["extra"]);
 
             var geom = JsonConvert.DeserializeObject<Geometry>(json);
-            Assert.AreEqual(GeometryShape.MultiPoint, geom.Type);
+            Assert.AreEqual(GeometryType.MultiPoint, geom.Type);
 
             Assert.AreEqual(geom, multiPoint);
 

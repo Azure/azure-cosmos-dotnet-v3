@@ -16,8 +16,13 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosStoredProcedures"/> for creating new stored procedures, and reading/querying all stored procedures;
     /// </summary>
-    public abstract class CosmosStoredProcedure : CosmosIdentifier
+    public abstract class CosmosStoredProcedure
     {
+        /// <summary>
+        /// The Id of the Cosmos stored procedure
+        /// </summary>
+        public abstract string Id { get; }
+
         /// <summary>
         /// Reads a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -141,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <typeparam name="TInput">The input type that is JSON serializable.</typeparam>
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
-        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="input">The JSON serializable input parameters.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>

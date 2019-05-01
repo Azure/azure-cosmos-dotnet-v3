@@ -17,37 +17,36 @@ namespace Microsoft.Azure.Cosmos
     {
         private const string InMemoryDefaultHostName = "InMemory";
 
-        private readonly CosmosContainer monitoredContainer;
+        private readonly CosmosContainerCore monitoredContainer;
         private readonly ChangeFeedProcessor changeFeedProcessor;
         private readonly ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private readonly Action<DocumentServiceLeaseStoreManager,
-                CosmosContainer,
+                CosmosContainerCore,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainer> applyBuilderConfiguration;
+                CosmosContainerCore> applyBuilderConfiguration;
 
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
 
-        private CosmosContainer leaseContainer;
+        private CosmosContainerCore leaseContainer;
         private string InstanceName;
         private DocumentServiceLeaseStoreManager LeaseStoreManager;
-        private string databaseResourceId;
-        private string collectionResourceId;
+        private string monitoredContainerRid;
         private bool isBuilt;
 
         internal ChangeFeedProcessorBuilder(
             string workflowName, 
-            CosmosContainer cosmosContainer, 
+            CosmosContainerCore cosmosContainer, 
             ChangeFeedProcessor changeFeedProcessor,
             Action<DocumentServiceLeaseStoreManager,
-                CosmosContainer,
+                CosmosContainerCore,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainer> applyBuilderConfiguration)
+                CosmosContainerCore> applyBuilderConfiguration)
         {
             this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
             this.changeFeedLeaseOptions.LeasePrefix = workflowName;
@@ -68,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithCosmosLeaseContainer(CosmosContainer)"/>.
+        /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithCosmosLeaseContainer"/>.
         /// </summary>
         /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
 
-            this.leaseContainer = leaseContainer;
+            this.leaseContainer = (CosmosContainerCore)leaseContainer;
             return this;
         }
 
@@ -205,6 +204,14 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
+        internal virtual ChangeFeedProcessorBuilder WithMonitoredContainerRid(string monitoredContainerRid)
+        {
+            if (monitoredContainerRid != null) throw new ArgumentNullException(nameof(monitoredContainerRid));
+
+            this.monitoredContainerRid = monitoredContainerRid;
+            return this;
+        }
+
         /// <summary>
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
@@ -226,37 +233,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer or WithInMemoryLeaseContainer is required.");
             }
 
-            if (this.changeFeedLeaseOptions?.LeasePrefix == null)
+            if (this.changeFeedLeaseOptions.LeasePrefix == null)
             {
                 throw new InvalidOperationException("Workflow name was not specified using WithWorkflowName");
             }
 
             this.InitializeDefaultOptions();
-            this.InitializeCollectionPropertiesForBuild();
-
-            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.GetLeasePrefix(), this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
+            this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;
-        }
-
-        private string GetLeasePrefix()
-        {
-            string optionsPrefix = this.changeFeedLeaseOptions.LeasePrefix ?? string.Empty;
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                "{0}{1}_{2}_{3}",
-                optionsPrefix,
-                this.monitoredContainer.Client.Configuration.AccountEndPoint.Host,
-                this.databaseResourceId,
-                this.collectionResourceId);
-        }
-
-        private void InitializeCollectionPropertiesForBuild()
-        {
-            string[] containerLinkSegments = this.monitoredContainer.LinkUri.OriginalString.Split('/');
-            this.databaseResourceId = containerLinkSegments[2];
-            this.collectionResourceId = containerLinkSegments[4];
         }
 
         private void InitializeDefaultOptions()

@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             cosmosResponse.ErrorMessage = reasonPhraseString;
+            cosmosResponse.Error = dce.Error;
 
             if (dce.Headers != null)
             {

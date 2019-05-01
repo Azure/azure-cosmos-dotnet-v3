@@ -4,20 +4,30 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Threading;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos;
-    using Moq;
     using System.Reflection;
-    using System.Diagnostics;
     using Microsoft.Azure.Documents;
+    using System.Text;
 
     [TestClass]
     public class ContractTests
     {
+        [TestMethod]
+        public void ApiVersionTest()
+        {
+            try
+            {
+                new CosmosClient((string)null);
+                Assert.Fail();
+            }
+            catch(ArgumentNullException)
+            { }
+
+            Assert.AreEqual(HttpConstants.Versions.v2018_12_31, HttpConstants.Versions.CurrentVersion);
+            CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2018_12_31), HttpConstants.Versions.CurrentVersionUTF8);
+        }
+
         [TestMethod]
         public void ClientDllNamespaceTest()
         {

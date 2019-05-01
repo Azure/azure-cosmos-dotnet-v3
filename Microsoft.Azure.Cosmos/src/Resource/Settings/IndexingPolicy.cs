@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="CosmosContainerSettings"/>
     public sealed class IndexingPolicy 
     {
-        private static readonly string DefaultPath = "/*";
+        internal const string DefaultPath = "/*";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexingPolicy"/> class for the Azure Cosmos DB service.
@@ -37,52 +37,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Automatic = true;
             this.IndexingMode = IndexingMode.Consistent;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="IndexingPolicy"/> class with the specified set of indexes as 
-        /// default index specifications for the root path for the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="defaultIndexOverrides">Comma seperated set of indexes that serve as default index specifications for the root path.</param>
-        /// <seealso cref="Index"/>
-        /// <example>
-        /// The following example shows how to override the default indexingPolicy for root path:
-        /// <code language="c#">
-        /// <![CDATA[
-        /// HashIndex hashIndexOverride = Index.Hash(DataType.String, 5);
-        /// RangeIndex rangeIndexOverride = Index.Range(DataType.Number, 2);
-        /// SpatialIndex spatialIndexOverride = Index.Spatial(DataType.Point);
-        /// 
-        /// IndexingPolicy indexingPolicy = new IndexingPolicy(hashIndexOverride, rangeIndexOverride, spatialIndexOverride);
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <example>
-        /// If you would like to just override the indexingPolicy for Numbers you can specify just that:
-        /// <code language="c#">
-        /// <![CDATA[
-        /// RangeIndex rangeIndexOverride = Index.Range(DataType.Number, 2);
-        /// 
-        /// IndexingPolicy indexingPolicy = new IndexingPolicy(rangeIndexOverride);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public IndexingPolicy(params Index[] defaultIndexOverrides)
-            : this()
-        {
-            if (defaultIndexOverrides == null)
-            {
-                throw new ArgumentNullException("defaultIndexOverrides");
-            }
-
-            this.IncludedPaths = new Collection<IncludedPath>
-            {
-                new IncludedPath
-                {
-                    Path = DefaultPath,
-                    Indexes = new Collection<Index>(defaultIndexOverrides)
-                },
-            };
         }
 
         /// <summary>
@@ -154,10 +108,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
-        internal Collection<Collection<CompositePath>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePath>>();
+        public Collection<Collection<CompositePath>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePath>>();
 
+        /// <summary>
+        /// Collection of spatial index definitions to be used
+        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        internal Collection<SpatialSpec> SpatialIndexes { get; set; } = new Collection<SpatialSpec>();
+        public Collection<SpatialSpec> SpatialIndexes { get; set; } = new Collection<SpatialSpec>();
 
         # region EqualityComparers
         internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>

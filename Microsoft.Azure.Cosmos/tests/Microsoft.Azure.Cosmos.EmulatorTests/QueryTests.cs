@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private DocumentClient client;
         private DocumentClient primaryReadonlyClient;
         private DocumentClient secondaryReadonlyClient;
+        private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
 
         private enum PrecisionType
         {
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             DocumentCollection collection = TestCommon.RetryRateLimiting<DocumentCollection>(() =>
             {
-                return TestCommon.CreateCollectionAsync(this.client, database, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
+                return TestCommon.CreateCollectionAsync(this.client, database, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition }).Result;
             });
 
             for (int i = 0; i < 200; i++)
@@ -92,15 +93,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // default page size, expect 100 documents
-            FeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r").AsDocumentQuery().ExecuteNextAsync().Result;
+            FeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.AreEqual(100, result.Count);
 
             // dynamic page size (-1), expect all documents to be returned
-            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = -1 }).AsDocumentQuery().ExecuteNextAsync().Result;
+            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = -1, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.AreEqual(200, result.Count);
 
             // page size 10
-            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10 }).AsDocumentQuery().ExecuteNextAsync().Result;
+            result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.AreEqual(10, result.Count);
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
@@ -157,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryCollection" + Guid.NewGuid().ToString() });
 
                 DocumentCollection[] collections = (from index in Enumerable.Range(1, 3)
-                                                    select this.client.Create<DocumentCollection>(database.GetIdOrFullName(), new DocumentCollection { Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index) })).ToArray();
+                                                    select this.client.Create<DocumentCollection>(database.GetIdOrFullName(), new DocumentCollection { Id = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index), PartitionKey = defaultPartitionKeyDefinition })).ToArray();
                 Action<DocumentClient> queryAction = (documentClient) =>
                 {
                     // query by  name
@@ -544,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentSecondaryIndexDatabase" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString() };
+                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition };
                 collectionDefinition.IndexingPolicy.Automatic = true;
                 collectionDefinition.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
@@ -564,7 +565,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentsDatabase" + Guid.NewGuid().ToString() });
-                DocumentCollection documentCollection = new DocumentCollection { Id = "TestQueryDocumentsCollection" + Guid.NewGuid().ToString() };
+                DocumentCollection documentCollection = new DocumentCollection { Id = "TestQueryDocumentsCollection" + Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition };
                 documentCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, documentCollection).Result;
 
@@ -586,22 +587,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DocumentCollection sourceCollection = new DocumentCollection
                 {
                     Id = "TestQueryDocumentManualRemoveIndex" + Guid.NewGuid().ToString(),
+                    PartitionKey = defaultPartitionKeyDefinition
                 };
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
-
+                JObject property = new JObject();
+                property["pk"] = JToken.FromObject("test");
                 dynamic doc = new Document()
                 {
                     Id = string.Format(CultureInfo.InvariantCulture, "doc{0}", 222)
                 };
                 doc.NumericField = 222;
                 doc.StringField = "222";
-
+                Document documentDefinition = (Document)doc;
+                documentDefinition.SetPropertyValue("pk", "test");
                 INameValueCollection requestHeaders = new StringKeyValueCollection();
                 requestHeaders.Add("x-ms-indexing-directive", "exclude");
-                this.client.Create<Document>(collection.GetIdOrFullName(), (Document)doc, requestHeaders);
+                this.client.Create<Document>(collection.GetIdOrFullName(), documentDefinition, requestHeaders);
 
-                IEnumerable<Document> queriedDocuments = this.client.CreateDocumentQuery<Document>(collection.GetLink(), @"select * from root r where r.StringField = ""222""");
+                IEnumerable<Document> queriedDocuments = this.client.CreateDocumentQuery<Document>(collection.GetLink(), @"select * from root r where r.StringField = ""222""", new FeedOptions { EnableCrossPartitionQuery = true });
                 Assert.AreEqual(0, queriedDocuments.Count());
             }
             catch (DocumentClientException e)
@@ -621,6 +625,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DocumentCollection sourceCollection = new DocumentCollection
                 {
                     Id = "TestQueryDocumentManualAddRemoveIndex" + Guid.NewGuid().ToString(),
+                    PartitionKey = defaultPartitionKeyDefinition
                 };
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, sourceCollection).Result;
@@ -631,12 +636,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     NumericField = 333,
                     StringField = "333",
                 };
-
+                doc.SetPropertyValue("pk", "test");
                 INameValueCollection requestHeaders = new StringKeyValueCollection();
                 requestHeaders.Add("x-ms-indexing-directive", "include");
 
                 QueryDocument docCreated = this.client.Create<QueryDocument>(collection.GetIdOrFullName(), doc, requestHeaders);
-                Assert.IsNotNull(this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""333""").AsEnumerable().Single());
+                Assert.IsNotNull(this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Single());
 
                 docCreated.NumericField = 3333;
                 docCreated.StringField = "3333";
@@ -649,17 +654,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(docReplaced.NumericField, 3333);
 
                 // query for changed string value
-                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""").AsEnumerable().Count());
+                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
                 requestHeaders.Remove("x-ms-indexing-directive");
                 requestHeaders.Add("x-ms-indexing-directive", "include");
                 docReplaced = this.client.Update<QueryDocument>(docReplaced, requestHeaders);
 
-                Assert.IsNotNull(this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""").AsEnumerable().Single());
+                Assert.IsNotNull(this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.StringField=""3333""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Single());
 
                 this.client.Delete<QueryDocument>(docReplaced.ResourceId);
 
-                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.id=""" + doc.Id + @"""").AsEnumerable().Count());
+                Assert.AreEqual(0, this.client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.id=""" + doc.Id + @"""", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
             }
             catch (DocumentClientException e)
             {
@@ -677,6 +682,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DocumentCollection sourceCollection = new DocumentCollection
                 {
                     Id = "TestQueryDocumentsCollectionNoIndex" + Guid.NewGuid().ToString(),
+                    PartitionKey = defaultPartitionKeyDefinition
                 };
                 sourceCollection.IndexingPolicy.Automatic = false;
                 sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
@@ -699,6 +705,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection collection = new DocumentCollection
             {
                 Id = "SessionTokenControlThroughFeedOptionsCollection",
+                PartitionKey = defaultPartitionKeyDefinition
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
             collection = TestCommon.CreateCollectionAsync(this.client, database, collection).Result;
@@ -715,7 +722,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(sessionTokenBeforeReplication);
 
                 IQueryable<dynamic> documentIdQuery = client.CreateDocumentQuery(collection.GetLink(), @"select * from root r where r.Title=""TestSessionTokenControlThroughFeedOptions""",
-                    new FeedOptions() { SessionToken = sessionTokenBeforeReplication });
+                    new FeedOptions() { SessionToken = sessionTokenBeforeReplication, EnableCrossPartitionQuery = true });
 
                 Assert.AreEqual(1, documentIdQuery.AsEnumerable().Count());
 
@@ -736,7 +743,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     if (!string.Equals(sessionTokenAfterReplication, sessionTokenBeforeReplication))
                     {
                         documentIdQuery = client.CreateDocumentQuery(collection.SelfLink, @"select * from root r where r.Title=""TestSessionTokenControlThroughFeedOptions""",
-                            new FeedOptions() { SessionToken = sessionTokenAfterReplication });
+                            new FeedOptions() { SessionToken = sessionTokenAfterReplication, EnableCrossPartitionQuery = true });
 
                         Assert.AreEqual(1 + retryCounter, documentIdQuery.AsEnumerable().Count());
                         break;
@@ -777,6 +784,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     DocumentCollection sourceCollection = new DocumentCollection
                     {
                         Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString(),
+                        PartitionKey = defaultPartitionKeyDefinition
                     };
                     sourceCollection.IndexingPolicy.Automatic = true;
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
@@ -794,14 +802,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Id = name,
                             StringField = rawValue,
                         };
-
+                        document.SetPropertyValue("pk", "test");
                         QueryDocument docCreated = testClient.Create<QueryDocument>(collection.GetIdOrFullName(), document, requestHeaders);
 
                         {
                             IEnumerable<JObject> result = testClient
                                 .CreateDocumentQuery(collection,
                                 string.Format(CultureInfo.InvariantCulture, "SELECT r.StringField FROM ROOT r WHERE r.StringField=\"{0}\"", rawValue),
-                                null).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
+                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
 
                             Assert.AreEqual(document.StringField, result.Single()["StringField"].Value<string>());
                         }
@@ -810,7 +818,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             IEnumerable<JObject> result = testClient
                                 .CreateDocumentQuery(collection,
                                 string.Format(CultureInfo.InvariantCulture, "SELECT r.StringField FROM ROOT r WHERE r.StringField=\"{0}\"", escapedValue),
-                                null).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
+                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
 
                             Assert.AreEqual(document.StringField, result.Single()["StringField"].Value<string>());
                         }
@@ -819,7 +827,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             IEnumerable<JObject> result = testClient
                                 .CreateDocumentQuery(collection,
                                 string.Format(CultureInfo.InvariantCulture, "SELECT * FROM ROOT r WHERE r.StringField=\"{0}\"", rawValue),
-                                null).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
+                                new FeedOptions { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync<JObject>().Result;
 
                             Assert.AreEqual(document.Id, result.Single()["id"].Value<string>());
                         }
@@ -843,7 +851,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public void TestLazyIndexAllTerms()
         {
@@ -857,7 +864,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = System.Reflection.MethodBase.GetCurrentMethod().Name + Guid.NewGuid().ToString("N")
                 }).Result.Resource;
 
-                DocumentCollection coll = new DocumentCollection { Id = db.Id };
+                DocumentCollection coll = new DocumentCollection { Id = db.Id, PartitionKey = defaultPartitionKeyDefinition };
                 coll.IndexingPolicy.Automatic = true;
                 coll.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
@@ -885,16 +892,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [Ignore]
-        [TestMethod]
-        public async Task TestRouteToSpecificPartition()
+        ////[DataRow(true)]
+        ////[DataRow(false)]
+        ////[DataTestMethod]
+        public async Task TestRoutToSpecificPartition(bool useGateway)
         {
-            await this.TestRoutToSpecificPartition(false);
-            await this.TestRoutToSpecificPartition(true);
-        }
-
-        private async Task TestRoutToSpecificPartition(bool useGateway)
-        {
-            const int partitionCount = 5;
             DocumentClient client = TestCommon.CreateClient(useGateway);
 
             string guid = Guid.NewGuid().ToString();
@@ -923,7 +925,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(partitionCount, ranges.Count());
+            Assert.IsTrue(ranges.Count() > 1);
 
             Document document = new Document { Id = "id1" };
             document.SetPropertyValue("key", "hello");
@@ -950,7 +952,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryMultiplePartitions(bool useGateway)
         {
-            const int partitionCount = 5;
             Trace.TraceInformation(
                 "Start TestQueryMultiplePartitions in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
@@ -988,7 +989,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(partitionCount, ranges.Count());
+            Assert.IsTrue(ranges.Count() > 1);
 
             DateTime startTime = DateTime.Now;
             IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
@@ -1010,7 +1011,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await client.DeleteDatabaseAsync(database);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestQueryForRoutingMapSanity()
         {
@@ -1041,7 +1041,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
                 await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
-            Assert.AreEqual(5, ranges.Count);
+            Assert.IsTrue(ranges.Count > 1);
 
             // Query Number 1, that failed before
             List<string> expected = new List<string> { "documentId123", "documentId124", "documentId125" };
@@ -1904,7 +1904,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Guid guid = Guid.NewGuid();
             List<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>
             {
-                new FetchExecutionRange(guid.ToString(), new DateTime(), new DateTime(), null, 5, 5)
+                new FetchExecutionRange("0", guid.ToString(), new DateTime(), new DateTime(), 5, 5)
             };
 
             QueryMetrics queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics("totalExecutionTimeInMs=33.67;queryCompileTimeInMs=0.06;queryLogicalPlanBuildTimeInMs=0.02;queryPhysicalPlanBuildTimeInMs=0.10;queryOptimizationTimeInMs=0.01;VMExecutionTimeInMs=32.56;indexLookupTimeInMs=0.36;documentLoadTimeInMs=9.58;systemFunctionExecuteTimeInMs=0.05;userFunctionExecuteTimeInMs=0.07;retrievedDocumentCount=2000;retrievedDocumentSize=1125600;outputDocumentCount=2000;outputDocumentSize=1125600;writeOutputTimeInMs=18.10;indexUtilizationRatio=1.00",
@@ -1957,7 +1957,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
-            TestQueryMetricsHeaders(database, false);
             TestQueryMetricsHeaders(database, true);
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
@@ -1978,12 +1977,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string guid = Guid.NewGuid().ToString();
             Database database = await client.CreateDatabaseAsync(new Database { Id = "db" + guid });
-
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             DocumentCollection coll = await TestCommon.CreateCollectionAsync(client,
                 database,
                 new DocumentCollection
                 {
                     Id = "coll" + guid,
+                    PartitionKey = partitionKeyDefinition
                 },
                 new RequestOptions { OfferThroughput = 5000 });
 
@@ -1998,6 +1998,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedOptions feedOptions = new FeedOptions
             {
                 PopulateQueryMetrics = true,
+                PartitionKey = new PartitionKey("1")
             };
 
             IDocumentQuery<dynamic> documentQuery = client.CreateDocumentQuery(coll, "SELECT TOP 1 * FROM c", feedOptions).AsDocumentQuery();
@@ -2023,7 +2024,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
-            TestForceQueryScanHeaders(database, false);
             TestForceQueryScanHeaders(database, true);
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
@@ -2267,7 +2267,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
             });
 
-            TestContinuationLimitHeaders(database, false);
             TestContinuationLimitHeaders(database, true);
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
@@ -2656,13 +2655,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var sproc = await Util.GetOrCreateStoredProcedureAsync(client, coll, new StoredProcedure { Id = "bulkInsert", Body = script });
 
             List<string> documents = new List<string>();
+            RequestOptions requestOptions = new RequestOptions();
+            requestOptions.PartitionKey = new PartitionKey("test");
             foreach (string line in serializedDocuments)
             {
                 documents.Add(line);
                 if (documents.Count == 15)
                 {
                     await TestCommon.AsyncRetryRateLimiting(() =>
-                        client.ExecuteStoredProcedureAsync<dynamic>(sproc, new[] { documents.ToArray() }));
+                        client.ExecuteStoredProcedureAsync<dynamic>(sproc, requestOptions, new[] { documents.ToArray() }));
                     documents = new List<string>();
                 }
             }
@@ -2670,7 +2671,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (documents.Count != 0)
             {
                 await TestCommon.AsyncRetryRateLimiting(() =>
-                    client.ExecuteStoredProcedureAsync<dynamic>(sproc, new[] { documents.ToArray() })); ;
+                    client.ExecuteStoredProcedureAsync<dynamic>(sproc, requestOptions, new[] { documents.ToArray() })); ;
             }
         }
 
@@ -2739,7 +2740,7 @@ function sproc(feed) {
                     NumericField = index,
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
-
+                doc.SetPropertyValue("pk", "test");
                 INameValueCollection headers = new StringKeyValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
@@ -2763,13 +2764,13 @@ function sproc(feed) {
                 {
                     string name = string.Format(CultureInfo.InvariantCulture, "doc{0}", index);
 
-                    IEnumerable<Document> result = documentClient.CreateDocumentQuery<Document>(collection, @"SELECT r._rid FROM root r WHERE r.id=""" + name + @"""", null);
+                    IEnumerable<Document> result = documentClient.CreateDocumentQuery<Document>(collection, @"SELECT r._rid FROM root r WHERE r.id=""" + name + @"""", new FeedOptions { EnableCrossPartitionQuery = true });
                     Assert.AreEqual(documents[index - 1].ResourceId, result.Single().ResourceId, "Expect queried id to match the id with the same name in the created documents");
 
-                    result = documentClient.CreateDocumentQuery<Document>(collection, @"SELECT r._rid FROM root r WHERE r.NumericField=" + index.ToString(CultureInfo.InvariantCulture), null);
+                    result = documentClient.CreateDocumentQuery<Document>(collection, @"SELECT r._rid FROM root r WHERE r.NumericField=" + index.ToString(CultureInfo.InvariantCulture), new FeedOptions { EnableCrossPartitionQuery = true });
                     Assert.AreEqual(documents[index - 1].ResourceId, result.Single().ResourceId, "Expect queried id to match the id with the same name in the created documents");
 
-                    result = documentClient.CreateDocumentQuery<Document>(collection, @"SELECT r._rid FROM root r WHERE r.StringField=""" + index.ToString(CultureInfo.InvariantCulture) + @"""", null);
+                    result = documentClient.CreateDocumentQuery<Document>(collection, @"SELECT r._rid FROM root r WHERE r.StringField=""" + index.ToString(CultureInfo.InvariantCulture) + @"""", new FeedOptions { EnableCrossPartitionQuery = true });
                     Assert.AreEqual(documents[index - 1].ResourceId, result.Single().ResourceId, "Expect queried id to match the id with the same name in the created documents");
                 }
             };

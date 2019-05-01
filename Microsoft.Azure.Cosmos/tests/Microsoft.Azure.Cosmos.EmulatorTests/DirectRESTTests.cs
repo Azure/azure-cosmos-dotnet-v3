@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -15,10 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http.Headers;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.CSharp.RuntimeBinder;
@@ -366,7 +363,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Database retrievedDatabase2 = await retrievedTask.ToResourceAsync<Database>();
 
                     string collectionName1 = "coll1";
-                    DocumentCollection collection1 = new DocumentCollection { Id = collectionName1 };
+                    PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+                    {
+                        Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }),
+                        Kind = PartitionKind.Hash,
+                        Version = PartitionKeyDefinitionVersion.V1
+                    };
+                    DocumentCollection collection1 = new DocumentCollection { Id = collectionName1, PartitionKey = partitionKeyDefinition };
 
                     Uri uri;
 
@@ -393,7 +396,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         PartitionKeyDefinition partitionKey = new PartitionKeyDefinition
                         {
                             Paths = new Collection<string> { "/a" },
-                            Kind = PartitionKind.Hash
+                            Kind = PartitionKind.Hash,
+                            Version = PartitionKeyDefinitionVersion.V1
                         };
                         collection2 = new DocumentCollection { Id = collectionName2, PartitionKey = partitionKey };
 
@@ -440,7 +444,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                 using (StreamContent documentContent1 = new StreamContent(documentStream1))
                                 {
-
+                                    client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.PartitionKey);
+                                    client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.PartitionKey, "[\"user1\"]");
                                     uri = new Uri(this.baseUri, retrievedCollection1.SelfLink + "docs");
                                     message = await client.PostAsync(uri, documentContent1);
 
@@ -565,6 +570,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Logger.LogLine("Reading document #1 {0} iteration", i);
 
                         uri = new Uri(this.baseUri, retrievedDocument1.SelfLink);
+                        client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.PartitionKey);
+                        client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.PartitionKey, "[\"user1\"]");
                         retrievedTask = await client.GetAsync(uri);
                         using (message = retrievedTask)
                         {
@@ -723,7 +730,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
 
                 string uniqCollectionName = "ValidateUpdateCollectionIndexingPolicy_COLL_" + Guid.NewGuid().ToString("N");
-                DocumentCollection collection = await client.CreateDocumentCollectionAsync(database, new DocumentCollection { Id = uniqCollectionName });
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+                DocumentCollection collection = await client.CreateDocumentCollectionAsync(database, new DocumentCollection { Id = uniqCollectionName, PartitionKey = partitionKeyDefinition });
 
                 Logger.LogLine("Replace the collection with an invalid json object.");
                 HttpResponseMessage response = await ReplaceDocumentCollectionAsync(collection, "I am not a valid json object");
@@ -736,7 +744,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                if(database != null)
+                if (database != null)
                 {
                     await client.DeleteDatabaseAsync(database);
                 }
@@ -801,9 +809,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database retrievedDatabase = await retrievedTask.ToResourceAsync<Database>();
 
             string collectionName = "coll1";
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             DocumentCollection collection = new DocumentCollection
             {
-                Id = collectionName
+                Id = collectionName,
+                PartitionKey = partitionKeyDefinition
+
             };
 
             Uri uri;
@@ -812,7 +823,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers = new StringKeyValueCollection();
             client.AddMasterAuthorizationHeader("post", retrievedDatabase.ResourceId, "colls", headers, this.masterKey);
             uri = new Uri(this.baseUri, retrievedDatabase.SelfLink + "colls");
-
             DocumentCollection retrievedCollection = null;
             using (message = await client.PostAsync(uri, collection.AsHttpContent()))
             {
@@ -838,7 +848,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     using (StreamContent documentContent = new StreamContent(documentStream))
                     {
-
+                        client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.PartitionKey);
+                        client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.PartitionKey, "[\"user1\"]");
                         uri = new Uri(this.baseUri, retrievedCollection.SelfLink + "docs");
                         message = await client.PostAsync(uri, documentContent);
 
@@ -957,6 +968,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore]
         [TestMethod]
         public async Task TestPartitionedQueryExecutionInfoInDocumentClientExceptionWithIsContinuationExpectedHeader()
         {
@@ -976,23 +988,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Id = uniqCollectionName,
                         PartitionKey = new PartitionKeyDefinition
                         {
-                            Paths = new Collection<string> { "/key" }
+                            Paths = new Collection<string> { "/key" },
+                            Version = PartitionKeyDefinitionVersion.V1
                         }
                     },
                     new RequestOptions { OfferThroughput = 10000 });
 
                 string uniqSinglePartitionCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
-                DocumentCollection singlePartitionCollection = await client.CreateDocumentCollectionAsync(
-                    database.SelfLink,
-                    new DocumentCollection
-                    {
-                        Id = uniqSinglePartitionCollectionName,
-                    },
-                    new RequestOptions { OfferThroughput = 10000 });
 
                 var partitionedCollectionUri = new Uri(this.baseUri, new Uri(collection.SelfLink + "docs", UriKind.Relative));
 
-                var singlePartitionCollectionUri = new Uri(this.baseUri, new Uri(singlePartitionCollection.SelfLink + "docs", UriKind.Relative));
 
                 SqlQuerySpec querySpec = new SqlQuerySpec
                 {
@@ -1043,7 +1048,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     foreach (var collectionTuple in new[] {
                         Tuple.Create(collection, partitionedCollectionUri, true),
-                        Tuple.Create(singlePartitionCollection, singlePartitionCollectionUri, false),
                     })
                     {
                         foreach (var versionTuple in new[] {
@@ -1094,7 +1098,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                                 Assert.IsTrue(((string)json.message).StartsWith(RMResources.UnsupportedQueryWithFullResultAggregate));
 
-                                                PartitionedQueryExecutionInfo responseQueryInfo = (PartitionedQueryExecutionInfo) JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(json.additionalErrorInfo.ToString());
+                                                PartitionedQueryExecutionInfo responseQueryInfo = (PartitionedQueryExecutionInfo)JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(json.additionalErrorInfo.ToString());
                                                 if (isPartitionedCollectionUri)
                                                 {
                                                     Assert.AreEqual(JsonConvert.SerializeObject(queryInfoForPartitionedCollection), JsonConvert.SerializeObject(responseQueryInfo));
@@ -1164,7 +1168,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Id = uniqCollectionName,
                         PartitionKey = new PartitionKeyDefinition
                         {
-                            Paths = new Collection<string> { "/key" }
+                            Paths = new Collection<string> { "/key" },
+                            Version = PartitionKeyDefinitionVersion.V1
                         }
                     },
                     new RequestOptions { OfferThroughput = 10000 });
@@ -1319,7 +1324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         string errorMessage = (string)json.message;
                                         Assert.IsTrue(
                                             errorMessage.Contains(RMResources.UnsupportedCrossPartitionQuery) ||
-                                            errorMessage.Contains(RMResources.UnsupportedCrossPartitionQueryWithAggregate) || 
+                                            errorMessage.Contains(RMResources.UnsupportedCrossPartitionQueryWithAggregate) ||
                                             errorMessage.Contains("Cross partition query with TOP/ORDER BY or aggregate functions is not supported"),
                                             errorMessage);
 

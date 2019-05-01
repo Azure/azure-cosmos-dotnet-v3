@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly PartitionSupervisorFactory partitionSupervisorFactory;
         private readonly PartitionSynchronizer synchronizer;
-        private readonly CancellationTokenSource shutdownCts = new CancellationTokenSource();
+        private CancellationTokenSource shutdownCts;
 
         public PartitionControllerCore(
             DocumentServiceLeaseContainer leaseContainer,
@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task InitializeAsync()
         {
+            shutdownCts = new CancellationTokenSource();
             await this.LoadLeasesAsync().ConfigureAwait(false);
         }
 

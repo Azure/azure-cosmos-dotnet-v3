@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="AccessConditionType"/>
-    /// <seealso cref="RequestOptions"/>
+    /// <seealso cref="CosmosRequestOptions"/>
     public sealed class AccessCondition
     {
         /// <summary>

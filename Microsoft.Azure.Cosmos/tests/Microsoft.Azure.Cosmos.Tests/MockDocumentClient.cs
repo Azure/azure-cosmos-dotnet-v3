@@ -26,19 +26,6 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
 
-        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
-        {
-            DocumentClient documentClient = new MockDocumentClient();
-            
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
-
-            return cosmosClientBuilder.Build(documentClient);
-        }
-
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
@@ -153,7 +140,6 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<bool>(),
                             It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
@@ -161,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
             var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
-            this.Session = sessionContainer;
+            this.sessionContainer = sessionContainer;
         }
     }
 }
