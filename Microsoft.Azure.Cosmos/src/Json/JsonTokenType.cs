@@ -64,5 +64,10 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Corresponds to the JSON fieldname in a JSON object.
         /// </summary>
         FieldName,
+
+        /// <summary>
+        /// Corresponds to an arbitrary sequence of bytes in an object.
+        /// </summary>
+        Binary,
     }
 }

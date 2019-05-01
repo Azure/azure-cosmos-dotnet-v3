@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -27,8 +28,10 @@ namespace Microsoft.Azure.Cosmos.Query
     {
         /// <summary>
         /// The buffered pages that is thread safe, since the producer and consumer of the queue can be on different threads.
+        /// We buffer TryMonad of FeedResponse of T, since we want to buffer exceptions,
+        /// so that the exception is thrown on the consumer thread (instead of the background producer thread), thus observing the exception.
         /// </summary>
-        private readonly AsyncCollection<FeedResponse<CosmosElement>> bufferedPages;
+        private readonly AsyncCollection<TryMonad<FeedResponse<CosmosElement>>> bufferedPages;
 
         /// <summary>
         /// The document producer can only be fetching one page at a time.
@@ -128,7 +131,10 @@ namespace Microsoft.Azure.Cosmos.Query
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            this.bufferedPages = new AsyncCollection<FeedResponse<CosmosElement>>();
+            this.bufferedPages = new AsyncCollection<TryMonad<FeedResponse<CosmosElement>>>();
+
+            // We use a binary semaphore to get the behavior of a mutex,
+            // since fetching documents from the backend using a continuation token is a critical section.
             this.fetchSemaphore = new SemaphoreSlim(1, 1);
             if (partitionKeyRange == null)
             {
@@ -340,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.hasStartedFetching = true;
                         this.BackendContinuationToken = feedResponse.ResponseContinuation;
                         this.ActivityId = Guid.Parse(feedResponse.ActivityId);
-                        await this.bufferedPages.AddAsync(feedResponse);
+                        await this.bufferedPages.AddAsync(TryMonad<FeedResponse<CosmosElement>>.FromResult(feedResponse));
                         Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
                         QueryMetrics queryMetrics = QueryMetrics.Zero;
 
@@ -383,15 +389,25 @@ namespace Microsoft.Azure.Cosmos.Query
                         ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(exception, token);
                         if (!shouldRetryResult.ShouldRetry)
                         {
+                            Exception exceptionToBuffer;
                             if (shouldRetryResult.ExceptionToThrow != null)
                             {
-                                throw shouldRetryResult.ExceptionToThrow;
+                                exceptionToBuffer = shouldRetryResult.ExceptionToThrow;
                             }
                             else
                             {
                                 // Propagate original exception.
-                                throw;
+                                exceptionToBuffer = exception;
                             }
+
+                            // Buffer the exception instead of throwing, since we don't want an unobserved exception.
+                            await this.bufferedPages.AddAsync(TryMonad<FeedResponse<CosmosElement>>.FromException(exceptionToBuffer));
+
+                            // null out the backend continuation token, 
+                            // so that people stop trying to buffer more on this producer.
+                            this.hasStartedFetching = true;
+                            this.BackendContinuationToken = null;
+                            break;
                         }
                         else
                         {
@@ -519,7 +535,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
-            FeedResponse<CosmosElement> feedResponse = await this.bufferedPages.TakeAsync(token);
+            TryMonad<FeedResponse<CosmosElement>> tryMonad = await this.bufferedPages.TakeAsync(token);
+            FeedResponse<CosmosElement> feedResponse = tryMonad.Match<FeedResponse<CosmosElement>>(
+                onSuccess: ((page) =>
+                {
+                    return page;
+                }),
+                onError: ((exceptionDispatchInfo) =>
+                {
+                    exceptionDispatchInfo.Throw();
+                    return null;
+                }));
+
             this.PreviousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = feedResponse.ResponseContinuation;
             this.CurrentPage = feedResponse.GetEnumerator();
@@ -532,6 +559,53 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 return false;
+            }
+        }
+
+        private struct TryMonad<TResult>
+        {
+            private readonly TResult result;
+            private readonly ExceptionDispatchInfo exceptionDispatchInfo;
+            private readonly bool succeeded;
+
+            private TryMonad(
+                TResult result,
+                ExceptionDispatchInfo exceptionDispatchInfo,
+                bool succeeded)
+            {
+                this.result = result;
+                this.exceptionDispatchInfo = exceptionDispatchInfo;
+                this.succeeded = succeeded;
+            }
+
+            public static TryMonad<TResult> FromResult(TResult result)
+            {
+                return new TryMonad<TResult>(
+                    result: result,
+                    exceptionDispatchInfo: default(ExceptionDispatchInfo),
+                    succeeded: true);
+            }
+
+            public static TryMonad<TResult> FromException(Exception exception)
+            {
+                return new TryMonad<TResult>(
+                    result: default(TResult),
+                    exceptionDispatchInfo: ExceptionDispatchInfo.Capture(exception),
+                    succeeded: false);
+            }
+
+            public TOutput Match<TOutput>(
+                Func<TResult, TOutput> onSuccess,
+                Func<ExceptionDispatchInfo, TOutput> onError)
+            {
+                if (this.succeeded)
+                {
+                    return onSuccess(this.result);
+                }
+                else
+                {
+                    return onError(this.exceptionDispatchInfo);
+                }
             }
         }
     }

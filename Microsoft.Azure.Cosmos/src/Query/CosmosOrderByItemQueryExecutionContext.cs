@@ -226,10 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 await currentItemProducerTree.MoveNextAsync(cancellationToken);
 
-                if (currentItemProducerTree.HasMoreResults)
-                {
-                    this.PushCurrentItemProducerTree(currentItemProducerTree);
-                }
+                this.PushCurrentItemProducerTree(currentItemProducerTree);
             }
 
             return new FeedResponse<CosmosElement>(

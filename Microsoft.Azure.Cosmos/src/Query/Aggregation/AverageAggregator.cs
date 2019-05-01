@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                     return null;
                 }
 
-                return CosmosNumber.Create(this.Sum.Value / this.Count);
+                return CosmosNumber64.Create(this.Sum.Value / this.Count);
             }
         }
     }

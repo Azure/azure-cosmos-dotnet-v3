@@ -24,13 +24,11 @@ namespace Microsoft.Azure.Cosmos.Query
     {
         private const int PageSizeFactorForTop = 5;
         private readonly CosmosQueryContext cosmosQueryContext;
-        private readonly DocumentClient documentClient;
         private readonly AsyncLazy<IDocumentQueryExecutionContext> innerExecutionContext;
 
         public static bool TestFlag = true;
 
         public CosmosQueryExecutionContextFactory(
-            DocumentClient documentClient,
             CosmosQueryClient client,
             ResourceType resourceTypeEnum,
             OperationType operationType,
@@ -42,11 +40,6 @@ namespace Microsoft.Azure.Cosmos.Query
             bool allowNonValueAggregateQuery,
             Guid correlatedActivityId)
         {
-            if (documentClient == null)
-            {
-                throw new ArgumentNullException(nameof(documentClient));
-            }
-
             if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
@@ -66,8 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 throw new ArgumentNullException(nameof(resourceLink));
             }
-
-            this.documentClient = documentClient;
 
             // Prevent users from updating the values after creating the execution context.
             CosmosQueryRequestOptions cloneQueryRequestOptions = queryRequestOptions.Clone();
@@ -146,6 +137,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     containerSettings = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
                 }
+
+                if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
+                {
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(containerSettings.GetNoneValue());
+                }
             }
             else
             {
@@ -174,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                 // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                    this.documentClient,
+                    this.cosmosQueryContext.QueryClient.GetDocumentClient(),
                     this.cosmosQueryContext.SqlQuerySpec,
                     this.cosmosQueryContext.ResourceLink,
                     cancellationToken);

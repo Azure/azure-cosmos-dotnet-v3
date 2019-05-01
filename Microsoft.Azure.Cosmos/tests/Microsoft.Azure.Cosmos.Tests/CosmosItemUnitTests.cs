@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return null;
             });
 
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient(
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             CosmosContainer container = client.Databases["testdb"]
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(response);
             });
 
-            CosmosClient client = MockDocumentClient.CreateMockCosmosClient(
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
             CosmosContainer container = client.Databases["testdb"]
