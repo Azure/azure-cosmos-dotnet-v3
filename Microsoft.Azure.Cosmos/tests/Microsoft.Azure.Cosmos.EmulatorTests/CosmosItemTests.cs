@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static CosmosContainer fixedContainer = null;
         private static readonly string utc_date = DateTime.UtcNow.ToString("r");
 
+        private static readonly string PreNonPartitionedMigrationApiVersion = "2018-09-17";
         private static readonly string nonPartitionContainerId = "fixed-Container";
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
 
@@ -727,7 +728,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                await this.CreateNonPartitionContainerItem();
+                await this.CreateNonPartitionedContainer();
+                await this.CreateItemInNonPartitionedContainer(nonPartitionItemId);
                 await this.CreateUndefinedPartitionItem();
                 fixedContainer = this.database.Containers[nonPartitionContainerId];
 
@@ -872,11 +874,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createdList;
         }
 
-        private async Task CreateNonPartitionContainerItem()
-        {
-            await CreateNonPartitionedContainer();
-            await CreateItemInNonPartitionedContainer(nonPartitionItemId);
-        }
         private async Task CreateNonPartitionedContainer()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
@@ -889,7 +886,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceId = string.Format("dbs/{0}", this.database.Id);
             string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+            client.DefaultRequestHeaders.Add("x-ms-version", PreNonPartitionedMigrationApiVersion);
 
             string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
@@ -914,7 +911,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+            client.DefaultRequestHeaders.Add("x-ms-version", PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
             string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: itemId));
@@ -935,7 +932,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceId = string.Format("dbs/{0}", this.database.Id);
             string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+            client.DefaultRequestHeaders.Add("x-ms-version", PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("x-ms-documentdb-partitionkey", "[{}]");
 
             //Creating undefined partition Container item.
