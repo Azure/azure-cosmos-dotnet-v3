@@ -57,11 +57,11 @@
                 documentServiceLease);
             if (created)
             {
-                Logger.InfoFormat("Created lease with lease token {0}.", leaseToken);
+                DefaultTrace.TraceInformation("Created lease with lease token {0}.", leaseToken);
                 return Task.FromResult<DocumentServiceLease>(documentServiceLease);
             }
 
-            Logger.InfoFormat("Some other host created lease for {0}.", leaseToken);
+            DefaultTrace.TraceInformation("Some other host created lease for {0}.", leaseToken);
             return Task.FromResult<DocumentServiceLease>(null);
         }
 
@@ -72,7 +72,7 @@
 
             if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
             {
-                Logger.InfoFormat("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);
             }
 
@@ -107,7 +107,7 @@
             // certainly the lease was updated in between.
             if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
             {
-                Logger.InfoFormat("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);
             }
 

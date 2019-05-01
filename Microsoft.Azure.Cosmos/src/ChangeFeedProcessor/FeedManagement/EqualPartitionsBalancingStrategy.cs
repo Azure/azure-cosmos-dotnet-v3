@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             int myCount = workerToPartitionCount[this.hostName];
             int partitionsNeededForMe = target - myCount;
 
-            Logger.InfoFormat(
+            DefaultTrace.TraceInformation(
                 "Host '{0}' {1} partitions, {2} hosts, {3} available leases, target = {4}, min = {5}, max = {6}, mine = {7}, will try to take {8} lease(s) for myself'.",
                 this.hostName,
                 partitionCount,

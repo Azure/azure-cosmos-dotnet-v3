@@ -79,13 +79,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             this.shutdownCts = new CancellationTokenSource();
-            Logger.InfoFormat("Starting estimator...");
+            DefaultTrace.TraceInformation("Starting estimator...");
             this.runAsync = this.feedEstimator.RunAsync(this.shutdownCts.Token);
         }
 
         public override async Task StopAsync()
         {
-            Logger.InfoFormat("Stopping estimator...");
+            DefaultTrace.TraceInformation("Stopping estimator...");
             this.shutdownCts.Cancel();
             try
             {

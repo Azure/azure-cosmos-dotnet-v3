@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 var updatedLease = await this.leaseManager.AcquireAsync(lease).ConfigureAwait(false);
                 if (updatedLease != null) lease = updatedLease;
-                Logger.InfoFormat("Lease with token {0}: acquired", lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0}: acquired", lease.CurrentLeaseToken);
             }
             catch (Exception)
             {
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             var addLeaseTasks = new List<Task>();
             foreach (DocumentServiceLease lease in await this.leaseContainer.GetOwnedLeasesAsync().ConfigureAwait(false))
             {
-                Logger.InfoFormat("Acquired lease with token '{0}' on startup.", lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Acquired lease with token '{0}' on startup.", lease.CurrentLeaseToken);
                 addLeaseTasks.Add(this.AddOrUpdateLeaseAsync(lease));
             }
 
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return;
             }
 
-            Logger.InfoFormat("Lease with token {0}: released", lease.CurrentLeaseToken);
+            DefaultTrace.TraceInformation("Lease with token {0}: released", lease.CurrentLeaseToken);
 
             try
             {

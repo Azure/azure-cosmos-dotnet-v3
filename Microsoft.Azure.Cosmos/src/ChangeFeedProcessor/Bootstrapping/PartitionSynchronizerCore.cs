@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         {
             List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
             HashSet<string> partitionIds = new HashSet<string>(ranges.Select(range => range.Id));
-            Logger.InfoFormat("Source collection: '{0}', {1} partition(s)", this.container.LinkUri.ToString(), partitionIds.Count);
+            DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri.ToString(), partitionIds.Count);
             await this.CreateLeasesAsync(partitionIds).ConfigureAwait(false);
         }
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             string partitionId = lease.CurrentLeaseToken;
             string lastContinuationToken = lease.ContinuationToken;
 
-            Logger.InfoFormat("Partition {0} is gone due to split", partitionId);
+            DefaultTrace.TraceInformation("Partition {0} is gone due to split", partitionId);
 
             // After split the childs are either all or none available
             List<PartitionKeyRange> ranges = await this.EnumPartitionKeyRangesAsync().ConfigureAwait(false);
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
             if (Logger.IsInfoEnabled())
             {
-                Logger.InfoFormat("partition {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
+                DefaultTrace.TraceInformation("partition {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
             }
 
             return newLeases;

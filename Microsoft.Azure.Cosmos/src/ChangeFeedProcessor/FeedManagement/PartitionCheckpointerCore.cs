@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         public override async Task CheckpointPartitionAsync(string сontinuationToken)
         {
             this.lease = await this.leaseCheckpointer.CheckpointAsync(this.lease, сontinuationToken).ConfigureAwait(false);
-            Logger.InfoFormat("Checkpoint: lease token {0}, new continuation {1}", this.lease.CurrentLeaseToken, this.lease.ContinuationToken);
+            DefaultTrace.TraceInformation("Checkpoint: lease token {0}, new continuation {1}", this.lease.CurrentLeaseToken, this.lease.ContinuationToken);
         }
     }
 }

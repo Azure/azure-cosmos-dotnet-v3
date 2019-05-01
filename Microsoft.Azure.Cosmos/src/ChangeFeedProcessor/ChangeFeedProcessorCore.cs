@@ -67,16 +67,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 await this.InitializeAsync().ConfigureAwait(false);
             }
 
-            Logger.InfoFormat("Starting processor...");
+            DefaultTrace.TraceInformation("Starting processor...");
             await this.partitionManager.StartAsync().ConfigureAwait(false);
-            Logger.InfoFormat("Processor started.");
+            DefaultTrace.TraceInformation("Processor started.");
         }
 
         public override async Task StopAsync()
         {
-            Logger.InfoFormat("Stopping processor...");
+            DefaultTrace.TraceInformation("Stopping processor...");
             await this.partitionManager.StopAsync().ConfigureAwait(false);
-            Logger.InfoFormat("Processor stopped.");
+            DefaultTrace.TraceInformation("Processor stopped.");
         }
 
         private async Task InitializeAsync()

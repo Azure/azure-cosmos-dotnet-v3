@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     return Task.FromResult(lease);
                 }
 
-                Logger.InfoFormat("Lease with token {0} update conflict. ", lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0} update conflict. ", lease.CurrentLeaseToken);
             }
 
             throw new LeaseLostException(lease);

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             try
             {
-                Logger.InfoFormat("Lease with token {0}: renewer task started.", this.lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0}: renewer task started.", this.lease.CurrentLeaseToken);
                 await Task.Delay(TimeSpan.FromTicks(this.leaseRenewInterval.Ticks / 2), cancellationToken).ConfigureAwait(false);
 
                 while (true)
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                Logger.InfoFormat("Lease with token {0}: renewer task stopped.", this.lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0}: renewer task stopped.", this.lease.CurrentLeaseToken);
             }
             catch (Exception ex)
             {
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 var renewedLease = await this.leaseManager.RenewAsync(this.lease).ConfigureAwait(false);
                 if (renewedLease != null) this.lease = renewedLease;
 
-                Logger.InfoFormat("Lease with token {0}: renewed lease with result {1}", this.lease.CurrentLeaseToken, renewedLease != null);
+                DefaultTrace.TraceInformation("Lease with token {0}: renewed lease with result {1}", this.lease.CurrentLeaseToken, renewedLease != null);
             }
             catch (LeaseLostException leaseLostException)
             {
