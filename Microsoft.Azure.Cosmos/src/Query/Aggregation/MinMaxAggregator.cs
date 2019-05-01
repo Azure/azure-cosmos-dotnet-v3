@@ -166,6 +166,12 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 case CosmosElementType.String:
                     return true;
 
+                case CosmosElementType.Guid:
+                    return true;
+
+                case CosmosElementType.Binary:
+                    return true;
+
                 default:
                     throw new ArgumentException($"Unknown {nameof(CosmosElementType)} : {cosmosElementType}.");
             }

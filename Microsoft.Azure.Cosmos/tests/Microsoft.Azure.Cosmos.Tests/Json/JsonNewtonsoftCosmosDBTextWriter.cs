@@ -5,6 +5,8 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 {
+    using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -29,6 +31,51 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             {
                 return JsonSerializationFormat.Text;
             }
+        }
+
+        public override void WriteInt8Value(sbyte value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteInt16Value(short value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteInt32Value(int value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteInt64Value(long value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteFloat32Value(float value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteFloat64Value(double value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteUInt32Value(uint value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteGuidValue(Guid value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteBinaryValue(IReadOnlyList<byte> value)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

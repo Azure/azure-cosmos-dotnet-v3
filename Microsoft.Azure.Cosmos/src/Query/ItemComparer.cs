@@ -6,10 +6,8 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
+    using System.ComponentModel;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -88,9 +86,8 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             CosmosElementType type1 = element1.Type;
-            CosmosElementType type2 = element2.Type;
 
-            int cmp = CompareTypes(type1, type2);
+            int cmp = CompareTypes(element1, element2);
             if (cmp == 0)
             {
                 // If they are the same type then you need to break the tie.
@@ -110,30 +107,45 @@ namespace Microsoft.Azure.Cosmos.Query
                     case CosmosElementType.Number:
                         CosmosNumber number1 = element1 as CosmosNumber;
                         CosmosNumber number2 = element2 as CosmosNumber;
-
-                        double double1;
-                        if (number1.IsFloatingPoint)
+                        if (number1.NumberType == CosmosNumberType.Number64)
                         {
-                            double1 = number1.AsFloatingPoint().Value;
+                            double double1;
+                            if (number1.IsFloatingPoint)
+                            {
+                                double1 = number1.AsFloatingPoint().Value;
+                            }
+                            else
+                            {
+                                double1 = number1.AsInteger().Value;
+                            }
+
+                            double double2;
+                            if (number2.IsFloatingPoint)
+                            {
+                                double2 = number2.AsFloatingPoint().Value;
+                            }
+                            else
+                            {
+                                double2 = number2.AsInteger().Value;
+                            }
+
+                            cmp = Comparer<double>.Default.Compare(
+                                double1,
+                                double2);
+                        }
+                        else if (number1.IsFloatingPoint)
+                        {
+                            double double1 = number1.AsFloatingPoint().Value;
+                            double double2 = number2.AsFloatingPoint().Value;
+                            cmp = Comparer<double>.Default.Compare(double1, double2);
                         }
                         else
                         {
-                            double1 = number1.AsInteger().Value;
+                            long integer1 = number1.AsInteger().Value;
+                            long integer2 = number2.AsInteger().Value;
+                            cmp = Comparer<long>.Default.Compare(integer1, integer2);
                         }
 
-                        double double2;
-                        if (number2.IsFloatingPoint)
-                        {
-                            double2 = number2.AsFloatingPoint().Value;
-                        }
-                        else
-                        {
-                            double2 = number2.AsInteger().Value;
-                        }
-
-                        cmp = Comparer<double>.Default.Compare(
-                            double1,
-                            double2);
                         break;
 
                     case CosmosElementType.String:
@@ -142,6 +154,18 @@ namespace Microsoft.Azure.Cosmos.Query
                         cmp = string.CompareOrdinal(
                             string1.Value,
                             string2.Value);
+                        break;
+
+                    case CosmosElementType.Guid:
+                        CosmosGuid guid1 = element1 as CosmosGuid;
+                        CosmosGuid guid2 = element2 as CosmosGuid;
+                        cmp = guid1.Value.CompareTo(guid2.Value);
+                        break;
+
+                    case CosmosElementType.Binary:
+                        CosmosBinary binary1 = element1 as CosmosBinary;
+                        CosmosBinary binary2 = element2 as CosmosBinary;
+                        cmp = ItemComparer.CompareTo(binary1, binary2);
                         break;
 
                     default:
@@ -157,18 +181,18 @@ namespace Microsoft.Azure.Cosmos.Query
             return obj == MinValue || obj == MaxValue;
         }
 
-        private static int CompareTypes(CosmosElementType cosmosElementType1, CosmosElementType cosmosElementType2)
+        private static int CompareTypes(CosmosElement cosmosElement1, CosmosElement cosmosElement2)
         {
-            int order1 = TypeToOrder(cosmosElementType1);
-            int order2 = TypeToOrder(cosmosElementType2);
+            int order1 = TypeToOrder(cosmosElement1);
+            int order2 = TypeToOrder(cosmosElement2);
 
             return order1 - order2;
         }
 
-        private static int TypeToOrder(CosmosElementType cosmosElementType)
+        private static int TypeToOrder(CosmosElement cosmosElement)
         {
             int order;
-            switch (cosmosElementType)
+            switch (cosmosElement.Type)
             {
                 case CosmosElementType.Null:
                     order = 0;
@@ -177,16 +201,84 @@ namespace Microsoft.Azure.Cosmos.Query
                     order = 1;
                     break;
                 case CosmosElementType.Number:
-                    order = 2;
+                {
+                    CosmosNumber number = (CosmosNumber)cosmosElement;
+                    switch (number.NumberType)
+                    {
+                        case CosmosNumberType.Number64:
+                            order = 2;
+                            break;
+                        case CosmosNumberType.Float32:
+                            order = 6;
+                            break;
+                        case CosmosNumberType.Float64:
+                            order = 7;
+                            break;
+                        case CosmosNumberType.Int16:
+                            order = 8;
+                            break;
+                        case CosmosNumberType.Int32:
+                            order = 9;
+                            break;
+                        case CosmosNumberType.Int64:
+                            order = 10;
+                            break;
+                        case CosmosNumberType.Int8:
+                            order = 11;
+                            break;
+                        case CosmosNumberType.UInt32:
+                            order = 12;
+                            break;
+                        default:
+                            throw new InvalidEnumArgumentException("Unknown number type", (int)number.NumberType, typeof(CosmosNumberType));
+                    }
+                }
+
                     break;
                 case CosmosElementType.String:
                     order = 3;
                     break;
+                case CosmosElementType.Guid:
+                    order = 5;
+                    break;
+                case CosmosElementType.Binary:
+                    order = 4;
+                    break;
                 default:
-                    throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {cosmosElementType}");
+                    throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {cosmosElement.Type}");
             }
 
             return order;
+        }
+
+        public static int CompareTo(CosmosBinary left, CosmosBinary right)
+        {
+            if (left == null && right == null)
+            {
+                return 0;
+            }
+
+            if (left == null)
+            {
+                return 1;
+            }
+
+            if (right == null)
+            {
+                return -1;
+            }
+
+            int minLength = Math.Min(left.Value.Count, right.Value.Count);
+            for (int i = 0; i < minLength; i++)
+            {
+                int cmp = left.Value[i].CompareTo(right.Value[i]);
+                if (cmp != 0)
+                {
+                    return cmp;
+                }
+            }
+
+            return left.Value.Count.CompareTo(right.Value.Count);
         }
 
         /// <summary>
