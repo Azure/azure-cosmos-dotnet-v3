@@ -131,11 +131,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken;
-            return new CosmosQueryResponse(
+            return CosmosQueryResponse.CreateSuccess(
                 distinctResults,
                 distinctResults.Count,
-                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage),
-                cosmosQueryResponse.ResponseLengthBytes);
+                cosmosQueryResponse.ResponseLengthBytes,
+                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage));
         }
 
         /// <summary>

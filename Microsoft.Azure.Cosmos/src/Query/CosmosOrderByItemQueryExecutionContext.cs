@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
             }
 
-            return new CosmosQueryResponse(
+            return CosmosQueryResponse.CreateSuccess(
                 result: results,
                 count: results.Count,
                 responseHeaders: this.GetResponseHeaders(),

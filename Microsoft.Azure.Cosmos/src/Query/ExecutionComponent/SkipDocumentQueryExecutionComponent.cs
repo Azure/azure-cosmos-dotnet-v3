@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
-            return new CosmosQueryResponse(
+            return CosmosQueryResponse.CreateSuccess(
                     result: documentsAfterSkip,
                     count: documentsAfterSkip.Count(),
                     responseHeaders: sourcePage.QueryHeaders.CloneKnownProperties(updatedContinuationToken, sourcePage.QueryHeaders.DisallowContinuationTokenMessage),

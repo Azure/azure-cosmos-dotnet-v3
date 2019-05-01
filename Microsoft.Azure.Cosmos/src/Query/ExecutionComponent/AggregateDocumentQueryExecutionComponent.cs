@@ -153,14 +153,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
-            return new CosmosQueryResponse(
-                finalResult,
-                finalResult.Count,
-                new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null)
+            return CosmosQueryResponse.CreateSuccess(
+                result: finalResult,
+                count: finalResult.Count,
+                responseLengthBytes: responseLengthBytes,
+                responseHeaders: new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null)
                 {
                     RequestCharge = requestCharge
-                },
-                responseLengthBytes: responseLengthBytes);
+                });
         }
 
         /// <summary>

@@ -165,12 +165,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
-                    return new CosmosQueryResponse(
-                        statusCode: cosmosResponseMessage.StatusCode,
-                        errorMessage: cosmosResponseMessage.ErrorMessage,
-                        error: cosmosResponseMessage.Error,
-                        responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
-                        requestMessage: cosmosResponseMessage.RequestMessage);
+                    return CosmosQueryResponse.CreateFailure(cosmosResponseMessage);
                 }
 
                 // Execute the callback an each element of the page
@@ -227,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 int itemCount = cosmosArray.Count;
-                return new CosmosQueryResponse(
+                return CosmosQueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
                     responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),

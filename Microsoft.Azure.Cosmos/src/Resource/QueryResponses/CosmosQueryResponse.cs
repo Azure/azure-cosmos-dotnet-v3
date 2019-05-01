@@ -22,25 +22,12 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQueryResponse(
             IEnumerable<CosmosElement> result,
             int count,
+            long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            long responseLengthBytes): base(
-                statusCode: HttpStatusCode.Accepted,
-                requestMessage: null,
-                errorMessage: null,
-                error: null,
-                headers: responseHeaders)
-        {
-            this.CosmosElements = result;
-            this.Count = count;
-            this.ResponseLengthBytes = responseLengthBytes;
-        }
-
-        internal CosmosQueryResponse(
             HttpStatusCode statusCode,
             CosmosRequestMessage requestMessage,
             string errorMessage,
-            Error error,
-            CosmosQueryResponseMessageHeaders responseHeaders) 
+            Error error)
             : base(
                 statusCode: statusCode,
                 requestMessage: requestMessage,
@@ -48,10 +35,9 @@ namespace Microsoft.Azure.Cosmos
                 error: error,
                 headers: responseHeaders)
         {
-
-            this.CosmosElements = Enumerable.Empty<CosmosElement>();
-            this.Count = 0;
-            this.ResponseLengthBytes = 0;
+            this.CosmosElements = result;
+            this.Count = count;
+            this.ResponseLengthBytes = responseLengthBytes;
         }
 
         public int Count { get; }
@@ -83,6 +69,65 @@ namespace Microsoft.Azure.Cosmos
         internal bool GetHasMoreResults()
         {
             return !string.IsNullOrEmpty(this.Headers.Continuation);
+        }
+
+        internal static CosmosQueryResponse CreateSuccess(
+            IEnumerable<CosmosElement> result,
+            int count,
+            long responseLengthBytes,
+            CosmosQueryResponseMessageHeaders responseHeaders)
+        {
+            if(result == null)
+            {
+                throw new ArgumentNullException(nameof(result));
+            }
+
+            if (responseHeaders == null)
+            {
+                throw new ArgumentNullException(nameof(responseHeaders));
+            }
+
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException("count must be positive");
+            }
+
+            if (responseLengthBytes < 0)
+            {
+                throw new ArgumentOutOfRangeException("responseLengthBytes must be positive");
+            }
+
+            CosmosQueryResponse cosmosQueryResponse = new CosmosQueryResponse(
+               result: result,
+               count: count,
+               responseLengthBytes: responseLengthBytes,
+               responseHeaders: responseHeaders,
+               statusCode: HttpStatusCode.Accepted,
+               errorMessage: null,
+               error: null,
+               requestMessage: null);
+
+            return cosmosQueryResponse;
+        }
+
+        internal static CosmosQueryResponse CreateFailure(CosmosResponseMessage cosmosResponseMessage)
+        {
+            if (cosmosResponseMessage == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosResponseMessage));
+            }
+
+            CosmosQueryResponse cosmosQueryResponse = new CosmosQueryResponse(
+                result: Enumerable.Empty<CosmosElement>(),
+                count: 0,
+                responseLengthBytes: 0,
+                responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
+                statusCode: cosmosResponseMessage.StatusCode,
+                errorMessage: cosmosResponseMessage.ErrorMessage,
+                error: cosmosResponseMessage.Error,
+                requestMessage: cosmosResponseMessage.RequestMessage);
+
+            return cosmosQueryResponse;
         }
     }
 
@@ -163,8 +208,8 @@ namespace Microsoft.Azure.Cosmos
             if (this.resources == null)
             {
                 this.resources = CosmosElementSerializer.Deserialize<T>(
-                    this.cosmosElements, 
-                    this.jsonSerializer, 
+                    this.cosmosElements,
+                    this.jsonSerializer,
                     this.serializationOptions);
             }
 
@@ -187,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
                     jsonSerializer: jsonSerializer,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }
-            
+
             return queryResponse;
         }
     }

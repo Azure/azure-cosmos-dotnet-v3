@@ -152,11 +152,11 @@ namespace Microsoft.Azure.Cosmos.Query
             this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
 
             // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
-            return new CosmosQueryResponse(
+            return CosmosQueryResponse.CreateSuccess(
                 result: results,
                 count: results.Count,
-                responseHeaders: this.GetResponseHeaders(),
-                responseLengthBytes: this.GetAndResetResponseLengthBytes());
+                responseLengthBytes: this.GetAndResetResponseLengthBytes(),
+                responseHeaders: this.GetResponseHeaders());
         }
 
         /// <summary>

@@ -397,11 +397,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     dynamics.Add(element);
                 }
 
-                return new CosmosQueryResponse(
+                return CosmosQueryResponse.CreateSuccess(
                     dynamics,
                     queryResponse.Count,
-                    queryResponse.QueryHeaders.CloneKnownProperties(),
-                    queryResponse.ResponseLengthBytes);
+                    queryResponse.ResponseLengthBytes,
+                    queryResponse.QueryHeaders.CloneKnownProperties());
             }
             catch (Exception)
             {

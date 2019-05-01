@@ -133,11 +133,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
-            return new CosmosQueryResponse(
+            return CosmosQueryResponse.CreateSuccess(
                 takedDocuments,
                 takedDocuments.Count,
-                results.QueryHeaders.CloneKnownProperties(updatedContinuationToken, results.QueryHeaders.DisallowContinuationTokenMessage),
-                results.ResponseLengthBytes);
+                results.ResponseLengthBytes,
+                results.QueryHeaders.CloneKnownProperties(updatedContinuationToken, results.QueryHeaders.DisallowContinuationTokenMessage));
         }
 
         private enum TakeEnum
