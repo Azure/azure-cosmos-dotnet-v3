@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             if (degreeOfParallelism < 1)
             {
-                throw new ArgumentException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
+                throw new ArgumentOutOfRangeException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
             }
 
             this.leaseContainer = leaseContainer;
