@@ -191,8 +191,37 @@ namespace Microsoft.Azure.Cosmos.Query
                    containerSettings,
                    this.cosmosQueryContext.QueryRequestOptions);
 
+            CosmosQueryContext rewrittenComosQueryContext;
+            if(!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            {
+                // We need pass down the rewritten query.
+                SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
+                {
+                    QueryText = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
+                    Parameters = this.cosmosQueryContext.SqlQuerySpec.Parameters
+                };
+
+                rewrittenComosQueryContext = new CosmosQueryContext(
+                    this.cosmosQueryContext.QueryClient,
+                    this.cosmosQueryContext.ResourceTypeEnum,
+                    this.cosmosQueryContext.OperationTypeEnum,
+                    this.cosmosQueryContext.ResourceType,
+                    rewrittenQuerySpec,
+                    this.cosmosQueryContext.QueryRequestOptions,
+                    this.cosmosQueryContext.ResourceLink,
+                    this.cosmosQueryContext.IsContinuationExpected,
+                    this.cosmosQueryContext.CorrelatedActivityId,
+                    this.cosmosQueryContext.IsContinuationExpected,
+                    this.cosmosQueryContext.AllowNonValueAggregateQuery,
+                    this.cosmosQueryContext.ContainerResourceId);
+            }
+            else
+            {
+                rewrittenComosQueryContext = this.cosmosQueryContext;
+            }
+
             return await CreateSpecializedDocumentQueryExecutionContext(
-                this.cosmosQueryContext,
+                rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 containerSettings.ResourceId,

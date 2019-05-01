@@ -147,14 +147,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 constructorParams,
                 new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
 
-            SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
-            {
-                QueryText = initParams.PartitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
-                Parameters = constructorParams.SqlQuerySpec.Parameters
-            };
-
             await context.InitializeAsync(
-                rewrittenQuerySpec,
+                constructorParams.SqlQuerySpec,
                 initParams.RequestContinuation,
                 initParams.CollectionRid,
                 initParams.PartitionKeyRanges,
