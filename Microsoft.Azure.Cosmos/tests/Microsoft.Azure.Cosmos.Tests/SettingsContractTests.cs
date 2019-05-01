@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Reflection;
     using System.Text;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void OperationKingMatchesDirect()
+        public void OperationKindMatchesDirect()
         {
             CollectionAssert.AreEqual(Enum.GetNames(typeof(Cosmos.OperationKind)), Enum.GetNames(typeof(OperationKind)));
         }

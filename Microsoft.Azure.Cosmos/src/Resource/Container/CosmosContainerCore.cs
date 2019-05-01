@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal class CosmosContainerCore : CosmosContainer
+    internal partial class CosmosContainerCore : CosmosContainer
     {
         /// <summary>
         /// Only used for unit testing
@@ -154,28 +154,6 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        public override Task<CosmosResponseMessage> DeleteConflictAsync(
-            object partitionKey, 
-            string id,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Uri conflictLink = this.ClientContext.CreateLink(
-                 parentLink: this.LinkUri.OriginalString,
-                 uriPathSegment: Paths.ConflictsPathSegment,
-                 id: id);
-
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: conflictLink,
-                resourceType: ResourceType.Conflict,
-                operationType: OperationType.Delete,
-                requestOptions: null,
-                cosmosContainerCore: this,
-                partitionKey: partitionKey,
-                streamPayload: null,
-                requestEnricher: null,
                 cancellationToken: cancellationToken);
         }
 

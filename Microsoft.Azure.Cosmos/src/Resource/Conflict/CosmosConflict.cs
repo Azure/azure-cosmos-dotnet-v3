@@ -12,6 +12,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a conflict in the Azure Cosmos DB service.
     /// </summary>
+    /// <remarks>
+    /// On rare occasions, during an async operation (insert, replace and delete), a version conflict may occur on a resource during failover or multi master scenarios.
+    /// The conflicting resource is persisted as a Conflict resource.  
+    /// Inspecting Conflict resources will allow you to determine which operations and resources resulted in conflicts.
+    /// This is not related to operations returning a Conflict status code.
+    /// </remarks>
     public class CosmosConflict
     {
         /// <summary>
@@ -45,12 +51,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual Type ResourceType { get; set; }
 
         /// <summary>
-        /// Gets the resource ID for the conflict in the Azure Cosmos DB service.
-        /// </summary>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.SourceResourceId)]
-        public virtual string SourceResourceId { get; set; }
-
-        /// <summary>
         /// Gets the content of the Conflict resource in the Azure Cosmos DB service.
         /// </summary>
         /// <typeparam name="T">The type to use to deserialize the content.</typeparam>
@@ -79,6 +79,9 @@ namespace Microsoft.Azure.Cosmos
 
             return default(T);
         }
+
+        [JsonProperty(PropertyName = Documents.Constants.Properties.SourceResourceId)]
+        internal string SourceResourceId { get; set; }
 
         [JsonProperty(PropertyName = Documents.Constants.Properties.Content)]
         internal string Content { get; set; }
