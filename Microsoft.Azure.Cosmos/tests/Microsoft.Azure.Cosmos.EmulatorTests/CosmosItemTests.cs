@@ -913,7 +913,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Re-Query the items on the container with NonePartitionKeyValue
                 setIterator = fixedContainer.Items
                     .CreateItemQuery<ToDoActivity>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: ItemsToCreate);
-                while (setIterator.HasMoreResults)
+                Assert.IsTrue(setIterator.HasMoreResults);
                 {
                     CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
                     Assert.AreEqual(0, queryResponse.Count());
@@ -922,7 +922,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Query the items with newly inserted PartitionKey
                 setIterator = fixedContainer.Items
                     .CreateItemQuery<ToDoActivity>(sql, partitionKey: "TestPK", maxItemCount: ItemsToCreate + 1);
-                while (setIterator.HasMoreResults)
+                Assert.IsTrue(setIterator.HasMoreResults);
                 {
                     CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
                     Assert.AreEqual(ItemsToCreate, queryResponse.Count());
