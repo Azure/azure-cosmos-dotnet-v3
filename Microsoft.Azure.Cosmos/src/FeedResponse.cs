@@ -284,6 +284,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The continuation token to be used for continuing enumeration.
         /// </value>
+        /// <remarks>
+        /// The continuation token only affects the session result set.  It is not
+        /// possible to break out of the original query by tampering with the
+        /// token when continuing the enumeration.  From a security perspective,
+        /// it is safe to pass the token value to a client.
+        /// </remarks>
         public string ResponseContinuation
         {
             get
