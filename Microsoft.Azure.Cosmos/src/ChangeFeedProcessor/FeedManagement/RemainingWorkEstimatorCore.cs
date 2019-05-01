@@ -7,15 +7,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class RemainingWorkEstimatorCore : RemainingWorkEstimator
     {
@@ -23,27 +25,39 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
-        private readonly CosmosContainerCore container;
+        private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosDefaultJsonSerializer();
+        private readonly Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            CosmosContainerCore container,
+            Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator,
             int degreeOfParallelism)
         {
-            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
-            if (container == null) throw new ArgumentNullException(nameof(container));
-            if (degreeOfParallelism < 1) throw new ArgumentException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
+            if (leaseContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseContainer));
+            }
+
+            if (feedCreator == null)
+            {
+                throw new ArgumentNullException(nameof(feedCreator));
+            }
+
+            if (degreeOfParallelism < 1)
+            {
+                throw new ArgumentOutOfRangeException("Degree of parallelism is out of range", nameof(degreeOfParallelism));
+            }
 
             this.leaseContainer = leaseContainer;
-            this.container = container;
+            this.feedCreator = feedCreator;
             this.degreeOfParallelism = degreeOfParallelism;
         }
 
         public override async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellationToken)
         {
-            var leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
+            IReadOnlyList<RemainingLeaseTokenWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
             if (leaseTokens.Count == 0) return 1;
 
             return leaseTokens.Sum(leaseToken => leaseToken.RemainingWork);
@@ -57,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return new List<RemainingLeaseTokenWork>().AsReadOnly();
             }
 
-            var tasks = Partitioner.Create(leases)
+            IEnumerable<Task<List<RemainingLeaseTokenWork>>> tasks = Partitioner.Create(leases)
                 .GetPartitions(this.degreeOfParallelism)
                 .Select(partition => Task.Run(async () =>
                 {
-                    var partialResults = new List<RemainingLeaseTokenWork>();
+                    List<RemainingLeaseTokenWork> partialResults = new List<RemainingLeaseTokenWork>();
                     using (partition)
                     {
                         while (!cancellationToken.IsCancellationRequested && partition.MoveNext())
@@ -70,10 +84,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             try
                             {
                                 if (string.IsNullOrEmpty(item?.CurrentLeaseToken)) continue;
-                                var result = await this.GetRemainingWorkAsync(item, cancellationToken);
+                                long result = await this.GetRemainingWorkAsync(item, cancellationToken);
                                 partialResults.Add(new RemainingLeaseTokenWork(item.CurrentLeaseToken, result));
                             }
-                            catch (DocumentClientException ex)
+                            catch (CosmosException ex)
                             {
                                 Logger.WarnException($"Getting estimated work for lease token {item.CurrentLeaseToken} failed!", ex);
                             }
@@ -83,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     return partialResults;
                 })).ToArray();
 
-            var results = await Task.WhenAll(tasks);
+            IEnumerable<List<RemainingLeaseTokenWork>> results = await Task.WhenAll(tasks);
             return results.SelectMany(r => r).ToList().AsReadOnly();
         }
 
@@ -111,9 +125,63 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return segments[1];
         }
 
-        private static Document GetFirstDocument(IFeedResponse<Document> response)
+        private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
         {
-            using (IEnumerator<Document> e = response.GetEnumerator())
+            // Current lease schema maps Token to PKRangeId
+            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
+            CosmosFeedResultSetIterator iterator = this.feedCreator(
+                partitionKeyRangeId,
+                existingLease.ContinuationToken,
+                string.IsNullOrEmpty(existingLease.ContinuationToken));
+
+            try
+            {
+                CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.NotModified)
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+
+                long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
+                long lastQueryLSN = items.Count > 0
+                    ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
+                    : parsedLSNFromSessionToken;
+                if (lastQueryLSN < 0)
+                {
+                    return 1;
+                }
+
+                long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
+                return leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
+            }
+            catch (Exception clientException)
+            {
+                Logger.WarnException($"GetEstimateWork > exception: lease token '{existingLease.CurrentLeaseToken}'", clientException);
+                throw;
+            }
+        }
+
+        private static string GetFirstItemLSN(Collection<JObject> items)
+        {
+            JObject item = RemainingWorkEstimatorCore.GetFirstItem(items);
+            if (item == null)
+            {
+                return null;
+            }
+
+            if (item.TryGetValue(LSNPropertyName, StringComparison.OrdinalIgnoreCase, out JToken property))
+            {
+                return property.Value<string>();
+            }
+
+            Logger.Warn("Change Feed response item does not include LSN.");
+            return null;
+        }
+
+        private static JObject GetFirstItem(Collection<JObject> response)
+        {
+            using (IEnumerator<JObject> e = response.GetEnumerator())
             {
                 while (e.MoveNext())
                 {
@@ -136,39 +204,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return parsed;
         }
 
-        private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
+        private static Collection<JObject> GetItemsFromResponse(CosmosResponseMessage response)
         {
-            ChangeFeedOptions options = new ChangeFeedOptions
+            if (response.Content == null)
             {
-                MaxItemCount = 1,
-                PartitionKeyRangeId = existingLease.CurrentLeaseToken,
-                RequestContinuation = existingLease.ContinuationToken,
-                StartFromBeginning = string.IsNullOrEmpty(existingLease.ContinuationToken),
-            };
-
-            IDocumentQuery<Document> query = this.container.ClientContext.DocumentClient.CreateDocumentChangeFeedQuery(this.container.LinkUri.ToString(), options);
-            IFeedResponse<Document> response = null;
-
-            try
-            {
-                response = await query.ExecuteNextAsync<Document>(cancellationToken).ConfigureAwait(false);
-                long parsedLSNFromSessionToken = TryConvertToNumber(ExtractLsnFromSessionToken(response.SessionToken));
-                long lastQueryLSN = response.Count > 0
-                    ? TryConvertToNumber(GetFirstDocument(response).GetPropertyValue<string>(LSNPropertyName)) - 1
-                    : parsedLSNFromSessionToken;
-                if (lastQueryLSN < 0)
-                {
-                    return 1;
-                }
-
-                long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
-                return leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
+                return new Collection<JObject>();
             }
-            catch (Exception clientException)
-            {
-                Logger.WarnException($"GetEstimateWork > exception: lease token '{existingLease.CurrentLeaseToken}'", clientException);
-                throw;
-            }
+
+            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponse<JObject>>(response.Content).Data;
         }
     }
 }
