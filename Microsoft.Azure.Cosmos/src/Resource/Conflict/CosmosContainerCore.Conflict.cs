@@ -18,6 +18,16 @@ namespace Microsoft.Azure.Cosmos
             string id,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             Uri conflictLink = this.ClientContext.CreateLink(
                  parentLink: this.LinkUri.OriginalString,
                  uriPathSegment: Paths.ConflictsPathSegment,
@@ -40,6 +50,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosConflict cosmosConflict,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (cosmosConflict == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosConflict));
+            }
+
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
             CosmosDatabaseCore databaseCore = (CosmosDatabaseCore) this.Database;
             string databaseResourceId = await databaseCore.GetRID(cancellationToken);
