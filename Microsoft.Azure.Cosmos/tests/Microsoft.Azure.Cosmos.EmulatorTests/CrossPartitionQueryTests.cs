@@ -398,7 +398,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
-            int maxItemCount,
             CosmosQueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
@@ -1033,14 +1032,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
-                        MaxConcurrency = maxDegreeOfParallelism
+                        MaxConcurrency = maxDegreeOfParallelism,
+                        MaxItemCount = maxItemCount
                     };
 
                     List<JToken> actualFromQueryWithoutContinutionTokens;
                     actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
                         container,
                         "SELECT * FROM c",
-                        maxItemCount,
                         feedOptions);
 
                     Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
@@ -1071,7 +1070,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 catch (Exception e)
                 {
                     // When Service Interop is available add back this check.
-                    if(!(e.GetBaseException() is DllNotFoundException))
+                    if (!(e.GetBaseException() is DllNotFoundException))
                     {
                         throw e;
                     }
@@ -1095,17 +1094,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
-                        MaxConcurrency = maxDegreeOfParallelism
+                        MaxConcurrency = maxDegreeOfParallelism,
+                        MaxItemCount = maxItemCount,
                     };
 
                     List<JToken> actualFromQueryWithoutContinutionTokens;
                     actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
                         container,
                         "SELECT * FROM c ORDER BY c._ts",
-                        maxItemCount,
                         feedOptions);
 
                     Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestUnsupportedQueries()
+        {
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                NoDocuments,
+                this.TestUnsupportedQueriesHelper);
+        }
+
+        private async Task TestUnsupportedQueriesHelper(
+            CosmosContainer container,
+            IEnumerable<Document> documents)
+        {
+            CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+            {
+                EnableCrossPartitionQuery = true,
+                MaxBufferedItemCount = 7000,
+                MaxConcurrency = 10,
+                MaxItemCount = 10,
+            };
+
+            string aggregateWithoutValue = "SELECT COUNT(1) FROM c";
+            string compositeAggregate = "SELECT COUNT(1) + 5 FROM c";
+            string multipleAggregates = "SELECT COUNT(1) + SUM(c) FROM c";
+
+            string[] unsupportedQueries = new string[]
+            {
+                aggregateWithoutValue,
+                compositeAggregate,
+                multipleAggregates
+            };
+
+
+            foreach (string unsupportedQuery in unsupportedQueries)
+            {
+                try
+                {
+                    await QueryWithoutContinuationTokens<JToken>(
+                        container,
+                        unsupportedQuery,
+                        feedOptions);
+                    Assert.Fail("Expected query to fail due it not being supported.");
+                }
+                catch (Exception e)
+                {
+                    Assert.IsTrue(e.GetBaseException().Message.Contains("Query contains 1 or more unsupported features. Upgrade your SDK to a version that does support the requested features:"));
                 }
             }
         }
@@ -1299,7 +1348,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (Tuple<string, object> data in datum)
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
-                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(container, query, maxItemCount: 1)).Single();
+                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(
+                        container,
+                        query)).Single();
                     object expected = data.Item2;
 
                     if (aggregate is long)
@@ -2685,7 +2736,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<JToken> actualFromQueryWithContinutionToken = await QueryWithoutContinuationTokens<JToken>(
                     container,
                     query,
-                    3,
                     queryRequestOptions);
 
                 Assert.Fail("Expected exception for Cross Partition OFFSET LIMIT");
@@ -2731,7 +2781,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         List<JToken> actualFromQueryWithoutContinutionToken = await QueryWithoutContinuationTokens<JToken>(
                             container,
                             query,
-                            3,
                             queryRequestOptions);
                         Assert.IsTrue(
                             expectedResults.SequenceEqual(actualFromQueryWithoutContinutionToken, JsonTokenEqualityComparer.Value),
