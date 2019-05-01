@@ -157,6 +157,28 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+        public override Task<CosmosResponseMessage> DeleteConflictAsync(
+            object partitionKey, 
+            string id,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Uri conflictLink = this.ClientContext.CreateLink(
+                 parentLink: this.LinkUri.OriginalString,
+                 uriPathSegment: Paths.ConflictsPathSegment,
+                 id: id);
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: conflictLink,
+                resourceType: ResourceType.Conflict,
+                operationType: OperationType.Delete,
+                requestOptions: null,
+                cosmosContainerCore: this,
+                partitionKey: partitionKey,
+                streamPayload: null,
+                requestEnricher: null,
+                cancellationToken: cancellationToken);
+        }
+
         internal Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {

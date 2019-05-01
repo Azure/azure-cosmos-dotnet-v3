@@ -19,11 +19,11 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
         }
 
-        public override CosmosResultSetIterator<CosmosConflictSettings> GetConflictsIterator(
+        public override CosmosResultSetIterator<CosmosConflict> GetConflictsIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosConflictSettings>(
+            return new CosmosDefaultResultSetIterator<CosmosConflict>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -40,8 +40,6 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 this.ConflictsFeedStreamRequestExecutor);
         }
-
-        public override CosmosConflict this[string id] => new CosmosConflictCore(this.clientContext, this.container, id);
 
         private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutor(
             int? maxItemCount,
@@ -67,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosQueryResponse<CosmosConflictSettings>> ConflictsFeedRequestExecutor(
+        private Task<CosmosQueryResponse<CosmosConflict>> ConflictsFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -76,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosConflictSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosConflict>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: Documents.ResourceType.Conflict,
                 operationType: Documents.OperationType.ReadFeed,
@@ -89,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosConflictSettings>(response),
+                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosConflict>(response),
                 cancellationToken: cancellationToken);
         }
     }

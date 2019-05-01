@@ -46,13 +46,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ConflictsSettingsDefaults()
         {
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            CosmosConflict conflictSettings = new CosmosConflict();
 
             Assert.IsNull(conflictSettings.ResourceType);
             Assert.AreEqual(Cosmos.OperationKind.Invalid, conflictSettings.OperationKind);
             Assert.IsNull(conflictSettings.Id);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosConflictSettings), "Id", "OperationKind", "ResourceType", "SourceResourceId");
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosConflict), "Id", "OperationKind", "ResourceType", "SourceResourceId");
+        }
+
+        [TestMethod]
+        public void OperationKingMatchesDirect()
+        {
+            CollectionAssert.AreEqual(Enum.GetNames(typeof(Cosmos.OperationKind)), Enum.GetNames(typeof(OperationKind)));
         }
 
         [TestMethod]
@@ -422,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string id = Guid.NewGuid().ToString();
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings()
+            CosmosConflict conflictSettings = new CosmosConflict()
             {
                 Id = id,
                 OperationKind = Cosmos.OperationKind.Create,
@@ -440,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(conflict);
 
             // Swap de-serialize and validate 
-            CosmosConflictSettings conflictDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosConflictSettings>(directSerialized);
+            CosmosConflict conflictDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosConflict>(directSerialized);
             Conflict conflictDeser = SettingsContractTests.DirectDeSerialize<Conflict>(cosmosSerialized);
 
             Assert.AreEqual(conflictDeserSettings.Id, conflictDeser.Id);
@@ -459,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  resourceType: 'trigger'
                 }";
 
-            CosmosConflictSettings conflictSettings = SettingsContractTests.CosmosDeserialize<CosmosConflictSettings>(conflictResponsePayload);
+            CosmosConflict conflictSettings = SettingsContractTests.CosmosDeserialize<CosmosConflict>(conflictResponsePayload);
             Conflict conflict = SettingsContractTests.DirectDeSerialize<Conflict>(conflictResponsePayload);
 
             Assert.AreEqual(conflict.Id, conflictSettings.Id);

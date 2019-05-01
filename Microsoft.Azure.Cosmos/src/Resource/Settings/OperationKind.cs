@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <remarks>
     /// When a version conflict occurs during an async operation, retrieving the <see cref="CosmosConflict"/> instance will allow you 
-    /// to determine which resource and operation caause the conflict.
+    /// to determine which resource and operation cause the conflict.
     /// </remarks>
     public enum OperationKind
     {

@@ -261,5 +261,27 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
             CosmosContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Delete a conflict from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="partitionKey">The partition key for the item.</param>
+        /// <param name="id">The conflict id.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <exception cref="CosmosException">
+        /// This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
+            object partitionKey, 
+            string id,
+            CancellationToken cancellationToken = default(CancellationToken));
     }
 }
