@@ -3,7 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
 {
-    internal enum FluentSettingsOperation
+    internal enum FluentOperation
     {
         Create,
         Replace

@@ -4,9 +4,10 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     /// <summary>
-    /// <see cref="IndexingPolicy"/> fluent definition.
+    /// Indexing Policy fluent definition.
     /// </summary>
-    public abstract class IndexingPolicyFluentDefinition : FluentSettings<CosmosContainerFluentDefinition>
+    /// <seealso cref="IndexingPolicy"/>
+    public abstract class IndexingPolicyFluentDefinition
     {
         /// <summary>
         /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingMode"/>.
@@ -42,5 +43,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <returns></returns>
         public abstract SpatialIndexFluentDefinition WithSpatialIndex();
+
+        /// <summary>
+        /// Applies the current definition to the parent.
+        /// </summary>
+        public abstract CosmosContainerFluentDefinition Attach();
     }
 }

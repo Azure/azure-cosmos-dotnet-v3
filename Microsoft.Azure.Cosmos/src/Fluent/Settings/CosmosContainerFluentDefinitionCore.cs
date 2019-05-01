@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     internal class CosmosContainerFluentDefinitionCore : CosmosContainerFluentDefinitionForCreate
     {
         private readonly string containerName;
-        private readonly FluentSettingsOperation fluentSettingsOperation;
+        private readonly FluentOperation fluentSettingsOperation;
         private readonly CosmosContainers cosmosContainers;
         private string partitionKeyPath;
         private UniqueKeyPolicy uniqueKeyPolicy;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosContainerFluentDefinitionCore(
             CosmosContainers cosmosContainers,
             string name,
-            FluentSettingsOperation fluentSettingsOperation,
+            FluentOperation fluentSettingsOperation,
             string partitionKeyPath = null)
         {
             this.containerName = name;
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         public override async Task<CosmosContainerResponse> ApplyAsync()
         {
-            if (this.partitionKeyPath == null && this.fluentSettingsOperation != FluentSettingsOperation.Create)
+            if (this.partitionKeyPath == null && this.fluentSettingsOperation != FluentOperation.Create)
             {
                 CosmosContainerSettings currentConfiguration = await this.cosmosContainers[this.containerName].ReadAsync();
                 this.partitionKeyPath = currentConfiguration.PartitionKeyPath;
@@ -142,9 +142,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             switch (this.fluentSettingsOperation)
             {
-                case FluentSettingsOperation.Create:
+                case FluentOperation.Create:
                     return await this.cosmosContainers.CreateContainerAsync(settings, this.throughput);
-                case FluentSettingsOperation.Replace:
+                case FluentOperation.Replace:
                     return await this.cosmosContainers[this.containerName].ReplaceAsync(settings);
             }
 

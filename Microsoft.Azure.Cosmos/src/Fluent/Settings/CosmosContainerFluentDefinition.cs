@@ -7,8 +7,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Threading.Tasks;
 
     /// <summary>
-    /// <see cref="CosmosContainer"/> fluent definition.
+    /// Azure Cosmos container fluent definition.
     /// </summary>
+    /// <seealso cref="CosmosContainer"/>
     public abstract class CosmosContainerFluentDefinition
     {
         /// <summary>
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Sets the time to live base timestamp property path.
         /// </summary>
         /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
+        /// <seealso cref="CosmosContainerSettings.TimeToLivePropertyPath"/>
         public abstract CosmosContainerFluentDefinition WithTimeToLivePropertyPath(string propertyPath);
 
         /// <summary>

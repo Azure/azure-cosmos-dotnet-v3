@@ -4,9 +4,10 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     /// <summary>
-    /// <see cref="SpatialSpec"/> fluent definition.
+    /// Spatial index fluent definition.
     /// </summary>
-    public abstract class SpatialIndexFluentDefinition : FluentSettings<IndexingPolicyFluentDefinition>
+    /// <seealso cref="SpatialSpec"/>
+    public abstract class SpatialIndexFluentDefinition
     {
         /// <summary>
         /// Adds a path to the current <see cref="SpatialSpec"/> definition.
@@ -24,5 +25,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public abstract SpatialIndexFluentDefinition WithPath(
             string path,
             params SpatialType[] spatialTypes);
+
+        /// <summary>
+        /// Applies the current definition to the parent.
+        /// </summary>
+        public abstract IndexingPolicyFluentDefinition Attach();
     }
 }

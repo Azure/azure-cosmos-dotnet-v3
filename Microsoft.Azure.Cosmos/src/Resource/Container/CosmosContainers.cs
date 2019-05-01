@@ -289,7 +289,10 @@ namespace Microsoft.Azure.Cosmos
         /// Replace an Azure Cosmos container through a Fluent API.
         /// </summary>
         /// <param name="name">Azure Cosmos container name to replace.</param>
+        /// <param name="partitionKeyPath">Current partition key path for the container, if not specified, an additional internal request will obtain it. Example: /location</param>
         /// <returns>A fluent definition of an Azure Cosmos container.</returns>
-        public abstract CosmosContainerFluentDefinition Replace(string name);
+        public abstract CosmosContainerFluentDefinition Replace(
+            string name,
+            string partitionKeyPath = null);
     }
 }

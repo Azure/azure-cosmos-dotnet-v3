@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 null);
 
             await cosmosContainerFluentDefinitionCore.ApplyAsync();
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 null);
 
             CosmosContainerResponse response = await cosmosContainerFluentDefinitionCore.ApplyAsync();
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 partitionKey);
 
             await cosmosContainerFluentDefinitionCore
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 partitionKey);
 
             await cosmosContainerFluentDefinitionCore
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 partitionKey);
 
             await cosmosContainerFluentDefinitionCore
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 partitionKey);
 
             await cosmosContainerFluentDefinitionCore
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 partitionKey);
 
             await cosmosContainerFluentDefinitionCore
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             CosmosContainerFluentDefinitionCore cosmosContainerFluentDefinitionCore = new CosmosContainerFluentDefinitionCore(
                 mockContainers.Object,
                 containerName,
-                FluentSettingsOperation.Create,
+                FluentOperation.Create,
                 partitionKey);
 
             await cosmosContainerFluentDefinitionCore

@@ -6,7 +6,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// Composite Index fluent definition.
     /// </summary>
-    public abstract class CompositeIndexFluentDefinition : FluentSettings<IndexingPolicyFluentDefinition>
+    /// <seealso cref="CompositePath"/>
+    public abstract class CompositeIndexFluentDefinition
     {
         /// <summary>
         /// Add a path to the current <see cref="CompositePath"/> definition.
@@ -23,5 +24,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public abstract CompositeIndexFluentDefinition Path(
             string path,
             CompositePathSortOrder sortOrder);
+
+        /// <summary>
+        /// Applies the current definition to the parent.
+        /// </summary>
+        public abstract IndexingPolicyFluentDefinition Attach();
     }
 }
