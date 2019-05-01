@@ -1058,7 +1058,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             bool originalTestFlag = CosmosQueryExecutionContextFactory.TestFlag;
 
-            foreach (bool testFlag in new bool[] { true, false})
+            foreach (bool testFlag in new bool[] { true, false })
             {
                 try
                 {
@@ -1067,6 +1067,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionModes.Direct,
                         documents,
                         this.TestQueryPlanGatewayAndServiceInteropHelper);
+                }
+                catch (Exception e)
+                {
+                    // When Service Interop is available add back this check.
+                    if(!(e.GetBaseException() is DllNotFoundException))
+                    {
+                        throw e;
+                    }
                 }
                 finally
                 {
