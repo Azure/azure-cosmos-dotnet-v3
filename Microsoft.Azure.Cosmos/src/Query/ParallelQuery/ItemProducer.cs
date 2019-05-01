@@ -101,6 +101,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly SqlQuerySpec querySpecForInit;
 
         /// <summary>
+        /// Need this flag so that the document producer stops buffering more results after a fatal exception.
+        /// </summary>
+        private bool hitException;
+
+        /// <summary>
         /// Initializes a new instance of the ItemProducer class.
         /// </summary>
         /// <param name="queryContext">request context</param>
@@ -294,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Query
             try
             {
                 await this.fetchSemaphore.WaitAsync();
-                if (!this.HasMoreBackendResults)
+                if (!this.HasMoreBackendResults || this.hitException)
                 {
                     // Just NOP
                     return;
@@ -315,28 +320,31 @@ namespace Microsoft.Azure.Cosmos.Query
                         CosmosQueryRequestOptions.FillMaxItemCount(cosmosRequestMessage, pageSize);
                     });
 
-                        this.fetchExecutionRangeAccumulator.EndFetchRange(
-                            partitionIdentifier: this.PartitionKeyRange.Id,
-                            activityId: feedResponse.Headers.ActivityId,
-                            numberOfDocuments: feedResponse.Count,
-                            retryCount: -1);
+                this.fetchExecutionRangeAccumulator.EndFetchRange(
+                    partitionIdentifier: this.PartitionKeyRange.Id,
+                    activityId: feedResponse.Headers.ActivityId,
+                    numberOfDocuments: feedResponse.Count,
+                    retryCount: -1);
 
-                        this.fetchSchedulingMetrics.Stop();
-                        this.hasStartedFetching = true;
-                        this.BackendContinuationToken = feedResponse.Headers.Continuation;
-                        this.ActivityId = Guid.Parse(feedResponse.Headers.ActivityId);
-                        await this.bufferedPages.AddAsync(feedResponse);
-                        if (!feedResponse.IsSuccessStatusCode)
-                        {
-                            // null out the backend continuation token, 
-                            // so that people stop trying to buffer more on this producer.
-                            this.hasStartedFetching = true;
-                            this.BackendContinuationToken = null;
-                            return;
-                        }
+                this.fetchSchedulingMetrics.Stop();
+                this.hasStartedFetching = true;
+                this.BackendContinuationToken = feedResponse.Headers.Continuation;
+                this.ActivityId = Guid.Parse(feedResponse.Headers.ActivityId);
+                await this.bufferedPages.AddAsync(feedResponse);
+                if (!feedResponse.IsSuccessStatusCode)
+                {
+                    // null out the backend continuation token, 
+                    // so that people stop trying to buffer more on this producer.
+                    this.hasStartedFetching = true;
+                    this.BackendContinuationToken = null;
 
-                        Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
-                        QueryMetrics queryMetrics = QueryMetrics.Zero;
+                    // set this flag so that people stop trying to buffer more on this producer.
+                    this.hitException = true;
+                    return;
+                }
+
+                Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
+                QueryMetrics queryMetrics = QueryMetrics.Zero;
 
                 if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
                 {
