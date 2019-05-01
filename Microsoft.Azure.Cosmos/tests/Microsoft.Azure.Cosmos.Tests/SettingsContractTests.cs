@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void OperationKindMatchesDirect()
         {
-            CollectionAssert.AreEqual(Enum.GetNames(typeof(Cosmos.OperationKind)), Enum.GetNames(typeof(OperationKind)));
+            AssertEnums<Cosmos.OperationKind, Documents.OperationKind>();
         }
 
         [TestMethod]
@@ -233,19 +233,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void PartitionKeyDefinitionVersionValuesTest()
         {
-            string[] allCosmosEntries = Enum.GetNames(typeof(PartitionKeyDefinitionVersion));
-            string[] allDocumentsEntries = Enum.GetNames(typeof(Documents.PartitionKeyDefinitionVersion));
-
-            CollectionAssert.AreEqual(allCosmosEntries, allDocumentsEntries);
-
-            foreach(string entry in allCosmosEntries)
-            {
-                
-                Enum.TryParse<PartitionKeyDefinitionVersion>(entry, out PartitionKeyDefinitionVersion cosmosVersion);
-                Enum.TryParse<Documents.PartitionKeyDefinitionVersion>(entry, out Documents.PartitionKeyDefinitionVersion documentssVersion);
-
-                Assert.AreEqual(documentssVersion, cosmosVersion);
-            }
+            AssertEnums<Cosmos.PartitionKeyDefinitionVersion, Documents.PartitionKeyDefinitionVersion>();
         }
 
         [TestMethod]
@@ -551,6 +539,23 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Assert.IsTrue(m.IsVirtual, m.ToString());
                     }
                 }
+            }
+        }
+
+        private void AssertEnums<TFirstEnum,TSecondEnum>() where TFirstEnum : struct, IConvertible where TSecondEnum : struct, IConvertible
+        {
+            string[] allCosmosEntries = Enum.GetNames(typeof(TFirstEnum));
+            string[] allDocumentsEntries = Enum.GetNames(typeof(TSecondEnum));
+
+            CollectionAssert.AreEqual(allCosmosEntries, allDocumentsEntries);
+
+            foreach (string entry in allCosmosEntries)
+            {
+
+                Enum.TryParse<TFirstEnum>(entry, out TFirstEnum cosmosVersion);
+                Enum.TryParse<TSecondEnum>(entry, out TSecondEnum documentssVersion);
+
+                Assert.AreEqual(Convert.ToInt32(documentssVersion), Convert.ToInt32(cosmosVersion));
             }
         }
     }
