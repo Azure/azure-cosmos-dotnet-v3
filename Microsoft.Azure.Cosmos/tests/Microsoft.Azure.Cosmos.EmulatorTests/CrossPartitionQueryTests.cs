@@ -564,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TestQueryAndReadFeedWithPartitionKey()
+        public async Task TestQueryWithPartitionKey()
         {
             string[] documents = new[]
             {
@@ -582,11 +582,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
-                this.TestQueryAndReadFeedWithPartitionKeyHelper,
+                this.TestQueryWithPartitionKeyHelper,
                 "/key");
         }
 
-        private async Task TestQueryAndReadFeedWithPartitionKeyHelper(
+        private async Task TestQueryWithPartitionKeyHelper(
             CosmosContainer container,
             IEnumerable<Document> documents)
         {

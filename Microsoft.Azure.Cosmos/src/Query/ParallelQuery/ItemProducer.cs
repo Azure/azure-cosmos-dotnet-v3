@@ -331,9 +331,15 @@ namespace Microsoft.Azure.Cosmos.Query
                             requestEnricher: (cosmosRequestMessage) =>
                             {
                                 this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage);
-                                cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
-                                CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.BackendContinuationToken);
-                                CosmosQueryRequestOptions.FillMaxItemCount(cosmosRequestMessage, pageSize);
+                                cosmosRequestMessage.Headers.Add(
+                                    HttpConstants.HttpHeaders.IsContinuationExpected,
+                                    this.queryContext.IsContinuationExpected.ToString());
+                                CosmosQueryRequestOptions.FillContinuationToken(
+                                    cosmosRequestMessage,
+                                    this.BackendContinuationToken);
+                                CosmosQueryRequestOptions.FillMaxItemCount(
+                                    cosmosRequestMessage,
+                                    pageSize);
                             });
 
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
@@ -438,9 +444,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.queryContext.ResourceTypeEnum.IsPartitioned())
             {
-                request.ToDocumentServiceRequest().RouteTo(new PartitionKeyRangeIdentity(
-                    this.queryContext.ContainerResourceId, 
-                    this.PartitionKeyRange.Id));
+                // If the request already has the logical partition key,
+                // then we shouldn't add the physical partiton key range id.
+
+                bool hasPartitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey) != null;
+                if (!hasPartitionKey)
+                {
+                    request
+                        .ToDocumentServiceRequest()
+                        .RouteTo(new PartitionKeyRangeIdentity(
+                            this.queryContext.ContainerResourceId,
+                            this.PartitionKeyRange.Id));
+                }
             }
         }
 
