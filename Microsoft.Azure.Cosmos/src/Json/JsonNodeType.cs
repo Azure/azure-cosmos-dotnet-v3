@@ -51,6 +51,51 @@ namespace Microsoft.Azure.Cosmos.Json
         FieldName,
 
         /// <summary>
+        /// Corresponds to the sbyte type in C# for the extended types.
+        /// </summary>
+        Int8,
+
+        /// <summary>
+        /// Corresponds to the short type in C# for the extended types.
+        /// </summary>
+        Int16,
+
+        /// <summary>
+        /// Corresponds to the int type in C# for the extended types.
+        /// </summary>
+        Int32,
+
+        /// <summary>
+        /// Corresponds to the long type in C# for the extended types.
+        /// </summary>
+        Int64,
+
+        /// <summary>
+        /// Corresponds to the uint type in C# for the extended types.
+        /// </summary>
+        UInt32,
+
+        /// <summary>
+        /// Corresponds to the float type in C# for the extended types.
+        /// </summary>
+        Float32,
+
+        /// <summary>
+        /// Corresponds to the double type in C# for the extended types.
+        /// </summary>
+        Float64,
+
+        /// <summary>
+        /// Corresponds to an arbitrary sequence of bytes (equivalent to a byte[] in C#)
+        /// </summary>
+        Binary,
+
+        /// <summary>
+        /// Corresponds to a GUID type in C# for teh extended types.
+        /// </summary>
+        Guid,
+
+        /// <summary>
         /// Unknown JsonNodeType.
         /// </summary>
         Unknown,

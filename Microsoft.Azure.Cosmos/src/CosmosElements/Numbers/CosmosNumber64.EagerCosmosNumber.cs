@@ -8,13 +8,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosNumber : CosmosElement
+    internal abstract partial class CosmosNumber64 : CosmosNumber
     {
-        private sealed class EagerCosmosNumber : CosmosNumber
+        private sealed class EagerCosmosNumber64 : CosmosNumber64
         {
             private readonly Number64 number;
 
-            public EagerCosmosNumber(Number64 number)
+            public EagerCosmosNumber64(Number64 number)
             {
                 this.number = number;
             }

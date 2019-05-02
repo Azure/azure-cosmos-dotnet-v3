@@ -13,5 +13,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         Number,
         Object,
         String,
+        Guid,
+        Binary,
     }
 }

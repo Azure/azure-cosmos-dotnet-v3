@@ -63,6 +63,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
         private UniqueKeyPolicy uniqueKeyPolicyInternal;
 
+        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
+        private ConflictResolutionPolicy conflictResolutionInternal;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -85,6 +88,50 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ValidateRequiredProperties();
+        }
+
+        /// <summary>
+        /// Gets the Partitioning scheme version used. <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
+        /// </summary>
+        [JsonIgnore]
+        public virtual PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
+        {
+            get
+            {
+                return (Cosmos.PartitionKeyDefinitionVersion?)this.PartitionKey?.Version;
+            }
+
+            set
+            {
+                if (this.PartitionKey == null)
+                {
+                    throw new ArgumentOutOfRangeException($"PartitionKey is not defined for container");
+                }
+
+                this.PartitionKey.Version = (Documents.PartitionKeyDefinitionVersion)value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ConflictResolutionPolicy" />
+        /// </summary>
+        [JsonIgnore]
+        public virtual ConflictResolutionPolicy ConflictResolutionPolicy
+        {
+            get
+            {
+                if (this.conflictResolutionInternal == null)
+                {
+                    this.conflictResolutionInternal = new ConflictResolutionPolicy();
+                }
+
+                return this.conflictResolutionInternal;
+            }
+
+            set
+            {
+                this.conflictResolutionInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
+            }
         }
 
         /// <summary>
