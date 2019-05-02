@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ContainerContractTest()
         {
             CosmosContainerResponse response = 
-                await this.database.Containers.Create(new Guid().ToString(), "/id")
+                await this.database.Containers.DefineContainer(new Guid().ToString(), "/id")
                     .CreateAsync();
             Assert.IsNotNull(response);
             Assert.IsTrue(response.RequestCharge > 0);
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/users";
 
             CosmosContainerResponse containerResponse =
-                await this.database.Containers.Create(containerName, partitionKeyPath)
+                await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                     .WithIndexingPolicy()
                         .WithIndexingMode(Cosmos.IndexingMode.None)
                         .WithoutAutomaticIndexing()
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/users";
 
             CosmosContainerResponse containerResponse =
-                await this.database.Containers.Create(containerName, partitionKeyPath)
+                await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                     .WithUniqueKey()
                         .Path("/attribute1")
                         .Path("/attribute2")
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/users";
 
             CosmosContainerResponse containerResponse =
-                await this.database.Containers.Create(containerName, partitionKeyPath)
+                await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                     .WithIndexingPolicy()
                         .IncludedPaths()
                             .Path("/included1/*")
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/users";
 
             CosmosContainerResponse containerResponse
-                = await this.database.Containers.Create(containerName, partitionKeyPath)
+                = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                         .CreateAsync(expectedThroughput);
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
             int timeToLiveInSeconds = 10;
-            CosmosContainerResponse containerResponse = await this.database.Containers.Create(containerName, partitionKeyPath)
+            CosmosContainerResponse containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                 .WithDefaultTimeToLive(timeToLiveInSeconds)
                 .CreateAsync();
 
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             try
             {
-                await this.database.Containers.Create(containerName, null)
+                await this.database.Containers.DefineContainer(containerName, null)
                     .CreateAsync();
                 Assert.Fail("Create should throw null ref exception");
             }
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainerResponse containerResponse = null;
             try
             {
-                containerResponse = await this.database.Containers.Create(containerName, partitionKeyPath)
+                containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                     .WithTimeToLivePropertyPath("/creationDate")
                     .CreateAsync();
                 Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Verify the container content.
-            containerResponse = await this.database.Containers.Create(containerName, partitionKeyPath)
+            containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                    .WithTimeToLivePropertyPath("/creationDate")
                    .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
                    .CreateAsync();

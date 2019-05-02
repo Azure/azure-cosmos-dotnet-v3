@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="name">Azure Cosmos container name to create.</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
         /// <returns>A fluent definition of an Azure Cosmos container.</returns>
-        public abstract CosmosContainerFluentDefinitionForCreate Create(
+        public abstract CosmosContainerFluentDefinitionForCreate DefineContainer(
             string name,
             string partitionKeyPath);
     }

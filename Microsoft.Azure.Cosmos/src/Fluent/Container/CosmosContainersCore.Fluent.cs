@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal partial class CosmosContainersCore
     {
-        public override CosmosContainerFluentDefinitionForCreate Create(
+        public override CosmosContainerFluentDefinitionForCreate DefineContainer(
             string name,
             string partitionKeyPath)
         {
