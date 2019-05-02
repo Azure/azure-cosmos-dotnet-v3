@@ -436,11 +436,11 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-            CosmosQueryResponse feedResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
-            feedResponse.EnsureSuccessStatusCode();
+            CosmosQueryResponse queryResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
+            queryResponse.EnsureSuccessStatusCode();
 
             return CosmosQueryResponse<T>.CreateResponse<T>(
-                cosmosQueryResponse: feedResponse,
+                cosmosQueryResponse: queryResponse,
                 jsonSerializer: this.clientContext.JsonSerializer,
                 hasMoreResults: !cosmosQueryExecution.IsDone);
         }

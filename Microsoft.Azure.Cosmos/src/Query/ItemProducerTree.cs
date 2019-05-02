@@ -396,10 +396,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that returns whether we successfully moved next.</returns>
         /// <remarks>This function is split proofed.</remarks>
-        public async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
+        public async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
-                function:this.TryMoveNextAsyncImplementation,
+                function: this.TryMoveNextAsyncImplementation,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }
@@ -410,10 +410,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn returns whether or not we moved next.</returns>
-        public async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> MoveNextIfNotSplit(CancellationToken token)
+        public async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextIfNotSplit(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
-                function:this.TryMoveNextIfNotSplitAsyncImplementation,
+                function: this.TryMoveNextIfNotSplitAsyncImplementation,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }

@@ -82,17 +82,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // First item should be a success
             var result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsTrue(result.isSuccess);
+            Assert.IsTrue(result.successfullyMovedNext);
             Assert.IsNull(result.failureResponse);
 
             // Second item should be a success
             result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsTrue(result.isSuccess);
+            Assert.IsTrue(result.successfullyMovedNext);
             Assert.IsNull(result.failureResponse);
 
             // Third item should be a failure
             result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
-            Assert.IsFalse(result.isSuccess);
+            Assert.IsFalse(result.successfullyMovedNext);
             Assert.IsNotNull(result.failureResponse);
         }
     }

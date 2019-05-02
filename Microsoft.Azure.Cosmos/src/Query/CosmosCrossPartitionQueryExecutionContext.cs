@@ -8,25 +8,18 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
-    using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
     using Common;
     using ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
     using ParallelQuery;
-    using Routing;
 
     /// <summary>
     /// This class is responsible for maintaining a forest of <see cref="ItemProducerTree"/>.
@@ -186,29 +179,21 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether this context is done having documents drained.
         /// </summary>
-        public override bool IsDone
+        public override bool IsDone => !this.HasMoreResults;
+
+        /// <summary>
+        /// If a failure is hit store it and return it on the next drain call.
+        /// This allows returning the results computed before the failure.
+        /// </summary>
+        public CosmosQueryResponse FailureResponse
         {
-            get
-            {
-                return !this.HasMoreResults;
-            }
+            get;
+            protected set;
         }
 
-        protected int ActualMaxBufferedItemCount
-        {
-            get
-            {
-                return (int)this.actualMaxBufferedItemCount;
-            }
-        }
+        protected int ActualMaxBufferedItemCount => (int)this.actualMaxBufferedItemCount;
 
-        protected int ActualMaxPageSize
-        {
-            get
-            {
-                return (int)this.actualMaxPageSize;
-            }
-        }
+        protected int ActualMaxPageSize => (int)this.actualMaxPageSize;
 
         /// <summary>
         /// Gets the continuation token for the context.
@@ -222,42 +207,24 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether we are allowed to prefetch.
         /// </summary>
-        private bool CanPrefetch
-        {
-            get
-            {
-                return this.queryRequestOptions.MaxConcurrency.HasValue && this.queryRequestOptions.MaxConcurrency.Value != 0;
-            }
-        }
+        private bool CanPrefetch => this.queryRequestOptions.MaxConcurrency.HasValue && this.queryRequestOptions.MaxConcurrency.Value != 0;
 
         /// <summary>
         /// Gets a value indicating whether the context still has more results.
         /// </summary>
-        private bool HasMoreResults
-        {
-            get
-            {
-                return this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults;
-            }
-        }
+        private bool HasMoreResults => this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults;
 
         /// <summary>
         /// Gets the number of documents we can still buffer.
         /// </summary>
-        private long FreeItemSpace
-        {
-            get
-            {
-                return this.actualMaxBufferedItemCount - Interlocked.Read(ref this.totalBufferedItems);
-            }
-        }
+        private long FreeItemSpace => this.actualMaxBufferedItemCount - Interlocked.Read(ref this.totalBufferedItems);
 
         /// <summary>
         /// Gets the response headers for the context.
         /// </summary>
         /// <returns>The response headers for the context.</returns>
         public CosmosQueryResponseMessageHeaders GetResponseHeaders()
-        { 
+        {
             string continuation = this.ContinuationToken;
             if (continuation == "[]")
             {
@@ -379,6 +346,63 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         /// <summary>
+        /// A helper to move next and set the failure response if one is received
+        /// </summary>
+        /// <param name="itemProducerTree">The item producer tree</param>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
+        protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
+        {
+            (bool successfullyMovedNext, CosmosQueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
+            if (moveNextResponse.failureResponse != null)
+            {
+                this.FailureResponse = moveNextResponse.failureResponse;
+            }
+
+            return !moveNextResponse.successfullyMovedNext;
+        }
+
+        /// <summary>
+        /// Drains documents from this component. This has the common drain logic for each implementation.
+        /// </summary>
+        /// <param name="maxElements">The maximum number of documents to drain.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
+        /// <returns>A task that when awaited on returns a feed response.</returns>
+        public async override Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // The initialization or previous Drain Async failed. Just return the failure.
+            if (this.FailureResponse != null)
+            {
+                this.Stop();
+                return this.FailureResponse;
+            }
+
+            // Drain the results. If there is no results and a failure then return the failure.
+            IList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellationToken);
+            if ((results == null || results.Count == 0) && this.FailureResponse != null)
+            {
+                this.Stop();
+                return this.FailureResponse;
+            }
+
+            return CosmosQueryResponse.CreateSuccess(
+                result: results,
+                count: results.Count,
+                responseHeaders: this.GetResponseHeaders(),
+                responseLengthBytes: this.GetAndResetResponseLengthBytes());
+        }
+
+        /// <summary>
+        /// The drain async logic for the different implementation 
+        /// </summary>
+        /// <param name="maxElements">The maximum number of documents to drain.</param>
+        /// <param name="token">The cancellation token to cancel tasks.</param>
+        /// <returns>A task that when awaited on returns a feed response.</returns>
+        public abstract Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken token);
+
+        /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.
         /// </summary>
         /// <param name="collectionRid">The collection to drain from.</param>
@@ -426,9 +450,10 @@ namespace Microsoft.Azure.Cosmos.Query
                     deferFirstPage,
                     collectionRid,
                     initialPageSize,
-                    initialContinuationToken);
-
-                itemProducerTree.Filter = filter;
+                    initialContinuationToken)
+                {
+                    Filter = filter
+                };
 
                 // Prefetch if necessary, and populate consume queue.
                 if (this.CanPrefetch)
@@ -444,7 +469,15 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    await itemProducerTree.MoveNextIfNotSplit(token);
+                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplit(token);
+                    if (response.failureResponse != null)
+                    {
+                        // Set the failure so on drain it can be returned.
+                        this.FailureResponse = response.failureResponse;
+
+                        // No reason to enqueue the rest of the itemProducerTrees since there is a failure.
+                        break;
+                    }
                 }
 
                 if (filterCallback != null)

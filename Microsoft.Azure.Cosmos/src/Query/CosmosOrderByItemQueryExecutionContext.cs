@@ -166,9 +166,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
         {
-            //// In order to maintain the continuation toke for the user we must drain with a few constraints
+            //// In order to maintain the continuation token for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
             //// 2) If multiple partitions have the same priority item then we drain from the left most first
             ////   otherwise we would need to keep track of how many of each item we drained from each partition
@@ -219,20 +219,15 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                (bool isSuccess, CosmosQueryResponse failureResponse) moveNextResponse = await currentItemProducerTree.MoveNextAsync(cancellationToken);
-                if(!moveNextResponse.isSuccess && moveNextResponse.failureResponse != null)
+                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
                 {
-                    return moveNextResponse.failureResponse;
+                    break;
                 }
 
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
             }
 
-            return CosmosQueryResponse.CreateSuccess(
-                result: results,
-                count: results.Count,
-                responseHeaders: this.GetResponseHeaders(),
-                responseLengthBytes: this.GetAndResetResponseLengthBytes());
+            return results;
         }
 
         /// <summary>
@@ -242,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>Whether or not we should increment the skip count.</returns>
         private bool ShouldIncrementSkipCount(ItemProducer currentItemProducer)
         {
-            // If we are not at the begining of the page and we saw the same rid again.
+            // If we are not at the beginning of the page and we saw the same rid again.
             return !currentItemProducer.IsAtBeginningOfPage &&
                 string.Equals(
                     this.previousRid,
@@ -277,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (requestContinuation == null)
                 {
                     SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
-                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True), 
+                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
                         sqlQuerySpec.Parameters);
 
                     await base.InitializeAsync(
@@ -394,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
-                        this.TraceWarning($"Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
+                        this.TraceWarning($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
                         throw new BadRequestException(RMResources.InvalidContinuationToken);
                     }
                 }
@@ -519,11 +514,17 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    (bool isSuccess, CosmosQueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
-                    if (!moveNextResponse.isSuccess)
+                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
+                    if (!moveNextResponse.successfullyMovedNext)
                     {
+                        if(moveNextResponse.failureResponse != null)
+                        {
+                            this.FailureResponse = moveNextResponse.failureResponse;
+                        }
+
                         break;
                     }
+
                 }
             }
         }

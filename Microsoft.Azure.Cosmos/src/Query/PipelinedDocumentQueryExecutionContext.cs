@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             };
 
-            return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelper(
+            return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                 partitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
                requestContinuation,
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             };
 
-            return (CosmosQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelper(
+            return (CosmosQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                partitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
                requestContinuation,
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Query
                createParallelComponentFunc));
         }
 
-        private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelper(
+        private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
             QueryInfo queryInfo,
             int initialPageSize,
             string requestContinuation,
@@ -385,13 +385,14 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             try
             {
-                List<CosmosElement> dynamics = new List<CosmosElement>();
                 CosmosQueryResponse queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
                 if (!queryResponse.IsSuccessStatusCode)
                 {
+                    this.component.Stop();
                     return queryResponse;
                 }
 
+                List<CosmosElement> dynamics = new List<CosmosElement>();
                 foreach (CosmosElement element in queryResponse.CosmosElements)
                 {
                     dynamics.Add(element);

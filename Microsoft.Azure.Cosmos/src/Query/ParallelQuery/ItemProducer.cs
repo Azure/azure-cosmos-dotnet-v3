@@ -246,25 +246,25 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// A static object representing that the move next operation succeeded, and was able to load the next page
         /// </summary>
-        internal static readonly (bool isSuccess, CosmosQueryResponse failureResponse) IsSuccessResponse = (true, null);
+        internal static readonly (bool successfullyMovedNext, CosmosQueryResponse failureResponse) IsSuccessResponse = (true, null);
 
         /// <summary>
         /// A static object representing that there is no more pages to load. 
         /// </summary>
-        internal static readonly (bool isSuccess, CosmosQueryResponse failureResponse) IsDoneResponse = (false, null);
+        internal static readonly (bool successfullyMovedNext, CosmosQueryResponse failureResponse) IsDoneResponse = (false, null);
 
         /// <summary>
         /// Moves to the next document in the producer.
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document.</returns>
-        public async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
+        public async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             CosmosElement originalCurrent = this.Current;
-            (bool isSuccess, CosmosQueryResponse failureResponse) movedNext = await this.MoveNextAsyncImplementation(token);
-            if (!movedNext.isSuccess || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
+            (bool successfullyMovedNext, CosmosQueryResponse failureResponse) movedNext = await this.MoveNextAsyncImplementation(token);
+            if (!movedNext.successfullyMovedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
                 this.IsActive = false;
             }
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
-        private async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> MoveNextAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextAsyncImplementation(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -421,8 +421,8 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 // First time calling move next async so we are just going to call movenextpage to get the ball rolling
                 this.hasInitialized = true;
-                (bool isSuccess, CosmosQueryResponse failureResponse) response = await this.TryMoveNextPage(token);
-                if (!response.isSuccess)
+                (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await this.TryMoveNextPage(token);
+                if (!response.successfullyMovedNext)
                 {
                     this.HasMoreResults = false;
                 }
@@ -443,8 +443,8 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 // We might be at a continuation boundary so we need to move to the next page
-                (bool isSuccess, CosmosQueryResponse failureResponse) response = await this.TryMoveNextPage(token);
-                if (!response.isSuccess)
+                (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await this.TryMoveNextPage(token);
+                if (!response.successfullyMovedNext)
                 {
                     this.HasMoreResults = false;
                 }
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether the operation was successful.</returns>
-        private async Task<(bool isSuccess, CosmosQueryResponse failureResponse)> TryMoveNextPage(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> TryMoveNextPage(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
