@@ -5,21 +5,18 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using System.Globalization;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedProcessorCore<T> : ChangeFeedProcessor
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly ChangeFeedObserverFactory<T> observerFactory;
         private CosmosContainerCore leaseContainer;
         private string monitoredContainerRid;

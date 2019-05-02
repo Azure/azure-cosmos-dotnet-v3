@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
@@ -24,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosDefaultJsonSerializer();
         private readonly Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
@@ -89,7 +87,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             }
                             catch (CosmosException ex)
                             {
-                                Logger.WarnException($"Getting estimated work for lease token {item.CurrentLeaseToken} failed!", ex);
+                                DefaultTrace.TraceException(ex);
+                                DefaultTrace.TraceWarning("Getting estimated work for lease token {0} failed!", item.CurrentLeaseToken);
                             }
                         }
                     }
@@ -157,7 +156,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (Exception clientException)
             {
-                Logger.WarnException($"GetEstimateWork > exception: lease token '{existingLease.CurrentLeaseToken}'", clientException);
+                DefaultTrace.TraceException(clientException);
+                DefaultTrace.TraceWarning("GetEstimateWork > exception: lease token '{0}'", existingLease.CurrentLeaseToken);
                 throw;
             }
         }
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return property.Value<string>();
             }
 
-            Logger.Warn("Change Feed response item does not include LSN.");
+            DefaultTrace.TraceWarning("Change Feed response item does not include LSN.");
             return null;
         }
 
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             long parsed = 0;
             if (!long.TryParse(number, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
             {
-                Logger.WarnFormat(string.Format(CultureInfo.InvariantCulture, "Cannot parse number '{0}'.", number));
+                DefaultTrace.TraceWarning("Cannot parse number '{0}'.", number);
                 return 0;
             }
 

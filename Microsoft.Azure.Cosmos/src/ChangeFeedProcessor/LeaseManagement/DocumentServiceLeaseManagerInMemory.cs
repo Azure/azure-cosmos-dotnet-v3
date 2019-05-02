@@ -4,15 +4,13 @@
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses In-Memory
     /// </summary>
     internal sealed class DocumentServiceLeaseManagerInMemory : DocumentServiceLeaseManager
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly ConcurrentDictionary<string, DocumentServiceLease> container;
 
@@ -27,7 +25,9 @@
         public override Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
         {
             if (lease == null)
+            {
                 throw new ArgumentNullException(nameof(lease));
+            }
 
             return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
@@ -43,9 +43,11 @@
         public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(string leaseToken, string continuationToken)
         {
             if (leaseToken == null)
+            {
                 throw new ArgumentNullException(nameof(leaseToken));
+            }
 
-            var documentServiceLease = new DocumentServiceLeaseCore
+            DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
             {
                 LeaseId = leaseToken,
                 LeaseToken = leaseToken,

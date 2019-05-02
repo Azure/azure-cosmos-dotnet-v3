@@ -6,11 +6,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Documents;
 
     internal sealed class PartitionCheckpointerCore : PartitionCheckpointer
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
         private DocumentServiceLease lease;
 

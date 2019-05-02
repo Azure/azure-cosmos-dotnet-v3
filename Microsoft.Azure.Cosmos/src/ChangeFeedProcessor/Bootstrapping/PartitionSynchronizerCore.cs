@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Documents;
 
@@ -21,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     {
         internal static int DefaultDegreeOfParallelism = 25;
 
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly CosmosContainerCore container;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly DocumentServiceLeaseManager leaseManager;
@@ -67,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             List<string> addedPartitionIds = ranges.Where(range => range.Parents.Contains(partitionId)).Select(range => range.Id).ToList();
             if (addedPartitionIds.Count == 0)
             {
-                Logger.ErrorFormat("Partition {0} had split but we failed to find at least one child partition", partitionId);
+                DefaultTrace.TraceError("Partition {0} had split but we failed to find at least one child partition", partitionId);
                 throw new InvalidOperationException();
             }
 
@@ -83,10 +81,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 },
                 this.degreeOfParallelism).ConfigureAwait(false);
 
-            if (Logger.IsInfoEnabled())
-            {
-                DefaultTrace.TraceInformation("partition {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
-            }
+            DefaultTrace.TraceInformation("partition {0} split into {1}", partitionId, string.Join(", ", newLeases.Select(l => l.CurrentLeaseToken)));
 
             return newLeases;
         }

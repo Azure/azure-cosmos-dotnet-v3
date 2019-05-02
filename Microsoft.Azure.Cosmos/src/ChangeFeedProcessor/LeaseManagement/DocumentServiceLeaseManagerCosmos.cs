@@ -3,15 +3,14 @@
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses Azure Cosmos DB service
     /// </summary>
     internal sealed class DocumentServiceLeaseManagerCosmos : DocumentServiceLeaseManager
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly CosmosContainer leaseContainer;
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly DocumentServiceLeaseStoreManagerSettings settings;
@@ -32,7 +31,9 @@
         public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
         {
             if (lease == null)
+            {
                 throw new ArgumentNullException(nameof(lease));
+            }
 
             string oldOwner = lease.Owner;
 

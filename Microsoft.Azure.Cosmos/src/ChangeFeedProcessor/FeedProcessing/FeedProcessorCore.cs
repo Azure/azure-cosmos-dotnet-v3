@@ -15,11 +15,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
-        private readonly ILog logger = LogProvider.GetCurrentClassLogger();
         private readonly ProcessorSettings settings;
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
@@ -55,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
-                            this.logger.WarnFormat("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
+                            DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
                             this.HandleFailedRequest(response.StatusCode, (int)response.Headers.SubStatusCode, lastContinuation);
 
                             if (response.Headers.RetryAfter.HasValue)
@@ -82,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         throw;
                     }
 
-                    this.logger.WarnException("exception: lease token '{0}'", canceledException, this.settings.LeaseToken);
+                    DefaultTrace.TraceException(canceledException);
+                    DefaultTrace.TraceWarning("exception: lease token '{0}'", this.settings.LeaseToken);
 
                     // ignore as it is caused by Cosmos DB client when StopAsync is called
                 }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 case DocDbError.Undefined:
                     throw new InvalidOperationException($"Undefined DocDbError for status code {statusCode} and substatus code {subStatusCode}");
                 default:
-                    this.logger.Fatal($"Unrecognized DocDbError enum value {docDbError}");
+                    DefaultTrace.TraceCritical($"Unrecognized DocDbError enum value {docDbError}");
                     Debug.Fail($"Unrecognized DocDbError enum value {docDbError}");
                     throw new InvalidOperationException($"Unrecognized DocDbError enum value {docDbError} for status code {statusCode} and substatus code {subStatusCode}");
             }

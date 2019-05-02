@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseUpdaterCosmos : DocumentServiceLeaseUpdater
     {
         private const int RetryCountOnConflict = 5;
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly CosmosContainer container;
 
         public DocumentServiceLeaseUpdaterCosmos(CosmosContainer container)
@@ -90,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
             catch (CosmosException ex)
             {
-                Logger.WarnFormat("Lease operation exception, status code: ", ex.StatusCode);
+                DefaultTrace.TraceWarning("Lease operation exception, status code: {0}", ex.StatusCode);
                 if (ex.StatusCode == HttpStatusCode.PreconditionFailed)
                 {
                     return null;
