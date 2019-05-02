@@ -7,13 +7,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Documents;
 
     internal sealed class FeedEstimatorCore : FeedEstimator
     {
         private static TimeSpan DefaultMonitoringDelay = TimeSpan.FromSeconds(5);
-        private readonly ILog logger = LogProvider.GetCurrentClassLogger();
         private readonly ChangeFeedEstimatorDispatcher dispatcher;
         private readonly RemainingWorkEstimator remainingWorkEstimator;
         private readonly TimeSpan monitoringDelay;
@@ -41,9 +40,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     if (cancellationToken.IsCancellationRequested)
                         throw;
 
-                    this.logger.WarnException("exception within estimator", canceledException);
+                    DefaultTrace.TraceException(new Exception("exception within estimator", canceledException));
 
-                    // ignore as it is caused by DocumentDB client
+                    // ignore as it is caused by client
                 }
 
                 await Task.Delay(delay, cancellationToken).ConfigureAwait(false);

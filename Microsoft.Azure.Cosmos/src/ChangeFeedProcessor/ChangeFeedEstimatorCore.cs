@@ -11,14 +11,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
         private const string EstimatorDefaultHostName = "Estimator";
 
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
         private CancellationTokenSource shutdownCts;
         private CosmosContainerCore leaseContainer;
@@ -79,13 +78,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             this.shutdownCts = new CancellationTokenSource();
-            Logger.InfoFormat("Starting estimator...");
+            DefaultTrace.TraceInformation("Starting estimator...");
             this.runAsync = this.feedEstimator.RunAsync(this.shutdownCts.Token);
         }
 
         public override async Task StopAsync()
         {
-            Logger.InfoFormat("Stopping estimator...");
+            DefaultTrace.TraceInformation("Stopping estimator...");
             this.shutdownCts.Cancel();
             try
             {
