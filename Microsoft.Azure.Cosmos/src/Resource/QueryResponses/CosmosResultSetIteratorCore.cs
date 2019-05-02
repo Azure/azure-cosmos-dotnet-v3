@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos result set stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class CosmosResultSetIteratorCore : CosmosResultSetIterator
+    internal class CosmosResultSetIteratorCore : CosmosFeedIterator
     {
         internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
     /// <typeparam name="T">The response object type that can be deserialized</typeparam>
-    internal class CosmosDefaultResultSetIterator<T> : CosmosResultSetIterator<T>
+    internal class CosmosDefaultResultSetIterator<T> : CosmosFeedIterator<T>
     {
         internal delegate Task<CosmosFeedResponse<T>> NextResultSetDelegate(
             int? maxItemCount,

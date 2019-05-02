@@ -26,13 +26,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const string LSNPropertyName = "_lsn";
         private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosDefaultJsonSerializer();
-        private readonly Func<string, string, bool, CosmosResultSetIterator> feedCreator;
+        private readonly Func<string, string, bool, CosmosFeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            Func<string, string, bool, CosmosResultSetIterator> feedCreator,
+            Func<string, string, bool, CosmosFeedIterator> feedCreator,
             int degreeOfParallelism)
         {
             if (leaseContainer == null)
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = existingLease.CurrentLeaseToken;
-            CosmosResultSetIterator iterator = this.feedCreator(
+            CosmosFeedIterator iterator = this.feedCreator(
                 partitionKeyRangeId,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));

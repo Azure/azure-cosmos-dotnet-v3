@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (this.remainingWorkEstimator == null)
             {
-                Func<string, string, bool, CosmosResultSetIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+                Func<string, string, bool, CosmosFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
                 {
                     return ResultSetIteratorUtils.BuildResultSetIterator(
                         partitionKeyRangeId: partitionKeyRangeId,

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            CosmosResultSetIterator resultSetIterator = new CosmosResultSetIteratorCore(
+            CosmosFeedIterator resultSetIterator = new CosmosResultSetIteratorCore(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
+            CosmosFeedIterator setIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql, 
                 maxConcurrency: 1,
                 partitionKey: "pk", 
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosResultSetIterator<CosmosConflict> setIterator = container.GetConflictsIterator();
+            CosmosFeedIterator<CosmosConflict> setIterator = container.GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosResultSetIterator setIterator = container.GetConflictsStreamIterator();
+            CosmosFeedIterator setIterator = container.GetConflictsStreamIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);

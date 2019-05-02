@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await container.ReadAsync();
 
                 // read documentCollection feed.
-                CosmosResultSetIterator<CosmosContainerSettings> rr = database.Containers.GetContainerIterator();
+                CosmosFeedIterator<CosmosContainerSettings> rr = database.Containers.GetContainerIterator();
                 List<CosmosContainerSettings> settings = new List<CosmosContainerSettings>();
                 while (rr.HasMoreResults)
                 {
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc3 = await container.Items.DeleteItemAsync<Document>(partitionKey: resourceRandomId, id: resourceRandomId);
 
                     // read databaseCollection feed.
-                    CosmosResultSetIterator<dynamic> itemIterator = container.Items.GetItemIterator<dynamic>();
+                    CosmosFeedIterator<dynamic> itemIterator = container.Items.GetItemIterator<dynamic>();
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         bool bFound = false;
                         CosmosSqlQueryDefinition sqlQueryDefinition = new CosmosSqlQueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
-                        CosmosResultSetIterator<Document> docServiceQuery = container.Items.CreateItemQuery<Document>(
+                        CosmosFeedIterator<Document> docServiceQuery = container.Items.CreateItemQuery<Document>(
                             sqlQueryDefinition: sqlQueryDefinition,
                             partitionKey: doc1.Id);
                         while (docServiceQuery.HasMoreResults)
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // 
                     // read databaseCollection feed.
-                    CosmosResultSetIterator<CosmosStoredProcedureSettings> storedProcedureIter = container.StoredProcedures.GetStoredProcedureIterator();
+                    CosmosFeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = container.StoredProcedures.GetStoredProcedureIterator();
                     List<CosmosStoredProcedureSettings> storedProcedures = new List<CosmosStoredProcedureSettings>();
                     while (storedProcedureIter.HasMoreResults)
                     {
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.Items.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument.Id, myDocument);
 
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
-            CosmosResultSetIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            CosmosFeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
@@ -1884,7 +1884,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return documentCollections;
         }
 
-        private async Task<int> GetCountFromIterator<T>(CosmosResultSetIterator<T> iterator)
+        private async Task<int> GetCountFromIterator<T>(CosmosFeedIterator<T> iterator)
         {
             int count = 0;
             while (iterator.HasMoreResults)

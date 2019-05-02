@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             CosmosResponseMessageHeaders headers = new CosmosResponseMessageHeaders();
             headers.Continuation = string.Empty;
 
-            Mock<CosmosResultSetIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<CosmosResultSetIterator<DocumentServiceLeaseCore>>();
+            Mock<CosmosFeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<CosmosFeedIterator<DocumentServiceLeaseCore>>();
             mockedQuery.Setup(q => q.FetchNextSetAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => CosmosReadFeedResponse<DocumentServiceLeaseCore>.CreateResponse(
                     responseMessageHeaders: headers,

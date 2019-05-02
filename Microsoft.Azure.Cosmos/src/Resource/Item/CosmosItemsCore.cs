@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override CosmosResultSetIterator<T> GetItemIterator<T>(
+        public override CosmosFeedIterator<T> GetItemIterator<T>(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ItemFeedRequestExecutor<T>);
         }
 
-        public override CosmosResultSetIterator GetItemStreamIterator(
+        public override CosmosFeedIterator GetItemStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosItemRequestOptions requestOptions = null)
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosResultSetIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
         }
 
-        public override CosmosResultSetIterator CreateItemQueryAsStream(
+        public override CosmosFeedIterator CreateItemQueryAsStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             object partitionKey = null,
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosQueryExecution);
         }
 
-        public override CosmosResultSetIterator CreateItemQueryAsStream(
+        public override CosmosFeedIterator CreateItemQueryAsStream(
             string sqlQueryText,
             int maxConcurrency,
             object partitionKey = null,
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public override CosmosResultSetIterator<T> CreateItemQuery<T>(
+        public override CosmosFeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             object partitionKey,
             int? maxItemCount = null,
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosQueryExecution);
         }
 
-        public override CosmosResultSetIterator<T> CreateItemQuery<T>(
+        public override CosmosFeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             object partitionKey,
             int? maxItemCount = null,
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public override CosmosResultSetIterator<T> CreateItemQuery<T>(
+        public override CosmosFeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             int? maxItemCount = null,
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosQueryExecution);
         }
 
-        public override CosmosResultSetIterator<T> CreateItemQuery<T>(
+        public override CosmosFeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             int maxConcurrency,
             int? maxItemCount = null,
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-        internal CosmosResultSetIterator GetStandByFeedIterator(
+        internal CosmosFeedIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
             CosmosChangeFeedRequestOptions requestOptions = null,

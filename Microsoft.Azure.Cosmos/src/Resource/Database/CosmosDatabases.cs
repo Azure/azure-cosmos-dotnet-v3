@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosResultSetIterator<CosmosDatabaseSettings> GetDatabaseIterator(
+        public abstract CosmosFeedIterator<CosmosDatabaseSettings> GetDatabaseIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 

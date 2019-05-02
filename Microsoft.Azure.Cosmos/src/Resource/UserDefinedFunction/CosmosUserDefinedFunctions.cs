@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosResultSetIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
-    public abstract class CosmosResultSetIterator
+    public abstract class CosmosFeedIterator
     {
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
-    public abstract class CosmosResultSetIterator<T>
+    public abstract class CosmosFeedIterator<T>
     {
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service

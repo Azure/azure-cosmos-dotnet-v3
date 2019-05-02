@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override CosmosResultSetIterator<CosmosConflict> GetConflictsIterator(
+        public override CosmosFeedIterator<CosmosConflict> GetConflictsIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConflictsFeedRequestExecutor);
         }
 
-        public override CosmosResultSetIterator GetConflictsStreamIterator(
+        public override CosmosFeedIterator GetConflictsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {

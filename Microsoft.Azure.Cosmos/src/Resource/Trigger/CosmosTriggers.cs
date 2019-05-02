@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosResultSetIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
