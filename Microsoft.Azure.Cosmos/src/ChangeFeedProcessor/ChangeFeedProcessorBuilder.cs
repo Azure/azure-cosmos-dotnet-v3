@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="pollInterval">Polling interval value.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public virtual ChangeFeedProcessorBuilder WithPollInternal(TimeSpan pollInterval)
+        public virtual ChangeFeedProcessorBuilder WithPollInterval(TimeSpan pollInterval)
         {
             if (pollInterval == null) throw new ArgumentNullException(nameof(pollInterval));
 
