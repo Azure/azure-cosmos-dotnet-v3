@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithSpatialType()
         {
-            Mock<IndexingPolicyFluentDefinition> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition>();
+            Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>>();
             Action<SpatialSpec> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 Assert.AreEqual(SpatialType.Point, spatialspec.SpatialTypes[1]);
             };
 
-            SpatialIndexFluentDefinitionCore spatialIndexFluentDefinitionCore = new SpatialIndexFluentDefinitionCore(
+            SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>> spatialIndexFluentDefinitionCore = new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>>(
                 mockIndexingPolicyDefinition.Object,
                 callback);
 
@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithNoSpatialType()
         {
-            Mock<IndexingPolicyFluentDefinition> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition>();
+            Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>>();
             Action<SpatialSpec> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
                 Assert.AreEqual(0, spatialspec.SpatialTypes.Count);
             };
 
-            SpatialIndexFluentDefinitionCore spatialIndexFluentDefinitionCore = new SpatialIndexFluentDefinitionCore(
+            SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>> spatialIndexFluentDefinitionCore = new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>>(
                 mockIndexingPolicyDefinition.Object,
                 callback);
 

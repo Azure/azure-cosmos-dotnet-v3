@@ -162,14 +162,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            return new CosmosContainerFluentDefinitionCore(this, name, FluentOperation.Create, partitionKeyPath);
-        }
-
-        public override CosmosContainerFluentDefinition Replace(
-            string name,
-            string partitionKeyPath = null)
-        {
-            return new CosmosContainerFluentDefinitionCore(this, name, FluentOperation.Replace, partitionKeyPath);
+            return new CosmosContainerFluentDefinitionForCreate(this, name, partitionKeyPath);
         }
 
         internal void ValidateContainerSettings(CosmosContainerSettings containerSettings)

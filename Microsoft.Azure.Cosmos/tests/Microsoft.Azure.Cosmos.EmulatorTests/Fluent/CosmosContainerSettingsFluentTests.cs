@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosContainerResponse response = 
                 await this.database.Containers.Create(new Guid().ToString(), "/id")
-                    .ApplyAsync();
+                    .CreateAsync();
             Assert.IsNotNull(response);
             Assert.IsTrue(response.RequestCharge > 0);
             Assert.IsNotNull(response.Headers);
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .WithIndexingMode(Cosmos.IndexingMode.None)
                         .WithoutAutomaticIndexing()
                         .Attach()
-                    .ApplyAsync();
+                    .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Path("/attribute1")
                         .Path("/attribute2")
                         .Attach()
-                    .ApplyAsync();
+                    .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .Path("/composite2", CompositePathSortOrder.Descending)
                             .Attach()
                         .Attach()
-                    .ApplyAsync();
+                    .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
@@ -178,10 +178,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            CosmosContainerResponse containerResponse 
+            CosmosContainerResponse containerResponse
                 = await this.database.Containers.Create(containerName, partitionKeyPath)
-                .WithThroughput(expectedThroughput)
-                .ApplyAsync();
+                        .CreateAsync(expectedThroughput);
+
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             CosmosContainer cosmosContainer = this.database.Containers[containerName];
 
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int timeToLiveInSeconds = 10;
             CosmosContainerResponse containerResponse = await this.database.Containers.Create(containerName, partitionKeyPath)
                 .WithDefaultTimeToLive(timeToLiveInSeconds)
-                .ApplyAsync();
+                .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             CosmosContainer cosmosContainer = containerResponse;
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 await this.database.Containers.Create(containerName, null)
-                    .ApplyAsync();
+                    .CreateAsync();
                 Assert.Fail("Create should throw null ref exception");
             }
             catch (ArgumentNullException ae)
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 containerResponse = await this.database.Containers.Create(containerName, partitionKeyPath)
                     .WithTimeToLivePropertyPath("/creationDate")
-                    .ApplyAsync();
+                    .CreateAsync();
                 Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
             }
             catch (CosmosException exeption)
@@ -263,28 +263,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerResponse = await this.database.Containers.Create(containerName, partitionKeyPath)
                    .WithTimeToLivePropertyPath("/creationDate")
                    .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
-                   .ApplyAsync();
+                   .CreateAsync();
             CosmosContainer cosmosContainer = containerResponse;
             Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
             Assert.AreEqual("/creationDate", containerResponse.Resource.TimeToLivePropertyPath);
-
-            CosmosContainerSettings responseSettings = containerResponse;
-
-            //verify removing the ttl property path
-            containerResponse = await this.database.Containers.Replace(containerName)
-                  .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
-                  .ApplyAsync();
-            cosmosContainer = containerResponse;
-            Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
-            Assert.IsNull(containerResponse.Resource.TimeToLivePropertyPath);
-
-            //adding back the ttl property path
-            containerResponse = await this.database.Containers.Replace(containerName)
-                  .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
-                  .WithTimeToLivePropertyPath("/creationDate")
-                  .ApplyAsync();
-            cosmosContainer = containerResponse;
-            Assert.AreEqual(containerResponse.Resource.TimeToLivePropertyPath, "/creationDate");
 
             //Creating an item and reading before expiration
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };

@@ -1,24 +1,73 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+using System.Threading.Tasks;
+
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     /// <summary>
     /// <see cref="CosmosContainer"/> fluent definition for creation flows.
     /// </summary>
-    public abstract class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition
+    public class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition<CosmosContainerFluentDefinitionForCreate>
     {
+        private UniqueKeyPolicy uniqueKeyPolicy;
+        private readonly CosmosContainers cosmosContainers;
+
         /// <summary>
-        /// Sets the throughput provisioned for the Azure Cosmos container in measurement of Requests-per-Unit in the Azure Cosmos DB service.
+        /// Creates an instance for unit-testing
         /// </summary>
-        /// <remarks>
-        /// If multiple calls are made to this method within the same <see cref="CosmosContainerFluentDefinition"/>, the last one will apply.
-        /// </remarks>
-        public abstract CosmosContainerFluentDefinition WithThroughput(int throughput);
+        public CosmosContainerFluentDefinitionForCreate() {}
+
+        internal CosmosContainerFluentDefinitionForCreate(
+            CosmosContainers cosmosContainers,
+            string name,
+            string partitionKeyPath = null) : base(name, partitionKeyPath)
+        {
+            this.cosmosContainers = cosmosContainers;
+        }
 
         /// <summary>
         /// Defines a Unique Key policy for this Azure Cosmos container.
         /// </summary>
-        public abstract UniqueKeyFluentDefinition WithUniqueKey();
+        public virtual UniqueKeyFluentDefinition WithUniqueKey()
+        {
+            return new UniqueKeyFluentDefinition(
+                this,
+                (uniqueKey) => this.WithUniqueKey(uniqueKey));
+        }
+
+        /// <summary>
+        /// Creates a container with the current fluent definition.
+        /// </summary>
+        /// <param name="throughput">Desired throughput for the container</param>
+        public virtual async Task<CosmosContainerResponse> CreateAsync(int? throughput = null)
+        {
+            CosmosContainerSettings settings = this.Build();
+
+            return await this.cosmosContainers.CreateContainerAsync(settings, throughput);
+        }
+
+        /// <inheritdoc />
+        public virtual new CosmosContainerSettings Build()
+        {
+            CosmosContainerSettings settings = base.Build();
+
+            if (this.uniqueKeyPolicy != null)
+            {
+                settings.UniqueKeyPolicy = this.uniqueKeyPolicy;
+            }
+
+            return settings;
+        }
+
+        private void WithUniqueKey(UniqueKey uniqueKey)
+        {
+            if (this.uniqueKeyPolicy == null)
+            {
+                this.uniqueKeyPolicy = new UniqueKeyPolicy();
+            }
+
+            this.uniqueKeyPolicy.UniqueKeys.Add(uniqueKey);
+        }
     }
 }
