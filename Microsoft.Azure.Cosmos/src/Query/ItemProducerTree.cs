@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            if(queryContext == null)
+            if (queryContext == null)
             {
                 throw new ArgumentNullException($"{nameof(queryContext)}");
             }
@@ -423,10 +423,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public Task BufferMoreDocuments(CancellationToken token)
+        public Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> BufferMoreDocuments(CancellationToken token)
         {
             return this.ExecuteWithSplitProofing(
-                function:this.BufferMoreDocumentsImplementation,
+                function: this.BufferMoreDocumentsImplementation,
                 functionNeedsBeReexecuted: true,
                 cancellationToken: token);
         }
@@ -537,9 +537,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="ex">The document client exception</param>
         /// <returns>Whether or not the exception was due to a split.</returns>
-        private static bool IsSplitException(DocumentClientException ex)
+        private static bool IsSplitException(CosmosQueryResponse ex)
         {
-            return ex.StatusCode == (HttpStatusCode)StatusCodes.Gone && ex.GetSubStatus() == SubStatusCodes.PartitionKeyRangeGone;
+            return ex.StatusCode == HttpStatusCode.Gone && ex.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone;
         }
 
         /// <summary>
@@ -547,11 +547,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task with whether or not move next succeeded.</returns>
-        private async Task<dynamic> TryMoveNextAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> TryMoveNextAsyncImplementation(CancellationToken token)
         {
             if (!this.HasMoreResults)
             {
-                return Task.FromResult<dynamic>(ItemProducer.IsDoneResponse);
+                return ItemProducer.IsDoneResponse;
             }
 
             if (this.CurrentItemProducerTree == this)
@@ -569,11 +569,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn return whether we successfully moved next.</returns>
-        private async Task<dynamic> TryMoveNextIfNotSplitAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> TryMoveNextIfNotSplitAsyncImplementation(CancellationToken token)
         {
             if (this.HasSplit)
             {
-                return Task.FromResult<dynamic>(ItemProducer.IsDoneResponse);
+                return ItemProducer.IsDoneResponse;
             }
 
             return await this.TryMoveNextAsyncImplementation(token);
@@ -584,14 +584,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private async Task<object> BufferMoreDocumentsImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> BufferMoreDocumentsImplementation(CancellationToken token)
         {
             if (this.CurrentItemProducerTree == this)
             {
                 if (!this.HasMoreBackendResults || this.HasSplit)
                 {
                     // Just no-op, since this method might be called by the scheduler, which doesn't know of the reconfiguration yet.
-                    return null;
+                    return ItemProducer.IsSuccessResponse;
                 }
 
                 await this.Root.BufferMoreDocuments(token);
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 await this.CurrentItemProducerTree.BufferMoreDocuments(token);
             }
 
-            return null;
+            return ItemProducer.IsSuccessResponse;
         }
 
         /// <summary>
@@ -629,8 +629,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </para>
         /// </remarks>
         /// <returns>The result of the function would have returned as if there were no splits.</returns>
-        private async Task<dynamic> ExecuteWithSplitProofing(
-            Func<CancellationToken, Task<dynamic>> function,
+        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> ExecuteWithSplitProofing(
+            Func<CancellationToken, Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)>> function,
             bool functionNeedsBeReexecuted,
             CancellationToken cancellationToken)
         {
@@ -641,10 +641,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 try
                 {
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
-                    return await function(cancellationToken);
-                }
-                catch (DocumentClientException dce) when (ItemProducerTree.IsSplitException(dce))
-                {
+                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await function(cancellationToken);
+                    if (response.failureResponse == null || !ItemProducerTree.IsSplitException(response.failureResponse))
+                    {
+                        return response;
+                    }
+
                     // Split just happened
                     ItemProducerTree splitItemProducerTree = this.CurrentItemProducerTree;
 
@@ -673,12 +675,6 @@ namespace Microsoft.Azure.Cosmos.Query
                                 throw new InvalidOperationException("Unable to add child document producer tree");
                             }
                         }
-                    }
-
-                    if (!functionNeedsBeReexecuted)
-                    {
-                        // We don't want to call move next async again, since we already did when creating the document producers
-                        return true;
                     }
                 }
                 finally
