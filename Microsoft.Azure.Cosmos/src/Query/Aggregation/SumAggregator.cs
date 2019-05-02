@@ -57,13 +57,13 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// </summary>
         /// <returns>The current sum.</returns>
         public CosmosElement GetResult()
-        {   
+        {
             if (double.IsNaN(this.globalSum))
             {
                 return null;
             }
 
-            return CosmosNumber.Create(this.globalSum);
+            return CosmosNumber64.Create(this.globalSum);
         }
     }
 }

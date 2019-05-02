@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static CosmosContainer fixedContainer = null;
         private static readonly string utc_date = DateTime.UtcNow.ToString("r");
 
+        private static readonly string PreNonPartitionedMigrationApiVersion = "2018-09-17";
         private static readonly string nonPartitionContainerId = "fixed-Container";
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
 
@@ -713,44 +714,121 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // Read write non partition Container item.
         [TestMethod]
+        [Ignore] //Temporary ignore till we fix emulator issue
         public async Task ReadNonPartitionItemAsync()
         {
             try
             {
-                await this.CreateNonPartitionContainerItem();
+                await this.CreateNonPartitionedContainer();
+                await this.CreateItemInNonPartitionedContainer(nonPartitionItemId);
                 await this.CreateUndefinedPartitionItem();
                 fixedContainer = this.database.Containers[nonPartitionContainerId];
 
                 CosmosContainerResponse containerResponse = await fixedContainer.ReadAsync();
                 Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
-                Assert.AreEqual(containerResponse.Resource.PartitionKey.Paths[0], PartitionKey.SystemKeyPath);
+                Assert.AreEqual(PartitionKey.SystemKeyPath, containerResponse.Resource.PartitionKey.Paths[0]);
 
+                //Reading item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 CosmosItemResponse<ToDoActivity> response = await fixedContainer.Items.ReadItemAsync<ToDoActivity>(
                     partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                     id: nonPartitionItemId);
 
                 Assert.IsNotNull(response.Resource);
-                Assert.IsTrue(response.StatusCode == HttpStatusCode.OK);
-                Assert.IsNotNull(response.Resource.id == nonPartitionItemId);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(nonPartitionItemId, response.Resource.id);
 
+                //Adding item to fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                ToDoActivity itemWithoutPK = CreateRandomToDoActivity();
+                CosmosItemResponse<ToDoActivity> createResponseWithoutPk = await fixedContainer.Items.CreateItemAsync<ToDoActivity>(
+                 partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
+                 item: itemWithoutPK);
+
+                Assert.IsNotNull(createResponseWithoutPk.Resource);
+                Assert.AreEqual(HttpStatusCode.Created, createResponseWithoutPk.StatusCode);
+                Assert.AreEqual(itemWithoutPK.id, createResponseWithoutPk.Resource.id);
+
+                //Updating item on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                itemWithoutPK.status = "updatedStatus";
+                CosmosItemResponse<ToDoActivity> updateResponseWithoutPk = await fixedContainer.Items.ReplaceItemAsync<ToDoActivity>(
+                 partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
+                 id: itemWithoutPK.id,
+                 item: itemWithoutPK);
+
+                Assert.IsNotNull(updateResponseWithoutPk.Resource);
+                Assert.AreEqual(HttpStatusCode.OK, updateResponseWithoutPk.StatusCode);
+                Assert.AreEqual(itemWithoutPK.id, updateResponseWithoutPk.Resource.id);
+
+                //Adding item to fixed container with non-none PK.
+                ToDoActivityAfterMigration itemWithPK = CreateRandomToDoActivityAfterMigration("TestPk");
+                CosmosItemResponse<ToDoActivityAfterMigration> createResponseWithPk = await fixedContainer.Items.CreateItemAsync<ToDoActivityAfterMigration>(
+                 partitionKey: itemWithPK.status,
+                 item: itemWithPK);
+
+                Assert.IsNotNull(createResponseWithPk.Resource);
+                Assert.AreEqual(HttpStatusCode.Created, createResponseWithPk.StatusCode);
+                Assert.AreEqual(itemWithPK.id, createResponseWithPk.Resource.id);
+
+                //Quering items on fixed container with cross partition enabled.
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-                CosmosResultSetIterator<ToDoActivity> setIterator = fixedContainer.Items
-                    .CreateItemQuery<ToDoActivity>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+                CosmosResultSetIterator<dynamic> setIterator = fixedContainer.Items
+                    .CreateItemQuery<dynamic>(sql, maxConcurrency: 1,maxItemCount:10, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
                 while (setIterator.HasMoreResults)
                 {
-                    CosmosFeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
-                    Assert.AreEqual(1, queryResponse.Count());
-                    ToDoActivity toDoActivity = queryResponse.First();
-                    Assert.AreEqual(nonPartitionItemId, toDoActivity.id);
+                    CosmosFeedResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(3, queryResponse.Count());
                 }
 
-                CosmosItemResponse<dynamic> undefinedItemResponse = await this.Container.Items.ReadItemAsync<dynamic>(
+                //Reading all items on fixed container.
+                setIterator = fixedContainer.Items
+                    .GetItemIterator<dynamic>(maxItemCount: 10);
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosFeedResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(3, queryResponse.Count());
+                }
+
+                //Quering items on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                setIterator = fixedContainer.Items
+                    .CreateItemQuery<dynamic>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: 10);
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosFeedResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(2, queryResponse.Count());
+                }
+
+                //Quering items on fixed container with non-none PK.
+                setIterator = fixedContainer.Items
+                    .CreateItemQuery<dynamic>(sql, partitionKey: itemWithPK.status, maxItemCount: 10);
+                while (setIterator.HasMoreResults)
+                {
+                    CosmosFeedResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
+                    Assert.AreEqual(1, queryResponse.Count());
+                }
+
+                //Deleting item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                CosmosItemResponse<ToDoActivity> deleteResponseWithoutPk = await fixedContainer.Items.DeleteItemAsync<ToDoActivity>(
+                 partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
+                 id: itemWithoutPK.id);
+
+                Assert.IsNull(deleteResponseWithoutPk.Resource);
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponseWithoutPk.StatusCode);
+
+                //Deleting item from fixed container with non-none PK.
+                CosmosItemResponse<ToDoActivityAfterMigration> deleteResponseWithPk = await fixedContainer.Items.DeleteItemAsync<ToDoActivityAfterMigration>(
+                 partitionKey: itemWithPK.status,
+                 id: itemWithPK.id);
+
+                Assert.IsNull(deleteResponseWithPk.Resource);
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponseWithPk.StatusCode);
+
+                //Reading item from partitioned container with CosmosContainerSettings.NonePartitionKeyValue.
+                CosmosItemResponse<ToDoActivity> undefinedItemResponse = await Container.Items.ReadItemAsync<ToDoActivity>(
                     partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                     id: undefinedPartitionItemId);
 
                 Assert.IsNotNull(undefinedItemResponse.Resource);
-                Assert.IsTrue(undefinedItemResponse.StatusCode == HttpStatusCode.OK);
-                Assert.IsNotNull(undefinedItemResponse.Resource.id == undefinedPartitionItemId);
+                Assert.AreEqual(HttpStatusCode.OK, undefinedItemResponse.StatusCode);
+                Assert.AreEqual(undefinedPartitionItemId, undefinedItemResponse.Resource.id);
             }
             finally
             {
@@ -787,7 +865,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createdList;
         }
 
-        private async Task CreateNonPartitionContainerItem()
+        private async Task CreateNonPartitionedContainer()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
@@ -799,7 +877,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceId = string.Format("dbs/{0}", this.database.Id);
             string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
 
             string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
@@ -808,20 +886,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StringContent containerContent = new StringContent(containerDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), containerContent);
+        }
 
+        private async Task CreateItemInNonPartitionedContainer(string itemId)
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             //Creating non partition Container item.
-            verb = "POST";
-            resourceType = "docs";
-            resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
-            resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
-            authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            HttpClient client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "docs";
+            string resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
+            string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
+            string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
-            client.DefaultRequestHeaders.Remove("authorization");
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
-            string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: nonPartitionItemId));
+            string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: itemId));
             StringContent itemContent = new StringContent(itemDefinition);
-            requestUri = new Uri(baseUri, resourceLink);
+            Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), itemContent);
         }
 
@@ -837,7 +923,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceId = string.Format("dbs/{0}", this.database.Id);
             string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", "2018-09-17");
+            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("x-ms-documentdb-partitionkey", "[{}]");
 
             //Creating undefined partition Container item.
@@ -898,6 +984,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
+
+
         public class ToDoActivity
         {
             public string id { get; set; }
@@ -905,6 +993,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public double cost { get; set; }
             public string description { get; set; }
             public string status { get; set; }
+        }
+
+        public class ToDoActivityAfterMigration
+        {
+            public string id { get; set; }
+            public int taskNum { get; set; }
+            public double cost { get; set; }
+            public string description { get; set; }
+            [JsonProperty(PropertyName = "_partitionKey")]
+            public string status { get; set; }
+        }
+
+        private ToDoActivityAfterMigration CreateRandomToDoActivityAfterMigration(string pk = null, string id = null)
+        {
+            if (string.IsNullOrEmpty(pk))
+            {
+                pk = "TBD" + Guid.NewGuid().ToString();
+            }
+            if (id == null)
+            {
+                id = Guid.NewGuid().ToString();
+            }
+            return new ToDoActivityAfterMigration()
+            {
+                id = id,
+                description = "CreateRandomToDoActivity",
+                status = pk,
+                taskNum = 42,
+                cost = double.MaxValue
+            };
         }
     }
 }

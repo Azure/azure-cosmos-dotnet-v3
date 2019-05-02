@@ -73,5 +73,11 @@ namespace Microsoft.Azure.Cosmos
             get => this.Data;
             set => this.Data = value;
         }
+
+        public Collection<T> Conflicts
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
     }
 }

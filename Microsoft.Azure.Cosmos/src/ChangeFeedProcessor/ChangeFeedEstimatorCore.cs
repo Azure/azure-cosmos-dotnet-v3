@@ -110,9 +110,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (this.remainingWorkEstimator == null)
             {
+                Func<string, string, bool, CosmosResultSetIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+                {
+                    return ResultSetIteratorUtils.BuildResultSetIterator(
+                        partitionKeyRangeId: partitionKeyRangeId,
+                        continuationToken: continuationToken,
+                        maxItemCount: 1,
+                        cosmosContainer: this.monitoredContainer,
+                        startTime: null,
+                        startFromBeginning: string.IsNullOrEmpty(continuationToken));
+                };
+
                 this.remainingWorkEstimator = new RemainingWorkEstimatorCore(
                    this.documentServiceLeaseStoreManager.LeaseContainer,
-                   this.monitoredContainer,
+                   feedCreator,
                    this.monitoredContainer.ClientContext.Client.Configuration?.MaxConnectionLimit ?? 1);
             }
 

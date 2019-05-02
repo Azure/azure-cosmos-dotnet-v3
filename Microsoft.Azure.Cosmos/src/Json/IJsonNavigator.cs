@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
@@ -51,6 +52,77 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="stringNode">The <see cref="IJsonNavigatorNode"/> of the node to get the string value from.</param>
         /// <returns>The string value from the node.</returns>
         string GetStringValue(IJsonNavigatorNode stringNode);
+
+        /// <summary>
+        /// Gets the numeric value for a node as a signed byte.
+        /// </summary>
+        /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
+        /// <returns>A sbyte value that represents the number value in the node.</returns>
+        sbyte GetInt8Value(IJsonNavigatorNode numberNode);
+
+        /// <summary>
+        /// Gets the numeric value for a node as a 16-bit signed integer.
+        /// </summary>
+        /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
+        /// <returns>A short value that represents the number value in the node.</returns>
+        short GetInt16Value(IJsonNavigatorNode numberNode);
+
+        /// <summary>
+        /// Gets the numeric value for a node as a 32-bit signed integer.
+        /// </summary>
+        /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
+        /// <returns>An int value that represents the number value in the node.</returns>
+        int GetInt32Value(IJsonNavigatorNode numberNode);
+
+        /// <summary>
+        /// Gets the numeric value for a node as a 64-bit signed integer.
+        /// </summary>
+        /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
+        /// <returns>A long value that represents the number value in the node.</returns>
+        long GetInt64Value(IJsonNavigatorNode numberNode);
+
+        /// <summary>
+        /// Gets the numeric value for a node as a single precision number if the number is expressed as a floating point.
+        /// </summary>
+        /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
+        /// <returns>A double that represents the number value in the node.</returns>
+        float GetFloat32Value(IJsonNavigatorNode numberNode);
+
+        /// <summary>
+        /// Gets the numeric value for a node as double precision number if the number is expressed as a floating point.
+        /// </summary>
+        /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
+        /// <returns>A double that represents the number value in the node.</returns>
+        double GetFloat64Value(IJsonNavigatorNode numberNode);
+
+        /// <summary>
+        /// Gets the numeric value for a node as an unsigned 32 bit integer if the node is expressed as an uint32.
+        /// </summary>
+        /// <param name="numberNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
+        /// <returns>An unsigned integer that represents the number value in the node.</returns>
+        uint GetUInt32Value(IJsonNavigatorNode numberNode);
+
+        /// <summary>
+        /// Gets the Guid value for a node.
+        /// </summary>
+        /// <param name="guidNode">The <see cref="IJsonNavigatorNode"/> of the node you want the guid value from.</param>
+        /// <returns>A guid read from the node.</returns>
+        Guid GetGuidValue(IJsonNavigatorNode guidNode);
+
+        /// <summary>
+        /// Gets a binary value for a given node from the input.
+        /// </summary>
+        /// <param name="binaryNode">The <see cref="IJsonNavigatorNode"/> of the node to get the binary value from.</param>
+        /// <returns>The binary value from the node</returns>
+        IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode);
+
+        /// <summary>
+        /// Tries to get the buffered binary value from a node.
+        /// </summary>
+        /// <param name="binaryNode">The <see cref="IJsonNavigatorNode"/> of the node to get the buffered binary from.</param>
+        /// <param name="bufferedBinaryValue">The buffered binary value if possible</param>
+        /// <returns><code>true</code> if the JsonNavigator successfully got the buffered binary value; <code>false</code> if the JsonNavigator failed to get the buffered binary value.</returns>
+        bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue);
 
         /// <summary>
         /// Gets the number of elements in an array node.

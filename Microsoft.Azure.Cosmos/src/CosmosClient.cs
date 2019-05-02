@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
+    using System.Text;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB database account.
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.Cosmos
         static CosmosClient()
         {
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+            HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
         }
 
         /// <summary>

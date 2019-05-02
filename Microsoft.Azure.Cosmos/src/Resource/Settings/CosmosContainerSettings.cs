@@ -61,6 +61,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
         private UniqueKeyPolicy uniqueKeyPolicyInternal;
 
+        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
+        private ConflictResolutionPolicy conflictResolutionInternal;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -104,6 +107,28 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.PartitionKey.Version = (Documents.PartitionKeyDefinitionVersion)value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ConflictResolutionPolicy" />
+        /// </summary>
+        [JsonIgnore]
+        public virtual ConflictResolutionPolicy ConflictResolutionPolicy
+        {
+            get
+            {
+                if (this.conflictResolutionInternal == null)
+                {
+                    this.conflictResolutionInternal = new ConflictResolutionPolicy();
+                }
+
+                return this.conflictResolutionInternal;
+            }
+
+            set
+            {
+                this.conflictResolutionInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
             }
         }
 
