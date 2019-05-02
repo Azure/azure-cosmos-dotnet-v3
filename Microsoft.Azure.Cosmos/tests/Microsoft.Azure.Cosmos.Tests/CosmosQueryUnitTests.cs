@@ -6,19 +6,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
-    using System.Linq;
-    using System.Reflection;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
-    using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Query;
-    using Moq;
     using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosQueryUnitTests
@@ -26,6 +19,41 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestCosmosQueryExecutionComponentOnFailure()
         {
+            (IList<DocumentQueryExecutionComponentBase> components, CosmosQueryResponse response) setupContext = await this.GetAllExecutionComponents();
+
+            foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
+            {
+                CosmosQueryResponse response = await component.DrainAsync(1, default(CancellationToken));
+                Assert.AreEqual(setupContext.response, response);
+            }
+        }
+
+        [TestMethod]
+        public async Task TestCosmosQueryExecutionComponentCancellation()
+        {
+            (IList<DocumentQueryExecutionComponentBase> components, CosmosQueryResponse response) setupContext = await this.GetAllExecutionComponents();
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            foreach (DocumentQueryExecutionComponentBase component in setupContext.components)
+            {
+                try
+                {
+                    CosmosQueryResponse response = await component.DrainAsync(1, cancellationTokenSource.Token);
+                    Assert.Fail("cancellation token should have thrown an exception");
+                }
+                catch (OperationCanceledException e)
+                {
+                    Assert.IsNotNull(e.Message);
+                }
+            }
+        }
+
+        private async Task<(IList<DocumentQueryExecutionComponentBase> components, CosmosQueryResponse response)> GetAllExecutionComponents()
+        {
+            (Func<string, Task<IDocumentQueryExecutionComponent>> func, CosmosQueryResponse response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
+
+            List<DocumentQueryExecutionComponentBase> components = new List<DocumentQueryExecutionComponentBase>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
             {
                 AggregateOperator.Average,
@@ -35,46 +63,32 @@ namespace Microsoft.Azure.Cosmos.Tests
                 AggregateOperator.Sum
             };
 
-            (Func<string, Task<IDocumentQueryExecutionComponent>> func, CosmosQueryResponse response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
-            DocumentQueryExecutionComponentBase executionContext = await AggregateDocumentQueryExecutionComponent.CreateAsync(
+            components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
                 operators.ToArray(),
                 null,
-                setupContext.func);
+                setupContext.func));
 
-           CosmosQueryResponse response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.response, response);
+            components.Add(await DistinctDocumentQueryExecutionComponent.CreateAsync(
+                     null,
+                     setupContext.func,
+                     DistinctQueryType.Ordered));
 
-             executionContext = await DistinctDocumentQueryExecutionComponent.CreateAsync(
-                      null,
-                      setupContext.func,
-                      DistinctQueryType.Ordered);
-
-            response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.response, response);
-
-            executionContext = await SkipDocumentQueryExecutionComponent.CreateAsync(
+            components.Add(await SkipDocumentQueryExecutionComponent.CreateAsync(
                        5,
                        null,
-                       setupContext.func);
+                       setupContext.func));
 
-            response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.response, response);
-
-            executionContext = await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
+            components.Add(await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
                       5,
                       null,
-                      setupContext.func);
+                      setupContext.func));
 
-            response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.response, response);
-
-            executionContext = await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
+            components.Add(await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
                        5,
                        null,
-                       setupContext.func);
+                       setupContext.func));
 
-            response = await executionContext.DrainAsync(1, default(CancellationToken));
-            Assert.AreEqual(setupContext.response, response);
+            return (components, setupContext.response);
         }
 
         private (Func<string, Task<IDocumentQueryExecutionComponent>>, CosmosQueryResponse) SetupBaseContextToVerifyFailureScenario()

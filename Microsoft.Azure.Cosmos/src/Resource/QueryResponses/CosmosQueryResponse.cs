@@ -19,6 +19,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosQueryResponse : CosmosResponseMessage
     {
+        /// <summary>
+        /// Used for unit testing only
+        /// </summary>
+        internal CosmosQueryResponse() { }
+
         private CosmosQueryResponse(
             IEnumerable<CosmosElement> result,
             int count,
