@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
 
     public partial class CosmosContainers
     {
-            /// <summary>
+        /// <summary>
         /// Create an Azure Cosmos container through a Fluent API.
         /// </summary>
         /// <param name="name">Azure Cosmos container name to create.</param>

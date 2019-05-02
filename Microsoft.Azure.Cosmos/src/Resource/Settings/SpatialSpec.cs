@@ -47,20 +47,5 @@ namespace Microsoft.Azure.Cosmos
                 this.spatialTypesInternal = value;
             }
         }
-
-        internal object Clone()
-        {
-            SpatialSpec cloned = new SpatialSpec()
-            {
-                Path = this.Path
-            };
-
-            foreach (SpatialType spatialType in this.SpatialTypes)
-            {
-                cloned.SpatialTypes.Add(spatialType);
-            }
-
-            return cloned;
-        }
     }
 }
