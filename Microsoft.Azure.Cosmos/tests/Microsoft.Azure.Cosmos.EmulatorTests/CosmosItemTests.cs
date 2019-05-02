@@ -892,7 +892,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         ToDoActivity activity = iter.Current;
 
-                        // Re-Insert into container with a partition key, use Upsert operation
+                        // Re-Insert into container with a partition key
                         ToDoActivityAfterMigration itemWithPK = new ToDoActivityAfterMigration
                         { id = activity.id, cost = activity.cost, description = activity.description, status = "TestPK", taskNum = activity.taskNum };
                         CosmosItemResponse<ToDoActivityAfterMigration> createResponseWithPk = await fixedContainer.Items.CreateItemAsync<ToDoActivityAfterMigration>(
