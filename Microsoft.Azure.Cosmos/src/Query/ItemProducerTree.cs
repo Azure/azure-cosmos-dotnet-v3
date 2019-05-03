@@ -676,6 +676,12 @@ namespace Microsoft.Azure.Cosmos.Query
                             }
                         }
                     }
+
+                    if (!functionNeedsBeReexecuted)
+                    {
+                        // We don't want to call move next async again, since we already did when creating the document producers
+                        return ItemProducer.IsSuccessResponse;
+                    }
                 }
                 finally
                 {
