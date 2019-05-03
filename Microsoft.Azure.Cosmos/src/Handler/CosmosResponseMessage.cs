@@ -19,7 +19,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosResponseMessage"/>
         /// </summary>
-        public CosmosResponseMessage() { }
+        public CosmosResponseMessage()
+        {
+            this.Headers = new CosmosResponseMessageHeaders();
+        }
 
         /// <summary>
         /// Create a <see cref="CosmosResponseMessage"/>
