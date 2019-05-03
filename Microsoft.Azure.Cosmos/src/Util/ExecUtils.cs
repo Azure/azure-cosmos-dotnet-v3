@@ -272,6 +272,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType == OperationType.Upsert ||
                 operationType == OperationType.Query ||
                 operationType == OperationType.SqlQuery ||
+                operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
                 operationType == OperationType.ExecuteJavaScript)
             {

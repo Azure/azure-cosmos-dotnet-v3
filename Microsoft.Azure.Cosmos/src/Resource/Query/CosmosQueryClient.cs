@@ -36,6 +36,14 @@ namespace Microsoft.Azure.Cosmos
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 
+        internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellationToken);
+
         internal abstract Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
 
         internal abstract Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();

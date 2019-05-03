@@ -82,6 +82,32 @@ namespace Microsoft.Azure.Cosmos
             return this.GetFeedResponse(requestOptions, resourceType, message);
         }
 
+        internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: null,
+                partitionKey: null,
+                cosmosContainerCore: this.cosmosContainerCore,
+                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken))
+            {
+                partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+            }
+                
+            return partitionedQueryExecutionInfo;
+        }
+
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             return this.DocumentQueryClient.GetDefaultConsistencyLevelAsync();
