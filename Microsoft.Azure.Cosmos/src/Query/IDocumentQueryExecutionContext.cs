@@ -29,6 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on, which in return provides a FeedResponse of documents.</returns>
-        Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token);
+        Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token);
     }
 }

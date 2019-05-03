@@ -5,10 +5,10 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using System.Collections.Concurrent;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseUpdater"/> that uses In-Memory
@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseUpdaterInMemory : DocumentServiceLeaseUpdater
     {
         private const int RetryCountOnConflict = 5;
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly ConcurrentDictionary<string, DocumentServiceLease> container;
 
         public DocumentServiceLeaseUpdaterInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     return Task.FromResult(lease);
                 }
 
-                DefaultTrace.TraceInformation("Lease with token {0} update conflict. ", lease.CurrentLeaseToken);
+                Logger.InfoFormat("Lease with token {0} update conflict. ", lease.CurrentLeaseToken);
             }
 
             throw new LeaseLostException(lease);

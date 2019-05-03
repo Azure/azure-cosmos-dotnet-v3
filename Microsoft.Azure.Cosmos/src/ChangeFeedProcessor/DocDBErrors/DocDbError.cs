@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors
     internal enum DocDbError
     {
         Undefined,
-        PartitionSplit
+        PartitionNotFound,
+        PartitionSplit,
+        TransientError,
+        MaxItemCountTooLarge,
     }
 }

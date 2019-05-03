@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class CosmosChangeFeedResultSetIteratorCore : CosmosFeedIterator
+    internal class CosmosChangeFeedResultSetIteratorCore : CosmosFeedResultSetIterator
     {
         private const int DefaultMaxItemCount = 100;
         private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";

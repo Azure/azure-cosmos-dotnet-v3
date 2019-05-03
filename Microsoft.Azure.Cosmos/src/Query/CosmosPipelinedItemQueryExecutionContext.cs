@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="PipelinedDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
+// <copyright file="CosmosPipelinedItemQueryExecutionContext.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This bubbles down until you reach a component that has a DocumentProducer that fetches a document from the backend.
     /// </para>
     /// </summary>
-    internal sealed class PipelinedDocumentQueryExecutionContext : IDocumentQueryExecutionContext
+    internal sealed class CosmosPipelinedItemQueryExecutionContext : IDocumentQueryExecutionContext
     {
         /// <summary>
         /// The root level component that all calls will be forwarded to.
@@ -90,11 +90,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly int actualPageSize;
 
         /// <summary>
-        /// Initializes a new instance of the PipelinedDocumentQueryExecutionContext class.
+        /// Initializes a new instance of the CosmosPipelinedItemQueryExecutionContext class.
         /// </summary>
         /// <param name="component">The root level component that all calls will be forwarded to.</param>
         /// <param name="actualPageSize">The actual page size to drain.</param>
-        private PipelinedDocumentQueryExecutionContext(
+        private CosmosPipelinedItemQueryExecutionContext(
             IDocumentQueryExecutionComponent component,
             int actualPageSize)
         {
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         /// <summary>
-        /// Creates a PipelinedDocumentQueryExecutionContext.
+        /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
         /// <param name="constructorParams">The parameters for constructing the base class.</param>
         /// <param name="collectionRid">The collection rid.</param>
@@ -133,9 +133,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="requestContinuation">The request continuation.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on, which in turn returns a PipelinedDocumentQueryExecutionContext.</returns>
+        /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
         public static async Task<IDocumentQueryExecutionContext> CreateAsync(
-            DocumentQueryExecutionContextBase.InitParams constructorParams,
+            CosmosQueryContext constructorParams,
             string collectionRid,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> partitionKeyRanges,
@@ -156,14 +156,14 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 createComponentFunc = async (continuationToken) =>
                 {
-                    CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                         collectionRid,
                         partitionedQueryExecutionInfo,
                         partitionKeyRanges,
                         initialPageSize,
                         continuationToken);
 
-                    return await OrderByDocumentQueryExecutionContext.CreateAsync(
+                    return await CosmosOrderByItemQueryExecutionContext.CreateAsync(
                         constructorParams,
                         initParams,
                         cancellationToken);
@@ -173,14 +173,14 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 createComponentFunc = async (continuationToken) =>
                 {
-                    CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                         collectionRid,
                         partitionedQueryExecutionInfo,
                         partitionKeyRanges,
                         initialPageSize,
                         continuationToken);
 
-                    return await ParallelDocumentQueryExecutionContext.CreateAsync(
+                    return await CosmosParallelItemQueryExecutionContext.CreateAsync(
                         constructorParams,
                         initParams,
                         cancellationToken);
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasOffset)
             {
-                if (!constructorParams.FeedOptions.EnableCrossPartitionSkipTake)
+                if (!constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake)
                 {
                     throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
                 }
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasLimit)
             {
-                if (!constructorParams.FeedOptions.EnableCrossPartitionSkipTake)
+                if (!constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake)
                 {
                     throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
                 }
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 };
             }
 
-            return new PipelinedDocumentQueryExecutionContext(
+            return new CosmosPipelinedItemQueryExecutionContext(
                 await createComponentFunc(requestContinuation), initialPageSize);
         }
 

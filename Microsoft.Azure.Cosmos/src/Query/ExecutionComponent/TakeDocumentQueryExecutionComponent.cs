@@ -92,25 +92,27 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
         {
-            token.ThrowIfCancellationRequested();
-            CosmosQueryResponse results = await base.DrainAsync(maxElements, token);
-            if (!results.IsSuccessStatusCode)
-            {
-                return results;
-            }
-
-            List<CosmosElement> takedDocuments = results.CosmosElements.Take(this.takeCount).ToList();
+            FeedResponse<CosmosElement> results = await base.DrainAsync(maxElements, token);
+            List<CosmosElement> takedDocuments = results.Take(this.takeCount).ToList();
+            results = new FeedResponse<CosmosElement>(
+                takedDocuments,
+                takedDocuments.Count,
+                results.Headers,
+                results.UseETagAsContinuation,
+                results.QueryMetrics,
+                results.RequestStatistics,
+                results.DisallowContinuationTokenMessage,
+                results.ResponseLengthBytes);
 
             this.takeCount -= takedDocuments.Count;
-            string updatedContinuationToken = null;
 
-            if (results.QueryHeaders.DisallowContinuationTokenMessage == null)
+            if (results.DisallowContinuationTokenMessage == null)
             {
                 if (!this.IsDone)
                 {
-                    string sourceContinuation = results.Headers.Continuation;
+                    string sourceContinuation = results.ResponseContinuation;
                     TakeContinuationToken takeContinuationToken;
                     switch (this.takeEnum)
                     {
@@ -127,18 +129,18 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                             break;
 
                         default:
-                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {takeEnum}");
                     }
 
-                    updatedContinuationToken = takeContinuationToken.ToString();
+                    results.ResponseContinuation = takeContinuationToken.ToString();
+                }
+                else
+                {
+                    results.ResponseContinuation = null;
                 }
             }
 
-            return CosmosQueryResponse.CreateSuccess(
-                takedDocuments,
-                takedDocuments.Count,
-                results.ResponseLengthBytes,
-                results.QueryHeaders.CloneKnownProperties(updatedContinuationToken, results.QueryHeaders.DisallowContinuationTokenMessage));
+            return results;
         }
 
         private enum TakeEnum

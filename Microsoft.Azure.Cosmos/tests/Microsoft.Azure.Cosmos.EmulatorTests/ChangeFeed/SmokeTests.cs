@@ -32,45 +32,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
-                {
-                    foreach (TestClass doc in docs)
-                    {
-                        receivedIds.Add(int.Parse(doc.id));
-                    }
-
-                    return Task.CompletedTask;
-                })
-                .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
-
-            await processor.StartAsync();
-            // Letting processor initialize
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-            // Inserting documents
-            foreach (int id in expectedIds)
-            {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
-            }
-
-            // Waiting on all notifications to finish
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
-            await processor.StopAsync();
-            // Verify that we maintain order
-            CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
-        }
-
-        [TestMethod]
-        public async Task WritesTriggerDelegate_WithLeaseContainerWithDynamic()
-        {
-            IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
-            List<int> receivedIds = new List<int>();
-            ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
                 {
                     foreach (dynamic doc in docs)
                     {
-                        receivedIds.Add(int.Parse(doc.id.Value));
+                        receivedIds.Add(int.Parse(doc.id));
                     }
 
                     return Task.CompletedTask;
@@ -100,9 +66,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
                 {
-                    foreach (TestClass doc in docs)
+                    foreach (dynamic doc in docs)
                     {
                         receivedIds.Add(int.Parse(doc.id));
                     }
@@ -126,45 +92,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
-        }
-
-        [TestMethod]
-        public async Task WritesTriggerDelegate_WithInMemoryContainerWithDynamic()
-        {
-            IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
-            List<int> receivedIds = new List<int>();
-            ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                {
-                    foreach (dynamic doc in docs)
-                    {
-                        receivedIds.Add(int.Parse(doc.id.Value));
-                    }
-
-                    return Task.CompletedTask;
-                })
-                .WithInstanceName("random")
-                .WithInMemoryLeaseContainer().Build();
-
-            await processor.StartAsync();
-            // Letting processor initialize
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-            // Inserting documents
-            foreach (int id in expectedIds)
-            {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
-            }
-
-            // Waiting on all notifications to finish
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
-            await processor.StopAsync();
-            // Verify that we maintain order
-            CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
-        }
-
-        public class TestClass
-        {
-            public string id { get; set; }
         }
     }
 }

@@ -38,31 +38,59 @@
                     SupportedQueryFeatures);
         }
 
-        public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
-            CosmosQueryClient client,
+        public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
+            DocumentClient documentClient,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return client.ExecuteQueryPlanRequestAsync(
-                resourceLink,
-                ResourceType.Document,
-                OperationType.QueryPlan,
-                sqlQuerySpec,
-                QueryPlanRequestEnricher,
-                cancellationToken);
+            using (DocumentServiceRequest request = CreateRequest(
+                sqlQuerySpec, 
+                resourceLink))
+            {
+                using (DocumentServiceResponse documentServiceResponse = await documentClient.ExecuteQueryAsync(
+                    request: request,
+                    retryPolicy: null,
+                    cancellationToken: cancellationToken))
+                {
+                    JsonSerializer jsonSerializer = new JsonSerializer();
+                    using (StreamReader streamReader = new StreamReader(documentServiceResponse.ResponseBody))
+                    {
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+                        {
+                            return jsonSerializer.Deserialize<PartitionedQueryExecutionInfo>(jsonTextReader);
+                        }
+                    }
+                }
+            }
         }
 
-        private static void QueryPlanRequestEnricher(
-            CosmosRequestMessage requestMessage)
+        private static DocumentServiceRequest CreateRequest(
+            SqlQuerySpec sqlQuerySpec,
+            Uri resourceLink)
         {
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQueryPlanRequest, bool.TrueString);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.SupportedQueryFeatures, SupportedQueryFeaturesString);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
-            requestMessage.UseGatewayMode = true;
+            StringKeyValueCollection headers = new StringKeyValueCollection()
+            {
+                { HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson },
+                { HttpConstants.HttpHeaders.IsQueryPlanRequest, bool.TrueString },
+                { HttpConstants.HttpHeaders.SupportedQueryFeatures, SupportedQueryFeaturesString },
+                { HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString() }
+            };
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.QueryPlan,
+                ResourceType.Document,
+                resourceLink.OriginalString,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers);
+
+            string queryText = JsonConvert.SerializeObject(sqlQuerySpec);
+
+            request.Body = new MemoryStream(Encoding.UTF8.GetBytes(queryText));
+            request.UseGatewayMode = true;
+            return request;
         }
     }
 }

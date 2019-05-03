@@ -9,10 +9,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     internal sealed class PartitionLoadBalancerCore : PartitionLoadBalancer
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly PartitionController partitionController;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly LoadBalancingStrategy partitionLoadBalancingStrategy;
@@ -77,15 +78,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             }
                             catch (Exception e)
                             {
-                                DefaultTrace.TraceException(e);
-                                DefaultTrace.TraceError("Partition load balancer lease add/update iteration failed");
+                                Logger.ErrorException("Partition load balancer lease add/update iteration failed", e);
                             }
                         }
                     }
                     catch (Exception e)
                     {
-                        DefaultTrace.TraceException(e);
-                        DefaultTrace.TraceError("Partition load balancer iteration failed");
+                        Logger.ErrorException("Partition load balancer iteration failed", e);
                     }
 
                     await Task.Delay(this.leaseAcquireInterval, this.cancellationTokenSource.Token).ConfigureAwait(false);
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (OperationCanceledException)
             {
-                DefaultTrace.TraceInformation("Partition load balancer task stopped.");
+                Logger.Info("Partition load balancer task stopped.");
             }
         }
     }

@@ -6,10 +6,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     internal sealed class PartitionCheckpointerCore : PartitionCheckpointer
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
         private DocumentServiceLease lease;
 
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         public override async Task CheckpointPartitionAsync(string сontinuationToken)
         {
             this.lease = await this.leaseCheckpointer.CheckpointAsync(this.lease, сontinuationToken).ConfigureAwait(false);
-            DefaultTrace.TraceInformation("Checkpoint: lease token {0}, new continuation {1}", this.lease.CurrentLeaseToken, this.lease.ContinuationToken);
+            Logger.InfoFormat("Checkpoint: lease token {0}, new continuation {1}", this.lease.CurrentLeaseToken, this.lease.ContinuationToken);
         }
     }
 }

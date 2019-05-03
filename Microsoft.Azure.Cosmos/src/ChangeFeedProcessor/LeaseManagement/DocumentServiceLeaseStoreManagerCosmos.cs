@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     /// <summary>
     /// Lease manager that is using Azure Document Service as lease storage.
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal sealed class DocumentServiceLeaseStoreManagerCosmos : DocumentServiceLeaseStoreManager
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly DocumentServiceLeaseStore leaseStore;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;

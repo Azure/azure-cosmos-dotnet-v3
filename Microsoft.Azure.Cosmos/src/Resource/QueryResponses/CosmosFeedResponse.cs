@@ -3,69 +3,75 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.IO;
-    using System.Net;
 
     /// <summary>
-    /// The user contract for the various feed responses that serialized the responses to a type.
-    /// To follow the .NET standard for typed responses any exceptions should be thrown to the user.
+    /// This is a helper class that is used to get the query response collection.
+    /// Each resource type has a different property to access the array.
+    /// During JSON deserialization any one of the properties listed will be set.
+    /// For example Databases which will then use the base property Data to actually
+    /// store the collection. Then the response object will use the Data property to
+    /// access the collection. This prevents having a class for each different property.
     /// </summary>
-    public abstract class CosmosFeedResponse<T> : CosmosResponse<IEnumerable<T>>, IEnumerable<T>
+    internal class CosmosFeedResponse<T>
     {
         /// <summary>
-        /// Create an empty cosmos feed response for mock testing
+        /// All the properties use this to store the collection.
         /// </summary>
-        public CosmosFeedResponse()
-        {
+        public Collection<T> Data { get; set; }
 
+        public Collection<T> Attachments
+        {
+            get => this.Data;
+            set => this.Data = value;
         }
 
-        /// <summary>
-        /// Create a CosmosFeedResponse object with the default properties set
-        /// </summary>
-        /// <param name="httpStatusCode">The status code of the response</param>
-        /// <param name="headers">The headers of the response</param>
-        /// <param name="resource">The object from the response</param>
-        internal CosmosFeedResponse(
-            HttpStatusCode httpStatusCode,
-            CosmosResponseMessageHeaders headers,
-            IEnumerable<T> resource):base(
-                httpStatusCode,
-                headers,
-                resource)
+        public Collection<T> DocumentCollections
         {
+            get => this.Data;
+            set => this.Data = value;
         }
 
-        /// <summary>
-        /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The continuation token to be used for continuing enumeration.
-        /// </value>
-        public abstract string Continuation { get; }
-
-        /// <summary>
-        /// The number of items in the stream.
-        /// </summary>
-        public abstract int Count { get; }
-
-        /// <summary>
-        /// Get an enumerator of the object
-        /// </summary>
-        /// <returns></returns>
-        public abstract IEnumerator<T> GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator()
+        public Collection<T> Databases
         {
-            return this.GetEnumerator();
+            get => this.Data;
+            set => this.Data = value;
         }
 
-        internal abstract string InternalContinuationToken { get; }
+        public Collection<T> Documents
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
 
-        internal abstract bool HasMoreResults { get; }
+        public Collection<T> Offers
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
+
+        public Collection<T> Triggers
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
+
+        public Collection<T> UserDefinedFunctions
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
+
+        public Collection<T> UserDefinedTypes
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
+
+        public Collection<T> StoredProcedures
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
     }
 }

@@ -4,16 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System;
-    using System.Collections.ObjectModel;
-    using System.IO;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using System;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     [TestClass]
     public class ResultSetIteratorTests
@@ -32,24 +31,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            CosmosFeedIterator resultSetIterator = new CosmosResultSetIteratorCore(
+            CosmosFeedResultSetIterator resultSetIterator = new CosmosFeedResultSetIteratorCore(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,
-                this.NextResultSetDelegate);
+                NextResultSetDelegate);
 
-            Assert.IsTrue(resultSetIterator.HasMoreResults);
+            Assert.IsTrue(resultSetIterator.HasMoreResults );
 
             CosmosResponseMessage response = await resultSetIterator.FetchNextSetAsync(this.CancellationToken);
             this.ContinuationToken = response.Headers.Continuation;
 
-            Assert.IsTrue(resultSetIterator.HasMoreResults);
+            Assert.IsTrue(resultSetIterator.HasMoreResults );
             this.ContinueNextExecution = false;
 
             response = await resultSetIterator.FetchNextSetAsync(this.CancellationToken);
             this.ContinuationToken = response.Headers.Continuation;
 
-            Assert.IsFalse(resultSetIterator.HasMoreResults);
+            Assert.IsFalse(resultSetIterator.HasMoreResults );
             Assert.IsNull(response.Headers.Continuation);
         }
 
@@ -58,8 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<CosmosQueryRequestOptions> options = new Mock<CosmosQueryRequestOptions>() { CallBase = true };
 
-            CosmosRequestMessage request = new CosmosRequestMessage
-            {
+            CosmosRequestMessage request = new CosmosRequestMessage {
                 OperationType = OperationType.SqlQuery
             };
 
@@ -88,14 +86,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosFeedIterator setIterator = container.Items.CreateItemQueryAsStream(
-                sqlQueryDefinition: sql,
+            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
+                sqlQueryDefinition: sql, 
                 maxConcurrency: 1,
-                partitionKey: "pk",
+                partitionKey: "pk", 
                 requestOptions: new CosmosQueryRequestOptions());
 
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(
                     15, //OperationType.SqlQuery
                     (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
@@ -104,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosResponseMessage response = await setIterator.FetchNextSetAsync();
+            CosmosQueryResponse response = await setIterator.FetchNextSetAsync();
 
             //Test gateway mode
             mockClient = MockCosmosUtil.CreateMockCosmosClient(
@@ -115,105 +112,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxConcurrency: 1,
                 partitionKey: "pk",
                 requestOptions: new CosmosQueryRequestOptions());
-            testHandler = new TestHandler((request, cancellationToken) =>
-            {
+            testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(
                     14, //OperationType.Query
                     (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
                 );
                 return TestHandler.ReturnSuccess();
             });
-
+            
             mockClient.RequestHandler.InnerHandler = testHandler;
             response = await setIterator.FetchNextSetAsync();
-        }
-
-        [TestMethod]
-        public async Task CosmosConflictsIteratorBuildsSettings()
-        {
-            string conflictResponsePayload = @"{ 'Data':[{
-                 id: 'Conflict1',
-                 operationType: 'Replace',
-                 resourceType: 'trigger'
-                }]}";
-
-            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
-
-            CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosFeedIterator<CosmosConflict> setIterator = container.GetConflictsIterator();
-
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
-                Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
-                CosmosResponseMessage handlerResponse = TestHandler.ReturnSuccess().Result;
-                MemoryStream stream = new MemoryStream();
-                StreamWriter writer = new StreamWriter(stream);
-                writer.Write(conflictResponsePayload);
-                writer.Flush();
-                stream.Position = 0;
-
-                handlerResponse.Content = stream;
-                return Task.FromResult(handlerResponse);
-            });
-
-            mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosFeedResponse<CosmosConflict> response = await setIterator.FetchNextSetAsync();
-
-            Assert.AreEqual(1, response.Count());
-
-            CosmosConflict responseSettings = response.FirstOrDefault();
-            Assert.IsNotNull(responseSettings);
-
-            Assert.AreEqual("Conflict1", responseSettings.Id);
-            Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTrigger), responseSettings.ResourceType);
-        }
-
-        [TestMethod]
-        public async Task CosmosConflictsStreamIteratorBuildsSettings()
-        {
-            string conflictResponsePayload = @"{ 'Data':[{
-                 id: 'Conflict1',
-                 operationType: 'Replace',
-                 resourceType: 'trigger'
-                }]}";
-
-            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
-
-            CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosFeedIterator setIterator = container.GetConflictsStreamIterator();
-
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
-                Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
-                CosmosResponseMessage handlerResponse = TestHandler.ReturnSuccess().Result;
-                MemoryStream stream = new MemoryStream();
-                StreamWriter writer = new StreamWriter(stream);
-                writer.Write(conflictResponsePayload);
-                writer.Flush();
-                stream.Position = 0;
-
-                handlerResponse.Content = stream;
-                return Task.FromResult(handlerResponse);
-            });
-
-            mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosResponseMessage streamResponse = await setIterator.FetchNextSetAsync();
-
-            Collection<CosmosConflict> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<CosmosConflict>>(streamResponse.Content).Data;
-
-            Assert.AreEqual(1, response.Count());
-
-            CosmosConflict responseSettings = response.FirstOrDefault();
-            Assert.IsNotNull(responseSettings);
-
-            Assert.AreEqual("Conflict1", responseSettings.Id);
-            Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTrigger), responseSettings.ResourceType);
         }
 
         private Task<CosmosResponseMessage> NextResultSetDelegate(
@@ -230,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // CancellationToken is a struct and refs will not match
             Assert.AreEqual(this.CancellationToken.IsCancellationRequested, cancellationToken.IsCancellationRequested);
 
-            return Task.FromResult(this.GetHttpResponse());
+            return Task.FromResult(GetHttpResponse());
         }
 
         private CosmosResponseMessage GetHttpResponse()

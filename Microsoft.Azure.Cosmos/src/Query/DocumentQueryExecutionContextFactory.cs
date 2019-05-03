@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
-            return await PipelinedDocumentQueryExecutionContext.CreateDocumentQueryExecutionContextAsync(
+            return await PipelinedDocumentQueryExecutionContext.CreateAsync(
                 constructorParams,
                 collectionRid,
                 partitionedQueryExecutionInfo,

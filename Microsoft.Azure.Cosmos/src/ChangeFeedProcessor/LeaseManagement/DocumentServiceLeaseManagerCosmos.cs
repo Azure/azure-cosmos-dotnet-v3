@@ -3,14 +3,15 @@
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses Azure Cosmos DB service
     /// </summary>
     internal sealed class DocumentServiceLeaseManagerCosmos : DocumentServiceLeaseManager
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly CosmosContainer leaseContainer;
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly DocumentServiceLeaseStoreManagerSettings settings;
@@ -31,9 +32,7 @@
         public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
         {
             if (lease == null)
-            {
                 throw new ArgumentNullException(nameof(lease));
-            }
 
             string oldOwner = lease.Owner;
 
@@ -45,7 +44,7 @@
                 {
                     if (serverLease.Owner != oldOwner)
                     {
-                        DefaultTrace.TraceInformation("{0} lease token was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
+                        Logger.InfoFormat("{0} lease token was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
                         throw new LeaseLostException(lease);
                     }
                     serverLease.Owner = this.settings.HostName;
@@ -72,11 +71,11 @@
                 documentServiceLease).ConfigureAwait(false) != null;
             if (created)
             {
-                DefaultTrace.TraceInformation("Created lease with lease token {0}.", leaseToken);
+                Logger.InfoFormat("Created lease with lease token {0}.", leaseToken);
                 return documentServiceLease;
             }
 
-            DefaultTrace.TraceInformation("Some other host created lease for {0}.", leaseToken);
+            Logger.InfoFormat("Some other host created lease for {0}.", leaseToken);
             return null;
         }
 
@@ -88,7 +87,7 @@
             DocumentServiceLeaseCore refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             if (refreshedLease == null)
             {
-                DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
+                Logger.InfoFormat("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);
             }
 
@@ -100,7 +99,7 @@
                 {
                     if (serverLease.Owner != lease.Owner)
                     {
-                        DefaultTrace.TraceInformation("Lease with token {0} no need to release lease. The lease was already taken by another host '{1}'.", lease.CurrentLeaseToken, serverLease.Owner);
+                        Logger.InfoFormat("Lease with token {0} no need to release lease. The lease was already taken by another host '{1}'.", lease.CurrentLeaseToken, serverLease.Owner);
                         throw new LeaseLostException(lease);
                     }
                     serverLease.Owner = null;
@@ -130,7 +129,7 @@
             DocumentServiceLeaseCore refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             if (refreshedLease == null)
             {
-                DefaultTrace.TraceInformation("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
+                Logger.InfoFormat("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);
             }
 
@@ -142,7 +141,7 @@
                 {
                     if (serverLease.Owner != lease.Owner)
                     {
-                        DefaultTrace.TraceInformation("Lease with token {0} was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
+                        Logger.InfoFormat("Lease with token {0} was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
                         throw new LeaseLostException(lease);
                     }
                     return serverLease;
@@ -155,7 +154,7 @@
 
             if (lease.Owner != this.settings.HostName)
             {
-                DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}' before lease properties update", lease.CurrentLeaseToken, lease.Owner);
+                Logger.InfoFormat("Lease with token '{0}' was taken over by owner '{1}' before lease properties update", lease.CurrentLeaseToken, lease.Owner);
                 throw new LeaseLostException(lease);
             }
 
@@ -167,7 +166,7 @@
                 {
                     if (serverLease.Owner != lease.Owner)
                     {
-                        DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
+                        Logger.InfoFormat("Lease with token '{0}' was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
                         throw new LeaseLostException(lease);
                     }
                     serverLease.Properties = lease.Properties;

@@ -5,18 +5,21 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Globalization;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedProcessorCore<T> : ChangeFeedProcessor
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly ChangeFeedObserverFactory<T> observerFactory;
         private CosmosContainerCore leaseContainer;
         private string monitoredContainerRid;
@@ -64,16 +67,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 await this.InitializeAsync().ConfigureAwait(false);
             }
 
-            DefaultTrace.TraceInformation("Starting processor...");
+            Logger.InfoFormat("Starting processor...");
             await this.partitionManager.StartAsync().ConfigureAwait(false);
-            DefaultTrace.TraceInformation("Processor started.");
+            Logger.InfoFormat("Processor started.");
         }
 
         public override async Task StopAsync()
         {
-            DefaultTrace.TraceInformation("Stopping processor...");
+            Logger.InfoFormat("Stopping processor...");
             await this.partitionManager.StopAsync().ConfigureAwait(false);
-            DefaultTrace.TraceInformation("Processor stopped.");
+            Logger.InfoFormat("Processor stopped.");
         }
 
         private async Task InitializeAsync()
@@ -135,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             PartitionSupervisorFactoryCore<T> partitionSuperviserFactory = new PartitionSupervisorFactoryCore<T>(
                 factory,
                 this.documentServiceLeaseStoreManager.LeaseManager,
-                new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, this.documentServiceLeaseStoreManager.LeaseCheckpointer, this.monitoredContainer.ClientContext.JsonSerializer),
+                new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, this.documentServiceLeaseStoreManager.LeaseCheckpointer),
                 this.changeFeedLeaseOptions);
 
             EqualPartitionsBalancingStrategy loadBalancingStrategy = new EqualPartitionsBalancingStrategy(

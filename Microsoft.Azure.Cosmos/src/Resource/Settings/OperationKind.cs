@@ -3,16 +3,16 @@
 //------------------------------------------------------------
 
 using System;
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Internal
 {
     /// <summary>
     /// These are the operation types resulted in a version conflict on a resource. 
     /// </summary>
     /// <remarks>
-    /// When a version conflict occurs during an async operation, retrieving the <see cref="CosmosConflict"/> instance will allow you 
-    /// to determine which resource and operation cause the conflict.
+    /// When a version conflict occurs during an async operation, retrieving the <see cref="Microsoft.Azure.Documents.Conflict"/> instance will allow you 
+    /// to determine which resource and operation caause the conflict.
     /// </remarks>
-    public enum OperationKind
+    internal enum OperationKind
     {
         /// <summary>
         /// An invalid operation.

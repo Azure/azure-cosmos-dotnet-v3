@@ -7,13 +7,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Documents;
 
     internal sealed class BootstrapperCore : Bootstrapper
     {
         internal static readonly TimeSpan DefaultSleepTime = TimeSpan.FromSeconds(15);
         internal static readonly TimeSpan DefaultLockTime = TimeSpan.FromSeconds(30);
+
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
 
         private readonly PartitionSynchronizer synchronizer;
         private readonly DocumentServiceLeaseStore leaseStore;
@@ -46,12 +48,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 {
                     if (!isLockAcquired)
                     {
-                        DefaultTrace.TraceInformation("Another instance is initializing the store");
+                        Logger.InfoFormat("Another instance is initializing the store");
                         await Task.Delay(this.sleepTime).ConfigureAwait(false);
                         continue;
                     }
 
-                    DefaultTrace.TraceInformation("Initializing the store");
+                    Logger.InfoFormat("Initializing the store");
                     await this.synchronizer.CreateMissingLeasesAsync().ConfigureAwait(false);
                     await this.leaseStore.MarkInitializedAsync().ConfigureAwait(false);
                 }
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 break;
             }
 
-            DefaultTrace.TraceInformation("The store is initialized");
+            Logger.InfoFormat("The store is initialized");
         }
     }
 }

@@ -4,13 +4,15 @@
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses In-Memory
     /// </summary>
     internal sealed class DocumentServiceLeaseManagerInMemory : DocumentServiceLeaseManager
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly ConcurrentDictionary<string, DocumentServiceLease> container;
 
@@ -25,9 +27,7 @@
         public override Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
         {
             if (lease == null)
-            {
                 throw new ArgumentNullException(nameof(lease));
-            }
 
             return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
@@ -43,11 +43,9 @@
         public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(string leaseToken, string continuationToken)
         {
             if (leaseToken == null)
-            {
                 throw new ArgumentNullException(nameof(leaseToken));
-            }
 
-            DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
+            var documentServiceLease = new DocumentServiceLeaseCore
             {
                 LeaseId = leaseToken,
                 LeaseToken = leaseToken,
@@ -59,11 +57,11 @@
                 documentServiceLease);
             if (created)
             {
-                DefaultTrace.TraceInformation("Created lease with lease token {0}.", leaseToken);
+                Logger.InfoFormat("Created lease with lease token {0}.", leaseToken);
                 return Task.FromResult<DocumentServiceLease>(documentServiceLease);
             }
 
-            DefaultTrace.TraceInformation("Some other host created lease for {0}.", leaseToken);
+            Logger.InfoFormat("Some other host created lease for {0}.", leaseToken);
             return Task.FromResult<DocumentServiceLease>(null);
         }
 
@@ -74,7 +72,7 @@
 
             if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
             {
-                DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
+                Logger.InfoFormat("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);
             }
 
@@ -109,7 +107,7 @@
             // certainly the lease was updated in between.
             if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
             {
-                DefaultTrace.TraceInformation("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
+                Logger.InfoFormat("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
                 throw new LeaseLostException(lease);
             }
 

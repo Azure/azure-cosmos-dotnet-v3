@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
         }
 
-        public override CosmosFeedIterator<CosmosContainerSettings> GetContainerIterator(
+        public override CosmosResultSetIterator<CosmosContainerSettings> GetContainerIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -146,12 +146,12 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override CosmosFeedIterator GetContainerStreamIterator(
+        public override CosmosFeedResultSetIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
-            return new CosmosResultSetIteratorCore(
+            return new CosmosFeedResultSetIteratorCore(
                 maxItemCount,
                 continuationToken,
                 requestOptions,
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosFeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
+        private Task<CosmosQueryResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosContainerSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosContainerSettings>>(
                 resourceUri: this.database.LinkUri,
                 resourceType: ResourceType.Collection,
                 operationType: OperationType.ReadFeed,

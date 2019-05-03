@@ -58,37 +58,41 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
         {
-            token.ThrowIfCancellationRequested();
-            CosmosQueryResponse sourcePage = await base.DrainAsync(maxElements, token);
-            if (!sourcePage.IsSuccessStatusCode)
-            {
-                return sourcePage;
-            }
+            FeedResponse<CosmosElement> sourcePage = await base.DrainAsync(maxElements, token);
 
             // skip the documents but keep all the other headers
-            List<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
+            List<CosmosElement> documentsAfterSkip = sourcePage.Skip(this.skipCount).ToList();
+            FeedResponse<CosmosElement> offsetPage = new FeedResponse<CosmosElement>(
+                    documentsAfterSkip,
+                    documentsAfterSkip.Count(),
+                    sourcePage.Headers,
+                    sourcePage.UseETagAsContinuation,
+                    sourcePage.QueryMetrics,
+                    sourcePage.RequestStatistics,
+                    sourcePage.DisallowContinuationTokenMessage,
+                    sourcePage.ResponseLengthBytes);
 
             int numberOfDocumentsSkipped = sourcePage.Count - documentsAfterSkip.Count;
             this.skipCount -= numberOfDocumentsSkipped;
-            string updatedContinuationToken = null;
 
-            if (sourcePage.QueryHeaders.DisallowContinuationTokenMessage == null)
+            if (sourcePage.DisallowContinuationTokenMessage == null)
             {
                 if (!this.IsDone)
                 {
-                    updatedContinuationToken = new OffsetContinuationToken(
+                    string sourceContinuation = sourcePage.ResponseContinuation;
+                    offsetPage.ResponseContinuation = new OffsetContinuationToken(
                         this.skipCount,
-                        sourcePage.Headers.Continuation).ToString();
+                        sourceContinuation).ToString();
+                }
+                else
+                {
+                    offsetPage.ResponseContinuation = null;
                 }
             }
 
-            return CosmosQueryResponse.CreateSuccess(
-                    result: documentsAfterSkip,
-                    count: documentsAfterSkip.Count(),
-                    responseHeaders: sourcePage.QueryHeaders.CloneKnownProperties(updatedContinuationToken, sourcePage.QueryHeaders.DisallowContinuationTokenMessage),
-                    responseLengthBytes: sourcePage.ResponseLengthBytes); ;
+            return offsetPage;
         }
 
         /// <summary>

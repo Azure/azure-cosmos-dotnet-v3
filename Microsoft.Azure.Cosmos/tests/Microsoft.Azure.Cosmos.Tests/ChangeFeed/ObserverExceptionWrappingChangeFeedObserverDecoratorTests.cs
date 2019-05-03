@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly Mock<ChangeFeedObserver<MyDocument>> observer;
         private readonly ChangeFeedObserverContext changeFeedObserverContext;
         private readonly FeedProcessing.ObserverExceptionWrappingChangeFeedObserverDecorator<MyDocument> observerWrapper;
-        private readonly IReadOnlyList<MyDocument> documents;
+        private readonly List<MyDocument> documents;
 
         public ObserverExceptionWrappingChangeFeedObserverDecoratorTests()
         {

@@ -6,12 +6,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Collections.Concurrent;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
 
     /// <summary>
     /// Lease manager that is using In-Memory as lease storage.
     /// </summary>
     internal sealed class DocumentServiceLeaseStoreManagerInMemory : DocumentServiceLeaseStoreManager
     {
+        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly DocumentServiceLeaseStore leaseStore;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;

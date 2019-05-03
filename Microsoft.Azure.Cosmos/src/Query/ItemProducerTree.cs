@@ -37,6 +37,10 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal sealed class ItemProducerTree : IEnumerable<ItemProducerTree>
     {
+        /// <summary>
+        /// Root of the document producer tree.
+        /// </summary>
+        private readonly ItemProducer root;
 
         /// <summary>
         /// The child partitions of this node in the tree that are added after a split.
@@ -54,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly bool deferFirstPage;
 
         /// <summary>
-        /// The collection rid to drain from. 
+        /// The collection rid to to drain from. 
         /// </summary>
         private readonly string collectionRid;
 
@@ -72,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="queryContext">query context.</param>
         /// <param name="querySpecForInit">query spec init.</param>
         /// <param name="partitionKeyRange">The partition key range.</param>
+        /// <param name="createRetryPolicyFunc">Callback to create a retry policy.</param>
         /// <param name="produceAsyncCompleteCallback">Callback to invoke once a fetch finishes.</param>
         /// <param name="itemProducerTreeComparer">Comparer to determine, which tree to produce from.</param>
         /// <param name="equalityComparer">Comparer to see if we need to return the continuation token for a partition.</param>
@@ -83,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
             PartitionKeyRange partitionKeyRange,
+            Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
@@ -91,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            if (queryContext == null)
+            if(queryContext == null)
             {
                 throw new ArgumentNullException($"{nameof(queryContext)}");
             }
@@ -99,6 +105,11 @@ namespace Microsoft.Azure.Cosmos.Query
             if (itemProducerTreeComparer == null)
             {
                 throw new ArgumentNullException($"{nameof(itemProducerTreeComparer)}");
+            }
+
+            if (createRetryPolicyFunc == null)
+            {
+                throw new ArgumentNullException($"{nameof(createRetryPolicyFunc)}");
             }
 
             if (produceAsyncCompleteCallback == null)
@@ -121,10 +132,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentException($"{nameof(collectionRid)} can not be null or empty.");
             }
 
-            this.Root = new ItemProducer(
+            this.root = new ItemProducer(
                 queryContext,
                 querySpecForInit,
                 partitionKeyRange,
+                createRetryPolicyFunc,
                 (itemProducer, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token),
                 equalityComparer,
                 initialPageSize,
@@ -137,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.createItemProducerTreeCallback = ItemProducerTree.CreateItemProducerTreeCallback(
                 queryContext,
                 querySpecForInit,
+                createRetryPolicyFunc,
                 produceAsyncCompleteCallback,
                 itemProducerTreeComparer,
                 equalityComparer,
@@ -149,7 +162,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the root document from the tree.
         /// </summary>
-        public ItemProducer Root { get; }
+        public ItemProducer Root
+        {
+            get
+            {
+                return this.root;
+            }
+        }
 
         /// <summary>
         /// Gets the partition key range from the current document producer tree.
@@ -160,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.PartitionKeyRange;
+                    return this.root.PartitionKeyRange;
                 }
                 else
                 {
@@ -178,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.Filter;
+                    return this.root.Filter;
                 }
                 else
                 {
@@ -190,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    this.Root.Filter = value;
+                    this.root.Filter = value;
                 }
                 else
                 {
@@ -206,9 +225,9 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                if (this.HasSplit && !this.Root.HasMoreResults)
+                if (this.HasSplit && !this.root.HasMoreResults)
                 {
-                    // If the partition has split and there are no more results in the parent buffer
+                    // If the partition has split and there are are no more results in the parent buffer
                     // then just pull from the highest priority child (with recursive decent).
 
                     // Need to pop push to force an update in priority
@@ -233,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.IsAtBeginningOfPage;
+                    return this.root.IsAtBeginningOfPage;
                 }
                 else
                 {
@@ -249,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.Root.HasMoreResults
+                return this.root.HasMoreResults
                     || (this.HasSplit && this.children.Peek().HasMoreResults);
             }
         }
@@ -261,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.Root.HasMoreBackendResults
+                return this.root.HasMoreBackendResults
                     || (this.HasSplit && this.children.Peek().HasMoreBackendResults);
             }
         }
@@ -275,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.ItemsLeftInCurrentPage;
+                    return this.root.ItemsLeftInCurrentPage;
                 }
                 else
                 {
@@ -293,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.BufferedItemCount;
+                    return this.root.BufferedItemCount;
                 }
                 else
                 {
@@ -309,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.Root.IsActive || this.children.Any((child) => child.IsActive);
+                return this.root.IsActive || this.children.Any((child) => child.IsActive);
             }
         }
 
@@ -322,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.PageSize;
+                    return this.root.PageSize;
                 }
                 else
                 {
@@ -334,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    this.Root.PageSize = value;
+                    this.root.PageSize = value;
                 }
                 else
                 {
@@ -352,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.ActivityId;
+                    return this.root.ActivityId;
                 }
                 else
                 {
@@ -370,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.CurrentItemProducerTree == this)
                 {
-                    return this.Root.Current;
+                    return this.root.Current;
                 }
                 else
                 {
@@ -396,10 +415,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that returns whether we successfully moved next.</returns>
         /// <remarks>This function is split proofed.</remarks>
-        public async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
+        public async Task<bool> MoveNextAsync(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
-                function: this.TryMoveNextAsyncImplementation,
+                function:this.MoveNextAsyncImplementation,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }
@@ -410,10 +429,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn returns whether or not we moved next.</returns>
-        public async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextIfNotSplit(CancellationToken token)
+        public async Task<bool> MoveNextIfNotSplit(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
-                function: this.TryMoveNextIfNotSplitAsyncImplementation,
+                function:this.MoveNextIfNotSplitAsyncImplementation,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }
@@ -423,10 +442,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> BufferMoreDocuments(CancellationToken token)
+        public Task BufferMoreDocuments(CancellationToken token)
         {
             return this.ExecuteWithSplitProofing(
-                function: this.BufferMoreDocumentsImplementation,
+                function:this.BufferMoreDocumentsImplementation,
                 functionNeedsBeReexecuted: true,
                 cancellationToken: token);
         }
@@ -439,18 +458,18 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (!this.HasSplit)
             {
-                if (this.Root.IsActive)
+                if (this.root.IsActive)
                 {
-                    yield return this.Root;
+                    yield return this.root;
                 }
             }
             else
             {
                 // A document producer is "active" if it resumed from a continuation token and has more buffered results.
-                if (this.Root.IsActive && this.Root.BufferedItemCount != 0)
+                if (this.root.IsActive && this.root.BufferedItemCount != 0)
                 {
                     // has split but need to check if parent is fully drained
-                    yield return this.Root;
+                    yield return this.root;
                 }
                 else
                 {
@@ -499,6 +518,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="queryContext">request context</param>
         /// <param name="querySpecForInit">query spec for initialization</param>
+        /// <param name="createRetryPolicyFunc">Callback to create a retry policy.</param>
         /// <param name="produceAsyncCompleteCallback">Callback to invoke once a fetch finishes.</param>
         /// <param name="itemProducerTreeComparer">Comparer to determine, which tree to produce from.</param>
         /// <param name="equalityComparer">Comparer to see if we need to return the continuation token for a partition.</param>
@@ -509,6 +529,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private static Func<PartitionKeyRange, string, ItemProducerTree> CreateItemProducerTreeCallback(
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
+            Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
@@ -522,6 +543,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     queryContext,
                     querySpecForInit,
                     partitionKeyRange,
+                    createRetryPolicyFunc,
                     produceAsyncCompleteCallback,
                     itemProducerTreeComparer,
                     equalityComparer,
@@ -537,9 +559,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="ex">The document client exception</param>
         /// <returns>Whether or not the exception was due to a split.</returns>
-        private static bool IsSplitException(CosmosQueryResponse ex)
+        private static bool IsSplitException(DocumentClientException ex)
         {
-            return ex.StatusCode == HttpStatusCode.Gone && ex.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone;
+            return ex.StatusCode == (HttpStatusCode)StatusCodes.Gone && ex.GetSubStatus() == SubStatusCodes.PartitionKeyRangeGone;
         }
 
         /// <summary>
@@ -547,16 +569,16 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task with whether or not move next succeeded.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> TryMoveNextAsyncImplementation(CancellationToken token)
+        private async Task<dynamic> MoveNextAsyncImplementation(CancellationToken token)
         {
             if (!this.HasMoreResults)
             {
-                return ItemProducer.IsDoneResponse;
+                return false;
             }
 
             if (this.CurrentItemProducerTree == this)
             {
-                return await this.Root.MoveNextAsync(token);
+                return await this.root.MoveNextAsync(token);
             }
             else
             {
@@ -569,14 +591,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn return whether we successfully moved next.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> TryMoveNextIfNotSplitAsyncImplementation(CancellationToken token)
+        private async Task<dynamic> MoveNextIfNotSplitAsyncImplementation(CancellationToken token)
         {
             if (this.HasSplit)
             {
-                return ItemProducer.IsDoneResponse;
+                return Task.FromResult<dynamic>(false);
             }
 
-            return await this.TryMoveNextAsyncImplementation(token);
+            return await this.MoveNextAsyncImplementation(token);
         }
 
         /// <summary>
@@ -584,24 +606,24 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> BufferMoreDocumentsImplementation(CancellationToken token)
+        private async Task<object> BufferMoreDocumentsImplementation(CancellationToken token)
         {
             if (this.CurrentItemProducerTree == this)
             {
                 if (!this.HasMoreBackendResults || this.HasSplit)
                 {
                     // Just no-op, since this method might be called by the scheduler, which doesn't know of the reconfiguration yet.
-                    return ItemProducer.IsSuccessResponse;
+                    return null;
                 }
 
-                await this.Root.BufferMoreDocuments(token);
+                await this.root.BufferMoreDocuments(token);
             }
             else
             {
                 await this.CurrentItemProducerTree.BufferMoreDocuments(token);
             }
 
-            return ItemProducer.IsSuccessResponse;
+            return null;
         }
 
         /// <summary>
@@ -610,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// If a split happens when this function will 
         /// </summary>
         /// <param name="function">The function to execute in a split proof manner.</param>
-        /// <param name="functionNeedsBeReexecuted">If the function needs to be re-executed after split.</param>
+        /// <param name="functionNeedsBeReexecuted">If the function needs to be reexecuted after split.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <remarks>
         /// <para>
@@ -629,8 +651,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </para>
         /// </remarks>
         /// <returns>The result of the function would have returned as if there were no splits.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> ExecuteWithSplitProofing(
-            Func<CancellationToken, Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)>> function,
+        private async Task<dynamic> ExecuteWithSplitProofing(
+            Func<CancellationToken, Task<dynamic>> function,
             bool functionNeedsBeReexecuted,
             CancellationToken cancellationToken)
         {
@@ -641,12 +663,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 try
                 {
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
-                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await function(cancellationToken);
-                    if (response.failureResponse == null || !ItemProducerTree.IsSplitException(response.failureResponse))
-                    {
-                        return response;
-                    }
-
+                    return await function(cancellationToken);
+                }
+                catch (DocumentClientException dce) when (ItemProducerTree.IsSplitException(dce))
+                {
                     // Split just happened
                     ItemProducerTree splitItemProducerTree = this.CurrentItemProducerTree;
 
@@ -656,18 +676,18 @@ namespace Microsoft.Azure.Cosmos.Query
                         splitItemProducerTree.Root.Shutdown();
                     }
 
-                    // Repair the execution context: Get the replacement document producers and add them to the tree.
+                    // Repair the execution context: Get the replacement documentproducers and add them to the tree.
                     List<PartitionKeyRange> replacementRanges = await this.GetReplacementRanges(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
                     foreach (PartitionKeyRange replacementRange in replacementRanges)
                     {
-                        ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.Root.BackendContinuationToken);
+                        ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.root.BackendContinuationToken);
 
                         if (!this.deferFirstPage)
                         {
                             await replacementItemProducerTree.MoveNextAsync(cancellationToken);
                         }
 
-                        replacementItemProducerTree.Filter = splitItemProducerTree.Root.Filter;
+                        replacementItemProducerTree.Filter = splitItemProducerTree.root.Filter;
                         if (replacementItemProducerTree.HasMoreResults)
                         {
                             if (!splitItemProducerTree.children.TryAdd(replacementItemProducerTree))
@@ -680,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (!functionNeedsBeReexecuted)
                     {
                         // We don't want to call move next async again, since we already did when creating the document producers
-                        return ItemProducer.IsSuccessResponse;
+                        return true;
                     }
                 }
                 finally

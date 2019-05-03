@@ -2017,7 +2017,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore] //Ignore until v3 support query metrics
         public void TestForceQueryScanHeaders()
         {
             Database database = TestCommon.RetryRateLimiting<Database>(() =>
