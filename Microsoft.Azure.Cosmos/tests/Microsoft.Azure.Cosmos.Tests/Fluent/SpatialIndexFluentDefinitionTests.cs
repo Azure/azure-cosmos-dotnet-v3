@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             spatialIndexFluentDefinitionCore
-                .WithPath("/path", SpatialType.MultiPolygon, SpatialType.Point)
+                .Path("/path", SpatialType.MultiPolygon, SpatialType.Point)
                 .Attach();
         }
 
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             spatialIndexFluentDefinitionCore
-                .WithPath("/path")
+                .Path("/path")
                 .Attach();
         }
     }

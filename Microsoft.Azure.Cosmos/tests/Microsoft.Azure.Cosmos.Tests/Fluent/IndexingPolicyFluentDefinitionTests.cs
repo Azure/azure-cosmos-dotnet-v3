@@ -48,8 +48,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             indexingPolicyFluentDefinitionCore
-                .WithSpatialIndex()
-                    .WithPath("/path")
+                .SpatialIndex()
+                    .Path("/path")
                     .Attach()
                 .Attach();
         }
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             indexingPolicyFluentDefinitionCore
-                .WithCompositeIndex()
+                .CompositeIndex()
                     .Path("/path")
                     .Attach()
                 .Attach();

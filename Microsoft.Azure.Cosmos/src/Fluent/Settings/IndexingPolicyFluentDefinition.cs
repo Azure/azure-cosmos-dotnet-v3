@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines a Composite Index in the current <see cref="CosmosContainer"/>'s definition.
         /// </summary>
-        public virtual CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> WithCompositeIndex()
+        public virtual CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> CompositeIndex()
         {
             return new CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                 this,
@@ -95,10 +95,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defines a <see cref="SpatialIndex"/> in the current <see cref="CosmosContainer"/>'s definition.
+        /// Defines a <see cref="Cosmos.SpatialIndex"/> in the current <see cref="CosmosContainer"/>'s definition.
         /// </summary>
         /// <returns></returns>
-        public virtual SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> WithSpatialIndex()
+        public virtual SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> SpatialIndex()
         {
             return new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                 this,

@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .ExcludedPaths()
                             .Path("/*")
                             .Attach()
-                        .WithCompositeIndex()
+                        .CompositeIndex()
                             .Path("/composite1")
                             .Path("/composite2", CompositePathSortOrder.Descending)
                             .Attach()

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
         /// <returns></returns>
-        public virtual SpatialIndexFluentDefinition<T> WithPath(string path)
+        public virtual SpatialIndexFluentDefinition<T> Path(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="path">Property path for the current definition. Example: /property</param>
         /// <param name="spatialTypes">Set of <see cref="SpatialType"/> to apply to the path.</param>
         /// <returns></returns>
-        public virtual SpatialIndexFluentDefinition<T> WithPath(
+        public virtual SpatialIndexFluentDefinition<T> Path(
             string path,
             params SpatialType[] spatialTypes)
         {
