@@ -20,11 +20,11 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
     /// </summary>
-    internal sealed class CosmosQueryExecutionContextFactory : IDocumentQueryExecutionContext
+    internal sealed class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
     {
         private const int PageSizeFactorForTop = 5;
         private readonly CosmosQueryContext cosmosQueryContext;
-        private readonly AsyncLazy<IDocumentQueryExecutionContext> innerExecutionContext;
+        private readonly AsyncLazy<CosmosQueryExecutionContext> innerExecutionContext;
 
         /// <summary>
         /// Test flag for making the query use the opposite code path for query plan retrieval.
@@ -96,14 +96,14 @@ namespace Microsoft.Azure.Cosmos.Query
                   allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                   correlatedActivityId: correlatedActivityId);
 
-            this.innerExecutionContext = new AsyncLazy<IDocumentQueryExecutionContext>(() =>
+            this.innerExecutionContext = new AsyncLazy<CosmosQueryExecutionContext>(() =>
             {
                 return this.CreateItemQueryExecutionContextAsync(default(CancellationToken));
             },
             default(CancellationToken));
         }
 
-        public bool IsDone
+        public override bool IsDone
         {
             get
             {
@@ -111,12 +111,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
-            return await (await this.innerExecutionContext.Value).ExecuteNextAsync(token);
+            CosmosQueryResponse response = await (await this.innerExecutionContext.Value).ExecuteNextAsync(token);
+            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+            return response;
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (this.innerExecutionContext.IsValueCreated)
             {
@@ -160,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return containerSettings;
         }
 
-        private async Task<IDocumentQueryExecutionContext> CreateItemQueryExecutionContextAsync(
+        private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

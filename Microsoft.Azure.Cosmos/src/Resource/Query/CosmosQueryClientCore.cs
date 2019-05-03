@@ -103,6 +103,8 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken))
             {
+                // Syntax exception are argument exceptions and thrown to the user.
+                message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
                 
