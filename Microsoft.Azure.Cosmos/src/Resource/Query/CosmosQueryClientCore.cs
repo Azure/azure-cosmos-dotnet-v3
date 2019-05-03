@@ -35,16 +35,6 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
-        internal override DocumentClient GetDocumentClient()
-        {
-            return this.clientContext.DocumentClient;
-        }
-
-        internal override IDocumentClientRetryPolicy GetRetryPolicy()
-        {
-            return this.DocumentQueryClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-        }
-
         internal override Task<CollectionCache> GetCollectionCacheAsync()
         {
             return this.DocumentQueryClient.GetCollectionCacheAsync();
@@ -81,6 +71,34 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(requestOptions, resourceType, message);
+        }
+
+        internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: null,
+                partitionKey: null,
+                cosmosContainerCore: this.cosmosContainerCore,
+                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken))
+            {
+                // Syntax exception are argument exceptions and thrown to the user.
+                message.EnsureSuccessStatusCode();
+                partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+            }
+                
+            return partitionedQueryExecutionInfo;
         }
 
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()

@@ -113,7 +113,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
-            return await (await this.innerExecutionContext.Value).ExecuteNextAsync(token);
+            CosmosQueryResponse response = await (await this.innerExecutionContext.Value).ExecuteNextAsync(token);
+            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+            return response;
         }
 
         public override void Dispose()
@@ -174,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                 // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                    this.cosmosQueryContext.QueryClient.GetDocumentClient(),
+                    this.cosmosQueryContext.QueryClient,
                     this.cosmosQueryContext.SqlQuerySpec,
                     this.cosmosQueryContext.ResourceLink,
                     cancellationToken);
