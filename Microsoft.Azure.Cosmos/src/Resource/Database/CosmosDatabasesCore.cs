@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             return await database.ReadAsync(cancellationToken: cancellationToken);
         }
 
-        public override CosmosResultSetIterator<CosmosDatabaseSettings> GetDatabaseIterator(
+        public override CosmosFeedIterator<CosmosDatabaseSettings> GetDatabaseIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateDatabaseResponse(this[databaseSettings.Id], response);
         }
 
-        private Task<CosmosQueryResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutor(
+        private Task<CosmosFeedResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(state == null);
 
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosDatabaseSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosDatabaseSettings>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,

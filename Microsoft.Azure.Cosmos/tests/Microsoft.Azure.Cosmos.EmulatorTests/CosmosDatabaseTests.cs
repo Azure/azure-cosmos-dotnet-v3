@@ -255,11 +255,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     databaseIds.Add(createResponse.Resource.Id);
                 }
 
-                CosmosResultSetIterator<CosmosDatabaseSettings> setIterator =
+                CosmosFeedIterator<CosmosDatabaseSettings> setIterator =
                     this.cosmosClient.Databases.GetDatabaseIterator();
                 while (setIterator.HasMoreResults)
                 {
-                    CosmosQueryResponse<CosmosDatabaseSettings> iterator =
+                    CosmosFeedResponse<CosmosDatabaseSettings> iterator =
                         await setIterator.FetchNextSetAsync(this.cancellationToken);
                     foreach (CosmosDatabaseSettings databaseSettings in iterator)
                     {

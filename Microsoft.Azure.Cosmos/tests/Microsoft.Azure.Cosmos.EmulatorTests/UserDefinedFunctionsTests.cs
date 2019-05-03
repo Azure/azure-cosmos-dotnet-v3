@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");
             
-             CosmosResultSetIterator<dynamic> setIterator = this.container.Items.CreateItemQuery<dynamic>(
+             CosmosFeedIterator<dynamic> setIterator = this.container.Items.CreateItemQuery<dynamic>(
                  sqlQueryDefinition: sqlQuery,
                  partitionKey: "Done");
 
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosUserDefinedFunction cosmosUserDefinedFunction = await CreateRandomUdf();
 
             HashSet<string> settings = new HashSet<string>();
-            CosmosResultSetIterator<CosmosUserDefinedFunctionSettings> iter = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator(); ;
+            CosmosFeedIterator<CosmosUserDefinedFunctionSettings> iter = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator(); ;
             while (iter.HasMoreResults)
             {
                 foreach (CosmosUserDefinedFunctionSettings storedProcedureSettingsEntry in await iter.FetchNextSetAsync())

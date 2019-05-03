@@ -110,10 +110,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<string> readSprocIds = new List<string>();
-            CosmosResultSetIterator<CosmosStoredProcedureSettings> iter = this.container.StoredProcedures.GetStoredProcedureIterator();
+            CosmosFeedIterator<CosmosStoredProcedureSettings> iter = this.container.StoredProcedures.GetStoredProcedureIterator();
             while (iter.HasMoreResults)
             {
-                CosmosQueryResponse<CosmosStoredProcedureSettings> currentResultSet = await iter.FetchNextSetAsync();
+                CosmosFeedResponse<CosmosStoredProcedureSettings> currentResultSet = await iter.FetchNextSetAsync();
                 {
                     foreach (CosmosStoredProcedureSettings storedProcedureSettingsEntry in currentResultSet)
                     {

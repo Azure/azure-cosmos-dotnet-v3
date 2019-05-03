@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Base class for Header handling.
     /// </summary>
-    public abstract class CosmosMessageHeadersBase: IEnumerable
+    public abstract class CosmosMessageHeadersBase : IEnumerable
     {
         private readonly Lazy<CosmosMessageHeadersInternal> messageHeaders;
 
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosMessageHeadersBase()
         {
-            this.messageHeaders = new Lazy<CosmosMessageHeadersInternal>(CreateCosmosMessageHeaders);
+            this.messageHeaders = new Lazy<CosmosMessageHeadersInternal>(this.CreateCosmosMessageHeaders);
         }
 
         /// <summary>
@@ -30,10 +30,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns></returns>
         public virtual string this[string headerName]
         {
-            get
-            {
-                return this.messageHeaders.Value[headerName];
-            }
+            get => this.messageHeaders.Value[headerName];
+            set => this.messageHeaders.Value[headerName] = value;
         }
 
         /// <summary>
@@ -94,6 +92,21 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool TryGetValue(string headerName, out string value)
         {
             return this.messageHeaders.Value.TryGetValue(headerName, out value);
+        }
+
+        /// <summary>
+        /// Returns the header value or the default(string)
+        /// </summary>
+        /// <param name="headerName">Header Name</param>
+        /// <returns>Returns the header value or the default(string)</returns>
+        public virtual string GetValueOrDefault(string headerName)
+        {
+            if (this.TryGetValue(headerName, out string value))
+            {
+                return value;
+            }
+
+            return default(string);
         }
 
         /// <summary>

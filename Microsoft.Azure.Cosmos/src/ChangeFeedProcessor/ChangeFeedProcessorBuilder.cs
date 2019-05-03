@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="pollInterval">Polling interval value.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public virtual ChangeFeedProcessorBuilder WithPollInternal(TimeSpan pollInterval)
+        public virtual ChangeFeedProcessorBuilder WithPollInterval(TimeSpan pollInterval)
         {
             if (pollInterval == null) throw new ArgumentNullException(nameof(pollInterval));
 
@@ -116,21 +115,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartFromBeginning = true;
-            return this;
-        }
-
-        /// <summary>
-        /// Sets the start request session continuation token to start looking for changes after.
-        /// </summary>
-        /// <remarks>
-        /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
-        /// If this is specified, both StartTime and StartFromBeginning are ignored.
-        /// </remarks>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public virtual ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
-        {
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorOptions.StartContinuation = startContinuation;
             return this;
         }
 
@@ -201,6 +185,21 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the start request session continuation token to start looking for changes after.
+        /// </summary>
+        /// <remarks>
+        /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// If this is specified, both StartTime and StartFromBeginning are ignored.
+        /// </remarks>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        internal virtual ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
+        {
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.StartContinuation = startContinuation;
             return this;
         }
 

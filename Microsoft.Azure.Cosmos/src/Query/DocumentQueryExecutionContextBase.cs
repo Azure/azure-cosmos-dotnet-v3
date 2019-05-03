@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery);
         }
 
-        public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)
+        public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellationToken)
         {
             if (this.IsDone)
             {
