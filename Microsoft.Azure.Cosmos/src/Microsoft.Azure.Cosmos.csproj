@@ -41,13 +41,13 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
   </ItemGroup>
   
-  <!--<ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
+  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="$(DirectVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="$(DirectVersion)" />
-  </ItemGroup>-->
+  </ItemGroup>
   
   <ItemGroup>
     <Compile Remove="RuntimePerfCounters.cs" />
@@ -56,10 +56,6 @@
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\..\CosmosDB\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
