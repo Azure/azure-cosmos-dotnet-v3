@@ -395,6 +395,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        private static async Task<List<T>> QueryWithContinuationTokens<T>(
+            CosmosContainer container,
+            string query,
+            int maxItemCount,
+            CosmosQueryRequestOptions queryRequestOptions = null)
+        {
+            List<T> results = new List<T>();
+            string continuationToken = null;
+            do
+            {
+                CosmosResultSetIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
+                   sqlQueryText: query,
+                   maxConcurrency: 2,
+                   maxItemCount: maxItemCount,
+                   requestOptions: queryRequestOptions,
+                   continuationToken: continuationToken);
+
+                CosmosQueryResponse<T> cosmosQueryResponse = await itemQuery.FetchNextSetAsync();
+                results.AddRange(cosmosQueryResponse);
+                continuationToken = cosmosQueryResponse.ContinuationToken;
+            } while (continuationToken != null);
+
+            return results;
+        }
+
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
@@ -1930,6 +1955,69 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 maxConcurrency: 1);
 
             Assert.AreEqual(string.Join(", ", expected), string.Join(", ", query.Select(doc => doc.Id)));
+        }
+
+        [TestMethod]
+        public async Task TestOrderByNonAsciiCharacters()
+        {
+            string[] specialStrings = new string[]
+            {
+                // Strings which may be used elsewhere in code
+                "undefined",
+                // Numeric Strings
+                "-9223372036854775808/-1",
+                // Non-whitespace C0 controls: U+0001 through U+0008, U+000E through U+001F,
+                "\u0001",
+                // "Byte order marks"
+                "U+FEFF",
+                // Unicode Symbols
+                "ЁЂЃЄЅІЇЈЉЊЋЌЍЎЏАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя",
+                // Quotation Marks
+                "<foo val=“bar” />",
+                // Strings which contain two-byte characters: can cause rendering issues or character-length issues
+                "찦차를 타고 온 펲시맨과 쑛다리 똠방각하",
+                // Changing length when lowercased
+                "Ⱥ",
+                // Japanese Emoticons
+                "ﾟ･✿ヾ╲(｡◕‿◕｡)╱✿･ﾟ",
+                // Emoji
+                "❤️ 💔 💌 💕 💞 💓 💗 💖 💘 💝 💟 💜 💛 💚 💙",
+                // Strings which contain "corrupted" text. The corruption will not appear in non-HTML text, however. (via http://www.eeemo.net)
+                "Ṱ̺̺̕o͞ ̷i̲̬͇̪͙n̝̗͕v̟̜̘̦͟o̶̙̰̠kè͚̮̺̪̹̱̤ ̖t̝͕̳̣̻̪͞h̼͓̲̦̳̘̲e͇̣̰̦̬͎ ̢̼̻̱̘h͚͎͙̜̣̲ͅi̦̲̣̰̤v̻͍e̺̭̳̪̰-m̢iͅn̖̺̞̲̯̰d̵̼̟͙̩̼̘̳ ̞̥̱̳̭r̛̗̘e͙p͠r̼̞̻̭̗e̺̠̣͟s̘͇̳͍̝͉e͉̥̯̞̲͚̬͜ǹ̬͎͎̟̖͇̤t͍̬̤͓̼̭͘ͅi̪̱n͠g̴͉ ͏͉ͅc̬̟h͡a̫̻̯͘o̫̟̖͍̙̝͉s̗̦̲.̨̹͈̣"
+
+            };
+
+            IEnumerable<string> documents = specialStrings.Select((specialString) => $@"{{ ""field"" : ""{specialString}""}}");
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                documents,
+                this.TestOrderByNonAsciiCharactersHelper);
+        }
+
+        private async Task TestOrderByNonAsciiCharactersHelper(
+            CosmosContainer container,
+            IEnumerable<Document> documents)
+        {
+            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+            {
+                foreach (int maxItemCount in new int[] { 10, 100 })
+                {
+                    CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                    {
+                        EnableCrossPartitionQuery = true,
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = maxDegreeOfParallelism
+                    };
+
+                    List<JToken> actualFromQueryWithoutContinutionTokens = await QueryWithContinuationTokens<JToken>(
+                        container,
+                        "SELECT * FROM c ORDER BY c.field",
+                        maxItemCount,
+                        feedOptions);
+
+                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                }
+            }
         }
 
         [TestMethod]
