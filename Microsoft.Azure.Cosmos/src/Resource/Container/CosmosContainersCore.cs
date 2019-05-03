@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosContainer"/> for reading, replacing, or deleting an existing container.
     /// </summary>
-    internal partial class CosmosContainersCore : CosmosContainers
+    internal class CosmosContainersCore : CosmosContainers
     {
         private readonly CosmosDatabaseCore database;
         private readonly CosmosClientContext clientContext;
@@ -155,6 +156,18 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 this.ContainerStreamFeedRequestExecutor);
+        }
+
+        public override CosmosContainerFluentDefinitionForCreate DefineContainer(
+            string name,
+            string partitionKeyPath)
+        {
+            if (string.IsNullOrEmpty(partitionKeyPath))
+            {
+                throw new ArgumentNullException(nameof(partitionKeyPath));
+            }
+
+            return new CosmosContainerFluentDefinitionForCreate(this, name, partitionKeyPath);
         }
 
         internal void ValidateContainerSettings(CosmosContainerSettings containerSettings)

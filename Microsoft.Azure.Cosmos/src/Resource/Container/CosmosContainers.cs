@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `containers.GetContainerIterator()` before every single `item.read()` call, to ensure the container exists;
     /// do this once on application start up.
     /// </summary>
-    public abstract partial class CosmosContainers
+    public abstract class CosmosContainers
     {
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -273,5 +274,15 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Create an Azure Cosmos container through a Fluent API.
+        /// </summary>
+        /// <param name="name">Azure Cosmos container name to create.</param>
+        /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
+        /// <returns>A fluent definition of an Azure Cosmos container.</returns>
+        public abstract CosmosContainerFluentDefinitionForCreate DefineContainer(
+            string name,
+            string partitionKeyPath);
     }
 }
