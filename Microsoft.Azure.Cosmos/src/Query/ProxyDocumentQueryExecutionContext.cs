@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.innerExecutionContext.Dispose();
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        public async Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
         {
             if (this.IsDone)
             {
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             try
             {
-                return await this.innerExecutionContext.ExecuteNextAsync(token);
+                return await this.innerExecutionContext.ExecuteNextFeedResponseAsync(token);
             }
             catch (DocumentClientException ex)
             {
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.isContinuationExpected,
                 token);
 
-            return await this.innerExecutionContext.ExecuteNextAsync(token);
+            return await this.innerExecutionContext.ExecuteNextFeedResponseAsync(token);
         }
     }
 }

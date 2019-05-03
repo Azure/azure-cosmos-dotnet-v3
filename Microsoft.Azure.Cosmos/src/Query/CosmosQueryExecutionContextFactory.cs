@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        public async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             return await (await this.innerExecutionContext.Value).ExecuteNextAsync(token);
         }
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-        public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
+        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
-            return await CosmosPipelinedItemQueryExecutionContext.CreateAsync(
+            return await PipelinedDocumentQueryExecutionContext.CreateAsync(
                 cosmosQueryContext,
                 collectionRid,
                 partitionedQueryExecutionInfo,

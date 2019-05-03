@@ -9,14 +9,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Documents;
 
     internal sealed class EqualPartitionsBalancingStrategy : LoadBalancingStrategy
     {
         internal static int DefaultMinLeaseCount = 0;
         internal static int DefaultMaxLeaseCount = 0;
 
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly string hostName;
         private readonly int minPartitionCount;
         private readonly int maxPartitionCount;
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             int myCount = workerToPartitionCount[this.hostName];
             int partitionsNeededForMe = target - myCount;
 
-            Logger.InfoFormat(
+            DefaultTrace.TraceInformation(
                 "Host '{0}' {1} partitions, {2} hosts, {3} available leases, target = {4}, min = {5}, max = {6}, mine = {7}, will try to take {8} lease(s) for myself'.",
                 this.hostName,
                 partitionCount,
@@ -134,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 allPartitions.Add(lease.CurrentLeaseToken, lease);
                 if (string.IsNullOrWhiteSpace(lease.Owner) || this.IsExpired(lease))
                 {
-                    Logger.DebugFormat("Found unused or expired lease: {0}", lease);
+                    DefaultTrace.TraceVerbose("Found unused or expired lease: {0}", lease);
                     expiredLeases.Add(lease);
                 }
                 else

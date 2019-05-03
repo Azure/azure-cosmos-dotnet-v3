@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This bubbles down until you reach a component that has a DocumentProducer that fetches a document from the backend.
     /// </para>
     /// </summary>
-    internal sealed class PipelinedDocumentQueryExecutionContext : IDocumentQueryExecutionContext
+    internal sealed class PipelinedDocumentQueryExecutionContext : CosmosQueryExecutionContext, IDocumentQueryExecutionContext
     {
         /// <summary>
         /// The root level component that all calls will be forwarded to.
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether this execution context is done draining documents.
         /// </summary>
-        public bool IsDone
+        public override bool IsDone
         {
             get
             {
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="requestContinuation">The request continuation.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a PipelinedDocumentQueryExecutionContext.</returns>
-        public static async Task<IDocumentQueryExecutionContext> CreateAsync(
+        public static async Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
             string collectionRid,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -150,41 +150,129 @@ namespace Microsoft.Azure.Cosmos.Query
                     DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                     constructorParams.CorrelatedActivityId));
 
-            Func<string, Task<IDocumentQueryExecutionComponent>> createComponentFunc;
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
+
+            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByComponentFunc = async (continuationToken) =>
+            {
+                CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    collectionRid,
+                    partitionedQueryExecutionInfo,
+                    partitionKeyRanges,
+                    initialPageSize,
+                    continuationToken);
+
+                return await OrderByDocumentQueryExecutionContext.CreateAsync(
+                    constructorParams,
+                    initParams,
+                    cancellationToken);
+            };
+
+            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelComponentFunc = async (continuationToken) =>
+            {
+                CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    collectionRid,
+                    partitionedQueryExecutionInfo,
+                    partitionKeyRanges,
+                    initialPageSize,
+                    continuationToken);
+
+                return await ParallelDocumentQueryExecutionContext.CreateAsync(
+                    constructorParams,
+                    initParams,
+                    cancellationToken);
+            };
+
+            return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
+                partitionedQueryExecutionInfo.QueryInfo,
+                initialPageSize,
+               requestContinuation,
+                constructorParams.FeedOptions.EnableCrossPartitionSkipTake,
+                createOrderByComponentFunc,
+                createParallelComponentFunc));
+        }
+
+        /// <summary>
+        /// Creates a CosmosPipelinedItemQueryExecutionContext.
+        /// </summary>
+        /// <param name="constructorParams">The parameters for constructing the base class.</param>
+        /// <param name="collectionRid">The collection rid.</param>
+        /// <param name="partitionedQueryExecutionInfo">The partitioned query execution info.</param>
+        /// <param name="partitionKeyRanges">The partition key ranges.</param>
+        /// <param name="initialPageSize">The initial page size.</param>
+        /// <param name="requestContinuation">The request continuation.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
+        public static async Task<CosmosQueryExecutionContext> CreateAsync(
+            CosmosQueryContext constructorParams,
+            string collectionRid,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            List<PartitionKeyRange> partitionKeyRanges,
+            int initialPageSize,
+            string requestContinuation,
+            CancellationToken cancellationToken)
+        {
+            DefaultTrace.TraceInformation(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
+                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                    constructorParams.CorrelatedActivityId));
+
+            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByComponentFunc = async (continuationToken) =>
+            {
+                CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    collectionRid,
+                    partitionedQueryExecutionInfo,
+                    partitionKeyRanges,
+                    initialPageSize,
+                    continuationToken);
+
+                return await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                    constructorParams,
+                    initParams,
+                    cancellationToken);
+            };
+
+            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelComponentFunc = async (continuationToken) =>
+            {
+                CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    collectionRid,
+                    partitionedQueryExecutionInfo,
+                    partitionKeyRanges,
+                    initialPageSize,
+                    continuationToken);
+
+                return await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                    constructorParams,
+                    initParams,
+                    cancellationToken);
+            };
+
+            return (CosmosQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
+               partitionedQueryExecutionInfo.QueryInfo,
+               initialPageSize,
+               requestContinuation,
+               constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake,
+               createOrderByComponentFunc,
+               createParallelComponentFunc));
+        }
+
+        private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
+            QueryInfo queryInfo,
+            int initialPageSize,
+            string requestContinuation,
+            bool enableCrossPartitionSkipTake,
+            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
+            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
+        {
+            Func<string, Task<IDocumentQueryExecutionComponent>> createComponentFunc;
             if (queryInfo.HasOrderBy)
             {
-                createComponentFunc = async (continuationToken) =>
-                {
-                    CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                        collectionRid,
-                        partitionedQueryExecutionInfo,
-                        partitionKeyRanges,
-                        initialPageSize,
-                        continuationToken);
-
-                    return await OrderByDocumentQueryExecutionContext.CreateAsync(
-                        constructorParams,
-                        initParams,
-                        cancellationToken);
-                };
+                createComponentFunc = createOrderByQueryExecutionContext;
             }
             else
             {
-                createComponentFunc = async (continuationToken) =>
-                {
-                    CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                        collectionRid,
-                        partitionedQueryExecutionInfo,
-                        partitionKeyRanges,
-                        initialPageSize,
-                        continuationToken);
-
-                    return await ParallelDocumentQueryExecutionContext.CreateAsync(
-                        constructorParams,
-                        initParams,
-                        cancellationToken);
-                };
+                createComponentFunc = createParallelQueryExecutionContext;
             }
 
             if (queryInfo.HasAggregates)
@@ -213,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasOffset)
             {
-                if (!constructorParams.FeedOptions.EnableCrossPartitionSkipTake)
+                if (!enableCrossPartitionSkipTake)
                 {
                     throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
                 }
@@ -230,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasLimit)
             {
-                if (!constructorParams.FeedOptions.EnableCrossPartitionSkipTake)
+                if (!enableCrossPartitionSkipTake)
                 {
                     throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
                 }
@@ -264,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Disposes of this context.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             this.component.Dispose();
         }
@@ -274,26 +362,47 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        public async Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
+        {
+            CosmosQueryResponse feedResponse = await this.ExecuteNextAsync(token);
+            return new FeedResponse<CosmosElement>(
+                result: feedResponse.CosmosElements,
+                count: feedResponse.Count,
+                responseHeaders: feedResponse.Headers.CosmosMessageHeaders,
+                useETagAsContinuation: false,
+                queryMetrics: null,
+                requestStats: feedResponse.RequestStatistics,
+                disallowContinuationTokenMessage: feedResponse.QueryHeaders.DisallowContinuationTokenMessage,
+                responseLengthBytes: feedResponse.ResponseLengthBytes);
+        }
+
+        /// <summary>
+        /// Gets the next page of results from this context.
+        /// </summary>
+        /// <param name="token">The cancellation token.</param>
+        /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             try
             {
+                CosmosQueryResponse queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
+                if (!queryResponse.IsSuccessStatusCode)
+                {
+                    this.component.Stop();
+                    return queryResponse;
+                }
+
                 List<CosmosElement> dynamics = new List<CosmosElement>();
-                FeedResponse<CosmosElement> feedResponse = await this.component.DrainAsync(this.actualPageSize, token);
-                foreach (CosmosElement element in feedResponse)
+                foreach (CosmosElement element in queryResponse.CosmosElements)
                 {
                     dynamics.Add(element);
                 }
 
-                return new FeedResponse<CosmosElement>(
+                return CosmosQueryResponse.CreateSuccess(
                     dynamics,
-                    feedResponse.Count,
-                    feedResponse.Headers,
-                    feedResponse.UseETagAsContinuation,
-                    feedResponse.QueryMetrics,
-                    feedResponse.RequestStatistics,
-                    feedResponse.DisallowContinuationTokenMessage,
-                    feedResponse.ResponseLengthBytes);
+                    queryResponse.Count,
+                    queryResponse.ResponseLengthBytes,
+                    queryResponse.QueryHeaders.CloneKnownProperties());
             }
             catch (Exception)
             {
