@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override CosmosResultSetIterator<CosmosConflict> GetConflictsIterator(
+        public override CosmosFeedIterator<CosmosConflict> GetConflictsIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -103,11 +103,11 @@ namespace Microsoft.Azure.Cosmos
                 this.ConflictsFeedRequestExecutor);
         }
 
-        public override CosmosFeedResultSetIterator GetConflictsStreamIterator(
+        public override CosmosFeedIterator GetConflictsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosFeedResultSetIteratorCore(
+            return new CosmosResultSetIteratorCore(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -138,14 +138,14 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosQueryResponse<CosmosConflict>> ConflictsFeedRequestExecutor(
+        private Task<CosmosFeedResponse<CosmosConflict>> ConflictsFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosConflict>>(
+            return this.ClientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosConflict>>(
                 resourceUri: this.LinkUri,
                 resourceType: Documents.ResourceType.Conflict,
                 operationType: Documents.OperationType.ReadFeed,

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// so forcing the request through Gateway. We are also now by-passing this for 32-bit host process in NETFX on Windows
     /// as the ServiceInterop dll is only available in 64-bit.
     /// </remarks>
-    internal sealed class CosmosGatewayQueryExecutionContext : IDocumentQueryExecutionContext
+    internal sealed class CosmosGatewayQueryExecutionContext : CosmosQueryExecutionContext
     {
         // For a single partition collection the only partition is 0
         private const string SinglePartitionKeyId = "0";
@@ -41,8 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryContext queryContext;
 
         private long retries;
-        private FeedResponse<CosmosElement> lastPage;
-        private string ContinuationToken => this.lastPage == null ? this.queryContext.QueryRequestOptions.RequestContinuation : this.lastPage.ResponseContinuation;
+        private CosmosQueryResponse lastPage;
+        private string ContinuationToken => this.lastPage == null ? this.queryContext.QueryRequestOptions.RequestContinuation : this.lastPage.Headers.Continuation;
         
 
         public CosmosGatewayQueryExecutionContext(
@@ -61,9 +61,9 @@ namespace Microsoft.Azure.Cosmos.Query
             this.partitionRoutingHelper = new PartitionRoutingHelper();
         }
 
-        public bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
+        public override bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.Headers.Continuation);
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.lastPage;
         }
 
-        private async Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
+        private async Task<CosmosQueryResponse> ExecuteInternalAsync(CancellationToken token)
         {
             CollectionCache collectionCache = await this.queryContext.QueryClient.GetCollectionCacheAsync();
             PartitionKeyRangeCache partitionKeyRangeCache = await this.queryContext.QueryClient.GetPartitionKeyRangeCache();
@@ -91,43 +91,19 @@ namespace Microsoft.Azure.Cosmos.Query
                     retryPolicyInstance);
             }
 
-            return await BackoffRetryUtility<FeedResponse<CosmosElement>>.ExecuteAsync(
+            return await BackoffRetryUtility<CosmosQueryResponse>.ExecuteAsync(
                 async () =>
                 {
                     this.fetchExecutionRangeAccumulator.BeginFetchRange();
                     ++this.retries;
-                    FeedResponse<CosmosElement> response = await this.ExecuteOnceAsync(retryPolicyInstance, token);
-                    if (!string.IsNullOrEmpty(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]))
+                    CosmosQueryResponse response = await this.ExecuteOnceAsync(retryPolicyInstance, token);
+                    if (!string.IsNullOrEmpty(response.Headers[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
                             CosmosGatewayQueryExecutionContext.SinglePartitionKeyId,
-                            response.ActivityId,
+                            response.Headers.ActivityId,
                             response.Count,
                             this.retries);
-                        response = new FeedResponse<CosmosElement>(
-                            response,
-                            response.Count,
-                            response.Headers,
-                            response.UseETagAsContinuation,
-                            new Dictionary<string, QueryMetrics>
-                            {
-                                {
-                                    SinglePartitionKeyId,
-                                    QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                                        response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
-                                        new ClientSideMetrics(
-                                            this.retries,
-                                            response.RequestCharge,
-                                            this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                            string.IsNullOrEmpty(response.ResponseContinuation) ? new List<Tuple<string, SchedulingTimeSpan>>()
-                                            {
-                                                new Tuple<string, SchedulingTimeSpan>(SinglePartitionKeyId, this.fetchSchedulingMetrics.Elapsed)
-                                            } : new List<Tuple<string, SchedulingTimeSpan>>()))
-                                }
-                            },
-                            response.RequestStatistics,
-                            response.DisallowContinuationTokenMessage,
-                            response.ResponseLengthBytes);
                     }
 
                     this.retries = -1;
@@ -137,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 token);
         }
 
-        private async Task<FeedResponse<CosmosElement>> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<CosmosQueryResponse> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             if(this.LogicalPartitionKeyProvided())
             {
@@ -170,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.queryContext.QueryRequestOptions.PartitionKey != null || !this.queryContext.ResourceTypeEnum.IsPartitioned();
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
         }
     }

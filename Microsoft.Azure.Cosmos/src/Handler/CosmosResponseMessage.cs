@@ -19,7 +19,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosResponseMessage"/>
         /// </summary>
-        public CosmosResponseMessage() { }
+        public CosmosResponseMessage()
+        {
+            this.Headers = new CosmosResponseMessageHeaders();
+        }
 
         /// <summary>
         /// Create a <see cref="CosmosResponseMessage"/>
@@ -40,6 +43,29 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
+            this.Headers = new CosmosResponseMessageHeaders();
+        }
+
+        /// <summary>
+        /// Create a <see cref="CosmosResponseMessage"/>
+        /// </summary>
+        /// <param name="statusCode">The HttpStatusCode of the response</param>
+        /// <param name="requestMessage">The <see cref="CosmosRequestMessage"/> object</param>
+        /// <param name="errorMessage">The reason for failures if any.</param>
+        /// <param name="error">The inner error object</param>
+        /// <param name="headers">The headers for the response.</param>
+        internal CosmosResponseMessage(
+            HttpStatusCode statusCode,
+            CosmosRequestMessage requestMessage,
+            string errorMessage,
+            Error error,
+            CosmosResponseMessageHeaders headers)
+        {
+            this.StatusCode = statusCode;
+            this.RequestMessage = requestMessage;
+            this.ErrorMessage = errorMessage;
+            this.Error = error;
+            this.Headers = headers;
         }
 
         /// <summary>
@@ -68,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="CosmosResponseMessage"/> HTTP headers.
         /// </summary>
-        public virtual CosmosResponseMessageHeaders Headers { get; } = new CosmosResponseMessageHeaders();
+        public virtual CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
         /// Gets the original request message
@@ -78,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the internal error object.
         /// </summary>
-        internal virtual Error Error { private get; set; }
+        internal virtual Error Error { get; set; }
 
         private bool _disposed;
 

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string lastKnownContinuationToken = null;
-            CosmosFeedResultSetIterator iter = this.Container.Database.Containers[this.Container.Id].Items
+            CosmosFeedIterator iter = this.Container.Database.Containers[this.Container.Id].Items
                                 .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
             int count = 0;
             List<string> forwardOrder = new List<string>();
