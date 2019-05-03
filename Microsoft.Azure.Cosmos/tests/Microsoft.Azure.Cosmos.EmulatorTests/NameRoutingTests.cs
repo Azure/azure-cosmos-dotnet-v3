@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
@@ -598,7 +598,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 #endif
         [TestMethod]
-        [Ignore]
         public void VerifyGatewayNameIdCacheRefreshDirectGateway()
         {
             // This test hits this issue: https://github.com/Azure/azure-documentdb-dotnet/issues/457
@@ -1289,7 +1288,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
+        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
         public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned()
         {
             await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(TestCommon.CreateClient(true));
@@ -1484,11 +1483,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Tests that routing to non-existent range throws PartitionKeyRangeGoneException even after collection recreate.
         /// </summary>
         /// <returns></returns>
-        [Ignore]
         [TestMethod]
         public async Task TestRouteToNonExistentRangeAfterCollectionRecreate()
         {
-            await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(true));
+            await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateCosmosClient(true));
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
@@ -1496,65 +1494,72 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #endif
         }
 
-        internal async Task TestRouteToNonExistentRangeAfterCollectionRecreate(DocumentClient client)
+        internal async Task TestRouteToNonExistentRangeAfterCollectionRecreate(CosmosClient client)
         {
+            const int partitionCount = 5;
+            const int federationDefaultRUsPerPartition = 6000;
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
-            var partitionKeyRangeCache = await client.GetPartitionKeyRangeCacheAsync();
-            var ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                collection.ResourceId,
-                new Range<string>(
-                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    true,
-                    false));
-
-            Assert.AreEqual(5, ranges.Count());
-
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
+            CosmosDatabase database = null;
             try
             {
-                await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "foo" });
-                Assert.Fail();
-            }
-            catch (DocumentClientException ex)
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer cosmosContainer = await database.Containers.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
+
+                CosmosContainerCore containerCore = (CosmosContainerCore)cosmosContainer;
+                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
+
+                Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());
+            } finally
             {
-                Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
-                Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+                if (database != null)
+                {
+                    await database.DeleteAsync();
+                }
             }
 
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1" });
+            //PartitionKeyRangeId is not supported reed feed from V3 SDK onwards
+            //Document document1 = new Document { Id = "doc1" };
+            //document1.SetPropertyValue("field1", 1);
+            //await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
-            try
-            {
-                await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[ranges.Count - 1].Id });
-                Assert.Fail();
-            }
-            catch (DocumentClientException ex)
-            {
-                Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
-                Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
-            }
+            //try
+            //{
+            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "foo" });
+            //    Assert.Fail();
+            //}
+            //catch (DocumentClientException ex)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
+            //    Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+            //}
 
-            await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[0].Id });
+            //DocumentClient otherClient = TestCommon.CreateClient(false);
+            //await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
+            //await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+
+            //try
+            //{
+            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[ranges.Count - 1].Id });
+            //    Assert.Fail();
+            //}
+            //catch (DocumentClientException ex)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
+            //    Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+            //}
+
+            //await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[0].Id });
         }
 
         /// <summary>
         /// Tests that routing to non-existent range throws PartitionKeyRangeGoneException even after collection recreate.
         /// </summary>
         /// <returns></returns>
-        [Ignore]
         [TestMethod]
         public async Task TestRouteToExistentRangeAfterCollectionRecreate()
         {
-            await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(true));
+            await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateCosmosClient(true));
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
@@ -1562,43 +1567,65 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #endif
         }
 
-        internal async Task TestRouteToExistentRangeAfterCollectionRecreate(DocumentClient client)
+        internal async Task TestRouteToExistentRangeAfterCollectionRecreate(CosmosClient client)
         {
+            const int partitionCount = 5;
+            const int federationDefaultRUsPerPartition = 6000;
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
+            CosmosDatabase database = null;
             try
             {
-                await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
-                Assert.Fail();
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer cosmosContainer = await database.Containers.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
+
+                CosmosContainerCore containerCore = (CosmosContainerCore)cosmosContainer;
+                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
+
+                Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());
             }
-            catch (DocumentClientException ex)
+            finally
             {
-                Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
-                Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+                if (database != null)
+                {
+                    await database.DeleteAsync();
+                }
             }
+            //PartitionKeyRangeId is not supported reed feed from V3 SDK onwards
+            //await client.CreateDatabaseAsync(new Database { Id = "db1" });
+            //await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
 
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection = await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
-            var partitionKeyRangeCache = await client.GetPartitionKeyRangeCacheAsync();
-            var ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                collection.ResourceId,
-                new Range<string>(
-                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    true,
-                    false));
+            //Document document1 = new Document { Id = "doc1" };
+            //document1.SetPropertyValue("field1", 1);
+            //await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
-            Assert.AreEqual(5, ranges.Count());
+            //try
+            //{
+            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
+            //    Assert.Fail();
+            //}
+            //catch (DocumentClientException ex)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
+            //    Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+            //}
 
-            await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
+            //DocumentClient otherClient = TestCommon.CreateClient(false);
+            //await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
+            //PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+            //DocumentCollection collection = await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
+            //var partitionKeyRangeCache = await client.GetPartitionKeyRangeCacheAsync();
+            //var ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+            //    collection.ResourceId,
+            //    new Range<string>(
+            //        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+            //        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+            //        true,
+            //        false));
+
+            //Assert.AreEqual(5, ranges.Count());
+
+            //await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
         }
 
         /// <summary>
@@ -1661,7 +1688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
+        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
         public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned()
         {
             await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(true));
@@ -1698,7 +1725,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
+        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
         public async Task TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned()
         {
             await this.TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(true));
@@ -1728,7 +1755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
+        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
         public async Task TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned()
         {
             await this.TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned(TestCommon.CreateClient(true));
