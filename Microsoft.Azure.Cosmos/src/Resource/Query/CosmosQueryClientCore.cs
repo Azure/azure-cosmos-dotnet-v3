@@ -35,16 +35,6 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
-        internal override DocumentClient GetDocumentClient()
-        {
-            return this.clientContext.DocumentClient;
-        }
-
-        internal override IDocumentClientRetryPolicy GetRetryPolicy()
-        {
-            return this.DocumentQueryClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-        }
-
         internal override Task<CollectionCache> GetCollectionCacheAsync()
         {
             return this.DocumentQueryClient.GetCollectionCacheAsync();
