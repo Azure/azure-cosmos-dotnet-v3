@@ -123,7 +123,10 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
                         filter);
                 }),
-                DefaultJsonSerializationSettings.Value) : null;
+                new JsonSerializerSettings()
+                {
+                    StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+                }) : null;
             }
         }
 
