@@ -26,6 +26,10 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryContext cosmosQueryContext;
         private readonly AsyncLazy<IDocumentQueryExecutionContext> innerExecutionContext;
 
+        /// <summary>
+        /// Test flag for making the query use the opposite code path for query plan retrieval.
+        /// If the SDK would have went to Gateway, then it will use ServiceInterop and visa versa.
+        /// </summary>
         public static bool TestFlag = true;
 
         public CosmosQueryExecutionContextFactory(
