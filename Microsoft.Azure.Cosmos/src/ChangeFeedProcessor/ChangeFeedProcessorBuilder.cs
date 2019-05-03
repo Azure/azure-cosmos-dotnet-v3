@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
@@ -120,21 +119,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets the start request session continuation token to start looking for changes after.
-        /// </summary>
-        /// <remarks>
-        /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
-        /// If this is specified, both StartTime and StartFromBeginning are ignored.
-        /// </remarks>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public virtual ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
-        {
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorOptions.StartContinuation = startContinuation;
-            return this;
-        }
-
-        /// <summary>
         /// Sets the time (exclusive) to start looking for changes after.
         /// </summary>
         /// <remarks>
@@ -201,6 +185,21 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the start request session continuation token to start looking for changes after.
+        /// </summary>
+        /// <remarks>
+        /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// If this is specified, both StartTime and StartFromBeginning are ignored.
+        /// </remarks>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        internal virtual ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
+        {
+            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
+            this.changeFeedProcessorOptions.StartContinuation = startContinuation;
             return this;
         }
 
