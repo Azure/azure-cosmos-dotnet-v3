@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string workflowName,
-            Func<IReadOnlyList<T>, CancellationToken, Task> onChangesDelegate)
+            Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate)
         {
             if (workflowName == null)
             {
