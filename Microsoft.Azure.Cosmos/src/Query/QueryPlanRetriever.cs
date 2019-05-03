@@ -46,21 +46,25 @@
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            DocumentServiceRequest request = CreateRequest(
-                sqlQuerySpec,
-                resourceLink);
-
-            DocumentServiceResponse documentServiceResponse = await documentClient.ExecuteQueryAsync(
-                request: request,
-                retryPolicy: null,
-                cancellationToken: cancellationToken);
-
-            MemoryStream body = new MemoryStream();
-            await documentServiceResponse.ResponseBody.CopyToAsync(body);
-            string unencodedBody = Encoding.UTF8.GetString(body.GetBuffer());
-            PartitionedQueryExecutionInfo partitionedQueryInfo = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(unencodedBody);
-
-            return partitionedQueryInfo;
+            using (DocumentServiceRequest request = CreateRequest(
+                sqlQuerySpec, 
+                resourceLink))
+            {
+                using (DocumentServiceResponse documentServiceResponse = await documentClient.ExecuteQueryAsync(
+                    request: request,
+                    retryPolicy: null,
+                    cancellationToken: cancellationToken))
+                {
+                    JsonSerializer jsonSerializer = new JsonSerializer();
+                    using (StreamReader streamReader = new StreamReader(documentServiceResponse.ResponseBody))
+                    {
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+                        {
+                            return jsonSerializer.Deserialize<PartitionedQueryExecutionInfo>(jsonTextReader);
+                        }
+                    }
+                }
+            }
         }
 
         private static DocumentServiceRequest CreateRequest(
