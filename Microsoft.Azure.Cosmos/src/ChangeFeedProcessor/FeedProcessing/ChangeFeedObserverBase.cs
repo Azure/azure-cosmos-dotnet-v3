@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal sealed class ChangeFeedObserverBase<T> : ChangeFeedObserver<T>
     {
-        private readonly Func<IReadOnlyList<T>, CancellationToken, Task> onChanges;
+        private readonly Func<IReadOnlyCollection<T>, CancellationToken, Task> onChanges;
 
-        public ChangeFeedObserverBase(Func<IReadOnlyList<T>, CancellationToken, Task> onChanges)
+        public ChangeFeedObserverBase(Func<IReadOnlyCollection<T>, CancellationToken, Task> onChanges)
         {
             this.onChanges = onChanges;
         }
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             return Task.CompletedTask;
         }
 
-        public override Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyList<T> docs, CancellationToken cancellationToken)
+        public override Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
         {
             return this.onChanges(docs, cancellationToken);
         }

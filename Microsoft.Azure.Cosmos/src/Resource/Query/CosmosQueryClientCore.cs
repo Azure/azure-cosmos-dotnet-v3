@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -34,16 +35,6 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
-        internal override DocumentClient GetDocumentClient()
-        {
-            return this.clientContext.DocumentClient;
-        }
-
-        internal override IDocumentClientRetryPolicy GetRetryPolicy()
-        {
-            return this.DocumentQueryClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-        }
-
         internal override Task<CollectionCache> GetCollectionCacheAsync()
         {
             return this.DocumentQueryClient.GetCollectionCacheAsync();
@@ -59,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
         }
 
-        internal override async Task<FeedResponse<CosmosElement>> ExecuteItemQueryAsync(
+        internal override async Task<CosmosQueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -79,7 +70,35 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);
 
-            return this.GetFeedResponse(requestOptions, resourceType, message);
+            return this.GetCosmosElementResponse(requestOptions, resourceType, message);
+        }
+
+        internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: null,
+                partitionKey: null,
+                cosmosContainerCore: this.cosmosContainerCore,
+                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken))
+            {
+                // Syntax exception are argument exceptions and thrown to the user.
+                message.EnsureSuccessStatusCode();
+                partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+            }
+                
+            return partitionedQueryExecutionInfo;
         }
 
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
@@ -160,15 +179,22 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        private FeedResponse<CosmosElement> GetFeedResponse(
+        private CosmosQueryResponse GetCosmosElementResponse(
             CosmosQueryRequestOptions requestOptions,
             ResourceType resourceType,
             CosmosResponseMessage cosmosResponseMessage)
         {
             using (cosmosResponseMessage)
             {
-                // DEVNOTE: For now throw the exception. Needs to be converted to handle exceptionless path.
-                cosmosResponseMessage.EnsureSuccessStatusCode();
+                if (!cosmosResponseMessage.IsSuccessStatusCode)
+                {
+                    return CosmosQueryResponse.CreateFailure(
+                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
+                        cosmosResponseMessage.StatusCode,
+                        cosmosResponseMessage.RequestMessage,
+                        cosmosResponseMessage.ErrorMessage,
+                        cosmosResponseMessage.Error);
+                }
 
                 // Execute the callback an each element of the page
                 // For example just could get a response like this
@@ -191,8 +217,7 @@ namespace Microsoft.Azure.Cosmos
                 byte[] content = memoryStream.ToArray();
                 IJsonNavigator jsonNavigator = null;
 
-                // Use the users custom navigator first. If it returns null back try the
-                // internal override navigator.
+                // Use the users custom navigator
                 if (requestOptions.CosmosSerializationOptions != null)
                 {
                     jsonNavigator = requestOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
@@ -225,10 +250,10 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 int itemCount = cosmosArray.Count;
-                return new FeedResponse<CosmosElement>(
+                return CosmosQueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
-                    responseHeaders: cosmosResponseMessage.Headers.CosmosMessageHeaders,
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
                     responseLengthBytes: responseLengthBytes);
             }
         }

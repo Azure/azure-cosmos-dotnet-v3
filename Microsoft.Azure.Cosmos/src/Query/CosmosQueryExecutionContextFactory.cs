@@ -20,11 +20,11 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
     /// </summary>
-    internal sealed class CosmosQueryExecutionContextFactory : IDocumentQueryExecutionContext
+    internal sealed class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
     {
         private const int PageSizeFactorForTop = 5;
         private readonly CosmosQueryContext cosmosQueryContext;
-        private readonly AsyncLazy<IDocumentQueryExecutionContext> innerExecutionContext;
+        private readonly AsyncLazy<CosmosQueryExecutionContext> innerExecutionContext;
 
         /// <summary>
         /// Test flag for making the query use the opposite code path for query plan retrieval.
@@ -96,14 +96,14 @@ namespace Microsoft.Azure.Cosmos.Query
                   allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                   correlatedActivityId: correlatedActivityId);
 
-            this.innerExecutionContext = new AsyncLazy<IDocumentQueryExecutionContext>(() =>
+            this.innerExecutionContext = new AsyncLazy<CosmosQueryExecutionContext>(() =>
             {
                 return this.CreateItemQueryExecutionContextAsync(default(CancellationToken));
             },
             default(CancellationToken));
         }
 
-        public bool IsDone
+        public override bool IsDone
         {
             get
             {
@@ -111,12 +111,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
-            return await (await this.innerExecutionContext.Value).ExecuteNextAsync(token);
+            CosmosQueryResponse response = await (await this.innerExecutionContext.Value).ExecuteNextAsync(token);
+            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+            return response;
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (this.innerExecutionContext.IsValueCreated)
             {
@@ -160,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return containerSettings;
         }
 
-        private async Task<IDocumentQueryExecutionContext> CreateItemQueryExecutionContextAsync(
+        private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -174,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                 // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                    this.cosmosQueryContext.QueryClient.GetDocumentClient(),
+                    this.cosmosQueryContext.QueryClient,
                     this.cosmosQueryContext.SqlQuerySpec,
                     this.cosmosQueryContext.ResourceLink,
                     cancellationToken);
@@ -232,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-        public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
+        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -295,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
-            return await CosmosPipelinedItemQueryExecutionContext.CreateAsync(
+            return await PipelinedDocumentQueryExecutionContext.CreateAsync(
                 cosmosQueryContext,
                 collectionRid,
                 partitionedQueryExecutionInfo,

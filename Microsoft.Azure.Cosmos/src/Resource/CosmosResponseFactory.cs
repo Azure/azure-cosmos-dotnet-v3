@@ -21,18 +21,10 @@ namespace Microsoft.Azure.Cosmos
             this.jsonSerializer = cosmosJsonSerializer;
         }
 
-        internal CosmosQueryResponse<T> CreateResultSetQueryResponse<T>(
+        internal CosmosFeedResponse<T> CreateResultSetQueryResponse<T>(
             CosmosResponseMessage cosmosResponseMessage)
         {
             return CosmosDefaultResultSetIterator<T>.CreateCosmosQueryResponse(
-                cosmosResponseMessage,
-                this.jsonSerializer);
-        }
-
-        internal CosmosQueryResponse<T> CreateChangeFeedQueryResponse<T>(
-           CosmosResponseMessage cosmosResponseMessage)
-        {
-            return ChangeFeedResultSetIterator<T>.CreateCosmosQueryFeedResponse<T>(
                 cosmosResponseMessage,
                 this.jsonSerializer);
         }
