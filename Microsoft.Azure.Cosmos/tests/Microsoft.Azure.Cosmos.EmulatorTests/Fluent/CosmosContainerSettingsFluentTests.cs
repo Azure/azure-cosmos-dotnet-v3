@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainerResponse containerResponse =
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                     .WithIndexingPolicy()
-                        .WithIndexingMode(Cosmos.IndexingMode.None)
+                        .IndexingMode(Cosmos.IndexingMode.None)
                         .WithoutAutomaticIndexing()
                         .Attach()
                     .CreateAsync();

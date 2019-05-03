@@ -33,13 +33,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingMode"/>.
+        /// Defines the <see cref="CosmosContainer"/>'s <see cref="Cosmos.IndexingMode"/>.
         /// </summary>
-        /// <param name="indexingMode">An <see cref="IndexingMode"/></param>
+        /// <param name="indexingMode">An <see cref="Cosmos.IndexingMode"/></param>
         /// <remarks>
         /// If multiple calls are made to this method within the same <see cref="IndexingPolicyFluentDefinition{T}"/>, the last one will apply.
         /// </remarks>
-        public virtual IndexingPolicyFluentDefinition<T> WithIndexingMode(IndexingMode indexingMode)
+        public virtual IndexingPolicyFluentDefinition<T> IndexingMode(IndexingMode indexingMode)
         {
             this.indexingPolicy.IndexingMode = indexingMode;
             return this;

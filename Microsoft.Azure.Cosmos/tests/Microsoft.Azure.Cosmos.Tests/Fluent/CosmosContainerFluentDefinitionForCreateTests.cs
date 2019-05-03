@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             await CosmosContainerFluentDefinitionForCreate
                 .WithIndexingPolicy()
-                    .WithIndexingMode(IndexingMode.None)
+                    .IndexingMode(IndexingMode.None)
                     .WithoutAutomaticIndexing()
                     .Attach()
                 .CreateAsync();
