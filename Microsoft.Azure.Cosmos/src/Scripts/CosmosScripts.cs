@@ -2,20 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Operations for creating new stored procedures, and reading/querying all stored procedures
-    ///
-    /// <see cref="CosmosStoredProcedure"/> for reading, replacing, or deleting an existing stored procedures.
+    /// Represents script operations on an Azure Cosmos container.
     /// </summary>
-    public abstract class CosmosStoredProcedures
+    /// <seealso cref="CosmosStoredProcedure"/>
+    /// <seealso cref="CosmosTrigger"/>
+    /// <seealso cref="CosmosUserDefinedFunction"/>
+    public abstract class CosmosScripts
     {
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
@@ -70,7 +69,8 @@ namespace Microsoft.Azure.Cosmos
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// CosmosStoredProcedure cosmosStoredProcedure = await this.container.StoredProcedures.CreateStoredProceducreAsync(
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProceducreAsync(
         ///         id: "appendString",
         ///         body: sprocBody);
         /// 
@@ -95,7 +95,8 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the stored procedures under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosResultSetIterator<CosmosStoredProcedureSettings> setIterator = this.container.StoredProcedures.GetStoredProcedureIterator();
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosResultSetIterator<CosmosStoredProcedureSettings> setIterator = scripts.GetStoredProcedureIterator();
         /// while (setIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosStoredProcedureSettings settings in await setIterator.FetchNextSetAsync())
@@ -109,23 +110,5 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null);
-
-        /// <summary>
-        /// Returns a reference to a stored procedure object. 
-        /// </summary>
-        /// <param name="id">The cosmos stored procedure id.</param>
-        /// <remarks>
-        /// Note that the stored procedure must be explicitly created, if it does not already exist, before
-        /// you can read from it or write to it.
-        /// </remarks>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosStoredProcedure storedProcedure = this.cosmosContainer.StoredProcedures["myStoredProcedureId"];
-        /// CosmosStoredProcedureResponse response = await storedProcedure.ReadAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract CosmosStoredProcedure this[string id] { get; }
     }
 }
