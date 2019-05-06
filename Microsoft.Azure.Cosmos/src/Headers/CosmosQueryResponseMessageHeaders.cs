@@ -5,16 +5,18 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// HTTP headers in a <see cref="CosmosResponseMessage"/>.
     /// </summary>
     internal class CosmosQueryResponseMessageHeaders : CosmosResponseMessageHeaders
     {
-        public CosmosQueryResponseMessageHeaders(string continauationToken, string disallowContinuationTokenMessage)
+        public CosmosQueryResponseMessageHeaders(string continauationToken, string disallowContinuationTokenMessage, ResourceType resourceType)
         {
             base.Continuation = continauationToken;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
+            this.ResourceType = resourceType;
         }
 
         internal string DisallowContinuationTokenMessage { get; }
@@ -37,6 +39,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal virtual ResourceType ResourceType { get; }
+
         internal string InternalContinuationToken => base.Continuation;
 
         internal CosmosQueryResponseMessageHeaders CloneKnownProperties()
@@ -50,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             string continauationToken, 
             string disallowContinuationTokenMessage)
         {
-            return new CosmosQueryResponseMessageHeaders(continauationToken, disallowContinuationTokenMessage)
+            return new CosmosQueryResponseMessageHeaders(continauationToken, disallowContinuationTokenMessage, this.ResourceType)
             {
                 RequestCharge = this.RequestCharge,
                 ContentLength = this.ContentLength,
@@ -64,9 +68,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
-            CosmosResponseMessageHeaders sourceHeaders)
+            CosmosResponseMessageHeaders sourceHeaders,
+            ResourceType resourceType)
         {
-            return new CosmosQueryResponseMessageHeaders(sourceHeaders.Continuation, null)
+            return new CosmosQueryResponseMessageHeaders(sourceHeaders.Continuation, null, resourceType)
             {
                 RequestCharge = sourceHeaders.RequestCharge,
                 ContentLength = sourceHeaders.ContentLength,

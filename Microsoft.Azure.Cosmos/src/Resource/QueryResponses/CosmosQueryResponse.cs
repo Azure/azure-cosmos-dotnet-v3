@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int Count { get; }
 
-        public override Stream Content => CosmosElementSerializer.ToStream(this.CosmosElements, this.CosmosSerializationOptions);
+        public override Stream Content => CosmosElementSerializer.ToStream(this.CosmosElements, this.QueryHeaders.ResourceType, this.CosmosSerializationOptions);
 
         internal virtual IEnumerable<CosmosElement> CosmosElements { get; }
 
@@ -227,6 +227,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.resources = CosmosElementSerializer.Deserialize<T>(
                         this.cosmosElements,
+                        this.QueryHeaders.ResourceType,
                         this.jsonSerializer,
                         this.serializationOptions);
                 }

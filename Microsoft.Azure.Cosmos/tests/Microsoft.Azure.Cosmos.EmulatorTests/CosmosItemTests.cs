@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
 
@@ -261,6 +262,93 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(itemIds.Count, 0);
         }
+
+
+        [TestMethod]
+        public async Task ItemStreamContractVerifier()
+        {
+            int totalCount = 4;
+            Dictionary<string, ToDoActivity> toDoActivities = new Dictionary<string, ToDoActivity>();
+            // Create 3 constant items;
+            for (int i = 0; i < totalCount; i++)
+            {
+                ToDoActivity toDoActivity = new ToDoActivity()
+                {
+                    id = "toDoActivity" + i,
+                    status = "InProgress",
+                    cost = 9000 + i,
+                    description = "Constant to do activity",
+                    taskNum = i
+                };
+
+                toDoActivities.Add(toDoActivity.id, toDoActivity);
+
+                await this.Container.Items.CreateItemAsync<ToDoActivity>(toDoActivity.status, toDoActivity);
+            }
+
+            List<CosmosFeedIterator> cosmosFeedIterators = new List<CosmosFeedIterator>();
+
+            // The stream contract should return the same contract as read feed.
+            // {
+            //    "Documents": [{
+            //        "id": "03230",
+            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
+            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
+            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
+            //        "_attachments": "attachments\/",
+            //        "_ts": 1501107886
+            //    }],
+            //    "_count": 1
+            // }
+
+            CosmosFeedIterator setIterator =
+                this.Container.Items.GetItemStreamIterator();
+            cosmosFeedIterators.Add(setIterator);
+
+            CosmosFeedIterator queryIterator =
+                this.Container.Items.CreateItemQueryAsStream(@"select * from t where t.id != """" ", maxConcurrency: 1, maxItemCount: 4);
+            cosmosFeedIterators.Add(queryIterator);
+
+            foreach(var iterator in cosmosFeedIterators)
+            {
+                int count = 0;
+                while (iterator.HasMoreResults)
+                {
+                    CosmosResponseMessage response = await iterator.FetchNextSetAsync(this.cancellationToken);
+                    response.EnsureSuccessStatusCode();
+
+                    JsonSerializer serializer = new JsonSerializer();
+
+                    using (StreamReader sr = new StreamReader(response.Content))
+                    using (JsonTextReader jtr = new JsonTextReader(sr))
+                    {
+                        //string result = await sr.ReadToEndAsync();
+                        JObject jObject = serializer.Deserialize<JObject>(jtr);
+                        Assert.IsNotNull(jObject["Documents"]);
+                        Assert.IsTrue(jObject["_count"].ToObject<int>() >= 0);
+                        foreach (JObject item in jObject["Documents"])
+                        {
+                            count++;
+                            Assert.IsNotNull(item["id"]);
+                            ToDoActivity createdItem = toDoActivities[item["id"].ToString()];
+
+                            Assert.AreEqual(createdItem.taskNum, item["taskNum"].ToObject<int>());
+                            Assert.AreEqual(createdItem.cost, item["cost"].ToObject<double>());
+                            Assert.AreEqual(createdItem.description, item["description"].ToString());
+                            Assert.AreEqual(createdItem.status, item["status"].ToString());
+                            Assert.IsNotNull(item["_rid"]);
+                            Assert.IsNotNull(item["_self"]);
+                            Assert.IsNotNull(item["_etag"]);
+                            Assert.IsNotNull(item["_attachments"]);
+                            Assert.IsNotNull(item["_ts"]);
+                        }
+                    }
+                }
+
+                Assert.AreEqual(totalCount, count);
+            }
+        }
+
 
         [DataRow(1, 1)]
         [DataRow(5, 5)]
@@ -771,7 +859,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Quering items on fixed container with cross partition enabled.
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
                 CosmosFeedIterator<dynamic> setIterator = fixedContainer.Items
-                    .CreateItemQuery<dynamic>(sql, maxConcurrency: 1,maxItemCount:10, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+                    .CreateItemQuery<dynamic>(sql, maxConcurrency: 1, maxItemCount: 10, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
                 while (setIterator.HasMoreResults)
                 {
                     CosmosFeedResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();

@@ -108,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             List<Uri> replicaUris = new List<Uri>();
             ClientSideRequestStatistics requestStatistics = new ClientSideRequestStatistics();
             PartitionedQueryMetrics partitionedQueryMetrics = new PartitionedQueryMetrics();
+            ResourceType resourceType = ResourceType.Document;
 
             while (!this.IsDone)
             {
@@ -117,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     return result;
                 }
 
+                resourceType = result.QueryHeaders.ResourceType;
                 requestCharge += result.Headers.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
                 //partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
@@ -159,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 result: finalResult,
                 count: finalResult.Count,
                 responseLengthBytes: responseLengthBytes,
-                responseHeaders: new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null)
+                responseHeaders: new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null, resourceType: resourceType)
                 {
                     RequestCharge = requestCharge
                 });

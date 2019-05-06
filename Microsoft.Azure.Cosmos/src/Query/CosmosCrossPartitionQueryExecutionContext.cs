@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
             }
 
-            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(continuation, null);
+            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(continuation, null, this.queryContext.ResourceTypeEnum);
             this.SetQueryMetrics();
 
             IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics = this.GetQueryMetrics();
