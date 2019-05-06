@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/users";
             int timeToLiveInSeconds = 10;
             CosmosContainerResponse containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                .WithDefaultTimeToLive(timeToLiveInSeconds)
+                .DefaultTimeToLive(timeToLiveInSeconds)
                 .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .WithTimeToLivePropertyPath("/creationDate")
+                    .TimeToLivePropertyPath("/creationDate")
                     .CreateAsync();
                 Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
             }
@@ -261,8 +261,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Verify the container content.
             containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                   .WithTimeToLivePropertyPath("/creationDate")
-                   .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
+                   .TimeToLivePropertyPath("/creationDate")
+                   .DefaultTimeToLive(timeToLivetimeToLiveInSeconds)
                    .CreateAsync();
             CosmosContainer cosmosContainer = containerResponse;
             Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);

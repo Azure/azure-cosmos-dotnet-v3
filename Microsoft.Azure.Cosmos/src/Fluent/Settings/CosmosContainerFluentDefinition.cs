@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <seealso cref="CosmosContainerSettings.DefaultTimeToLive"/>
-        public virtual T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
+        public virtual T DefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
             if (defaultTtlTimeSpan == null)
             {
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <seealso cref="CosmosContainerSettings.DefaultTimeToLive"/>
-        public virtual T WithDefaultTimeToLive(int defaulTtlInSeconds)
+        public virtual T DefaultTimeToLive(int defaulTtlInSeconds)
         {
             if (defaulTtlInSeconds < -1)
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
         /// <seealso cref="CosmosContainerSettings.TimeToLivePropertyPath"/>
-        public virtual T WithTimeToLivePropertyPath(string propertyPath)
+        public virtual T TimeToLivePropertyPath(string propertyPath)
         {
             if (string.IsNullOrEmpty(propertyPath))
             {
