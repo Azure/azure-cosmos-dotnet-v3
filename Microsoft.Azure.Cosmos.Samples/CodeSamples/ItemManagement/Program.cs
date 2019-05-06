@@ -253,19 +253,20 @@
             // Use the same query as before but get the cosmos response message to access the stream directly
             CosmosResultSetIterator streamResultSet = container.Items.CreateItemQueryAsStream(
                 query,
+                maxConcurrency: 1,
                 partitionKey: "Account1",
                 maxItemCount: 10);
 
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
             {
-                using (CosmosResponseMessage responseMessage = await streamResultSet.FetchNextSetAsync())
+                using (CosmosQueryResponse responseMessage = await streamResultSet.FetchNextSetAsync())
                 {
                     // Item stream operations do not throw exceptions for better performance
-                    if (responseMessage.IsSuccessStatusCode)
+                    if (responseMessage.IsSuccess)
                     {
                         dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
-                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
+                        List<SalesOrder> salesOrders = streamResponse.ToObject<List<SalesOrder>>();
                         Console.WriteLine($"\n1.4.3 - Item Query via stream {salesOrders.Count}");
                         allSalesForAccount1FromStream.AddRange(salesOrders);
                     }
@@ -667,9 +668,6 @@
             // number so that we can retrieve all sales orders for an account efficiently from a single partition,
             // and perform transactions across multiple sales order for a single account number. 
             CosmosContainerSettings containerSettings = new CosmosContainerSettings(containerId, partitionKeyPath: "/AccountNumber");
-
-            // Use the recommended indexing policy which supports range queries/sorting on strings
-            containerSettings.IndexingPolicy = new IndexingPolicy(new RangeIndex(DataType.String) { Precision = -1 });
 
             // Create with a throughput of 1000 RU/s
             container = await database.Containers.CreateContainerIfNotExistsAsync(

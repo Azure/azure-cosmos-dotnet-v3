@@ -5,7 +5,7 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
 
-    class Program
+    internal class Program
     {
         //Read configuration
         private static readonly string databaseId = "samples";
@@ -70,35 +70,38 @@
             // The response from Azure Cosmos
             CosmosDatabaseSettings settings = databaseResponse;
 
-            Console.WriteLine($"\n1. Create a database resource with id: {settings.Id} and time stamp: {settings.Timestamp}");
+            Console.WriteLine($"\n1. Create a database resource with id: {settings.Id} and last modified time stamp: {settings.LastModified}");
             Console.WriteLine($"\n2. Create a database resource request charge: {databaseResponse.RequestCharge} and Activity Id: {databaseResponse.ActivityId}");
 
             // Read the database from Azure Cosmos
             CosmosDatabaseResponse readResponse = await database.ReadAsync();
+            Console.WriteLine($"\n3. Read a database: {readResponse.Resource.Id}");
+
+            await readResponse.Database.Containers.CreateContainerAsync("testContainer", "/pk");
 
             // Get the current throughput for the database
             int? throughput = await database.ReadProvisionedThroughputAsync();
             if (throughput.HasValue)
             {
-                Console.WriteLine($"\n3. Read a database throughput: {throughput.Value}");
+                Console.WriteLine($"\n4. Read a database throughput: {throughput.Value}");
 
                 // Update the current throughput for the database
                 await database.ReplaceProvisionedThroughputAsync(11000);
             }
 
-            Console.WriteLine("\n4. Reading all databases resources for an account");
+            Console.WriteLine("\n5. Reading all databases resources for an account");
             CosmosResultSetIterator<CosmosDatabaseSettings> iterator = client.Databases.GetDatabaseIterator();
             do
             {
                 foreach (CosmosDatabaseSettings db in await iterator.FetchNextSetAsync())
                 {
-                    Console.WriteLine(db);
+                    Console.WriteLine(db.Id);
                 }
             } while (iterator.HasMoreResults);
 
             // Delete the database from Azure Cosmos.
             await database.DeleteAsync();
-            Console.WriteLine($"\n5. Database {database.Id} deleted.");
+            Console.WriteLine($"\n6. Database {database.Id} deleted.");
         }
     }
 }
