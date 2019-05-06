@@ -46,11 +46,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Turns off the <see cref="CosmosContainer"/>'s automatic indexing.
+        /// Defines the <see cref="CosmosContainer"/>'s automatic indexing.
         /// </summary>
-        public virtual IndexingPolicyFluentDefinition<T> WithoutAutomaticIndexing()
+        public virtual IndexingPolicyFluentDefinition<T> AutomaticIndexing(bool enabled)
         {
-            this.indexingPolicy.Automatic = false;
+            this.indexingPolicy.Automatic = enabled;
             return this;
         }
 

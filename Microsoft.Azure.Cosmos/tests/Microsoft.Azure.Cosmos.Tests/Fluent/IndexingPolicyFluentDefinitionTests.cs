@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             indexingPolicyFluentDefinitionCore
                 .IndexingMode(IndexingMode.None)
-                .WithoutAutomaticIndexing()
+                .AutomaticIndexing(false)
                 .Attach();
         }
 

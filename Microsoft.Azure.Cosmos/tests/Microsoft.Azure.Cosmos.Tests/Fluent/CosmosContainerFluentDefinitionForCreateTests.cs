@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             await CosmosContainerFluentDefinitionForCreate
                 .IndexingPolicy()
                     .IndexingMode(IndexingMode.None)
-                    .WithoutAutomaticIndexing()
+                    .AutomaticIndexing(false)
                     .Attach()
                 .CreateAsync();
 
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 partitionKey);
 
             await CosmosContainerFluentDefinitionForCreate
-                .WithUniqueKey()
+                .UniqueKey()
                     .Path(path)
                     .Attach()
                 .CreateAsync();

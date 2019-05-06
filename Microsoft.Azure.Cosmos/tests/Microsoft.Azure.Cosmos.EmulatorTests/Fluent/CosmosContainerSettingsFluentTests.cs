@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
                     .IndexingPolicy()
                         .IndexingMode(Cosmos.IndexingMode.None)
-                        .WithoutAutomaticIndexing()
+                        .AutomaticIndexing(false)
                         .Attach()
                     .CreateAsync();
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse =
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .WithUniqueKey()
+                    .UniqueKey()
                         .Path("/attribute1")
                         .Path("/attribute2")
                         .Attach()
