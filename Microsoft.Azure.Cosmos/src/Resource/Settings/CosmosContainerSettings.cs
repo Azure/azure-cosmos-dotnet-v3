@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos
 
             // HACK: Till service can handle the defaults (self-mutation)
             // If indexing mode is not 'none' and not paths are set, set them to the defaults
-            if (this.indexingPolicyInternal != null 
+            if (this.indexingPolicyInternal != null
                 && this.indexingPolicyInternal.IndexingMode != IndexingMode.None
                 && this.indexingPolicyInternal.IncludedPaths.Count == 0
                 && this.indexingPolicyInternal.ExcludedPaths.Count == 0)

@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosResultSetIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
             this.container, 
             id);
 
-        private Task<CosmosQueryResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
+        private Task<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosUserDefinedFunctionSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.ReadFeed,

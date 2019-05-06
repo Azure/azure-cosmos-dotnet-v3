@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="createSourceCallback">The callback to create the source to drain from.</param>
         /// <param name="distinctQueryType">The type of distinct query.</param>
         /// <returns>A task to await on and in return </returns>
-        public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<DistinctDocumentQueryExecutionComponent> CreateAsync(
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
             DistinctQueryType distinctQueryType)
@@ -100,11 +100,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of items to drain.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A page of distinct results.</returns>
-        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             List<CosmosElement> distinctResults = new List<CosmosElement>();
-            FeedResponse<CosmosElement> feedResponse = await base.DrainAsync(maxElements, cancellationToken);
-            foreach (CosmosElement document in feedResponse)
+            CosmosQueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
+            if (!cosmosQueryResponse.IsSuccessStatusCode)
+            {
+                return cosmosQueryResponse;
+            }
+
+            foreach (CosmosElement document in cosmosQueryResponse.CosmosElements)
             {
                 if (this.distinctMap.Add(document, out this.lastHash))
                 {
@@ -112,28 +117,25 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
+            string updatedContinuationToken; 
             if (!this.IsDone)
             {
-                string sourceContinuationToken = feedResponse.ResponseContinuation;
-                feedResponse.ResponseContinuation = new DistinctContinuationToken(
+                updatedContinuationToken = new DistinctContinuationToken(
                     this.lastHash,
-                    sourceContinuationToken).ToString();
+                    cosmosQueryResponse.Headers.Continuation).ToString();
             }
             else
             {
                 this.Source.Stop();
-                feedResponse.ResponseContinuation = null;
+                updatedContinuationToken = null;
             }
 
-            return new FeedResponse<CosmosElement>(
+            string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken;
+            return CosmosQueryResponse.CreateSuccess(
                 distinctResults,
                 distinctResults.Count,
-                feedResponse.Headers,
-                feedResponse.UseETagAsContinuation,
-                feedResponse.QueryMetrics,
-                feedResponse.RequestStatistics,
-                this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken,
-                feedResponse.ResponseLengthBytes);
+                cosmosQueryResponse.ResponseLengthBytes,
+                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage));
         }
 
         /// <summary>

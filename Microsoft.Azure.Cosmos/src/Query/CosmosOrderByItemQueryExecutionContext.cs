@@ -123,7 +123,10 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
                         filter);
                 }),
-                DefaultJsonSerializationSettings.Value) : null;
+                new JsonSerializerSettings()
+                {
+                    StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+                }) : null;
             }
         }
 
@@ -166,9 +169,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
         {
-            //// In order to maintain the continuation toke for the user we must drain with a few constraints
+            //// In order to maintain the continuation token for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
             //// 2) If multiple partitions have the same priority item then we drain from the left most first
             ////   otherwise we would need to keep track of how many of each item we drained from each partition
@@ -199,12 +202,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
                 ItemProducerTree currentItemProducerTree = this.PopCurrentItemProducerTree();
+
                 OrderByQueryResult orderByQueryResult = new OrderByQueryResult(currentItemProducerTree.Current);
 
                 // Only add the payload, since other stuff is garbage from the caller's perspective.
                 results.Add(orderByQueryResult.Payload);
 
-                // If we are at the begining of the page and seeing an rid from the previous page we should increment the skip count
+                // If we are at the beginning of the page and seeing an rid from the previous page we should increment the skip count
                 // due to the fact that JOINs can make a document appear multiple times and across continuations, so we don't want to
                 // surface this more than needed. More information can be found in the continuation token docs.
                 if (this.ShouldIncrementSkipCount(currentItemProducerTree.CurrentItemProducerTree.Root))
@@ -218,20 +222,15 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                await currentItemProducerTree.MoveNextAsync(cancellationToken);
+                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                {
+                    break;
+                }
 
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
             }
 
-            return new FeedResponse<CosmosElement>(
-                results,
-                results.Count,
-                this.GetResponseHeaders(),
-                false,
-                this.GetQueryMetrics(),
-                null,
-                null,
-                this.GetAndResetResponseLengthBytes());
+            return results;
         }
 
         /// <summary>
@@ -241,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>Whether or not we should increment the skip count.</returns>
         private bool ShouldIncrementSkipCount(ItemProducer currentItemProducer)
         {
-            // If we are not at the begining of the page and we saw the same rid again.
+            // If we are not at the beginning of the page and we saw the same rid again.
             return !currentItemProducer.IsAtBeginningOfPage &&
                 string.Equals(
                     this.previousRid,
@@ -276,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (requestContinuation == null)
                 {
                     SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
-                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True), 
+                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
                         sqlQuerySpec.Parameters);
 
                     await base.InitializeAsync(
@@ -393,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
-                        this.TraceWarning($"Invalid order-by items in ontinutaion token {requestContinuation} for OrderBy~Context.");
+                        this.TraceWarning($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
                         throw new BadRequestException(RMResources.InvalidContinuationToken);
                     }
                 }
@@ -518,10 +517,17 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    if (!await tree.MoveNextAsync(cancellationToken))
+                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
+                    if (!moveNextResponse.successfullyMovedNext)
                     {
+                        if(moveNextResponse.failureResponse != null)
+                        {
+                            this.FailureResponse = moveNextResponse.failureResponse;
+                        }
+
                         break;
                     }
+
                 }
             }
         }

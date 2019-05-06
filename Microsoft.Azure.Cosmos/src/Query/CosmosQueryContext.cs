@@ -32,17 +32,19 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal class CosmosQueryContext
     {
-        public CosmosQueryClient QueryClient { get; }
-        public ResourceType ResourceTypeEnum { get; }
-        public OperationType OperationTypeEnum { get; }
-        public Type ResourceType { get; }
-        public SqlQuerySpec SqlQuerySpec { get; }
-        public CosmosQueryRequestOptions QueryRequestOptions { get; }
-        public bool IsContinuationExpected { get; }
-        public bool AllowNonValueAggregateQuery { get; }
-        public Uri ResourceLink { get; }
-        public string ContainerResourceId { get; set; }
-        public Guid CorrelatedActivityId { get; }
+        public virtual CosmosQueryClient QueryClient { get; }
+        public virtual ResourceType ResourceTypeEnum { get; }
+        public virtual OperationType OperationTypeEnum { get; }
+        public virtual Type ResourceType { get; }
+        public virtual SqlQuerySpec SqlQuerySpec { get; }
+        public virtual CosmosQueryRequestOptions QueryRequestOptions { get; }
+        public virtual bool IsContinuationExpected { get; }
+        public virtual bool AllowNonValueAggregateQuery { get; }
+        public virtual Uri ResourceLink { get; }
+        public virtual string ContainerResourceId { get; set; }
+        public virtual Guid CorrelatedActivityId { get; }
+
+        internal CosmosQueryContext() { }
 
         public CosmosQueryContext(
             CosmosQueryClient client,
@@ -96,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
-        internal async Task<FeedResponse<CosmosElement>> ExecuteQueryAsync(
+        internal virtual async Task<CosmosQueryResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             CancellationToken cancellationToken,
             Action<CosmosRequestMessage> requestEnricher = null)

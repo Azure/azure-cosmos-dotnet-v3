@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
                     It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
-            Mock<CosmosFeedResultSetIterator> mockIterator = new Mock<CosmosFeedResultSetIterator>();
+            Mock<CosmosFeedIterator> mockIterator = new Mock<CosmosFeedIterator>();
             mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
-            Mock<CosmosFeedResultSetIterator> mockIterator = new Mock<CosmosFeedResultSetIterator>();
+            Mock<CosmosFeedIterator> mockIterator = new Mock<CosmosFeedIterator>();
             mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
-            Mock<CosmosFeedResultSetIterator> mockIterator = new Mock<CosmosFeedResultSetIterator>();
+            Mock<CosmosFeedIterator> mockIterator = new Mock<CosmosFeedIterator>();
             mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 MyDocument document = new MyDocument();
                 document.id = "test";
-                CosmosFeedResponse<MyDocument> cosmosFeedResponse = new CosmosFeedResponse<MyDocument>();
+                CosmosFeedResponseUtil<MyDocument> cosmosFeedResponse = new CosmosFeedResponseUtil<MyDocument>();
                 cosmosFeedResponse.Data = new System.Collections.ObjectModel.Collection<MyDocument>()
                 {
                     document

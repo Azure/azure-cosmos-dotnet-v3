@@ -24,13 +24,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
         private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosDefaultJsonSerializer();
-        private readonly Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator;
+        private readonly Func<string, string, bool, CosmosFeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
 
         public RemainingWorkEstimatorCore(
             DocumentServiceLeaseContainer leaseContainer,
-            Func<string, string, bool, CosmosFeedResultSetIterator> feedCreator,
+            Func<string, string, bool, CosmosFeedIterator> feedCreator,
             int degreeOfParallelism)
         {
             if (leaseContainer == null)
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = existingLease.CurrentLeaseToken;
-            CosmosFeedResultSetIterator iterator = this.feedCreator(
+            CosmosFeedIterator iterator = this.feedCreator(
                 partitionKeyRangeId,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 return new Collection<JObject>();
             }
 
-            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponse<JObject>>(response.Content).Data;
+            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.Content).Data;
         }
     }
 }

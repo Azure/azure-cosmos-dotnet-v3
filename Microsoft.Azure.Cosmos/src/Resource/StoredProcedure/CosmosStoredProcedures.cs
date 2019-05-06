@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosResultSetIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public abstract CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 

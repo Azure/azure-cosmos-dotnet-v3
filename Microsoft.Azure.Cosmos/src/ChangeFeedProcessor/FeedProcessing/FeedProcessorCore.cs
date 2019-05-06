@@ -22,12 +22,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly ProcessorSettings settings;
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
-        private readonly CosmosFeedResultSetIterator resultSetIterator;
+        private readonly CosmosFeedIterator resultSetIterator;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
-            CosmosFeedResultSetIterator resultSetIterator, 
+            CosmosFeedIterator resultSetIterator, 
             ProcessorSettings settings, 
             PartitionCheckpointer checkpointer, 
             CosmosJsonSerializer cosmosJsonSerializer)
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = cosmosJsonSerializer.FromStream<CosmosFeedResponse<T>>(response.Content).Data;
+                asFeedResponse = cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
             }
             catch (Exception serializationException)
             {

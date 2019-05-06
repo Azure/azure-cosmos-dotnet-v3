@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
 
-        public override CosmosResultSetIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public override CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             this.container,
             id);
 
-        private Task<CosmosQueryResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
+        private Task<CosmosFeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosStoredProcedureSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosStoredProcedureSettings>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ReadFeed,
