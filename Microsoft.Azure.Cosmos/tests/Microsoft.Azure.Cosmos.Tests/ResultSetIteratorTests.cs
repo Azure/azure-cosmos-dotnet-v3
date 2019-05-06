@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.AreEqual(
-                    15, //OperationType.Query
+                    Documents.OperationType.Query,
                     (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
                 );
                 return TestHandler.ReturnSuccess();
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.AreEqual(
-                    15, //OperationType.Query
+                    Documents.OperationType.Query,
                     (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
                 );
                 return TestHandler.ReturnSuccess();

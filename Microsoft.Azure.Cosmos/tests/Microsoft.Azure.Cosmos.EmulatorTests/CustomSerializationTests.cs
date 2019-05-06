@@ -260,11 +260,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task  TestJsonSerializerSettings(bool useGatway)
+        public async Task  TestJsonSerializerSettings()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(new CustomeJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())));
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())));
             CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
 
             var rnd = new Random();
@@ -438,7 +436,7 @@ function bulkImport(docs) {
                 }
             };
 
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(new CustomeJsonSerializer(jsonSerializerSettings)));
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
             CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
 
             // Create a few test documents
@@ -569,11 +567,11 @@ function bulkImport(docs) {
         }
 #pragma warning restore CS0618
 
-        private class CustomeJsonSerializer : CosmosJsonSerializer
+        private class CustomJsonSerializer : CosmosJsonSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
             private JsonSerializer serializer;
-            public CustomeJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
+            public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
                 serializer = JsonSerializer.Create(jsonSerializerSettings);
             }
@@ -599,7 +597,7 @@ function bulkImport(docs) {
             public override Stream ToStream<T>(T input)
             {
                 MemoryStream streamPayload = new MemoryStream();
-                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CustomeJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CustomJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
                 {
                     using (JsonWriter writer = new JsonTextWriter(streamWriter))
                     {

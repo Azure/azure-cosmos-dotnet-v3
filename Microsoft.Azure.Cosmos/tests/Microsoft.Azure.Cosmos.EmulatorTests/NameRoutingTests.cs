@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
@@ -602,7 +603,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // This test hits this issue: https://github.com/Azure/azure-documentdb-dotnet/issues/457
             // Ignoring it until this is fixed
-            DocumentClient client = TestCommon.CreateClient(true);
+            CosmosClient client = TestCommon.CreateCosmosClient(true);
             this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client).Wait();
         }
 
@@ -622,38 +623,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection,
         }
 
-        private async Task VerifyGatewayNameIdCacheRefreshPrivateAsync(DocumentClient client)
+        private async Task VerifyGatewayNameIdCacheRefreshPrivateAsync(CosmosClient client)
         {
-            Database database = null;
+            CosmosDatabase database = null;
             try
             {
                 // Create database and create collection
-                database = await client.CreateDatabaseAsync(new Database() { Id = "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString() });
+                database = await client.Databases.CreateDatabaseAsync(id : "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString());
 
                 int collectionsCount = 10;
                 Logger.LogLine("Create {0} collections simultaneously.", collectionsCount);
-                IList<DocumentCollection> collections = await this.CreateCollectionsAsync(client,
-                    database,
+                IList<CosmosContainer> containers = await this.CreateContainerssAsync(database,
                     collectionsCount - 1);
 
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.DocumentCollection);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToDifferentName, collections[0], CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToDifferentName, collections[1], CallAPIForStaleCacheTest.DocumentCollection);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.Bindable, collections[2], CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.Bindable, collections[3], CallAPIForStaleCacheTest.DocumentCollection);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.Document);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.DocumentCollection);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[0], CallAPIForStaleCacheTest.Document);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[1], CallAPIForStaleCacheTest.DocumentCollection);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[2], CallAPIForStaleCacheTest.Document);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[3], CallAPIForStaleCacheTest.DocumentCollection);
             }
             finally
             {
                 if (database != null)
                 {
-                    await client.DeleteDatabaseAsync(database);
+                    await database.DeleteAsync();
                 }
             }
         }
 
-        private async Task UsingSameFabircServiceTestAsync(string databaseId, DocumentClient client, FabircServiceReuseType type,
-            DocumentCollection collectionToDelete,
+        private async Task UsingSameFabircServiceTestAsync(CosmosDatabase database, FabircServiceReuseType type,
+            CosmosContainer collectionToDelete,
             CallAPIForStaleCacheTest eApiTest)
         {
             string suffix = Guid.NewGuid().ToString();
@@ -661,17 +661,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string collectionFooId = "collectionFoo" + suffix;
             string collectionBarId = "collectionBar" + suffix;
             string doc1Id = "document1" + suffix;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            CosmosContainer collFoo = await database.Containers.CreateContainerAsync( new CosmosContainerSettings() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
+            Document documentDefinition = new Document() { Id = doc1Id };
+            documentDefinition.SetPropertyValue("pk", "test");
+            Document doc1 = await collFoo.Items.CreateItemAsync<Document>(partitionKey: "test", item: documentDefinition);
 
-            DocumentCollection collFoo = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionFooId });
-            Document doc1 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId), new Document() { Id = doc1Id });
-
+            RequestOptions requestOptions = new RequestOptions() { PartitionKey = new PartitionKey("test") };
             // doing a read, which cause the gateway has name->Id cache (collectionFooId -> Rid)
-            Document docIgnore = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionFooId, doc1Id));
+            Document docIgnore = await collFoo.Items.ReadItemAsync<Document>(partitionKey: "test", id: doc1Id);
 
             // Now delete the collection so we have 1 bindable collection left
-            DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+            //DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+            await collFoo.DeleteAsync();
 
-            DocumentCollection collBar = null;
+            CosmosContainer collBar = null;
             if (type == FabircServiceReuseType.BoundToSameName)
             {
                 // do nothing
@@ -679,37 +683,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             else if (type == FabircServiceReuseType.BoundToDifferentName || type == FabircServiceReuseType.Bindable)
             {
                 // Now create collectionBar fist.
-                collBar = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionBarId });
+                collBar = await database.Containers.CreateContainerAsync( new CosmosContainerSettings() { Id = collectionBarId, PartitionKey = partitionKeyDefinition });
                 // delete another random collection so we have 1 bindable collection left
-                await client.DeleteDocumentCollectionAsync(collectionToDelete);
+                await collBar.DeleteAsync();
             }
 
             // Now create collectionFoo second time
-            DocumentCollection collFoo2 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionFooId });
+            CosmosContainer collFoo2 = await database.Containers.CreateContainerAsync( new CosmosContainerSettings() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
 
             if (type == FabircServiceReuseType.Bindable)
             {
-                await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionBarId));
+                await collBar.DeleteAsync();
             }
 
             // Now verify the collectionFooId, the cache has collectionFooId -> OldRid cache
             if (eApiTest == CallAPIForStaleCacheTest.DocumentCollection)
             {
-                DocumentCollection collFooRead = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+                CosmosContainer collFooRead = await collFoo2.ReadAsync();
             }
             else if (eApiTest == CallAPIForStaleCacheTest.Document)
             {
-                string docFoo1Id = "docFoo1Id" + suffix;
-                Document docFoo1 = await client.CreateDocumentAsync(collFoo2.SelfLink, new Document() { Id = docFoo1Id });
-                Document docFoo1Back = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionFooId, docFoo1Id));
+                documentDefinition = new Document() { Id = "docFoo1Id" + suffix };
+                documentDefinition.SetPropertyValue("pk", "test");
+                Document docFoo1 = await collFoo.Items.CreateItemAsync<Document>(partitionKey: "test", item: documentDefinition);
+                Document docFoo1Back = await collFoo.Items.ReadItemAsync<Document>(partitionKey: "test", id: documentDefinition.Id);
             }
 
             // Now delete the collection foo again
-            await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+            await collFoo2.DeleteAsync();
 
             if (type == FabircServiceReuseType.BoundToDifferentName)
             {
-                await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionBarId));
+                await collBar.DeleteAsync(); ;
             }
         }
 
@@ -1859,17 +1864,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return await TestCommon.AsyncRetryRateLimiting<T>(work);
         }
 
-        private async Task<IList<DocumentCollection>> CreateCollectionsAsync(DocumentClient client, Database database, int numberOfCollectionsPerDatabase)
+        private async Task<IList<CosmosContainer>> CreateContainerssAsync(CosmosDatabase database, int numberOfCollectionsPerDatabase)
         {
-            IList<DocumentCollection> documentCollections = new List<DocumentCollection>();
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+            IList<CosmosContainer> cosmosContainers = new List<CosmosContainer>();
             if (numberOfCollectionsPerDatabase > 0)
             {
                 for (int i = 0; i < numberOfCollectionsPerDatabase; ++i)
                 {
-                    documentCollections.Add(await AsyncRetryRateLimiting(() => TestCommon.CreateCollectionAsync(client, database.CollectionsLink, new DocumentCollection { Id = Guid.NewGuid().ToString() })));
+                    cosmosContainers.Add(await AsyncRetryRateLimiting(() => database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })));
                 }
             }
-            return documentCollections;
+            return cosmosContainers;
         }
 
         private async Task<int> GetCountFromIterator<T>(CosmosFeedIterator<T> iterator)
