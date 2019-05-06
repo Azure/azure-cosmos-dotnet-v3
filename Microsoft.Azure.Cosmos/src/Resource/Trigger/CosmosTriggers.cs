@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosResultSetIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public CosmosTrigger this[string id] => new CosmosTrigger(this.clientContext, this.container, id);
 
-        private Task<CosmosQueryResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
+        private Task<CosmosFeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosTriggerSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosTriggerSettings>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: OperationType.ReadFeed,

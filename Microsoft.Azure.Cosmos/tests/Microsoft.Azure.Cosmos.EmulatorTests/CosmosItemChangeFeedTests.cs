@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(batchSize, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            CosmosFeedIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (setIterator.HasMoreResults)
             {
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(pkRangesCount, deserializedToken.Count);
                     if (responseMessage.IsSuccessStatusCode)
                     {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                         totalCount += response.Count;
                     }
 
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Insert another batch of 25 and use the last continuation token from the first cycle
             await this.CreateRandomItems(batchSize, randomPartitionKey: true);
-            CosmosFeedResultSetIterator setIteratorNew =
+            CosmosFeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(lastcontinuation);
 
             while (setIteratorNew.HasMoreResults)
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     if (responseMessage.IsSuccessStatusCode)
                     {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                         totalCount += response.Count;
                     }
 
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string corruptedTokenSerialized = JsonConvert.SerializeObject(corruptedTokens);
 
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIteratorNew =
+            CosmosFeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
             CosmosResponseMessage responseMessage =
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateRandomItems(2, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            CosmosFeedIterator setIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (setIterator.HasMoreResults)
             {
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (responseMessage.IsSuccessStatusCode)
                     {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                         if (response.Count > 0)
                         {
                             Assert.AreEqual(1, response.Count);
@@ -213,14 +213,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
 
-                CosmosFeedResultSetIterator setIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
+                CosmosFeedIterator setIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (CosmosResponseMessage responseMessage =
                     await setIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     continuationToken = responseMessage.Headers.Continuation;
                     if (responseMessage.IsSuccessStatusCode)
                     {
-                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponse<ToDoActivity>>(responseMessage.Content).Data;
+                        Collection<ToDoActivity> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                         count += response.Count;
                     }
                 }

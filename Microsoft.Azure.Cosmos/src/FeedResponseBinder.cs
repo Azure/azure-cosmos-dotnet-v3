@@ -47,64 +47,6 @@ namespace Microsoft.Azure.Cosmos
         /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
         /// </summary>
         public static FeedResponse<T> ConvertCosmosElementFeed<T>(
-            FeedResponse<CosmosElement> dynamicFeed, 
-            ResourceType resourceType,
-            CosmosJsonSerializer jsonSerializer)
-        {
-            if(dynamicFeed.Count == 0)
-            {
-                return new FeedResponse<T>(
-                new List<T>(),
-                dynamicFeed.Count,
-                dynamicFeed.Headers,
-                dynamicFeed.UseETagAsContinuation,
-                dynamicFeed.QueryMetrics,
-                dynamicFeed.RequestStatistics,
-                dynamicFeed.DisallowContinuationTokenMessage,
-                dynamicFeed.ResponseLengthBytes);
-            }
-
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-
-            jsonWriter.WriteArrayStart();
-
-            foreach (CosmosElement cosmosElement in dynamicFeed)
-            {
-                cosmosElement.WriteTo(jsonWriter);
-            }
-
-            jsonWriter.WriteArrayEnd();
-            MemoryStream stream = new MemoryStream(jsonWriter.GetResult());
-            IEnumerable<T> typedResults;
-
-            // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic
-            // create a OfferV2 object and cast it to T. This is a temporary fix until offers is moved to v3 API. 
-            if (resourceType == ResourceType.Offer &&
-                (typeof(T).IsSubclassOf(typeof(Resource)) || typeof(T) == typeof(object)))
-            {
-                typedResults = jsonSerializer.FromStream<List<OfferV2>>(stream).Cast<T>();
-            }
-            else
-            {
-                typedResults = jsonSerializer.FromStream<List<T>>(stream);
-            }
-
-            return new FeedResponse<T>(
-                typedResults,
-                dynamicFeed.Count,
-                dynamicFeed.Headers,
-                dynamicFeed.UseETagAsContinuation,
-                dynamicFeed.QueryMetrics,
-                dynamicFeed.RequestStatistics,
-                dynamicFeed.DisallowContinuationTokenMessage,
-                dynamicFeed.ResponseLengthBytes);
-        }
-
-
-        /// <summary>
-        /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
-        /// </summary>
-        public static FeedResponse<T> ConvertCosmosElementFeed<T>(
             FeedResponse<CosmosElement> dynamicFeed,
             ResourceType resourceType,
             JsonSerializerSettings settings)
@@ -157,39 +99,6 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.RequestStatistics,
                 dynamicFeed.DisallowContinuationTokenMessage,
                 dynamicFeed.ResponseLengthBytes);
-        }
-
-        public static CosmosQueryResponse ConvertToCosmosQueryResponse(
-            FeedResponse<CosmosElement> dynamicFeed,
-            CosmosSerializationOptions cosmosSerializationOptions)
-        {
-            IJsonWriter jsonWriter;
-            if (cosmosSerializationOptions != null)
-            {
-                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
-            }
-            else
-            {
-                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            }
-
-            jsonWriter.WriteArrayStart();
-
-            foreach (CosmosElement cosmosElement in dynamicFeed)
-            {
-                cosmosElement.WriteTo(jsonWriter);
-            }
-
-            jsonWriter.WriteArrayEnd();
-
-            MemoryStream memoryStream = new MemoryStream(jsonWriter.GetResult());
-            return new CosmosQueryResponse(
-                dynamicFeed.Headers,
-                memoryStream,
-                dynamicFeed.Count,
-                dynamicFeed.InternalResponseContinuation,
-                dynamicFeed.DisallowContinuationTokenMessage,
-                dynamicFeed.QueryMetrics);
         }
     }
 }

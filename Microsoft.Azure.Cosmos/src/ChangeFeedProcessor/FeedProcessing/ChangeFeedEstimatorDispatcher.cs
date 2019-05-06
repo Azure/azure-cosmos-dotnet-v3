@@ -7,11 +7,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedEstimatorDispatcher
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly Func<long, CancellationToken, Task> dispatchEstimation;
 
         public TimeSpan? DispatchPeriod { get; private set; }
@@ -30,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                Logger.WarnException("Exception happened on ChangeFeedEstimatorDispatcher.DispatchEstimation", userException);
+                DefaultTrace.TraceException(userException);
+                DefaultTrace.TraceWarning("Exception happened on ChangeFeedEstimatorDispatcher.DispatchEstimation");
             }
         }
     }

@@ -45,9 +45,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
-                    processedDocCount += docs.Count;
+                    processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
                     if (processedDocCount == 10) allDocsProcessed.Set();
 
@@ -91,23 +91,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyList<dynamic> docs, CancellationToken token) =>
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
-                    processedDocCount += docs.Count;
+                    processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
-                    if (processedDocCount == 6) allDocsProcessed.Set();
+                    if (processedDocCount == 5) allDocsProcessed.Set();
 
                     return Task.CompletedTask;
                 })
+                .WithStartFromBeginning()
                 .WithInstanceName("random")
+                .WithMaxItems(6)
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
-
-            // Start the processor, insert 1 document to generate a checkpoint
-            await processor.StartAsync();
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-            await this.Container.Items.CreateItemAsync(partitionKey, new { id="doc10", pk=0 });
-            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
-            await processor.StopAsync();
 
             // Generate the payload
             await storedProcedureResponse.StoredProcedure.ExecuteAsync<int, object>(partitionKey, 0);
@@ -122,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
-            Assert.AreEqual("doc10.doc0.doc1.doc2.doc3.doc4.", accumulator);
+            Assert.AreEqual("doc0.doc1.doc2.doc3.doc4.", accumulator);
         }
     }
 }

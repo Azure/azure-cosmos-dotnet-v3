@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseUpdaterCosmos : DocumentServiceLeaseUpdater
     {
         private const int RetryCountOnConflict = 5;
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly CosmosContainer container;
 
         public DocumentServiceLeaseUpdaterCosmos(CosmosContainer container)
@@ -45,19 +43,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     return leaseDocument;
                 }
 
-                Logger.InfoFormat("Lease with token {0} update conflict. Reading the current version of lease.", lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0} update conflict. Reading the current version of lease.", lease.CurrentLeaseToken);
 
                 CosmosItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReadItemAsync<DocumentServiceLeaseCore>(
                     partitionKey, itemId).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    Logger.InfoFormat("Lease with token {0} no longer exists", lease.CurrentLeaseToken);
+                    DefaultTrace.TraceInformation("Lease with token {0} no longer exists", lease.CurrentLeaseToken);
                     throw new LeaseLostException(lease, true);
                 }
 
                 DocumentServiceLeaseCore serverLease = response.Resource;
 
-                Logger.InfoFormat(
+                DefaultTrace.TraceInformation(
                     "Lease with token {0} update failed because the lease with concurrency token '{1}' was updated by host '{2}' with concurrency token '{3}'. Will retry, {4} retry(s) left.",
                     lease.CurrentLeaseToken,
                     lease.ConcurrencyToken,
@@ -90,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
             catch (CosmosException ex)
             {
-                Logger.WarnFormat("Lease operation exception, status code: ", ex.StatusCode);
+                DefaultTrace.TraceWarning("Lease operation exception, status code: {0}", ex.StatusCode);
                 if (ex.StatusCode == HttpStatusCode.PreconditionFailed)
                 {
                     return null;

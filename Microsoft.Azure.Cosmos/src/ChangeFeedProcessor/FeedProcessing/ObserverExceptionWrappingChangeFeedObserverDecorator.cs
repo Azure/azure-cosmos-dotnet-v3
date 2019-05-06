@@ -9,11 +9,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator<T>: ChangeFeedObserver<T>
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private ChangeFeedObserver<T> changeFeedObserver;
 
         public ObserverExceptionWrappingChangeFeedObserverDecorator(ChangeFeedObserver<T> changeFeedObserver)
@@ -29,7 +28,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                Logger.WarnException("Exception happened on Observer.CloseAsync", userException);
+                DefaultTrace.TraceException(userException);
+                DefaultTrace.TraceWarning("Exception happened on Observer.CloseAsync");
                 throw new ObserverException(userException);
             }
         }
@@ -42,12 +42,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                Logger.WarnException("Exception happened on Observer.OpenAsync", userException);
+                DefaultTrace.TraceException(userException);
+                DefaultTrace.TraceWarning("Exception happened on Observer.OpenAsync");
                 throw new ObserverException(userException);
             }
         }
 
-        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyList<T> docs, CancellationToken cancellationToken)
+        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
         {
             try
             {
@@ -55,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                Logger.WarnException("Exception happened on Observer.ProcessChangesAsync", userException);
+                DefaultTrace.TraceException(userException);
+                DefaultTrace.TraceWarning("Exception happened on Observer.ProcessChangesAsync");
                 throw new ObserverException(userException);
             }
         }

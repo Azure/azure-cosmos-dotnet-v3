@@ -445,9 +445,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 int pageSize = (int)Math.Min(this.pageSize, (long)int.MaxValue);
                 using (DocumentServiceRequest request = this.createRequestFunc(this.PartitionKeyRange, this.backendContinuationToken, pageSize))
                 {
-                    // BUG: retryPolicyInstance shound not be shared betweet different requests
                     IDocumentClientRetryPolicy retryPolicy = this.createRetryPolicyFunc();
-                    retryPolicy.OnBeforeSendRequest(request);
 
                     // Custom backoff and retry
                     while (true)
