@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
                 out effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
-                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
+                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey)
                 {
                     throw new ArgumentOutOfRangeException(nameof(collection));
                 }
