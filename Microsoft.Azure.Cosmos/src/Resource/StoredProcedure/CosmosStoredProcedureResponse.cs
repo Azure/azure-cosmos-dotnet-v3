@@ -6,15 +6,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
     using System.Net;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos stored procedure response
     /// </summary>
-    public class CosmosStoredProcedureResponse : CosmosResponse<CosmosStoredProcedureSettings>
+    public class CosmosStoredProcedureResponse : CosmosResponse<CosmosStoredProcedure>
     {
         /// <summary>
         /// Create a <see cref="CosmosStoredProcedureResponse"/> as a no-op for mock testing
@@ -31,28 +28,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal CosmosStoredProcedureResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosStoredProcedureSettings cosmosStoredProcedureSettings,
-           CosmosStoredProcedure storedProcedure) : base(
+           CosmosStoredProcedure cosmosStoredProcedure) : base(
                httpStatusCode,
                headers,
-               cosmosStoredProcedureSettings)
+               cosmosStoredProcedure)
         {
-            this.StoredProcedure = storedProcedure;
-        }
-
-        /// <summary>
-        /// The reference to the cosmos stored procedure.
-        /// This allows additional operations for the stored procedure
-        /// </summary>
-        public virtual CosmosStoredProcedure StoredProcedure { get; private set; }
-
-        /// <summary>
-        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="CosmosStoredProcedureResponse"/>
-        /// </summary>
-        /// <param name="response">CosmosStoredProcedureResponse</param>
-        public static implicit operator CosmosStoredProcedure(CosmosStoredProcedureResponse response)
-        {
-            return response.StoredProcedure;
         }
 
         /// <summary>

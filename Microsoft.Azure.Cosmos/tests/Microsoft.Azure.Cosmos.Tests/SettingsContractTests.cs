@@ -34,14 +34,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void StoredProecdureSettingsDefaults()
         {
-            CosmosStoredProcedureSettings dbSettings = new CosmosStoredProcedureSettings();
+            CosmosStoredProcedure dbSettings = new CosmosStoredProcedure();
 
             Assert.IsNull(dbSettings.LastModified);
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedureSettings), "Id", "Body");
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedure), "Id", "Body");
         }
 
         [TestMethod]
@@ -136,8 +136,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosStoredProcedureSettings deserializedPayload =
-                JsonConvert.DeserializeObject<CosmosStoredProcedureSettings>(testPyaload);
+            CosmosStoredProcedure deserializedPayload =
+                JsonConvert.DeserializeObject<CosmosStoredProcedure>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);

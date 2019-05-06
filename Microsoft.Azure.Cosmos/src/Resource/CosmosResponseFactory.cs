@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosStoredProcedureSettings settings = this.ToObjectInternal<CosmosStoredProcedureSettings>(cosmosResponseMessage);
+                CosmosStoredProcedure settings = this.ToObjectInternal<CosmosStoredProcedure>(cosmosResponseMessage);
                 return new CosmosStoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
