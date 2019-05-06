@@ -260,9 +260,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task  TestJsonSerializerSettings()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task  TestJsonSerializerSettings(bool useGateway)
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())));
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+                if (useGateway)
+                {
+                    cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).UseConnectionModeGateway();
+                } else
+                {
+                    cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).UseConnectionModeDirect();
+
+                }
+            });
             CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
 
             var rnd = new Random();
