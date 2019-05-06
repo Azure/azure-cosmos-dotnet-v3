@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// <see cref="IndexingPolicy"/> definition for the current Azure Cosmos container.
+        /// <see cref="Cosmos.IndexingPolicy"/> definition for the current Azure Cosmos container.
         /// </summary>
-        public virtual IndexingPolicyFluentDefinition<T> WithIndexingPolicy()
+        public virtual IndexingPolicyFluentDefinition<T> IndexingPolicy()
         {
             if (this.indexingPolicy != null)
             {

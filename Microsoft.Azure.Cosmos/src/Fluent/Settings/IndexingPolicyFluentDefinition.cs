@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             {
                 this.includedPathsBuilder = new PathsFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                     this,
-                    (paths) => this.WithIncludedPaths(paths));
+                    (paths) => this.AddIncludedPaths(paths));
             }
 
             return this.includedPathsBuilder;
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             {
                 this.excludedPathsBuilder = new PathsFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                     this,
-                    (paths) => this.WithExcludedPaths(paths));
+                    (paths) => this.AddExcludedPaths(paths));
             }
 
             return this.excludedPathsBuilder;
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             return new CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                 this,
-                (compositePaths) => this.WithCompositePaths(compositePaths));
+                (compositePaths) => this.AddCompositePaths(compositePaths));
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             return new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                 this,
-                (spatialIndex) => this.WithSpatialIndex(spatialIndex));
+                (spatialIndex) => this.AddSpatialIndex(spatialIndex));
         }
 
         /// <summary>
@@ -114,17 +114,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this.parent;
         }
 
-        private void WithCompositePaths(Collection<CompositePath> compositePaths)
+        private void AddCompositePaths(Collection<CompositePath> compositePaths)
         {
             this.indexingPolicy.CompositeIndexes.Add(compositePaths);
         }
 
-        private void WithSpatialIndex(SpatialSpec spatialSpec)
+        private void AddSpatialIndex(SpatialSpec spatialSpec)
         {
             this.indexingPolicy.SpatialIndexes.Add(spatialSpec);
         }
 
-        private void WithIncludedPaths(IEnumerable<string> paths)
+        private void AddIncludedPaths(IEnumerable<string> paths)
         {
             foreach (string path in paths)
             {
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             }
         }
 
-        private void WithExcludedPaths(IEnumerable<string> paths)
+        private void AddExcludedPaths(IEnumerable<string> paths)
         {
             foreach (string path in paths)
             {

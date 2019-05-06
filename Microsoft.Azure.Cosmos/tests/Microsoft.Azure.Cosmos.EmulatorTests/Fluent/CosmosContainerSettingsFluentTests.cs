@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse =
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .WithIndexingPolicy()
+                    .IndexingPolicy()
                         .IndexingMode(Cosmos.IndexingMode.None)
                         .WithoutAutomaticIndexing()
                         .Attach()
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse =
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .WithIndexingPolicy()
+                    .IndexingPolicy()
                         .IncludedPaths()
                             .Path("/included1/*")
                             .Path("/included2/*")

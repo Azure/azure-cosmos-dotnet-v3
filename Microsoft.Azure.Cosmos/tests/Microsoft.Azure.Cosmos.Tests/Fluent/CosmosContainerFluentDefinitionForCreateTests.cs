@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 partitionKey);
 
             await CosmosContainerFluentDefinitionForCreate
-                .WithIndexingPolicy()
+                .IndexingPolicy()
                     .IndexingMode(IndexingMode.None)
                     .WithoutAutomaticIndexing()
                     .Attach()
