@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -21,53 +22,40 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
-        private readonly CosmosClient _client;
+        private readonly CosmosClientContext clientContext;
         private readonly CosmosContainerCore cosmosContainerCore;
-        internal readonly IDocumentQueryClient DocumentClient;
+        internal readonly IDocumentQueryClient DocumentQueryClient;
 
-        internal CosmosQueryClientCore(CosmosClient client, IDocumentQueryClient documentClient, CosmosContainerCore cosmosContainerCore)
+        internal CosmosQueryClientCore(
+            CosmosClientContext clientContext,
+            CosmosContainerCore cosmosContainerCore)
         {
-            if (client == null)
-            {
-                throw new ArgumentException(nameof(client));
-            }
-
-            if (documentClient == null)
-            {
-                throw new ArgumentException(nameof(documentClient));
-            }
-
-            if (cosmosContainerCore == null)
-            {
-                throw new ArgumentException(nameof(cosmosContainerCore));
-            }
-
-            this._client = client;
-            this.DocumentClient = documentClient;
-            this.cosmosContainerCore = cosmosContainerCore;
+            this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
+            this.cosmosContainerCore = cosmosContainerCore ?? throw new ArgumentException(nameof(cosmosContainerCore));
+            this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
         internal override IDocumentClientRetryPolicy GetRetryPolicy()
         {
-            return this.DocumentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            return this.DocumentQueryClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
         }
 
         internal override Task<CollectionCache> GetCollectionCacheAsync()
         {
-            return this.DocumentClient.GetCollectionCacheAsync();
+            return this.DocumentQueryClient.GetCollectionCacheAsync();
         }
 
         internal override Task<IRoutingMapProvider> GetRoutingMapProviderAsync()
         {
-            return this.DocumentClient.GetRoutingMapProviderAsync();
+            return this.DocumentQueryClient.GetRoutingMapProviderAsync();
         }
 
         internal override Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken)
         {
-            return this.DocumentClient.GetQueryPartitionProviderAsync(cancellationToken);
+            return this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
         }
 
-        internal override async Task<FeedResponse<CosmosElement>> ExecuteItemQueryAsync(
+        internal override async Task<CosmosQueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -76,39 +64,38 @@ namespace Microsoft.Azure.Cosmos
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            CosmosResponseMessage message = await ExecUtils.ProcessResourceOperationStreamAsync(
-                client: this._client,
+            CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: requestOptions.PartitionKey,
-                cosmosContainerCore: cosmosContainerCore,
-                streamPayload: this._client.CosmosJsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                cosmosContainerCore: this.cosmosContainerCore,
+                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);
 
-            return this.GetFeedResponse(requestOptions, resourceType, message);
+            return this.GetCosmosElementResponse(requestOptions, resourceType, message);
         }
 
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            return this.DocumentClient.GetDefaultConsistencyLevelAsync();
+            return this.DocumentQueryClient.GetDefaultConsistencyLevelAsync();
         }
 
         internal override Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
-            return this.DocumentClient.GetDesiredConsistencyLevelAsync();
+            return this.DocumentQueryClient.GetDesiredConsistencyLevelAsync();
         }
 
         internal override Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
         {
-            return this.DocumentClient.EnsureValidOverwrite(desiredConsistencyLevel);
+            return this.DocumentQueryClient.EnsureValidOverwrite(desiredConsistencyLevel);
         }
 
         internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
         {
-            return this.DocumentClient.GetPartitionKeyRangeCache();
+            return this.DocumentQueryClient.GetPartitionKeyRangeCache();
         }
 
         internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(
@@ -169,15 +156,22 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        private FeedResponse<CosmosElement> GetFeedResponse(
+        private CosmosQueryResponse GetCosmosElementResponse(
             CosmosQueryRequestOptions requestOptions,
             ResourceType resourceType,
             CosmosResponseMessage cosmosResponseMessage)
         {
             using (cosmosResponseMessage)
             {
-                // DEVNOTE: For now throw the exception. Needs to be converted to handle exceptionless path.
-                cosmosResponseMessage.EnsureSuccessStatusCode();
+                if (!cosmosResponseMessage.IsSuccessStatusCode)
+                {
+                    return CosmosQueryResponse.CreateFailure(
+                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
+                        cosmosResponseMessage.StatusCode,
+                        cosmosResponseMessage.RequestMessage,
+                        cosmosResponseMessage.ErrorMessage,
+                        cosmosResponseMessage.Error);
+                }
 
                 // Execute the callback an each element of the page
                 // For example just could get a response like this
@@ -200,8 +194,7 @@ namespace Microsoft.Azure.Cosmos
                 byte[] content = memoryStream.ToArray();
                 IJsonNavigator jsonNavigator = null;
 
-                // Use the users custom navigator first. If it returns null back try the
-                // internal override navigator.
+                // Use the users custom navigator
                 if (requestOptions.CosmosSerializationOptions != null)
                 {
                     jsonNavigator = requestOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
@@ -234,10 +227,10 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 int itemCount = cosmosArray.Count;
-                return new FeedResponse<CosmosElement>(
+                return CosmosQueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
-                    responseHeaders: cosmosResponseMessage.Headers.CosmosMessageHeaders,
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
                     responseLengthBytes: responseLengthBytes);
             }
         }

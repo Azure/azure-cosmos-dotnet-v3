@@ -9,11 +9,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Logging;
+    using Microsoft.Azure.Documents;
 
     internal sealed class LeaseRenewerCore : LeaseRenewer
     {
-        private static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly TimeSpan leaseRenewInterval;
         private DocumentServiceLease lease;
@@ -29,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         {
             try
             {
-                Logger.InfoFormat("Lease with token {0}: renewer task started.", this.lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0}: renewer task started.", this.lease.CurrentLeaseToken);
                 await Task.Delay(TimeSpan.FromTicks(this.leaseRenewInterval.Ticks / 2), cancellationToken).ConfigureAwait(false);
 
                 while (true)
@@ -40,11 +39,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                Logger.InfoFormat("Lease with token {0}: renewer task stopped.", this.lease.CurrentLeaseToken);
+                DefaultTrace.TraceInformation("Lease with token {0}: renewer task stopped.", this.lease.CurrentLeaseToken);
             }
             catch (Exception ex)
             {
-                Logger.FatalException("Lease with token {0}: renew lease loop failed", ex, this.lease.CurrentLeaseToken);
+                DefaultTrace.TraceException(ex);
+                DefaultTrace.TraceCritical("Lease with token {0}: renew lease loop failed", this.lease.CurrentLeaseToken);
                 throw;
             }
         }
@@ -56,16 +56,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 var renewedLease = await this.leaseManager.RenewAsync(this.lease).ConfigureAwait(false);
                 if (renewedLease != null) this.lease = renewedLease;
 
-                Logger.InfoFormat("Lease with token {0}: renewed lease with result {1}", this.lease.CurrentLeaseToken, renewedLease != null);
+                DefaultTrace.TraceInformation("Lease with token {0}: renewed lease with result {1}", this.lease.CurrentLeaseToken, renewedLease != null);
             }
             catch (LeaseLostException leaseLostException)
             {
-                Logger.ErrorException("Lease with token {0}: lost lease on renew.", leaseLostException, this.lease.CurrentLeaseToken);
+                DefaultTrace.TraceException(leaseLostException);
+                DefaultTrace.TraceError("Lease with token {0}: lost lease on renew.", this.lease.CurrentLeaseToken);                
                 throw;
             }
             catch (Exception ex)
             {
-                Logger.ErrorException("Lease with token {0}: failed to renew lease.", ex, this.lease.CurrentLeaseToken);
+                DefaultTrace.TraceException(ex);
+                DefaultTrace.TraceError("Lease with token {0}: failed to renew lease.", this.lease.CurrentLeaseToken);
             }
         }
     }

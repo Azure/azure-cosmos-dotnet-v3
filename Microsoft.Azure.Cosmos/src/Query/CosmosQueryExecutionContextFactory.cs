@@ -20,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
     /// </summary>
-    internal class CosmosQueryExecutionContextFactory : IDocumentQueryExecutionContext
+    internal class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
     {
-        private IDocumentQueryExecutionContext innerExecutionContext;
+        private CosmosQueryExecutionContext innerExecutionContext;
         private CosmosQueryContext cosmosQueryContext;
 
         private const int PageSizeFactorForTop = 5;
 
-        public bool IsDone => this.innerExecutionContext == null ? false : this.innerExecutionContext.IsDone;
+        public override bool IsDone => this.innerExecutionContext == null ? false : this.innerExecutionContext.IsDone;
 
         public CosmosQueryExecutionContextFactory(
             CosmosQueryClient client,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query
                   correlatedActivityId: correlatedActivityId);
         }
 
-        private async Task<IDocumentQueryExecutionContext> CreateItemQueryExecutionContextAsync(CancellationToken cancellationToken)
+        private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             CosmosContainerSettings collection = null;
@@ -109,6 +109,11 @@ namespace Microsoft.Azure.Cosmos.Query
                         AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
                 {
                     collection = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                }
+
+                if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
+                {
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
                 }
             }
 
@@ -161,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-        public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
+        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -224,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
-            return await CosmosPipelinedItemQueryExecutionContext.CreateAsync(
+            return await PipelinedDocumentQueryExecutionContext.CreateAsync(
                 cosmosQueryContext,
                 collectionRid,
                 partitionedQueryExecutionInfo,
@@ -316,17 +321,20 @@ namespace Microsoft.Azure.Cosmos.Query
             return false;
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.innerExecutionContext == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
             }
 
-            return await this.innerExecutionContext.ExecuteNextAsync(token);
+            CosmosQueryResponse response =  await this.innerExecutionContext.ExecuteNextAsync(token);
+            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+            return response;
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (this.innerExecutionContext != null)
             {

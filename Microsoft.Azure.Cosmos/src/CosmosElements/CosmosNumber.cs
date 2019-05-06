@@ -1,18 +1,20 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosNumber.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿// ------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All rights reserved.
+// ------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosNumber : CosmosElement
+    internal abstract class CosmosNumber : CosmosElement
     {
-        protected CosmosNumber()
+        protected CosmosNumber(CosmosNumberType cosmosNumberType)
             : base(CosmosElementType.Number)
         {
+            this.NumberType = cosmosNumberType;
         }
+
+        public CosmosNumberType NumberType { get; }
 
         public abstract bool IsInteger
         {
@@ -22,18 +24,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public abstract bool IsFloatingPoint
         {
             get;
-        }
-
-        public static CosmosNumber Create(
-            IJsonNavigator jsonNavigator,
-            IJsonNavigatorNode jsonNavigatorNode)
-        {
-            return new LazyCosmosNumber(jsonNavigator, jsonNavigatorNode);
-        }
-
-        public static CosmosNumber Create(Number64 number)
-        {
-            return new EagerCosmosNumber(number);
         }
 
         public abstract double? AsFloatingPoint();

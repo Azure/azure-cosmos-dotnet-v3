@@ -14,13 +14,14 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class CosmosChangeFeedResultSetIteratorCore : CosmosFeedResultSetIterator
+    internal class CosmosChangeFeedResultSetIteratorCore : CosmosFeedIterator
     {
         private const int DefaultMaxItemCount = 100;
         private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
 
         internal StandByFeedContinuationToken compositeContinuationToken;
 
+        private readonly CosmosClientContext clientContext;
         private readonly CosmosContainerCore cosmosContainer;
         private readonly int? originalMaxItemCount;
         private string containerRid;
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private int? maxItemCount;
 
         internal CosmosChangeFeedResultSetIteratorCore(
+            CosmosClientContext clientContext,
             CosmosContainerCore cosmosContainer,
             string continuationToken,
             int? maxItemCount,
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
 
+            this.clientContext = clientContext;
             this.cosmosContainer = cosmosContainer;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
@@ -60,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.compositeContinuationToken == null)
             {
-                PartitionKeyRangeCache pkRangeCache = await this.cosmosContainer.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
@@ -152,8 +155,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
-            return ExecUtils.ProcessResourceOperationAsync<CosmosResponseMessage>(
-                client: this.cosmosContainer.Database.Client,
+            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,

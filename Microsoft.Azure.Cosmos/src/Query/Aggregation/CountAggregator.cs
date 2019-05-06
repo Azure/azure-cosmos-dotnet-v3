@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// <returns>The global count.</returns>
         public CosmosElement GetResult()
         {
-            return CosmosNumber.Create(this.globalCount);
+            return CosmosNumber64.Create(this.globalCount);
         }
     }
 }

@@ -139,6 +139,33 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         public abstract void WriteNullValue();
 
+        /// <inheritdoc />
+        public abstract void WriteInt8Value(sbyte value);
+
+        /// <inheritdoc />
+        public abstract void WriteInt16Value(short value);
+
+        /// <inheritdoc />
+        public abstract void WriteInt32Value(int value);
+
+        /// <inheritdoc />
+        public abstract void WriteInt64Value(long value);
+
+        /// <inheritdoc />
+        public abstract void WriteFloat32Value(float value);
+
+        /// <inheritdoc />
+        public abstract void WriteFloat64Value(double value);
+
+        /// <inheritdoc />
+        public abstract void WriteUInt32Value(uint value);
+
+        /// <inheritdoc />
+        public abstract void WriteGuidValue(Guid value);
+
+        /// <inheritdoc />
+        public abstract void WriteBinaryValue(IReadOnlyList<byte> value);
+
         /// <summary>
         /// Writes current token from a json reader to the internal buffer.
         /// </summary>
@@ -330,7 +357,80 @@ namespace Microsoft.Azure.Cosmos.Json
                                 this.WriteStringValue(value);
                             }
                         }
+
                         break;
+
+                    case JsonNodeType.Int8:
+                    {
+                        sbyte number = jsonNavigator.GetInt8Value(jsonNavigatorNode);
+                        this.WriteInt8Value(number);
+                        break;
+                    }
+
+                    case JsonNodeType.Int16:
+                    {
+                        short number = jsonNavigator.GetInt16Value(jsonNavigatorNode);
+                        this.WriteInt16Value(number);
+                        break;
+                    }
+
+                    case JsonNodeType.Int32:
+                    {
+                        int number = jsonNavigator.GetInt32Value(jsonNavigatorNode);
+                        this.WriteInt32Value(number);
+                        break;
+                    }
+
+                    case JsonNodeType.Int64:
+                    {
+                        long number = jsonNavigator.GetInt64Value(jsonNavigatorNode);
+                        this.WriteInt64Value(number);
+                        break;
+                    }
+
+                    case JsonNodeType.UInt32:
+                    {
+                        uint number = jsonNavigator.GetUInt32Value(jsonNavigatorNode);
+                        this.WriteUInt32Value(number);
+                        break;
+                    }
+
+                    case JsonNodeType.Float32:
+                    {
+                        float number = jsonNavigator.GetFloat32Value(jsonNavigatorNode);
+                        this.WriteFloat32Value(number);
+                        break;
+                    }
+
+                    case JsonNodeType.Float64:
+                    {
+                        double number = jsonNavigator.GetFloat64Value(jsonNavigatorNode);
+                        this.WriteFloat64Value(number);
+                        break;
+                    }
+
+                    case JsonNodeType.Guid:
+                    {
+                        Guid number = jsonNavigator.GetGuidValue(jsonNavigatorNode);
+                        this.WriteGuidValue(number);
+                        break;
+                    }
+
+                    case JsonNodeType.Binary:
+                    {
+                        IReadOnlyList<byte> bufferedBinaryValue;
+                        if (jsonNavigator.TryGetBufferedBinaryValue(jsonNavigatorNode, out bufferedBinaryValue))
+                        {
+                            this.WriteRawJsonToken(JsonTokenType.Binary, bufferedBinaryValue);
+                        }
+                        else
+                        {
+                            IReadOnlyList<byte> value = jsonNavigator.GetBinaryValue(jsonNavigatorNode);
+                            this.WriteBinaryValue(value);
+                        }
+
+                        break;
+                    }
 
                     case JsonNodeType.Array:
                         this.WriteArrayStart();
@@ -338,6 +438,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         {
                             this.WriteJsonNode(jsonNavigator, arrayItem);
                         }
+
                         this.WriteArrayEnd();
                         break;
 
@@ -348,6 +449,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             this.WriteJsonNode(jsonNavigator, objectProperty.NameNode);
                             this.WriteJsonNode(jsonNavigator, objectProperty.ValueNode);
                         }
+
                         this.WriteObjectEnd();
                         break;
 

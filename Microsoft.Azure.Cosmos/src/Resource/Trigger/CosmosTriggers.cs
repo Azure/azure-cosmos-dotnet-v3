@@ -19,16 +19,19 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosTriggers
     {
         private readonly CosmosContainerCore container;
-        private readonly CosmosClient client;
+        private readonly CosmosClientContext clientContext;
 
         /// <summary>
         /// Create a <see cref="CosmosTriggers"/>
         /// </summary>
+        /// <param name="clientContext">The client context</param>
         /// <param name="container">The <see cref="CosmosContainer"/> the triggers set is related to.</param>
-        protected internal CosmosTriggers(CosmosContainerCore container)
+        protected internal CosmosTriggers(
+            CosmosClientContext clientContext,
+            CosmosContainerCore container)
         {
             this.container = container;
-            this.client = container.Client;
+            this.clientContext = clientContext;
         }
 
         /// <summary>
@@ -96,18 +99,18 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.container.Database.Client,
-                this.container.LinkUri,
-                ResourceType.Trigger,
-                OperationType.Create,
-                requestOptions,
+            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.Trigger,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(triggerSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 
-            return this.client.ResponseFactory.CreateTriggerResponse(this[triggerSettings.Id], response);
+            return this.clientContext.ResponseFactory.CreateTriggerResponse(this[triggerSettings.Id], response);
         }
 
         /// <summary>
@@ -130,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosResultSetIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -157,9 +160,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosTrigger this[string id] => new CosmosTrigger(this.container, id);
+        public CosmosTrigger this[string id] => new CosmosTrigger(this.clientContext, this.container, id);
 
-        private Task<CosmosQueryResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
+        private Task<CosmosFeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -168,19 +171,21 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return ExecUtils.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosTriggerSettings>>(
-                this.container.Database.Client,
-                this.container.LinkUri,
-                ResourceType.Trigger,
-                OperationType.ReadFeed,
-                options,
-                request =>
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosTriggerSettings>>(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.Trigger,
+                operationType: OperationType.ReadFeed,
+                requestOptions: options,
+                cosmosContainerCore: null,
+                partitionKey: null,
+                streamPayload: null,
+                requestEnricher: request =>
                 {
                     CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                response => this.client.ResponseFactory.CreateResultSetQueryResponse<CosmosTriggerSettings>(response),
-                cancellationToken);
+                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosTriggerSettings>(response),
+                cancellationToken: cancellationToken);
         }
     }
 }

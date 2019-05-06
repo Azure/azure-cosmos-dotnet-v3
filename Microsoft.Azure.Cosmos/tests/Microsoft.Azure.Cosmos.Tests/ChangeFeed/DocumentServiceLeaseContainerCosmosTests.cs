@@ -62,9 +62,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static CosmosContainer GetMockedContainer(string containerName = "myColl")
         {
-            Mock<CosmosResultSetIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<CosmosResultSetIterator<DocumentServiceLeaseCore>>();
+            CosmosResponseMessageHeaders headers = new CosmosResponseMessageHeaders();
+            headers.Continuation = string.Empty;
+
+            Mock<CosmosFeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<CosmosFeedIterator<DocumentServiceLeaseCore>>();
             mockedQuery.Setup(q => q.FetchNextSetAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => CosmosQueryResponse<DocumentServiceLeaseCore>.CreateResponse(DocumentServiceLeaseContainerCosmosTests.allLeases, string.Empty, false));
+                .ReturnsAsync(() => CosmosReadFeedResponse<DocumentServiceLeaseCore>.CreateResponse(
+                    responseMessageHeaders: headers,
+                    resources: DocumentServiceLeaseContainerCosmosTests.allLeases,
+                    hasMoreResults: false));
             mockedQuery.SetupSequence(q => q.HasMoreResults)
                 .Returns(true)
                 .Returns(false);
@@ -83,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
-            mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
-            mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseContainerCosmosTests.GetMockedClient());
+            //mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
+            //mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseContainerCosmosTests.GetMockedClient());
             mockedContainer.Setup(c => c.Items).Returns(mockedItems.Object);
             return mockedContainer.Object;
         }

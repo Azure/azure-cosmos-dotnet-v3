@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -19,16 +18,19 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosUserDefinedFunctions
     {
         private readonly CosmosContainerCore container;
-        private readonly CosmosClient client;
+        private readonly CosmosClientContext clientContext;
 
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunctions"/>
         /// </summary>
+        /// <param name="clientContext">The client context.</param>
         /// <param name="container">The <see cref="CosmosContainer"/> the user defined function set is related to.</param>
-        protected internal CosmosUserDefinedFunctions(CosmosContainerCore container)
+        protected internal CosmosUserDefinedFunctions(
+            CosmosClientContext clientContext,
+            CosmosContainerCore container)
         {
             this.container = container;
-            this.client = container.Client;
+            this.clientContext = clientContext;
         }
 
         /// <summary>
@@ -95,19 +97,18 @@ namespace Microsoft.Azure.Cosmos
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = ExecUtils.ProcessResourceOperationStreamAsync(
-                this.container.Database.Client,
-                this.container.LinkUri,
-                ResourceType.UserDefinedFunction,
-                OperationType.Create,
-                requestOptions,
-                this.container,
+            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.UserDefinedFunction,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this.container,
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 
-            return this.client.ResponseFactory.CreateUserDefinedFunctionResponse(this[userDefinedFunctionSettings.Id], response);
+            return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(this[userDefinedFunctionSettings.Id], response);
         }
 
         /// <summary>
@@ -130,14 +131,14 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosResultSetIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
             return new CosmosDefaultResultSetIterator<CosmosUserDefinedFunctionSettings>(
                 maxItemCount,
-                continuationToken, 
-                null, 
+                continuationToken,
+                null,
                 this.ContainerFeedRequestExecutor);
         }
 
@@ -157,12 +158,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosUserDefinedFunction this[string id]
-        {
-            get { return new CosmosUserDefinedFunction(this.container, id); }
-        }
+        public CosmosUserDefinedFunction this[string id] => new CosmosUserDefinedFunction(
+            this.clientContext,
+            this.container, 
+            id);
 
-        private Task<CosmosQueryResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
+        private Task<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -171,19 +172,21 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return ExecUtils.ProcessResourceOperationAsync<CosmosQueryResponse<CosmosUserDefinedFunctionSettings>>(
-                this.container.Database.Client,
-                this.container.LinkUri,
-                ResourceType.UserDefinedFunction,
-                OperationType.ReadFeed,
-                options,
-                request =>
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>>(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.UserDefinedFunction,
+                operationType: OperationType.ReadFeed,
+                requestOptions: options,
+                cosmosContainerCore: null,
+                partitionKey: null,
+                streamPayload: null,
+                requestEnricher: request =>
                 {
                     CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                response => this.client.ResponseFactory.CreateResultSetQueryResponse<CosmosUserDefinedFunctionSettings>(response),
-                cancellationToken);
+                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosUserDefinedFunctionSettings>(response),
+                cancellationToken: cancellationToken);
         }
     }
 }

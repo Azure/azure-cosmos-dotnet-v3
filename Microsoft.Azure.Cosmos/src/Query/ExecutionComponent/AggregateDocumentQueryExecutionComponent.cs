@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         }
 
         /// <summary>
-        /// Drains at most 'maxElements' documents from the AggregateDocumentQueryExecutionComponent.
+        /// Drains at most 'maxElements' documents from the <see cref="AggregateDocumentQueryExecutionComponent"/> .
         /// </summary>
         /// <param name="maxElements">This value is ignored, since the aggregates are aggregated for you.</param>
         /// <param name="token">The cancellation token.</param>
@@ -98,8 +98,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
         /// This means that if you have a long running query this function will take a very long time to return.
         /// </remarks>
-        public override async Task<FeedResponse<CosmosElement>> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+
             // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
             double requestCharge = 0;
             long responseLengthBytes = 0;
@@ -109,16 +111,21 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             while (!this.IsDone)
             {
-                FeedResponse<CosmosElement> result = await base.DrainAsync(int.MaxValue, token);
-                requestCharge += result.RequestCharge;
+                CosmosQueryResponse result = await base.DrainAsync(int.MaxValue, token);
+                if (!result.IsSuccessStatusCode)
+                {
+                    return result;
+                }
+
+                requestCharge += result.Headers.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
-                partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
+                //partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
                 if (result.RequestStatistics != null)
                 {
                     replicaUris.AddRange(result.RequestStatistics.ContactedReplicas);
                 }
 
-                foreach (CosmosElement item in result)
+                foreach (CosmosElement item in result.CosmosElements)
                 {
                     if (!(item is CosmosArray comosArray))
                     {
@@ -126,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     }
 
                     List<AggregateItem> aggregateItems = new List<AggregateItem>();
-                    foreach(CosmosElement arrayItem in comosArray)
+                    foreach (CosmosElement arrayItem in comosArray)
                     {
                         aggregateItems.Add(new AggregateItem(arrayItem));
                     }
@@ -148,21 +155,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
-            return new FeedResponse<CosmosElement>(
-                finalResult,
-                finalResult.Count,
-                new StringKeyValueCollection()
+            return CosmosQueryResponse.CreateSuccess(
+                result: finalResult,
+                count: finalResult.Count,
+                responseLengthBytes: responseLengthBytes,
+                responseHeaders: new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null)
                 {
-                    {
-                        HttpConstants.HttpHeaders.RequestCharge,
-                        requestCharge.ToString(CultureInfo.InvariantCulture)
-                    }
-                },
-                useETagAsContinuation: false,
-                queryMetrics: partitionedQueryMetrics,
-                requestStats: requestStatistics,
-                disallowContinuationTokenMessage: null,
-                responseLengthBytes: responseLengthBytes);
+                    RequestCharge = requestCharge
+                });
         }
 
         /// <summary>

@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}",
                 optionsPrefix,
-                monitoredContainer.Client.Configuration.AccountEndPoint.Host,
+                ((CosmosContainerCore)monitoredContainer).ClientContext.ClientConfiguration.AccountEndPoint.Host,
                 monitoredContainerRid);
         }
     }

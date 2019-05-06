@@ -6,14 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq.Expressions;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -24,11 +20,10 @@ namespace Microsoft.Azure.Cosmos.Query
     /// haven't produced Linux/Mac version of the ServiceInterop native binary which holds the logic for
     /// parsing the query without having this extra hop to Gateway
     /// </summary>
-    internal sealed class CosmosProxyItemQueryExecutionContext : IDocumentQueryExecutionContext
+    internal sealed class CosmosProxyItemQueryExecutionContext : CosmosQueryExecutionContext
     {
-        private IDocumentQueryExecutionContext innerExecutionContext;
-
-        CosmosQueryContext queryContext;
+        private CosmosQueryExecutionContext innerExecutionContext;
+        private CosmosQueryContext queryContext;
 
         private readonly CosmosContainerSettings containerSettings;
 
@@ -36,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryContext queryContext,
             CosmosContainerSettings containerSettings)
         {
-            if(queryContext == null)
+            if (queryContext == null)
             {
                 throw new ArgumentNullException(nameof(queryContext));
             }
@@ -51,41 +46,31 @@ namespace Microsoft.Azure.Cosmos.Query
             this.containerSettings = containerSettings;
         }
 
-        public bool IsDone
-        {
-            get { return this.innerExecutionContext.IsDone; }
-        }
+        public override bool IsDone => this.innerExecutionContext.IsDone;
 
-        public void Dispose()
+        public override void Dispose()
         {
             this.innerExecutionContext.Dispose();
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken token)
+        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.IsDone)
             {
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            Error error;
+            CosmosQueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
 
-            try
+            // If the query failed because of cross partition query not servable then parse the query plan that is returned in the error
+            // and create the correct context to execute it. For all other responses just return it since there is no query plan to parse.
+            if (response.StatusCode != HttpStatusCode.BadRequest || response.Headers.SubStatusCode != SubStatusCodes.CrossPartitionQueryNotServable)
             {
-                return await this.innerExecutionContext.ExecuteNextAsync(token);
-            }
-            catch (CosmosException ex)
-            {
-                if (ex.StatusCode != HttpStatusCode.BadRequest || ex.SubStatusCode != (int)SubStatusCodes.CrossPartitionQueryNotServable)
-                {
-                    throw;
-                }
-
-                error = ex.Error;
+                return response;
             }
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo =
-                    JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(error.AdditionalErrorInfo);
+                    JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(response.Error.AdditionalErrorInfo);
 
             string rewrittenQuery = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery;
             if (!string.IsNullOrEmpty(rewrittenQuery))
