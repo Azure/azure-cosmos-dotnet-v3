@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <seealso cref="DefineContainer(string, string)"/>
         public abstract Task<CosmosContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
@@ -107,6 +108,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <seealso cref="DefineContainer(string, string)"/>
         public abstract Task<CosmosContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
@@ -258,6 +260,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
+        /// <seealso cref="DefineContainer(string, string)"/>
         public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
             Stream streamPayload,
             int? throughput = null,
@@ -279,8 +282,41 @@ namespace Microsoft.Azure.Cosmos
         /// Create an Azure Cosmos container through a Fluent API.
         /// </summary>
         /// <param name="name">Azure Cosmos container name to create.</param>
-        /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
+        /// <param name="partitionKeyPath">The path to the partition key. Example: /partitionKey</param>
         /// <returns>A fluent definition of an Azure Cosmos container.</returns>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosContainerResponse container = await this.cosmosDatabase.Containers.DefineContainer("TestContainer", "/partitionKey")
+        ///     .UniqueKey()
+        ///         .Path("/path1")
+        ///         .Path("/path2")
+        ///         .Attach()
+        ///     .IndexingPolicy()
+        ///         .IndexingMode(IndexingMode.Consistent)
+        ///         .AutomaticIndexing(false)
+        ///         .IncludedPaths()
+        ///             .Path("/includepath1")
+        ///             .Path("/includepath2")
+        ///             .Attach()
+        ///         .ExcludedPaths()
+        ///             .Path("/excludepath1")
+        ///             .Path("/excludepath2")
+        ///             .Attach()
+        ///         .CompositeIndex()
+        ///             .Path("/root/leaf1")
+        ///             .Path("/root/leaf2", CompositePathSortOrder.Descending)
+        ///             .Attach()
+        ///         .CompositeIndex()
+        ///             .Path("/root/leaf3")
+        ///             .Path("/root/leaf4")
+        ///             .Attach()
+        ///         .Attach()
+        ///     .CreateAsync(5000 /* throughput /*); 
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract CosmosContainerFluentDefinitionForCreate DefineContainer(
             string name,
             string partitionKeyPath);
