@@ -869,11 +869,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Query items on the container that have no partition key value
                 int resultsFetched = 0;
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-                CosmosResultSetIterator<ToDoActivity> setIterator = fixedContainer.Items
+                CosmosFeedIterator<ToDoActivity> setIterator = fixedContainer.Items
                     .CreateItemQuery<ToDoActivity>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: 2);
                 while (setIterator.HasMoreResults)
                 {
-                    CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    CosmosFeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
                     resultsFetched += queryResponse.Count();
 
                     // For the items returned with NonePartitionKeyValue
@@ -905,7 +905,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CreateItemQuery<ToDoActivity>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: ItemsToCreate);
                 Assert.IsTrue(setIterator.HasMoreResults);
                 {
-                    CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    CosmosFeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
                     Assert.AreEqual(0, queryResponse.Count());
                 }
 
@@ -914,7 +914,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CreateItemQuery<ToDoActivity>(sql, partitionKey: "TestPK", maxItemCount: ItemsToCreate + 1);
                 Assert.IsTrue(setIterator.HasMoreResults);
                 {
-                    CosmosQueryResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    CosmosFeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
                     Assert.AreEqual(ItemsToCreate, queryResponse.Count());
                 }
             }
