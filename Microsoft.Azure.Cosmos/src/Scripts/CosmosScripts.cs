@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ReplaceStoredProcedureAsync(
+        public abstract Task<CosmosStoredProcedureResponse> ReplaceStoredProcedureAsync(
             string id,
             string body,
             CosmosRequestOptions requestOptions = null,

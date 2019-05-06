@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
-        public override Task<CosmosResponseMessage> ReplaceStoredProcedureAsync(
+        public override Task<CosmosStoredProcedureResponse> ReplaceStoredProcedureAsync(
             string id,
             string body,
             CosmosRequestOptions requestOptions = null,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 uriPathSegment: Paths.TriggersPathSegment,
                 id: id);
 
-            return this.container.ClientContext.ProcessResourceOperationStreamAsync(
+            Task<CosmosResponseMessage> response = this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: LinkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Replace,
@@ -132,6 +132,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
+
+            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override Task<CosmosResponseMessage> DeleteStoredProcedureAsync(

@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents.Routing;
     using IndexingMode = IndexingMode;
     using ConsistencyLevel = Documents.ConsistencyLevel;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     [TestClass]
     public class GatewayTests
@@ -1390,8 +1391,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 __.readDocuments(__.getSelfLink(), { pageSize : 1, continuation : ''}, callback);
             }";
             //Script cannot timeout.
-            CosmosStoredProcedure storedProcedure = await collection.StoredProcedures.CreateStoredProcedureAsync("scriptId", script);
-            string result = await storedProcedure.ExecuteAsync<object ,string >(partitionKey : documentDefinition.Id, input : null);
+            CosmosScripts cosmosScripts = collection.GetScripts();
+            CosmosStoredProcedure storedProcedure = await cosmosScripts.CreateStoredProcedureAsync("scriptId", script);
+            string result = await cosmosScripts.ExecuteStoredProcedureAsync<object ,string >(id : "scriptId", partitionKey : documentDefinition.Id, input : null);
             await database.DeleteAsync();
         }
 
@@ -1435,8 +1437,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Script cannot timeout.
             try
             {
-                CosmosStoredProcedure storedProcedure = await collection.StoredProcedures.CreateStoredProcedureAsync("scriptId", script);
-                string result = await storedProcedure.ExecuteAsync<object, string>(document.Id, input: null);
+                CosmosScripts cosmosScripts = collection.GetScripts();
+                CosmosStoredProcedure storedProcedure = await cosmosScripts.CreateStoredProcedureAsync("scriptId", script);
+                string result = await cosmosScripts.ExecuteStoredProcedureAsync<object, string>(document.Id, "scriptId", input: null);
             }
             catch (DocumentClientException exception)
             {
@@ -1468,13 +1471,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             CosmosContainer collection = await database.Containers.CreateContainerAsync(collectionSpec);
 
-            CosmosStoredProcedure sprocUri = await collection.StoredProcedures["__.sys.echo"].ReadAsync();
+            CosmosScripts cosmosScripts = collection.GetScripts();
+            CosmosStoredProcedure sprocUri = await cosmosScripts.ReadStoredProcedureAsync("__.sys.echo");
             string input = "foobar";
 
             string result = string.Empty;
             try
             {
-                result = sprocUri.ExecuteAsync<string, string>("anyPk", input).Result;
+                result = cosmosScripts.ExecuteStoredProcedureAsync<string, string>("anyPk", "__.sys.echo", input).Result;
             }
             catch (DocumentClientException exception)
             {
