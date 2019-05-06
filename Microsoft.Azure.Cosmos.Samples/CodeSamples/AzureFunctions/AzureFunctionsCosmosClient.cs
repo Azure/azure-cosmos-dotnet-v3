@@ -53,17 +53,14 @@ namespace AzureFunctions
                 throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
             }
 
-            var cosmosConfiguration = new CosmosConfiguration(endpoint,
-                authKey);
-            // Customize client configuration
-
-            var cosmosClient = new CosmosClient(cosmosConfiguration);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(endpoint, authKey);
+            var cosmosClient = cosmosClientBuilder.Build();
 
             // Optional. Initialize container
-            CosmosDatabaseResponse databaseResponse = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("mydb").Result;
+            CosmosDatabaseResponse databaseResponse = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("mydb").GetAwaiter().GetResult();
             CosmosDatabase database = databaseResponse.Database;
 
-            var containerResponse = database.Containers.CreateContainerIfNotExistsAsync("mycoll", "/id").Result;
+            var containerResponse = database.Containers.CreateContainerIfNotExistsAsync("mycoll", "/id").GetAwaiter().GetResult();
 
             return cosmosClient;
         }
