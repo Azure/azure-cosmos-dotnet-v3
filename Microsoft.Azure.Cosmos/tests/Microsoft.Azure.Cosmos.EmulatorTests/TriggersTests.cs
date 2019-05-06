@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;

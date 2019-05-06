@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             this.container = container;
         }
 
-        public override Task<CosmosStoredProcedure> CreateStoredProcedureAsync(
+        public override Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
                     CosmosRequestOptions requestOptions = null,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 Body = body
             };
 
-            return this.container.ClientContext.ProcessResourceOperationAsync(
+            Task<CosmosResponseMessage> response = this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Create,
@@ -50,8 +50,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,
-                responseCreator: response => this.container.ClientContext.ResponseFactory.ToObjectInternal<CosmosStoredProcedure>(response),
                 cancellationToken: cancellationToken);
+
+            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override CosmosFeedIterator<CosmosStoredProcedure> GetStoredProcedureIterator(
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 this.StoredProcedureFeedRequestExecutor);
         }
 
-        public override Task<CosmosStoredProcedure> ReadStoredProcedureAsync(
+        public override Task<CosmosStoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 uriPathSegment: Paths.TriggersPathSegment,
                 id: id);
 
-            return this.container.ClientContext.ProcessResourceOperationAsync(
+            Task<CosmosResponseMessage> response = this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: LinkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Read,
@@ -89,8 +90,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 partitionKey: null,
                 streamPayload: null,
                 requestEnricher: null,
-                responseCreator: response => this.container.ClientContext.ResponseFactory.ToObjectInternal<CosmosStoredProcedure>(response),
                 cancellationToken: cancellationToken);
+
+            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override Task<CosmosResponseMessage> ReplaceStoredProcedureAsync(
@@ -159,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
+        public override Task<CosmosStoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
             object partitionKey,
             string id,
             TInput input,
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 
-            return this.container.ClientContext.ResponseFactory.CreateItemResponse<TOutput>(response);
+            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureExecuteResponse<TOutput>(response);
         }
 
         private Task<CosmosFeedResponse<CosmosStoredProcedure>> StoredProcedureFeedRequestExecutor(

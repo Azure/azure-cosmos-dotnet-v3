@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     internal class CosmosResponseFactory
     {
@@ -72,18 +73,27 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosStoredProcedureResponse> CreateStoredProcedureResponse(
-            CosmosStoredProcedure storedProcedure,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<CosmosStoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponse<T>(Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosStoredProcedure settings = this.ToObjectInternal<CosmosStoredProcedure>(cosmosResponseMessage);
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage);
+                return new CosmosStoredProcedureExecuteResponse<T>(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    item);
+            });
+        }
+
+        internal Task<CosmosStoredProcedureResponse> CreateStoredProcedureResponse(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                CosmosStoredProcedure cosmosStoredProcedure = this.ToObjectInternal<CosmosStoredProcedure>(cosmosResponseMessage);
                 return new CosmosStoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
-                    storedProcedure);
+                    cosmosStoredProcedure);
             });
         }
 

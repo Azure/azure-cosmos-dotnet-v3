@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosStoredProcedure> CreateStoredProcedureAsync(
+        public abstract Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
                     CosmosRequestOptions requestOptions = null,
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosStoredProcedure> ReadStoredProcedureAsync(
+        public abstract Task<CosmosStoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosItemResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
+        public abstract Task<CosmosStoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
             object partitionKey,
             string id,
             TInput input,

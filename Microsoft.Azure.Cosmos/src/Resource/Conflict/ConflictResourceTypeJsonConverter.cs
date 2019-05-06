@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Newtonsoft.Json;
 
     internal sealed class ConflictResourceTypeJsonConverter : JsonConverter
