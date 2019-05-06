@@ -290,11 +290,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
 
-
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosResultSetIterator<TestDocument> setIterator =
+            CosmosFeedIterator<TestDocument> setIterator =
                container.Items.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
-            CosmosQueryResponse<TestDocument> queryResponse = await setIterator.FetchNextSetAsync();
+            CosmosFeedResponse<TestDocument> queryResponse = await setIterator.FetchNextSetAsync();
             AssertEqual(testDocument, queryResponse.First());
 
             //Will add LINQ test once it is available with new V3 OM 
@@ -452,10 +451,10 @@ function bulkImport(docs) {
             }
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");
-            CosmosResultSetIterator<MyObject> setIterator1 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
+            CosmosFeedIterator<MyObject> setIterator1 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition2 = new CosmosSqlQueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
-            CosmosResultSetIterator<MyObject> setIterator2 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
+            CosmosFeedIterator<MyObject> setIterator2 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
 
             List<MyObject> list1 = new List<MyObject>();
             List<MyObject> list2 = new List<MyObject>();

@@ -1282,40 +1282,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Tests that collection cache is refreshed when collection is recreated.
+        /// Tests that container cache is refreshed when container is recreated.
         /// The test just ensures that client retries and completes successfully.
-        /// It verifies case when original collection is not partitioned and new collection is partitioned.
+        /// It verifies case when original and new container have different partition key path.
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
-        public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned()
+        public async Task TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath()
         {
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(TestCommon.CreateClient(true));
+            await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Https));
+            await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
+            await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
-        internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(DocumentClient client)
+        internal async Task TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(CosmosClient client)
         {
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
+            CosmosDatabase database = null;
+            try
+            {
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+                Document document1 = new Document { Id = "doc1" };
+                document1.SetPropertyValue("field1", 1);
+                await container.Items.CreateItemAsync(1, document1);
 
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
+                CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
+                database = otherClient.Databases["db1"];
+                container = database.Containers["coll1"];
+                await container.DeleteAsync();
+                PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
+                container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
-            Document document2 = new Document { Id = "doc1" };
-            document2.SetPropertyValue("field2", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document2);
+                Document document2 = new Document { Id = "doc1" };
+                document2.SetPropertyValue("field2", 1);
+                container = client.Databases["db1"].Containers["coll1"];
+                await container.Items.CreateItemAsync(1, document2);
+            }
+            finally
+            {
+                if(database != null)
+                {
+                    await database.DeleteAsync();
+                }
+            }
         }
 
         /// <summary>
@@ -1682,103 +1696,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Tests that partition key definition cache is refreshed when collection is recreated.
-        /// The test just ensures that client retries and completes successfully.
-        /// It verifies case when original collection is partitioned and new collection is not partitioned.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
-        public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned()
-        {
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(true));
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Https));
-#endif
-        }
-
-        internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
-        {
-            await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-
-            Document document2 = new Document { Id = "doc1" };
-            document2.SetPropertyValue("field2", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document2);
-        }
-
-        /// <summary>
-        /// Tests that partition key definition cache is refreshed when collection is recreated.
+        /// Tests that partition key definition cache is refreshed when container is recreated.
         /// The test just ensures that Gateway successfully creates script when its partitionkeydefinition cache is outdated..
-        /// It verifies case when original collection is partitioned and new collection is not partitioned.
+        /// It verifies case when original container and new container have different partition key path.
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
-        public async Task TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned()
+        public async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath()
         {
-            await this.TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(true));
+            await this.TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
         }
 
-        internal async Task TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
+        internal async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(CosmosClient client)
         {
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-
-            await client.CreateStoredProcedureAsync("/dbs/db1/colls/coll1", new StoredProcedure { Id = "sproc1", Body = "function() {return 1}" });
-        }
-
-        /// <summary>
-        /// Tests that partition key definition cache is refreshed when collection is recreated.
-        /// The test just ensures that Gateway successfully creates script when its partitionkeydefinition cache is outdated..
-        /// It verifies case when original collection is not partitioned and new collection is partitioned.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [Ignore("NonPartitioned container is not a valid scenerio from V3 SDK onward")]
-        public async Task TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned()
-        {
-            await this.TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned(TestCommon.CreateClient(true));
-        }
-
-        internal async Task TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned(DocumentClient client)
-        {
-            await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition2 }, new RequestOptions { OfferThroughput = 12000 });
-
-            await client.CreateStoredProcedureAsync("/dbs/db1/colls/coll1", new StoredProcedure { Id = "sproc1", Body = "function() {return 1}" });
-            for (int i = 0; i < 10; i++)
+            CosmosDatabase database = null;
+            try
             {
-                await client.ExecuteStoredProcedureAsync<object>("/dbs/db1/colls/coll1/sprocs/sproc1", new RequestOptions { PartitionKey = new PartitionKey(i) });
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+                Document document1 = new Document { Id = "doc1" };
+                document1.SetPropertyValue("field1", 1);
+                await container.Items.CreateItemAsync(1, document1);
+
+                CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
+                database = otherClient.Databases["db1"];
+                container = database.Containers["coll1"];
+                await container.DeleteAsync();
+                PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
+                container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
+
+                container = client.Databases["db1"].Containers["coll1"];
+                CosmosStoredProcedure storedProcedure = await container.StoredProcedures.CreateStoredProcedureAsync(id: "sproc1", body: "function() {return 1}");
+                for (int i = 0; i < 10; i++)
+                {
+                    await storedProcedure.ExecuteAsync<object, object>(partitionKey: i, input: null);
+                }
+            }
+            finally
+            {
+                if (database != null)
+                {
+                    await database.DeleteAsync();
+                }
             }
         }
 
