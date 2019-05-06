@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
                 {
-                    ToDoActivity[] results = serializer.Deserialize<ToDoActivity[]>(jtr);
+                    ToDoActivity[] results = serializer.Deserialize<CosmosFeedResponseUtil<ToDoActivity>>(jtr).Data.ToArray();
                     ToDoActivity[] readTodoActivities = results.OrderBy(e => e.id)
                         .ToArray();
 
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
 
-                ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                ToDoActivity[] activities = this.jsonSerializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
                 Assert.AreEqual(1, activities.Length);
                 ToDoActivity response = activities.First();
                 resultList.Add(response);
@@ -504,7 +504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
-                ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                ToDoActivity[] response = this.jsonSerializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
                 Assert.IsTrue(response.Length <= 5);
                 resultList.AddRange(response);
             }
@@ -640,12 +640,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
+
                 IJsonReader reader = JsonReader.Create(iter.Content);
                 IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
                 textWriter.WriteAll(reader);
                 string json = Encoding.UTF8.GetString(textWriter.GetResult());
                 Assert.IsNotNull(json);
-                ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
+                ToDoActivity[] responseActivities =  JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
                 Assert.IsTrue(responseActivities.Length <= 5);
                 resultList.AddRange(responseActivities);
             }
