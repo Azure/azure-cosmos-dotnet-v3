@@ -405,16 +405,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string continuationToken = null;
             do
             {
-                CosmosResultSetIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
+                CosmosFeedIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
                    sqlQueryText: query,
                    maxConcurrency: 2,
                    maxItemCount: maxItemCount,
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
 
-                CosmosQueryResponse<T> cosmosQueryResponse = await itemQuery.FetchNextSetAsync();
+                CosmosFeedResponse<T> cosmosQueryResponse = await itemQuery.FetchNextSetAsync();
                 results.AddRange(cosmosQueryResponse);
-                continuationToken = cosmosQueryResponse.ContinuationToken;
+                continuationToken = cosmosQueryResponse.Continuation;
             } while (continuationToken != null);
 
             return results;
