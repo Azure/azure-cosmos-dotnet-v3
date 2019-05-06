@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; set; }
+        public virtual string Id { get; internal set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.

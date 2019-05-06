@@ -34,14 +34,14 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Documents.Constants.Properties.Id)]
-        public virtual string Id { get; set; }
+        public virtual string Id { get; internal set; }
 
         /// <summary>
         /// Gets or sets the operation that resulted in the conflict in the Azure Cosmos DB service.
         /// </summary>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.OperationType)]
-        public virtual OperationKind OperationKind { get; set; }
+        public virtual OperationKind OperationKind { get; internal set; }
 
         /// <summary>
         /// Gets the content of the Conflict resource in the Azure Cosmos DB service.
