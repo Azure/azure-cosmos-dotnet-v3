@@ -38,7 +38,7 @@
             return Task.Factory.StartNew(
                 () => {
                     CosmosResponseMessage responseMessage =  new CosmosResponseMessage(HttpStatusCode.OK);
-                    responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes("TestContent"));
+                    responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"));
                     return responseMessage;
                 });
         }
