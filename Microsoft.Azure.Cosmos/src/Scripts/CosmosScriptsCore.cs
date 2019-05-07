@@ -77,8 +77,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment,
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
                 id: id);
 
             Task<CosmosResponseMessage> response = this.container.ClientContext.ProcessResourceOperationStreamAsync(
@@ -118,8 +118,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
             };
 
             Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment,
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
                 id: id);
 
             Task<CosmosResponseMessage> response = this.container.ClientContext.ProcessResourceOperationStreamAsync(
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
-        public override Task<CosmosResponseMessage> DeleteStoredProcedureAsync(
+        public override Task<CosmosStoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -147,11 +147,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment,
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
                 id: id);
 
-            return this.container.ClientContext.ProcessResourceOperationStreamAsync(
+            Task<CosmosResponseMessage> response = this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: LinkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Delete,
@@ -161,6 +161,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: null,
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
+
+            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override Task<CosmosStoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
@@ -188,8 +190,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment,
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
                 id: id);
 
             Task<CosmosResponseMessage> response = this.container.ClientContext.ProcessResourceOperationStreamAsync(

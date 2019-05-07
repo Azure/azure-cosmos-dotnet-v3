@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> DeleteStoredProcedureAsync(
+        public abstract Task<CosmosStoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
