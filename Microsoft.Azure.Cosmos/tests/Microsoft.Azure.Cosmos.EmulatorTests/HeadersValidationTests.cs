@@ -376,7 +376,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore /* This test fails without an understandable reason, it expects an exception that doesn't happen */]
         public void ValidateEmitVerboseTracesInQueryHttps()
         {
             var client = TestCommon.CreateClient(false, Protocol.Https);
