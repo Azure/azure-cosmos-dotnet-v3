@@ -209,6 +209,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerSettings));
             }
 
+            if (string.IsNullOrEmpty(triggerSettings.Id))
+            {
+                throw new ArgumentNullException(nameof(triggerSettings.Id));
+            }
+
+            if (string.IsNullOrEmpty(triggerSettings.Body))
+            {
+                throw new ArgumentNullException(nameof(triggerSettings.Body));
+            }
+
             Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Trigger,
@@ -274,6 +284,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerSettings.Id));
             }
 
+            if (string.IsNullOrEmpty(triggerSettings.Body))
+            {
+                throw new ArgumentNullException(nameof(triggerSettings.Body));
+            }
+
 
             Uri LinkUri = this.container.ClientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
@@ -327,6 +342,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
             if (userDefinedFunctionSettings == null)
             {
                 throw new ArgumentNullException(nameof(userDefinedFunctionSettings));
+            }
+
+            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Id))
+            {
+                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Id));
+            }
+
+            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Body))
+            {
+                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
             }
 
             Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
@@ -392,6 +417,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             if (string.IsNullOrEmpty(userDefinedFunctionSettings.Id))
             {
                 throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Id));
+            }
+
+            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Body))
+            {
+                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
             }
 
 
