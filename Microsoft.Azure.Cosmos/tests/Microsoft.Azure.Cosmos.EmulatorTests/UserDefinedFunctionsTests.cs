@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public sealed class UserDefinedFunctionsTests : BaseCosmosClientHelper
     {
         private CosmosContainerCore container = null;
+        private CosmosScripts scripts = null;
         private const string function = @"function(amt) { return amt * 0.05; }";
 
         [TestInitialize]
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
             this.container = (CosmosContainerCore)response;
+            this.scripts = this.container.GetScripts();
         }
 
         [TestCleanup]
@@ -48,13 +50,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             CosmosUserDefinedFunctionResponse response =
-                await this.container.UserDefinedFunctions.CreateUserDefinedFunctionAsync(settings);
+                await this.scripts.CreateUserDefinedFunctionAsync(settings);
             double reqeustCharge = response.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(settings, response);
 
-            response = await response.UserDefinedFunction.ReadAsync();
+            response = await this.scripts.ReadUserDefinedFunctionAsync(settings.Id);
             reqeustCharge = response.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -63,13 +65,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosUserDefinedFunctionSettings updatedSettings = response.Resource;
             updatedSettings.Body = @"function(amt) { return amt * 0.42; }";
 
-            CosmosUserDefinedFunctionResponse replaceResponse = await response.UserDefinedFunction.ReplaceAsync(updatedSettings);
+            CosmosUserDefinedFunctionResponse replaceResponse = await this.scripts.ReplaceUserDefinedFunctionAsync(updatedSettings);
             UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(updatedSettings, replaceResponse);
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
 
-            replaceResponse = await replaceResponse.UserDefinedFunction.DeleteAsync();
+            replaceResponse = await this.scripts.DeleteUserDefinedFunctionAsync(settings.Id);
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
@@ -79,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateUserDefinedFunctionsTest()
         {
             // Prevent failures if previous test did not clean up correctly 
-            await this.container.UserDefinedFunctions["calculateTax"].DeleteAsync();
+            await this.scripts.DeleteUserDefinedFunctionAsync("calculateTax");
 
             ToDoActivity item = new ToDoActivity()
             {
@@ -92,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.container.Items.CreateItemAsync<ToDoActivity>(item.status, item);
 
-            CosmosUserDefinedFunction cosmosUserDefinedFunction = await this.container.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
+            CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await this.scripts.CreateUserDefinedFunctionAsync(
                 new CosmosUserDefinedFunctionSettings
                 {
                     Id = "calculateTax",
@@ -123,16 +125,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(iterIds.Contains(item.id));
 
             // Delete existing user defined functions.
-            await cosmosUserDefinedFunction.DeleteAsync();
+            await this.scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
         }
 
         [TestMethod]
         public async Task UserDefinedFunctionsIteratorTest()
         {
-            CosmosUserDefinedFunction cosmosUserDefinedFunction = await CreateRandomUdf();
+            CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await CreateRandomUdf();
 
             HashSet<string> settings = new HashSet<string>();
-            CosmosFeedIterator<CosmosUserDefinedFunctionSettings> iter = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator(); ;
+            CosmosFeedIterator<CosmosUserDefinedFunctionSettings> iter = this.scripts.GetUserDefinedFunctionIterator(); ;
             while (iter.HasMoreResults)
             {
                 foreach (CosmosUserDefinedFunctionSettings storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
@@ -144,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(settings.Contains(cosmosUserDefinedFunction.Id), "The iterator did not return the user defined function definition.");
 
             // Delete existing user defined functions.
-            await cosmosUserDefinedFunction.DeleteAsync();
+            await this.scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
         }
 
         private static void ValidateUserDefinedFunctionSettings(CosmosUserDefinedFunctionSettings udfSettings, CosmosUserDefinedFunctionResponse cosmosResponse)
@@ -171,9 +173,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             //Create a user defined function 
-            CosmosUserDefinedFunctionResponse createResponse = await this.container.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
+            CosmosUserDefinedFunctionResponse createResponse = await this.scripts.CreateUserDefinedFunctionAsync(
                 userDefinedFunctionSettings: settings,
-                cancellationToken: this.cancellationToken);
+                cancellation: this.cancellationToken);
 
             ValidateUserDefinedFunctionSettings(settings, createResponse);
 

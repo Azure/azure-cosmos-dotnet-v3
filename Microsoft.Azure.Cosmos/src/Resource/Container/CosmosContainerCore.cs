@@ -40,7 +40,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.Database = database;
             this.Items = new CosmosItemsCore(this.ClientContext, this);
-            this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this.ClientContext, this);
         }
 
         public override string Id { get; }
@@ -50,8 +49,6 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosItems Items { get; }
 
         internal virtual Uri LinkUri { get; }
-
-        internal CosmosUserDefinedFunctions UserDefinedFunctions { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
 

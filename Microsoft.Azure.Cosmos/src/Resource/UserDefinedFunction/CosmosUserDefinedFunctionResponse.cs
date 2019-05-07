@@ -5,12 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System.Net;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// The cosmos user defined function response
     /// </summary>
-    internal class CosmosUserDefinedFunctionResponse : CosmosResponse<CosmosUserDefinedFunctionSettings>
+    public class CosmosUserDefinedFunctionResponse : CosmosResponse<CosmosUserDefinedFunctionSettings>
     {
         /// <summary>
         /// Create a <see cref="CosmosUserDefinedFunctionResponse"/> as a no-op for mock testing
@@ -27,28 +26,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal CosmosUserDefinedFunctionResponse(
           HttpStatusCode httpStatusCode,
           CosmosResponseMessageHeaders headers,
-          CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings,
-          CosmosUserDefinedFunction userDefinedFunction) : base(
+          CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings) : base(
               httpStatusCode,
               headers,
               cosmosUserDefinedFunctionSettings)
         {
-             this.UserDefinedFunction = userDefinedFunction;
         }
 
         /// <summary>
-        /// The reference to the cosmos user defined function. 
-        /// This allows additional operations for the user defined function
-        /// </summary>
-        public virtual CosmosUserDefinedFunction UserDefinedFunction { get; private set; }
-
-        /// <summary>
-        /// Get <see cref="CosmosUserDefinedFunction"/> implicitly from <see cref="CosmosUserDefinedFunctionResponse"/>
+        /// Get <see cref="CosmosUserDefinedFunctionSettings"/> implicitly from <see cref="CosmosUserDefinedFunctionResponse"/>
         /// </summary>
         /// <param name="response">CosmosUserDefinedFunctionResponse</param>
-        public static implicit operator CosmosUserDefinedFunction(CosmosUserDefinedFunctionResponse response)
+        public static implicit operator CosmosUserDefinedFunctionSettings(CosmosUserDefinedFunctionResponse response)
         {
-            return response.UserDefinedFunction;
+            return response.Resource;
         }
     }
 }

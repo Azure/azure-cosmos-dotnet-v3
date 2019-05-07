@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="functionUri">A URI to the User Defined Function resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunction"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="UserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:

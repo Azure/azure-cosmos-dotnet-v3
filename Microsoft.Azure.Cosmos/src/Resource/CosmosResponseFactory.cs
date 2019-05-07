@@ -109,9 +109,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(
-            CosmosUserDefinedFunction userDefinedFunction,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -119,8 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 return new CosmosUserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
-                    userDefinedFunction);
+                    settings);
             });
         }
 

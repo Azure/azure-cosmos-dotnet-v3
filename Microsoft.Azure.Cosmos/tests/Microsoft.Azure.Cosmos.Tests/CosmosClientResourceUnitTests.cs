@@ -41,9 +41,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             CosmosContainerCore container = new CosmosContainerCore(context, db, crId);
             Assert.AreEqual(container.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId);
-
-            CosmosUserDefinedFunction udf = new CosmosUserDefinedFunction(context, container, udfId);
-            Assert.AreEqual(udf.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/udfs/" + udfId);
         }
 
         [TestMethod]
