@@ -189,13 +189,13 @@ WHERE c.key = "arrayOnlyKey"]]></Query>
     <Query><![CDATA[SELECT VALUE MIN (c.field)
 FROM c
 WHERE c.key = "oneArrayKey"]]></Query>
-    <Aggregation><![CDATA[[]]]></Aggregation>
+    <Aggregation />
   </Result>
   <Result>
     <Query><![CDATA[SELECT VALUE MIN (c.field)
 FROM c
 WHERE c.key = "oneObjectKey"]]></Query>
-    <Aggregation><![CDATA[{}]]></Aggregation>
+    <Aggregation />
   </Result>
   <Result>
     <Query><![CDATA[SELECT VALUE MIN (c.field)
@@ -291,13 +291,13 @@ WHERE c.key = "arrayOnlyKey"]]></Query>
     <Query><![CDATA[SELECT VALUE MAX (c.field)
 FROM c
 WHERE c.key = "oneArrayKey"]]></Query>
-    <Aggregation><![CDATA[[]]]></Aggregation>
+    <Aggregation />
   </Result>
   <Result>
     <Query><![CDATA[SELECT VALUE MAX (c.field)
 FROM c
 WHERE c.key = "oneObjectKey"]]></Query>
-    <Aggregation><![CDATA[{}]]></Aggregation>
+    <Aggregation />
   </Result>
   <Result>
     <Query><![CDATA[SELECT VALUE MAX (c.field)
