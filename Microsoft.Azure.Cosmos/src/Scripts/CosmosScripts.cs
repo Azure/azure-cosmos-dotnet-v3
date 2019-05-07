@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// Represents script operations on an Azure Cosmos container.
     /// </summary>
-    /// <seealso cref="CosmosStoredProcedure"/>
-    /// <seealso cref="CosmosTrigger"/>
+    /// <seealso cref="CosmosStoredProcedureSettings"/>
+    /// <seealso cref="CosmosTriggerSettings"/>
     /// <seealso cref="CosmosUserDefinedFunction"/>
     public abstract class CosmosScripts
     {
@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="id">The identifier of the Stored Procedure to create.</param>
         /// <param name="body">The JavaScript function that is the body of the stored procedure</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The <see cref="CosmosStoredProcedure"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The <see cref="CosmosStoredProcedureSettings"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="id"/> or <paramref name="body"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -38,10 +38,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         <term>403</term><description>Forbidden - You have reached your quota of stored procedures for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosStoredProcedure"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosStoredProcedureSettings"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosStoredProcedure"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosStoredProcedureSettings"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                     string id,
                     string body,
                     CosmosRequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken));
+                    CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Gets an iterator to go through all the stored procedures for the container
@@ -107,18 +107,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<CosmosStoredProcedure> GetStoredProcedureIterator(
+        public abstract CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosStoredProcedure"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to read.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedure"/>.
+        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureSettings"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -146,17 +146,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<CosmosStoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
             CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
-        /// Replaces a <see cref="CosmosStoredProcedure"/> in the Azure Cosmos service as an asynchronous operation.
+        /// Replaces a <see cref="CosmosStoredProcedureSettings"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to replace.</param>
         /// <param name="body">The JavaScript function to replace the existing resource with.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedure"/>.
+        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureSettings"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/>, <paramref name="body"/> are not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -193,14 +193,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string id,
             string body,
             CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="CosmosStoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain the response to the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> are not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<CosmosStoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
             CosmosRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service.
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="id">The identifier of the Stored Procedure to execute.</param>
         /// <param name="input">The JSON serializable input parameters.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
@@ -279,6 +279,203 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string id,
             TInput input,
             CosmosStoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
+
+        /// <summary>
+        /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="triggerSettings">The <see cref="CosmosTriggerSettings"/> object.</param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A task object representing the service response for the asynchronous operation.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="triggerSettings"/> is not set.</exception>
+        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an Id was not supplied for the new trigger or that the Body was malformed.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>403</term><description>Forbidden - You have reached your quota of triggers for the collection supplied. Contact support to have this quota increased.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosTriggerSettings"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosTriggerSettings"/> you tried to create was too large.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///  This creates a trigger then uses the trigger in a create item.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosTrigger cosmosTrigger = await scripts.CreateTriggerAsync(
+        ///     new CosmosTriggerSettings
+        ///     {
+        ///         Id = "addTax",
+        ///         Body = @"function AddTax() {
+        ///             var item = getContext().getRequest().getBody();
+        ///
+        ///             // calculate the tax.
+        ///             item.tax = item.cost * .15;
+        ///
+        ///             // Update the request -- this is what is going to be inserted.
+        ///             getContext().getRequest().setBody(item);
+        ///         }",
+        ///         TriggerOperation = TriggerOperation.All,
+        ///         TriggerType = TriggerType.Pre
+        ///     });
+        ///
+        /// CosmosItemRequestOptions options = new CosmosItemRequestOptions()
+        /// {
+        ///     PreTriggers = new List<string>() { cosmosTrigger.Id },
+        /// };
+        ///
+        /// // Create a new item with trigger set in the request options
+        /// CosmosItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+        /// double itemTax = createdItem.Resource.tax;
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<CosmosTriggerResponse> CreateTriggerAsync(
+            CosmosTriggerSettings triggerSettings,
+            CosmosRequestOptions requestOptions = null,
+            CancellationToken cancellation = default(CancellationToken));
+
+        /// <summary>
+        /// Gets an iterator to go through all the triggers for the container
+        /// </summary>
+        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <example>
+        /// Get an iterator for all the triggers under the cosmos container
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosResultSetIterator<CosmosTriggerSettings> setIterator = scripts.Triggers.GetTriggerIterator();
+        /// while (setIterator.HasMoreResults)
+        /// {
+        ///     foreach(CosmosTriggerSettings settings in await setIterator.FetchNextSetAsync())
+        ///     {
+        ///          Console.WriteLine(settings.Id); 
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
+            int? maxItemCount = null,
+            string continuationToken = null);
+
+        /// <summary>
+        /// Reads a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="id">The id of the trigger to read.</param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="CosmosTriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the read resource record.
+        /// </returns>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///  This reads an existing trigger
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosTriggerResponse response = await scripts.ReadTriggerAsync("ExistingId");
+        /// CosmosTriggerSettings settings = response;
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<CosmosTriggerResponse> ReadTriggerAsync(
+            string id,
+            CosmosRequestOptions requestOptions = null,
+            CancellationToken cancellation = default(CancellationToken));
+
+        /// <summary>
+        /// Replaces a <see cref="CosmosTriggerSettings"/> in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="triggerSettings">The <see cref="CosmosTriggerSettings"/> object.</param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="CosmosTriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the updated resource record.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="triggerSettings"/> is not set.</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>404</term><description>NotFound - This means the resource you tried to delete did not exist.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        /// This examples replaces an existing trigger.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// //Updated settings
+        /// CosmosTriggerSettings settings = new CosmosTriggerSettings
+        /// {
+        ///     Id = "testTriggerId",
+        ///     Body = @"function AddTax() {
+        ///         var item = getContext().getRequest().getBody();
+        ///
+        ///         // Validate/calculate the tax.
+        ///         item.tax = item.cost* .15;
+        ///
+        ///         // Update the request -- this is what is going to be inserted.
+        ///         getContext().getRequest().setBody(item);
+        ///     }",
+        ///     TriggerOperation = TriggerOperation.All,
+        ///     TriggerType = TriggerType.Post
+        /// };
+        /// 
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosTriggerResponse response = await scripts.ReplaceTriggerAsync(CosmosTriggerSettings);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<CosmosTriggerResponse> ReplaceTriggerAsync(
+                    CosmosTriggerSettings triggerSettings,
+                    CosmosRequestOptions requestOptions = null,
+                    CancellationToken cancellation = default(CancellationToken));
+
+        /// <summary>
+        /// Delete a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="id">The id of the trigger to delete.</param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosTriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> which will contain information about the request issued.</returns>
+        /// /// <example>
+        /// This examples gets a reference to an existing trigger and deletes it.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosTriggerResponse response = await scripts.DeleteTriggerAsync("existingId");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<CosmosTriggerResponse> DeleteTriggerAsync(
+            string id,
+            CosmosRequestOptions requestOptions = null,
+            CancellationToken cancellation = default(CancellationToken));
     }
 }

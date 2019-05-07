@@ -35,14 +35,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void StoredProecdureSettingsDefaults()
         {
-            CosmosStoredProcedure dbSettings = new CosmosStoredProcedure();
+            CosmosStoredProcedureSettings dbSettings = new CosmosStoredProcedureSettings();
 
             Assert.IsNull(dbSettings.LastModified);
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedure), "Id", "Body");
+            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedureSettings), "Id", "Body");
         }
 
         [TestMethod]
@@ -61,6 +61,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void OperationKindMatchesDirect()
         {
             AssertEnums<Cosmos.OperationKind, Documents.OperationKind>();
+        }
+
+        [TestMethod]
+        public void TriggerOperationMatchesDirect()
+        {
+            AssertEnums<Cosmos.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -137,8 +143,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosStoredProcedure deserializedPayload =
-                JsonConvert.DeserializeObject<CosmosStoredProcedure>(testPyaload);
+            CosmosStoredProcedureSettings deserializedPayload =
+                JsonConvert.DeserializeObject<CosmosStoredProcedureSettings>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -422,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Id = id,
                 OperationKind = Cosmos.OperationKind.Create,
-                ResourceType = typeof(CosmosStoredProcedure)
+                ResourceType = typeof(CosmosStoredProcedureSettings)
             };
 
             Conflict conflict = new Conflict()
@@ -442,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(conflictDeserSettings.Id, conflictDeser.Id);
             Assert.AreEqual((int)conflictDeserSettings.OperationKind, (int)conflictDeser.OperationKind);
             Assert.AreEqual(typeof(StoredProcedure), conflictDeser.ResourceType);
-            Assert.AreEqual(typeof(CosmosStoredProcedure), conflictDeserSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosStoredProcedureSettings), conflictDeserSettings.ResourceType);
             Assert.AreEqual(conflictDeserSettings.Id, conflict.Id);
         }
 
@@ -461,7 +467,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(conflict.Id, conflictSettings.Id);
             Assert.AreEqual((int)conflictSettings.OperationKind, (int)conflict.OperationKind);
             Assert.AreEqual(typeof(Trigger), conflict.ResourceType);
-            Assert.AreEqual(typeof(CosmosTrigger), conflictSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosTriggerSettings), conflictSettings.ResourceType);
 
             Assert.AreEqual("Conflict1", conflictSettings.Id);
         }

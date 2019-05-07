@@ -4,15 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-
     /// <summary>
     /// Extensions to interact with Scripts.
     /// </summary>
-    /// <seealso cref="CosmosStoredProcedure"/>
-    /// <seealso cref="CosmosTrigger"/>
+    /// <seealso cref="CosmosStoredProcedureSettings"/>
+    /// <seealso cref="CosmosTriggerSettings"/>
     /// <seealso cref="CosmosUserDefinedFunction"/>
     public static class ScriptsExtensions
     {

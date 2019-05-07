@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     CosmosScripts cosmosScripts = container.GetScripts();
 
-                    CosmosStoredProcedure storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
+                    CosmosStoredProcedureSettings storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
                     myStoredProcedure.Body = "function() {var x = 5;}";
                     storedProcedure1 = await cosmosScripts.ReplaceStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
                     await cosmosScripts.DeleteStoredProcedureAsync(myStoredProcedure.Id);
@@ -271,8 +271,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // 
                     // read databaseCollection feed.
-                    CosmosFeedIterator<CosmosStoredProcedure> storedProcedureIter = cosmosScripts.GetStoredProcedureIterator();
-                    List<CosmosStoredProcedure> storedProcedures = new List<CosmosStoredProcedure>();
+                    CosmosFeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = cosmosScripts.GetStoredProcedureIterator();
+                    List<CosmosStoredProcedureSettings> storedProcedures = new List<CosmosStoredProcedureSettings>();
                     while (storedProcedureIter.HasMoreResults)
                     {
                         storedProcedures.AddRange(await storedProcedureIter.FetchNextSetAsync());

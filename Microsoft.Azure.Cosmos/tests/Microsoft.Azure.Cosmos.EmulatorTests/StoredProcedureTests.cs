@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             Assert.IsTrue(storedProcedureResponse.RequestCharge > 0);
 
-            CosmosStoredProcedure sprocSettings = storedProcedureResponse;
+            CosmosStoredProcedureSettings sprocSettings = storedProcedureResponse;
             Assert.AreEqual(sprocId, sprocSettings.Id);
             Assert.IsNotNull(sprocSettings.ResourceId);
             Assert.IsNotNull(sprocSettings.ETag);
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
-            CosmosStoredProcedure storedProcedure = storedProcedureResponse;
+            CosmosStoredProcedureSettings storedProcedure = storedProcedureResponse;
             CosmosStoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string, string>(
                 testPartitionId, 
                 sprocId, 
@@ -142,12 +142,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<string> readSprocIds = new List<string>();
-            CosmosFeedIterator<CosmosStoredProcedure> iter = this.scripts.GetStoredProcedureIterator();
+            CosmosFeedIterator<CosmosStoredProcedureSettings> iter = this.scripts.GetStoredProcedureIterator();
             while (iter.HasMoreResults)
             {
-                CosmosFeedResponse<CosmosStoredProcedure> currentResultSet = await iter.FetchNextSetAsync();
+                CosmosFeedResponse<CosmosStoredProcedureSettings> currentResultSet = await iter.FetchNextSetAsync();
                 {
-                    foreach (CosmosStoredProcedure storedProcedureSettingsEntry in currentResultSet)
+                    foreach (CosmosStoredProcedureSettings storedProcedureSettingsEntry in currentResultSet)
                     {
                         readSprocIds.Add(storedProcedureSettingsEntry.Id);
                     }
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosItemResponse<dynamic> createItemResponse = await this.container.Items.CreateItemAsync<dynamic>(testPartitionId, payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            CosmosStoredProcedure storedProcedure = storedProcedureResponse;
+            CosmosStoredProcedureSettings storedProcedure = storedProcedureResponse;
             CosmosStoredProcedureExecuteResponse<JArray> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<object, JArray>(testPartitionId, sprocId, null);
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
@@ -215,8 +215,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosStoredProcedureResponse storedProcedureResponse =
                 await this.scripts.CreateStoredProcedureAsync(sprocId, sprocBody);
-            CosmosStoredProcedure cosmosStoredProcedure = storedProcedureResponse;
-            CosmosStoredProcedure cosmosStoredProcedureSettings = storedProcedureResponse;
+            CosmosStoredProcedureSettings cosmosStoredProcedure = storedProcedureResponse;
+            CosmosStoredProcedureSettings cosmosStoredProcedureSettings = storedProcedureResponse;
 
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             Assert.IsNotNull(cosmosStoredProcedure);
@@ -267,16 +267,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static void ValidateStoredProcedureSettings(string id, string body, CosmosStoredProcedureResponse cosmosResponse)
         {
-            CosmosStoredProcedure settings = cosmosResponse.Resource;
+            CosmosStoredProcedureSettings settings = cosmosResponse.Resource;
             Assert.AreEqual(id, settings.Id,
                 "Stored Procedure id do not match");
             Assert.AreEqual(body, settings.Body,
                 "Stored Procedure functions do not match");
         }
 
-        private void ValidateStoredProcedureSettings(CosmosStoredProcedure storedProcedureSettings, CosmosStoredProcedureResponse cosmosResponse)
+        private void ValidateStoredProcedureSettings(CosmosStoredProcedureSettings storedProcedureSettings, CosmosStoredProcedureResponse cosmosResponse)
         {
-            CosmosStoredProcedure settings = cosmosResponse.Resource;
+            CosmosStoredProcedureSettings settings = cosmosResponse.Resource;
             Assert.AreEqual(storedProcedureSettings.Body, settings.Body,
                 "Stored Procedure functions do not match");
             Assert.AreEqual(storedProcedureSettings.Id, settings.Id,

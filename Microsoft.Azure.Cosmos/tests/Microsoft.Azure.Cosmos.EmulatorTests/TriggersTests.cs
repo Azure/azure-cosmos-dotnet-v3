@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public sealed class TriggersTests : BaseCosmosClientHelper
     {
         private CosmosContainerCore container = null;
+        private CosmosScripts scripts = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
             this.container = (CosmosContainerCore)response;
+            this.scripts = this.container.GetScripts();
         }
 
         [TestCleanup]
@@ -44,18 +46,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = Guid.NewGuid().ToString(),
                 Body = TriggersTests.GetTriggerFunction(".05"),
-                TriggerOperation = TriggerOperation.Create,
+                TriggerOperation = Cosmos.TriggerOperation.Create,
                 TriggerType = Cosmos.TriggerType.Pre
             };
 
             CosmosTriggerResponse triggerResponse =
-                await this.container.Triggers.CreateTriggerAsync(settings);
+                await this.scripts.CreateTriggerAsync(settings);
             double reqeustCharge = triggerResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, triggerResponse.StatusCode);
             TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
-            triggerResponse = await triggerResponse.Trigger.ReadAsync();
+            triggerResponse = await this.scripts.ReadTriggerAsync(settings.Id);
             reqeustCharge = triggerResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, triggerResponse.StatusCode);
@@ -64,13 +66,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosTriggerSettings updatedSettings = triggerResponse.Resource;
             updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
 
-            CosmosTriggerResponse replaceResponse = await triggerResponse.Trigger.ReplaceAsync(updatedSettings);
+            CosmosTriggerResponse replaceResponse = await this.scripts.ReplaceTriggerAsync(updatedSettings);
             TriggersTests.ValidateTriggerSettings(updatedSettings, replaceResponse);
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
 
-            replaceResponse = await replaceResponse.Trigger.DeleteAsync();
+            replaceResponse = await this.scripts.DeleteTriggerAsync(updatedSettings.Id);
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
@@ -80,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateTriggersTest()
         {
             // Prevent failures if previous test did not clean up correctly 
-            await this.container.Triggers["addTax"].DeleteAsync();
+            await this.scripts.DeleteTriggerAsync("addTax");
 
             ToDoActivity item = new ToDoActivity()
             {
@@ -91,18 +93,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 1
             };
 
-            CosmosTrigger cosmosTrigger = await this.container.Triggers.CreateTriggerAsync(
+            CosmosTriggerSettings cosmosTrigger = await this.scripts.CreateTriggerAsync(
                 new CosmosTriggerSettings
                 {
                     Id = "addTax",
                     Body = TriggersTests.GetTriggerFunction(".20"),
-                    TriggerOperation = TriggerOperation.All,
+                    TriggerOperation = Cosmos.TriggerOperation.All,
                     TriggerType = Cosmos.TriggerType.Pre
                 });
            
             CosmosItemRequestOptions options = new CosmosItemRequestOptions()
             {
-               PreTriggers = new List<string>(){cosmosTrigger.Id },
+               PreTriggers = new List<string>(){ cosmosTrigger.Id },
             };
 
             CosmosItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
@@ -110,16 +112,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             double itemTax = createdItem.Resource.tax;
             Assert.AreEqual(item.cost * .20, itemTax);
             // Delete existing user defined functions.
-            await cosmosTrigger.DeleteAsync();
+            await this.scripts.DeleteTriggerAsync("addTax");
         }
 
         [TestMethod]
         public async Task TriggersIteratorTest()
         {
-            CosmosTrigger cosmosTrigger = await CreateRandomTrigger();
+            CosmosTriggerSettings cosmosTrigger = await CreateRandomTrigger();
 
             HashSet<string> settings = new HashSet<string>();
-            CosmosFeedIterator<CosmosTriggerSettings> iter = this.container.Triggers.GetTriggerIterator(); ;
+            CosmosFeedIterator<CosmosTriggerSettings> iter = this.scripts.GetTriggerIterator(); ;
             while (iter.HasMoreResults)
             {
                 foreach (CosmosTriggerSettings storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
@@ -131,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(settings.Contains(cosmosTrigger.Id), "The iterator did not return the user defined function definition.");
 
             // Delete existing user defined functions.
-            await cosmosTrigger.DeleteAsync();
+            await this.scripts.DeleteTriggerAsync(cosmosTrigger.Id);
         }
 
         private static string GetTriggerFunction(string taxPercentage)
@@ -176,14 +178,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = id,
                 Body = function,
-                TriggerOperation = TriggerOperation.Create,
+                TriggerOperation = Cosmos.TriggerOperation.Create,
                 TriggerType = Cosmos.TriggerType.Pre
             };
 
             //Create a user defined function 
-            CosmosTriggerResponse createResponse = await this.container.Triggers.CreateTriggerAsync(
+            CosmosTriggerResponse createResponse = await this.scripts.CreateTriggerAsync(
                 triggerSettings: settings,
-                cancellationToken: this.cancellationToken);
+                cancellation: this.cancellationToken);
 
             ValidateTriggerSettings(settings, createResponse);
 

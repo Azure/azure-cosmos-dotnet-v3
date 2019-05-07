@@ -5,13 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System.Net;
-    using System.Net.Http;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// The cosmos trigger response
     /// </summary>
-    internal class CosmosTriggerResponse : CosmosResponse<CosmosTriggerSettings>
+    public class CosmosTriggerResponse : CosmosResponse<CosmosTriggerSettings>
     {
         /// <summary>
         /// Create a <see cref="CosmosTriggerResponse"/> as a no-op for mock testing
@@ -28,28 +26,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal CosmosTriggerResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosTriggerSettings cosmosTriggerSettings,
-           CosmosTrigger trigger) : base(
+           CosmosTriggerSettings cosmosTriggerSettings) : base(
                httpStatusCode,
                headers,
                cosmosTriggerSettings)
         {
-            this.Trigger = trigger;
         }
 
         /// <summary>
-        /// The reference to the cosmos trigger.
-        /// This allows additional operations for the trigger
-        /// </summary>
-        public virtual CosmosTrigger Trigger { get; private set; }
-
-        /// <summary>
-        /// Get <see cref="CosmosTrigger"/> implictly from <see cref="CosmosTriggerResponse"/>
+        /// Get <see cref="CosmosTriggerSettings"/> implictly from <see cref="CosmosTriggerResponse"/>
         /// </summary>
         /// <param name="response">CosmosUserDefinedFunctionResponse</param>
-        public static implicit operator CosmosTrigger(CosmosTriggerResponse response)
+        public static implicit operator CosmosTriggerSettings(CosmosTriggerResponse response)
         {
-            return response.Trigger;
+            return response.Resource;
         }
     }
 }

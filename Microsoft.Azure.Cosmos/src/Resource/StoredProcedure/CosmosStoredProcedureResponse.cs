@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// The cosmos stored procedure response
     /// </summary>
-    public class CosmosStoredProcedureResponse : CosmosResponse<CosmosStoredProcedure>
+    public class CosmosStoredProcedureResponse : CosmosResponse<CosmosStoredProcedureSettings>
     {
         /// <summary>
         /// Create a <see cref="CosmosStoredProcedureResponse"/> as a no-op for mock testing
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal CosmosStoredProcedureResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosStoredProcedure cosmosStoredProcedure) : base(
+           CosmosStoredProcedureSettings cosmosStoredProcedure) : base(
                httpStatusCode,
                headers,
                cosmosStoredProcedure)
@@ -44,19 +44,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public virtual string SessionToken => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
 
         /// <summary>
-        /// Gets the output from stored procedure console.log() statements.
+        /// Get <see cref="CosmosStoredProcedureSettings"/> implictly from <see cref="CosmosStoredProcedureResponse"/>
         /// </summary>
-        /// <value>
-        /// Output from console.log() statements in a stored procedure.
-        /// </value>
-        /// <seealso cref="CosmosStoredProcedureRequestOptions.EnableScriptLogging"/>
-        public virtual string ScriptLog
+        /// <param name="response">CosmosUserDefinedFunctionResponse</param>
+        public static implicit operator CosmosStoredProcedureSettings(CosmosStoredProcedureResponse response)
         {
-            get
-            {
-                string logResults = this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.LogResults);
-                return string.IsNullOrEmpty(logResults) ? logResults : Uri.UnescapeDataString(logResults);
-            }
+            return response.Resource;
         }
     }
 }
