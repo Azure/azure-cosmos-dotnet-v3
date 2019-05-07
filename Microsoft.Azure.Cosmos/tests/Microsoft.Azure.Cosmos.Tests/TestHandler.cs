@@ -2,7 +2,9 @@
 {
     using System;
     using System.Globalization;
+    using System.IO;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -34,7 +36,11 @@
         public static Task<CosmosResponseMessage> ReturnSuccess()
         {
             return Task.Factory.StartNew(
-                () => new CosmosResponseMessage(HttpStatusCode.OK));
+                () => {
+                    CosmosResponseMessage responseMessage =  new CosmosResponseMessage(HttpStatusCode.OK);
+                    responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"));
+                    return responseMessage;
+                });
         }
 
         public static Task<CosmosResponseMessage> ReturnStatusCode(HttpStatusCode statusCode, SubStatusCodes subStatusCode = SubStatusCodes.Unknown)

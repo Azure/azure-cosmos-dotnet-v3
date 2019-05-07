@@ -267,7 +267,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task PartitionKeyRangeGoneRetryHandlerOn410()
         {

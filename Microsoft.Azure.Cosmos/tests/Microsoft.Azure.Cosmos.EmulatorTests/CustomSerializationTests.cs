@@ -8,9 +8,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net.Http;
     using System.Runtime.Serialization;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Utils;
@@ -111,9 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await TestCommon.DeleteAllDatabasesAsync();
         }
 
-        // Need to convert to use v3 API
         [TestMethod]
-        [Ignore]
         public void TestOrderByQuery()
         {
             TestOrderyByQueryAsync().GetAwaiter().GetResult();
@@ -259,74 +259,71 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        // Need to convert to use v3 API
         [TestMethod]
-        [Ignore]
-        public void TestJsonSerializerSettings()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task  TestJsonSerializerSettings(bool useGateway)
         {
-            ConnectionMode connectionMode = ConnectionMode.Gateway;
-            var connectionPolicy = new ConnectionPolicy() { ConnectionMode = connectionMode };
-            var client = new DocumentClient(this.hostUri, this.masterKey, CustomSerializationTests.GetSerializerWithCustomConverterAndBinder(), connectionPolicy, ConsistencyLevel.Session);
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+                if (useGateway)
+                {
+                    cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).UseConnectionModeGateway();
+                } else
+                {
+                    cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).UseConnectionModeDirect();
+
+                }
+            });
+            CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
 
             var rnd = new Random();
             var bytes = new byte[100];
             rnd.NextBytes(bytes);
             var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
-            Uri testDocumentUri = UriFactory.CreateDocumentUri(databaseName, collectionName, testDocument.Id);
-
-            // create and read
-            var createDocument = (TestDocument)(dynamic)client.CreateDocumentAsync(collectionUri, testDocument, disableAutomaticIdGeneration: true).Result.Resource;
-            var readDocument = client.ReadDocumentAsync<TestDocument>(testDocumentUri).Result.Document;
-            AssertEqual(testDocument, readDocument);
-            AssertEqual(testDocument, createDocument);
+            //create and read
+            CosmosItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
+            CosmosItemResponse<TestDocument> readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            AssertEqual(testDocument, readResponse.Resource);
+            AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
-            var upsertedDocument = (TestDocument)(dynamic)client.UpsertDocumentAsync(collectionUri, testDocument, disableAutomaticIdGeneration: true).Result.Resource;
-            readDocument = client.ReadDocumentAsync<TestDocument>(testDocumentUri).Result.Document;
-            AssertEqual(testDocument, readDocument);
-            AssertEqual(testDocument, upsertedDocument);
+            CosmosItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
+            readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            AssertEqual(testDocument, readResponse.Resource);
+            AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            var replacedDocument = (TestDocument)(dynamic)client.ReplaceDocumentAsync(testDocumentUri, testDocument).Result.Resource;
-            readDocument = client.ReadDocumentAsync<TestDocument>(testDocumentUri).Result.Document;
-            AssertEqual(testDocument, readDocument);
-            AssertEqual(testDocument, replacedDocument);
+            CosmosItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
+            readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            AssertEqual(testDocument, readResponse.Resource);
+            AssertEqual(testDocument, replacedResponse.Resource);
 
-            // query
-            readDocument = client.CreateDocumentQuery<TestDocument>(
-                collectionUri,
-                new FeedOptions
-                {
-                    EnableCrossPartitionQuery = true,
-                    MaxDegreeOfParallelism = -1,
-                    MaxBufferedItemCount = -1,
-                }).ToList()[0];
-            AssertEqual(testDocument, readDocument);
+            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
+            CosmosFeedIterator<TestDocument> setIterator =
+               container.Items.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
+            CosmosFeedResponse<TestDocument> queryResponse = await setIterator.FetchNextSetAsync();
+            AssertEqual(testDocument, queryResponse.First());
 
-            FeedOptions options = new FeedOptions()
-            {
-                JsonSerializerSettings = CustomSerializationTests.GetSerializerWithCustomConverterAndBinder(),
-            };
+            //Will add LINQ test once it is available with new V3 OM 
+            // // LINQ Lambda
+            // var query1 = client.CreateDocumentQuery<TestDocument>(partitionedCollectionUri, options)
+            //            .Where(_ => _.Id.CompareTo(String.Empty) > 0)
+            //            .Select(_ => _.Id);
+            // string query1Str = query1.ToString();
+            // var result = query1.ToList();
+            // Assert.AreEqual(1, result.Count);
+            // Assert.AreEqual(testDocument.Id, result[0]);
 
-            // LINQ Lambda
-            var query1 = client.CreateDocumentQuery<TestDocument>(collectionUri)
-                       .Where(_ => _.Id.CompareTo(String.Empty) > 0)
-                       .Select(_ => _.Id);
-            string query1Str = query1.ToString();
-            var result = query1.ToList();
-            Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(testDocument.Id, result[0]);
-
-            // LINQ Query
-            var query2 =
-                from f in client.CreateDocumentQuery<TestDocument>(collectionUri)
-                where f.Id.CompareTo(String.Empty) > 0
-                select f.Id;
-            string query2Str = query2.ToString();
-            var result2 = query2.ToList();
-            Assert.AreEqual(1, result2.Count);
-            Assert.AreEqual(testDocument.Id, result2[0]);
+            // // LINQ Query
+            // var query2 =
+            //     from f in client.CreateDocumentQuery<TestDocument>(partitionedCollectionUri, options)
+            //     where f.Id.CompareTo(String.Empty) > 0
+            //     select f.Id;
+            // string query2Str = query2.ToString();
+            // var result2 = query2.ToList();
+            // Assert.AreEqual(1, result2.Count);
+            // Assert.AreEqual(testDocument.Id, result2[0]);
         }
 
         [TestMethod]
@@ -449,16 +446,9 @@ function bulkImport(docs) {
                     new ObjectStringJsonConverter<SerializedObject>(_ => _.Name, _ => SerializedObject.Parse(_))
                 }
             };
-            var connectionPolicy = new ConnectionPolicy();
-            ConsistencyLevel defaultConsistencyLevel = ConsistencyLevel.Session;
-            DocumentClient client = this.CreateDocumentClient(
-                this.hostUri,
-                this.masterKey,
-                jsonSerializerSettings,
-                connectionPolicy,
-                defaultConsistencyLevel);
 
-            var collectionUri = UriFactory.CreateDocumentCollectionUri(this.databaseName, this.collectionName);
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
+            CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
 
             // Create a few test documents
             int documentCount = 3;
@@ -466,40 +456,34 @@ function bulkImport(docs) {
             for (int i = 0; i < documentCount; ++i)
             {
                 var newDocument = new MyObject(i);
-                var createdDocument = client.CreateDocumentAsync(collectionUri, newDocument, ApplyRequestOptions(new RequestOptions(), jsonSerializerSettings)).Result.Resource;
+                var createdDocument = await container.Items.CreateItemAsync<MyObject>(newDocument.pk, newDocument);
             }
 
-            FeedOptions feedOptions = this.ApplyFeedOptions(
-                new FeedOptions
+            CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");
+            CosmosFeedIterator<MyObject> setIterator1 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
+
+            CosmosSqlQueryDefinition cosmosSqlQueryDefinition2 = new CosmosSqlQueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
+            CosmosFeedIterator<MyObject> setIterator2 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
+
+            List<MyObject> list1 = new List<MyObject>();
+            List<MyObject> list2 = new List<MyObject>();
+
+            while (setIterator1.HasMoreResults)
+            {
+                foreach (MyObject obj in await setIterator1.FetchNextSetAsync())
                 {
-                    EnableCrossPartitionQuery = true,
-                    MaxBufferedItemCount = -1,
-                    MaxDegreeOfParallelism = -1,
-                    MaxItemCount = -1
-                },
-                jsonSerializerSettings);
+                    list1.Add(obj);
+                }
+            }
 
-            var orderedQuery = client.CreateDocumentQuery<MyObject>(
-                collectionUri,
-                new SqlQuerySpec(
-                    "SELECT * FROM root"
-                ),
-                feedOptions);
+            while (setIterator2.HasMoreResults)
+            {
+                foreach (MyObject obj in await setIterator2.FetchNextSetAsync())
+                {
+                    list2.Add(obj);
+                }
+            }
 
-            var orderedQuery2 = client.CreateDocumentQuery<MyObject>(
-                collectionUri,
-                new SqlQuerySpec(
-                    "SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC"
-                ),
-                feedOptions);
-
-            var documentQuery = orderedQuery.AsDocumentQuery();
-            var documentQuery2 = orderedQuery2.AsDocumentQuery();
-
-            var results = await documentQuery.ExecuteNextAsync<MyObject>();
-            var results2 = await documentQuery2.ExecuteNextAsync<MyObject>();
-            var list1 = results.ToList();
-            var list2 = results2.ToList();
             Assert.AreEqual(documentCount, list1.Count);
             Assert.AreEqual(documentCount, list2.Count);
             for (int i = 0; i < documentCount; ++i)
@@ -592,7 +576,54 @@ function bulkImport(docs) {
             serializerSettings.DateParseHandling = DateParseHandling.None;
             return serializerSettings;
         }
-#pragma warning restore CS0618 
+#pragma warning restore CS0618
+
+        private class CustomJsonSerializer : CosmosJsonSerializer
+        {
+            private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+            private JsonSerializer serializer;
+            public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
+            {
+                serializer = JsonSerializer.Create(jsonSerializerSettings);
+            }
+            public override T FromStream<T>(Stream stream)
+            {
+                using (stream)
+                {
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)(stream);
+                    }
+
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                        {
+                            return serializer.Deserialize<T>(jsonTextReader);
+                        }
+                    }
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream streamPayload = new MemoryStream();
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CustomJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+                {
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    {
+                        writer.Formatting = Newtonsoft.Json.Formatting.None;
+                        serializer.Serialize(writer, input);
+                        writer.Flush();
+                        streamWriter.Flush();
+                    }
+                }
+
+                streamPayload.Position = 0;
+                return streamPayload;
+            }
+        }
+    
 
         [TestClass]
         public sealed class OnDocumentClientTests : CustomSerializationTests
@@ -759,6 +790,8 @@ function bulkImport(docs) {
 
             [JsonProperty("id")]
             public string Id { get; set; }
+
+            [JsonProperty("pk")]
             public string Name { get; set; }
 
             public TestDocument(KerberosTicketHashKey kerberosTicketHashKey)
