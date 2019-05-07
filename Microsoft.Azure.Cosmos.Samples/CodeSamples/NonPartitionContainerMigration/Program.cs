@@ -224,18 +224,23 @@
                 while (iter.MoveNext())
                 {
                     DeviceInformationItem item = iter.Current;
-                    item.PartitionKey = "a";
-                    // Re-Insert into container with a partition key
-                    // This could result in exception if the same item was inserted in a previous run of the program on existing container
-                    // and the program stopped before the delete.
-                    CosmosItemResponse<DeviceInformationItem> createResponseWithPk = await container.Items.CreateItemAsync<DeviceInformationItem>(
-                     partitionKey: item.PartitionKey,
-                     item: item);
+                    if (item.DeviceId != null)
+                    {
+                        // Using existing deviceID for partition key
+                        item.PartitionKey = item.DeviceId;
+                        Console.WriteLine("Migrating item {0} to Partition {1}", item.Id, item.DeviceId);
+                        // Re-Insert into container with a partition key
+                        // This could result in exception if the same item was inserted in a previous run of the program on existing container
+                        // and the program stopped before the delete.
+                        CosmosItemResponse<DeviceInformationItem> createResponseWithPk = await container.Items.CreateItemAsync<DeviceInformationItem>(
+                         partitionKey: item.PartitionKey,
+                         item: item);
 
-                    // Deleting item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
-                    CosmosItemResponse<DeviceInformationItem> deleteResponseWithoutPk = await container.Items.DeleteItemAsync<DeviceInformationItem>(
-                     partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
-                     id: item.Id);
+                        // Deleting item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
+                        CosmosItemResponse<DeviceInformationItem> deleteResponseWithoutPk = await container.Items.DeleteItemAsync<DeviceInformationItem>(
+                         partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
+                         id: item.Id);
+                    }
                 }
             }
         }
