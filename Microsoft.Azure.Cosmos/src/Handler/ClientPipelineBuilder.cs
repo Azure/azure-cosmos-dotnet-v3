@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosRequestHandler PartitionKeyRangeHandler { get; set; }
 
-        public CosmosRequestHandler Build()
+        public CosmosRequestHandler Build(out CosmosRequestHandler rootHandler)
         {
             CosmosRequestHandler root = new RequestInvokerHandler(this.client);
 
@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
             current.InnerHandler = routerHandler;
             current = (CosmosRequestHandler)current.InnerHandler;
 
+            rootHandler = this.transportHandler;
             return root;
         }
 

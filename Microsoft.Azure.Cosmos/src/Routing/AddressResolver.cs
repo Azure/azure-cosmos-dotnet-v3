@@ -213,9 +213,36 @@ namespace Microsoft.Azure.Cosmos
 
             bool collectionRoutingMapCacheIsUptoDate = false;
 
-            var collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-            CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId, null, request, request.ForceCollectionRoutingMapRefresh, cancellationToken);
+            CosmosContainerSettings collection;
+            if (request.ContainerSettingsWrapper?.ContainerSettings != null)
+            {
+                collection = request.ContainerSettingsWrapper.ContainerSettings;
+            }
+            else
+            {
+                collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                if (request.ContainerSettingsWrapper != null)
+                {
+                    request.ContainerSettingsWrapper.ContainerSettings = collection;
+                }
+            }
+
+            CollectionRoutingMap routingMap;
+
+            if (!request.ForceCollectionRoutingMapRefresh &&
+                request.ContainerSettingsWrapper?.CollectionRoutingMap != null)
+            {
+                routingMap = (CollectionRoutingMap)request.ContainerSettingsWrapper.CollectionRoutingMap;
+            }
+            else
+            {
+                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
+                    collection.ResourceId, null, request, request.ForceCollectionRoutingMapRefresh, cancellationToken);
+                if (request.ContainerSettingsWrapper != null)
+                {
+                    request.ContainerSettingsWrapper.CollectionRoutingMap = routingMap;
+                }
+            }
 
             if (request.ForcePartitionKeyRangeRefresh)
             {
@@ -241,6 +268,11 @@ namespace Microsoft.Azure.Cosmos
                         request:request,
                         forceRefreshCollectionRoutingMap: false,
                         cancellationToken: cancellationToken);
+                if (request.ContainerSettingsWrapper != null)
+                {
+                    request.ContainerSettingsWrapper.ContainerSettings = collection;
+                    request.ContainerSettingsWrapper.CollectionRoutingMap = routingMap;
+                }
             }
 
             AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
@@ -264,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
                     request.ForceNameCacheRefresh = true;
                     collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+
                     if(collection.ResourceId != routingMap.CollectionUniqueId)
                     {
                         // Collection cache was stale. We resolved to new Rid. routing map cache is potentially stale
@@ -277,7 +310,7 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken: cancellationToken);
                     }
                 }
-                
+
                 if (!collectionRoutingMapCacheIsUptoDate)
                 {
                     collectionRoutingMapCacheIsUptoDate = true;
@@ -290,6 +323,12 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
+
+                if (request.ContainerSettingsWrapper != null)
+                {
+                    request.ContainerSettingsWrapper.ContainerSettings = collection;
+                    request.ContainerSettingsWrapper.CollectionRoutingMap = routingMap;
+                }
 
                 result = await this.TryResolveServerPartitionAsync(
                     request,
@@ -391,7 +430,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             PartitionKeyRange range;
-            string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
+            string partitionKeyString = request.Headers.PartitionKey;
 
             if (partitionKeyString != null)
             {

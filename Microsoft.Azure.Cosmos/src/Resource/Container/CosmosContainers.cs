@@ -327,10 +327,20 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosContainer this[string id] =>
-                this.containerCache.GetOrAdd(
-                    id,
-                    keyName => new CosmosContainer(this.database, keyName));
+        public virtual CosmosContainer this[string id]
+        {
+            get
+            {
+                if (!this.containerCache.TryGetValue(id, out CosmosContainer container))
+                {
+                    container = this.containerCache.GetOrAdd(
+                        id,
+                        keyName => new CosmosContainer(this.database, keyName));
+                }
+
+                return container;
+            }
+        }
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.

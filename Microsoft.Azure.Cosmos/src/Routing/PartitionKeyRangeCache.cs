@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             AuthorizationTokenType.PrimaryMasterKey);
                 }
 
-                request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                request.Headers.AuthorizationToken = authorizationToken;
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {

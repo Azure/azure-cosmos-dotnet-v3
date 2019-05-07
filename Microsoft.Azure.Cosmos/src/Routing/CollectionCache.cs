@@ -61,13 +61,7 @@ namespace Microsoft.Azure.Cosmos.Common
                         await this.ResolveByNameAsync(request.ResourceAddress, cancellationToken);
                     if (collectionInfo != null)
                     {
-                        DefaultTrace.TraceVerbose(
-                            "Mapped resourceName {0} to resourceId {1}. '{2}'",
-                            request.ResourceAddress,
-                            collectionInfo.ResourceId,
-                            Trace.CorrelationManager.ActivityId);
-
-                        request.ResourceId = collectionInfo.ResourceId;
+                       request.ResourceId = collectionInfo.ResourceId;
                         request.RequestContext.ResolvedCollectionRid = collectionInfo.ResourceId;
                     }
                     else

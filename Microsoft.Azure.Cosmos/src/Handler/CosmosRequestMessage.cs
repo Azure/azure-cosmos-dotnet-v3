@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
@@ -25,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     public class CosmosRequestMessage : IDisposable
     {
+        private IDictionary<string, object> properties = null;
+
         /// <summary>
         /// Create a <see cref="CosmosRequestMessage"/>
         /// </summary>
@@ -85,22 +88,38 @@ namespace Microsoft.Azure.Cosmos
 
         internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
 
-        internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
+        internal string ResourceName { get; set; }
+
+        internal bool IsPropertiesInitialized => this.properties != null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.
         /// </summary>
-        public virtual Dictionary<string, object> Properties
+        public IDictionary<string, object> Properties
         {
-            get => this.properties.Value;
+            get
+            {
+                if (this.properties == null)
+                {
+                    this.properties = CosmosRequestMessage.CreateDictionary();
+                }
+
+                return this.properties;
+            }
+            set => this.properties = value;
         }
+
+        internal bool HasRequestProperties
+        {
+            get { return this.properties != null && this.properties.Count > 0; }
+        }
+
+        internal AuthorizationTokenCache TokenCache { get; set; }
 
         private bool _disposed;
 
         private Stream _content;
-
-        private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(CosmosRequestMessage.CreateDictionary);
 
         private readonly Lazy<CosmosRequestMessageHeaders> headers = new Lazy<CosmosRequestMessageHeaders>(CosmosRequestMessage.CreateHeaders);
 
@@ -171,12 +190,18 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders, this.ResourceName);
                 }
 
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
-                serviceRequest.Properties = this.Properties;
+                if (this.HasRequestProperties)
+                {
+                    serviceRequest.Properties = this.Properties;
+                }
+
+                serviceRequest.ContainerSettingsWrapper = this.RequestOptions?.ContainerSettingsWrapper;
+
                 this.DocumentServiceRequest = serviceRequest;
             }
 

@@ -131,45 +131,48 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private EndpointCache GetOrAddEndpoint(Uri endpoint)
         {
-            EndpointCache endpointCache = this.addressCacheByEndpoint.GetOrAdd(
-                endpoint,
-                (Uri resolvedEndpoint) =>
-                {
-                    GatewayAddressCache gatewayAddressCache = new GatewayAddressCache(
-                        resolvedEndpoint,
-                        this.protocol,
-                        this.tokenProvider,
-                        this.userAgentContainer,
-                        this.serviceConfigReader,
-                        messageHandler: this.messageHandler,
-                        apiType: this.apiType);
-
-                    string location = this.endpointManager.GetLocation(endpoint);
-                    AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);
-                    addressResolver.InitializeCaches(this.collectionCache, this.routingMapProvider, gatewayAddressCache);
-
-                    return new EndpointCache()
-                    {
-                        AddressCache = gatewayAddressCache,
-                        AddressResolver = addressResolver,
-                    };
-                });
-
-            if (this.addressCacheByEndpoint.Count > this.maxEndpoints)
+            if (!this.addressCacheByEndpoint.TryGetValue(endpoint, out EndpointCache endpointCache))
             {
-                IEnumerable<Uri> allEndpoints = this.endpointManager.WriteEndpoints.Union(this.endpointManager.ReadEndpoints);
-                Queue<Uri> endpoints = new Queue<Uri>(allEndpoints.Reverse());                
+                endpointCache = this.addressCacheByEndpoint.GetOrAdd(
+                    endpoint,
+                    (Uri resolvedEndpoint) =>
+                    {
+                        GatewayAddressCache gatewayAddressCache = new GatewayAddressCache(
+                            resolvedEndpoint,
+                            this.protocol,
+                            this.tokenProvider,
+                            this.userAgentContainer,
+                            this.serviceConfigReader,
+                            messageHandler: this.messageHandler,
+                            apiType: this.apiType);
 
-                while (this.addressCacheByEndpoint.Count > this.maxEndpoints)
+                        string location = this.endpointManager.GetLocation(endpoint);
+                        AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);
+                        addressResolver.InitializeCaches(this.collectionCache, this.routingMapProvider, gatewayAddressCache);
+
+                        return new EndpointCache()
+                        {
+                            AddressCache = gatewayAddressCache,
+                            AddressResolver = addressResolver,
+                        };
+                    });
+
+                if (this.addressCacheByEndpoint.Count > this.maxEndpoints)
                 {
-                    if (endpoints.Count > 0)
+                    IEnumerable<Uri> allEndpoints = this.endpointManager.WriteEndpoints.Union(this.endpointManager.ReadEndpoints);
+                    Queue<Uri> endpoints = new Queue<Uri>(allEndpoints.Reverse());
+
+                    while (this.addressCacheByEndpoint.Count > this.maxEndpoints)
                     {
-                        EndpointCache removedEntry;
-                        this.addressCacheByEndpoint.TryRemove(endpoints.Dequeue(), out removedEntry);
-                    }
-                    else
-                    {
-                        break;
+                        if (endpoints.Count > 0)
+                        {
+                            EndpointCache removedEntry;
+                            this.addressCacheByEndpoint.TryRemove(endpoints.Dequeue(), out removedEntry);
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
             }

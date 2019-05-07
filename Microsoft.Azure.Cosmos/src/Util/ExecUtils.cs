@@ -139,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool useTransportHandler = false)
         {
             CosmosRequestMessage request = ExecUtils.GenerateCosmosRequestMessage(
                 resourceUri,
@@ -149,6 +150,12 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 streamPayload,
                 requestEnricher);
+
+            if (useTransportHandler)
+            {
+                requestOptions.FillRequestOptions(request);
+                return client.TransportHandler.SendAsync(request, cancellationToken);
+            }
 
             return client.RequestHandler.SendAsync(request, cancellationToken);
         }

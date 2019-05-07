@@ -6148,6 +6148,7 @@ namespace Microsoft.Azure.Cosmos
                 PathsHelper.GetResourcePath(request.ResourceType),
                 HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
+            request.Headers.AuthorizationToken = authorization;
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -6171,6 +6172,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey);
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
+            request.Headers.AuthorizationToken = authorization;
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -6194,6 +6196,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey);
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+            request.Headers.AuthorizationToken = authorizationToken;
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -6215,6 +6218,7 @@ namespace Microsoft.Azure.Cosmos
                 PathsHelper.GetResourcePath(request.ResourceType),
                 HttpConstants.HttpMethods.Get, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+            request.Headers.AuthorizationToken = authorizationToken;
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -6239,6 +6243,7 @@ namespace Microsoft.Azure.Cosmos
                     AuthorizationTokenType.PrimaryMasterKey);
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+            request.Headers.AuthorizationToken = authorizationToken;
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -6257,9 +6262,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             request.Headers[HttpConstants.HttpHeaders.ContentType] = RuntimeConstants.MediaTypes.Json;
+            string userAuthorizationToken = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
+                PathsHelper.GetResourcePath(request.ResourceType), HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
             request.Headers[HttpConstants.HttpHeaders.Authorization] =
-                            ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
-                            PathsHelper.GetResourcePath(request.ResourceType), HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                            userAuthorizationToken;
+            request.Headers.AuthorizationToken = userAuthorizationToken;
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -6285,6 +6292,7 @@ namespace Microsoft.Azure.Cosmos
                 PathsHelper.GetResourcePath(request.ResourceType),
                 HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+            request.Headers.AuthorizationToken = authorizationToken;
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -6308,6 +6316,7 @@ namespace Microsoft.Azure.Cosmos
                 PathsHelper.GetResourcePath(request.ResourceType),
                 HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
+            request.Headers.AuthorizationToken = authorization;
 
             request.Headers[HttpConstants.HttpHeaders.IsUpsert] = bool.TrueString;
 

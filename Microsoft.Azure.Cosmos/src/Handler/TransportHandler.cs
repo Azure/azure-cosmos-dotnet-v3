@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Internal;
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             try
             {
-                using (new ActivityScope(Guid.NewGuid()))
+                // using (new ActivityScope(Guid.NewGuid()))
                 {
                     DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
                     return response.ToCosmosResponseMessage(request);
@@ -70,12 +71,33 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
-            string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
-                serviceRequest.ResourceAddress,
-                PathsHelper.GetResourcePath(request.ResourceType),
-                request.Method.ToString(), serviceRequest.Headers, AuthorizationTokenType.PrimaryMasterKey);
-            serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
-                
+            string authorization;
+            if (request.TokenCache != null)
+            {
+                authorization = request.TokenCache.GetOrAddToken(
+                    serviceRequest.ResourceAddress,
+                    serviceRequest,
+                    () =>
+                    {
+                        var header = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
+                            serviceRequest.ResourceAddress,
+                            PathsHelper.GetResourcePath(request.ResourceType),
+                            request.Method.ToString(), serviceRequest.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                        return new Tuple<string, string>(
+                            header,
+                            serviceRequest.Headers[HttpConstants.HttpHeaders.XDate]);
+                    });
+            }
+            else
+            {
+                authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
+                    serviceRequest.ResourceAddress,
+                    PathsHelper.GetResourcePath(request.ResourceType),
+                    request.Method.ToString(), serviceRequest.Headers, AuthorizationTokenType.PrimaryMasterKey);
+            }
+
+            serviceRequest.Headers.AuthorizationToken = authorization;
+
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
             if (request.OperationType == OperationType.Upsert)
             {

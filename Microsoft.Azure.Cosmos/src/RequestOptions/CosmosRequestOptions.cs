@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
@@ -29,17 +28,41 @@ namespace Microsoft.Azure.Cosmos
         public virtual AccessCondition AccessCondition { get; set; }
 
         /// <summary>
+        /// Some doc
+        /// </summary>
+        public string ResourceName { get; set; }
+
+        /// <summary>
+        /// Some Doc
+        /// </summary>
+        public Uri ResourceUri { get; set; }
+
+        internal ContainerSettingsWrapper ContainerSettingsWrapper { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public virtual void FillRequestOptions(CosmosRequestMessage request)
-        {            
+        {
             if (this.Properties != null)
             {
-                foreach (KeyValuePair<string, object> property in this.Properties)
+                if (!request.HasRequestProperties)
                 {
-                    request.Properties[property.Key] = property.Value;
+                    request.Properties = this.Properties;
                 }
+                else
+                {
+                    foreach (KeyValuePair<string, object> property in this.Properties)
+                    {
+                        request.Properties[property.Key] = property.Value;
+                    }
+                }
+            }
+
+            if (this.ResourceName != null)
+            {
+                request.ResourceName = this.ResourceName;
             }
 
             if (this.AccessCondition != null)
@@ -48,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                         HttpConstants.HttpHeaders.IfMatch : HttpConstants.HttpHeaders.IfNoneMatch;
 
                 request.Headers.Add(accessConditionHeaderName, this.AccessCondition.Condition);
-            }                     
+            }
         }
 
         /// <summary>
@@ -58,9 +81,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>True if the object exists in the request options. False if the value was not passed in as a request option</returns>
         internal bool TryGetResourceUri(out Uri resourceUri)
         {
-            if (this.Properties != null && this.Properties.TryGetValue(HandlerConstants.ResourceUri, out var requestOptesourceUri))
+            if (this.ResourceUri != null)
             {
-                Uri uri = requestOptesourceUri as Uri;
+                Uri uri = this.ResourceUri as Uri;
                 if (uri == null || uri.IsAbsoluteUri)
                 {
                     throw new ArgumentException(HandlerConstants.ResourceUri + " must be a relative Uri of type System.Uri");
@@ -96,5 +119,5 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
             }
         }
-    }                     
+    }
 }

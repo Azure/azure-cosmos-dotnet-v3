@@ -13,14 +13,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public abstract class CosmosMessageHeadersBase: IEnumerable
     {
-        private readonly Lazy<CosmosMessageHeadersInternal> messageHeaders;
+        private readonly CosmosMessageHeadersInternal messageHeaders;
 
         /// <summary>
         /// Creates a new instance of <see cref="CosmosMessageHeadersBase"/>.
         /// </summary>
         public CosmosMessageHeadersBase()
         {
-            this.messageHeaders = new Lazy<CosmosMessageHeadersInternal>(CreateCosmosMessageHeaders);
+            this.messageHeaders = this.CreateCosmosMessageHeaders();
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.messageHeaders.Value[headerName];
+                return this.messageHeaders[headerName];
             }
         }
 
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns></returns>
         public virtual IEnumerator<string> GetEnumerator()
         {
-            return this.messageHeaders.Value.GetEnumerator();
+            return this.messageHeaders.GetEnumerator();
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">Header value.</param>
         public virtual void Add(string headerName, string value)
         {
-            this.messageHeaders.Value.Add(headerName, value);
+            this.messageHeaders.Add(headerName, value);
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="values">List of values to be added as a comma-separated list.</param>
         public virtual void Add(string headerName, IEnumerable<string> values)
         {
-            this.messageHeaders.Value.Add(headerName, values);
+            this.messageHeaders.Add(headerName, values);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">Header value.</param>
         public virtual void Set(string headerName, string value)
         {
-            this.messageHeaders.Value.Set(headerName, value);
+            this.messageHeaders.Set(headerName, value);
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns></returns>
         public virtual string Get(string headerName)
         {
-            return this.messageHeaders.Value.Get(headerName);
+            return this.messageHeaders.Get(headerName);
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>True or false if the header name existed in the header collection.</returns>
         public virtual bool TryGetValue(string headerName, out string value)
         {
-            return this.messageHeaders.Value.TryGetValue(headerName, out value);
+            return this.messageHeaders.TryGetValue(headerName, out value);
         }
 
         /// <summary>
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="headerName">Header name.</param>
         public virtual void Remove(string headerName)
         {
-            this.messageHeaders.Value.Remove(headerName);
+            this.messageHeaders.Remove(headerName);
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An array with all the header names.</returns>
         public virtual string[] AllKeys()
         {
-            return this.messageHeaders.Value.AllKeys();
+            return this.messageHeaders.AllKeys();
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns></returns>
         public virtual T GetHeaderValue<T>(string headerName)
         {
-            return this.messageHeaders.Value.GetHeaderValue<T>(headerName);
+            return this.messageHeaders.GetHeaderValue<T>(headerName);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
             return new string[1] { this[key] };
         }
 
-        internal CosmosMessageHeadersInternal CosmosMessageHeaders => this.messageHeaders.Value;
+        internal CosmosMessageHeadersInternal CosmosMessageHeaders => this.messageHeaders;
 
         private CosmosMessageHeadersInternal CreateCosmosMessageHeaders()
         {

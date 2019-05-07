@@ -26,14 +26,6 @@ namespace Microsoft.Azure.Cosmos
                 cosmosResponse.Content = response.ResponseBody;
             }
 
-            if (response.Headers != null)
-            {
-                foreach (string key in response.Headers)
-                {
-                    cosmosResponse.Headers.Add(key, response.Headers[key]);
-                }
-            }
-
             return cosmosResponse;
         }
 

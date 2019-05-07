@@ -194,6 +194,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
         internal CosmosRequestHandler RequestHandler { get; private set; }
+        internal CosmosRequestHandler TransportHandler { get; private set; }
         internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
 
         internal CosmosResponseFactory ResponseFactory =>
@@ -229,7 +230,8 @@ namespace Microsoft.Azure.Cosmos
             // DocumentClient is not initialized with any consistency overrides so default is backend consistency
             this.AccountConsistencyLevel = this.DocumentClient.ConsistencyLevel;
 
-            this.RequestHandler = clientPipelineBuilder.Build();
+            this.RequestHandler = clientPipelineBuilder.Build(out CosmosRequestHandler handler);
+            this.TransportHandler = handler;
             this.Databases = new CosmosDatabases(this);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }

@@ -17,31 +17,61 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosRequestMessageHeaders : CosmosMessageHeadersBase
     {
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PartitionKey)]
-        internal string PartitionKey { get; set; }
+        internal string PartitionKey
+        {
+            get
+            {
+                return this.CosmosMessageHeaders.PartitionKey;
+            }
+            set
+            {
+                this.CosmosMessageHeaders.PartitionKey = value;
+            }
+        }
+
+        internal string AuthorizationToken
+        {
+            get => this.CosmosMessageHeaders.AuthorizationToken;
+            set => this.CosmosMessageHeaders.AuthorizationToken = value;
+        }
 
         [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.PartitionKeyRangeId)]
-        internal string PartitionKeyRangeId { get; set; }
+        internal string PartitionKeyRangeId
+        {
+            get => this.CosmosMessageHeaders[WFConstants.BackendHeaders.PartitionKeyRangeId];
+            set => this.CosmosMessageHeaders[WFConstants.BackendHeaders.PartitionKeyRangeId] = value;
+        }
 
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Continuation)]
-        internal string Continuation { get; set; }
+        internal string Continuation
+        { 
+            get => this.CosmosMessageHeaders[HttpConstants.HttpHeaders.Continuation];
+            set => this.CosmosMessageHeaders[HttpConstants.HttpHeaders.Continuation] = value;
+        }
 
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IsUpsert)]
-        internal string IsUpsert { get; set; }
+        internal string IsUpsert
+        { 
+            get => this.CosmosMessageHeaders[HttpConstants.HttpHeaders.IsUpsert];
+            set => this.CosmosMessageHeaders[HttpConstants.HttpHeaders.IsUpsert] = value;
+        }
 
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.OfferThroughput)]
-        internal string OfferThroughput { get; set; }
+        internal string OfferThroughput {
+            get => this.CosmosMessageHeaders[HttpConstants.HttpHeaders.OfferThroughput];
+            set => this.CosmosMessageHeaders[HttpConstants.HttpHeaders.OfferThroughput] = value;
+
+        }
 
         private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<CosmosRequestMessageHeaders>();
 
+        private static Dictionary<string, CosmosCustomHeader> headers = new Dictionary<string, CosmosCustomHeader>(
+            CosmosRequestMessageHeaders.knownHeaderProperties.Length,
+            StringComparer.OrdinalIgnoreCase);
+
         internal override Dictionary<string, CosmosCustomHeader> CreateKnownDictionary()
         {
-            return CosmosRequestMessageHeaders.knownHeaderProperties.ToDictionary(
-                    knownProperty => knownProperty.Key,
-                    knownProperty => new CosmosCustomHeader(
-                            () => (string)knownProperty.Value.GetValue(this),
-                            (string value) => { knownProperty.Value.SetValue(this, value); }
-                        )
-                , StringComparer.OrdinalIgnoreCase);
+            return CosmosRequestMessageHeaders.headers;
         }
     }
 }

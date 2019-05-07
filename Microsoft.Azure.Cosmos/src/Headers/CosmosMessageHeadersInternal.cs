@@ -131,8 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            this.headers.Value.Remove(key);
-            this.headers.Value.Add(key, value);
+            this.headers.Value[key] = value;
         }
 
         public string Get(string key)
@@ -213,6 +212,10 @@ namespace Microsoft.Azure.Cosmos
         {
             throw new NotImplementedException();
         }
+
+        public string PartitionKey { get; set; }
+
+        public string AuthorizationToken { get; set; }
 
         public IEnumerator<string> GetEnumerator()
         {

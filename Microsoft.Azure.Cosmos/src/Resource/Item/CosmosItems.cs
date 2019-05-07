@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
 
@@ -29,6 +30,8 @@ namespace Microsoft.Azure.Cosmos
         private CosmosJsonSerializer cosmosJsonSerializer { get; }
         private CosmosClient client { get; }
 
+        private AuthorizationTokenCache tokenCache = new AuthorizationTokenCache();
+
         /// <summary>
         /// Create a <see cref="CosmosItems"/>
         /// </summary>
@@ -42,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal readonly CosmosContainer container;
+        private ContainerSettingsWrapper containerSettingsWrapper = new ContainerSettingsWrapper();
 
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
@@ -231,13 +235,20 @@ namespace Microsoft.Azure.Cosmos
                     CosmosItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (requestOptions != null)
+            {
+                requestOptions.AuthTokenCache = this.tokenCache;
+                requestOptions.ContainerSettingsWrapper = this.containerSettingsWrapper;
+            }
+
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 null,
                 OperationType.Read,
                 requestOptions,
-                cancellationToken);
+                cancellationToken,
+                useTransportHandler: true);
         }
 
         /// <summary>
@@ -1088,11 +1099,10 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             CosmosRequestOptions requestOptions,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool useTransportHandler = false)
         {
-            CosmosItems.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
-
             return ExecUtils.ProcessResourceOperationStreamAsync(
                 this.container.Database.Client,
                 resourceUri,
@@ -1102,7 +1112,8 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 streamPayload,
                 null,
-                cancellationToken);
+                cancellationToken,
+                useTransportHandler);
         }
 
         private Task<CosmosResponseMessage> ItemStreamFeedRequestExecutor(
@@ -1251,7 +1262,7 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <remarks>Would be used when creating an <see cref="Attachment"/>, or when replacing or deleting a item in Azure Cosmos DB.</remarks>
         /// <seealso cref="Uri.EscapeUriString"/>
-        private Uri ContcatCachedUriWithId(string resourceId)
+        internal Uri ContcatCachedUriWithId(string resourceId)
         {
             return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
         }

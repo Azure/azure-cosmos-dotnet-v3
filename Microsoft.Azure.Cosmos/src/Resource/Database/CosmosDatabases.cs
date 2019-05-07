@@ -179,11 +179,21 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual CosmosDatabase this[string id] =>
-                // TODO: Argument check and singleton database
-                this.databasesCache.GetOrAdd(
-                    id,
-                    keyName => new CosmosDatabase(this.client, keyName));
+        public virtual CosmosDatabase this[string id]
+        {
+            get
+            {
+                if (!this.databasesCache.TryGetValue(id, out CosmosDatabase database))
+                {
+                    // TODO: Argument check and singleton database
+                    database = this.databasesCache.GetOrAdd(
+                        id,
+                        keyName => new CosmosDatabase(this.client, keyName));
+                }
+
+                return database;
+            }
+        }
 
         /// <summary>
         /// Send a request for creating a database.

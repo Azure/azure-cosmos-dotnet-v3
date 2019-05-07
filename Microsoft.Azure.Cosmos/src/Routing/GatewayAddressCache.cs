@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     this.serverPartitionAddressCache.Refresh(
                         partitionKeyRangeIdentity,
-                        async () => await this.GetAddressesForRangeId(
+                        () => this.GetAddressesForRangeId(
                         request,
                         partitionKeyRangeIdentity.CollectionRid,
                         partitionKeyRangeIdentity.PartitionKeyRangeId,
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 PartitionAddressInformation addresses = await this.serverPartitionAddressCache.GetAsync(
                         partitionKeyRangeIdentity,
                         null,
-                        async () => await this.GetAddressesForRangeId(
+                        () => this.GetAddressesForRangeId(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         cancellationToken);
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;
-                if (addresses.AllAddresses.Count() < targetReplicaSetSize)
+                if (addresses.AllAddresses.Length < targetReplicaSetSize)
                 {
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
                 }
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 headers,
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+            headers.AuthorizationToken = token;
 
             Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         AuthorizationTokenType.PrimaryMasterKey);
             }
 
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+            headers.AuthorizationToken = token;
 
             Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 

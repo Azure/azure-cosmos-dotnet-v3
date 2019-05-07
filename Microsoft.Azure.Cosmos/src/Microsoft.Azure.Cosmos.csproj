@@ -30,7 +30,8 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ShippingScope>External</ShippingScope>
     <SigningType>Product</SigningType>
-    <DebugType>portable</DebugType>
+    <DebugType>full</DebugType>
+    <SignAssembly>True</SignAssembly>
     <IncludeSymbols>false</IncludeSymbols>
     <IncludeSource>false</IncludeSource>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
@@ -39,10 +40,6 @@
   
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.Internal" Version="$(DirectVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
@@ -71,9 +68,15 @@
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\cdb-sdk-1\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\Microsoft.Azure.Cosmos.Direct.csproj" />
+  </ItemGroup>
+
   <PropertyGroup>
     <DefineConstants>DOCDBCLIENT</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
@@ -81,5 +84,14 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <DefineConstants>$(DefineConstants);NETSTANDARD20</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup> 
+  <Target Name="CopyFiles" AfterTargets="AfterBuild">
+    <Copy SourceFiles="$(OutDir)\Microsoft.Azure.Cosmos.Client.dll" DestinationFolder="D:\NuGetPackages\Microsoft.Azure.Cosmos.3.0.0.9-rc8\lib\netstandard2.0" />
+    <Copy SourceFiles="$(OutDir)\Microsoft.Azure.Cosmos.Client.pdb" DestinationFolder="D:\NuGetPackages\Microsoft.Azure.Cosmos.3.0.0.9-rc8\lib\netstandard2.0" />
+    <Copy SourceFiles="$(OutDir)\Microsoft.Azure.Cosmos.Direct.dll" DestinationFolder="D:\NuGetPackages\Microsoft.Azure.Cosmos.Direct.3.0.0.10-rc6\lib\netstandard2.0" />
+    <Copy SourceFiles="$(OutDir)\Microsoft.Azure.Cosmos.Direct.pdb" DestinationFolder="D:\NuGetPackages\Microsoft.Azure.Cosmos.Direct.3.0.0.10-rc6\lib\netstandard2.0" />
+  </Target>
 </Project>

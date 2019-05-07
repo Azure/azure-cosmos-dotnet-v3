@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Internal;
 
     /// <summary>
@@ -94,6 +95,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
 
+        internal AuthorizationTokenCache AuthTokenCache { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -117,6 +120,8 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
             CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
+
+            request.TokenCache = this.AuthTokenCache;
 
             base.FillRequestOptions(request);
         }
