@@ -74,6 +74,18 @@ namespace Microsoft.Azure.Cosmos
         public virtual string Id { get; internal set; }
 
         /// <summary>
+        /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The entity tag associated with the resource.
+        /// </value>
+        /// <remarks>
+        /// ETags are used for concurrency checking when updating resources. 
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        public virtual string ETag { get; protected internal set; }
+
+        /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -85,19 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
-        public virtual string ResourceId { get; protected internal set; }
-
-        /// <summary>
-        /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The entity tag associated with the resource.
-        /// </value>
-        /// <remarks>
-        /// ETags are used for concurrency checking when updating resources. 
-        /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        internal string ResourceId { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
         internal Collection<CosmosAccountLocation> WriteLocationsInternal
