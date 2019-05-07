@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosStoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
             requestCharge = deleteResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
-            Assert.AreEqual(HttpStatusCode.NoContent, storedProcedureResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
         [TestMethod]
