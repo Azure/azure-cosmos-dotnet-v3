@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
             };
 
-            CosmosQueryResponseMessageHeaders headers = new CosmosQueryResponseMessageHeaders("TestToken", null)
+            CosmosQueryResponseMessageHeaders headers = new CosmosQueryResponseMessageHeaders("TestToken", null, ResourceType.Document)
             {
                 ActivityId = "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
                 RequestCharge = 42
