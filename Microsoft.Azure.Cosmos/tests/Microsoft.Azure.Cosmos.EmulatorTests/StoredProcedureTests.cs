@@ -96,6 +96,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ExecutionLogsTests()
+        {
+            const string testLogsText = "this is a test";
+            const string testPartitionId = "1";
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(name) { var context = getContext(); console.log('"+ testLogsText + "'); var response = context.getResponse(); response.setBody('hello there ' + name); }";
+
+            CosmosStoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(sprocId, sprocBody);
+            double requestCharge = storedProcedureResponse.RequestCharge;
+            Assert.IsTrue(requestCharge > 0);
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            CosmosStoredProcedure storedProcedure = storedProcedureResponse;
+            CosmosStoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string, string>(
+                testPartitionId, 
+                sprocId, 
+                Guid.NewGuid().ToString(),
+                new CosmosStoredProcedureRequestOptions()
+                {
+                    EnableScriptLogging = true
+                });
+
+            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
+            Assert.AreEqual(testLogsText, sprocResponse.ScriptLog);
+        }
+
+        [TestMethod]
         public async Task IteratorTest()
         {
             string sprocBody = "function() { { var x = 42; } }";
