@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
+            string containerResourceId,
             CosmosQueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
@@ -75,7 +76,11 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);
 
-            return this.GetCosmosElementResponse(requestOptions, resourceType, message);
+            return this.GetCosmosElementResponse(
+                requestOptions, 
+                resourceType, 
+                containerResourceId, 
+                message);
         }
 
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
@@ -159,6 +164,7 @@ namespace Microsoft.Azure.Cosmos
         private CosmosQueryResponse GetCosmosElementResponse(
             CosmosQueryRequestOptions requestOptions,
             ResourceType resourceType,
+            string containerResourceId,
             CosmosResponseMessage cosmosResponseMessage)
         {
             using (cosmosResponseMessage)
@@ -166,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
                     return CosmosQueryResponse.CreateFailure(
-                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType),
+                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType, containerResourceId),
                         cosmosResponseMessage.StatusCode,
                         cosmosResponseMessage.RequestMessage,
                         cosmosResponseMessage.ErrorMessage,
@@ -194,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                 return CosmosQueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType),
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType, containerResourceId),
                     responseLengthBytes: responseLengthBytes);
             }
         }

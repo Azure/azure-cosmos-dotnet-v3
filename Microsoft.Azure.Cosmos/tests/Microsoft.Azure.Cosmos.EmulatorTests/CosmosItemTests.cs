@@ -325,6 +325,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         //string result = await sr.ReadToEndAsync();
                         JObject jObject = serializer.Deserialize<JObject>(jtr);
                         Assert.IsNotNull(jObject["Documents"]);
+                        Assert.IsNotNull(jObject["_rid"].ToString());
                         Assert.IsTrue(jObject["_count"].ToObject<int>() >= 0);
                         foreach (JObject item in jObject["Documents"])
                         {
