@@ -25,8 +25,8 @@
     // Partitioned mode.
     //
     // These include the following operations:
-    //    1. Document operations in the same logical partition as pre-migration documents
-    //    2. Document operations with a partition key value on the migrated container
+    //    1. Document CRUD operations in the same logical partition as pre-migration
+    //    2. Document CRUD operations with a partition key value on the migrated container
     //    3. Migration of documents inserted without partition key into a logical parition with a valid partition key value
     //
     //
@@ -52,10 +52,7 @@
             public string DeviceId { get; set; }
 
             [JsonProperty(PropertyName = "_partitionKey")]
-            public string PartitionKey
-            {
-                get; set;
-            }
+            public string PartitionKey { get; set; }
         }
 
         public static async Task Main(string[] args)
@@ -83,28 +80,35 @@
 
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    CosmosDatabaseResponse databaseResponse = await client.Databases.CreateDatabaseIfNotExistsAsync(databaseId);
+                    CosmosDatabase database = await client.Databases.CreateDatabaseIfNotExistsAsync(databaseId);
 
                     // Create the container using REST API without a partition key definition
-                    await Program.CreateNonPartitionedContainer(endpoint, authKey);
+                    await Program.CreateNonPartitionedContainerAsync(endpoint, authKey);
 
-                    CosmosContainer container = client.Databases[databaseId].Containers[containerId];
+                    CosmosContainer container = database.Containers[containerId];
 
                     // Read back the container to see the system partition key is populated
                     var containerResposne = await container.ReadAsync();
-                    Console.WriteLine("Container Partition Key path {0}", containerResposne.Resource.PartitionKeyPath);
+                    if (containerResposne.Resource.PartitionKeyPath != null)
+                    {
+                        Console.WriteLine("Container Partition Key path {0}", containerResposne.Resource.PartitionKeyPath);
+                    }
+                    else
+                    {
+                        throw new Exception("Partition Key path is not populated");
+                    }
 
-                    Console.WriteLine("--Demo Item operations with no value for partition key on the migrated collection--");
+                    Console.WriteLine("--Demo Item operations with no partition key--");
                     await Program.ItemOperationsWithNonePartitionKeyValue(container);
 
-                    Console.WriteLine("--Demo Item operations with valid value for partition key on the migrated collection--");
+                    Console.WriteLine("--Demo Item operations with valid partition key--");
                     await Program.ItemOperationsWithValidPartitionKeyValue(container);
 
                     Console.WriteLine("--Demo migration of items inserted with no partition key to items with a partition key--");
                     await Program.MigratedItemsFromNonePartitionKeyToValidPartitionKeyValue(container);
 
                     // Clean up the database -- for rerunning the sample
-                    await databaseResponse.Database.DeleteAsync();
+                    await database.DeleteAsync();
                 }
             }
             catch (CosmosException cre)
@@ -264,7 +268,7 @@
             };
         }
 
-        private static async Task CreateNonPartitionedContainer(string endpoint, string authKey)
+        private static async Task CreateNonPartitionedContainerAsync(string endpoint, string authKey)
         {
             // Creating non partition Container, REST api used instead of .NET SDK as creation without a partition key is not supported anymore.
             Console.WriteLine("Creating container without a partition key");
