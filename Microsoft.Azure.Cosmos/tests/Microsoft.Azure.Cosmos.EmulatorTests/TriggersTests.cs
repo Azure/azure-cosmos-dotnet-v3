@@ -4,13 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
