@@ -3112,7 +3112,8 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
-                SerializationFormattingPolicy.None))
+                SerializationFormattingPolicy.None,
+                this.GetSerializerSettingsForRequest(options)))
             {
                 await this.AddPartitionKeyInformationAsync(request, document, options);
                 request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
@@ -5502,7 +5503,8 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers,
-                SerializationFormattingPolicy.None))
+                SerializationFormattingPolicy.None,
+                this.GetSerializerSettingsForRequest(options)))
             {
                 await this.AddPartitionKeyInformationAsync(request, typedDocument, options);
                 request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
