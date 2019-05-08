@@ -898,6 +898,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
+                // Validate all items with no partition key value are returned
                 Assert.AreEqual(ItemsToCreate, resultsFetched);
 
                 // Re-Query the items on the container with NonePartitionKeyValue
