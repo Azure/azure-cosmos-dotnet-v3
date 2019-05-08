@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
             FeedResponse<CosmosElement> feedResponse,
             CosmosSerializationOptions cosmosSerializationOptions)
         {
-            return FeedResponseBinder.ConvertToCosmosQueryResponse(feedResponse, null);
+            return FeedResponseBinder.ConvertToCosmosQueryResponse(feedResponse, cosmosSerializationOptions);
         }
 
         /// <summary>
