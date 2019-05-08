@@ -4,12 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Linq;
-    using System.Reflection;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -17,36 +11,45 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosResponseMessageTests
     {
         [TestMethod]
-        public void IsDocumentFeed_ForDocumentReads()
+        public void IsFeedOperation_ForDocumentReads()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            Assert.IsTrue(request.IsDocumentFeedOperation);
+            Assert.IsTrue(request.IsFeedOperation);
         }
 
         [TestMethod]
-        public void IsDocumentFeed_ForChangeFeed()
+        public void IsFeedOperation_ForConflictReads()
+        {
+            CosmosRequestMessage request = new CosmosRequestMessage();
+            request.OperationType = OperationType.ReadFeed;
+            request.ResourceType = ResourceType.Conflict;
+            Assert.IsTrue(request.IsFeedOperation);
+        }
+
+        [TestMethod]
+        public void IsFeedOperation_ForChangeFeed()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
             request.PartitionKeyRangeId = "something";
-            Assert.IsFalse(request.IsDocumentFeedOperation);
+            Assert.IsFalse(request.IsFeedOperation);
         }
 
         [TestMethod]
-        public void IsDocumentFeed_ForOtherOperations()
+        public void IsFeedOperation_ForOtherOperations()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             request.OperationType = OperationType.Upsert;
             request.ResourceType = ResourceType.Document;
-            Assert.IsFalse(request.IsDocumentFeedOperation);
+            Assert.IsFalse(request.IsFeedOperation);
 
             CosmosRequestMessage request2 = new CosmosRequestMessage();
             request2.OperationType = OperationType.ReadFeed;
             request2.ResourceType = ResourceType.Database;
-            Assert.IsFalse(request2.IsDocumentFeedOperation);
+            Assert.IsFalse(request2.IsFeedOperation);
         }
     }
 }
