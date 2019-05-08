@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
         /// <returns></returns>
-        public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
+        public abstract ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName, 
             Func<long, CancellationToken, Task> estimationDelegate, 
             TimeSpan? estimationPeriod = null);

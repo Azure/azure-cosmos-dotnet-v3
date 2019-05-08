@@ -2130,7 +2130,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
         */
 
-        [Ignore("https://msdata.visualstudio.com/CosmosDB/_workitems/edit/299020")]
         [TestMethod]
         public async Task ValidateReadOnlyStoredProcedureExecution()
         {

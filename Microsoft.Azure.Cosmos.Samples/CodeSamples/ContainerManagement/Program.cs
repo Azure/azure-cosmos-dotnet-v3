@@ -121,13 +121,13 @@
 
         private static async Task CreateContainerWithTtlExpiration()
         {
-            CosmosContainerSettings containerSettings = new CosmosContainerSettings(
-                id: "TtlExpiryContainer",
+            CosmosContainerSettings settings = new CosmosContainerSettings
+                (id: "TtlExpiryContainer",
                 partitionKeyPath: partitionKey);
-            containerSettings.DefaultTimeToLive = TimeSpan.FromDays(1); //expire in 1 day
+            settings.DefaultTimeToLive = (int)TimeSpan.FromDays(1).TotalSeconds; //expire in 1 day
 
             CosmosContainerResponse ttlEnabledContainerResponse = await database.Containers.CreateContainerIfNotExistsAsync(
-                containerSettings: containerSettings);
+                containerSettings: settings);
             CosmosContainerSettings returnedSettings = ttlEnabledContainerResponse;
 
             Console.WriteLine($"\n1.3. Created Container \n{returnedSettings.Id} with TTL expiration of {returnedSettings.DefaultTimeToLive}");

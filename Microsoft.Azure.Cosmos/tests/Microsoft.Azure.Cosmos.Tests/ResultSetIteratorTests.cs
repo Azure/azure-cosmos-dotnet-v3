@@ -79,8 +79,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             options.Verify(m => m.FillRequestOptions(It.Is<CosmosRequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
         }
 
-        // DEVNOTE: Query is not wired into the handler pipeline yet.
-        [Ignore]
         [TestMethod]
         public async Task VerifyCosmosDefaultResultSetStreamIteratorOperationType()
         {
@@ -98,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.AreEqual(
-                    15, //OperationType.SqlQuery
+                    (int)Documents.OperationType.Query,
                     (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
                 );
                 return TestHandler.ReturnSuccess();
@@ -119,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.AreEqual(
-                    14, //OperationType.Query
+                    (int)Documents.OperationType.Query,
                     (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
                 );
                 return TestHandler.ReturnSuccess();

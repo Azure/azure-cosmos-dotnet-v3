@@ -8,9 +8,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
@@ -601,12 +602,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 #endif
         [TestMethod]
-        [Ignore]
         public void VerifyGatewayNameIdCacheRefreshDirectGateway()
         {
             // This test hits this issue: https://github.com/Azure/azure-documentdb-dotnet/issues/457
             // Ignoring it until this is fixed
-            DocumentClient client = TestCommon.CreateClient(true);
+            CosmosClient client = TestCommon.CreateCosmosClient(true);
             this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client).Wait();
         }
 
@@ -626,38 +626,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection,
         }
 
-        private async Task VerifyGatewayNameIdCacheRefreshPrivateAsync(DocumentClient client)
+        private async Task VerifyGatewayNameIdCacheRefreshPrivateAsync(CosmosClient client)
         {
-            Database database = null;
+            CosmosDatabase database = null;
             try
             {
                 // Create database and create collection
-                database = await client.CreateDatabaseAsync(new Database() { Id = "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString() });
+                database = await client.Databases.CreateDatabaseAsync(id : "GatewayNameIdCacheRefresh" + Guid.NewGuid().ToString());
 
                 int collectionsCount = 10;
                 Logger.LogLine("Create {0} collections simultaneously.", collectionsCount);
-                IList<DocumentCollection> collections = await this.CreateCollectionsAsync(client,
-                    database,
+                IList<CosmosContainer> containers = await this.CreateContainerssAsync(database,
                     collectionsCount - 1);
 
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.DocumentCollection);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToDifferentName, collections[0], CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.BoundToDifferentName, collections[1], CallAPIForStaleCacheTest.DocumentCollection);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.Bindable, collections[2], CallAPIForStaleCacheTest.Document);
-                await UsingSameFabircServiceTestAsync(database.Id, client, FabircServiceReuseType.Bindable, collections[3], CallAPIForStaleCacheTest.DocumentCollection);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.Document);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToSameName, null, CallAPIForStaleCacheTest.DocumentCollection);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[0], CallAPIForStaleCacheTest.Document);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.BoundToDifferentName, containers[1], CallAPIForStaleCacheTest.DocumentCollection);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[2], CallAPIForStaleCacheTest.Document);
+                await UsingSameFabircServiceTestAsync(database, FabircServiceReuseType.Bindable, containers[3], CallAPIForStaleCacheTest.DocumentCollection);
             }
             finally
             {
                 if (database != null)
                 {
-                    await client.DeleteDatabaseAsync(database);
+                    await database.DeleteAsync();
                 }
             }
         }
 
-        private async Task UsingSameFabircServiceTestAsync(string databaseId, DocumentClient client, FabircServiceReuseType type,
-            DocumentCollection collectionToDelete,
+        private async Task UsingSameFabircServiceTestAsync(CosmosDatabase database, FabircServiceReuseType type,
+            CosmosContainer collectionToDelete,
             CallAPIForStaleCacheTest eApiTest)
         {
             string suffix = Guid.NewGuid().ToString();
@@ -665,17 +664,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string collectionFooId = "collectionFoo" + suffix;
             string collectionBarId = "collectionBar" + suffix;
             string doc1Id = "document1" + suffix;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            CosmosContainer collFoo = await database.Containers.CreateContainerAsync( new CosmosContainerSettings() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
+            Document documentDefinition = new Document() { Id = doc1Id };
+            documentDefinition.SetPropertyValue("pk", "test");
+            Document doc1 = await collFoo.Items.CreateItemAsync<Document>(partitionKey: "test", item: documentDefinition);
 
-            DocumentCollection collFoo = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionFooId });
-            Document doc1 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId), new Document() { Id = doc1Id });
-
+            RequestOptions requestOptions = new RequestOptions() { PartitionKey = new PartitionKey("test") };
             // doing a read, which cause the gateway has name->Id cache (collectionFooId -> Rid)
-            Document docIgnore = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionFooId, doc1Id));
+            Document docIgnore = await collFoo.Items.ReadItemAsync<Document>(partitionKey: "test", id: doc1Id);
 
             // Now delete the collection so we have 1 bindable collection left
-            DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+            //DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+            await collFoo.DeleteAsync();
 
-            DocumentCollection collBar = null;
+            CosmosContainer collBar = null;
             if (type == FabircServiceReuseType.BoundToSameName)
             {
                 // do nothing
@@ -683,37 +686,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             else if (type == FabircServiceReuseType.BoundToDifferentName || type == FabircServiceReuseType.Bindable)
             {
                 // Now create collectionBar fist.
-                collBar = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionBarId });
+                collBar = await database.Containers.CreateContainerAsync( new CosmosContainerSettings() { Id = collectionBarId, PartitionKey = partitionKeyDefinition });
                 // delete another random collection so we have 1 bindable collection left
-                await client.DeleteDocumentCollectionAsync(collectionToDelete);
+                await collBar.DeleteAsync();
             }
 
             // Now create collectionFoo second time
-            DocumentCollection collFoo2 = await TestCommon.CreateCollectionAsync(client, UriFactory.CreateDatabaseUri(databaseId), new DocumentCollection() { Id = collectionFooId });
+            CosmosContainer collFoo2 = await database.Containers.CreateContainerAsync( new CosmosContainerSettings() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
 
             if (type == FabircServiceReuseType.Bindable)
             {
-                await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionBarId));
+                await collBar.DeleteAsync();
             }
 
             // Now verify the collectionFooId, the cache has collectionFooId -> OldRid cache
             if (eApiTest == CallAPIForStaleCacheTest.DocumentCollection)
             {
-                DocumentCollection collFooRead = await client.ReadDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+                CosmosContainer collFooRead = await collFoo2.ReadAsync();
             }
             else if (eApiTest == CallAPIForStaleCacheTest.Document)
             {
-                string docFoo1Id = "docFoo1Id" + suffix;
-                Document docFoo1 = await client.CreateDocumentAsync(collFoo2.SelfLink, new Document() { Id = docFoo1Id });
-                Document docFoo1Back = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionFooId, docFoo1Id));
+                documentDefinition = new Document() { Id = "docFoo1Id" + suffix };
+                documentDefinition.SetPropertyValue("pk", "test");
+                Document docFoo1 = await collFoo.Items.CreateItemAsync<Document>(partitionKey: "test", item: documentDefinition);
+                Document docFoo1Back = await collFoo.Items.ReadItemAsync<Document>(partitionKey: "test", id: documentDefinition.Id);
             }
 
             // Now delete the collection foo again
-            await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
+            await collFoo2.DeleteAsync();
 
             if (type == FabircServiceReuseType.BoundToDifferentName)
             {
-                await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionBarId));
+                await collBar.DeleteAsync(); ;
             }
         }
 
@@ -1286,40 +1290,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Tests that collection cache is refreshed when collection is recreated.
+        /// Tests that container cache is refreshed when container is recreated.
         /// The test just ensures that client retries and completes successfully.
-        /// It verifies case when original collection is not partitioned and new collection is partitioned.
+        /// It verifies case when original and new container have different partition key path.
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
-        public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned()
+        public async Task TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath()
         {
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(TestCommon.CreateClient(true));
+            await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Https));
+            await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
+            await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
-        internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitioned(DocumentClient client)
+        internal async Task TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(CosmosClient client)
         {
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
+            CosmosDatabase database = null;
+            try
+            {
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+                Document document1 = new Document { Id = "doc1" };
+                document1.SetPropertyValue("field1", 1);
+                await container.Items.CreateItemAsync(1, document1);
 
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
+                CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
+                database = otherClient.Databases["db1"];
+                container = database.Containers["coll1"];
+                await container.DeleteAsync();
+                PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
+                container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
-            Document document2 = new Document { Id = "doc1" };
-            document2.SetPropertyValue("field2", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document2);
+                Document document2 = new Document { Id = "doc1" };
+                document2.SetPropertyValue("field2", 1);
+                container = client.Databases["db1"].Containers["coll1"];
+                await container.Items.CreateItemAsync(1, document2);
+            }
+            finally
+            {
+                if(database != null)
+                {
+                    await database.DeleteAsync();
+                }
+            }
         }
 
         /// <summary>
@@ -1487,11 +1505,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Tests that routing to non-existent range throws PartitionKeyRangeGoneException even after collection recreate.
         /// </summary>
         /// <returns></returns>
-        [Ignore]
         [TestMethod]
         public async Task TestRouteToNonExistentRangeAfterCollectionRecreate()
         {
-            await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(true));
+            await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateCosmosClient(true));
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
@@ -1499,65 +1516,72 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #endif
         }
 
-        internal async Task TestRouteToNonExistentRangeAfterCollectionRecreate(DocumentClient client)
+        internal async Task TestRouteToNonExistentRangeAfterCollectionRecreate(CosmosClient client)
         {
+            const int partitionCount = 5;
+            const int federationDefaultRUsPerPartition = 6000;
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection = await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
-            var partitionKeyRangeCache = await client.GetPartitionKeyRangeCacheAsync();
-            var ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                collection.ResourceId,
-                new Range<string>(
-                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    true,
-                    false));
-
-            Assert.AreEqual(5, ranges.Count());
-
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
+            CosmosDatabase database = null;
             try
             {
-                await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "foo" });
-                Assert.Fail();
-            }
-            catch (DocumentClientException ex)
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer cosmosContainer = await database.Containers.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
+
+                CosmosContainerCore containerCore = (CosmosContainerCore)cosmosContainer;
+                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
+
+                Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());
+            } finally
             {
-                Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
-                Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+                if (database != null)
+                {
+                    await database.DeleteAsync();
+                }
             }
 
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1" });
+            //PartitionKeyRangeId is not supported reed feed from V3 SDK onwards
+            //Document document1 = new Document { Id = "doc1" };
+            //document1.SetPropertyValue("field1", 1);
+            //await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
-            try
-            {
-                await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[ranges.Count - 1].Id });
-                Assert.Fail();
-            }
-            catch (DocumentClientException ex)
-            {
-                Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
-                Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
-            }
+            //try
+            //{
+            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "foo" });
+            //    Assert.Fail();
+            //}
+            //catch (DocumentClientException ex)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
+            //    Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+            //}
 
-            await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[0].Id });
+            //DocumentClient otherClient = TestCommon.CreateClient(false);
+            //await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
+            //await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+
+            //try
+            //{
+            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[ranges.Count - 1].Id });
+            //    Assert.Fail();
+            //}
+            //catch (DocumentClientException ex)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
+            //    Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+            //}
+
+            //await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[0].Id });
         }
 
         /// <summary>
         /// Tests that routing to non-existent range throws PartitionKeyRangeGoneException even after collection recreate.
         /// </summary>
         /// <returns></returns>
-        [Ignore]
         [TestMethod]
         public async Task TestRouteToExistentRangeAfterCollectionRecreate()
         {
-            await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(true));
+            await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateCosmosClient(true));
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
@@ -1565,43 +1589,65 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #endif
         }
 
-        internal async Task TestRouteToExistentRangeAfterCollectionRecreate(DocumentClient client)
+        internal async Task TestRouteToExistentRangeAfterCollectionRecreate(CosmosClient client)
         {
+            const int partitionCount = 5;
+            const int federationDefaultRUsPerPartition = 6000;
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
+            CosmosDatabase database = null;
             try
             {
-                await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
-                Assert.Fail();
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer cosmosContainer = await database.Containers.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
+
+                CosmosContainerCore containerCore = (CosmosContainerCore)cosmosContainer;
+                CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
+
+                Assert.AreEqual(partitionCount, collectionRoutingMap.OrderedPartitionKeyRanges.Count());
             }
-            catch (DocumentClientException ex)
+            finally
             {
-                Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
-                Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+                if (database != null)
+                {
+                    await database.DeleteAsync();
+                }
             }
+            //PartitionKeyRangeId is not supported reed feed from V3 SDK onwards
+            //await client.CreateDatabaseAsync(new Database { Id = "db1" });
+            //await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
 
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection = await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
-            var partitionKeyRangeCache = await client.GetPartitionKeyRangeCacheAsync();
-            var ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                collection.ResourceId,
-                new Range<string>(
-                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    true,
-                    false));
+            //Document document1 = new Document { Id = "doc1" };
+            //document1.SetPropertyValue("field1", 1);
+            //await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
-            Assert.AreEqual(5, ranges.Count());
+            //try
+            //{
+            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
+            //    Assert.Fail();
+            //}
+            //catch (DocumentClientException ex)
+            //{
+            //    Assert.AreEqual(HttpStatusCode.Gone, ex.StatusCode);
+            //    Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
+            //}
 
-            await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
+            //DocumentClient otherClient = TestCommon.CreateClient(false);
+            //await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
+            //PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+            //DocumentCollection collection = await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
+            //var partitionKeyRangeCache = await client.GetPartitionKeyRangeCacheAsync();
+            //var ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+            //    collection.ResourceId,
+            //    new Range<string>(
+            //        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+            //        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+            //        true,
+            //        false));
+
+            //Assert.AreEqual(5, ranges.Count());
+
+            //await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = "4" });
         }
 
         /// <summary>
@@ -1658,103 +1704,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Tests that partition key definition cache is refreshed when collection is recreated.
-        /// The test just ensures that client retries and completes successfully.
-        /// It verifies case when original collection is partitioned and new collection is not partitioned.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
-        public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned()
-        {
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(true));
-#if DIRECT_MODE
-            // DIRECT MODE has ReadFeed issues in the Public emulator
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(false, protocol: Protocol.Https));
-#endif
-        }
-
-        internal async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
-        {
-            await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-
-            Document document2 = new Document { Id = "doc1" };
-            document2.SetPropertyValue("field2", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document2);
-        }
-
-        /// <summary>
-        /// Tests that partition key definition cache is refreshed when collection is recreated.
+        /// Tests that partition key definition cache is refreshed when container is recreated.
         /// The test just ensures that Gateway successfully creates script when its partitionkeydefinition cache is outdated..
-        /// It verifies case when original collection is partitioned and new collection is not partitioned.
+        /// It verifies case when original container and new container have different partition key path.
         /// </summary>
         /// <returns></returns>
         [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
-        public async Task TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned()
+        public async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath()
         {
-            await this.TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned(TestCommon.CreateClient(true));
+            await this.TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
         }
 
-        internal async Task TestScriptCreateOnCollectionRecreateFromPartitionedToNonPartitioned(DocumentClient client)
+        internal async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(CosmosClient client)
         {
             await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-
-            await client.CreateStoredProcedureAsync("/dbs/db1/colls/coll1", new StoredProcedure { Id = "sproc1", Body = "function() {return 1}" });
-        }
-
-        /// <summary>
-        /// Tests that partition key definition cache is refreshed when collection is recreated.
-        /// The test just ensures that Gateway successfully creates script when its partitionkeydefinition cache is outdated..
-        /// It verifies case when original collection is not partitioned and new collection is partitioned.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [Ignore] // Not valid scenerio from V3 SDK onward
-        public async Task TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned()
-        {
-            await this.TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned(TestCommon.CreateClient(true));
-        }
-
-        internal async Task TestScriptCreateOnCollectionRecreateFromNotPartitionedToPartitioned(DocumentClient client)
-        {
-            await TestCommon.DeleteAllDatabasesAsync();
-            await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
-            Document document1 = new Document { Id = "doc1" };
-            document1.SetPropertyValue("field1", 1);
-            await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
-
-            DocumentClient otherClient = TestCommon.CreateClient(false);
-            await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition2 }, new RequestOptions { OfferThroughput = 12000 });
-
-            await client.CreateStoredProcedureAsync("/dbs/db1/colls/coll1", new StoredProcedure { Id = "sproc1", Body = "function() {return 1}" });
-            for (int i = 0; i < 10; i++)
+            CosmosDatabase database = null;
+            try
             {
-                await client.ExecuteStoredProcedureAsync<object>("/dbs/db1/colls/coll1/sprocs/sproc1", new RequestOptions { PartitionKey = new PartitionKey(i) });
+                database = await client.Databases.CreateDatabaseAsync("db1");
+                PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
+                CosmosContainer container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+                Document document1 = new Document { Id = "doc1" };
+                document1.SetPropertyValue("field1", 1);
+                await container.Items.CreateItemAsync(1, document1);
+
+                CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
+                database = otherClient.Databases["db1"];
+                container = database.Containers["coll1"];
+                await container.DeleteAsync();
+                PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
+                container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
+
+                container = client.Databases["db1"].Containers["coll1"];
+                CosmosStoredProcedure storedProcedure = await container.StoredProcedures.CreateStoredProcedureAsync(id: "sproc1", body: "function() {return 1}");
+                for (int i = 0; i < 10; i++)
+                {
+                    await storedProcedure.ExecuteAsync<object, object>(partitionKey: i, input: null);
+                }
+            }
+            finally
+            {
+                if (database != null)
+                {
+                    await database.DeleteAsync();
+                }
             }
         }
 
@@ -1874,17 +1867,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return await TestCommon.AsyncRetryRateLimiting<T>(work);
         }
 
-        private async Task<IList<DocumentCollection>> CreateCollectionsAsync(DocumentClient client, Database database, int numberOfCollectionsPerDatabase)
+        private async Task<IList<CosmosContainer>> CreateContainerssAsync(CosmosDatabase database, int numberOfCollectionsPerDatabase)
         {
-            IList<DocumentCollection> documentCollections = new List<DocumentCollection>();
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+            IList<CosmosContainer> cosmosContainers = new List<CosmosContainer>();
             if (numberOfCollectionsPerDatabase > 0)
             {
                 for (int i = 0; i < numberOfCollectionsPerDatabase; ++i)
                 {
-                    documentCollections.Add(await AsyncRetryRateLimiting(() => TestCommon.CreateCollectionAsync(client, database.CollectionsLink, new DocumentCollection { Id = Guid.NewGuid().ToString() })));
+                    cosmosContainers.Add(await AsyncRetryRateLimiting(() => database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })));
                 }
             }
-            return documentCollections;
+            return cosmosContainers;
         }
 
         private async Task<int> GetCountFromIterator<T>(CosmosFeedIterator<T> iterator)
