@@ -1736,10 +1736,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
                 container = client.Databases["db1"].Containers["coll1"];
-                CosmosStoredProcedure storedProcedure = await container.StoredProcedures.CreateStoredProcedureAsync(id: "sproc1", body: "function() {return 1}");
+                CosmosScripts scripts = container.GetScripts();
+                CosmosStoredProcedureSettings storedProcedure = await scripts.CreateStoredProcedureAsync(id: "sproc1", body: "function() {return 1}");
                 for (int i = 0; i < 10; i++)
                 {
-                    await storedProcedure.ExecuteAsync<object, object>(partitionKey: i, input: null);
+                    await scripts.ExecuteStoredProcedureAsync<object, object>(partitionKey: i, id: "sproc1", input: null);
                 }
             }
             finally
