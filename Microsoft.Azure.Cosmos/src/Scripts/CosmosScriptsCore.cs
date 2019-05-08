@@ -14,10 +14,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
     internal sealed class CosmosScriptsCore : CosmosScripts
     {
         private readonly CosmosContainerCore container;
+        private readonly CosmosClientContext clientContext;
 
-        internal CosmosScriptsCore(CosmosContainerCore container)
+        internal CosmosScriptsCore(
+            CosmosContainerCore container, 
+            CosmosClientContext clientContext)
         {
             this.container = container;
+            this.clientContext = clientContext;
         }
 
         public override Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
@@ -26,32 +30,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellation = default(CancellationToken))
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
+            CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings(id, body);
 
-            if (string.IsNullOrEmpty(body))
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
-            CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings
-            {
-                Id = id,
-                Body = body
-            };
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: this.container.LinkUri,
-                resourceType: ResourceType.StoredProcedure,
+            return this.ProcessStoredProcedureOperationAsync(
+                linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
@@ -75,21 +61,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.StoredProcedure,
+            return this.ProcessStoredProcedureOperationAsync(
+                id: id,
                 operationType: OperationType.Read,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: null,
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override Task<CosmosStoredProcedureResponse> ReplaceStoredProcedureAsync(
@@ -108,27 +85,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(body));
             }
 
-            CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings()
-            {
-                Id = id,
-                Body = body,
-            };
+            CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings(id, body);
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.StoredProcedure,
+            return this.ProcessStoredProcedureOperationAsync(
+                id: id,
                 operationType: OperationType.Replace,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override Task<CosmosStoredProcedureResponse> DeleteStoredProcedureAsync(
@@ -141,21 +105,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: OperationType.Delete,
-                requestOptions: requestOptions,
-                partitionKey: null,
+            return this.ProcessStoredProcedureOperationAsync(
+                id: id, 
+                operationType: OperationType.Delete, 
                 streamPayload: null,
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         public override Task<CosmosStoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
@@ -175,14 +130,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)
             {
-                parametersStream = this.container.ClientContext.JsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
+                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
             }
             else
             {
-                parametersStream = this.container.ClientContext.JsonSerializer.ToStream<TInput>(input);
+                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput>(input);
             }
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
+            Uri LinkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
                 uriPathSegment: Paths.StoredProceduresPathSegment,
                 id: id);
@@ -196,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 requestOptions: requestOptions,
                 cancellation: cancellation);
 
-            return this.container.ClientContext.ResponseFactory.CreateStoredProcedureExecuteResponse<TOutput>(response);
+            return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponse<TOutput>(response);
         }
 
         public override Task<CosmosTriggerResponse> CreateTriggerAsync(
@@ -219,16 +174,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerSettings.Body));
             }
 
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: this.container.LinkUri,
-                resourceType: ResourceType.Trigger,
+            return this.ProcessTriggerOperationAsync(
+                linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: CosmosResource.ToStream(triggerSettings),
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateTriggerResponse(response);
         }
 
         public override CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
@@ -252,21 +203,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.Trigger,
+            return this.ProcessTriggerOperationAsync(
+                id: id,
                 operationType: OperationType.Read,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: null,
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateTriggerResponse(response);
         }
 
         public override Task<CosmosTriggerResponse> ReplaceTriggerAsync(
@@ -289,22 +231,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(triggerSettings.Body));
             }
 
-
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment,
-                id: triggerSettings.Id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.Trigger,
+            return this.ProcessTriggerOperationAsync(
+                id: triggerSettings.Id,
                 operationType: OperationType.Replace,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: CosmosResource.ToStream(triggerSettings),
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateTriggerResponse(response);
         }
 
         public override Task<CosmosTriggerResponse> DeleteTriggerAsync(
@@ -317,21 +249,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.TriggersPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.Trigger,
+            return this.ProcessTriggerOperationAsync(
+                id: id,
                 operationType: OperationType.Delete,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: null,
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateTriggerResponse(response);
         }
 
         public override Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
@@ -354,16 +277,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
             }
 
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: this.container.LinkUri,
-                resourceType: ResourceType.UserDefinedFunction,
+            return this.ProcessUserDefinedFunctionOperationAsync(
+                linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
 
         public override CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
@@ -387,21 +306,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.UserDefinedFunction,
+            return this.ProcessUserDefinedFunctionOperationAsync(
+                id: id,
                 operationType: OperationType.Read,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: null,
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
 
         public override Task<CosmosUserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
@@ -424,22 +334,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
             }
 
-
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
-                id: userDefinedFunctionSettings.Id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.UserDefinedFunction,
+            return this.ProcessUserDefinedFunctionOperationAsync(
+                id: userDefinedFunctionSettings.Id,
                 operationType: OperationType.Replace,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
 
         public override Task<CosmosUserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
@@ -452,21 +352,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            Uri LinkUri = this.container.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
-                resourceType: ResourceType.UserDefinedFunction,
+            return this.ProcessUserDefinedFunctionOperationAsync(
+                id: id,
                 operationType: OperationType.Delete,
-                requestOptions: requestOptions,
-                partitionKey: null,
                 streamPayload: null,
+                requestOptions: requestOptions,
                 cancellation: cancellation);
-
-            return this.container.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
 
         private Task<CosmosFeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
@@ -517,6 +408,84 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
+        private Task<CosmosStoredProcedureResponse> ProcessStoredProcedureOperationAsync(
+            string id,
+            OperationType operationType,
+            Stream streamPayload,
+            CosmosRequestOptions requestOptions,
+            CancellationToken cancellation)
+        {
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: id);
+
+            return this.ProcessStoredProcedureOperationAsync(
+                linkUri: linkUri,
+                operationType: operationType,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellation: cancellation);
+        }
+
+        private Task<CosmosStoredProcedureResponse> ProcessStoredProcedureOperationAsync(
+            Uri linkUri,
+            OperationType operationType,
+            Stream streamPayload,
+            CosmosRequestOptions requestOptions,
+            CancellationToken cancellation)
+        {
+            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: streamPayload,
+                cancellation: cancellation);
+
+            return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(response);
+        }
+
+        private Task<CosmosTriggerResponse> ProcessTriggerOperationAsync(
+            string id,
+            OperationType operationType,
+            Stream streamPayload,
+            CosmosRequestOptions requestOptions,
+            CancellationToken cancellation)
+        {
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.TriggersPathSegment,
+                id: id);
+
+            return this.ProcessTriggerOperationAsync(
+                linkUri: linkUri,
+                operationType: operationType,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellation: cancellation);
+        }
+
+        private Task<CosmosTriggerResponse> ProcessTriggerOperationAsync(
+            Uri linkUri,
+            OperationType operationType,
+            Stream streamPayload,
+            CosmosRequestOptions requestOptions,
+            CancellationToken cancellation)
+        {
+            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.Trigger,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: streamPayload,
+                cancellation: cancellation);
+
+            return this.clientContext.ResponseFactory.CreateTriggerResponse(response);
+        }
+
         private Task<CosmosResponseMessage> ProcessStreamOperationAsync(
             Uri resourceUri,
             ResourceType resourceType,
@@ -526,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CosmosRequestOptions requestOptions,
             CancellationToken cancellation)
         {
-            return this.container.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -536,6 +505,45 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: streamPayload,
                 requestEnricher: null,
                 cancellationToken: cancellation);
+        }
+
+        private Task<CosmosUserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
+            string id,
+            OperationType operationType,
+            Stream streamPayload,
+            CosmosRequestOptions requestOptions,
+            CancellationToken cancellation)
+        {
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
+                id: id);
+
+            return this.ProcessUserDefinedFunctionOperationAsync(
+                linkUri: linkUri,
+                operationType: operationType,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellation: cancellation);
+        }
+
+        private Task<CosmosUserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
+            Uri linkUri,
+            OperationType operationType,
+            Stream streamPayload,
+            CosmosRequestOptions requestOptions,
+            CancellationToken cancellation)
+        {
+            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.UserDefinedFunction,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: streamPayload,
+                cancellation: cancellation);
+
+            return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
 
         private Task<CosmosFeedResponse<T>> GetIterator<T>(
@@ -548,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             Debug.Assert(state == null);
 
-            return this.container.ClientContext.ProcessResourceOperationAsync<CosmosFeedResponse<T>>(
+            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<T>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: resourceType,
                 operationType: OperationType.ReadFeed,
@@ -561,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                     CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.container.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
+                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
                 cancellationToken: cancellation);
         }
     }

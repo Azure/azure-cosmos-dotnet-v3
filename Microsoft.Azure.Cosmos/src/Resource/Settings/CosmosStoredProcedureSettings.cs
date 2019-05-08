@@ -22,6 +22,25 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosStoredProcedureSettings()
         {
+
+        }
+
+        internal CosmosStoredProcedureSettings(
+            string id,
+            string body)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (string.IsNullOrEmpty(body))
+            {
+                throw new ArgumentNullException(nameof(body));
+            }
+
+            this.Id = id;
+            this.Body = body;
         }
 
         /// <summary>
