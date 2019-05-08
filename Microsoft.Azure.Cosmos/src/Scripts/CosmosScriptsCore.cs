@@ -75,16 +75,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellation = default(CancellationToken))
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (string.IsNullOrEmpty(body))
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings(id, body);
 
             return this.ProcessStoredProcedureOperationAsync(
