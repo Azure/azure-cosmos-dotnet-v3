@@ -839,6 +839,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task ItemLinqQueryTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await CreateRandomItems(pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+            ToDoActivity find = itemList.First();
+
+            //Linq query excecution without partition key.
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.Items.CosmosItemQuery<ToDoActivity>(new CosmosQueryRequestOptions() { AllowQuerySync = true});
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            Assert.AreEqual(2, queriable.Count());
+            Assert.AreEqual(find.id, queriable.ToList()[0].id);
+
+            //Linq query excecution with wrong partition key.
+            linqQueryable = this.Container.Items.CosmosItemQuery<ToDoActivity>(requestOptions:  new CosmosQueryRequestOptions() { AllowQuerySync = true }, partitionKey: "test");
+            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            Assert.AreEqual(0, queriable.Count());
+
+            //Linq query excecution with correct partition key.
+            linqQueryable = this.Container.Items.CosmosItemQuery<ToDoActivity>(requestOptions: new CosmosQueryRequestOptions() { AllowQuerySync = true }, partitionKey: itemList[1].status);
+            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            Assert.AreEqual(1, queriable.Count());
+            Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
+
+            //Creating linq query with null requestOptions.
+            try
+            {
+                linqQueryable = this.Container.Items.CosmosItemQuery<ToDoActivity>(requestOptions: null, partitionKey: find.status);
+                queriable = linqQueryable.Where(item => (item.taskNum < 100));
+                Assert.Fail("Should throw ArgumentException on CosmosQueryRequestOptions");
+            }
+            catch (ArgumentException exception)
+            {
+                Assert.IsTrue(exception.Message.Contains("CosmosQueryRequestOptions cannot be null"));
+            }
+
+            //Creating linq query without setting AllowQuerySync true.
+            try
+            {
+                linqQueryable = this.Container.Items.CosmosItemQuery<ToDoActivity>(requestOptions: new CosmosQueryRequestOptions(), partitionKey: find.status);
+                queriable = linqQueryable.Where(item => (item.taskNum < 100));
+                Assert.Fail("Should throw NotSupportedException");
+            }
+            catch (NotSupportedException exception)
+            {
+                Assert.IsTrue(exception.Message.Contains("please set AllowQuerySync in CosmosQueryRequestOptions true"));
+            }
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);

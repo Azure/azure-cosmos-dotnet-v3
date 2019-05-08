@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -788,6 +789,52 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a linq query for items under a container in an Azure Cosmos DB service.
+        /// </summary>
+        /// <typeparam name="T">The type of object to query.</typeparam>
+        /// <param name="requestOptions">The options for the item query request <see cref="CosmosQueryRequestOptions"/></param>
+        /// <param name="partitionKey">(Optional) The partition key to excecute the query in a particular partition.</param>
+        /// <returns>An IOrderedQueryable{T} that can evaluate the query.</returns>
+        /// <example>
+        /// This example below queries for some book documents.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class Book 
+        /// {
+        ///     [JsonProperty("id")]
+        ///     public string Title {get; set;}
+        ///     
+        ///     public Author Author {get; set;}
+        ///     
+        ///     public int Price {get; set;}
+        /// }
+        /// 
+        /// public class Author
+        /// {
+        ///     public string FirstName {get; set;}
+        ///     public string LastName {get; set;}
+        /// }
+        ///  
+        /// // Query by the Title property
+        /// Book book = container.Items.CosmosItemQuery<Book>(requestOptions).Where(b => b.Title == "War and Peace").AsEnumerable().FirstOrDefault();
+        /// 
+        /// // Query a nested property
+        /// Book otherBook = container.Items.CosmosItemQuery<Book>(requestOptions).Where(b => b.Author.FirstName == "Leo").AsEnumerable().FirstOrDefault();
+        /// 
+        /// // Perform iteration on books
+        /// foreach (Book matchingBook in container.Items.CosmosItemQuery<Book>(requestOptions).Where(b => b.Price > 100))
+        /// {
+        ///     // Iterate through books
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
+        /// </remarks>
+        public abstract IOrderedQueryable<T> CosmosItemQuery<T>(CosmosQueryRequestOptions requestOptions, object partitionKey = null);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.

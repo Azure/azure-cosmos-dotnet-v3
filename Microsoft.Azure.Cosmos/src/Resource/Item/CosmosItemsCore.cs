@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -364,6 +366,30 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 requestOptions);
+        }
+
+        public override IOrderedQueryable<T> CosmosItemQuery<T>(CosmosQueryRequestOptions requestOptions, object partitionKey = null)
+        {
+            if(requestOptions == null)
+            {
+                throw new ArgumentException("CosmosQueryRequestOptions cannot be null");
+            }
+
+            if (!requestOptions.AllowQuerySync)
+            {
+                throw new NotSupportedException("To use Linq query please set AllowQuerySync in CosmosQueryRequestOptions true or" +
+                    " use CreateItemQuery api returning CosmosFeedIterator which excecute asynchronously via CosmosFeedIterator");
+            }
+
+            if(partitionKey != null)
+            {
+                requestOptions.PartitionKey = partitionKey;
+            } else
+            {
+                requestOptions.EnableCrossPartitionQuery = true;
+            }
+
+            return this.clientContext.DocumentClient.CreateDocumentQuery<T>(this.container.LinkUri, requestOptions.ToFeedOptions());
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(

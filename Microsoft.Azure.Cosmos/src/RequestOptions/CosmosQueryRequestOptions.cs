@@ -123,6 +123,15 @@ namespace Microsoft.Azure.Cosmos
         public virtual string RequestContinuation { get; set; }
 
         /// <summary>
+        /// Gets or sets the option which enable user to allow query execution syncronously via linq IOrderedQueryable.
+        /// This flag needs to set to true in CosmosItemQuery api returning linq IOrderedQueryable otherwise exception will be thrown.
+        /// </summary>
+        /// <remarks>
+        /// This flag wont be applicable on CosmosItemQuery api returning CosmosFeedIterator as it is always excecute asynchronously.
+        /// </remarks>
+        public virtual bool AllowQuerySync { get; set; }
+
+        /// <summary>
         /// Gets or sets the number of concurrent operations run client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
         /// A positive property value limits the number of 
@@ -226,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 MaxDegreeOfParallelism = this.MaxConcurrency.HasValue ? this.MaxConcurrency.Value : 0,
-                PartitionKey = new PartitionKey(this.PartitionKey),
+                PartitionKey = this.PartitionKey != null ? new PartitionKey(this.PartitionKey) : null,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
