@@ -799,9 +799,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Quering items on fixed container with cross partition enabled.
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-                CosmosFeedIterator<dynamic> setIterator = fixedContainer.Items
+                CosmosFeedIterator<dynamic> feedIterator = fixedContainer.Items
                     .CreateItemQuery<dynamic>(sql, maxConcurrency: 1, maxItemCount: 10);
-                while (setIterator.HasMoreResults)
+                while (feedIterator.HasMoreResults)
                 {
                     CosmosFeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
                     Assert.AreEqual(3, queryResponse.Count());
