@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// The comparer used to determine which document to serve next.
         /// </summary>
-        private static readonly IComparer<DocumentProducerTree> MoveNextComparer = new ParllelDocumentProducerTreeComparer();
+        private static readonly IComparer<DocumentProducerTree> MoveNextComparer = new ParllelTreeComparer();
 
         /// <summary>
         /// The function to determine which partition to fetch from first.

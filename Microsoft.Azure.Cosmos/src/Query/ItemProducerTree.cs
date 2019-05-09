@@ -634,12 +634,11 @@ namespace Microsoft.Azure.Cosmos.Query
             bool functionNeedsBeReexecuted,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             while (true)
             {
                 try
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
                     (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await function(cancellationToken);
                     if (response.failureResponse == null || !ItemProducerTree.IsSplitException(response.failureResponse))
@@ -657,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     // Repair the execution context: Get the replacement document producers and add them to the tree.
-                    List<PartitionKeyRange> replacementRanges = await this.GetReplacementRanges(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
+                    IReadOnlyList<PartitionKeyRange> replacementRanges = await this.GetReplacementRanges(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
                     foreach (PartitionKeyRange replacementRange in replacementRanges)
                     {
                         ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.Root.BackendContinuationToken);
@@ -696,13 +695,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="targetRange">The target range that got split.</param>
         /// <param name="collectionRid">The collection rid.</param>
         /// <returns>The replacement ranges for the target range that got split.</returns>
-        private async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
+        private async Task<IReadOnlyList<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
         {
             IRoutingMapProvider routingMapProvider = await this.queryClient.GetRoutingMapProviderAsync();
-            List<PartitionKeyRange> replacementRanges = (
+            IReadOnlyList<PartitionKeyRange> replacementRanges = (
                 await routingMapProvider
-                    .TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true))
-                    .ToList();
+                    .TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true));
+
             string replaceMinInclusive = replacementRanges.First().MinInclusive;
             string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
             if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))

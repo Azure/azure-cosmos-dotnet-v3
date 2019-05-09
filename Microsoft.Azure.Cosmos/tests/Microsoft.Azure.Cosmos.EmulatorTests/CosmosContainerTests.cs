@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -49,19 +50,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ContainerContractTest()
         {
-            CosmosContainerResponse response = await this.cosmosDatabase.Containers.CreateContainerAsync(new Guid().ToString(), "/id");
-            Assert.IsNotNull(response);
-            Assert.IsTrue(response.RequestCharge > 0);
-            Assert.IsNotNull(response.Headers);
-            Assert.IsNotNull(response.Headers.ActivityId);
+            CosmosClient client = new CosmosClient("https://jawilleytemp.documents.azure.com:443/", "GboKIMLEDVsipUwUx9qVo9k7zACZqhOG3Kh9PkWPeZK2FuSAAEeG6R3T3TinPKh3upxV4OYY4uw6tJI7whtfDA==");
+            //CosmosDatabase db = await client.Databases["PkTest"];
+           // CosmosContainerResponse response = await db.Containers.CreateContainerAsync("TestContainer", "/id", 500);
+            //Assert.IsNotNull(response);
+            //Assert.IsTrue(response.RequestCharge > 0);
+            //Assert.IsNotNull(response.Headers);
+            //Assert.IsNotNull(response.Headers.ActivityId);
+            CosmosContainerCore c = (CosmosContainerCore)client.Databases["PkTest"].Containers["TestContainer"];
+            var map = await c.GetRoutingMapAsync(default(CancellationToken));
+            var ranges = map.OrderedPartitionKeyRanges;
 
-            CosmosContainerSettings containerSettings = response.Resource;
-            Assert.IsNotNull(containerSettings.Id);
-            Assert.IsNotNull(containerSettings.ResourceId);
-            Assert.IsNotNull(containerSettings.ETag);
-            Assert.IsTrue(containerSettings.LastModified.HasValue);
+            //await c.ReplaceProvisionedThroughputAsync(15000);
 
-            Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
+            IReadOnlyList<PartitionKeyRange> ranges2 = null;
+            do
+            {
+                var map2 = await c.GetRoutingMapAsync(default(CancellationToken));
+                ranges2 = map2.OrderedPartitionKeyRanges;
+                Thread.Sleep(100);
+            } while (ranges2 == null || ranges2.Count == 1);
+
+            int count = ranges2.Count;
+            //CosmosContainerSettings containerSettings = response.Resource;
+            //Assert.IsNotNull(containerSettings.Id);
+            //Assert.IsNotNull(containerSettings.ResourceId);
+            //Assert.IsNotNull(containerSettings.ETag);
+            //Assert.IsTrue(containerSettings.LastModified.HasValue);
+
+            //Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
         }
 
         [TestMethod]

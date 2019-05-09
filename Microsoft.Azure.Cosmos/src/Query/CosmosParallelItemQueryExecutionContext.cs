@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
 
     /// <summary>
     /// CosmosParallelItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// The comparer used to determine which document to serve next.
         /// </summary>
-        private static readonly IComparer<ItemProducerTree> MoveNextComparer = new ParllelItemProducerTreeComparer();
+        private static readonly IComparer<ItemProducerTree> MoveNextComparer = new ParllelTreeComparer();
 
         /// <summary>
         /// The function to determine which partition to fetch from first.
@@ -264,50 +265,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyRanges,
                 minIndex,
                 partitionKeyRanges.Count - minIndex);
-        }
-
-        /// <summary>
-        /// For parallel queries we drain from left partition to right,
-        /// then by rid order within those partitions.
-        /// </summary>
-        private sealed class ParllelItemProducerTreeComparer : IComparer<ItemProducerTree>
-        {
-            /// <summary>
-            /// Compares two document producer trees in a parallel context and returns their comparison.
-            /// </summary>
-            /// <param name="documentProducerTree1">The first document producer tree.</param>
-            /// <param name="documentProducerTree2">The second document producer tree.</param>
-            /// <returns>
-            /// A negative number if the first comes before the second.
-            /// Zero if the two document producer trees are interchangeable.
-            /// A positive number if the second comes before the first.
-            /// </returns>
-            public int Compare(
-                ItemProducerTree documentProducerTree1,
-                ItemProducerTree documentProducerTree2)
-            {
-                if (object.ReferenceEquals(documentProducerTree1, documentProducerTree2))
-                {
-                    return 0;
-                }
-
-                if (documentProducerTree1.HasMoreResults && !documentProducerTree2.HasMoreResults)
-                {
-                    return -1;
-                }
-
-                if (!documentProducerTree1.HasMoreResults && documentProducerTree2.HasMoreResults)
-                {
-                    return 1;
-                }
-
-                // Either both don't have results or both do.
-                PartitionKeyRange partitionKeyRange1 = documentProducerTree1.PartitionKeyRange;
-                PartitionKeyRange partitionKeyRange2 = documentProducerTree2.PartitionKeyRange;
-                return string.CompareOrdinal(
-                    partitionKeyRange1.MinInclusive,
-                    partitionKeyRange2.MinInclusive);
-            }
         }
 
         /// <summary>

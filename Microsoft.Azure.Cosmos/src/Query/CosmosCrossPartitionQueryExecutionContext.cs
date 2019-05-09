@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         /// <summary>
-        /// Since query metrics are being aggregated asynchronously to the feed reponses as explained in the member documentation,
+        /// Since query metrics are being aggregated asynchronously to the feed reposes as explained in the member documentation,
         /// this function allows us to take a snapshot of the query metrics.
         /// </summary>
         private void SetQueryMetrics()
@@ -722,8 +722,8 @@ namespace Microsoft.Azure.Cosmos.Query
             // Adjust the producer page size so that we reach the optimal page size.
             producer.PageSize = Math.Min((long)(producer.PageSize * DynamicPageSizeAdjustmentFactor), this.actualMaxPageSize);
 
-            // Adjust Max Degree Of Paralleism if neccesary
-            // (needs to wait for comparable task scheudler refactor).
+            // Adjust Max Degree Of Parallelism if necessary
+            // (needs to wait for comparable task scheduler refactor).
 
             // Fetch again if necessary
             if (producer.HasMoreBackendResults)
@@ -815,7 +815,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (initialPageSize <= 0)
                 {
-                    throw new ArgumentOutOfRangeException($"{nameof(initialPageSize)} must be atleast 1.");
+                    throw new ArgumentOutOfRangeException($"{nameof(initialPageSize)} must be at least 1.");
                 }
 
                 //// Request continuation is allowed to be null

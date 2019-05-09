@@ -394,9 +394,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.queryContext.ResourceTypeEnum.IsPartitioned())
             {
-                request.ToDocumentServiceRequest().RouteTo(new PartitionKeyRangeIdentity(
-                    this.queryContext.ContainerResourceId,
-                    this.PartitionKeyRange.Id));
+                request.PartitionKeyRangeId = this.PartitionKeyRange.Id;
             }
         }
 
