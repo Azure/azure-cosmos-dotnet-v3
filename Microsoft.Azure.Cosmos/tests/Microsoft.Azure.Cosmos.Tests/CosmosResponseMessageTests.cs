@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosRequestMessage request = new CosmosRequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            Assert.IsTrue(request.IsFeedOperation);
+            Assert.IsTrue(request.IsPartitionedFeedOperation);
         }
 
         [TestMethod]
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosRequestMessage request = new CosmosRequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Conflict;
-            Assert.IsTrue(request.IsFeedOperation);
+            Assert.IsTrue(request.IsPartitionedFeedOperation);
         }
 
         [TestMethod]
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
             request.PartitionKeyRangeId = "something";
-            Assert.IsFalse(request.IsFeedOperation);
+            Assert.IsFalse(request.IsPartitionedFeedOperation);
         }
 
         [TestMethod]
@@ -44,12 +44,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosRequestMessage request = new CosmosRequestMessage();
             request.OperationType = OperationType.Upsert;
             request.ResourceType = ResourceType.Document;
-            Assert.IsFalse(request.IsFeedOperation);
+            Assert.IsFalse(request.IsPartitionedFeedOperation);
 
             CosmosRequestMessage request2 = new CosmosRequestMessage();
             request2.OperationType = OperationType.ReadFeed;
             request2.ResourceType = ResourceType.Database;
-            Assert.IsFalse(request2.IsFeedOperation);
+            Assert.IsFalse(request2.IsPartitionedFeedOperation);
         }
     }
 }

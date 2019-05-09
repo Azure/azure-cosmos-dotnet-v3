@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             CosmosRequestHandler targetHandler = null;
-            if (request.IsFeedOperation)
+            if (request.IsPartitionedFeedOperation)
             {
                 targetHandler = documentFeedHandler;
             }
