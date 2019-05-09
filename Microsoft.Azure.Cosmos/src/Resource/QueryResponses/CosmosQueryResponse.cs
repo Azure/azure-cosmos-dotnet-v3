@@ -262,8 +262,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryResponse<TInput> queryResponse = new CosmosQueryResponse<TInput>(
                 hasMoreResults: hasMoreResults,
                 continuationToken: continuationToken,
-                disallowContinuationTokenMessage: null);
-            queryResponse.Resources = resources;
+                disallowContinuationTokenMessage: null)
+            {
+                Resources = resources
+            };
             return queryResponse;
         }
 
