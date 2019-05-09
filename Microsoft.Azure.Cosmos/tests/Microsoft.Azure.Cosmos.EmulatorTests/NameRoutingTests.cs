@@ -791,7 +791,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // 1. DC -> GW: address resolver to resolve collectionFullName. 
                 // 2. GW -> MC: call mc to resolve collectionFullName.
                 // 3. MC : return NotFoundException
-                CosmosContainerResponse containerResponse = await cosmosContainerResponse.Container.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                CosmosContainerResponse containerResponse = await cosmosContainerResponse.Container.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.IsNull(containerResponse.Resource);
                 Assert.AreEqual(containerResponse.StatusCode, HttpStatusCode.NotFound);
                 Assert.IsNull(containerResponse.Headers[HttpConstants.HttpHeaders.RequestValidationFailure]);
@@ -1781,7 +1781,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await collection.ReplaceAsync(containerSetting);
 
                 // Read collection.
-                CosmosContainerResponse containerResponse = await collection.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                CosmosContainerResponse containerResponse = await collection.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.IsTrue(int.Parse(containerResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture) >= 0);
 
                 // Delete and re-create the collection with the same name.
@@ -1790,7 +1790,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Read the new collection.
                 // The gateway's cache is stale at this point. This test verifies that the gateway should be able to refresh the cache and returns the response.
-                containerResponse = await collection.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                containerResponse = await collection.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.AreEqual(100, int.Parse(containerResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture));
 
                 // Scenario 2: name based collection put.

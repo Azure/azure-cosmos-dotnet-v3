@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<CosmosContainerResponse> ReadAsync(
-            CosmosContainerRequestOptions requestOptions = null,
+            ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<CosmosContainerResponse> ReplaceAsync(
             CosmosContainerSettings containerSettings,
-            CosmosContainerRequestOptions requestOptions = null,
+            ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<CosmosContainerResponse> DeleteAsync(
-            CosmosContainerRequestOptions requestOptions = null,
+            ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
         /// </returns>
         public abstract Task<CosmosResponseMessage> ReadStreamAsync(
-            CosmosContainerRequestOptions requestOptions = null,
+            ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public abstract Task<CosmosResponseMessage> ReplaceStreamAsync(
             Stream streamPayload,
-            CosmosContainerRequestOptions requestOptions = null,
+            ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
         public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
-            CosmosContainerRequestOptions requestOptions = null,
+            ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }
 }

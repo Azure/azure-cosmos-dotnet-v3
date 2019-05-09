@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Meta-data operations
             foreach (HttpStatusCode code in testHttpStatusCodes)
             {
-                CosmosContainerRequestOptions options = new CosmosContainerRequestOptions();
+                ContainerRequestOptions options = new ContainerRequestOptions();
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
