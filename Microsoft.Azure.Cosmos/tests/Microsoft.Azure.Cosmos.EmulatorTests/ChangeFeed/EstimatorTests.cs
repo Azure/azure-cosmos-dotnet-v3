@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             long? receivedEstimation = 0;
             ChangeFeedProcessor estimator = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (long estimation, CancellationToken token) =>
+                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (long estimation, CancellationToken token) =>
+                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (long estimation, CancellationToken token) =>
+                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
