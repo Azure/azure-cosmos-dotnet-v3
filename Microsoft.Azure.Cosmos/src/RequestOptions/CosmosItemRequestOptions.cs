@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos item request options
     /// </summary>
-    public class CosmosItemRequestOptions : CosmosRequestOptions
+    public class CosmosItemRequestOptions : RequestOptions
     {
         /// <summary>
         /// Gets or sets the trigger to be invoked before the operation in the Azure Cosmos DB service.
@@ -116,8 +116,8 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.IndexingDirective, this.IndexingDirective.Value.ToString());
             }
 
-            CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
-            CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
+            RequestOptions.SetSessionToken(request, this.SessionToken);
+            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             base.FillRequestOptions(request);
         }

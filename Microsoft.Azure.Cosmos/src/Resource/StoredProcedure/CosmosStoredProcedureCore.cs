@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         internal Uri LinkUri { get; }
 
         public override Task<CosmosStoredProcedureResponse> ReadAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<CosmosStoredProcedureResponse> ReplaceAsync(
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(body))
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosStoredProcedureResponse> DeleteAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             Stream streamPayload,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(

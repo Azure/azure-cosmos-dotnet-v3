@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {

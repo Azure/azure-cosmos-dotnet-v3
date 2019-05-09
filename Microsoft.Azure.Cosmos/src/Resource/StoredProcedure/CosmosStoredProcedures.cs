@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

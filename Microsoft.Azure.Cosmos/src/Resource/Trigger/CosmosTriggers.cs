@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<CosmosTriggerResponse> CreateTriggerAsync(
             CosmosTriggerSettings triggerSettings,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<CosmosFeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {

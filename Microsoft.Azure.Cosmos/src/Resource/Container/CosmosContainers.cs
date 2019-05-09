@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             string partitionKeyPath,
             int? throughput = null,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerSettings containerSettings,
             int? throughput = null,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             string partitionKeyPath,
             int? throughput = null,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
             Stream streamPayload,
             int? throughput = null,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

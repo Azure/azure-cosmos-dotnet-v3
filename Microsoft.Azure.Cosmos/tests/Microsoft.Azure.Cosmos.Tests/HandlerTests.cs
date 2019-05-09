@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string PropertyKey = "propkey";
             const string Condition = "*";
             object propertyValue = Encoding.UTF8.GetBytes("test");
-            CosmosRequestOptions options = new CosmosItemRequestOptions
+            RequestOptions options = new CosmosItemRequestOptions
             {
                 Properties = new Dictionary<string, object>(new List<KeyValuePair<string, object>> {
                     new KeyValuePair<string, object>(PropertyKey, propertyValue)

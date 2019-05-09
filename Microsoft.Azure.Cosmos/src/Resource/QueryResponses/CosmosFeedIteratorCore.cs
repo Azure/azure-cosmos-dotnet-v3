@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken);
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosResultSetIteratorCore(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             NextResultSetDelegate nextDelegate,
             object state = null)
         {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly CosmosRequestOptions queryOptions;
+        protected readonly RequestOptions queryOptions;
 
         /// <summary>
         /// The state of the result set.
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         internal delegate Task<CosmosFeedResponse<T>> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken);
 
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosDefaultResultSetIterator(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             NextResultSetDelegate nextDelegate,
             object state = null)
         {
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly CosmosRequestOptions queryOptions;
+        protected readonly RequestOptions queryOptions;
 
         /// <summary>
         /// The state of the result set.

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The default cosmos request options
     /// </summary>
-    public class CosmosRequestOptions
+    public class RequestOptions
     {
         internal IDictionary<string, object> Properties { get; set; }
 

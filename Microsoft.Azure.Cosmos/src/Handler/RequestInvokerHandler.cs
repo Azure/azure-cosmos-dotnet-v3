@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(request));
             }
 
-            CosmosRequestOptions promotedRequestOptions = request.RequestOptions;
+            RequestOptions promotedRequestOptions = request.RequestOptions;
             if (promotedRequestOptions != null)
             {
                 // Fill request options

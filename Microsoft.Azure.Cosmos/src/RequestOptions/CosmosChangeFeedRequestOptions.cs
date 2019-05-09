@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos Change Feed request options
     /// </summary>
-    internal class CosmosChangeFeedRequestOptions : CosmosRequestOptions
+    internal class CosmosChangeFeedRequestOptions : RequestOptions
     {
         internal const string IfNoneMatchAllHeaderValue = "*";
 

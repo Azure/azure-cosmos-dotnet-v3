@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public virtual Task<CosmosUserDefinedFunctionResponse> ReadAsync(
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<CosmosUserDefinedFunctionResponse> ReplaceAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public virtual Task<CosmosUserDefinedFunctionResponse> DeleteAsync(
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             Stream streamPayload,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(

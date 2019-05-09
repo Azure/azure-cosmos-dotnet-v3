@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<CosmosFeedResponse<CosmosConflict>> ConflictsFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {

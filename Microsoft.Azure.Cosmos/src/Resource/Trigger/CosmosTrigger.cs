@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public virtual Task<CosmosTriggerResponse> ReadAsync(
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<CosmosTriggerResponse> ReplaceAsync(
                     CosmosTriggerSettings triggerSettings,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public virtual Task<CosmosTriggerResponse> DeleteAsync(
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             Stream streamPayload,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(

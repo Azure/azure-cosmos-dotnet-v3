@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<CosmosFeedResponse<T>> NextResultSetAsync<T>(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<CosmosResponseMessage> ItemStreamFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<CosmosFeedResponse<T>> ItemFeedRequestExecutor<T>(
             int? maxItemCount,
            string continuationToken,
-           CosmosRequestOptions options,
+           RequestOptions options,
            object state,
            CancellationToken cancellationToken)
         {
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<CosmosResponseMessage> QueryRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
@@ -529,7 +529,7 @@ namespace Microsoft.Azure.Cosmos
             return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
         }
 
-        internal Uri GetResourceUri(CosmosRequestOptions requestOptions, OperationType operationType, string itemId)
+        internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {
@@ -550,7 +550,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Throw an exception if the partition key is null or empty string
         /// </summary>
-        internal static void ValidatePartitionKey(object partitionKey, CosmosRequestOptions requestOptions)
+        internal static void ValidatePartitionKey(object partitionKey, RequestOptions requestOptions)
         {
             if (partitionKey != null)
             {

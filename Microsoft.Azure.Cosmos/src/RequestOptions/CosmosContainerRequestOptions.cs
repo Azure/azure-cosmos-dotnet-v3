@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos container request options
     /// </summary>
-    public class CosmosContainerRequestOptions : CosmosRequestOptions
+    public class CosmosContainerRequestOptions : RequestOptions
     {
         /// <summary>
         ///  Gets or sets the <see cref="PopulateQuotaInfo"/> for document collection read requests in the Azure Cosmos DB service.

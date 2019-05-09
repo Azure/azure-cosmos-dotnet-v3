@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {

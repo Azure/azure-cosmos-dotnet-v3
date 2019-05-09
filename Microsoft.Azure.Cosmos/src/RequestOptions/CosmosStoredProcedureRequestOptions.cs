@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos stored procedure request options
     /// </summary>
-    public class CosmosStoredProcedureRequestOptions : CosmosRequestOptions
+    public class CosmosStoredProcedureRequestOptions : RequestOptions
     {
         /// <summary>
         ///  Gets or sets the <see cref="EnableScriptLogging"/> for the current request in the Azure Cosmos DB service.
@@ -90,8 +90,8 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.EnableLogging, bool.TrueString);
             }
 
-            CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
-            CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
+            RequestOptions.SetSessionToken(request, this.SessionToken);
+            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             base.FillRequestOptions(request);
         }
