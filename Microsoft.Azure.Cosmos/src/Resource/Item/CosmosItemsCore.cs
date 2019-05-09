@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> CreateItemStreamAsync(
                     object partitionKey,
                     Stream streamPayload,
-                    CosmosItemRequestOptions requestOptions = null,
+                    ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosItemResponse<T>> CreateItemAsync<T>(
             object partitionKey,
             T item,
-            CosmosItemRequestOptions requestOptions = null,
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> ReadItemStreamAsync(
                     object partitionKey,
                     string id,
-                    CosmosItemRequestOptions requestOptions = null,
+                    ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosItemResponse<T>> ReadItemAsync<T>(
             object partitionKey,
             string id,
-            CosmosItemRequestOptions requestOptions = null,
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.ReadItemStreamAsync(
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> UpsertItemStreamAsync(
                     object partitionKey,
                     Stream streamPayload,
-                    CosmosItemRequestOptions requestOptions = null,
+                    ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosItemResponse<T>> UpsertItemAsync<T>(
             object partitionKey,
             T item,
-            CosmosItemRequestOptions requestOptions = null,
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     string id,
                     Stream streamPayload,
-                    CosmosItemRequestOptions requestOptions = null,
+                    ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             string id,
             T item,
-            CosmosItemRequestOptions requestOptions = null,
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> DeleteItemStreamAsync(
                     object partitionKey,
                     string id,
-                    CosmosItemRequestOptions requestOptions = null,
+                    ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosItemResponse<T>> DeleteItemAsync<T>(
             object partitionKey,
             string id,
-            CosmosItemRequestOptions requestOptions = null,
+            ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.DeleteItemStreamAsync(
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosFeedIterator GetItemStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosItemRequestOptions requestOptions = null)
+            ItemRequestOptions requestOptions = null)
         {
             return new CosmosResultSetIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
         }

@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string lastContinuationToken = null;
             int pageSize = 1;
-            CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
             CosmosFeedIterator feedIterator =
                 this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
 
@@ -441,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .InternalKey
                             .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
 
-            CosmosItemRequestOptions itemRequestOptions = new CosmosItemRequestOptions();
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
             itemRequestOptions.Properties = new Dictionary<string, object>();
             itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
@@ -684,7 +684,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Type = AccessConditionType.IfMatch
             };
 
-            CosmosItemRequestOptions itemRequestOptions = new CosmosItemRequestOptions()
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
             {
                 AccessCondition = accessCondition
             };

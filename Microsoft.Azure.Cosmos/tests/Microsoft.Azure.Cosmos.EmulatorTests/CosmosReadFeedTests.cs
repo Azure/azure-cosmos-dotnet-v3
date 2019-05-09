@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (CosmosResponseMessage createResponse = await this.Container.Items.CreateItemStreamAsync(
                         i.ToString(),
                         CosmosReadFeedTests.GenerateStreamFromString(item),
-                        requestOptions: new CosmosItemRequestOptions()))
+                        requestOptions: new ItemRequestOptions()))
                 {
                     Assert.IsTrue(createResponse.IsSuccessStatusCode);
                 }
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(total, count);
             Assert.IsFalse(forwardOrder.Where(x => string.IsNullOrEmpty(x)).Any());
 
-            CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
             requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>();
             requestOptions.Properties.Add(HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse);
             count = 0;

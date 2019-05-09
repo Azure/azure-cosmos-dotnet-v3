@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos item request options
     /// </summary>
-    public class CosmosItemRequestOptions : RequestOptions
+    public class ItemRequestOptions : RequestOptions
     {
         /// <summary>
         /// Gets or sets the trigger to be invoked before the operation in the Azure Cosmos DB service.
