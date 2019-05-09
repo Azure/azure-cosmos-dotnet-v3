@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (goThroughGateway)
                 {
-                    CosmosDatabaseResponse response = await client.Databases.CreateDatabaseAsync("test");
+                    DatabaseResponse response = await client.Databases.CreateDatabaseAsync("test");
                 }
                 else
                 {

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.databasesCache = new ConcurrentDictionary<string, CosmosDatabase>();
         }
 
-        public override Task<CosmosDatabaseResponse> CreateDatabaseAsync(
+        public override Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
                 CosmosRequestOptions requestOptions = null,
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<CosmosDatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        public override async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
             CosmosRequestOptions requestOptions = null,
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         {
             // Doing a Read before Create will give us better latency for existing databases
             CosmosDatabase database = this[id];
-            CosmosDatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
+            DatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosDatabaseResponse;
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
             return databaseSettings;
         }
 
-        internal Task<CosmosDatabaseResponse> CreateDatabaseAsync(
+        internal Task<DatabaseResponse> CreateDatabaseAsync(
                     CosmosDatabaseSettings databaseSettings,
                     int? throughput = null,
                     CosmosRequestOptions requestOptions = null,

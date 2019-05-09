@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosDatabase db = this.cosmosClient.Databases["myDatabaseId"];
-        /// CosmosDatabaseResponse response = await db.ReadAsync();
+        /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>

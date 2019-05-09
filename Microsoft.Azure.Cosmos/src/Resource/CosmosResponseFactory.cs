@@ -57,14 +57,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosDatabaseResponse> CreateDatabaseResponse(
+        internal Task<DatabaseResponse> CreateDatabaseResponse(
             CosmosDatabase database,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosDatabaseSettings settings = this.ToObjectInternal<CosmosDatabaseSettings>(cosmosResponseMessage);
-                return new CosmosDatabaseResponse(
+                return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,

@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos database response
     /// </summary>
-    public class CosmosDatabaseResponse : CosmosResponse<CosmosDatabaseSettings>
+    public class DatabaseResponse : CosmosResponse<CosmosDatabaseSettings>
     {
         /// <summary>
-        /// Create a <see cref="CosmosDatabaseResponse"/> as a no-op for mock testing
+        /// Create a <see cref="DatabaseResponse"/> as a no-op for mock testing
         /// </summary>
-        public CosmosDatabaseResponse() : base()
+        public DatabaseResponse() : base()
         {
 
         }
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal CosmosDatabaseResponse(
+        internal DatabaseResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
             CosmosDatabaseSettings cosmosDatabaseSettings,
@@ -43,10 +43,10 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosDatabase Database { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="CosmosDatabaseResponse"/>
+        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="DatabaseResponse"/>
         /// </summary>
-        /// <param name="response">CosmosDatabaseResponse</param>
-        public static implicit operator CosmosDatabase(CosmosDatabaseResponse response)
+        /// <param name="response">DatabaseResponse</param>
+        public static implicit operator CosmosDatabase(DatabaseResponse response)
         {
             return response.Database;
         }
