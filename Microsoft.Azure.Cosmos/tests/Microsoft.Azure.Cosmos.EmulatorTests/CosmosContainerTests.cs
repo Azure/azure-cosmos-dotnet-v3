@@ -64,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
         }
 
+        [Ignore]
         [TestMethod]
         public async Task PartitionedCRUDTest()
         {
