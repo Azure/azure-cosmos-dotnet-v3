@@ -42,14 +42,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosContainerResponse> CreateContainerResponse(
+        internal Task<ContainerResponse> CreateContainerResponse(
             CosmosContainer container,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosContainerSettings settings = this.ToObjectInternal<CosmosContainerSettings>(cosmosResponseMessage);
-                return new CosmosContainerResponse(
+                return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,

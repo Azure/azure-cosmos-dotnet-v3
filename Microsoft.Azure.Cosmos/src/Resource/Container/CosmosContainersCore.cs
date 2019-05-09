@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
         }
 
-        public override Task<CosmosContainerResponse> CreateContainerAsync(
+        public override Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
                     CosmosRequestOptions requestOptions = null,
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
         }
         
-        public override Task<CosmosContainerResponse> CreateContainerAsync(
+        public override Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
         
-        public override async Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
+        public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerSettings containerSettings,
             int? throughput = null,
             CosmosRequestOptions requestOptions = null,
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerSettings(containerSettings);
 
             CosmosContainer cosmosContainer = this[containerSettings.Id];
-            CosmosContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
+            ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosContainerResponse;
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
             return await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
         }
 
-        public override Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
+        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,

@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos container response
     /// </summary>
-    public class CosmosContainerResponse : CosmosResponse<CosmosContainerSettings>
+    public class ContainerResponse : CosmosResponse<CosmosContainerSettings>
     {
         /// <summary>
-        /// Create a <see cref="CosmosContainerResponse"/> as a no-op for mock testing
+        /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
         /// </summary>
-        public CosmosContainerResponse() : base()
+        public ContainerResponse() : base()
         {
 
         }
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal CosmosContainerResponse(
+        internal ContainerResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
             CosmosContainerSettings cosmosContainerSettings,
@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosContainer Container { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosContainer"/> implicitly from <see cref="CosmosContainerResponse"/>
+        /// Get <see cref="CosmosContainer"/> implicitly from <see cref="ContainerResponse"/>
         /// </summary>
-        /// <param name="response">CosmosContainerResponse</param>
-        public static implicit operator CosmosContainer(CosmosContainerResponse response)
+        /// <param name="response">ContainerResponse</param>
+        public static implicit operator CosmosContainer(ContainerResponse response)
         {
             return response.Container;
         }
