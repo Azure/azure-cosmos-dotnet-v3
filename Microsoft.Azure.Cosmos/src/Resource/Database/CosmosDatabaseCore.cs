@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDatabaseCore : CosmosDatabase
     {
+        /// <summary>
+        /// Only used for unit testing
+        /// </summary>
+        internal CosmosDatabaseCore() { }
+
         private readonly CosmosClientContext clientContext;
 
         internal CosmosDatabaseCore(
