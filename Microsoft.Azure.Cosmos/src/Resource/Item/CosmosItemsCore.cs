@@ -415,10 +415,10 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosFeedIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
-            CosmosChangeFeedRequestOptions requestOptions = null,
+            ChangeFeedRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
+            ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
             return new CosmosChangeFeedResultSetIteratorCore(
                 clientContext: this.clientContext,

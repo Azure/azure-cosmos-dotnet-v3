@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerCore cosmosContainer,
             string continuationToken,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions options)
         {
             if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly CosmosChangeFeedRequestOptions changeFeedOptions;
+        protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options,
+            ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
@@ -162,9 +162,9 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: options,
                 cosmosContainerCore: this.cosmosContainer,
                 requestEnricher: request => {
-                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                    CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
+                    ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                    ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
                 responseCreator: response => response,
                 partitionKey: null,
