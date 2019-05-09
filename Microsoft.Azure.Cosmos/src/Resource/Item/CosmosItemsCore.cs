@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
-        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder(
+        public override ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName,
             Func<long, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null)
