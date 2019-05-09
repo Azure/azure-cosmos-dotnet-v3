@@ -60,12 +60,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(batchSize, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedIterator setIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            CosmosFeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
-            while (setIterator.HasMoreResults)
+            while (feedIterator.HasMoreResults)
             {
                 using (CosmosResponseMessage responseMessage =
-                    await setIterator.FetchNextSetAsync(this.cancellationToken))
+                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     lastcontinuation = responseMessage.Headers.Continuation;
                     List<CompositeContinuationToken> deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation);
@@ -172,12 +172,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateRandomItems(2, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedIterator setIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            CosmosFeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
-            while (setIterator.HasMoreResults)
+            while (feedIterator.HasMoreResults)
             {
                 using (CosmosResponseMessage responseMessage =
-                    await setIterator.FetchNextSetAsync(this.cancellationToken))
+                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     if (responseMessage.IsSuccessStatusCode)
                     {
@@ -213,9 +213,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
 
-                CosmosFeedIterator setIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
+                CosmosFeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (CosmosResponseMessage responseMessage =
-                    await setIterator.FetchNextSetAsync(this.cancellationToken))
+                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     continuationToken = responseMessage.Headers.Continuation;
                     if (responseMessage.IsSuccessStatusCode)
