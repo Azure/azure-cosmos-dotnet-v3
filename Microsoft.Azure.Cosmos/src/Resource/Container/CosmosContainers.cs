@@ -219,10 +219,10 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosResultSetIterator<CosmosContainerSettings> setIterator = this.cosmosDatabase.Containers.GetContainerIterator();
-        /// while (setIterator.HasMoreResults)
+        /// CosmosFeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainerIterator();
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosContainerSettings setting in await setIterator.FetchNextSetAsync())
+        ///     foreach(CosmosContainerSettings setting in await feedIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(setting.Id); 
         ///     }
