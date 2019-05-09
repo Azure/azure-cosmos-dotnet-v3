@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     requestEnricher: (cosmosRequestMessage) =>
                     {
                         cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.FalseString);
-                        CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.ContinuationToken);
+                        QueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.ContinuationToken);
                     });
             }
 
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     cosmosRequestMessage.UseGatewayMode = true;
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, this.queryContext.IsContinuationExpected.ToString());
-                    CosmosQueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.ContinuationToken);
+                    QueryRequestOptions.FillContinuationToken(cosmosRequestMessage, this.ContinuationToken);
                 });
         }
 

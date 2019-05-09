@@ -272,6 +272,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosFeedIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null);
+            QueryRequestOptions requestOptions = null);
     }
 }

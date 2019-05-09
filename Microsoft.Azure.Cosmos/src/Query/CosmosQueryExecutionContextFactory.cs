@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query
             OperationType operationType,
             Type resourceType,
             SqlQuerySpec sqlQuerySpec,
-            CosmosQueryRequestOptions queryRequestOptions,
+            QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             // Prevent users from updating the values after creating the execution context.
-            CosmosQueryRequestOptions cloneQueryRequestOptions = queryRequestOptions.Clone();
+            QueryRequestOptions cloneQueryRequestOptions = queryRequestOptions.Clone();
 
             // Swapping out negative values in feedOptions for int.MaxValue
             if (cloneQueryRequestOptions.MaxBufferedItemCount.HasValue && cloneQueryRequestOptions.MaxBufferedItemCount < 0)
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Query
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             CosmosContainerSettings collection,
-            CosmosQueryRequestOptions queryRequestOptions)
+            QueryRequestOptions queryRequestOptions)
         {
             List<PartitionKeyRange> targetRanges;
             if (queryRequestOptions.PartitionKey != null)
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
 
         private static bool TryGetEpkProperty(
-            CosmosQueryRequestOptions queryRequestOptions,
+            QueryRequestOptions queryRequestOptions,
             out string effectivePartitionKeyString)
         {
             if (queryRequestOptions?.Properties != null

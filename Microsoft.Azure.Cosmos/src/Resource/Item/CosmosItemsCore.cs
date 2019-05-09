@@ -224,9 +224,9 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
+            requestOptions = requestOptions ?? new QueryRequestOptions();
             requestOptions.MaxConcurrency = maxConcurrency;
             requestOptions.EnableCrossPartitionQuery = true;
             requestOptions.RequestContinuation = continuationToken;
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQueryAsStream(
                 new CosmosSqlQueryDefinition(sqlQueryText),
@@ -275,9 +275,9 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
+            requestOptions = requestOptions ?? new QueryRequestOptions();
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = false;
             requestOptions.RequestContinuation = continuationToken;
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQuery<T>(
                 new CosmosSqlQueryDefinition(sqlQueryText),
@@ -323,9 +323,9 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
+            requestOptions = requestOptions ?? new QueryRequestOptions();
             requestOptions.EnableCrossPartitionQuery = true;
             requestOptions.RequestContinuation = continuationToken;
             requestOptions.MaxItemCount = maxItemCount;
@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQuery<T>(
                 new CosmosSqlQueryDefinition(sqlQueryText),
@@ -483,8 +483,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: options,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => response,
                 cosmosContainerCore: this.container,
@@ -508,8 +508,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: options,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
                 cosmosContainerCore: this.container,

@@ -45,9 +45,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     consistencyLevel = (promotedRequestOptions as CosmosItemRequestOptions).ConsistencyLevel;
                 }
-                else if (promotedRequestOptions is CosmosQueryRequestOptions)
+                else if (promotedRequestOptions is QueryRequestOptions)
                 {
-                    consistencyLevel = (promotedRequestOptions as CosmosQueryRequestOptions).ConsistencyLevel;
+                    consistencyLevel = (promotedRequestOptions as QueryRequestOptions).ConsistencyLevel;
                 }
                 else if (promotedRequestOptions is StoredProcedureRequestOptions)
                 {

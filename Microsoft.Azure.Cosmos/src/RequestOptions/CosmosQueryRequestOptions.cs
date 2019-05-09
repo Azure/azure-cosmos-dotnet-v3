@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos query request options
     /// </summary>
-    public class CosmosQueryRequestOptions : RequestOptions
+    public class QueryRequestOptions : RequestOptions
     {
         /// <summary>
         ///  Gets or sets the <see cref="ResponseContinuationTokenLimitInKb"/> request option for document query requests in the Azure Cosmos DB service.
@@ -196,9 +196,9 @@ namespace Microsoft.Azure.Cosmos
             base.FillRequestOptions(request);
         }
 
-        internal CosmosQueryRequestOptions Clone()
+        internal QueryRequestOptions Clone()
         {
-            CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 AccessCondition = this.AccessCondition,
                 RequestContinuation = this.RequestContinuation,

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
         internal ChangeFeedResultSetIterator(
             int? maxItemCount,
             string continuationToken,
-            CosmosQueryRequestOptions options,
+            QueryRequestOptions options,
             NextResultSetDelegate nextDelegate,
             object state = null) : base(maxItemCount, continuationToken, options, nextDelegate, state)
         {

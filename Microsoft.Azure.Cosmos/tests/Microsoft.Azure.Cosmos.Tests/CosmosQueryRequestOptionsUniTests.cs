@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void StatelessTest()
         {
-            CosmosQueryRequestOptions requestOption = new CosmosQueryRequestOptions();
+            QueryRequestOptions requestOption = new QueryRequestOptions();
             requestOption.RequestContinuation = "SomeToken";
 
             CosmosRequestMessage testMessage = new CosmosRequestMessage();

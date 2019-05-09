@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<string> containerIds = new HashSet<string>();
             CosmosFeedIterator resultSet = this.cosmosDatabase.Containers.GetContainerStreamIterator(
                     maxItemCount:1,
-                    requestOptions: new CosmosQueryRequestOptions());
+                    requestOptions: new QueryRequestOptions());
             while (resultSet.HasMoreResults)
             {
                 using (CosmosResponseMessage message = await resultSet.FetchNextSetAsync())
