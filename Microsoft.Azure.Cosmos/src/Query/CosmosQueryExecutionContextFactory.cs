@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query
             //need to make it not rely on information from collection cache.
             PartitionKeyDefinition partitionKeyDefinition;
             object partitionKeyDefinitionObject;
-            if (this.cosmosQueryContext.QueryRequestOptions != null
+            if (this.cosmosQueryContext.QueryRequestOptions?.Properties != null
                 && this.cosmosQueryContext.QueryRequestOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
             {
                 if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
@@ -164,8 +164,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyDefinition = collection.PartitionKey;
             }
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
-                queryClient: this.cosmosQueryContext.QueryClient,
+            // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.cosmosQueryContext.QueryClient.GetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec: this.cosmosQueryContext.SqlQuerySpec,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return targetRanges;
         }
 
-        public static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+        public static Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -312,12 +312,13 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
 
-            QueryPartitionProvider queryPartitionProvider = await queryClient.GetQueryPartitionProviderAsync(cancellationToken);
-            return queryPartitionProvider.GetPartitionedQueryExecutionInfo(sqlQuerySpec, 
-                partitionKeyDefinition, 
-                requireFormattableOrderByQuery, 
-                isContinuationExpected, 
-                allowNonValueAggregateQuery);
+            return queryClient.GetPartitionedQueryExecutionInfoAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                requireFormattableOrderByQuery,
+                isContinuationExpected,
+                allowNonValueAggregateQuery,
+                cancellationToken);
         }
 
 
