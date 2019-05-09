@@ -106,14 +106,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");
             
-             CosmosFeedIterator<dynamic> setIterator = this.container.Items.CreateItemQuery<dynamic>(
+             CosmosFeedIterator<dynamic> feedIterator = this.container.Items.CreateItemQuery<dynamic>(
                  sqlQueryDefinition: sqlQuery,
                  partitionKey: "Done");
 
             HashSet<string> iterIds = new HashSet<string>();
-            while (setIterator.HasMoreResults)
+            while (feedIterator.HasMoreResults)
             {
-                foreach (var response in await setIterator.FetchNextSetAsync())
+                foreach (var response in await feedIterator.FetchNextSetAsync())
                 {
                     Assert.IsTrue(response.cost > 9000);
                     Assert.AreEqual(response.cost * .05, response.total);
