@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
-            CosmosStoredProcedureRequestOptions requestOptions = null,
+            StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);

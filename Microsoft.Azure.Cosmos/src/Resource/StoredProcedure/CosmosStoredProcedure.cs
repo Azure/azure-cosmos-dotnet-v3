@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
-            CosmosStoredProcedureRequestOptions requestOptions = null,
+            StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }
 }
