@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -101,17 +99,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
-            if (PreTriggers != null && PreTriggers.Any())
+            if (this.PreTriggers != null && this.PreTriggers.Any())
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PreTriggerInclude, this.PreTriggers);
             }
 
-            if (PostTriggers != null && PostTriggers.Any())
+            if (this.PostTriggers != null && this.PostTriggers.Any())
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PostTriggerInclude, this.PostTriggers);
             }
 
-            if(this.IndexingDirective != null && this.IndexingDirective.HasValue)
+            if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IndexingDirective, this.IndexingDirective.Value.ToString());
             }

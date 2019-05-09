@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="userDefinedFunctionSettings">The <see cref="CosmosUserDefinedFunctionSettings"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionSettings"/> is not set.</exception>

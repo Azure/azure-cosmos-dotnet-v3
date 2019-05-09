@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="containerSettings"/> is not set.</exception>
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="containerSettings"/> is not set.</exception>
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="streamPayload">The <see cref="CosmosContainerSettings"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
         public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosQueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
         public abstract CosmosFeedIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,

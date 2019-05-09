@@ -994,7 +994,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="UserDefinedType"/> 
-        /// <seealso cref="CosmosRequestOptions"/>
+        /// <seealso cref="RequestOptions"/>
         /// <seealso cref="ResourceResponse{T}"/>
         /// <seealso cref="Task"/>
         internal Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypeAsync(Uri userDefinedTypeUri, Documents.Client.RequestOptions options = null)

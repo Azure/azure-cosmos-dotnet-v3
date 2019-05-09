@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ValidateFillCosmosQueryRequestOptions()
+        public void ValidateFillQueryRequestOptions()
         {
             Mock<QueryRequestOptions> options = new Mock<QueryRequestOptions>() { CallBase = true };
 

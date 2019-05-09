@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_ContinuationIsSet()
+        public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions(){ };
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_DefaultValues()
+        public void ChangeFeedRequestOptions_DefaultValues()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_MaxItemSizeIsSet()
+        public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_ContinuationBeatsStartTime()
+        public void ChangeFeedRequestOptions_ContinuationBeatsStartTime()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_AddsStartTime()
+        public void ChangeFeedRequestOptions_AddsStartTime()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_AddsPartitionKeyRangeId()
+        public void ChangeFeedRequestOptions_AddsPartitionKeyRangeId()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();

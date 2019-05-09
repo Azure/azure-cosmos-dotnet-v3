@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosQueryRequestOptionsUniTests
+    public class QueryRequestOptionsUniTests
     {
         [TestMethod]
         public void StatelessTest()

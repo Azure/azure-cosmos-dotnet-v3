@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
