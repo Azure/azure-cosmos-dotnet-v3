@@ -73,6 +73,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             await VerifyItemNullExceptions(testItem, requestOptions);
         }
 
+        [TestMethod]
+        public async Task TestGetPartitionKey()
+        {
+            DocumentClient documentClient = new MockDocumentClient();
+            Routing.ClientCollectionCache collectionCache = await documentClient.GetCollectionCacheAsync();
+            CosmosContainerSettings containerSettings = await collectionCache.GetByNameAsync(HttpConstants.Versions.CurrentVersion, "", default(System.Threading.CancellationToken));
+            CosmosClientContextCore context = new CosmosClientContextCore(
+                client: null,
+                clientConfiguration: null,
+                cosmosJsonSerializer: null,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: documentClient,
+                documentQueryClient: null
+            );
+            CosmosDatabaseCore database = new CosmosDatabaseCore(context, "testDatabase");
+            CosmosContainerCore container = new CosmosContainerCore(context, null, "testContainer");
+            CosmosItemsCore items = new CosmosItemsCore(container.ClientContext, container);
+        }
+
         private async Task VerifyItemNullExceptions(
             dynamic testItem,
             CosmosItemRequestOptions requestOptions = null)

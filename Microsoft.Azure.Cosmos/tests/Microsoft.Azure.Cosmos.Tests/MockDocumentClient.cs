@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Net.Http;
     using System.Security;
     using System.Threading;
@@ -132,7 +133,15 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test")));
+                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test", new Collection<string>(){ "/nested/pk" })));
+            this.collectionCache.Setup
+                    (m =>
+                        m.GetByNameAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test", new Collection<string>() { "/nested/pk" })));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(

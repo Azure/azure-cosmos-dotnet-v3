@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -349,17 +350,27 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
+        protected internal static CosmosContainerSettings CreateWithResourceId(string resourceId, Collection<string> partitionKeyPaths = null)
         {
-            if (string.IsNullOrEmpty(resoruceId))
+            if (string.IsNullOrEmpty(resourceId))
             {
-                throw new ArgumentNullException(nameof(resoruceId));
+                throw new ArgumentNullException(nameof(resourceId));
             }
 
-            return new CosmosContainerSettings()
+            CosmosContainerSettings container = new CosmosContainerSettings()
             {
-                ResourceId = resoruceId,
+                ResourceId = resourceId,
             };
+            
+            if(partitionKeyPaths != null && partitionKeyPaths.Any())
+            {
+                container.PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = partitionKeyPaths
+                };
+            }
+
+            return container;
         }
 
         /// <summary>
