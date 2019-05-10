@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 
-        internal abstract CosmosRequestHandler RequestHandler { get; }
+        internal abstract RequestInvokerHandler RequestHandler { get; }
 
         internal abstract CosmosClientConfiguration ClientConfiguration { get; }
 

@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
-        internal bool IsDocumentFeedOperation => this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Document && string.IsNullOrEmpty(this.PartitionKeyRangeId);
+        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && string.IsNullOrEmpty(this.PartitionKeyRangeId);
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -155,8 +155,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
             }
-#endif
-#if !DEBUG
+#else
             await Task.CompletedTask;
 #endif
         }

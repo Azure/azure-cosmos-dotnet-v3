@@ -17,19 +17,31 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class CosmosQueryClient
     {
-        internal abstract IDocumentClientRetryPolicy GetRetryPolicy();
-
         internal abstract Task<CollectionCache> GetCollectionCacheAsync();
 
         internal abstract Task<IRoutingMapProvider> GetRoutingMapProviderAsync();
 
-        internal abstract Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken);
+        internal abstract Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool requireFormattableOrderByQuery,
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
+            CancellationToken cancellationToken);
 
         internal abstract Task<CosmosQueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             QueryRequestOptions requestOptions,
+            SqlQuerySpec sqlQuerySpec,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellationToken);
+
+        internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken);
