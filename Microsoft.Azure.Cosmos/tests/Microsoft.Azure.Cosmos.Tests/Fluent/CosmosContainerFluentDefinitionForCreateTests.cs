@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task MissingPKForReplace_CallsReadAsync()
         {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             mockContainerResponse
                 .Setup(c => c.Resource)
                 .Returns(new CosmosContainerSettings() { PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { partitionKey } } });
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 containerName,
                 null);
 
-            CosmosContainerResponse response = await CosmosContainerFluentDefinitionForCreate.CreateAsync();
+            ContainerResponse response = await CosmosContainerFluentDefinitionForCreate.CreateAsync();
 
             mockContainer.Verify(c => c.ReadAsync(It.IsAny<CosmosContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithThroughput()
         {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<CosmosContainers> mockContainers = new Mock<CosmosContainers>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithTimeToLivePropertyPath()
         {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<CosmosContainers> mockContainers = new Mock<CosmosContainers>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithDefaultTimeToLiveTimeSpan()
         {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<CosmosContainers> mockContainers = new Mock<CosmosContainers>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithDefaultTimeToLiveInt()
         {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<CosmosContainers> mockContainers = new Mock<CosmosContainers>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithIndexingPolicy()
         {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<CosmosContainers> mockContainers = new Mock<CosmosContainers>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithUniqueKey()
         {
-            Mock<CosmosContainerResponse> mockContainerResponse = new Mock<CosmosContainerResponse>();
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<CosmosContainers> mockContainers = new Mock<CosmosContainers>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(

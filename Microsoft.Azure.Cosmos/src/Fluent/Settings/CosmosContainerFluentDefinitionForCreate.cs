@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Creates a container with the current fluent definition.
         /// </summary>
         /// <param name="throughput">Desired throughput for the container</param>
-        public virtual async Task<CosmosContainerResponse> CreateAsync(int? throughput = null)
+        public virtual async Task<ContainerResponse> CreateAsync(int? throughput = null)
         {
             CosmosContainerSettings settings = this.Build();
 
