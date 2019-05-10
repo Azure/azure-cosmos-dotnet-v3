@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         ///     .UseParameter("@expensive", 9000)
         ///     .UseParameter("@status", "Done");
         ///
-        /// CosmosFeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
+        /// FeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
         ///     sqlQueryDefinition: sqlQuery,
         ///     partitionKey: "Done");
         ///
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
+        /// FeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosUserDefinedFunctionSettings settings in await feedIterator.FetchNextSetAsync())
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {

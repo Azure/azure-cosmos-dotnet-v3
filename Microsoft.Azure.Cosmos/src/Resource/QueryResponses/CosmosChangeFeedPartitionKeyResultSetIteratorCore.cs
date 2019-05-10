@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
     /// </summary>
-    internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore : CosmosFeedIterator
+    internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
     {
         private readonly CosmosClientContext clientContext;
         private readonly CosmosContainerCore cosmosContainer;

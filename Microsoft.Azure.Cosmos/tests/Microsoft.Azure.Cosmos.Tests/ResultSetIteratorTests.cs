@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            CosmosFeedIterator resultSetIterator = new CosmosResultSetIteratorCore(
+            FeedIterator resultSetIterator = new CosmosResultSetIteratorCore(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosFeedIterator feedIterator = container.Items.CreateItemQueryAsStream(
+            FeedIterator feedIterator = container.Items.CreateItemQueryAsStream(
                 sqlQueryDefinition: sql,
                 maxConcurrency: 1,
                 partitionKey: "pk",
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosFeedIterator<CosmosConflict> feedIterator = container.GetConflictsIterator();
+            FeedIterator<CosmosConflict> feedIterator = container.GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosFeedIterator feedIterator = container.GetConflictsStreamIterator();
+            FeedIterator feedIterator = container.GetConflictsStreamIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {

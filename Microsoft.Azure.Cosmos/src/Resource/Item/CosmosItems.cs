@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemIterator<ToDoActivity>();
+        /// FeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemIterator<ToDoActivity>();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(ToDoActivity item in await feedIterator.FetchNextSetAsync())
@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<T> GetItemIterator<T>(
+        public abstract FeedIterator<T> GetItemIterator<T>(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// CosmosFeedIterator feedIterator = this.Container.Items.GetItemStreamIterator();
+        /// FeedIterator feedIterator = this.Container.Items.GetItemStreamIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator GetItemStreamIterator(
+        public abstract FeedIterator GetItemStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosItemRequestOptions requestOptions = null);
@@ -552,7 +552,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// CosmosFeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
+        /// FeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator CreateItemQueryAsStream(
+        public abstract FeedIterator CreateItemQueryAsStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             object partitionKey = null,
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// CosmosFeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
+        /// FeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
@@ -619,7 +619,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator CreateItemQueryAsStream(
+        public abstract FeedIterator CreateItemQueryAsStream(
             string sqlQueryText,
             int maxConcurrency,
             object partitionKey = null,
@@ -628,7 +628,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
@@ -647,7 +647,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
@@ -661,7 +661,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             object partitionKey,
             int? maxItemCount = null,
@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryText">The cosmos SQL query text.</param>
@@ -687,7 +687,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
@@ -701,7 +701,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             object partitionKey,
             int? maxItemCount = null,
@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
@@ -728,7 +728,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     sqlQuery,
         ///     maxConcurrency: 2);
         ///     
@@ -742,7 +742,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             int? maxItemCount = null,
@@ -750,7 +750,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryText">The cosmos SQL query text.</param>
@@ -768,7 +768,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     "select * from ToDos t where t.cost > 9000",
         ///     maxConcurrency: 2);
         ///     
@@ -782,7 +782,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             int maxConcurrency,
             int? maxItemCount = null,

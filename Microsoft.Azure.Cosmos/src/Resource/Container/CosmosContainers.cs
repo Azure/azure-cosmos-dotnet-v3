@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainerIterator();
+        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainerIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosContainerSettings setting in await feedIterator.FetchNextSetAsync())
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<CosmosContainerSettings> GetContainerIterator(
+        public abstract FeedIterator<CosmosContainerSettings> GetContainerIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosQueryRequestOptions"/></param>
-        public abstract CosmosFeedIterator GetContainerStreamIterator(
+        public abstract FeedIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null);

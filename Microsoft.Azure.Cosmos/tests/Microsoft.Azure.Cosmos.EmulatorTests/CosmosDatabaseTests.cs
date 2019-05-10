@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     databaseIds.Add(createResponse.Resource.Id);
                 }
 
-                CosmosFeedIterator<CosmosDatabaseSettings> feedIterator =
+                FeedIterator<CosmosDatabaseSettings> feedIterator =
                     this.cosmosClient.Databases.GetDatabaseIterator();
                 while (feedIterator.HasMoreResults)
                 {
