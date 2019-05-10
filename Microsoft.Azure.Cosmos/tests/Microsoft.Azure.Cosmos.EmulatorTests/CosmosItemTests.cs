@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportWrapperTests;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
 
@@ -90,6 +92,109 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosItemResponse<dynamic> deleteResponse = await this.Container.Items.DeleteItemAsync<dynamic>(partitionKey: "[{}]", id: testItem.id);
             Assert.IsNotNull(deleteResponse);
+        }
+
+        [TestMethod]
+        public async Task ReadCollectionNotExists()
+        {
+            string collectionName = Guid.NewGuid().ToString();
+            CosmosContainer testContainer = this.database.Containers[collectionName];
+            await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
+
+            // Item -> Container -> Database contract 
+            string dbName = Guid.NewGuid().ToString();
+            testContainer = this.cosmosClient.Databases[dbName].Containers[collectionName];
+            await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
+        }
+
+        [TestMethod]
+        public async Task NonPartitionKeyLookupCacheTest()
+        {
+            int count = 0;
+            CosmosClient client = TestCommon.CreateCosmosClient(builder => 
+                {
+                    builder.UseConnectionModeDirect();
+                    builder.UseSendingRequestEventArgs((sender, e) =>
+                        {
+                            if (e.DocumentServiceRequest != null)
+                            {
+                                Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
+                            }
+
+                            if (e.HttpRequest != null)
+                            {
+                                Trace.TraceInformation($"{e.HttpRequest.ToString()}");
+                            }
+
+                            if (e.IsHttpRequest() 
+                                && e.HttpRequest.RequestUri.AbsolutePath.Contains("/colls/"))
+                            {
+                                count++;
+                            }
+
+                            if (e.IsHttpRequest()
+                                && e.HttpRequest.RequestUri.AbsolutePath.Contains("/pkranges"))
+                            {
+                                Debugger.Break();
+                            }
+                        });
+                });
+
+            string dbName = Guid.NewGuid().ToString();
+            string containerName = Guid.NewGuid().ToString();
+            CosmosContainerCore testContainer = (CosmosContainerCore)client.Databases[dbName].Containers[containerName];
+
+            int loopCount = 2;
+            for (int i = 0; i < loopCount; i++)
+            {
+                try
+                {
+                    await testContainer.GetNonePartitionKeyValueAsync();
+                    Assert.Fail();
+                }
+                catch (DocumentClientException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
+                {
+                }
+            }
+
+            Assert.AreEqual(loopCount, count);
+
+            // Create real container and address 
+            CosmosDatabase db = await client.Databases.CreateDatabaseAsync(dbName);
+            CosmosContainer container = await db.Containers.CreateContainerAsync(containerName, "/id");
+
+            // reset counter
+            count = 0;
+            for (int i = 0; i < loopCount; i++)
+            {
+                await testContainer.GetNonePartitionKeyValueAsync();
+            }
+
+            // expected once post create 
+            Assert.AreEqual(1, count);
+
+            // reset counter
+            count = 0;
+            for (int i = 0; i < loopCount; i++)
+            {
+                await testContainer.GetRID(default(CancellationToken));
+            }
+
+            // Already cached by GetNonePartitionKeyValueAsync before
+            Assert.AreEqual(0, count);
+
+            // reset counter
+            count = 0;
+            int expected = 0;
+            for (int i = 0; i < loopCount; i++)
+            {
+                await testContainer.GetRoutingMapAsync(default(CancellationToken));
+                expected = count;
+            }
+
+            // OkRagnes should be fetched only once. 
+            // Possible to make multiple calls for ranges
+            Assert.AreEqual(expected, count);
         }
 
         [TestMethod]
@@ -1112,6 +1217,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 42,
                 cost = double.MaxValue
             };
+        }
+
+        private static async Task TestNonePKForNonExistingContainer(CosmosContainer cosmosContainer)
+        {
+            // Stream implementation should not throw
+            CosmosResponseMessage response = await cosmosContainer.Items.ReadItemStreamAsync(CosmosContainerSettings.NonePartitionKeyValue, "id1");
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.IsNotNull(response.Headers.ActivityId);
+            Assert.IsNotNull(response.ErrorMessage);
+
+            // FOr typed also its not error
+            var typedResponse = await cosmosContainer.Items.ReadItemAsync<string>(CosmosContainerSettings.NonePartitionKeyValue, "id1");
+            Assert.AreEqual(HttpStatusCode.NotFound, typedResponse.StatusCode);
+            Assert.IsNotNull(typedResponse.Headers.ActivityId);
         }
     }
 }

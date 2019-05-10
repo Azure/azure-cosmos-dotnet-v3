@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// These are the operation types resulted in a version conflict on a resource. 
     /// </summary>
     /// <remarks>
-    /// When a version conflict occurs during an async operation, retrieving the <see cref="CosmosConflict"/> instance will allow you 
+    /// When a version conflict occurs during an async operation, retrieving the <see cref="CosmosConflictSettings"/> instance will allow you 
     /// to determine which resource and operation cause the conflict.
     /// </remarks>
     public enum OperationKind
