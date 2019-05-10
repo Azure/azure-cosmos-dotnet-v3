@@ -107,14 +107,14 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if(this.innerExecutionContext == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
             }
 
-            CosmosQueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
+            QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
             response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
 
             return response;

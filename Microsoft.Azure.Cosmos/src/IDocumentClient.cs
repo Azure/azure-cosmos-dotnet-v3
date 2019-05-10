@@ -2096,7 +2096,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -2115,7 +2115,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null);
+        Task<DocumentFeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
@@ -2138,7 +2138,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedResponse<PartitionKeyRange> response = null;
+        /// DoucmentFeedResponse<PartitionKeyRange> response = null;
         /// List<string> ids = new List<string>();
         /// do
         /// {
@@ -2154,9 +2154,9 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
@@ -2170,7 +2170,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Uri partitionKeyRangesUri = UriFactory.CreatePartitionKeyRangesUri(database.Id, collection.Id);
-        /// FeedResponse<PartitionKeyRange> response = null;
+        /// DoucmentFeedResponse<PartitionKeyRange> response = null;
         /// List<string> ids = new List<string>();
         /// do
         /// {
@@ -2186,10 +2186,10 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.UriFactory.CreatePartitionKeyRangesUri(string, string)"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(Uri partitionKeyRangesOrCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(Uri partitionKeyRangesOrCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="DocumentCollection"/> for a database from the Azure Cosmos DB service as an asynchronous operation.
@@ -2221,7 +2221,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
+        ///     DoucmentFeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2241,7 +2241,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of collections for a database as an asynchronous operation in the Azure Cosmos DB service.
@@ -2249,7 +2249,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">The URI of the parent Database.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(Uri databaseUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(Uri databaseUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of documents for a specified collection from the Azure Cosmos DB service.
@@ -2283,7 +2283,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
+        ///     DoucmentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2300,13 +2300,13 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Instead of FeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
+        /// Instead of DoucmentFeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
         /// This is important becuse a DocumentCollection can contain different kinds of documents.
         /// </remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the feed (sequence) of documents for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2315,7 +2315,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentCollectionUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentCollectionUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="StoredProcedure"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2347,7 +2347,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
+        ///     DoucmentFeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2367,7 +2367,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of stored procedures for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2375,7 +2375,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Trigger"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2407,7 +2407,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
+        ///     DoucmentFeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2427,7 +2427,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of triggers for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2435,7 +2435,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="UserDefinedFunction"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2467,7 +2467,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
+        ///     DoucmentFeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2487,7 +2487,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of user defined functions for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2495,7 +2495,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.Conflict"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2527,7 +2527,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
+        ///     DoucmentFeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2547,7 +2547,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of conflicts for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2555,7 +2555,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<Conflict>> ReadConflictFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.Offer"/> for a database account from the Azure Cosmos DB service
@@ -2583,7 +2583,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -2602,7 +2602,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null);
+        Task<DocumentFeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null);
 
         #endregion
 

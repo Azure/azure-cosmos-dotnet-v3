@@ -90,7 +90,7 @@
             }
 
             Console.WriteLine("\n5. Reading all databases resources for an account");
-            CosmosFeedIterator<CosmosDatabaseSettings> iterator = client.Databases.GetDatabaseIterator();
+            CosmosResultSetIterator<CosmosDatabaseSettings> iterator = client.Databases.GetDatabaseIterator();
             do
             {
                 foreach (CosmosDatabaseSettings db in await iterator.FetchNextSetAsync())

@@ -3,37 +3,34 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.IO;
     using System.Net;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.
     /// To follow the .NET standard for typed responses any exceptions should be thrown to the user.
     /// </summary>
-    public abstract class CosmosFeedResponse<T> : CosmosResponse<IEnumerable<T>>, IEnumerable<T>
+    public abstract class FeedResponse<T> : Response<IEnumerable<T>>, IEnumerable<T>
     {
         /// <summary>
         /// Create an empty cosmos feed response for mock testing
         /// </summary>
-        public CosmosFeedResponse()
+        public FeedResponse()
         {
 
         }
 
         /// <summary>
-        /// Create a CosmosFeedResponse object with the default properties set
+        /// Create a FeedResponse object with the default properties set
         /// </summary>
         /// <param name="httpStatusCode">The status code of the response</param>
         /// <param name="headers">The headers of the response</param>
         /// <param name="resource">The object from the response</param>
-        internal CosmosFeedResponse(
+        internal FeedResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            IEnumerable<T> resource):base(
+            IEnumerable<T> resource) : base(
                 httpStatusCode,
                 headers,
                 resource)

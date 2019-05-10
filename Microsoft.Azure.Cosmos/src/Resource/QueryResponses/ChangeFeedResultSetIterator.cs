@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
 
-    internal class ChangeFeedResultSetIterator<T> : CosmosDefaultResultSetIterator<T>
+    internal class ChangeFeedResultSetIterator<T> : FeedIteratorCore<T>
     {
         internal ChangeFeedResultSetIterator(
             int? maxItemCount,

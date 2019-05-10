@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer mockContainer = mockClient.Databases[this.database.Id].Containers[this.container.Id];
 
             //Validate that the custom json serializer is used for creating the item
-            CosmosItemResponse<ToDoActivity> response = await mockContainer.Items.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
+            ItemResponse<ToDoActivity> response = await mockContainer.Items.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
