@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -160,60 +159,6 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher);
 
             return responseCreator(response);
-        }
-
-        /// <summary>
-        /// Used internally by friends ensure robust argument and
-        /// exception-less handling
-        /// </summary>
-        internal static Task<T> ProcessResourceOperationAsync<T>(
-            CosmosClient client,
-            Uri resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            Object partitionKey,
-            Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
-        {
-            return ProcessResourceOperationAsync(
-                requestHandler: client.RequestHandler,
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                cosmosContainerCore: null,
-                partitionKey: partitionKey,
-                streamPayload: streamPayload,
-                requestEnricher: requestEnricher,
-                responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
-        }
-
-        internal static Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
-            RequestInvokerHandler requestHandler,
-            Uri resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            Object partitionKey,
-            Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellationToken)
-        {
-            return requestHandler.SendAsync(
-                resourceUri,
-                resourceType,
-                operationType,
-                requestOptions,
-                cosmosContainerCore,
-                partitionKey,
-                streamPayload,
-                requestEnricher);
-
         }
     }
 }

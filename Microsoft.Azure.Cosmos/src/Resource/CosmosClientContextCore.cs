@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using System.IO;
     using System.Text;
     using System.Threading;
@@ -95,17 +94,16 @@ namespace Microsoft.Azure.Cosmos
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-                requestHandler: this.RequestHandler,
-                cosmosContainerCore: cosmosContainerCore,
+            return this.RequestHandler.SendAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                cancellationToken: cancellationToken);
+                cancellation: cancellationToken);
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
@@ -118,10 +116,9 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            return ExecUtils.ProcessResourceOperationAsync<T>(
-                requestHandler: this.RequestHandler,
+            return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -131,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
     }
 }

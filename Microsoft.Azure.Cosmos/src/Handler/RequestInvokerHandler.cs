@@ -85,6 +85,37 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 .Unwrap();
         }
 
+        public virtual async Task<T> SendAsync<T>(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            CosmosRequestOptions requestOptions,
+            CosmosContainerCore cosmosContainerCore,
+            Object partitionKey,
+            Stream streamPayload,
+            Action<CosmosRequestMessage> requestEnricher,
+            Func<CosmosResponseMessage, T> responseCreator,
+            CancellationToken cancellation = default(CancellationToken))
+        {
+            if (responseCreator == null)
+            {
+                throw new ArgumentNullException(nameof(responseCreator));
+            }
+
+            CosmosResponseMessage responseMessage = await this.SendAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: requestEnricher,
+                cancellation: cancellation);
+
+            return responseCreator(responseMessage);
+        }
+
         public virtual async Task<CosmosResponseMessage> SendAsync(
             Uri resourceUri,
             ResourceType resourceType,
@@ -96,6 +127,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellation = default(CancellationToken))
         {
+            if (resourceUri == null)
+            {
+                throw new ArgumentNullException(nameof(resourceUri));
+            }
+
             HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
             CosmosRequestMessage request = new CosmosRequestMessage(method, resourceUri);
@@ -135,7 +171,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             requestEnricher?.Invoke(request);
-
             return await this.SendAsync(request, cancellation);
         }
 
