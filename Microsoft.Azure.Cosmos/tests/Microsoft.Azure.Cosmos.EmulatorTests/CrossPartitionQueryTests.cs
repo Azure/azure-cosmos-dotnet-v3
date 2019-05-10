@@ -159,7 +159,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedContainerAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null, bool singlePartition = false)
         {
-            CosmosContainer partitionedCollection = singlePartition ? await this.CreatePartitionContainer(partitionKey, indexingPolicy) : await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
+            CosmosContainer partitionedCollection = !singlePartition ? 
+                await this.CreatePartitionContainer(partitionKey, indexingPolicy) 
+                : await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
             List<Document> insertedDocuments = new List<Document>();
             string jObjectPartitionKey = partitionKey.Remove(0, 1);
             foreach (string document in documents)
