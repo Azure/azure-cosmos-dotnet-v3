@@ -6,20 +6,17 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos stored procedure response
     /// </summary>
-    public class CosmosStoredProcedureResponse : CosmosResponse<CosmosStoredProcedureSettings>
+    public class StoredProcedureResponse : CosmosResponse<CosmosStoredProcedureSettings>
     {
         /// <summary>
-        /// Create a <see cref="CosmosStoredProcedureResponse"/> as a no-op for mock testing
+        /// Create a <see cref="StoredProcedureResponse"/> as a no-op for mock testing
         /// </summary>
-        public CosmosStoredProcedureResponse() : base()
+        public StoredProcedureResponse() : base()
         {
 
         }
@@ -28,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal CosmosStoredProcedureResponse(
+        internal StoredProcedureResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
            CosmosStoredProcedureSettings cosmosStoredProcedureSettings,
@@ -47,10 +44,10 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosStoredProcedure StoredProcedure { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="CosmosStoredProcedureResponse"/>
+        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="StoredProcedureResponse"/>
         /// </summary>
-        /// <param name="response">CosmosStoredProcedureResponse</param>
-        public static implicit operator CosmosStoredProcedure(CosmosStoredProcedureResponse response)
+        /// <param name="response">StoredProcedureResponse</param>
+        public static implicit operator CosmosStoredProcedure(StoredProcedureResponse response)
         {
             return response.StoredProcedure;
         }

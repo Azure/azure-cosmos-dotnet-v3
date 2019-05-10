@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
-            CosmosStoredProcedureResponse storedProcedureResponse =
+            StoredProcedureResponse storedProcedureResponse =
                 await this.Container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);

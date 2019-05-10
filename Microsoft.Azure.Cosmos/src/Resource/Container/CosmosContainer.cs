@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         ///    Body = "function() { { var x = 42; } }"
         ///};
         ///
-        /// CosmosStoredProcedureResponse response = await cosmosContainer.StoredProcedures.CreateStoredProcedureAsync(settings);
+        /// StoredProcedureResponse response = await cosmosContainer.StoredProcedures.CreateStoredProcedureAsync(settings);
         /// ]]>
         /// </code>
         /// </example>

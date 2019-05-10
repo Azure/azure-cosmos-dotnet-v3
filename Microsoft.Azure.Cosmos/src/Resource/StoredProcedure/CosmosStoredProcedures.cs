@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
+        public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
                     CosmosRequestOptions requestOptions = null,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosStoredProcedure storedProcedure = this.cosmosContainer.StoredProcedures["myStoredProcedureId"];
-        /// CosmosStoredProcedureResponse response = await storedProcedure.ReadAsync();
+        /// StoredProcedureResponse response = await storedProcedure.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>

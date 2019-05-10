@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
         }
 
-        public override Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
+        public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
                     CosmosRequestOptions requestOptions = null,
