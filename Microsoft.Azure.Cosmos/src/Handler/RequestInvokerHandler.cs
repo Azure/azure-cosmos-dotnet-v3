@@ -4,12 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Handlers
 {
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
     using System;
     using System.Globalization;
+    using System.IO;
+    using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// HttpMessageHandler can only be invoked by derived classed or internal classes inside http assembly
@@ -80,6 +83,92 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     return base.SendAsync(request, cancellationToken);
                 })
                 .Unwrap();
+        }
+
+        public virtual async Task<CosmosResponseMessage> SendAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            CosmosRequestOptions requestOptions,
+            CosmosContainerCore cosmosContainerCore,
+            Object partitionKey,
+            Stream streamPayload,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellation = default)
+        {
+            HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
+
+            CosmosRequestMessage request = new CosmosRequestMessage(method, resourceUri);
+            request.OperationType = operationType;
+            request.ResourceType = resourceType;
+            request.RequestOptions = requestOptions;
+            request.Content = streamPayload;
+
+            if (partitionKey != null)
+            {
+                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                {
+                    throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                }
+                else if (Object.ReferenceEquals(partitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                {
+                    try
+                    {
+                        PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellation);
+                        request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                    }
+                    catch (DocumentClientException dce)
+                    {
+                        return dce.ToCosmosResponseMessage(request);
+                    }
+                }
+                else
+                {
+                    PartitionKey pk = new PartitionKey(partitionKey);
+                    request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
+                }
+            }
+
+            if (operationType == OperationType.Upsert)
+            {
+                request.Headers.IsUpsert = bool.TrueString;
+            }
+
+            requestEnricher?.Invoke(request);
+
+            return await this.SendAsync(request, cancellation);
+        }
+
+        internal static HttpMethod GetHttpMethod(
+            OperationType operationType)
+        {
+            HttpMethod httpMethod = HttpMethod.Head;
+            if (operationType == OperationType.Create ||
+                operationType == OperationType.Upsert ||
+                operationType == OperationType.Query ||
+                operationType == OperationType.SqlQuery ||
+                operationType == OperationType.Batch ||
+                operationType == OperationType.ExecuteJavaScript)
+            {
+                return HttpMethod.Post;
+            }
+            else if (operationType == OperationType.Read ||
+                operationType == OperationType.ReadFeed)
+            {
+                return HttpMethod.Get;
+            }
+            else if (operationType == OperationType.Replace)
+            {
+                return HttpMethod.Put;
+            }
+            else if (operationType == OperationType.Delete)
+            {
+                return HttpMethod.Delete;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private void FillMultiMasterContext(CosmosRequestMessage request)

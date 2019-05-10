@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
         protected abstract Task<CosmosContainerSettings> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellationToken);
 
-        internal abstract Task<CosmosContainerSettings> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellationToken);
+        protected abstract Task<CosmosContainerSettings> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellationToken);
 
         private async Task<CosmosContainerSettings> ResolveByPartitionKeyRangeIdentityAsync(string apiVersion, PartitionKeyRangeIdentity partitionKeyRangeIdentity, CancellationToken cancellationToken)
         {
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 cancellationToken);
         }
 
-        private async Task<CosmosContainerSettings> ResolveByNameAsync(
+        internal virtual async Task<CosmosContainerSettings> ResolveByNameAsync(
             string apiVersion,
             string resourceAddress,
             CancellationToken cancellationToken)

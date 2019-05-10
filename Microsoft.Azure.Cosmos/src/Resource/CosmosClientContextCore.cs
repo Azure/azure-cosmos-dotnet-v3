@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientConfiguration clientConfiguration,
             CosmosJsonSerializer cosmosJsonSerializer,
             CosmosResponseFactory cosmosResponseFactory,
-            CosmosRequestHandler requestHandler,
+            RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             IDocumentQueryClient documentQueryClient)
         {
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosResponseFactory ResponseFactory { get; }
 
-        internal override CosmosRequestHandler RequestHandler { get; }
+        internal override RequestInvokerHandler RequestHandler { get; }
 
         internal override CosmosClientConfiguration ClientConfiguration { get; }
 
