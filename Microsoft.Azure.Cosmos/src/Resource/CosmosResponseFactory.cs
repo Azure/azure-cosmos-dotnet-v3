@@ -87,14 +87,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosTriggerResponse> CreateTriggerResponse(
+        internal Task<TriggerResponse> CreateTriggerResponse(
             CosmosTrigger trigger,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosTriggerSettings settings = this.ToObjectInternal<CosmosTriggerSettings>(cosmosResponseMessage);
-                return new CosmosTriggerResponse(
+                return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,

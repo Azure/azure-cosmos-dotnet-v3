@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosTriggerResponse> CreateTriggerAsync(
+        public virtual Task<TriggerResponse> CreateTriggerAsync(
             CosmosTriggerSettings triggerSettings,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosTrigger trigger = this.cosmosContainer.Tirggers["myTriggerId"];
-        /// CosmosTriggerResponse response = await trigger.ReadAsync();
+        /// TriggerResponse response = await trigger.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>

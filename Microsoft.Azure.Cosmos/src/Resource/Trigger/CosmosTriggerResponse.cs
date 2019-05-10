@@ -5,18 +5,16 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
-    using System.Net.Http;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// The cosmos trigger response
     /// </summary>
-    internal class CosmosTriggerResponse : CosmosResponse<CosmosTriggerSettings>
+    internal class TriggerResponse : CosmosResponse<CosmosTriggerSettings>
     {
         /// <summary>
-        /// Create a <see cref="CosmosTriggerResponse"/> as a no-op for mock testing
+        /// Create a <see cref="TriggerResponse"/> as a no-op for mock testing
         /// </summary>
-        public CosmosTriggerResponse() : base()
+        public TriggerResponse() : base()
         {
 
         }
@@ -25,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal CosmosTriggerResponse(
+        internal TriggerResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
            CosmosTriggerSettings cosmosTriggerSettings,
@@ -44,10 +42,10 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosTrigger Trigger { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosTrigger"/> implictly from <see cref="CosmosTriggerResponse"/>
+        /// Get <see cref="CosmosTrigger"/> implicitly from <see cref="TriggerResponse"/>
         /// </summary>
         /// <param name="response">CosmosUserDefinedFunctionResponse</param>
-        public static implicit operator CosmosTrigger(CosmosTriggerResponse response)
+        public static implicit operator CosmosTrigger(TriggerResponse response)
         {
             return response.Trigger;
         }
