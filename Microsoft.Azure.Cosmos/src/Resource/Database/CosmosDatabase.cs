@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosDatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list>
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
         /// //Reads a Database resource where
         /// // - database_id is the ID property of the Database resource you wish to read.
         /// CosmosDatabase database = this.cosmosClient.Databases[database_id];
-        /// CosmosDatabaseResponse response = await database.ReadAsync();
+        /// DatabaseResponse response = await database.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the Database. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        public abstract Task<CosmosDatabaseResponse> ReadAsync(
+        public abstract Task<DatabaseResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosDatabaseResponse"/> which will contain information about the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which will contain information about the request issued.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list>
         ///     <listheader>
@@ -95,11 +95,11 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// //Delete a cosmos database
         /// CosmosDatabase database = cosmosContainer["myDbId"];
-        /// CosmosDatabaseResponse response = await database.DeleteAsync();
+        /// DatabaseResponse response = await database.DeleteAsync();
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosDatabaseResponse> DeleteAsync(
+        public abstract Task<DatabaseResponse> DeleteAsync(
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
             bool allowNonValueAggregateQuery,
             CancellationToken cancellationToken);
 
-        internal abstract Task<CosmosQueryResponse> ExecuteItemQueryAsync(
+        internal abstract Task<QueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,

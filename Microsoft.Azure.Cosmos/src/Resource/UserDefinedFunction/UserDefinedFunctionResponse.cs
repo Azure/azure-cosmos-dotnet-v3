@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos user defined function response
     /// </summary>
-    internal class CosmosUserDefinedFunctionResponse : CosmosResponse<CosmosUserDefinedFunctionSettings>
+    internal class UserDefinedFunctionResponse : Response<CosmosUserDefinedFunctionSettings>
     {
         /// <summary>
-        /// Create a <see cref="CosmosUserDefinedFunctionResponse"/> as a no-op for mock testing
+        /// Create a <see cref="UserDefinedFunctionResponse"/> as a no-op for mock testing
         /// </summary>
-        public CosmosUserDefinedFunctionResponse() : base()
+        public UserDefinedFunctionResponse() : base()
         {
 
         }
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal CosmosUserDefinedFunctionResponse(
+        internal UserDefinedFunctionResponse(
           HttpStatusCode httpStatusCode,
           CosmosResponseMessageHeaders headers,
           CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings,
@@ -43,10 +43,10 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosUserDefinedFunction UserDefinedFunction { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosUserDefinedFunction"/> implicitly from <see cref="CosmosUserDefinedFunctionResponse"/>
+        /// Get <see cref="CosmosUserDefinedFunction"/> implicitly from <see cref="UserDefinedFunctionResponse"/>
         /// </summary>
-        /// <param name="response">CosmosUserDefinedFunctionResponse</param>
-        public static implicit operator CosmosUserDefinedFunction(CosmosUserDefinedFunctionResponse response)
+        /// <param name="response">UserDefinedFunctionResponse</param>
+        public static implicit operator CosmosUserDefinedFunction(UserDefinedFunctionResponse response)
         {
             return response.UserDefinedFunction;
         }

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return itemResponse.Object;
                 });
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return itemResponse.Object;
                 });
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0))
                 .Returns(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return Task.FromResult(itemResponse.Object);
                 });
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return itemResponse.Object;
                 });
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return itemResponse.Object;
                 });
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Throws(new CosmosException(string.Empty, HttpStatusCode.Conflict, 0, string.Empty, 0))
                 .Returns(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return Task.FromResult(itemResponse.Object);
                 });
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return itemResponse.Object;
                 });
@@ -224,13 +224,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.StatusCode).Returns(HttpStatusCode.NotFound);
                     return Task.FromResult(itemResponse.Object);
                 })
                 .Returns(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return Task.FromResult(itemResponse.Object);
                 });
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.StatusCode).Returns(HttpStatusCode.NotFound);
                     return itemResponse.Object;
                 });
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0))
                 .Returns(() =>
                 {
-                    var itemResponse = new Mock<CosmosItemResponse<DocumentServiceLeaseCore>>();
+                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
                     itemResponse.Setup(i => i.Resource).Returns(leaseToUpdate);
                     return Task.FromResult(itemResponse.Object);
                 });

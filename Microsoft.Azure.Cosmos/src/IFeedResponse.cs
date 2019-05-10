@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// Interface exposed for mocking purposes.
     /// </summary>
     /// <typeparam name="T">The feed type.</typeparam>
-    internal interface IFeedResponse<T>
+    internal interface IDocumentFeedResponse<T>
     {
         /// <summary>
         /// Gets the maximum quota for database resources within the Azure Cosmos DB database account. 

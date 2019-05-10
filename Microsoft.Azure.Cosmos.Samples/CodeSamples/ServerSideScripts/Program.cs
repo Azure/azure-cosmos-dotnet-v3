@@ -182,10 +182,10 @@
             // 8. Validate
             int numDocs = 0;
 
-            CosmosFeedIterator<dynamic> setIterator = container.Items.GetItemIterator<dynamic>();
+            CosmosResultSetIterator<dynamic> setIterator = container.Items.GetItemIterator<dynamic>();
             while (setIterator.HasMoreResults)
             {
-                CosmosFeedResponse<dynamic> response = await setIterator.FetchNextSetAsync();
+                CosmosQueryResponse<dynamic> response = await setIterator.FetchNextSetAsync();
                 numDocs += response.Count();
             }
 
