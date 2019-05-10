@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
 
-    internal class CosmosReadFeedResponse<T> : CosmosFeedResponse<T>
+    internal class CosmosReadFeedResponse<T> : FeedResponse<T>
     {
         protected CosmosReadFeedResponse(
             IEnumerable<T> resource,

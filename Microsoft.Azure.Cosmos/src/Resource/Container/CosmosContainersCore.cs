@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosFeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosContainerSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosContainerSettings>>(
                 resourceUri: this.database.LinkUri,
                 resourceType: ResourceType.Collection,
                 operationType: OperationType.ReadFeed,

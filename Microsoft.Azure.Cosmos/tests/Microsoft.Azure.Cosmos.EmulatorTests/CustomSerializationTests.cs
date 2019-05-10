@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
             CosmosFeedIterator<TestDocument> feedIterator =
                container.Items.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
-            CosmosFeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
+            FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
             AssertEqual(testDocument, queryResponse.First());
 
             //Will add LINQ test once it is available with new V3 OM 

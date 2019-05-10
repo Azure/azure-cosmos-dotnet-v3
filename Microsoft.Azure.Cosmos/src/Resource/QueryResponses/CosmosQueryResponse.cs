@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
     /// The cosmos query response
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class CosmosQueryResponse<T> : CosmosFeedResponse<T>
+    internal class CosmosQueryResponse<T> : FeedResponse<T>
     {
         private readonly IEnumerable<CosmosElement> cosmosElements;
         private readonly CosmosJsonSerializer jsonSerializer;

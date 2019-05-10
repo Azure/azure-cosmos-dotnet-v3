@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             this.container,
             id);
 
-        private Task<CosmosFeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
+        private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosStoredProcedureSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosStoredProcedureSettings>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ReadFeed,

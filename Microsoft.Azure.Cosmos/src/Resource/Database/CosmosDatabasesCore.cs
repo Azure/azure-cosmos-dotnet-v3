@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateDatabaseResponse(this[databaseSettings.Id], response);
         }
 
-        private Task<CosmosFeedResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutor(
+        private Task<FeedResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(state == null);
 
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosDatabaseSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosDatabaseSettings>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,

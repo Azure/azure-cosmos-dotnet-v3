@@ -138,14 +138,14 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosFeedResponse<CosmosConflict>> ConflictsFeedRequestExecutor(
+        private Task<FeedResponse<CosmosConflict>> ConflictsFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosConflict>>(
+            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<CosmosConflict>>(
                 resourceUri: this.LinkUri,
                 resourceType: Documents.ResourceType.Conflict,
                 operationType: Documents.OperationType.ReadFeed,

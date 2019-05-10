@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQuery<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
             while (feedIterator.HasMoreResults)
             {
-                CosmosFeedResponse<ToDoActivity> iter = await feedIterator.FetchNextSetAsync();
+                FeedResponse<ToDoActivity> iter = await feedIterator.FetchNextSetAsync();
                 Assert.AreEqual(1, iter.Count());
                 ToDoActivity response = iter.First();
                 Assert.AreEqual(find.id, response.id);
@@ -592,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 1);
             while (feedIterator.HasMoreResults)
             {
-                CosmosFeedResponse<ToDoActivity> iter = await feedIterator.FetchNextSetAsync();
+                FeedResponse<ToDoActivity> iter = await feedIterator.FetchNextSetAsync();
                 Assert.AreEqual(1, iter.Count());
             }
 
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.CreateItemQuery<ToDoActivity>(sql, toDoActivity.status, maxItemCount: 2);
             while (setIteratorMax2.HasMoreResults)
             {
-                CosmosFeedResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
+                FeedResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
                 Assert.AreEqual(2, iter.Count());
             }
         }
@@ -774,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CreateItemQuery<dynamic>(sql, maxConcurrency: 1,maxItemCount:10, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
                 while (feedIterator.HasMoreResults)
                 {
-                    CosmosFeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
                     Assert.AreEqual(3, queryResponse.Count());
                 }
 
@@ -783,7 +783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .GetItemIterator<dynamic>(maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
-                    CosmosFeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
                     Assert.AreEqual(3, queryResponse.Count());
                 }
 
@@ -792,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CreateItemQuery<dynamic>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
-                    CosmosFeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
                     Assert.AreEqual(2, queryResponse.Count());
                 }
 
@@ -801,7 +801,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .CreateItemQuery<dynamic>(sql, partitionKey: itemWithPK.status, maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
-                    CosmosFeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
                     Assert.AreEqual(1, queryResponse.Count());
                 }
 

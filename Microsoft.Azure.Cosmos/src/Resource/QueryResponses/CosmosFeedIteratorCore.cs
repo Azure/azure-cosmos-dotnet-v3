@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
     /// <typeparam name="T">The response object type that can be deserialized</typeparam>
     internal class CosmosDefaultResultSetIterator<T> : CosmosFeedIterator<T>
     {
-        internal delegate Task<CosmosFeedResponse<T>> NextResultSetDelegate(
+        internal delegate Task<FeedResponse<T>> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -149,14 +149,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<CosmosFeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             return this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken)
                 .ContinueWith(task =>
                 {
-                    CosmosFeedResponse<T> response = task.Result;
+                    FeedResponse<T> response = task.Result;
                     this.HasMoreResults = response.HasMoreResults;
                     this.continuationToken = response.InternalContinuationToken;
                     

@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos
                 options: cosmosQueryRequestOptions);
         }
 
-        internal async Task<CosmosFeedResponse<T>> NextResultSetAsync<T>(
+        internal async Task<FeedResponse<T>> NextResultSetAsync<T>(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosFeedResponse<T>> ItemFeedRequestExecutor<T>(
+        private Task<FeedResponse<T>> ItemFeedRequestExecutor<T>(
             int? maxItemCount,
            string continuationToken,
            CosmosRequestOptions options,
@@ -501,7 +501,7 @@ namespace Microsoft.Azure.Cosmos
            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<T>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<T>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,

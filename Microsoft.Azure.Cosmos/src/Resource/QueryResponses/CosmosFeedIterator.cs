@@ -40,6 +40,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public abstract Task<CosmosFeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }

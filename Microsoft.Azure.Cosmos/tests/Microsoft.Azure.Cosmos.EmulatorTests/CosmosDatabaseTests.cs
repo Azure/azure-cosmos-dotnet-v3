@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     this.cosmosClient.Databases.GetDatabaseIterator();
                 while (feedIterator.HasMoreResults)
                 {
-                    CosmosFeedResponse<CosmosDatabaseSettings> iterator =
+                    FeedResponse<CosmosDatabaseSettings> iterator =
                         await feedIterator.FetchNextSetAsync(this.cancellationToken);
                     foreach (CosmosDatabaseSettings databaseSettings in iterator)
                     {

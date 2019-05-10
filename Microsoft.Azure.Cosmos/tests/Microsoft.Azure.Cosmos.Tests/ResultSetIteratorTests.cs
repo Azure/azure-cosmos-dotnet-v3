@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosFeedResponse<CosmosConflict> response = await feedIterator.FetchNextSetAsync();
+            FeedResponse<CosmosConflict> response = await feedIterator.FetchNextSetAsync();
 
             Assert.AreEqual(1, response.Count());
 
