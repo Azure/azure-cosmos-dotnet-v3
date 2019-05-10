@@ -235,11 +235,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (goThroughGateway)
                 {
-                    CosmosDatabaseResponse response = await client.Databases.CreateDatabaseAsync("test");
+                    DatabaseResponse response = await client.Databases.CreateDatabaseAsync("test");
                 }
                 else
                 {
-                    CosmosItemResponse<dynamic> response = await client.Databases["test"].Containers["test"].Items.CreateItemAsync<dynamic>(partitionKey: "id", item: new { id = "id" });
+                    ItemResponse<dynamic> response = await client.Databases["test"].Containers["test"].Items.CreateItemAsync<dynamic>(partitionKey: "id", item: new { id = "id" });
                 }
             }
             catch (CosmosException)

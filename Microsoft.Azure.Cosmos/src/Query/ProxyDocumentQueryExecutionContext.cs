@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.innerExecutionContext.Dispose();
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
         {
             if (this.IsDone)
             {

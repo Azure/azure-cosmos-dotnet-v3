@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDatabaseCore : CosmosDatabase
     {
+        /// <summary>
+        /// Only used for unit testing
+        /// </summary>
+        internal CosmosDatabaseCore() { }
+
         private readonly CosmosClientContext clientContext;
 
         internal CosmosDatabaseCore(
@@ -39,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Uri LinkUri { get; }
 
-        public override Task<CosmosDatabaseResponse> ReadAsync(
+        public override Task<DatabaseResponse> ReadAsync(
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -50,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
-        public override Task<CosmosDatabaseResponse> DeleteAsync(
+        public override Task<DatabaseResponse> DeleteAsync(
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -126,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ReadAsync(cancellationToken: cancellationToken)
                 .ContinueWith(task =>
                 {
-                    CosmosDatabaseResponse response = task.Result;
+                    DatabaseResponse response = task.Result;
                     return response.Resource.ResourceId;
                 }, cancellationToken);
         }

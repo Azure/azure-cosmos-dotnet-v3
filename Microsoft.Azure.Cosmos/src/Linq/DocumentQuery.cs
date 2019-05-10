@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal sealed class DocumentQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
-        public static readonly FeedResponse<dynamic> EmptyFeedResponse = new FeedResponse<dynamic>(Enumerable.Empty<dynamic>(), 0, new StringKeyValueCollection());
+        public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(Enumerable.Empty<dynamic>(), 0, new StringKeyValueCollection());
 
         private readonly IDocumentQueryClient client;
         private readonly ResourceType resourceTypeEnum;
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Executes the query to retrieve the next page of results.
         /// </summary>
         /// <returns></returns>        
-        public Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ExecuteNextAsync<dynamic>(cancellationToken);
         }
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Executes the query to retrieve the next page of results.
         /// </summary>
         /// <returns></returns>
-        public Task<FeedResponse<TResponse>> ExecuteNextAsync<TResponse>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResponse>> ExecuteNextAsync<TResponse>(CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
@@ -260,8 +260,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    FeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(CancellationToken.None), null).Result;
-                    FeedResponse<T> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<T>(
+                    DocumentFeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(CancellationToken.None), null).Result;
+                    DocumentFeedResponse<T> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<T>(
                         feedResponse, 
                         this.resourceTypeEnum,
                         this.feedOptions.JsonSerializerSettings);
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    FeedResponse<T> partialResult = await (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken), null, cancellationToken);
+                    DocumentFeedResponse<T> partialResult = await (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken), null, cancellationToken);
                     result.AddRange(partialResult);
                 }
             }
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
-        private async Task<FeedResponse<TResponse>> ExecuteNextPrivateAsync<TResponse>(CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<TResponse>> ExecuteNextPrivateAsync<TResponse>(CancellationToken cancellationToken)
         {
             if (this.queryExecutionContext == null)
             {
@@ -335,8 +335,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
             }
 
-            FeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken);
-            FeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
+            DocumentFeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken);
+            DocumentFeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
                 response, 
                 this.resourceTypeEnum,
                 this.feedOptions.JsonSerializerSettings);
