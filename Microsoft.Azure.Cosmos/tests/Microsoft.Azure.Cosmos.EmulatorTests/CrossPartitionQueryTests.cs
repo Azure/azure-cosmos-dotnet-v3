@@ -1115,7 +1115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
@@ -1147,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+            QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 EnableCrossPartitionQuery = true,
                 MaxBufferedItemCount = 7000,
