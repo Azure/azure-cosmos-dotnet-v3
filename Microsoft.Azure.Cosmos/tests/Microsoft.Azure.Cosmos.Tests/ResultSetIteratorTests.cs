@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            CosmosFeedIterator resultSetIterator = new CosmosResultSetIteratorCore(
+            FeedIterator resultSetIterator = new FeedIteratorCore(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosFeedIterator<CosmosConflictSettings> feedIterator = container.GetConflictsIterator();
+            FeedIterator<CosmosConflictSettings> feedIterator = container.GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosFeedResponse<CosmosConflictSettings> response = await feedIterator.FetchNextSetAsync();
+            FeedResponse<CosmosConflictSettings> response = await feedIterator.FetchNextSetAsync();
 
             Assert.AreEqual(1, response.Count());
 
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosFeedIterator feedIterator = container.GetConflictsStreamIterator();
+            FeedIterator feedIterator = container.GetConflictsStreamIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {

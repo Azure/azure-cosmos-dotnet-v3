@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosUserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -73,12 +73,12 @@ namespace Microsoft.Azure.Cosmos
         ///  This reads an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosUserDefinedFunctionResponse response = await cosmosContainer.UserDefinedFunctions["ExistingId"].ReadAsync();
+        /// UserDefinedFunctionResponse response = await cosmosContainer.UserDefinedFunctions["ExistingId"].ReadAsync();
         /// CosmosUserDefinedFunctionSettings settings = response;
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosUserDefinedFunctionResponse> ReadAsync(
+        public virtual Task<UserDefinedFunctionResponse> ReadAsync(
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosUserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the updated resource record.
+        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -120,12 +120,12 @@ namespace Microsoft.Azure.Cosmos
         ///     Body = "function(amt) { return amt * 0.15; }",
         /// };
         /// 
-        /// CosmosUserDefinedFunctionResponse response = await this.cosmosUserDefinedFunction.ReplaceAsync(settings);
+        /// UserDefinedFunctionResponse response = await this.cosmosUserDefinedFunction.ReplaceAsync(settings);
         /// CosmosUserDefinedFunctionSettings settings = response;
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosUserDefinedFunctionResponse> ReplaceAsync(
+        public virtual Task<UserDefinedFunctionResponse> ReplaceAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosUserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> which will contain information about the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> which will contain information about the request issued.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
         ///     <listheader>
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
         /// This examples gets a reference to an existing user defined function and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosUserDefinedFunctionResponse response = await this.cosmosContainer.UserDefinedFunctions["taxUdfId"].DeleteAsync();
+        /// UserDefinedFunctionResponse response = await this.cosmosContainer.UserDefinedFunctions["taxUdfId"].DeleteAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -166,11 +166,11 @@ namespace Microsoft.Azure.Cosmos
         /// This examples containers an existing reference to a user defined function and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosUserDefinedFunctionResponse response = await this.cosmosTaxUdf.DeleteAsync();
+        /// UserDefinedFunctionResponse response = await this.cosmosTaxUdf.DeleteAsync();
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosUserDefinedFunctionResponse> DeleteAsync(
+        public virtual Task<UserDefinedFunctionResponse> DeleteAsync(
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal virtual Task<CosmosUserDefinedFunctionResponse> ProcessAsync(
+        internal virtual Task<UserDefinedFunctionResponse> ProcessAsync(
             object partitionKey,
             Stream streamPayload,
             OperationType operationType,

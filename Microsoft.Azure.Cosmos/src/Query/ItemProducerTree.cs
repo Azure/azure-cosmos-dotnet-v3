@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that returns whether we successfully moved next.</returns>
         /// <remarks>This function is split proofed.</remarks>
-        public async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
+        public async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
                 function: this.TryMoveNextAsyncImplementation,
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn returns whether or not we moved next.</returns>
-        public async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> MoveNextIfNotSplit(CancellationToken token)
+        public async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> MoveNextIfNotSplit(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
                 function: this.TryMoveNextIfNotSplitAsyncImplementation,
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> BufferMoreDocuments(CancellationToken token)
+        public Task<(bool successfullyMovedNext, QueryResponse failureResponse)> BufferMoreDocuments(CancellationToken token)
         {
             return this.ExecuteWithSplitProofing(
                 function: this.BufferMoreDocumentsImplementation,
@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="ex">The document client exception</param>
         /// <returns>Whether or not the exception was due to a split.</returns>
-        private static bool IsSplitException(CosmosQueryResponse ex)
+        private static bool IsSplitException(QueryResponse ex)
         {
             return ex.StatusCode == HttpStatusCode.Gone && ex.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone;
         }
@@ -547,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task with whether or not move next succeeded.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> TryMoveNextAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextAsyncImplementation(CancellationToken token)
         {
             if (!this.HasMoreResults)
             {
@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn return whether we successfully moved next.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> TryMoveNextIfNotSplitAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextIfNotSplitAsyncImplementation(CancellationToken token)
         {
             if (this.HasSplit)
             {
@@ -584,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> BufferMoreDocumentsImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> BufferMoreDocumentsImplementation(CancellationToken token)
         {
             if (this.CurrentItemProducerTree == this)
             {
@@ -629,8 +629,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </para>
         /// </remarks>
         /// <returns>The result of the function would have returned as if there were no splits.</returns>
-        private async Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)> ExecuteWithSplitProofing(
-            Func<CancellationToken, Task<(bool successfullyMovedNext, CosmosQueryResponse failureResponse)>> function,
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> ExecuteWithSplitProofing(
+            Func<CancellationToken, Task<(bool successfullyMovedNext, QueryResponse failureResponse)>> function,
             bool functionNeedsBeReexecuted,
             CancellationToken cancellationToken)
         {
@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 try
                 {
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
-                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await function(cancellationToken);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await function(cancellationToken);
                     if (response.failureResponse == null || !ItemProducerTree.IsSplitException(response.failureResponse))
                     {
                         return response;

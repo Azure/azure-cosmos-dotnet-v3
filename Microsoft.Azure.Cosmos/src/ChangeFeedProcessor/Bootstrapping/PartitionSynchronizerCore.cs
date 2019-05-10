@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             string containerUri = this.container.LinkUri.ToString();
             string partitionKeyRangesPath = string.Format(CultureInfo.InvariantCulture, "{0}/pkranges", containerUri);
 
-            IFeedResponse<PartitionKeyRange> response = null;
+            IDocumentFeedResponse<PartitionKeyRange> response = null;
             List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>();
             do
             {

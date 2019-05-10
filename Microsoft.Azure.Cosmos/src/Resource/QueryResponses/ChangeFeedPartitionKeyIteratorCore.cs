@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
     /// </summary>
-    internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore : CosmosFeedIterator
+    internal class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
     {
         private readonly CosmosClientContext clientContext;
         private readonly CosmosContainerCore cosmosContainer;
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         private string continuationToken;
         private string partitionKeyRangeId;
 
-        internal CosmosChangeFeedPartitionKeyResultSetIteratorCore(
+        internal ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
             CosmosContainerCore cosmosContainer,
             string partitionKeyRangeId,
@@ -28,8 +28,15 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount,
             CosmosChangeFeedRequestOptions options)
         {
-            if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
-            if (partitionKeyRangeId == null) throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            if (cosmosContainer == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosContainer));
+            }
+
+            if (partitionKeyRangeId == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            }
 
             this.clientContext = clientContext;
             this.cosmosContainer = cosmosContainer;
@@ -79,7 +86,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                requestEnricher: request => {
+                requestEnricher: request =>
+                {
                     CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
                     CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                     CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
