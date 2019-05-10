@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<T>(
+            return new FeedIteratorCore<T>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosItemRequestOptions requestOptions = null)
         {
-            return new CosmosResultSetIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
+            return new FeedIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
         }
 
         public override FeedIterator CreateItemQueryAsStream(
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
                 allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
-            return new CosmosResultSetIteratorCore(
+            return new FeedIteratorCore(
                 maxItemCount,
                 continuationToken,
                 requestOptions,
@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos
                 allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
-            return new CosmosDefaultResultSetIterator<T>(
+            return new FeedIteratorCore<T>(
                 maxItemCount,
                 continuationToken,
                 requestOptions,
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
                 allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
 
-            return new CosmosDefaultResultSetIterator<T>(
+            return new FeedIteratorCore<T>(
                 maxItemCount,
                 continuationToken,
                 requestOptions,

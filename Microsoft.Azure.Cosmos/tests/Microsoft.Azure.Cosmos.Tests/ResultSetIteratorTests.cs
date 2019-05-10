@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
-            FeedIterator resultSetIterator = new CosmosResultSetIteratorCore(
+            FeedIterator resultSetIterator = new FeedIteratorCore(
                 this.MaxItemCount,
                 this.ContinuationToken,
                 this.Options,

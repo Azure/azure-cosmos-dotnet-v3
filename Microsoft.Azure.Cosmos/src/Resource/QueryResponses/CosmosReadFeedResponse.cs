@@ -3,10 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
@@ -14,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
         protected ReadFeedResponse(
             IEnumerable<T> resource,
             CosmosResponseMessageHeaders responseMessageHeaders,
-            bool hasMoreResults): base(
+            bool hasMoreResults) : base(
                 httpStatusCode: HttpStatusCode.Accepted,
                 headers: responseMessageHeaders,
                 resource: resource)

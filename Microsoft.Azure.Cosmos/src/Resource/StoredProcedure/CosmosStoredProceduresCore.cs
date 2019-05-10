@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosStoredProcedureSettings>(
+            return new FeedIteratorCore<CosmosStoredProcedureSettings>(
                 maxItemCount,
                 continuationToken,
                 null,

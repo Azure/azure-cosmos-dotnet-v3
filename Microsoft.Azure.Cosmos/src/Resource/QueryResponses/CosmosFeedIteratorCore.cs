@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Cosmos result set stream iterator. This is used to get the query responses with a Stream content
+    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class CosmosResultSetIteratorCore : FeedIterator
+    internal class FeedIteratorCore : FeedIterator
     {
         internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
-        internal CosmosResultSetIteratorCore(
+        internal FeedIteratorCore(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -90,10 +90,10 @@ namespace Microsoft.Azure.Cosmos
     }
 
     /// <summary>
-    /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
+    /// Cosmos feed iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
     /// <typeparam name="T">The response object type that can be deserialized</typeparam>
-    internal class CosmosDefaultResultSetIterator<T> : FeedIterator<T>
+    internal class FeedIteratorCore<T> : FeedIterator<T>
     {
         internal delegate Task<FeedResponse<T>> NextResultSetDelegate(
             int? maxItemCount,
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
-        internal CosmosDefaultResultSetIterator(
+        internal FeedIteratorCore(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -173,8 +173,8 @@ namespace Microsoft.Azure.Cosmos
                 // Throw the exception if the query failed.
                 cosmosResponseMessage.EnsureSuccessStatusCode();
 
-                string continuationToken = CosmosResultSetIteratorCore.GetContinuationToken(cosmosResponseMessage);
-                bool hasMoreResults = CosmosResultSetIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
+                string continuationToken = FeedIteratorCore.GetContinuationToken(cosmosResponseMessage);
+                bool hasMoreResults = FeedIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
                 return ReadFeedResponse<T>.CreateResponse<T>(
                     responseMessageHeaders: cosmosResponseMessage.Headers,

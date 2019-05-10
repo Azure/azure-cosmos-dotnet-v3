@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosContainerSettings>(
+            return new FeedIteratorCore<CosmosContainerSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
-            return new CosmosResultSetIteratorCore(
+            return new FeedIteratorCore(
                 maxItemCount,
                 continuationToken,
                 requestOptions,
