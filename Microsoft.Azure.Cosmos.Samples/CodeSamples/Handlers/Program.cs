@@ -80,11 +80,11 @@
             await container.Items.ReplaceItemAsync<Item>(item.Id, item.Id, item);
 
             // Querying
-            CosmosFeedIterator<Item> query = container.Items.CreateItemQuery<Item>(new CosmosSqlQueryDefinition("SELECT * FROM c"), maxConcurrency: 1);
+            CosmosResultSetIterator<Item> query = container.Items.CreateItemQuery<Item>(new CosmosSqlQueryDefinition("SELECT * FROM c"), maxConcurrency: 1);
             List<Item> results = new List<Item>();
             while (query.HasMoreResults)
             {
-                CosmosFeedResponse<Item> response = await query.FetchNextSetAsync();
+                CosmosQueryResponse<Item> response = await query.FetchNextSetAsync();
 
                 results.AddRange(response.ToList());
             }
