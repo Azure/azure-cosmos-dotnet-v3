@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        internal static CosmosReadFeedResponse<T> CreateCosmosQueryResponse(
+        internal static ReadFeedResponse<T> CreateCosmosQueryResponse(
                 CosmosResponseMessage cosmosResponseMessage,
                 CosmosJsonSerializer jsonSerializer)
         {
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
                 string continuationToken = CosmosResultSetIteratorCore.GetContinuationToken(cosmosResponseMessage);
                 bool hasMoreResults = CosmosResultSetIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
-                return CosmosReadFeedResponse<T>.CreateResponse<T>(
+                return ReadFeedResponse<T>.CreateResponse<T>(
                     responseMessageHeaders: cosmosResponseMessage.Headers,
                     stream: cosmosResponseMessage.Content,
                     jsonSerializer: jsonSerializer,

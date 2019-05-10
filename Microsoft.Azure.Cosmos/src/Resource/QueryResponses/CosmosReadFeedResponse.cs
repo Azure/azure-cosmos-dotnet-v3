@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
 
-    internal class CosmosReadFeedResponse<T> : FeedResponse<T>
+    internal class ReadFeedResponse<T> : FeedResponse<T>
     {
-        protected CosmosReadFeedResponse(
+        protected ReadFeedResponse(
             IEnumerable<T> resource,
             CosmosResponseMessageHeaders responseMessageHeaders,
             bool hasMoreResults): base(
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
             return this.Resource.GetEnumerator();
         }
 
-        internal static CosmosReadFeedResponse<TInput> CreateResponse<TInput>(
+        internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             CosmosResponseMessageHeaders responseMessageHeaders,
             Stream stream,
             CosmosJsonSerializer jsonSerializer,
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             using (stream)
             {
                 IEnumerable<TInput> resources = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream).Data;
-                CosmosReadFeedResponse<TInput> readFeedResponse = new CosmosReadFeedResponse<TInput>(
+                ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     resource: resources,
                     responseMessageHeaders: responseMessageHeaders,
                     hasMoreResults: hasMoreResults);
@@ -53,12 +53,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static CosmosReadFeedResponse<TInput> CreateResponse<TInput>(
+        internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             CosmosResponseMessageHeaders responseMessageHeaders,
             IEnumerable<TInput> resources,
             bool hasMoreResults)
         {
-            CosmosReadFeedResponse<TInput> readFeedResponse = new CosmosReadFeedResponse<TInput>(
+            ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                 resource: resources,
                 responseMessageHeaders: responseMessageHeaders,
                 hasMoreResults: hasMoreResults);
