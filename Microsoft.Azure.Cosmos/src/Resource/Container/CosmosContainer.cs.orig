@@ -91,8 +91,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+<<<<<<< HEAD
         public abstract Task<ContainerResponse> ReadAsync(
+            CosmosContainerRequestOptions requestOptions = null,
+=======
+        public abstract Task<CosmosContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
+>>>>>>> users/jawilley/rename_options
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -157,8 +162,13 @@ namespace Microsoft.Azure.Cosmos
         ///]]>
         /// </code>
         /// </example>
+<<<<<<< HEAD
         public abstract Task<ContainerResponse> DeleteAsync(
+            CosmosContainerRequestOptions requestOptions = null,
+=======
+        public abstract Task<CosmosContainerResponse> DeleteAsync(
             ContainerRequestOptions requestOptions = null,
+>>>>>>> users/jawilley/rename_options
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

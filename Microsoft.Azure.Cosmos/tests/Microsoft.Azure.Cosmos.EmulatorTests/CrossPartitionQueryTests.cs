@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             string query,
             int maxItemCount,
-            CosmosQueryRequestOptions queryRequestOptions = null)
+            QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
             string continuationToken = null;
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
-            CosmosQueryRequestOptions queryRequestOptions = null)
+            QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
             FeedIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
@@ -1053,7 +1053,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
@@ -1115,7 +1115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
@@ -1147,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+            QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 EnableCrossPartitionQuery = true,
                 MaxBufferedItemCount = 7000,
@@ -2115,7 +2115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
@@ -2413,7 +2413,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             WHERE {filter}
                             ORDER BY c.{nameof(MixedTypedDocument.MixedTypeField)} {orderString}";
 
-                        CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions()
+                        QueryRequestOptions feedOptions = new QueryRequestOptions()
                         {
                             MaxBufferedItemCount = 1000,
                         };
@@ -2689,7 +2689,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                     int maxDegreeOfParallelism = hasTop ? rand.Next(4) : (rand.Next(2) == 0 ? -1 : (1 + rand.Next(0, 10)));
                                     int? maxItemCount = rand.Next(2) == 0 ? -1 : rand.Next(1, documents.Count());
-                                    CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                                    QueryRequestOptions feedOptions = new QueryRequestOptions
                                     {
                                         MaxBufferedItemCount = rand.Next(2) == 0 ? -1 : rand.Next(Math.Min(100, documents.Count()), documents.Count() + 1),
                                     };
@@ -2812,7 +2812,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Check error on skip take for partitioned collection.
             try
             {
-                CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions()
+                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
                 {
                     EnableCrossPartitionQuery = true,
                     MaxItemCount = 3,
@@ -2848,7 +2848,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             ORDER BY c.guid
                             OFFSET {offsetCount} LIMIT {limitCount}";
 
-                        CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions()
+                        QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
                         {
                             MaxItemCount = 3,
                             MaxBufferedItemCount = 1000,
@@ -3117,7 +3117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     do
                     {
-                        CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions
+                        QueryRequestOptions feedOptions = new QueryRequestOptions
                         {
                             MaxBufferedItemCount = 10000,
                         };
@@ -3506,7 +3506,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             #endregion
 
-                            CosmosQueryRequestOptions feedOptions = new CosmosQueryRequestOptions()
+                            QueryRequestOptions feedOptions = new QueryRequestOptions()
                             {
                                 MaxBufferedItemCount = 1000,
                             };
@@ -3740,7 +3740,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string query,
             int maxConcurrency,
             int? maxItemCount = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
             FeedIterator<T> resultSetIterator = container.Items.CreateItemQuery<T>(
                 query,
@@ -3762,7 +3762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string query,
             object partitionKey,
             int? maxItemCount = null,
-            CosmosQueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
             FeedIterator<T> resultSetIterator = container.Items.CreateItemQuery<T>(
                 query,
