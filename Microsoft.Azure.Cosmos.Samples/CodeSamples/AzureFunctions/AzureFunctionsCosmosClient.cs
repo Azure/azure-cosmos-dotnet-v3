@@ -1,17 +1,15 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Microsoft.Azure.Cosmos;
-using Microsoft.Extensions.Configuration;
-using AzureFunctions.Models;
 
-namespace AzureFunctions
+namespace Cosmos.Samples.AzureFunctions
 {
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
@@ -26,49 +24,17 @@ namespace AzureFunctions
     //
     // More information: https://github.com/Azure/azure-functions-host/wiki/Managing-Connections
 
-    public static class AzureFunctionsCosmosClient
+    public class AzureFunctionsCosmosClient
     {
-        private static Lazy<CosmosClient> lazyClient = new Lazy<CosmosClient>(InitializeCosmosClient);
-        private static CosmosClient cosmosClient => lazyClient.Value;
-        private static IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(Environment.CurrentDirectory)
-                .AddJsonFile("AppSettings.json", optional: true, reloadOnChange: true)
-                .Build();
-
-        /// <summary>
-        /// Initialize a static instance of the <see cref="CosmosClient"/>.
-        /// </summary>
-        /// <returns></returns>
-        private static CosmosClient InitializeCosmosClient()
+        private CosmosClient cosmosClient;
+        public AzureFunctionsCosmosClient(CosmosClient cosmosClient)
         {
-            string endpoint = configuration["EndPointUrl"];
-            if (string.IsNullOrEmpty(endpoint))
-            {
-                throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
-            }
-
-            string authKey = configuration["AuthorizationKey"];
-            if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
-            {
-                throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
-            }
-
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(endpoint, authKey);
-            var cosmosClient = cosmosClientBuilder.Build();
-
-            // Optional. Initialize container
-            CosmosDatabaseResponse databaseResponse = cosmosClient.Databases.CreateDatabaseIfNotExistsAsync("mydb").GetAwaiter().GetResult();
-            CosmosDatabase database = databaseResponse.Database;
-
-            var containerResponse = database.Containers.CreateContainerIfNotExistsAsync("mycoll", "/id").GetAwaiter().GetResult();
-
-            return cosmosClient;
+            this.cosmosClient = cosmosClient;
         }
 
-        //private static CosmosContainer Container 
 
         [FunctionName("CosmosClient")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
@@ -86,7 +52,7 @@ namespace AzureFunctions
                 data.Id = Guid.NewGuid().ToString();
             }
 
-            var container = cosmosClient.Databases["mydb"].Containers["mycoll"];
+            var container = this.cosmosClient.Databases["mydb"].Containers["mycoll"];
 
             try
             {
