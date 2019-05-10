@@ -143,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
+                Assert.IsTrue(request.IsPartitionedFeedOperation);
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
                 Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
                 CosmosResponseMessage handlerResponse = TestHandler.ReturnSuccess().Result;

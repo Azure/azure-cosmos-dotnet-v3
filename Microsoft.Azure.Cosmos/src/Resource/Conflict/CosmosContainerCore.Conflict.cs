@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     internal partial class CosmosContainerCore
     {
