@@ -4,34 +4,29 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
     using System.Net;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos resource response class
     /// </summary>
-    public abstract class CosmosResponse<T>
+    public abstract class Response<T>
     {
         /// <summary>
         /// Create an empty cosmos response for mock testing
         /// </summary>
-        public CosmosResponse()
+        public Response()
         {
 
         }
 
         /// <summary>
-        /// Create a CosmosResponse object with the default properties set
+        /// Create a Response object with the default properties set
         /// </summary>
         /// <param name="httpStatusCode">The status code of the response</param>
         /// <param name="headers">The headers of the response</param>
         /// <param name="resource">The object from the response</param>
-        internal CosmosResponse(
+        internal Response(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
             T resource)
@@ -52,9 +47,9 @@ namespace Microsoft.Azure.Cosmos
         public virtual T Resource { get; protected set; }
 
         /// <summary>
-        /// Get Resource implicitly from <see cref="CosmosResponse{T}"/>
+        /// Get Resource implicitly from <see cref="Response{T}"/>
         /// </summary>
-        public static implicit operator T(CosmosResponse<T> response)
+        public static implicit operator T(Response<T> response)
         {
             return response.Resource;
         }

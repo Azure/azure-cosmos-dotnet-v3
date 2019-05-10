@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
-                CosmosItemResponse<object> response = await container.Items.ReadItemAsync<object>("pk1", "id1", options);
+                ItemResponse<object> response = await container.Items.ReadItemAsync<object>("pk1", "id1", options);
                 Console.WriteLine($"Got status code {response.StatusCode}");
                 Assert.AreEqual(code, response.StatusCode);
             }
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
-                CosmosContainerResponse response = await container.DeleteAsync(options);
+                ContainerResponse response = await container.DeleteAsync(options);
 
                 Console.WriteLine($"Got status code {response.StatusCode}");
                 Assert.AreEqual(code, response.StatusCode);

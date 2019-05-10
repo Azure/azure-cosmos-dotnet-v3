@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
         }
 
-        public override Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
+        public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
                     CosmosRequestOptions requestOptions = null,
@@ -63,11 +63,11 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
 
-        public override CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosStoredProcedureSettings>(
+            return new FeedIteratorCore<CosmosStoredProcedureSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             this.container,
             id);
 
-        private Task<CosmosFeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
+        private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosStoredProcedureSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosStoredProcedureSettings>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ReadFeed,

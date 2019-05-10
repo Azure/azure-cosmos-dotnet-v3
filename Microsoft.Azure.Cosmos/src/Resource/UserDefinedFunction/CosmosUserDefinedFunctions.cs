@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         ///     .UseParameter("@expensive", 9000)
         ///     .UseParameter("@status", "Done");
         ///
-        /// CosmosFeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
+        /// FeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
         ///     sqlQueryDefinition: sqlQuery,
         ///     partitionKey: "Done");
         ///
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
+        public virtual Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
+        /// FeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosUserDefinedFunctionSettings settings in await feedIterator.FetchNextSetAsync())
@@ -131,11 +131,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosUserDefinedFunctionSettings>(
+            return new FeedIteratorCore<CosmosUserDefinedFunctionSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosUserDefinedFunction userDefinedFunction = this.cosmosContainer.UserDefinedFunction["myUserDefinedFunctionId"];
-        /// CosmosUserDefinedFunctionResponse response = await userDefinedFunction.ReadAsync();
+        /// UserDefinedFunctionResponse response = await userDefinedFunction.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
             this.container, 
             id);
 
-        private Task<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosUserDefinedFunctionSettings>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.ReadFeed,

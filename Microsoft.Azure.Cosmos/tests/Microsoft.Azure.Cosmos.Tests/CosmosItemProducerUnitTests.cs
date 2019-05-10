@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(sqlQuerySpec, cancellationTokenSource.Token, It.IsAny<Action<CosmosRequestMessage>>())).Returns(
-                Task.FromResult(CosmosQueryResponse.CreateSuccess(cosmosElements, 1, 500, headers)));
+                Task.FromResult(QueryResponse.CreateSuccess(cosmosElements, 1, 500, headers)));
 
             ItemProducerTree itemProducerTree = new ItemProducerTree(
                 queryContext: mockQueryContext.Object,
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Buffer a failure
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(sqlQuerySpec, cancellationTokenSource.Token, It.IsAny<Action<CosmosRequestMessage>>())).Returns(
-                Task.FromResult(CosmosQueryResponse.CreateFailure(headers, HttpStatusCode.InternalServerError, null, "Error message", null)));
+                Task.FromResult(QueryResponse.CreateFailure(headers, HttpStatusCode.InternalServerError, null, "Error message", null)));
 
             await itemProducerTree.BufferMoreDocuments(cancellationTokenSource.Token);
 

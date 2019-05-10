@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosDatabase database = this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-        /// CosmosContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
         ///]]>
         /// </code>
         /// </example>
