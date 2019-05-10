@@ -179,7 +179,7 @@
         {
             Console.WriteLine("\n5. Reading all CosmosContainer resources for a database");
 
-            CosmosFeedIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator();
+            CosmosResultSetIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator();
             while (resultSetIterator.HasMoreResults)
             {
                 foreach (CosmosContainerSettings container in await resultSetIterator.FetchNextSetAsync())
