@@ -480,10 +480,10 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// CosmosResultSetIterator<ToDoActivity> setIterator = this.cosmosContainer.Items.GetItemIterator<ToDoActivity>();
-        /// while (setIterator.HasMoreResults)
+        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemIterator<ToDoActivity>();
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(ToDoActivity item in await setIterator.FetchNextSetAsync())
+        ///     foreach(ToDoActivity item in await feedIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(item.id); 
         ///     }
@@ -510,10 +510,10 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// CosmosResultSetIterator setIterator = this.Container.Items.GetItemStreamIterator();
-        /// while (setIterator.HasMoreResults)
+        /// CosmosFeedIterator feedIterator = this.Container.Items.GetItemStreamIterator();
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     using (CosmosResponseMessage iterator = await setIterator.FetchNextSetAsync())
+        ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
         ///     {
         ///         using (StreamReader sr = new StreamReader(iterator.Content))
         ///         {
@@ -553,13 +553,13 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// CosmosResultSetIterator setIterator = this.Container.Items.CreateItemQueryAsStream(
+        /// CosmosFeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     using (CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
+        ///     using (CosmosResponseMessage response = await feedIterator.FetchNextSetAsync())
         ///     {
         ///         using (StreamReader sr = new StreamReader(response.Content))
         ///         using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -602,13 +602,13 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// CosmosResultSetIterator setIterator = this.Container.Items.CreateItemQueryAsStream(
+        /// CosmosFeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     using (CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
+        ///     using (CosmosResponseMessage response = await feedIterator.FetchNextSetAsync())
         ///     {
         ///         using (StreamReader sr = new StreamReader(response.Content))
         ///         using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -629,7 +629,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
@@ -648,13 +648,13 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// CosmosResultSetIterator<ToDoActivity> setIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(var item in await setIterator.FetchNextSetAsync()){
+        ///     foreach(var item in await feedIterator.FetchNextSetAsync()){
         ///     {
         ///         Console.WriteLine(item.cost); 
         ///     }
@@ -670,7 +670,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryText">The cosmos SQL query text.</param>
@@ -688,13 +688,13 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// CosmosResultSetIterator<ToDoActivity> setIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(var item in await setIterator.FetchNextSetAsync()){
+        ///     foreach(var item in await feedIterator.FetchNextSetAsync()){
         ///     {
         ///         Console.WriteLine(item.cost); 
         ///     }
@@ -710,7 +710,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
@@ -729,13 +729,13 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// CosmosResultSetIterator<ToDoActivity> setIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     sqlQuery,
         ///     maxConcurrency: 2);
         ///     
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(var item in await setIterator.FetchNextSetAsync()){
+        ///     foreach(var item in await feedIterator.FetchNextSetAsync()){
         ///     {
         ///         Console.WriteLine(item.cost); 
         ///     }
@@ -751,7 +751,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosQueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetIterator.
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosFeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="CosmosSqlQueryDefinition"/>.
         /// </summary>
         /// <param name="sqlQueryText">The cosmos SQL query text.</param>
@@ -769,13 +769,13 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// CosmosResultSetIterator<ToDoActivity> setIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// CosmosFeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
         ///     "select * from ToDos t where t.cost > 9000",
         ///     maxConcurrency: 2);
         ///     
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(var item in await setIterator.FetchNextSetAsync()){
+        ///     foreach(var item in await feedIterator.FetchNextSetAsync()){
         ///     {
         ///         Console.WriteLine(item.cost); 
         ///     }
