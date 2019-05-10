@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //    // 
                 //    // read trigger feed.
-                //    FeedResponse<Trigger> rr = await client.ReadTriggerFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
+                //    DoucmentFeedResponse<Trigger> rr = await client.ReadTriggerFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
                 //    Assert.AreEqual(rr.Count, 1);
 
                 //    // query documents 
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //                string.Format("select * from c where c.id = \"{0}\"", trigger1Id.EscapeForSQL())).AsDocumentQuery();
                 //    while (docServiceQuery.HasMoreResults)
                 //    {
-                //        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                //        DoucmentFeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
                 //        if (r.Count == 1)
                 //        {
                 //            bFound = true;
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //            string.Format("select * from c where c.id = \"{0}\"", storedProcedure1Id.EscapeForSQL())).AsDocumentQuery();
                     //while (docServiceQuery.HasMoreResults)
                     //{
-                    //    FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                    //    DoucmentFeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
                     //    if (r.Count == 1)
                     //    {
                     //        bFound = true;
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //    // 
                 //    // read UserDefinedFunction feed.
-                //    FeedResponse<UserDefinedFunction> rr = await client.ReadUserDefinedFunctionFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
+                //    DoucmentFeedResponse<UserDefinedFunction> rr = await client.ReadUserDefinedFunctionFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
                 //    Assert.AreEqual(rr.Count, 1);
 
                 //    // query UserDefinedFunction 
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //                string.Format("select * from c where c.id = \"{0}\"", udf1Id.EscapeForSQL())).AsDocumentQuery();
                 //    while (docServiceQuery.HasMoreResults)
                 //    {
-                //        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                //        DoucmentFeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
                 //        if (r.Count == 1)
                 //        {
                 //            bFound = true;
@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //    // 
                 //    // read conflict feed.
-                //    FeedResponse<Conflict> rr = await client.ReadConflictFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
+                //    DoucmentFeedResponse<Conflict> rr = await client.ReadConflictFeedAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId));
                 //    Assert.AreEqual(rr.Count, 0);
 
                 //    // query conflict 
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //                string.Format("select * from c")).AsDocumentQuery();
                 //    while (docServiceQuery.HasMoreResults)
                 //    {
-                //        FeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
+                //        DoucmentFeedResponse<dynamic> r = await docServiceQuery.ExecuteNextAsync();
                 //    }
                 //}
 

@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drains.</param>
         /// <param name="token">The cancellation token.</param>
-        /// <returns>A task that when awaited on returns a FeedResponse of results.</returns>
+        /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
         public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints

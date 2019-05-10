@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token that doesn't get used.</param>
         /// <returns>A dummy task to await on.</returns>
-        protected override Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
+        protected override Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             throw new NotImplementedException();
         }

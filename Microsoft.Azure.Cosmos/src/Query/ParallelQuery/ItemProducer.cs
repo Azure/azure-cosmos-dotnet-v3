@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query
     {
         /// <summary>
         /// The buffered pages that is thread safe, since the producer and consumer of the queue can be on different threads.
-        /// We buffer TryMonad of FeedResponse of T, since we want to buffer exceptions,
+        /// We buffer TryMonad of DoucmentFeedResponse of T, since we want to buffer exceptions,
         /// so that the exception is thrown on the consumer thread (instead of the background producer thread), thus observing the exception.
         /// </summary>
         private readonly AsyncCollection<CosmosQueryResponse> bufferedPages;
