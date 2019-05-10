@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
                 CosmosContainer coll = await db.Containers.CreateContainerAsync(containerSetting);
                 Document documentDefinition = new Document { Id = Guid.NewGuid().ToString() };
-                CosmosItemResponse<Document> docResult = await coll.Items.CreateItemAsync<Document>(documentDefinition.Id, documentDefinition);
+                ItemResponse<Document> docResult = await coll.Items.CreateItemAsync<Document>(documentDefinition.Id, documentDefinition);
                 Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
                 Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentReplicaSetSize], CultureInfo.InvariantCulture) > 0);
             }

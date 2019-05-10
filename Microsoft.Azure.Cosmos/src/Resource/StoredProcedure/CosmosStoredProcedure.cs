@@ -180,12 +180,12 @@ namespace Microsoft.Azure.Cosmos
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
+        /// ItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
         /// Console.WriteLine("sprocResponse.Resource");
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
+        public abstract Task<ItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
             CosmosStoredProcedureRequestOptions requestOptions = null,

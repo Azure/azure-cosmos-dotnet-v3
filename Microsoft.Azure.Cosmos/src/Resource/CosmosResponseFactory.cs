@@ -29,13 +29,13 @@ namespace Microsoft.Azure.Cosmos
                 this.jsonSerializer);
         }
 
-        internal Task<CosmosItemResponse<T>> CreateItemResponse<T>(
+        internal Task<ItemResponse<T>> CreateItemResponse<T>(
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 T item = this.ToObjectInternal<T>(cosmosResponseMessage);
-                return new CosmosItemResponse<T>(
+                return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item);

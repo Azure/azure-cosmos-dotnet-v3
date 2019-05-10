@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
+        public override Task<ItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
             CosmosStoredProcedureRequestOptions requestOptions = null,

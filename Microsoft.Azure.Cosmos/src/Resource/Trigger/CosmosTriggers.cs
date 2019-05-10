@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// };
         ///
         /// // Create a new item with trigger set in the request options
-        /// CosmosItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+        /// ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
         /// double itemTax = createdItem.Resource.tax;
         /// ]]>
         /// </code>

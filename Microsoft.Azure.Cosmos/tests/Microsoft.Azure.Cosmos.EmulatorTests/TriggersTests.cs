@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
@@ -98,14 +98,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     TriggerOperation = TriggerOperation.All,
                     TriggerType = Cosmos.TriggerType.Pre
                 });
-           
+
             CosmosItemRequestOptions options = new CosmosItemRequestOptions()
             {
-               PreTriggers = new List<string>(){cosmosTrigger.Id },
+                PreTriggers = new List<string>() { cosmosTrigger.Id },
             };
 
-            CosmosItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
-            
+            ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+
             double itemTax = createdItem.Resource.tax;
             Assert.AreEqual(item.cost * .20, itemTax);
             // Delete existing user defined functions.
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TriggersIteratorTest()
         {
-            CosmosTrigger cosmosTrigger = await CreateRandomTrigger();
+            CosmosTrigger cosmosTrigger = await this.CreateRandomTrigger();
 
             HashSet<string> settings = new HashSet<string>();
             CosmosFeedIterator<CosmosTriggerSettings> iter = this.container.Triggers.GetTriggerIterator(); ;

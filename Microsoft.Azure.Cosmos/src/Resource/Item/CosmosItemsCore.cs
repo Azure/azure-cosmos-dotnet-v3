@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<T>> CreateItemAsync<T>(
+        public override Task<ItemResponse<T>> CreateItemAsync<T>(
             object partitionKey,
             T item,
             CosmosItemRequestOptions requestOptions = null,
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<T>> ReadItemAsync<T>(
+        public override Task<ItemResponse<T>> ReadItemAsync<T>(
             object partitionKey,
             string id,
             CosmosItemRequestOptions requestOptions = null,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<T>> UpsertItemAsync<T>(
+        public override Task<ItemResponse<T>> UpsertItemAsync<T>(
             object partitionKey,
             T item,
             CosmosItemRequestOptions requestOptions = null,
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<T>> ReplaceItemAsync<T>(
+        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
             object partitionKey,
             string id,
             T item,
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<T>> DeleteItemAsync<T>(
+        public override Task<ItemResponse<T>> DeleteItemAsync<T>(
             object partitionKey,
             string id,
             CosmosItemRequestOptions requestOptions = null,

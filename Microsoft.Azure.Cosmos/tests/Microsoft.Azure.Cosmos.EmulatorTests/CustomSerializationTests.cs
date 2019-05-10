@@ -282,19 +282,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
             //create and read
-            CosmosItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
-            CosmosItemResponse<TestDocument> readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
-            CosmosItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
             readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            CosmosItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
+            ItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
             readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
