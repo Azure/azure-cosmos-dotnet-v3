@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
