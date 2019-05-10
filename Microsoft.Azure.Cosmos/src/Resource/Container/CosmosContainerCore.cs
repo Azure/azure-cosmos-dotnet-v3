@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
-            return await collectionCache.GetByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
+            return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
         }
 
         // Name based look-up, needs re-computation and can't be cached
@@ -213,10 +213,12 @@ namespace Microsoft.Azure.Cosmos
         /// The function selects the right partition key constant for inserting documents that don't have
         /// a value for partition key. The constant selection is based on whether the collection is migrated
         /// or user partitioned
+        /// 
+        /// For non-existing container will throw <see cref="DocumentClientException"/> with 404 as status code
         /// </remarks>
-        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValue(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellation = default(CancellationToken))
         {
-            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
+            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellation);
             return containerSettings.GetNoneValue();
         }
 

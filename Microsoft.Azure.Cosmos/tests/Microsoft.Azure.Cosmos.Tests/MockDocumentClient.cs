@@ -6,14 +6,13 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Net.Http;
     using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -32,60 +31,60 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, permissionFeed, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKey, serializerSettings, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKeyOrResourceToken, serializerSettings, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        internal MockDocumentClient(Uri serviceEndpoint, IList<ResourceToken> resourceTokens, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        internal MockDocumentClient(Uri serviceEndpoint, IList<ResourceToken> resourceTokens, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, resourceTokens, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
         internal MockDocumentClient(
-            Uri serviceEndpoint, 
-            string authKeyOrResourceToken, 
-            EventHandler<SendingRequestEventArgs> sendingRequestEventArgs, 
-            ConnectionPolicy connectionPolicy = null, 
+            Uri serviceEndpoint,
+            string authKeyOrResourceToken,
+            EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
+            ConnectionPolicy connectionPolicy = null,
             Documents.ConsistencyLevel? desiredConsistencyLevel = null,
             JsonSerializerSettings serializerSettings = null,
             ApiType apitype = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
-            Func<TransportClient, TransportClient> transportClientHandlerFactory = null) 
-            : base(serviceEndpoint, 
-                  authKeyOrResourceToken, 
-                  sendingRequestEventArgs, 
-                  connectionPolicy, 
-                  desiredConsistencyLevel, 
-                  serializerSettings, 
-                  apitype, 
-                  receivedResponseEventArgs, 
+            Func<TransportClient, TransportClient> transportClientHandlerFactory = null)
+            : base(serviceEndpoint,
+                  authKeyOrResourceToken,
+                  sendingRequestEventArgs,
+                  connectionPolicy,
+                  desiredConsistencyLevel,
+                  serializerSettings,
+                  apitype,
+                  receivedResponseEventArgs,
                   null,
                   null,
                   true,
@@ -132,7 +131,20 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test")));
+                ).Returns(() =>
+                {
+                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
+                    {
+                        Kind = PartitionKind.Hash,
+                        Paths = new Collection<string>()
+                        {
+                            "/pk"
+                        }
+                    };
+
+                    return Task.FromResult(cosmosContainerSetting);
+                });
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(

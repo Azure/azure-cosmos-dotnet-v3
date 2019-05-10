@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -47,6 +49,52 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.IsNotNull(e.Message);
                 }
             }
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(InvalidOperationException))]
+        public async Task TestCosmosQueryPartitionKeyDefinition()
+        {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions();
+            queryRequestOptions.Properties = new Dictionary<string, object>()
+            {
+                {"x-ms-query-partitionkey-definition", partitionKeyDefinition }
+            };
+
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(@"select * from t where t.something = 42 ");
+            bool allowNonValueAggregateQuery = true;
+            bool isContinuationExpected = true;
+            CancellationTokenSource cancellation = new CancellationTokenSource();
+            CancellationToken token = cancellation.Token;
+
+            Mock<CollectionCache> mockCollectionCache = new Mock<CollectionCache>();
+            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), token)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));
+
+            Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
+            client.Setup(x => x.GetCollectionCacheAsync()).Returns(Task.FromResult(mockCollectionCache.Object));
+            client.Setup(x => x.ByPassQueryParsing()).Returns(false);
+            client.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                true,
+                isContinuationExpected,
+                allowNonValueAggregateQuery,
+                token)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
+
+            CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
+                client: client.Object,
+                resourceTypeEnum: ResourceType.Document,
+                operationType: OperationType.Query,
+                resourceType: typeof(CosmosQueryResponse),
+                sqlQuerySpec: sqlQuerySpec,
+                queryRequestOptions: queryRequestOptions,
+                resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
+
+            await factory.ExecuteNextAsync(token);
         }
 
         private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponse response)> GetAllExecutionComponents()

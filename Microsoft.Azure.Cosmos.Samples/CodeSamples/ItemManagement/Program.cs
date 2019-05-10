@@ -235,7 +235,7 @@
                 "select * from sales s where s.AccountNumber = @AccountInput ")
                 .UseParameter("@AccountInput", "Account1");
 
-            CosmosResultSetIterator<SalesOrder> resultSet = container.Items.CreateItemQuery<SalesOrder>(
+            CosmosFeedIterator<SalesOrder> resultSet = container.Items.CreateItemQuery<SalesOrder>(
                 query,
                 partitionKey: "Account1",
                 maxItemCount: 1);
@@ -251,7 +251,7 @@
             Console.WriteLine($"\n1.4.2 Query found {allSalesForAccount1.Count} items.");
 
             // Use the same query as before but get the cosmos response message to access the stream directly
-            CosmosResultSetIterator streamResultSet = container.Items.CreateItemQueryAsStream(
+            CosmosFeedIterator streamResultSet = container.Items.CreateItemQueryAsStream(
                 query,
                 maxConcurrency: 1,
                 partitionKey: "Account1",
@@ -260,10 +260,10 @@
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
             {
-                using (CosmosQueryResponse responseMessage = await streamResultSet.FetchNextSetAsync())
+                using (CosmosResponseMessage responseMessage = await streamResultSet.FetchNextSetAsync())
                 {
                     // Item stream operations do not throw exceptions for better performance
-                    if (responseMessage.IsSuccess)
+                    if (responseMessage.IsSuccessStatusCode)
                     {
                         dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
                         List<SalesOrder> salesOrders = streamResponse.ToObject<List<SalesOrder>>();
