@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 partitionKey);
 
             await CosmosContainerFluentDefinitionForCreate
-                .TimeToLivePropertyPath(path)
+                .WithTimeToLivePropertyPath(path)
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 partitionKey);
 
             await CosmosContainerFluentDefinitionForCreate
-                .DefaultTimeToLive(timeToLive)
+                .WithDefaultTimeToLive(timeToLive)
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 partitionKey);
 
             await CosmosContainerFluentDefinitionForCreate
-                .DefaultTimeToLive((int)timeToLive.TotalSeconds)
+                .WithDefaultTimeToLive((int)timeToLive.TotalSeconds)
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
@@ -206,9 +206,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 partitionKey);
 
             await CosmosContainerFluentDefinitionForCreate
-                .IndexingPolicy()
-                    .IndexingMode(IndexingMode.None)
-                    .AutomaticIndexing(false)
+                .WithIndexingPolicy()
+                    .WithIndexingMode(IndexingMode.None)
+                    .WithAutomaticIndexing(false)
                     .Attach()
                 .CreateAsync();
 
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 partitionKey);
 
             await CosmosContainerFluentDefinitionForCreate
-                .UniqueKey()
+                .WithUniqueKey()
                     .Path(path)
                     .Attach()
                 .CreateAsync();

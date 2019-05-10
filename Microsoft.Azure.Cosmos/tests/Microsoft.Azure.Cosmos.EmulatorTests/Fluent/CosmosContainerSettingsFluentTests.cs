@@ -58,9 +58,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse =
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .IndexingPolicy()
-                        .IndexingMode(Cosmos.IndexingMode.None)
-                        .AutomaticIndexing(false)
+                    .WithIndexingPolicy()
+                        .WithIndexingMode(Cosmos.IndexingMode.None)
+                        .WithAutomaticIndexing(false)
                         .Attach()
                     .CreateAsync();
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse =
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .UniqueKey()
+                    .WithUniqueKey()
                         .Path("/attribute1")
                         .Path("/attribute2")
                         .Attach()
@@ -126,15 +126,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosContainerResponse containerResponse =
                 await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .IndexingPolicy()
-                        .IncludedPaths()
+                    .WithIndexingPolicy()
+                        .WithIncludedPaths()
                             .Path("/included1/*")
                             .Path("/included2/*")
                             .Attach()
-                        .ExcludedPaths()
+                        .WithExcludedPaths()
                             .Path("/*")
                             .Attach()
-                        .CompositeIndex()
+                        .WithCompositeIndex()
                             .Path("/composite1")
                             .Path("/composite2", CompositePathSortOrder.Descending)
                             .Attach()
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/users";
             int timeToLiveInSeconds = 10;
             CosmosContainerResponse containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                .DefaultTimeToLive(timeToLiveInSeconds)
+                .WithDefaultTimeToLive(timeToLiveInSeconds)
                 .CreateAsync();
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                    .TimeToLivePropertyPath("/creationDate")
+                    .WithTimeToLivePropertyPath("/creationDate")
                     .CreateAsync();
                 Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
             }
@@ -261,8 +261,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Verify the container content.
             containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
-                   .TimeToLivePropertyPath("/creationDate")
-                   .DefaultTimeToLive(timeToLivetimeToLiveInSeconds)
+                   .WithTimeToLivePropertyPath("/creationDate")
+                   .WithDefaultTimeToLive(timeToLivetimeToLiveInSeconds)
                    .CreateAsync();
             CosmosContainer cosmosContainer = containerResponse;
             Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines a Unique Key policy for this Azure Cosmos container.
         /// </summary>
-        public virtual UniqueKeyFluentDefinition UniqueKey()
+        public virtual UniqueKeyFluentDefinition WithUniqueKey()
         {
             return new UniqueKeyFluentDefinition(
                 this,

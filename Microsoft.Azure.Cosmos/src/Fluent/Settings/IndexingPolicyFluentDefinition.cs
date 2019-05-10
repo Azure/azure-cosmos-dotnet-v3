@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <remarks>
         /// If multiple calls are made to this method within the same <see cref="IndexingPolicyFluentDefinition{T}"/>, the last one will apply.
         /// </remarks>
-        public virtual IndexingPolicyFluentDefinition<T> IndexingMode(IndexingMode indexingMode)
+        public virtual IndexingPolicyFluentDefinition<T> WithIndexingMode(IndexingMode indexingMode)
         {
             this.indexingPolicy.IndexingMode = indexingMode;
             return this;
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the <see cref="CosmosContainer"/>'s automatic indexing.
         /// </summary>
-        public virtual IndexingPolicyFluentDefinition<T> AutomaticIndexing(bool enabled)
+        public virtual IndexingPolicyFluentDefinition<T> WithAutomaticIndexing(bool enabled)
         {
             this.indexingPolicy.Automatic = enabled;
             return this;
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingPolicy.IncludedPaths"/>.
         /// </summary>
-        public virtual PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> IncludedPaths()
+        public virtual PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> WithIncludedPaths()
         {
             if (this.includedPathsBuilder == null)
             {
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingPolicy.ExcludedPaths"/>.
         /// </summary>
-        public virtual PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> ExcludedPaths()
+        public virtual PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> WithExcludedPaths()
         {
             if (this.excludedPathsBuilder == null)
             {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines a Composite Index in the current <see cref="CosmosContainer"/>'s definition.
         /// </summary>
-        public virtual CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> CompositeIndex()
+        public virtual CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> WithCompositeIndex()
         {
             return new CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                 this,
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines a <see cref="Cosmos.SpatialIndex"/> in the current <see cref="CosmosContainer"/>'s definition.
         /// </summary>
         /// <returns></returns>
-        public virtual SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> SpatialIndex()
+        public virtual SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> WithSpatialIndex()
         {
             return new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                 this,

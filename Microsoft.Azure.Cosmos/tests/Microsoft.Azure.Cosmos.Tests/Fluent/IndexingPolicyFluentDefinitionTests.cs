@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             indexingPolicyFluentDefinitionCore
-                .IndexingMode(IndexingMode.None)
-                .AutomaticIndexing(false)
+                .WithIndexingMode(IndexingMode.None)
+                .WithAutomaticIndexing(false)
                 .Attach();
         }
 
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             indexingPolicyFluentDefinitionCore
-                .SpatialIndex()
+                .WithSpatialIndex()
                     .Path("/path")
                     .Attach()
                 .Attach();
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             indexingPolicyFluentDefinitionCore
-                .ExcludedPaths()
+                .WithExcludedPaths()
                     .Path("/path")
                     .Attach()
                 .Attach();
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             indexingPolicyFluentDefinitionCore
-                .IncludedPaths()
+                .WithIncludedPaths()
                     .Path("/path")
                     .Attach()
                 .Attach();
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 callback);
 
             indexingPolicyFluentDefinitionCore
-                .CompositeIndex()
+                .WithCompositeIndex()
                     .Path("/path")
                     .Attach()
                 .Attach();
