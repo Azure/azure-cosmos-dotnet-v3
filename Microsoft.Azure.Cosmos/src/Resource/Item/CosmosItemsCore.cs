@@ -420,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as CosmosChangeFeedRequestOptions ?? new CosmosChangeFeedRequestOptions();
 
-            return new CosmosChangeFeedResultSetIteratorCore(
+            return new ChangeFeedResultSetIteratorCore(
                 clientContext: this.clientContext,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,

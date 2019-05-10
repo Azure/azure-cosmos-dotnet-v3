@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class CosmosChangeFeedResultSetIteratorCore : FeedIterator
+    internal class ChangeFeedResultSetIteratorCore : FeedIterator
     {
         private const int DefaultMaxItemCount = 100;
         private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private string partitionKeyRangeId;
         private int? maxItemCount;
 
-        internal CosmosChangeFeedResultSetIteratorCore(
+        internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
             CosmosContainerCore cosmosContainer,
             string continuationToken,
@@ -128,12 +128,12 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            bool pageSizeError = response.ErrorMessage.Contains(CosmosChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
+            bool pageSizeError = response.ErrorMessage.Contains(ChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
             if (pageSizeError)
             {
                 if (!this.maxItemCount.HasValue)
                 {
-                    this.maxItemCount = CosmosChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
+                    this.maxItemCount = ChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
                 }
                 else if (this.maxItemCount <= 1)
                 {
