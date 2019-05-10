@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos trigger response
     /// </summary>
-    internal class TriggerResponse : CosmosResponse<CosmosTriggerSettings>
+    internal class TriggerResponse : Response<CosmosTriggerSettings>
     {
         /// <summary>
         /// Create a <see cref="TriggerResponse"/> as a no-op for mock testing

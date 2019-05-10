@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos database response
     /// </summary>
-    public class DatabaseResponse : CosmosResponse<CosmosDatabaseSettings>
+    public class DatabaseResponse : Response<CosmosDatabaseSettings>
     {
         /// <summary>
         /// Create a <see cref="DatabaseResponse"/> as a no-op for mock testing

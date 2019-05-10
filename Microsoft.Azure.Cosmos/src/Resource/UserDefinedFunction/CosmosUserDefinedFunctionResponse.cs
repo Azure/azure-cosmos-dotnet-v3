@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos user defined function response
     /// </summary>
-    internal class UserDefinedFunctionResponse : CosmosResponse<CosmosUserDefinedFunctionSettings>
+    internal class UserDefinedFunctionResponse : Response<CosmosUserDefinedFunctionSettings>
     {
         /// <summary>
         /// Create a <see cref="UserDefinedFunctionResponse"/> as a no-op for mock testing

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos item response
     /// </summary>
-    public class ItemResponse<T> : CosmosResponse<T>
+    public class ItemResponse<T> : Response<T>
     {
         /// <summary>
         /// Create a <see cref="ItemResponse{T}"/> as a no-op for mock testing

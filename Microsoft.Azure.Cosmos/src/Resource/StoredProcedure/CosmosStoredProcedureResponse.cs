@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos stored procedure response
     /// </summary>
-    public class StoredProcedureResponse : CosmosResponse<CosmosStoredProcedureSettings>
+    public class StoredProcedureResponse : Response<CosmosStoredProcedureSettings>
     {
         /// <summary>
         /// Create a <see cref="StoredProcedureResponse"/> as a no-op for mock testing

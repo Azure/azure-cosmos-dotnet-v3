@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos container response
     /// </summary>
-    public class ContainerResponse : CosmosResponse<CosmosContainerSettings>
+    public class ContainerResponse : Response<CosmosContainerSettings>
     {
         /// <summary>
         /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
