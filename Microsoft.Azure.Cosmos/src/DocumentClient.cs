@@ -4386,7 +4386,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -4405,14 +4405,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
+        public Task<DocumentFeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDatabaseFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4440,7 +4440,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedResponse<PartitionKeyRange> response = null;
+        /// DoucmentFeedResponse<PartitionKeyRange> response = null;
         /// List<string> ids = new List<string>();
         /// do
         /// {
@@ -4456,16 +4456,16 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadPartitionKeyRangeFeedPrivateAsync(partitionKeyRangesOrCollectionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedPrivateAsync(string partitionKeyRangesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedPrivateAsync(string partitionKeyRangesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4507,7 +4507,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
+        ///     DoucmentFeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4527,14 +4527,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentCollectionFeedPrivateAsync(collectionsLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedPrivateAsync(string collectionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedPrivateAsync(string collectionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4576,7 +4576,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
+        ///     DoucmentFeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4596,14 +4596,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadStoredProcedureFeedPrivateAsync(storedProceduresLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedPrivateAsync(string storedProceduresLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedPrivateAsync(string storedProceduresLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4645,7 +4645,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
+        ///     DoucmentFeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4666,14 +4666,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
 
-        public Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadTriggerFeedPrivateAsync(triggersLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Trigger>> ReadTriggerFeedPrivateAsync(string triggersLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedPrivateAsync(string triggersLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4715,7 +4715,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
+        ///     DoucmentFeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4735,14 +4735,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedFunctionFeedPrivateAsync(userDefinedFunctionsLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedPrivateAsync(string userDefinedFunctionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedPrivateAsync(string userDefinedFunctionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4786,7 +4786,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
+        ///     DoucmentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4803,18 +4803,18 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Instead of FeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
+        /// Instead of DoucmentFeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
         /// This is important becuse a DocumentCollection can contain different kinds of documents.
         /// </remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             return TaskHelper.InlineIfPossible(() => ReadDocumentFeedInlineAsync(documentsLink, options, cancellationToken), null, cancellationToken);
         }
 
-        private async Task<FeedResponse<dynamic>> ReadDocumentFeedInlineAsync(string documentsLink, FeedOptions options, CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedInlineAsync(string documentsLink, FeedOptions options, CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
 
@@ -4823,8 +4823,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentsLink");
             }
 
-            FeedResponse<Document> response = await this.CreateDocumentFeedReader(documentsLink, options).ExecuteNextAsync(cancellationToken);
-            return new FeedResponse<dynamic>(
+            DocumentFeedResponse<Document> response = await this.CreateDocumentFeedReader(documentsLink, options).ExecuteNextAsync(cancellationToken);
+            return new DocumentFeedResponse<dynamic>(
                 response.Cast<dynamic>(), 
                 response.Count, 
                 response.Headers, 
@@ -4864,7 +4864,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
+        ///     DoucmentFeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4884,12 +4884,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => ReadConflictFeedInlineAsync(conflictsLink, options), null);
         }
 
-        private async Task<FeedResponse<Conflict>> ReadConflictFeedInlineAsync(string conflictsLink, FeedOptions options)
+        private async Task<DocumentFeedResponse<Conflict>> ReadConflictFeedInlineAsync(string conflictsLink, FeedOptions options)
         {
             await this.EnsureValidClientAsync();
 
@@ -4927,7 +4927,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -4946,14 +4946,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null)
+        public Task<DocumentFeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadOfferFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Offer>> ReadOfferFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Offer>> ReadOfferFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4989,7 +4989,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<User> response = await client.ReadUserFeedAsync("/dbs/db_rid/colls/coll_rid/schemas",
+        ///     DoucmentFeedResponse<User> response = await client.ReadUserFeedAsync("/dbs/db_rid/colls/coll_rid/schemas",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -5009,13 +5009,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<FeedResponse<Schema>> ReadSchemaFeedAsync(string documentCollectionSchemaLink, FeedOptions options = null)
+        internal Task<DocumentFeedResponse<Schema>> ReadSchemaFeedAsync(string documentCollectionSchemaLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReadSchemaFeedPrivateAsync(documentCollectionSchemaLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Schema>> ReadSchemaFeedPrivateAsync(string documentCollectionSchemaLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Schema>> ReadSchemaFeedPrivateAsync(string documentCollectionSchemaLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5057,7 +5057,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<UserDefinedType> response = await client.ReadUserDefinedTypeFeedAsync("/dbs/db_rid/udts/",
+        ///     DoucmentFeedResponse<UserDefinedType> response = await client.ReadUserDefinedTypeFeedAsync("/dbs/db_rid/udts/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -5077,14 +5077,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<FeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedAsync(string userDefinedTypesLink, FeedOptions options = null)
+        internal Task<DocumentFeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedAsync(string userDefinedTypesLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedTypeFeedPrivateAsync(userDefinedTypesLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedPrivateAsync(string userDefinedTypesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedPrivateAsync(string userDefinedTypesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 

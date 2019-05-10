@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public static readonly FeedResponse<dynamic> EmptyFeedResponse = new FeedResponse<dynamic>(
+        public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(
             Enumerable.Empty<dynamic>(),
             Enumerable.Empty<dynamic>().Count(),
             new StringKeyValueCollection());
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly string resourceLink;
         private readonly bool getLazyFeedResponse;
         private bool isExpressionEvaluated;
-        private FeedResponse<CosmosElement> lastPage;
+        private DocumentFeedResponse<CosmosElement> lastPage;
         private readonly Guid correlatedActivityId;
 
         protected DocumentQueryExecutionContextBase(
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery);
         }
 
-        public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellationToken)
+        public virtual async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellationToken)
         {
             if (this.IsDone)
             {
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return request;
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteRequestLazyAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestLazyAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse(request, documentServiceResponse);
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteRequestAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.ExecuteReadFeedRequestAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
+        public async Task<DocumentFeedResponse<T>> ExecuteRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.ExecuteReadFeedRequestAsync<T>(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse(request, await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(
+        public async Task<DocumentFeedResponse<T>> ExecuteQueryRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteReadFeedRequestAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteReadFeedRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse(request, await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
+        public async Task<DocumentFeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public abstract void Dispose();
 
-        protected abstract Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
+        protected abstract Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
 
         protected async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
         {
@@ -627,16 +627,16 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private FeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)
+        private DocumentFeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)
         {
 
             long responseLengthBytes = response.ResponseBody.CanSeek ? response.ResponseBody.Length : 0;
             IEnumerable<T> responseFeed = response.GetQueryResponse<T>(this.resourceType, this.getLazyFeedResponse, out int itemCount);
 
-            return new FeedResponse<T>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
+            return new DocumentFeedResponse<T>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
         }
 
-        private FeedResponse<CosmosElement> GetFeedResponse(
+        private DocumentFeedResponse<CosmosElement> GetFeedResponse(
             DocumentServiceRequest documentServiceRequest,
             DocumentServiceResponse documentServiceResponse)
         {
@@ -695,7 +695,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             int itemCount = cosmosArray.Count;
-            return new FeedResponse<CosmosElement>(
+            return new DocumentFeedResponse<CosmosElement>(
                 cosmosArray,
                 itemCount,
                 documentServiceResponse.Headers,

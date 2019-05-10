@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             string cont = null;
             do
             {
-                FeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = cont, MaxItemCount = 1000 , EnableCrossPartitionQuery = true})).Result;
+                DocumentFeedResponse<dynamic> response = AsyncRetryRateLimiting(() => client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = cont, MaxItemCount = 1000 , EnableCrossPartitionQuery = true})).Result;
 
                 Trace.TraceInformation(DateTime.Now.ToString("HH:mm:ss.ffff") + ": Indexing {0} documents", response.Count);
 
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 while (docQuery.HasMoreResults)
                 {
                     DateTime startTime = DateTime.Now;
-                    FeedResponse<dynamic> queryResultsPage = await QueryOnePageWithRetry(docQuery, query);
+                    DocumentFeedResponse<dynamic> queryResultsPage = await QueryOnePageWithRetry(docQuery, query);
                     activityIDsAllQueryPages.Add(queryResultsPage.ActivityId);
                     totalQueryLatencyAllPages += (DateTime.Now - startTime);
                     numberOfPages++;
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             this.invertedIndex[indexKey].Add(val);
         }
 
-        private static async Task<FeedResponse<dynamic>> QueryOnePageWithRetry(IDocumentQuery<dynamic> query, string queryString)
+        private static async Task<DocumentFeedResponse<dynamic>> QueryOnePageWithRetry(IDocumentQuery<dynamic> query, string queryString)
         {
             int nMaxRetry = 5;
 

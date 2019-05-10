@@ -92,10 +92,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            CosmosQueryResponse results = await base.DrainAsync(maxElements, token);
+            QueryResponse results = await base.DrainAsync(maxElements, token);
             if (!results.IsSuccessStatusCode)
             {
                 return results;
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 takedDocuments,
                 takedDocuments.Count,
                 results.ResponseLengthBytes,
