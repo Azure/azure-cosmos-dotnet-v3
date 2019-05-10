@@ -23,7 +23,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<IRoutingMapProvider> GetRoutingMapProviderAsync();
 
-        internal abstract Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken);
+        internal abstract Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool requireFormattableOrderByQuery,
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
+            CancellationToken cancellationToken);
 
         internal abstract Task<FeedResponse<CosmosElement>> ExecuteItemQueryAsync(
             Uri resourceUri,
