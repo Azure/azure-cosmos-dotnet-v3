@@ -87,15 +87,16 @@
 
                     CosmosContainer container = database.Containers[containerId];
 
-                    // Read back the container to see the system partition key is populated
-                    var containerResposne = await container.ReadAsync();
+                    // Read back the same container and verify that partition key path is populated
+                    // Partition key is returned when read from V3 SDK.
+                    CosmosContainerResponse containerResposne = await container.ReadAsync();
                     if (containerResposne.Resource.PartitionKeyPath != null)
                     {
                         Console.WriteLine("Container Partition Key path {0}", containerResposne.Resource.PartitionKeyPath);
                     }
                     else
                     {
-                        throw new Exception("Partition Key path is not populated");
+                        throw new Exception("Unexpected error : Partition Key is not populated in a migrated collection");
                     }
 
                     Console.WriteLine("--Demo Item operations with no partition key--");
@@ -127,10 +128,13 @@
             }
         }
 
-        // NonePartitionKeyValue represents the information that the current item doesn't have a value for partitition key
-        // All items inserted pre-migration are grouped into this logical partition and can be accessed by providing this value
-        // for the partitionKey parameter
-        // New item CRUD could be performed using this NonePartitionKeyValue to target the same logical partition
+        /// <summary>
+        /// The function demonstrates the Item CRUD operation using the NonePartitionKeyValue
+        /// NonePartitionKeyValue represents the information that the current item doesn't have a value for partitition key
+        /// All items inserted pre-migration are grouped into this logical partition and can be accessed by providing this value
+        /// for the partitionKey parameter
+        /// New item CRUD could be performed using this NonePartitionKeyValue to target the same logical partition
+        /// </summary>
         private static async Task ItemOperationsWithNonePartitionKeyValue(CosmosContainer container)
         {
             string itemid = Guid.NewGuid().ToString();
@@ -163,8 +167,9 @@
             Console.WriteLine("Deleting Item {0} Status Code {1}", itemid, deleteResponse.StatusCode);
         }
 
-        // Now that partition is migrated and provided a system partition key one could perform CRUD operations
-        // supplying a value for this partition key
+        /// <summary>
+        /// The function demonstrates CRUD operations on the migrated collection supplying a value for the partition key
+        /// <summary>
         private static async Task ItemOperationsWithValidPartitionKeyValue(CosmosContainer container)
         {
             string itemid = Guid.NewGuid().ToString();
@@ -198,6 +203,10 @@
             Console.WriteLine("Deleting Item {0} with Partition Key Status Code {1}", itemid, deleteResponse.StatusCode);
         }
 
+        /// <summary>
+        ///  The function demonstrates migrating documents that were inserted without a value for partition key, and those inserted
+        ///  pre-migration to other logical partitions, those with a value for partition key.
+        /// </summary>
         private static async Task MigratedItemsFromNonePartitionKeyToValidPartitionKeyValue(CosmosContainer container)
         {
             // Pre-create a few items in the container to demo the migration
@@ -224,7 +233,7 @@
                 resultsFetched += queryResponse.Count();
 
                 // For the items returned with NonePartitionKeyValue
-                var iter = queryResponse.GetEnumerator();
+                IEnumerator<DeviceInformationItem> iter = queryResponse.GetEnumerator();
                 while (iter.MoveNext())
                 {
                     DeviceInformationItem item = iter.Current;
