@@ -95,10 +95,10 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the stored procedures under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosResultSetIterator<CosmosStoredProcedureSettings> setIterator = this.container.StoredProcedures.GetStoredProcedureIterator();
-        /// while (setIterator.HasMoreResults)
+        /// CosmosFeedIterator<CosmosStoredProcedureSettings> feedIterator = this.container.StoredProcedures.GetStoredProcedureIterator();
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosStoredProcedureSettings settings in await setIterator.FetchNextSetAsync())
+        ///     foreach(CosmosStoredProcedureSettings settings in await feedIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(settings.Id); 
         ///     }

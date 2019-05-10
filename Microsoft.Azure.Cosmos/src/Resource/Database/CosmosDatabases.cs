@@ -90,9 +90,9 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the database under the cosmos account
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosResultSetIterator<CosmosDatabaseSettings> setIterator = this.cosmosClient.Databases.GetDatabaseIterator();
+        /// CosmosFeedIterator<CosmosDatabaseSettings> feedIterator = this.cosmosClient.Databases.GetDatabaseIterator();
         /// {
-        ///     foreach (CosmosDatabaseSettings databaseSettings in  await setIterator.FetchNextSetAsync())
+        ///     foreach (CosmosDatabaseSettings databaseSettings in  await feedIterator.FetchNextSetAsync())
         ///     {
         ///         Console.WriteLine(setting.Id); 
         ///     }

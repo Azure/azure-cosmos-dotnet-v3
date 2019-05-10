@@ -78,13 +78,13 @@ namespace Microsoft.Azure.Cosmos
         ///     .UseParameter("@expensive", 9000)
         ///     .UseParameter("@status", "Done");
         ///
-        /// CosmosResultSetIterator<double> setIterator = this.container.Items.CreateItemQuery<double>(
+        /// CosmosFeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
         ///     sqlQueryDefinition: sqlQuery,
         ///     partitionKey: "Done");
         ///
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach (var tax in await setIterator.FetchNextSetAsync())
+        ///     foreach (var tax in await feedIterator.FetchNextSetAsync())
         ///     {
         ///         Console.WriteLine(tax);
         ///     }
@@ -120,10 +120,10 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosResultSetIterator<CosmosUserDefinedFunctionSettings> setIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
-        /// while (setIterator.HasMoreResults)
+        /// CosmosFeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosUserDefinedFunctionSettings settings in await setIterator.FetchNextSetAsync())
+        ///     foreach(CosmosUserDefinedFunctionSettings settings in await feedIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(settings.Id); 
         ///     }

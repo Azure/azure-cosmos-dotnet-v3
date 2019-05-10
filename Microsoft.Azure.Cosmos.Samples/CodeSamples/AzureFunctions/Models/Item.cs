@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace AzureFunctions.Models
+namespace Cosmos.Samples.AzureFunctions
 {
     public class Item
     {
