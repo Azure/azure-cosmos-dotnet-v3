@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return query(container, inputDocuments);
             };
 
-            await this.CreateIngestQueryDelete<object>(
+            await this.CreateIngestQueryDeleteForType<object>(
                 connectionModes,
                 documents,
                 queryWrapper,
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cosmosClientFactory);
         }
 
-        private async Task CreateIngestQueryDelete<T>(
+        private async Task CreateIngestQueryDeleteForType<T>(
             ConnectionModes connectionModes,
             IEnumerable<string> documents,
             Query<T> query,
@@ -783,14 +783,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 // For this test we need to split direct and gateway runs into separate collections,
                 // since the query callback inserts some documents (thus has side effects).
-                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
+                await this.CreateIngestQueryDeleteForType<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Direct,
                     CrossPartitionQueryTests.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
                     testArg,
                     "/" + testArg.Name);
 
-                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
+                await this.CreateIngestQueryDeleteForType<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Gateway,
                     CrossPartitionQueryTests.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
@@ -1000,7 +1000,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ExpectedPartitionKeyValues = expectedPartitionKeyValues,
             };
 
-            await this.CreateIngestQueryDelete<QueryCrossPartitionWithLargeNumberOfKeysArgs>(
+            await this.CreateIngestQueryDeleteForType<QueryCrossPartitionWithLargeNumberOfKeysArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionWithLargeNumberOfKeysHelper,
@@ -1227,7 +1227,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents.Add(doc.ToString());
             }
 
-            await this.CreateIngestQueryDelete<AggregateTestArgs>(
+            await this.CreateIngestQueryDeleteForType<AggregateTestArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsAsync,
@@ -1436,7 +1436,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents.Add(doc.ToString());
             }
 
-            await this.CreateIngestQueryDelete<AggregateQueryEmptyPartitionsArgs>(
+            await this.CreateIngestQueryDeleteForType<AggregateQueryEmptyPartitionsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsEmptyPartitionsHelper,
@@ -1568,7 +1568,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // This doc does not have the field key set
             documents.Add(undefinedDoc.ToString());
 
-            await this.CreateIngestQueryDelete<AggregateQueryMixedTypes>(
+            await this.CreateIngestQueryDeleteForType<AggregateQueryMixedTypes>(
                 ConnectionModes.Direct,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper,
@@ -1725,7 +1725,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents.Add(JsonConvert.SerializeObject(person));
             }
 
-            await this.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDeleteForType(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryDistinct,
@@ -2211,7 +2211,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         apiVersion,
                         async () =>
                         {
-                            await this.CreateIngestQueryDelete<Tuple<OrderByTypes[], Action<Exception>>>(
+                            await this.CreateIngestQueryDeleteForType<Tuple<OrderByTypes[], Action<Exception>>>(
                                 ConnectionModes.Direct,
                                 documents,
                                 this.TestMixedTypeOrderByHelper,
@@ -2539,7 +2539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryOracle.QueryOracleUtil util = new QueryOracle.QueryOracle2(seed);
             IEnumerable<string> documents = util.GetDocuments(numberOfDocuments);
 
-            await this.CreateIngestQueryDelete<string>(
+            await this.CreateIngestQueryDeleteForType<string>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionTopOrderByHelper,
@@ -2996,7 +2996,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Children = children,
             };
 
-            await this.CreateIngestQueryDelete<CrossPartitionWithContinuationsArgs>(
+            await this.CreateIngestQueryDeleteForType<CrossPartitionWithContinuationsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionWithContinuationsHelper,
