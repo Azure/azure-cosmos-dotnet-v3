@@ -79,54 +79,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task VerifyCosmosDefaultResultSetStreamIteratorOperationType()
-        {
-            CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
-
-            CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosFeedIterator feedIterator = container.Items.CreateItemQueryAsStream(
-                sqlQueryDefinition: sql,
-                maxConcurrency: 1,
-                partitionKey: "pk",
-                requestOptions: new CosmosQueryRequestOptions());
-
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.AreEqual(
-                    (int)Documents.OperationType.Query,
-                    (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
-                );
-                return TestHandler.ReturnSuccess();
-            });
-
-            mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosResponseMessage response = await feedIterator.FetchNextSetAsync();
-
-            //Test gateway mode
-            mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeGateway());
-            container = mockClient.Databases["database"].Containers["container"];
-            feedIterator = container.Items.CreateItemQueryAsStream(
-                sqlQueryDefinition: sql,
-                maxConcurrency: 1,
-                partitionKey: "pk",
-                requestOptions: new CosmosQueryRequestOptions());
-            testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.AreEqual(
-                    (int)Documents.OperationType.Query,
-                    (int)request.GetType().GetProperty("OperationType", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(request, null)
-                );
-                return TestHandler.ReturnSuccess();
-            });
-
-            mockClient.RequestHandler.InnerHandler = testHandler;
-            response = await feedIterator.FetchNextSetAsync();
-        }
-
-        [TestMethod]
         public async Task CosmosConflictsIteratorBuildsSettings()
         {
             string conflictResponsePayload = @"{ 'Data':[{

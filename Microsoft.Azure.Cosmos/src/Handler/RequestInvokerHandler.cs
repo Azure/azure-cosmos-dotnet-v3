@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System;
     using System.Globalization;
     using System.IO;
-    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public override Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request, 
+            CosmosRequestMessage request,
             CancellationToken cancellationToken)
         {
             if (request == null)
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return this.client.DocumentClient.EnsureValidClientAsync()
-                .ContinueWith(task => request.AssertPartitioningDetailsAsync(client, cancellationToken))
+                .ContinueWith(task => request.AssertPartitioningDetailsAsync(this.client, cancellationToken))
                 .ContinueWith(task =>
                 {
                     if (task.IsFaulted)
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             CosmosRequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
-            Object partitionKey,
+            object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             CosmosRequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
-            Object partitionKey,
+            object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellation = default(CancellationToken))
@@ -134,11 +133,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
-            CosmosRequestMessage request = new CosmosRequestMessage(method, resourceUri);
-            request.OperationType = operationType;
-            request.ResourceType = resourceType;
-            request.RequestOptions = requestOptions;
-            request.Content = streamPayload;
+            CosmosRequestMessage request = new CosmosRequestMessage(method, resourceUri)
+            {
+                OperationType = operationType,
+                ResourceType = resourceType,
+                RequestOptions = requestOptions,
+                Content = streamPayload
+            };
 
             if (partitionKey != null)
             {
@@ -182,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.Upsert ||
                 operationType == OperationType.Query ||
                 operationType == OperationType.SqlQuery ||
+                operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
                 operationType == OperationType.ExecuteJavaScript)
             {
