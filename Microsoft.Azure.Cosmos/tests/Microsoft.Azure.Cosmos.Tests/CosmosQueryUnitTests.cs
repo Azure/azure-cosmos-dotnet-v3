@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 client: client.Object,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
-                resourceType: typeof(CosmosQueryResponse),
+                resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQuerySpec,
                 queryRequestOptions: queryRequestOptions,
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),

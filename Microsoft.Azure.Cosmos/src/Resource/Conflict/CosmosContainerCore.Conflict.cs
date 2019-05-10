@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<CosmosItemResponse<T>> ReadConflictSourceItemAsync<T>(
+        public override async Task<ItemResponse<T>> ReadConflictSourceItemAsync<T>(
             object partitionKey,
             CosmosConflictSettings cosmosConflict,
             CancellationToken cancellationToken = default(CancellationToken))
