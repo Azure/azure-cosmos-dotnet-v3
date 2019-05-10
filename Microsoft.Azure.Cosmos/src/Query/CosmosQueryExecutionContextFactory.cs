@@ -20,15 +20,19 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
     /// </summary>
-    internal class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
+    internal sealed class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
     {
         internal const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
-        private CosmosQueryExecutionContext innerExecutionContext;
-        private CosmosQueryContext cosmosQueryContext;
-
         private const int PageSizeFactorForTop = 5;
 
-        public override bool IsDone => this.innerExecutionContext == null ? false : this.innerExecutionContext.IsDone;
+        private readonly CosmosQueryContext cosmosQueryContext;
+        private CosmosQueryExecutionContext innerExecutionContext;
+
+        /// <summary>
+        /// Test flag for making the query use the opposite code path for query plan retrieval.
+        /// If the SDK would have went to Gateway, then it will use ServiceInterop and visa versa.
+        /// </summary>
+        public static bool TestFlag = true;
 
         public CosmosQueryExecutionContextFactory(
             CosmosQueryClient client,
@@ -42,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool allowNonValueAggregateQuery,
             Guid correlatedActivityId)
         {
-            if(client == null)
+            if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -95,10 +99,40 @@ namespace Microsoft.Azure.Cosmos.Query
                   correlatedActivityId: correlatedActivityId);
         }
 
-        private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(CancellationToken cancellationToken)
+        public override bool IsDone
+        {
+            get
+            {
+                return this.innerExecutionContext != null ? this.innerExecutionContext.IsDone : false;
+            }
+        }
+
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
+        {
+            if(this.innerExecutionContext == null)
+            {
+                this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
+            }
+
+            QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
+            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+            return response;
+        }
+
+        public override void Dispose()
+        {
+            if (this.innerExecutionContext != null)
+            {
+                this.innerExecutionContext.Dispose();
+            }
+        }
+
+        private async Task<CosmosContainerSettings> GetContainerSettingsAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            CosmosContainerSettings collection = null;
+
+            CosmosContainerSettings containerSettings;
             if (this.cosmosQueryContext.ResourceTypeEnum.IsCollectionChild())
             {
                 CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
@@ -109,82 +143,120 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.cosmosQueryContext.ResourceLink.OriginalString,
                         AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
                 {
-                    collection = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                    containerSettings = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
                 }
 
                 if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
                 {
-                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
-                }
-            }
-
-            if(collection == null)
-            {
-                throw new ArgumentException($"The container was not found for resource: {this.cosmosQueryContext.ResourceLink.OriginalString} ");
-            }
-
-            this.cosmosQueryContext.ContainerResourceId = collection.ResourceId;
-
-            // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
-            // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
-            if (this.cosmosQueryContext.QueryClient.ByPassQueryParsing())
-            {
-                // We create a ProxyDocumentQueryExecutionContext that will be initialized with DefaultDocumentQueryExecutionContext
-                // which will be used to send the query to Gateway and on getting 400(bad request) with 1004(cross partition query not servable), we initialize it with
-                // PipelinedDocumentQueryExecutionContext by providing the partition query execution info that's needed(which we get from the exception returned from Gateway).
-                CosmosProxyItemQueryExecutionContext proxyQueryExecutionContext =
-                    new CosmosProxyItemQueryExecutionContext(
-                        queryContext: this.cosmosQueryContext,
-                        containerSettings: collection);
-
-                return proxyQueryExecutionContext;
-            }
-
-            //todo:elasticcollections this may rely on information from collection cache which is outdated
-            //if collection is deleted/created with same name.
-            //need to make it not rely on information from collection cache.
-            PartitionKeyDefinition partitionKeyDefinition;
-            object partitionKeyDefinitionObject;
-            if (this.cosmosQueryContext.QueryRequestOptions?.Properties != null
-                && this.cosmosQueryContext.QueryRequestOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
-            {
-                if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
-                {
-                    partitionKeyDefinition = definition;
-                }
-                else
-                {
-                    throw new ArgumentException(
-                        "partitionkeydefinition has invalid type",
-                        nameof(partitionKeyDefinitionObject));
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(containerSettings.GetNoneValue());
                 }
             }
             else
             {
-                partitionKeyDefinition = collection.PartitionKey;
+                containerSettings = null;
             }
 
-            // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.cosmosQueryContext.QueryClient.GetPartitionedQueryExecutionInfoAsync(
-                sqlQuerySpec: this.cosmosQueryContext.SqlQuerySpec,
-                partitionKeyDefinition: partitionKeyDefinition,
-                requireFormattableOrderByQuery: true,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: this.cosmosQueryContext.AllowNonValueAggregateQuery,
-                cancellationToken: cancellationToken);
+            if (containerSettings == null)
+            {
+                throw new ArgumentException($"The container was not found for resource: {this.cosmosQueryContext.ResourceLink.OriginalString} ");
+            }
+
+            return containerSettings;
+        }
+
+        private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            CosmosContainerSettings containerSettings = await this.GetContainerSettingsAsync(cancellationToken);
+            this.cosmosQueryContext.ContainerResourceId = containerSettings.ResourceId;
+
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+            if (this.cosmosQueryContext.QueryClient.ByPassQueryParsing() && TestFlag)
+            {
+                // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
+                // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
+                partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                    this.cosmosQueryContext.QueryClient,
+                    this.cosmosQueryContext.SqlQuerySpec,
+                    this.cosmosQueryContext.ResourceLink,
+                    cancellationToken);
+            }
+            else
+            {
+                //todo:elasticcollections this may rely on information from collection cache which is outdated
+                //if collection is deleted/created with same name.
+                //need to make it not rely on information from collection cache.
+                PartitionKeyDefinition partitionKeyDefinition;
+                object partitionKeyDefinitionObject;
+                if (this.cosmosQueryContext.QueryRequestOptions?.Properties != null
+                    && this.cosmosQueryContext.QueryRequestOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                {
+                    if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
+                    {
+                        partitionKeyDefinition = definition;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            "partitionkeydefinition has invalid type",
+                            nameof(partitionKeyDefinitionObject));
+                    }
+                }
+                else
+                {
+                    partitionKeyDefinition = containerSettings.PartitionKey;
+                }
+
+                partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                    this.cosmosQueryContext.QueryClient,
+                    this.cosmosQueryContext.SqlQuerySpec,
+                    partitionKeyDefinition,
+                    cancellationToken);
+            }
 
             List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
-                this.cosmosQueryContext.QueryClient,
-                this.cosmosQueryContext.ResourceLink.OriginalString,
-                partitionedQueryExecutionInfo,
-                collection,
-                this.cosmosQueryContext.QueryRequestOptions);
+                   this.cosmosQueryContext.QueryClient,
+                   this.cosmosQueryContext.ResourceLink.OriginalString,
+                   partitionedQueryExecutionInfo,
+                   containerSettings,
+                   this.cosmosQueryContext.QueryRequestOptions);
+
+            CosmosQueryContext rewrittenComosQueryContext;
+            if(!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            {
+                // We need pass down the rewritten query.
+                SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
+                {
+                    QueryText = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
+                    Parameters = this.cosmosQueryContext.SqlQuerySpec.Parameters
+                };
+
+                rewrittenComosQueryContext = new CosmosQueryContext(
+                    this.cosmosQueryContext.QueryClient,
+                    this.cosmosQueryContext.ResourceTypeEnum,
+                    this.cosmosQueryContext.OperationTypeEnum,
+                    this.cosmosQueryContext.ResourceType,
+                    rewrittenQuerySpec,
+                    this.cosmosQueryContext.QueryRequestOptions,
+                    this.cosmosQueryContext.ResourceLink,
+                    this.cosmosQueryContext.IsContinuationExpected,
+                    this.cosmosQueryContext.CorrelatedActivityId,
+                    this.cosmosQueryContext.IsContinuationExpected,
+                    this.cosmosQueryContext.AllowNonValueAggregateQuery,
+                    this.cosmosQueryContext.ContainerResourceId);
+            }
+            else
+            {
+                rewrittenComosQueryContext = this.cosmosQueryContext;
+            }
 
             return await CreateSpecializedDocumentQueryExecutionContext(
-                this.cosmosQueryContext,
+                rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,
-                collection.ResourceId,
+                containerSettings.ResourceId,
                 cancellationToken);
         }
 
@@ -321,7 +393,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-
         private static bool TryGetEpkProperty(
             CosmosQueryRequestOptions queryRequestOptions,
             out string effectivePartitionKeyString)
@@ -342,27 +413,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             effectivePartitionKeyString = null;
             return false;
-        }
-
-        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
-        {
-            if (this.innerExecutionContext == null)
-            {
-                this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
-            }
-
-            CosmosQueryResponse response =  await this.innerExecutionContext.ExecuteNextAsync(token);
-            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
-
-            return response;
-        }
-
-        public override void Dispose()
-        {
-            if (this.innerExecutionContext != null)
-            {
-                this.innerExecutionContext.Dispose();
-            }
         }
     }
 }

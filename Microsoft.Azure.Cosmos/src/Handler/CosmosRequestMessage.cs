@@ -155,8 +155,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
             }
-#endif
-#if !DEBUG
+#else
             await Task.CompletedTask;
 #endif
         }

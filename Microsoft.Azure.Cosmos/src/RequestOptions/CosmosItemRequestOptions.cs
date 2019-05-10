@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         /// In some scenarios you need to manage this Session yourself;
         /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="CosmosItemResponse{T}"/> of the write action on one node
+        /// you would have to send the SessionToken from <see cref="ItemResponse{T}"/> of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
         /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
         /// the read could potentially land on a different node to the write request, where the session was created.

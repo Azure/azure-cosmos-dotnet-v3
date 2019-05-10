@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.DocumentServiceRequest.PartitionKeyRangeIdentity);
                 return TestHandler.ReturnSuccess();
             });
-            CosmosFeedIterator iterator = container.GetConflictsStreamIterator();
+            FeedIterator iterator = container.GetConflictsStreamIterator();
             while (iterator.HasMoreResults)
             {
                 CosmosResponseMessage responseMessage = await iterator.FetchNextSetAsync();

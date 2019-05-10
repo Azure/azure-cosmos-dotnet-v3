@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainer container = client.Databases["testdb"]
                                         .Containers["testcontainer"];
 
-            CosmosItemResponse<dynamic> itemResponse = await container.Items.CreateItemAsync<dynamic>(
+            ItemResponse<dynamic> itemResponse = await container.Items.CreateItemAsync<dynamic>(
                 partitionKey: partitionKey,
                 item: testItem,
                 requestOptions: requestOptions);

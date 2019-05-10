@@ -57,9 +57,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosRequestHandler PartitionKeyRangeHandler { get; set; }
 
-        public CosmosRequestHandler Build()
+        public RequestInvokerHandler Build()
         {
-            CosmosRequestHandler root = new RequestInvokerHandler(this.client);
+            RequestInvokerHandler root = new RequestInvokerHandler(this.client);
 
             CosmosRequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())

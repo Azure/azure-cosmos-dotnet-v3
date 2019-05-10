@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string id { get; set; }
         }
 
-        private class TransportClientWrapper : TransportClient
+        internal class TransportClientWrapper : TransportClient
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;

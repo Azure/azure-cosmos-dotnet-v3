@@ -6,30 +6,11 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Globalization;
-    using System.Linq;
-    using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Collections.Generic;
-    using Common;
-    using ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
-    using ParallelQuery;
-    using Routing;
 
-    /// <summary>
-    /// 
-    /// </summary>
     internal class CosmosQueryContext
     {
         public virtual CosmosQueryClient QueryClient { get; }
@@ -98,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
-        internal virtual async Task<CosmosQueryResponse> ExecuteQueryAsync(
+        internal virtual async Task<QueryResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             CancellationToken cancellationToken,
             Action<CosmosRequestMessage> requestEnricher = null)

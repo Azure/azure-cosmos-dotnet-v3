@@ -89,12 +89,12 @@ namespace Microsoft.Azure.Cosmos
         /// };
         ///
         /// // Create a new item with trigger set in the request options
-        /// CosmosItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+        /// ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
         /// double itemTax = createdItem.Resource.tax;
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosTriggerResponse> CreateTriggerAsync(
+        public virtual Task<TriggerResponse> CreateTriggerAsync(
             CosmosTriggerSettings triggerSettings,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosTriggerSettings> feedIterator = this.container.Triggers.GetTriggerIterator();
+        /// FeedIterator<CosmosTriggerSettings> feedIterator = this.container.Triggers.GetTriggerIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosTriggerSettings settings in await feedIterator.FetchNextSetAsync())
@@ -133,11 +133,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public FeedIterator<CosmosTriggerSettings> GetTriggerIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosTriggerSettings>(
+            return new FeedIteratorCore<CosmosTriggerSettings>(
                 maxItemCount,
                 continuationToken, 
                 null, 
@@ -156,13 +156,13 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosTrigger trigger = this.cosmosContainer.Tirggers["myTriggerId"];
-        /// CosmosTriggerResponse response = await trigger.ReadAsync();
+        /// TriggerResponse response = await trigger.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
         public CosmosTrigger this[string id] => new CosmosTrigger(this.clientContext, this.container, id);
 
-        private Task<CosmosFeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
             CosmosRequestOptions options,
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosTriggerSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosTriggerSettings>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: OperationType.ReadFeed,
