@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryContext queryContext;
 
         private long retries;
-        private CosmosQueryResponse lastPage;
+        private QueryResponse lastPage;
         private string ContinuationToken => this.lastPage == null ? this.queryContext.QueryRequestOptions.RequestContinuation : this.lastPage.Headers.Continuation;
         
 
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.Headers.Continuation);
 
-        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.lastPage;
         }
 
-        private async Task<CosmosQueryResponse> ExecuteInternalAsync(CancellationToken token)
+        private async Task<QueryResponse> ExecuteInternalAsync(CancellationToken token)
         {
             CollectionCache collectionCache = await this.queryContext.QueryClient.GetCollectionCacheAsync();
             PartitionKeyRangeCache partitionKeyRangeCache = await this.queryContext.QueryClient.GetPartitionKeyRangeCache();
@@ -91,12 +91,12 @@ namespace Microsoft.Azure.Cosmos.Query
                     retryPolicyInstance);
             }
 
-            return await BackoffRetryUtility<CosmosQueryResponse>.ExecuteAsync(
+            return await BackoffRetryUtility<QueryResponse>.ExecuteAsync(
                 async () =>
                 {
                     this.fetchExecutionRangeAccumulator.BeginFetchRange();
                     ++this.retries;
-                    CosmosQueryResponse response = await this.ExecuteOnceAsync(retryPolicyInstance, token);
+                    QueryResponse response = await this.ExecuteOnceAsync(retryPolicyInstance, token);
                     if (!string.IsNullOrEmpty(response.Headers[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 token);
         }
 
-        private async Task<CosmosQueryResponse> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<QueryResponse> ExecuteOnceAsync(IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             if(this.LogicalPartitionKeyProvided())
             {

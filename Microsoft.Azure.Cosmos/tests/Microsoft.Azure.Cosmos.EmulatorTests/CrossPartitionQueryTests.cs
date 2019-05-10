@@ -3475,7 +3475,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Tests CosmosQueryResponse.ResponseLengthInBytes is populated with the correct value for queries on Direct connection.
+        /// Tests QueryResponse.ResponseLengthInBytes is populated with the correct value for queries on Direct connection.
         /// The expected response length is determined by capturing DocumentServiceResponse events and aggregate their lengths.
         /// Queries covered are standard/Top/Aggregate/Distinct and use MaxItemCount to force smaller page sizes, Max DOP and MaxBufferedItems to
         /// validate producer query threads are handled properly. Note: TOP has known non-deterministic behavior for non-zero Max DOP, so the setting
@@ -3560,7 +3560,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //    long actualResponseLength = 0;
 
         //    // NOTE: For queries with 'TOP' clause and non-zero Max DOP, it is possible for additional backend responses to return
-        //    // after the target item limit has been reached and the final CosmosQueryResponse is being percolated to the caller. 
+        //    // after the target item limit has been reached and the final QueryResponse is being percolated to the caller. 
         //    // As a result, the stats from these responses will not be included in the aggregated results on the CosmosQueryResponses.
         //    // To avoid this non-determinism in the test cases, we force Max DOP to zero if the query is a 'top' query.
         //    FeedOptions feedOptions = new FeedOptions
@@ -3589,7 +3589,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //        {
         //            FeedResponse<dynamic> response = await docQuery.FetchNextSetAsync();
 
-        //            Console.WriteLine("{0} : CosmosQueryResponse: Query: {1}, ActivityId: {2}, OuterActivityId: {3}, RequestCharge: {4}, ResponseLength: {5}, ItemCount: {6}",
+        //            Console.WriteLine("{0} : QueryResponse: Query: {1}, ActivityId: {2}, OuterActivityId: {3}, RequestCharge: {4}, ResponseLength: {5}, ItemCount: {6}",
         //                DateTime.UtcNow,
         //                query,
         //                response.ActivityId,
@@ -3618,7 +3618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //    // We still run the query to ensure there are no exceptions.
         //    if (!isTopQuery)
         //    {
-        //        Assert.AreEqual(expectedResponseLength, actualResponseLength, "Aggregate CosmosQueryResponse length did not match document service response.");
+        //        Assert.AreEqual(expectedResponseLength, actualResponseLength, "Aggregate QueryResponse length did not match document service response.");
         //    }
 
         //    this.responseLengthBytes.Value = null;

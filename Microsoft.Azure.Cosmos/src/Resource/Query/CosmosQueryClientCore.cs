@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
         }
 
-        internal override async Task<CosmosQueryResponse> ExecuteItemQueryAsync(
+        internal override async Task<QueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        private CosmosQueryResponse GetCosmosElementResponse(
+        private QueryResponse GetCosmosElementResponse(
             CosmosQueryRequestOptions requestOptions,
             ResourceType resourceType,
             CosmosResponseMessage cosmosResponseMessage)
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
-                    return CosmosQueryResponse.CreateFailure(
+                    return QueryResponse.CreateFailure(
                         CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
                         cosmosResponseMessage.StatusCode,
                         cosmosResponseMessage.RequestMessage,
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 int itemCount = cosmosArray.Count;
-                return CosmosQueryResponse.CreateSuccess(
+                return QueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
                     responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),

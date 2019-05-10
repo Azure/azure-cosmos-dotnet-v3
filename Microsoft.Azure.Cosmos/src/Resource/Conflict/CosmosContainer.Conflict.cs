@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosFeedIterator conflictIterator = await cosmosContainer.GetConflictsIterator();
         /// do
         /// {
-        ///     CosmosQueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
+        ///     QueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
         /// }
         /// while (conflictIterator.HasMoreResults);
         /// ]]>
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosFeedIterator conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
         /// do
         /// {
-        ///     CosmosQueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
+        ///     QueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
         /// }
         /// while (conflictIterator.HasMoreResults);
         /// ]]>

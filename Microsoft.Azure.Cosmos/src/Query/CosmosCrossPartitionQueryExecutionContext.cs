@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// If a failure is hit store it and return it on the next drain call.
         /// This allows returning the results computed before the failure.
         /// </summary>
-        public CosmosQueryResponse FailureResponse
+        public QueryResponse FailureResponse
         {
             get;
             protected set;
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
         protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
         {
-            (bool successfullyMovedNext, CosmosQueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
+            (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
             if (moveNextResponse.failureResponse != null)
             {
                 this.FailureResponse = moveNextResponse.failureResponse;
@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        public async override Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public async override Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.FailureResponse;
             }
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 result: results,
                 count: results.Count,
                 responseHeaders: this.GetResponseHeaders(),
@@ -469,7 +469,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplit(token);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplit(token);
                     if (response.failureResponse != null)
                     {
                         // Set the failure so on drain it can be returned.

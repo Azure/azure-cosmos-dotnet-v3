@@ -53,14 +53,14 @@ namespace Microsoft.Azure.Cosmos.Query
             this.innerExecutionContext.Dispose();
         }
 
-        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if (this.IsDone)
             {
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            CosmosQueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
+            QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
 
             // If the query failed because of cross partition query not servable then parse the query plan that is returned in the error
             // and create the correct context to execute it. For all other responses just return it since there is no query plan to parse.

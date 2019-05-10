@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
-                resourceType: typeof(CosmosQueryResponse),
+                resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
                 queryRequestOptions: requestOptions,
                 resourceLink: this.container.LinkUri,
@@ -436,10 +436,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-            CosmosQueryResponse queryResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
+            QueryResponse queryResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
             queryResponse.EnsureSuccessStatusCode();
 
-            return CosmosQueryResponse<T>.CreateResponse<T>(
+            return QueryResponse<T>.CreateResponse<T>(
                 cosmosQueryResponse: queryResponse,
                 jsonSerializer: this.clientContext.JsonSerializer,
                 hasMoreResults: !cosmosQueryExecution.IsDone);
