@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(this DocumentClient client, Database owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(this DocumentClient client, Database owner, FeedOptions options = null)
         {
             return client.ReadDocumentCollectionFeedAsync(owner.GetLink(), options);
         }
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadStoredProcedureFeedAsync(owner.GetLink(), options);
         }
@@ -459,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadTriggerFeedAsync(owner.GetLink(), options);
         }
@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadUserDefinedFunctionFeedAsync(owner.GetLink(), options);
         }
@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadDocumentFeedAsync(owner.GetLink(), options);
         }
@@ -495,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<FeedResponse<Conflict>> ReadConflictFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadConflictFeedAsync(owner.GetLink(), options);
         }
@@ -511,9 +511,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </returns>
         /// <seealso cref="Microsoft.Azure.Cosmos.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Client.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.Client.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.Client.DocumentFeedResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public static Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             if (owner == null)
             {
@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal static Task<FeedResponse<Schema>> ReadSchemaFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
+        internal static Task<DocumentFeedResponse<Schema>> ReadSchemaFeedAsync(this DocumentClient client, DocumentCollection owner, FeedOptions options = null)
         {
             return client.ReadSchemaFeedAsync(owner.GetLink(), options);
         }

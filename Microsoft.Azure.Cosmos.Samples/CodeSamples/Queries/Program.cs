@@ -96,7 +96,7 @@
             List<Family> families = new List<Family>();
 
             // SQL
-            CosmosFeedIterator<Family> setIterator = container.Items.GetItemIterator<Family>(maxItemCount: 1);
+            CosmosResultSetIterator<Family> setIterator = container.Items.GetItemIterator<Family>(maxItemCount: 1);
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
@@ -115,7 +115,7 @@
             int totalCount = 0;
 
             // SQL
-            CosmosFeedIterator setIterator = container.Items.GetItemStreamIterator();
+            CosmosFeedResultSetIterator setIterator = container.Items.GetItemStreamIterator();
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
@@ -140,7 +140,7 @@
         private static async Task QueryItemsInPartitionAsStreams(CosmosContainer container)
         {
             // SQL
-            CosmosFeedIterator setIterator = container.Items.CreateItemQueryAsStream(
+            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
                 "SELECT F.id, F.LastName, F.IsRegistered FROM Families F",
                 partitionKey: "Anderson",
                 maxConcurrency: 1,
@@ -149,9 +149,9 @@
             int count = 0;
             while (setIterator.HasMoreResults)
             {
-                using (CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
+                using (CosmosQueryResponse response = await setIterator.FetchNextSetAsync())
                 {
-                    Assert("Response failed", response.IsSuccessStatusCode);
+                    Assert("Response failed", response.IsSuccess);
                     count++;
                     using (StreamReader sr = new StreamReader(response.Content))
                     using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -178,7 +178,7 @@
                 .UseParameter("@city", "Seattle");
 
             List<Family> results = new List<Family>();
-            CosmosFeedIterator<Family> resultSetIterator = container.Items.CreateItemQuery<Family>(query, partitionKey: "Anderson");
+            CosmosResultSetIterator<Family> resultSetIterator = container.Items.CreateItemQuery<Family>(query, partitionKey: "Anderson");
             while (resultSetIterator.HasMoreResults)
             {
                 results.AddRange((await resultSetIterator.FetchNextSetAsync()));
@@ -195,7 +195,7 @@
             // 0 maximum parallel tasks, effectively serial execution
             CosmosQueryRequestOptions options = new CosmosQueryRequestOptions() { MaxBufferedItemCount = 100 };
 
-            CosmosFeedIterator<Family> query = container.Items.CreateItemQuery<Family>(
+            CosmosResultSetIterator<Family> query = container.Items.CreateItemQuery<Family>(
                 queryText,
                 maxConcurrency: 0,
                 requestOptions: options);

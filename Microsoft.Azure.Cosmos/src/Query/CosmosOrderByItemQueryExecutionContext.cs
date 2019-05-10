@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
                     if (!moveNextResponse.successfullyMovedNext)
                     {
                         if(moveNextResponse.failureResponse != null)

@@ -21,35 +21,35 @@ namespace Microsoft.Azure.Cosmos
             this.jsonSerializer = cosmosJsonSerializer;
         }
 
-        internal CosmosFeedResponse<T> CreateResultSetQueryResponse<T>(
+        internal FeedResponse<T> CreateResultSetQueryResponse<T>(
             CosmosResponseMessage cosmosResponseMessage)
         {
-            return CosmosDefaultResultSetIterator<T>.CreateCosmosQueryResponse(
+            return FeedIteratorCore<T>.CreateCosmosQueryResponse(
                 cosmosResponseMessage,
                 this.jsonSerializer);
         }
 
-        internal Task<CosmosItemResponse<T>> CreateItemResponse<T>(
+        internal Task<ItemResponse<T>> CreateItemResponse<T>(
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 T item = this.ToObjectInternal<T>(cosmosResponseMessage);
-                return new CosmosItemResponse<T>(
+                return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item);
             });
         }
 
-        internal Task<CosmosContainerResponse> CreateContainerResponse(
+        internal Task<ContainerResponse> CreateContainerResponse(
             CosmosContainer container,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosContainerSettings settings = this.ToObjectInternal<CosmosContainerSettings>(cosmosResponseMessage);
-                return new CosmosContainerResponse(
+                return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,
@@ -57,14 +57,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosDatabaseResponse> CreateDatabaseResponse(
+        internal Task<DatabaseResponse> CreateDatabaseResponse(
             CosmosDatabase database,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosDatabaseSettings settings = this.ToObjectInternal<CosmosDatabaseSettings>(cosmosResponseMessage);
-                return new CosmosDatabaseResponse(
+                return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,
@@ -72,14 +72,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosStoredProcedureResponse> CreateStoredProcedureResponse(
+        internal Task<StoredProcedureResponse> CreateStoredProcedureResponse(
             CosmosStoredProcedure storedProcedure,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosStoredProcedureSettings settings = this.ToObjectInternal<CosmosStoredProcedureSettings>(cosmosResponseMessage);
-                return new CosmosStoredProcedureResponse(
+                return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,
@@ -87,14 +87,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosTriggerResponse> CreateTriggerResponse(
+        internal Task<TriggerResponse> CreateTriggerResponse(
             CosmosTrigger trigger,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosTriggerSettings settings = this.ToObjectInternal<CosmosTriggerSettings>(cosmosResponseMessage);
-                return new CosmosTriggerResponse(
+                return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,
@@ -102,14 +102,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(
+        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(
             CosmosUserDefinedFunction userDefinedFunction,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosUserDefinedFunctionSettings settings = this.ToObjectInternal<CosmosUserDefinedFunctionSettings>(cosmosResponseMessage);
-                return new CosmosUserDefinedFunctionResponse(
+                return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,

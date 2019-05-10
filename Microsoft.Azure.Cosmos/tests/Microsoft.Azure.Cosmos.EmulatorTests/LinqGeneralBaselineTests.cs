@@ -1385,7 +1385,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             while (documentQuery.HasMoreResults)
             {
-                FeedResponse<Database> pagedResponse = await documentQuery.ExecuteNextAsync<Database>();
+                DocumentFeedResponse<Database> pagedResponse = await documentQuery.ExecuteNextAsync<Database>();
                 Assert.IsNotNull(pagedResponse.ResponseHeaders, "ResponseHeaders is null");
                 Assert.IsNotNull(pagedResponse.ActivityId, "Query ActivityId is null");
                 queryResults.AddRange(pagedResponse);
@@ -1450,7 +1450,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             IQueryable<dynamic> docQuery = client.CreateDocumentQuery(collection.DocumentsLink, @"select * from root r where r.Title=""MyBook""", null);
 
             IDocumentQuery<dynamic> DocumentQuery = docQuery.AsDocumentQuery();
-            FeedResponse<dynamic> queryResponse = DocumentQuery.ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> queryResponse = DocumentQuery.ExecuteNextAsync().Result;
 
             Assert.IsNotNull(queryResponse.ResponseHeaders, "ResponseHeaders is null");
             Assert.IsNotNull(queryResponse.ActivityId, "ActivityId is null");
@@ -1719,7 +1719,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             while (documentQuery.HasMoreResults)
             {
-                FeedResponse<dynamic> pagedResult = await documentQuery.ExecuteNextAsync();
+                DocumentFeedResponse<dynamic> pagedResult = await documentQuery.ExecuteNextAsync();
                 string isUnfiltered = pagedResult.ResponseHeaders[HttpConstants.HttpHeaders.IsFeedUnfiltered];
                 Assert.IsTrue(string.IsNullOrEmpty(isUnfiltered), "Query is evaulated in client");
                 Assert.IsTrue(pagedResult.Count <= pageSize, "Page size is not honored in client site eval");
@@ -1745,7 +1745,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             while (documentQuery.HasMoreResults)
             {
-                FeedResponse<dynamic> pagedResult = await documentQuery.ExecuteNextAsync();
+                DocumentFeedResponse<dynamic> pagedResult = await documentQuery.ExecuteNextAsync();
                 string isUnfiltered = pagedResult.ResponseHeaders[HttpConstants.HttpHeaders.IsFeedUnfiltered];
                 Assert.IsTrue(string.IsNullOrEmpty(isUnfiltered), "Query is evaulated in client");
                 Assert.IsTrue(pagedResult.Count == totalNumberOfDocuments, "Page size is not honored in client site eval");
