@@ -3584,7 +3584,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         //    int totalReadCount = 0;
 
-        //    CosmosResultSetIterator<dynamic> docQuery = coll.Items.CreateItemQuery<dynamic>(query, feedOptions);
+        //    CosmosFeedIterator<dynamic> docQuery = coll.Items.CreateItemQuery<dynamic>(query, feedOptions);
         //        while (docQuery.HasMoreResults && (maxReadItemCount < 0 || maxReadItemCount > totalReadCount))
         //        {
         //            CosmosFeedResponse<dynamic> response = await docQuery.FetchNextSetAsync();
