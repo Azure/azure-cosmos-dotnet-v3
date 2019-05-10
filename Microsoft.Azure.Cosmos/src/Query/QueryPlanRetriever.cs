@@ -21,21 +21,19 @@
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 
-        public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
-            CosmosQueryContext cosmosQueryContext,
+        public static Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
+            CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            QueryPartitionProvider queryPartitionProvider = await cosmosQueryContext.QueryClient.GetQueryPartitionProviderAsync(cancellationToken);
-            QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryPartitionProvider);
+            QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
             return queryPlanHandler.GetQueryPlan(
                     sqlQuerySpec,
                     partitionKeyDefinition,
-                    SupportedQueryFeatures);
+                    SupportedQueryFeatures,
+                    cancellationToken);
         }
 
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(

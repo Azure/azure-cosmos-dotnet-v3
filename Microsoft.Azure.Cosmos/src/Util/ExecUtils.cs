@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
 
     internal static class ExecUtils
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static async Task<T> ProcessResourceOperationAsync<T>(
-            CosmosRequestHandler requestHandler,
+            RequestInvokerHandler requestHandler,
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -149,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(responseCreator));
             }
 
-            CosmosRequestMessage request = await ExecUtils.GenerateCosmosRequestMessage(
+            CosmosResponseMessage response = await requestHandler.SendAsync(
                 resourceUri,
                 resourceType,
                 operationType,
@@ -159,142 +158,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 requestEnricher);
 
-            CosmosResponseMessage response = await requestHandler.SendAsync(request, cancellationToken);
             return responseCreator(response);
-        }
-
-        /// <summary>
-        /// Used internally by friends ensure robust argument and
-        /// exception-less handling
-        /// </summary>
-        internal static Task<T> ProcessResourceOperationAsync<T>(
-            CosmosClient client,
-            Uri resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            Object partitionKey,
-            Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
-        {
-            return ProcessResourceOperationAsync(
-                requestHandler: client.RequestHandler,
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                cosmosContainerCore: null,
-                partitionKey: partitionKey,
-                streamPayload: streamPayload,
-                requestEnricher: requestEnricher,
-                responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
-        }
-
-        internal static async Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
-            CosmosRequestHandler requestHandler,
-            Uri resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            Object partitionKey,
-            Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellationToken)
-        {
-            CosmosRequestMessage request = await ExecUtils.GenerateCosmosRequestMessage(
-                resourceUri,
-                resourceType,
-                operationType,
-                requestOptions,
-                cosmosContainerCore,
-                partitionKey,
-                streamPayload,
-                requestEnricher);
-
-            return await requestHandler.SendAsync(request, cancellationToken);
-        }
-
-        private static async Task<CosmosRequestMessage> GenerateCosmosRequestMessage(
-            Uri resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            CosmosRequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            Object partitionKey,
-            Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher)
-        {
-            HttpMethod method = ExecUtils.GetHttpMethod(operationType);
-
-            CosmosRequestMessage request = new CosmosRequestMessage(method, resourceUri);
-            request.OperationType = operationType;
-            request.ResourceType = resourceType;
-            request.RequestOptions = requestOptions;
-            request.Content = streamPayload;
-
-            if (partitionKey != null)
-            {
-                if (cosmosContainerCore == null && partitionKey.Equals(PartitionKey.None))
-                {
-                    throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
-                }
-                else if (partitionKey.Equals(PartitionKey.None))
-                {
-                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValue();
-                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                }
-                else
-                {
-                    PartitionKey pk = new PartitionKey(partitionKey);
-                    request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
-                }
-            }
-
-            if (operationType == OperationType.Upsert)
-            {
-                request.Headers.IsUpsert = bool.TrueString;
-            }
-
-            requestEnricher?.Invoke(request);
-
-            return request;
-        }
-
-        internal static HttpMethod GetHttpMethod(
-            OperationType operationType)
-        {
-            HttpMethod httpMethod = HttpMethod.Head;
-            if (operationType == OperationType.Create ||
-                operationType == OperationType.Upsert ||
-                operationType == OperationType.Query ||
-                operationType == OperationType.SqlQuery ||
-                operationType == OperationType.QueryPlan ||
-                operationType == OperationType.Batch ||
-                operationType == OperationType.ExecuteJavaScript)
-            {
-                return HttpMethod.Post;
-            }
-            else if (operationType == OperationType.Read ||
-                operationType == OperationType.ReadFeed)
-            {
-                return HttpMethod.Get;
-            }
-            else if (operationType == OperationType.Replace)
-            {
-                return HttpMethod.Put;
-            }
-            else if (operationType == OperationType.Delete)
-            {
-                return HttpMethod.Delete;
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
         }
     }
 }

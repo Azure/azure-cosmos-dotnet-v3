@@ -283,16 +283,55 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.ShouldExecuteQueryRequest)
                 {
+                    FeedOptions feedOptions = this.GetFeedOptions(null);
+                    PartitionKeyDefinition partitionKeyDefinition;
+                    object partitionKeyDefinitionObject;
+                    if (feedOptions.Properties != null && feedOptions.Properties.TryGetValue(CosmosQueryExecutionContextFactory.InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                    {
+                        if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
+                        {
+                            partitionKeyDefinition = definition;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(
+                                "partitionkeydefinition has invalid type",
+                                nameof(partitionKeyDefinitionObject));
+                        }
+                    }
+                    else
+                    {
+                        partitionKeyDefinition = collection.PartitionKey;
+                    }
+
                     QueryInfo queryInfo;
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,
                         isContinuationExpected,
-                        collection.PartitionKey,
+                        partitionKeyDefinition,
                         queryPartitionProvider,
                         version,
                         out queryInfo);
+                }
+                else if (request.Properties != null && request.Properties.TryGetValue(
+                    WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                    out object effectivePartitionKey))
+                {
+                    if (effectivePartitionKey is string effectivePartitionKeyString)
+                    {
+                        providedRanges = new List<Range<string>>()
+                        {
+                            Range<string>.GetPointRange(effectivePartitionKeyString),
+                        };
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            "EffectivePartitionKey must be a string",
+                            WFConstants.BackendHeaders.EffectivePartitionKeyString);
+                    }
                 }
                 else
                 {

@@ -8,26 +8,31 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Query;
+    using System.Threading.Tasks;
+    using System.Threading;
 
     internal sealed class QueryPlanHandler
     {
-        private readonly QueryPartitionProvider queryPartitionProvider;
+        private readonly CosmosQueryClient queryClient;
 
-        public QueryPlanHandler(QueryPartitionProvider queryPartitionProvider)
+        public QueryPlanHandler(CosmosQueryClient queryClient)
         {
-            if (queryPartitionProvider == null)
+            if (queryClient == null)
             {
-                throw new ArgumentNullException($"{nameof(queryPartitionProvider)}");
+                throw new ArgumentNullException($"{nameof(queryClient)}");
             }
 
-            this.queryPartitionProvider = queryPartitionProvider;
+            this.queryClient = queryClient;
         }
 
-        public PartitionedQueryExecutionInfo GetQueryPlan(
+        public async Task<PartitionedQueryExecutionInfo> GetQueryPlan(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
-            QueryFeatures supportedQueryFeatures)
+            QueryFeatures supportedQueryFeatures,
+            CancellationToken cancellation)
         {
+            cancellation.ThrowIfCancellationRequested();
+
             if (sqlQuerySpec == null)
             {
                 throw new ArgumentNullException($"{nameof(sqlQuerySpec)}");
@@ -38,13 +43,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
             }
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPartitionProvider
-                .GetPartitionedQueryExecutionInfo(
-                    querySpec: sqlQuerySpec,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.queryClient
+                .GetPartitionedQueryExecutionInfoAsync(
+                    sqlQuerySpec: sqlQuerySpec,
                     partitionKeyDefinition: partitionKeyDefinition,
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true);
+                    allowNonValueAggregateQuery: true,
+                    cancellation);
 
             if (partitionedQueryExecutionInfo == null ||
                 partitionedQueryExecutionInfo.QueryRanges == null ||
