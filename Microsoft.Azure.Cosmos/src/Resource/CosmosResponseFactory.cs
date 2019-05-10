@@ -102,14 +102,14 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(
+        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(
             CosmosUserDefinedFunction userDefinedFunction,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosUserDefinedFunctionSettings settings = this.ToObjectInternal<CosmosUserDefinedFunctionSettings>(cosmosResponseMessage);
-                return new CosmosUserDefinedFunctionResponse(
+                return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     settings,

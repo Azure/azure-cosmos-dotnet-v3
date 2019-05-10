@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
+        public virtual Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosUserDefinedFunction userDefinedFunction = this.cosmosContainer.UserDefinedFunction["myUserDefinedFunctionId"];
-        /// CosmosUserDefinedFunctionResponse response = await userDefinedFunction.ReadAsync();
+        /// UserDefinedFunctionResponse response = await userDefinedFunction.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>

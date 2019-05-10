@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get <see cref="CosmosTrigger"/> implicitly from <see cref="TriggerResponse"/>
         /// </summary>
-        /// <param name="response">CosmosUserDefinedFunctionResponse</param>
+        /// <param name="response">UserDefinedFunctionResponse</param>
         public static implicit operator CosmosTrigger(TriggerResponse response)
         {
             return response.Trigger;
