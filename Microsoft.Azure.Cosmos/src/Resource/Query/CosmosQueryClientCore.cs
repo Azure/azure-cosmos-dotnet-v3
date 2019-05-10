@@ -49,9 +49,21 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentQueryClient.GetRoutingMapProviderAsync();
         }
 
-        internal override Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken)
+        internal override async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool requireFormattableOrderByQuery,
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
+            CancellationToken cancellationToken)
         {
-            return this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
+            QueryPartitionProvider queryPartitionProvider = await this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
+            return queryPartitionProvider.GetPartitionedQueryExecutionInfo(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                requireFormattableOrderByQuery,
+                isContinuationExpected,
+                allowNonValueAggregateQuery);
         }
 
         internal override async Task<FeedResponse<CosmosElement>> ExecuteItemQueryAsync(
