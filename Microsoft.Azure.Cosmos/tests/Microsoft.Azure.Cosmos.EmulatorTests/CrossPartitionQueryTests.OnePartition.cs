@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// <summary>
     /// Tests for CrossPartitionQueryTestsOnePartition.
     /// </summary>
+    [TestCategory("Quarantine")]
     [TestClass]
     public class CrossPartitionQueryTestsOnePartition
     {
