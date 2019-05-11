@@ -214,11 +214,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
                 object pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
-                insertedDocuments.Add((await cosmosContainer.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
+                if (!partitionKey.Equals(PartitionKey.SystemKeyPath))
+                {
+                    insertedDocuments.Add((await cosmosContainer.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
+                }
+                else
+                {
+                    await this.CreateItemInNonPartitionedContainer(cosmosContainer, documentObject);
+                    insertedDocuments.Add(documentObject.ToObject<Document>());
+                }
 
             }
 
             return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
+        }
+
+        private async Task CreateItemInNonPartitionedContainer(CosmosContainer container, JObject documentObject)
+        {
+            Tuple<string, string> creds = TestCommon.GetDefaultCredentials();
+            string authKey = creds.Item1;
+            string endpoint = creds.Item2;
+            //Creating non partition Container item.
+            HttpClient client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "docs";
+            string resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, container.Id);
+            string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, container.Id);
+            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+
+            string itemDefinition = JsonConvert.SerializeObject(documentObject);
+            StringContent itemContent = new StringContent(itemDefinition);
+            Uri requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), itemContent);
+        }
+
+        private static string GetPKByConfig(PartitionConfiguration config, string partitionKey)
+        {
+            return config == PartitionConfiguration.NoPartitionKey ? PartitionKey.SystemKeyPath : partitionKey;
         }
 
         private async Task CleanUp()
@@ -678,8 +715,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryWithPartitionKey(PartitionConfiguration config)
         {
@@ -700,7 +737,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryWithPartitionKeyHelper,
-                "/key",
+                GetPKByConfig(config, "/key"),
                 null,
                 null,
                 config);
