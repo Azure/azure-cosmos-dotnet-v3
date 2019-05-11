@@ -62,8 +62,4 @@
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;NETSTANDARD20</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Optimize>true</Optimize>
-  </PropertyGroup> 
 </Project>

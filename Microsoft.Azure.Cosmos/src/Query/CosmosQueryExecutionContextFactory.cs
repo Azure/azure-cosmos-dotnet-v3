@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
@@ -110,11 +111,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
                 {
                     collection = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                }
-
-                if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
-                {
-                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
                 }
             }
 
@@ -283,10 +279,21 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> targetRanges;
             if (queryRequestOptions.PartitionKey != null)
             {
+                // Dis-ambiguate the NonePK if used 
+                PartitionKeyInternal partitionKeyInternal = null;
+                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                {
+                    partitionKeyInternal = collection.GetNoneValue();
+                }
+                else
+                {
+                    partitionKeyInternal = new PartitionKey(queryRequestOptions.PartitionKey).InternalKey;
+                }
+
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
                     resourceLink,
                     collection.ResourceId,
-                    new PartitionKey(queryRequestOptions.PartitionKey).InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
+                    partitionKeyInternal.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {
