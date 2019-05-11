@@ -78,8 +78,7 @@ namespace Microsoft.Azure.Cosmos
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
             // V3 always assumes assemblies exists
-            // If we hear any issues then will revisit it
-            // ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+            // Shall revisit on feedback
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
         }
 
