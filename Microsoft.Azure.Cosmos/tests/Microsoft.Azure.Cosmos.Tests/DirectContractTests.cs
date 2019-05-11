@@ -1,0 +1,91 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Reflection;
+    using System.Text;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    [TestClass]
+    public class DirectContractTests
+    {
+        [TestMethod]
+        public void TestInteropTest()
+        {
+            try
+            {
+                CosmosClient client = new CosmosClient(connectionString: null);
+                Assert.Fail();
+            }
+            catch(ArgumentNullException)
+            {
+            }
+
+            Assert.IsTrue(ServiceInteropWrapper.AssembliesExist.Value);
+
+            string configJson = "{}";
+            IntPtr provider;
+            uint result = ServiceInteropWrapper.CreateServiceProvider(configJson, out provider);
+        }
+
+        [TestMethod]
+        public void BatchIsWriteOperation()
+        {
+            Assert.IsTrue(Documents.OperationType.Batch.IsWriteOperation());
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void PublicDirectTypes()
+        {
+            Assembly directAssembly = typeof(IStoreClient).Assembly;
+
+            Assert.IsTrue(directAssembly.FullName.StartsWith("Microsoft.Azure.Cosmos.Direct", System.StringComparison.Ordinal), directAssembly.FullName);
+
+            Type[] exportedTypes = directAssembly.GetExportedTypes();
+            Assert.AreEqual(1, exportedTypes.Length, string.Join(",", exportedTypes.Select(e => e.Name).ToArray()));
+            Assert.AreEqual("Microsoft.Azure.Cosmos.CosmosRegions", exportedTypes.Select(e => e.FullName).Single());
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void RMContractTest()
+        {
+            Trace.TraceInformation($"{Documents.RMResources.PartitionKeyAndEffectivePartitionKeyBothSpecified} " +
+                $"{Documents.RMResources.UnexpectedPartitionKeyRangeId}");
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void RestVersionSettable()
+        {
+            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void ReqeustOptionsAutoScaleSettingsTest()
+        {
+            IEnumerable<string> propertiesWithScaleInName = typeof(Documents.Client.RequestOptions)
+                .GetProperties()
+                .Select(e => e.Name)
+                .Where(e => e.IndexOf("Scale", StringComparison.OrdinalIgnoreCase) > 0);
+
+            Assert.AreEqual(0, propertiesWithScaleInName.Count(), string.Join(",", propertiesWithScaleInName.ToArray()));
+        }
+
+        [TestMethod]
+        [Owner("kirankk")]
+        public void CustomJsonReaderTest()
+        {
+            // Contract validation that JsonReaderFactory is present 
+            DocumentServiceResponse.JsonReaderFactory = (stream) => null;
+        }
+    }
+}

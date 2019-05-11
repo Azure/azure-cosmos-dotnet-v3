@@ -195,6 +195,11 @@ namespace Microsoft.Azure.Cosmos.Query
             string collectionRid,
             CancellationToken cancellationToken)
         {
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            {
+                cosmosQueryContext.SqlQuerySpec = new SqlQuerySpec(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery);
+            }
+
             // Figure out the optimal page size.
             long initialPageSize = cosmosQueryContext.QueryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
 
