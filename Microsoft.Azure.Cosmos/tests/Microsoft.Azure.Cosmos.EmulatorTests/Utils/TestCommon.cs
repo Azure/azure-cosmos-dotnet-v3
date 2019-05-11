@@ -48,6 +48,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestCommon.masterStalenessIntervalInSeconds = int.Parse(ConfigurationManager.AppSettings["MasterStalenessIntervalInSeconds"], CultureInfo.InvariantCulture);
         }
 
+        internal static Tuple<string,string> GetDefaultCredentials()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            return new Tuple<string, string>(authKey, endpoint);
+        }
+
         internal static CosmosClientBuilder GetDefaultConfiguration()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];

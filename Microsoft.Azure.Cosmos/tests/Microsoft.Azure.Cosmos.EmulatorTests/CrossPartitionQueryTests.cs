@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CrossPartitionQueryTests
     {
+        private static readonly string utc_date = DateTime.UtcNow.ToString("r");
         private static readonly string[] NoDocuments = new string[] { };
         private CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
         private CosmosClient Client = TestCommon.CreateCosmosClient(false);
@@ -149,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Kind = PartitionKind.Hash
                     }
                 },
-                1000);
+                400);
 
             IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
             Assert.AreEqual(1, ranges.Count());
@@ -157,11 +159,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return containerResponse;
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedContainerAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null, bool singlePartition = false)
+        private async Task<CosmosContainer> CreateNotPartitionedContainer(Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            CosmosContainer partitionedCollection = !singlePartition ? 
-                await this.CreatePartitionContainer(partitionKey, indexingPolicy) 
-                : await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
+            string id = Guid.NewGuid().ToString() + "container";
+            Tuple<string,string> creds = TestCommon.GetDefaultCredentials();
+            string authKey = creds.Item1;
+            string endpoint = creds.Item2;
+            
+            //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
+            HttpClient client = new System.Net.Http.HttpClient();
+            Uri baseUri = new Uri(endpoint);
+            string verb = "POST";
+            string resourceType = "colls";
+            string resourceId = string.Format("dbs/{0}", this.database.Id);
+            string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
+            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
+
+            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+
+            client.DefaultRequestHeaders.Add("authorization", authHeader);
+            string containerDefinition = "{\n  \"id\": \"" + id + "\"\n}";
+            StringContent containerContent = new StringContent(containerDefinition);
+            Uri requestUri = new Uri(baseUri, resourceLink);
+            await client.PostAsync(requestUri.ToString(), containerContent);
+
+            return this.database.Containers[id];
+        }
+
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedContainerAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null, PartitionConfiguration config = PartitionConfiguration.MultiplePKRanges)
+        {
+            CosmosContainer cosmosContainer;
+            switch (config)
+            {
+                case PartitionConfiguration.OnePKRange:
+                    cosmosContainer = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
+                    break;
+                case PartitionConfiguration.NoPartitionKey:
+                    cosmosContainer = await this.CreateNotPartitionedContainer(indexingPolicy);
+                    break;
+                default:
+                    cosmosContainer = await this.CreatePartitionContainer(partitionKey, indexingPolicy);
+                    break;
+            }
             List<Document> insertedDocuments = new List<Document>();
             string jObjectPartitionKey = partitionKey.Remove(0, 1);
             foreach (string document in documents)
@@ -174,11 +214,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
                 object pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
-                insertedDocuments.Add((await partitionedCollection.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
+                insertedDocuments.Add((await cosmosContainer.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
 
             }
 
-            return new Tuple<CosmosContainer, List<Document>>(partitionedCollection, insertedDocuments);
+            return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
         }
 
         private async Task CleanUp()
@@ -240,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null,
-            bool singlePartition = false)
+            PartitionConfiguration config = PartitionConfiguration.MultiplePKRanges)
         {
             Query<object> queryWrapper = (container, inputDocuments, throwaway) =>
             {
@@ -255,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey,
                 indexingPolicy,
                 cosmosClientFactory,
-                singlePartition);
+                config);
         }
 
         private async Task CreateIngestQueryDeleteForType<T>(
@@ -266,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null,
-            bool singlePartition = false)
+            PartitionConfiguration config = PartitionConfiguration.MultiplePKRanges)
         {
             await this.CreateIngestQueryDelete(
                 connectionModes,
@@ -276,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testArgs,
                 partitionKey,
                 indexingPolicy,
-                singlePartition);
+                config);
         }
 
         /// <summary>
@@ -305,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            T testArgs,
            string partitionKey = "/id",
            Cosmos.IndexingPolicy indexingPolicy = null,
-           bool singlePartitionCollection = false)
+           PartitionConfiguration config = PartitionConfiguration.MultiplePKRanges)
         {
             int retryCount = 1;
             AggregateException exceptionHistory = new AggregateException();
@@ -315,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>
                     {
-                        this.CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy, singlePartitionCollection)
+                        this.CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy, config)
                     };
 
                     Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
@@ -533,11 +573,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(orderByContinuationToken.SkipCount, deserializedOrderByContinuationToken.SkipCount);
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestBadQueriesOverMultiplePartitions(bool singlePartition)
+        public async Task TestBadQueriesOverMultiplePartitions(PartitionConfiguration config)
         {
+
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CrossPartitionQueryTests.NoDocuments,
@@ -545,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/id",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestBadQueriesOverMultiplePartitionsHelper(CosmosContainer container, IEnumerable<Document> documents)
@@ -635,10 +677,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryWithPartitionKey(bool singlePartition)
+        public async Task TestQueryWithPartitionKey(PartitionConfiguration config)
         {
             string[] documents = new[]
             {
@@ -660,7 +703,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/key",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestQueryWithPartitionKeyHelper(
@@ -730,10 +773,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryMultiplePartitionsSinglePartitionKey(bool singlePartition)
+        public async Task TestQueryMultiplePartitionsSinglePartitionKey(PartitionConfiguration config)
         {
             string[] documents = new[]
             {
@@ -752,7 +796,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/pk",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestQueryMultiplePartitionsSinglePartitionKeyHelper(CosmosContainer container, IEnumerable<Document> documents)
@@ -1033,10 +1077,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public HashSet<int> ExpectedPartitionKeyValues;
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionWithLargeNumberOfKeys(bool singlePartition)
+        public async Task TestQueryCrossPartitionWithLargeNumberOfKeys(PartitionConfiguration config)
         {
             int numberOfDocuments = 1000;
             string partitionKey = "key";
@@ -1068,7 +1113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey,
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(CosmosContainer container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
@@ -1094,10 +1139,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(actualPartitionKeyValues.SetEquals(args.ExpectedPartitionKeyValues));
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestBasicCrossPartitionQuery(bool singlePartition)
+        public async Task TestBasicCrossPartitionQuery(PartitionConfiguration config)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 100;
@@ -1111,7 +1157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/id",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestBasicCrossPartitionQueryHelper(
@@ -1141,10 +1187,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryPlanGatewayAndServiceInterop(bool singlePartition)
+        public async Task TestQueryPlanGatewayAndServiceInterop(PartitionConfiguration config)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 100;
@@ -1165,7 +1212,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         "/id",
                         null,
                         null,
-                        singlePartition);
+                        config);
                 }
                 catch (Exception e)
                 {
@@ -1209,10 +1256,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestUnsupportedQueries(bool singlePartition)
+        public async Task TestUnsupportedQueries(PartitionConfiguration config)
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
@@ -1221,7 +1269,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/id",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestUnsupportedQueriesHelper(
@@ -1265,10 +1313,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionAggregateFunctions(bool singlePartition)
+        public async Task TestQueryCrossPartitionAggregateFunctions(PartitionConfiguration config)
         {
             AggregateTestArgs aggregateTestArgs = new AggregateTestArgs()
             {
@@ -1318,7 +1367,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + aggregateTestArgs.PartitionKey,
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private struct AggregateTestArgs
@@ -1503,10 +1552,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionAggregateFunctionsEmptyPartitions(bool singlePartition)
+        public async Task TestQueryCrossPartitionAggregateFunctionsEmptyPartitions(PartitionConfiguration config)
         {
             AggregateQueryEmptyPartitionsArgs args = new AggregateQueryEmptyPartitionsArgs()
             {
@@ -1532,7 +1582,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + args.PartitionKey,
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private struct AggregateQueryEmptyPartitionsArgs
@@ -1579,10 +1629,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes(bool singlePartition)
+        public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes(PartitionConfiguration config)
         {
             AggregateQueryMixedTypes args = new AggregateQueryMixedTypes()
             {
@@ -1669,7 +1720,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + args.PartitionKey,
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private struct AggregateQueryMixedTypes
@@ -1796,10 +1847,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(File.ReadAllText(baselinePath), File.ReadAllText(outputPath));
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryDistinctTest(bool singlePartition)
+        public async Task TestQueryDistinctTest(PartitionConfiguration config)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 100;
@@ -1831,7 +1883,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/id",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestQueryDistinct(CosmosContainer container, IEnumerable<Document> documents, dynamic testArgs = null)
@@ -2135,10 +2187,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             #endregion
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionTopOrderByDifferentDimension(bool singlePartition)
+        public async Task TestQueryCrossPartitionTopOrderByDifferentDimension(PartitionConfiguration config)
         {
             string[] documents = new[]
             {
@@ -2160,7 +2213,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/key",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestQueryCrossPartitionTopOrderByDifferentDimensionHelper(CosmosContainer container, IEnumerable<Document> documents)
@@ -2177,10 +2230,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(string.Join(", ", expected), string.Join(", ", query.Select(doc => doc.Id)));
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestOrderByNonAsciiCharacters(bool singlePartition)
+        public async Task TestOrderByNonAsciiCharacters(PartitionConfiguration config)
         {
             string[] specialStrings = new string[]
             {
@@ -2217,7 +2271,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/id",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestOrderByNonAsciiCharactersHelper(
@@ -2642,10 +2696,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionTopOrderBy(bool singlePartition)
+        public async Task TestQueryCrossPartitionTopOrderBy(PartitionConfiguration config)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 1000;
@@ -2662,7 +2717,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey,
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestQueryCrossPartitionTopOrderByHelper(CosmosContainer container, IEnumerable<Document> documents, string testArg)
@@ -2874,10 +2929,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionTop(bool singlePartition)
+        public async Task TestQueryCrossPartitionTop(PartitionConfiguration config)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 100;
@@ -2893,13 +2949,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey,
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestQueryCrossPartitionOffsetLimit(bool singlePartition)
+        public async Task TestQueryCrossPartitionOffsetLimit(PartitionConfiguration config)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 100;
@@ -2930,7 +2987,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/id",
                 null,
                 null,
-                singlePartition);
+                config);
         }
 
         private async Task TestQueryCrossPartitionOffsetLimit(
@@ -3291,10 +3348,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [DataRow(false)]
-        [DataRow(true)]
+        [DataRow(PartitionConfiguration.MultiplePKRanges)]
+        //[DataRow(PartitionConfiguration.NoPartitionKey)]
+        [DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
-        public async Task TestMultiOrderByQueries(bool singlePartition)
+        public async Task TestMultiOrderByQueries(PartitionConfiguration config)
         {
             int numberOfDocuments = 4;
 
@@ -3473,7 +3531,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + nameof(MultiOrderByDocument.PartitionKey),
                 indexingPolicy,
                 this.CreateNewCosmosClient,
-                singlePartition);
+                config);
         }
 
         private sealed class MultiOrderByDocument
@@ -4210,6 +4268,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Pet = pet;
                 this.Guid = guid;
             }
+        }
+
+        public enum PartitionConfiguration
+        {
+            OnePKRange,
+            MultiplePKRanges,
+            NoPartitionKey
         }
     }
 }
