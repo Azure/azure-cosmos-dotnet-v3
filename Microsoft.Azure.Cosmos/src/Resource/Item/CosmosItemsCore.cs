@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -466,6 +467,32 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 null,
                 cancellationToken);
+        }
+
+        internal async Task<object> GetPartitionKeyValueFromStream(Stream stream, CancellationToken cancellationToken = default(CancellationToken))
+        {            
+            MemoryStream memoryStream = new MemoryStream();
+            stream.Position = 0;
+            stream.CopyTo(memoryStream);
+        
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
+            IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
+            CosmosObject cosmosObject = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
+
+            string[] tokens = await this.container.GetPartitionKeyPathTokens(cancellationToken);
+            cosmosObject = (CosmosObject)cosmosObject[tokens[0]];
+
+            if(tokens.Length > 1)
+            {
+                for(int i = 1; i < tokens.Length - 1; i++)
+                {
+                    cosmosObject = (CosmosObject)cosmosObject[tokens[i]];
+                }
+            }
+            
+            CosmosElement cosmosElement = cosmosObject[tokens[tokens.Length - 1]];
+            //fix to return actual type
+            return cosmosElement.ToString();
         }
 
         private Task<CosmosResponseMessage> ItemStreamFeedRequestExecutor(

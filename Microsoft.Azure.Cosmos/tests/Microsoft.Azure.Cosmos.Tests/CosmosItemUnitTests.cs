@@ -10,8 +10,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosItemUnitTests
@@ -74,23 +76,28 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestGetPartitionKey()
+        public async Task TestGetPartitionValueFromStreamKey()
         {
-            DocumentClient documentClient = new MockDocumentClient();
-            Routing.ClientCollectionCache collectionCache = await documentClient.GetCollectionCacheAsync();
-            CosmosContainerSettings containerSettings = await collectionCache.GetByNameAsync(HttpConstants.Versions.CurrentVersion, "", default(System.Threading.CancellationToken));
             CosmosClientContextCore context = new CosmosClientContextCore(
                 client: null,
                 clientConfiguration: null,
                 cosmosJsonSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: documentClient,
-                documentQueryClient: null
+                documentClient: new MockDocumentClient(),
+                documentQueryClient: new Mock<IDocumentQueryClient>().Object
             );
             CosmosDatabaseCore database = new CosmosDatabaseCore(context, "testDatabase");
-            CosmosContainerCore container = new CosmosContainerCore(context, null, "testContainer");
+            CosmosContainerCore container = new CosmosContainerCore(context, database, "testContainer");
             CosmosItemsCore items = new CosmosItemsCore(container.ClientContext, container);
+
+            TestPOCO poco = new TestPOCO
+            {
+                Nested = new Nested { Pk = 138 }
+            };
+
+            string pk = (string) await items.GetPartitionKeyValueFromStream(new CosmosDefaultJsonSerializer().ToStream(poco));
+            Assert.AreEqual(poco.Nested.Pk, int.Parse(pk));
         }
 
         private async Task VerifyItemNullExceptions(
@@ -324,6 +331,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
+        }
+
+        private class Nested
+        {
+            public int Pk { get; set; }
+        }
+        private class TestPOCO
+        {
+            public Nested Nested { get; set; }
         }
     }
 }

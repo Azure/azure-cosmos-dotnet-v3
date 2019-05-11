@@ -10,8 +10,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -520,6 +522,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await cosmosContainer.DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-        }
+        }       
     }
 }

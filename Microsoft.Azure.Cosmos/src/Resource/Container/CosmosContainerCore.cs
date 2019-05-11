@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -206,6 +208,45 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
         }
 
+        internal async Task<string[]> GetPartitionKeyPathTokens(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if(partitionKeyPathTokens != null)
+            {
+                return partitionKeyPathTokens;
+            }
+
+            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+            if (partitionKeyDefinition == null || partitionKeyDefinition.Paths.Count == 0)
+            {
+                throw new ArgumentException("Partition key path not found");
+            }
+
+            string path = partitionKeyDefinition.Paths[0];
+
+            //faster than string.Spilt
+            partitionKeyPathTokens = new string[path.Count(x => x == '/')];
+            int index = 0;
+            int tokenCount = 0;
+            int nextId = path.IndexOf('/');            
+            do
+            {
+                index = nextId;
+                nextId = path.IndexOf('/', index + 1);
+                if (nextId == -1)
+                {
+                    partitionKeyPathTokens[tokenCount++] = path.Substring(index + 1);
+                }
+                else
+                {
+                    partitionKeyPathTokens[tokenCount++] = path.Substring(index + 1, nextId - index - 1);
+                }
+            }
+            while (nextId > -1);
+
+            return partitionKeyPathTokens;
+        }
+
+
         /// <summary>
         /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
         /// </summary>
@@ -241,6 +282,8 @@ namespace Microsoft.Azure.Cosmos
                 })
                 .Unwrap();
         }
+
+        private string[] partitionKeyPathTokens;
 
         private Task<CosmosResponseMessage> ProcessStreamAsync(
             Stream streamPayload,
