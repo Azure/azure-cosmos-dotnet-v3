@@ -611,8 +611,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestBadQueriesOverMultiplePartitions(PartitionConfiguration config)
         {
@@ -621,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CrossPartitionQueryTests.NoDocuments,
                 this.TestBadQueriesOverMultiplePartitionsHelper,
-                "/id",
+                GetPKByConfig(config, "/id"),
                 null,
                 null,
                 config);
@@ -811,8 +811,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryMultiplePartitionsSinglePartitionKey(PartitionConfiguration config)
         {
@@ -830,7 +830,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryMultiplePartitionsSinglePartitionKeyHelper,
-                "/pk",
+                GetPKByConfig(config, "/pk"),
                 null,
                 null,
                 config);
@@ -1116,7 +1116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
         //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionWithLargeNumberOfKeys(PartitionConfiguration config)
         {
@@ -1177,8 +1177,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestBasicCrossPartitionQuery(PartitionConfiguration config)
         {
@@ -1191,7 +1191,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct,
                 documents,
                 this.TestBasicCrossPartitionQueryHelper,
-                "/id",
+                GetPKByConfig(config, "/pk"),
                 null,
                 null,
                 config);
@@ -1225,8 +1225,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryPlanGatewayAndServiceInterop(PartitionConfiguration config)
         {
@@ -1246,7 +1246,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionModes.Direct,
                         documents,
                         this.TestQueryPlanGatewayAndServiceInteropHelper,
-                        "/id",
+                        GetPKByConfig(config, "/id"),
                         null,
                         null,
                         config);
@@ -1294,8 +1294,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestUnsupportedQueries(PartitionConfiguration config)
         {
@@ -1303,7 +1303,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 NoDocuments,
                 this.TestUnsupportedQueriesHelper,
-                "/id",
+                GetPKByConfig(config, "/id"),
                 null,
                 null,
                 config);
@@ -1352,7 +1352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
         //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctions(PartitionConfiguration config)
         {
@@ -1591,7 +1591,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
         //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctionsEmptyPartitions(PartitionConfiguration config)
         {
@@ -1668,7 +1668,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
         //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes(PartitionConfiguration config)
         {
@@ -1885,8 +1885,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryDistinctTest(PartitionConfiguration config)
         {
@@ -1917,7 +1917,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents,
                 this.TestQueryDistinct,
                 null,
-                "/id",
+                GetPKByConfig(config, "/id"),
                 null,
                 null,
                 config);
@@ -2225,8 +2225,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionTopOrderByDifferentDimension(PartitionConfiguration config)
         {
@@ -2247,7 +2247,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionTopOrderByDifferentDimensionHelper,
-                "/key",
+                GetPKByConfig(config, "/key"),
                 null,
                 null,
                 config);
@@ -2268,8 +2268,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestOrderByNonAsciiCharacters(PartitionConfiguration config)
         {
@@ -2305,7 +2305,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestOrderByNonAsciiCharactersHelper,
-                "/id",
+                GetPKByConfig(config, "/id"),
                 null,
                 null,
                 config);
@@ -2734,8 +2734,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionTopOrderBy(PartitionConfiguration config)
         {
@@ -2751,7 +2751,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents,
                 this.TestQueryCrossPartitionTopOrderByHelper,
                 partitionKey,
-                "/" + partitionKey,
+                GetPKByConfig(config, "/" + partitionKey),
                 null,
                 null,
                 config);
@@ -2967,8 +2967,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionTop(PartitionConfiguration config)
         {
@@ -2983,15 +2983,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct,
                 documents,
                 this.TestQueryCrossPartitionTopHelper,
-                "/" + partitionKey,
+                GetPKByConfig(config, "/" + partitionKey),
                 null,
                 null,
                 config);
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestQueryCrossPartitionOffsetLimit(PartitionConfiguration config)
         {
@@ -3021,7 +3021,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionOffsetLimit,
-                "/id",
+                GetPKByConfig(config, "/id"),
                 null,
                 null,
                 config);
@@ -3386,8 +3386,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [DataRow(PartitionConfiguration.MultiplePKRanges)]
-        //[DataRow(PartitionConfiguration.NoPartitionKey)]
-        [DataRow(PartitionConfiguration.OnePKRange)]
+        [DataRow(PartitionConfiguration.NoPartitionKey)]
+        //[DataRow(PartitionConfiguration.OnePKRange)]
         [DataTestMethod]
         public async Task TestMultiOrderByQueries(PartitionConfiguration config)
         {
