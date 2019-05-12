@@ -1476,7 +1476,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
 
-            string filename = $"CrossPartitionQueryTestsNp.AggregateMixedTypes";
+            string filename = $"CrossPartitionQueryTests.AggregateMixedTypes";
             string outputPath = $"{filename}_output.xml";
             string baselinePath = $"{filename}_baseline.xml";
             XmlWriterSettings settings = new XmlWriterSettings()
@@ -1520,7 +1520,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 writer.WriteEndDocument();
             }
 
-            Assert.AreEqual(File.ReadAllText(baselinePath), File.ReadAllText(outputPath));
+            string normalizedBaseline = File.ReadAllText(baselinePath).Replace(Environment.NewLine, "");
+            string normalizedOutput = File.ReadAllText(outputPath).Replace(Environment.NewLine, ""); Assert.AreEqual(File.ReadAllText(baselinePath), File.ReadAllText(outputPath));
+
+            Assert.AreEqual(normalizedBaseline, normalizedOutput);
         }
 
         [Ignore]

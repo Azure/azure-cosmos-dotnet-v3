@@ -1566,7 +1566,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 writer.WriteEndDocument();
             }
 
-            Assert.AreEqual(File.ReadAllText(baselinePath), File.ReadAllText(outputPath));
+            string normalizedBaseline = File.ReadAllText(baselinePath).Replace(Environment.NewLine, "");
+            string normalizedOutput = File.ReadAllText(outputPath).Replace(Environment.NewLine, "");
+
+            Assert.AreEqual(normalizedBaseline, normalizedOutput);
         }
 
         [TestMethod]
