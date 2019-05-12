@@ -69,13 +69,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await VerifyItemNullExceptions(testItem, null);
 
-            CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
             await VerifyItemNullExceptions(testItem, requestOptions);
         }
 
         private async Task VerifyItemNullExceptions(
             dynamic testItem,
-            CosmosItemRequestOptions requestOptions = null)
+            ItemRequestOptions requestOptions = null)
         {
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             object partitionKey,
             string partitionKeySerialized,
             dynamic testItem,
-            CosmosItemRequestOptions requestOptions = null)
+            ItemRequestOptions requestOptions = null)
         {
             CosmosResponseMessage response = null;
             HttpStatusCode httpStatusCode = HttpStatusCode.OK;
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainer container = client.Databases["testdb"]
                                         .Containers["testcontainer"];
 
-            CosmosItemResponse<dynamic> itemResponse = await container.Items.CreateItemAsync<dynamic>(
+            ItemResponse<dynamic> itemResponse = await container.Items.CreateItemAsync<dynamic>(
                 partitionKey: partitionKey,
                 item: testItem,
                 requestOptions: requestOptions);

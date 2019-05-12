@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disableAutomaticIdGeneration">Disables the automatic id generation, will throw an exception if id is missing.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> CreateDocumentAsync(Uri documentCollectionUri, object document, RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> CreateDocumentAsync(Uri documentCollectionUri, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (documentCollectionUri == null)
             {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollection">the Microsoft.Azure.Documents.DocumentCollection object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(Uri databaseUri, DocumentCollection documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(Uri databaseUri, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             if (databaseUri == null)
             {
@@ -62,13 +62,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollection">The <see cref="DocumentCollection"/> object.</param>
         /// <param name="options">(Optional) Any <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> you wish to provide when creating a Collection. E.g. RequestOptions.OfferThroughput = 400. </param>
         /// <returns>The <see cref="DocumentCollection"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(Uri databaseUri, DocumentCollection documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(Uri databaseUri, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDocumentCollectionIfNotExistsPrivateAsync(databaseUri, documentCollection, options), null);
         }
 
         private async Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsPrivateAsync(
-            Uri databaseUri, DocumentCollection documentCollection, RequestOptions options)
+            Uri databaseUri, DocumentCollection documentCollection, Documents.Client.RequestOptions options)
         {
             if (databaseUri == null)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedure">the Microsoft.Azure.Documents.StoredProcedure object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(Uri documentCollectionUri, StoredProcedure storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(Uri documentCollectionUri, StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="trigger">the Microsoft.Azure.Documents.Trigger object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Trigger>> CreateTriggerAsync(Uri documentCollectionUri, Trigger trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> CreateTriggerAsync(Uri documentCollectionUri, Trigger trigger, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="function">the Microsoft.Azure.Documents.UserDefinedFunction object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(Uri documentCollectionUri, UserDefinedFunction function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(Uri documentCollectionUri, UserDefinedFunction function, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="userDefinedType">the Microsoft.Azure.Documents.UserDefinedType object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal Task<ResourceResponse<UserDefinedType>> CreateUserDefinedTypeAsync(Uri databaseUri, UserDefinedType userDefinedType, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> CreateUserDefinedTypeAsync(Uri databaseUri, UserDefinedType userDefinedType, Documents.Client.RequestOptions options = null)
         {
             if (databaseUri == null)
             {
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disableAutomaticIdGeneration">Disables the automatic id generation, will throw an exception if id is missing.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> UpsertDocumentAsync(Uri documentCollectionUri, object document, RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> UpsertDocumentAsync(Uri documentCollectionUri, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (documentCollectionUri == null)
             {
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedure">the Microsoft.Azure.Documents.StoredProcedure object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(Uri documentCollectionUri, StoredProcedure storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(Uri documentCollectionUri, StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="trigger">the Microsoft.Azure.Documents.Trigger object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Trigger>> UpsertTriggerAsync(Uri documentCollectionUri, Trigger trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> UpsertTriggerAsync(Uri documentCollectionUri, Trigger trigger, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="function">the Microsoft.Azure.Documents.UserDefinedFunction object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(Uri documentCollectionUri, UserDefinedFunction function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(Uri documentCollectionUri, UserDefinedFunction function, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="userDefinedType">the Microsoft.Azure.Documents.UserDefinedType object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal Task<ResourceResponse<UserDefinedType>> UpsertUserDefinedTypeAsync(Uri databaseUri, UserDefinedType userDefinedType, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> UpsertUserDefinedTypeAsync(Uri databaseUri, UserDefinedType userDefinedType, Documents.Client.RequestOptions options = null)
         {
             if (databaseUri == null)
             {
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">the URI of the database to delete.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(Uri databaseUri, RequestOptions options = null)
+        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null)
         {
             if (databaseUri == null)
             {
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">The request options for the request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (documentUri == null)
             {
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">the URI of the document collection to delete.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(Uri documentCollectionUri, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedureUri">the URI of the stored procedure to delete.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(Uri storedProcedureUri, Documents.Client.RequestOptions options = null)
         {
             if (storedProcedureUri == null)
             {
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="triggerUri">the URI of the trigger to delete.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Trigger>> DeleteTriggerAsync(Uri triggerUri, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> DeleteTriggerAsync(Uri triggerUri, Documents.Client.RequestOptions options = null)
         {
             if (triggerUri == null)
             {
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="functionUri">the URI of the user defined function to delete.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(Uri functionUri, Documents.Client.RequestOptions options = null)
         {
             if (functionUri == null)
             {
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="conflictUri">the URI of the conflict to delete.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Conflict>> DeleteConflictAsync(Uri conflictUri, RequestOptions options = null)
+        public Task<ResourceResponse<Conflict>> DeleteConflictAsync(Uri conflictUri, Documents.Client.RequestOptions options = null)
         {
             if (conflictUri == null)
             {
@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">The request options for the request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (documentUri == null)
             {
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollection">the updated document collection.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(Uri documentCollectionUri, DocumentCollection documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(Uri documentCollectionUri, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedure">the updated stored procedure.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(Uri storedProcedureUri, StoredProcedure storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(Uri storedProcedureUri, StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null)
         {
             if (storedProcedureUri == null)
             {
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="trigger">the updated trigger.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Uri triggerUri, Trigger trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Uri triggerUri, Trigger trigger, Documents.Client.RequestOptions options = null)
         {
             if (triggerUri == null)
             {
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="function">the updated user defined function.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(Uri userDefinedFunctionUri, UserDefinedFunction function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(Uri userDefinedFunctionUri, UserDefinedFunction function, Documents.Client.RequestOptions options = null)
         {
             if (userDefinedFunctionUri == null)
             {
@@ -475,7 +475,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="userDefinedType">the updated user defined type.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal Task<ResourceResponse<UserDefinedType>> ReplaceUserDefinedTypeAsync(Uri userDefinedTypeUri, UserDefinedType userDefinedType, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> ReplaceUserDefinedTypeAsync(Uri userDefinedTypeUri, UserDefinedType userDefinedType, Documents.Client.RequestOptions options = null)
         {
             if (userDefinedTypeUri == null)
             {
@@ -529,7 +529,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> ReadDatabaseAsync(Uri databaseUri, RequestOptions options = null)
+        public Task<ResourceResponse<Database>> ReadDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null)
         {
             if (databaseUri == null)
             {
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (documentUri == null)
             {
@@ -635,7 +635,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (documentUri == null)
             {
@@ -686,7 +686,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(Uri documentCollectionUri, Documents.Client.RequestOptions options = null)
         {
             if (documentCollectionUri == null)
             {
@@ -738,7 +738,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(Uri storedProcedureUri, Documents.Client.RequestOptions options = null)
         {
             if (storedProcedureUri == null)
             {
@@ -790,7 +790,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Trigger>> ReadTriggerAsync(Uri triggerUri, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> ReadTriggerAsync(Uri triggerUri, Documents.Client.RequestOptions options = null)
         {
             if (triggerUri == null)
             {
@@ -842,7 +842,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(Uri functionUri, Documents.Client.RequestOptions options = null)
         {
             if (functionUri == null)
             {
@@ -894,7 +894,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Conflict>> ReadConflictAsync(Uri conflictUri, RequestOptions options = null)
+        public Task<ResourceResponse<Conflict>> ReadConflictAsync(Uri conflictUri, Documents.Client.RequestOptions options = null)
         {
             if (conflictUri == null)
             {
@@ -946,7 +946,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<Schema>> ReadSchemaAsync(Uri schemaUri, RequestOptions options = null)
+        internal Task<ResourceResponse<Schema>> ReadSchemaAsync(Uri schemaUri, Documents.Client.RequestOptions options = null)
         {
             if(schemaUri == null)
             {
@@ -994,10 +994,10 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="UserDefinedType"/> 
-        /// <seealso cref="CosmosRequestOptions"/>
+        /// <seealso cref="RequestOptions"/>
         /// <seealso cref="ResourceResponse{T}"/>
         /// <seealso cref="Task"/>
-        internal Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypeAsync(Uri userDefinedTypeUri, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypeAsync(Uri userDefinedTypeUri, Documents.Client.RequestOptions options = null)
         {
             if (userDefinedTypeUri == null)
             {
@@ -1015,7 +1015,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionsUri">the URI for the document collections.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(Uri documentCollectionsUri, FeedOptions options = null)
+        public Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(Uri documentCollectionsUri, FeedOptions options = null)
         {
             if (documentCollectionsUri == null)
             {
@@ -1030,7 +1030,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProceduresUri">the URI for the stored procedures.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(Uri storedProceduresUri, FeedOptions options = null)
+        public Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(Uri storedProceduresUri, FeedOptions options = null)
         {
             if (storedProceduresUri == null)
             {
@@ -1045,7 +1045,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="triggersUri">the URI for the triggers.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(Uri triggersUri, FeedOptions options = null)
+        public Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(Uri triggersUri, FeedOptions options = null)
         {
             if (triggersUri == null)
             {
@@ -1060,7 +1060,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="userDefinedFunctionsUri">the URI for the user defined functions.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(Uri userDefinedFunctionsUri, FeedOptions options = null)
+        public Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(Uri userDefinedFunctionsUri, FeedOptions options = null)
         {
             if (userDefinedFunctionsUri == null)
             {
@@ -1076,7 +1076,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">The request options for the request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentsUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentsUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (documentsUri == null)
             {
@@ -1091,7 +1091,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="conflictsUri">the URI for the conflicts.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<FeedResponse<Conflict>> ReadConflictFeedAsync(Uri conflictsUri, FeedOptions options = null)
+        public Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(Uri conflictsUri, FeedOptions options = null)
         {
             if (conflictsUri == null)
             {
@@ -1112,7 +1112,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Uri partitionKeyRangesUri = UriFactory.CreatePartitionKeyRangesUri(database.Id, collection.Id);
-        /// FeedResponse<PartitionKeyRange> response = null;
+        /// DoucmentFeedResponse<PartitionKeyRange> response = null;
         /// List<string> ids = new List<string>();
         /// do
         /// {
@@ -1128,10 +1128,10 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.UriFactory.CreatePartitionKeyRangesUri(string, string)"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(Uri partitionKeyRangesOrCollectionUri, FeedOptions options = null)
+        public Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(Uri partitionKeyRangesOrCollectionUri, FeedOptions options = null)
         {
             if (partitionKeyRangesOrCollectionUri == null)
             {
@@ -1147,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="userDefinedTypesUri">the URI for the user defined types.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal Task<FeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedAsync(Uri userDefinedTypesUri, FeedOptions options = null)
+        internal Task<DocumentFeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedAsync(Uri userDefinedTypesUri, FeedOptions options = null)
         {
             if (userDefinedTypesUri == null)
             {
@@ -1184,7 +1184,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">The request options for the request.</param>
         /// <param name="procedureParams">the parameters for the stored procedure execution.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(Uri storedProcedureUri, RequestOptions options, params dynamic[] procedureParams)
+        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(Uri storedProcedureUri, Documents.Client.RequestOptions options, params dynamic[] procedureParams)
         {
             if (storedProcedureUri == null)
             {
@@ -1202,7 +1202,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <param name="procedureParams">the parameters for the stored procedure execution.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(Uri storedProcedureUri, RequestOptions options, CancellationToken cancellationToken = default(CancellationToken), params dynamic[] procedureParams)
+        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(Uri storedProcedureUri, Documents.Client.RequestOptions options, CancellationToken cancellationToken = default(CancellationToken), params dynamic[] procedureParams)
         {
             if (storedProcedureUri == null)
             {
@@ -1217,7 +1217,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="schemasUri">the link for the schemas.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal Task<FeedResponse<Schema>> ReadSchemaFeedAsync(Uri schemasUri, FeedOptions options = null)
+        internal Task<DocumentFeedResponse<Schema>> ReadSchemaFeedAsync(Uri schemasUri, FeedOptions options = null)
         {
             if(schemasUri == null)
             {

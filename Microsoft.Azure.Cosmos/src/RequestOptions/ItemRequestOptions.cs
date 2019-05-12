@@ -6,14 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cosmos item request options
     /// </summary>
-    public class CosmosItemRequestOptions : CosmosRequestOptions
+    public class ItemRequestOptions : RequestOptions
     {
         /// <summary>
         /// Gets or sets the trigger to be invoked before the operation in the Azure Cosmos DB service.
@@ -66,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// In some scenarios you need to manage this Session yourself;
         /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="CosmosItemResponse{T}"/> of the write action on one node
+        /// you would have to send the SessionToken from <see cref="ItemResponse{T}"/> of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
         /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
         /// the read could potentially land on a different node to the write request, where the session was created.
@@ -101,23 +99,23 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
-            if (PreTriggers != null && PreTriggers.Any())
+            if (this.PreTriggers != null && this.PreTriggers.Any())
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PreTriggerInclude, this.PreTriggers);
             }
 
-            if (PostTriggers != null && PostTriggers.Any())
+            if (this.PostTriggers != null && this.PostTriggers.Any())
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PostTriggerInclude, this.PostTriggers);
             }
 
-            if(this.IndexingDirective != null && this.IndexingDirective.HasValue)
+            if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IndexingDirective, this.IndexingDirective.Value.ToString());
             }
 
-            CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
-            CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
+            RequestOptions.SetSessionToken(request, this.SessionToken);
+            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             base.FillRequestOptions(request);
         }

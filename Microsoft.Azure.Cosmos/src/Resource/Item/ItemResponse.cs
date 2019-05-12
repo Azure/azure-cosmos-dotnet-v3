@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos item response
     /// </summary>
-    public class CosmosItemResponse<T> : CosmosResponse<T>
+    public class ItemResponse<T> : Response<T>
     {
         /// <summary>
-        /// Create a <see cref="CosmosItemResponse{T}"/> as a no-op for mock testing
+        /// Create a <see cref="ItemResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        public CosmosItemResponse() : base()
+        public ItemResponse() : base()
         {
 
         }
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the CosmosResponseMessage
         /// </summary>
-        internal CosmosItemResponse(
+        internal ItemResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
             T item) : base(

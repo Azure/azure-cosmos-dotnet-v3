@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 50000,
                 cancellationToken: this.cancellationToken);
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             this.Container = (CosmosContainerCore)response;
 
-            FeedResponse<PartitionKeyRange> pkRangesFeed = await this.cosmosClient.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+            DocumentFeedResponse<PartitionKeyRange> pkRangesFeed = await this.cosmosClient.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
             Assert.IsTrue(pkRangesFeed.Count > 1, "Refresh container throughput to have at-least > 1 pk-range");
         }
 
@@ -64,14 +64,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (CosmosResponseMessage createResponse = await this.Container.Items.CreateItemStreamAsync(
                         i.ToString(),
                         CosmosReadFeedTests.GenerateStreamFromString(item),
-                        requestOptions: new CosmosItemRequestOptions()))
+                        requestOptions: new ItemRequestOptions()))
                 {
                     Assert.IsTrue(createResponse.IsSuccessStatusCode);
                 }
             }
 
             string lastKnownContinuationToken = null;
-            CosmosFeedIterator iter = this.Container.Database.Containers[this.Container.Id].Items
+            FeedIterator iter = this.Container.Database.Containers[this.Container.Id].Items
                                 .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
             int count = 0;
             List<string> forwardOrder = new List<string>();
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(total, count);
             Assert.IsFalse(forwardOrder.Where(x => string.IsNullOrEmpty(x)).Any());
 
-            CosmosItemRequestOptions requestOptions = new CosmosItemRequestOptions();
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
             requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>();
             requestOptions.Properties.Add(HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse);
             count = 0;

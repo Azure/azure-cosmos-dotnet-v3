@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     /// <example>
     /// <code language="c#">
     /// <![CDATA[
-    /// CosmosDatabaseResponse response = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
+    /// DatabaseResponse response = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
     /// ]]>
     /// </code>
     /// </example>
@@ -51,11 +51,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosDatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
-        public abstract Task<CosmosDatabaseResponse> CreateDatabaseAsync(
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
+        public abstract Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
-                CosmosRequestOptions requestOptions = null,
+                RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -74,11 +74,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosDatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
-        public abstract Task<CosmosDatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
+        public abstract Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the database under the cosmos account
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosDatabaseSettings> feedIterator = this.cosmosClient.Databases.GetDatabaseIterator();
+        /// FeedIterator<CosmosDatabaseSettings> feedIterator = this.cosmosClient.Databases.GetDatabaseIterator();
         /// {
         ///     foreach (CosmosDatabaseSettings databaseSettings in  await feedIterator.FetchNextSetAsync())
         ///     {
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<CosmosDatabaseSettings> GetDatabaseIterator(
+        public abstract FeedIterator<CosmosDatabaseSettings> GetDatabaseIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosDatabase db = this.cosmosClient.Databases["myDatabaseId"];
-        /// CosmosDatabaseResponse response = await db.ReadAsync();
+        /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -137,11 +137,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosDatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
         public abstract Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                Stream streamPayload,
                int? throughput = null,
-               CosmosRequestOptions requestOptions = null,
+               RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
     }
 }

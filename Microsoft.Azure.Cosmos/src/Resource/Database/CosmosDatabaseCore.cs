@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDatabaseCore : CosmosDatabase
     {
+        /// <summary>
+        /// Only used for unit testing
+        /// </summary>
+        internal CosmosDatabaseCore() { }
+
         private readonly CosmosClientContext clientContext;
 
         internal CosmosDatabaseCore(
@@ -39,8 +44,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Uri LinkUri { get; }
 
-        public override Task<CosmosDatabaseResponse> ReadAsync(
-                    CosmosRequestOptions requestOptions = null,
+        public override Task<DatabaseResponse> ReadAsync(
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.ReadStreamAsync(
@@ -50,8 +55,8 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
-        public override Task<CosmosDatabaseResponse> DeleteAsync(
-                    CosmosRequestOptions requestOptions = null,
+        public override Task<DatabaseResponse> DeleteAsync(
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
@@ -85,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> ReadStreamAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -95,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> DeleteStreamAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -126,14 +131,14 @@ namespace Microsoft.Azure.Cosmos
             return this.ReadAsync(cancellationToken: cancellationToken)
                 .ContinueWith(task =>
                 {
-                    CosmosDatabaseResponse response = task.Result;
+                    DatabaseResponse response = task.Result;
                     return response.Resource.ResourceId;
                 }, cancellationToken);
         }
 
         private Task<CosmosResponseMessage> ProcessAsync(
             OperationType operationType,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.clientContext.ProcessResourceOperationStreamAsync(

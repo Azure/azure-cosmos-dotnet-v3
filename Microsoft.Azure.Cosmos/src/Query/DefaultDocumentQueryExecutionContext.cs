@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
         }
 
-        protected override async Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
+        protected override async Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
             PartitionKeyRangeCache partitionKeyRangeCache = await this.Client.GetPartitionKeyRangeCache();
@@ -78,13 +78,13 @@ namespace Microsoft.Azure.Cosmos.Query
                     retryPolicyInstance);
             }
 
-            return await BackoffRetryUtility<FeedResponse<CosmosElement>>.ExecuteAsync(
+            return await BackoffRetryUtility<DocumentFeedResponse<CosmosElement>>.ExecuteAsync(
                 async () =>
                 {
                     this.fetchExecutionRangeAccumulator.BeginFetchRange();
                     ++this.retries;
-                    Tuple<FeedResponse<CosmosElement>, string> responseAndPartitionIdentifier = await this.ExecuteOnceAsync(retryPolicyInstance, token);
-                    FeedResponse<CosmosElement> response = responseAndPartitionIdentifier.Item1;
+                    Tuple<DocumentFeedResponse<CosmosElement>, string> responseAndPartitionIdentifier = await this.ExecuteOnceAsync(retryPolicyInstance, token);
+                    DocumentFeedResponse<CosmosElement> response = responseAndPartitionIdentifier.Item1;
                     string partitionIdentifier = responseAndPartitionIdentifier.Item2;
                     if (!string.IsNullOrEmpty(response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics]))
                     {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             response.ActivityId, 
                             response.Count, 
                             this.retries);
-                        response = new FeedResponse<CosmosElement>(
+                        response = new DocumentFeedResponse<CosmosElement>(
                             response,
                             response.Count,
                             response.Headers,
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 token);
         }
 
-        private async Task<Tuple<FeedResponse<CosmosElement>, string>> ExecuteOnceAsync(
+        private async Task<Tuple<DocumentFeedResponse<CosmosElement>, string>> ExecuteOnceAsync(
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
             // which shold be erased during retries.
             using (DocumentServiceRequest request = await this.CreateRequestAsync())
             {
-                FeedResponse<CosmosElement> feedRespose;
+                DocumentFeedResponse<CosmosElement> feedRespose;
                 string partitionIdentifier;
                 // We need to determine how to execute the request:
                 if (LogicalPartitionKeyProvided(request))
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
 
                         request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, queryRoutingInfo.Item1.ResolvedRange.Id));
-                        FeedResponse<CosmosElement> response = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
+                        DocumentFeedResponse<CosmosElement> response = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
 
                         // Form a composite continuation token (range + backend continuation token).
                         // If the backend continuation token was null for the range, 
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
                 }
 
-                return new Tuple<FeedResponse<CosmosElement>, string>(feedRespose, partitionIdentifier);
+                return new Tuple<DocumentFeedResponse<CosmosElement>, string>(feedRespose, partitionIdentifier);
             }
         }
 
@@ -283,16 +283,55 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (this.ShouldExecuteQueryRequest)
                 {
+                    FeedOptions feedOptions = this.GetFeedOptions(null);
+                    PartitionKeyDefinition partitionKeyDefinition;
+                    object partitionKeyDefinitionObject;
+                    if (feedOptions.Properties != null && feedOptions.Properties.TryGetValue(CosmosQueryExecutionContextFactory.InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                    {
+                        if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
+                        {
+                            partitionKeyDefinition = definition;
+                        }
+                        else
+                        {
+                            throw new ArgumentException(
+                                "partitionkeydefinition has invalid type",
+                                nameof(partitionKeyDefinitionObject));
+                        }
+                    }
+                    else
+                    {
+                        partitionKeyDefinition = collection.PartitionKey;
+                    }
+
                     QueryInfo queryInfo;
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,
                         isContinuationExpected,
-                        collection.PartitionKey,
+                        partitionKeyDefinition,
                         queryPartitionProvider,
                         version,
                         out queryInfo);
+                }
+                else if (request.Properties != null && request.Properties.TryGetValue(
+                    WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                    out object effectivePartitionKey))
+                {
+                    if (effectivePartitionKey is string effectivePartitionKeyString)
+                    {
+                        providedRanges = new List<Range<string>>()
+                        {
+                            Range<string>.GetPointRange(effectivePartitionKeyString),
+                        };
+                    }
+                    else
+                    {
+                        throw new ArgumentException(
+                            "EffectivePartitionKey must be a string",
+                            WFConstants.BackendHeaders.EffectivePartitionKeyString);
+                    }
                 }
                 else
                 {

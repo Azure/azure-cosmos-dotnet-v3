@@ -10,23 +10,23 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Cosmos result set stream iterator. This is used to get the query responses with a Stream content
+    /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
     /// </summary>
-    internal class CosmosResultSetIteratorCore : CosmosFeedIterator
+    internal class FeedIteratorCore : FeedIterator
     {
         internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken);
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
-        internal CosmosResultSetIteratorCore(
+        internal FeedIteratorCore(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             NextResultSetDelegate nextDelegate,
             object state = null)
         {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly CosmosRequestOptions queryOptions;
+        protected readonly RequestOptions queryOptions;
 
         /// <summary>
         /// The state of the result set.
@@ -90,24 +90,24 @@ namespace Microsoft.Azure.Cosmos
     }
 
     /// <summary>
-    /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
+    /// Cosmos feed iterator that keeps track of the continuation token when retrieving results form a query.
     /// </summary>
     /// <typeparam name="T">The response object type that can be deserialized</typeparam>
-    internal class CosmosDefaultResultSetIterator<T> : CosmosFeedIterator<T>
+    internal class FeedIteratorCore<T> : FeedIterator<T>
     {
-        internal delegate Task<CosmosFeedResponse<T>> NextResultSetDelegate(
+        internal delegate Task<FeedResponse<T>> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken);
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
-        internal CosmosDefaultResultSetIterator(
+        internal FeedIteratorCore(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             NextResultSetDelegate nextDelegate,
             object state = null)
         {
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly CosmosRequestOptions queryOptions;
+        protected readonly RequestOptions queryOptions;
 
         /// <summary>
         /// The state of the result set.
@@ -149,14 +149,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<CosmosFeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             return this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken)
                 .ContinueWith(task =>
                 {
-                    CosmosFeedResponse<T> response = task.Result;
+                    FeedResponse<T> response = task.Result;
                     this.HasMoreResults = response.HasMoreResults;
                     this.continuationToken = response.InternalContinuationToken;
                     
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        internal static CosmosReadFeedResponse<T> CreateCosmosQueryResponse(
+        internal static ReadFeedResponse<T> CreateCosmosQueryResponse(
                 CosmosResponseMessage cosmosResponseMessage,
                 CosmosJsonSerializer jsonSerializer)
         {
@@ -173,10 +173,10 @@ namespace Microsoft.Azure.Cosmos
                 // Throw the exception if the query failed.
                 cosmosResponseMessage.EnsureSuccessStatusCode();
 
-                string continuationToken = CosmosResultSetIteratorCore.GetContinuationToken(cosmosResponseMessage);
-                bool hasMoreResults = CosmosResultSetIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
+                string continuationToken = FeedIteratorCore.GetContinuationToken(cosmosResponseMessage);
+                bool hasMoreResults = FeedIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
 
-                return CosmosReadFeedResponse<T>.CreateResponse<T>(
+                return ReadFeedResponse<T>.CreateResponse<T>(
                     responseMessageHeaders: cosmosResponseMessage.Headers,
                     stream: cosmosResponseMessage.Content,
                     jsonSerializer: jsonSerializer,

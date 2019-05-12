@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<FeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellationToken);
         }
@@ -106,21 +106,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ExecuteNextAsync<dynamic>(cancellationToken);
         }
         #endregion IDocumentQuery<TResource>
 
         #region Private
-        public Task<FeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
+        public Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicy = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellationToken), retryPolicy, cancellationToken);
         }
 
-        private async Task<FeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellationToken))
             {
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     long responseLengthInBytes = response.ResponseBody.Length;
                     int itemCount = 0;
                     IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
-                    FeedResponse<dynamic> feedResponse = new FeedResponse<dynamic>(
+                    DocumentFeedResponse<dynamic> feedResponse = new DocumentFeedResponse<dynamic>(
                         feedResource,
                         itemCount,
                         response.Headers,
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
                 else
                 {
-                    return new FeedResponse<TResult>(
+                    return new DocumentFeedResponse<TResult>(
                         Enumerable.Empty<TResult>(),
                         0,
                         response.Headers,

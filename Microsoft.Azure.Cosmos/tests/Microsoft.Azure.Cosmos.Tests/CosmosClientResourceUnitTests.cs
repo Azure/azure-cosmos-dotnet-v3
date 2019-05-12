@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateItemRequestOptions()
         {
-            CosmosItemRequestOptions options = new CosmosItemRequestOptions
+            ItemRequestOptions options = new ItemRequestOptions
             {
                 PreTriggers = new List<string>()
                 {
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateItemRequestOptionsMultipleTriggers()
         {
-            CosmosItemRequestOptions options = new CosmosItemRequestOptions
+            ItemRequestOptions options = new ItemRequestOptions
             {
                 PreTriggers = new List<string>()
                 {
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateSetItemRequestOptions()
         {
-            CosmosItemRequestOptions options = new CosmosItemRequestOptions();
+            ItemRequestOptions options = new ItemRequestOptions();
             options.PreTriggers = new List<string>() { "preTrigger" };
             options.PostTriggers = new List<string>() { "postTrigger" };
 
