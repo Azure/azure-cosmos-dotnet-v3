@@ -1309,6 +1309,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestCategory("Quarantine")]
         [TestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes()
         {
