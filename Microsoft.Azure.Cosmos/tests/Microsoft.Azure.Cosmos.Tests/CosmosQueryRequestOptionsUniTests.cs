@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosQueryRequestOptionsUniTests
+    public class QueryRequestOptionsUniTests
     {
         [TestMethod]
         public void StatelessTest()
         {
-            CosmosQueryRequestOptions requestOption = new CosmosQueryRequestOptions();
+            QueryRequestOptions requestOption = new QueryRequestOptions();
             requestOption.RequestContinuation = "SomeToken";
 
             CosmosRequestMessage testMessage = new CosmosRequestMessage();

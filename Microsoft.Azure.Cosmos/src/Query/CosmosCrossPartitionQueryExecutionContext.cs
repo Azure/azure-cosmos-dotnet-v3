@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
     {
         private CosmosQueryContext queryContext;
 
-        private CosmosQueryRequestOptions queryRequestOptions;
+        private QueryRequestOptions queryRequestOptions;
 
         /// <summary>
         /// When a document producer tree successfully fetches a page we increase the page size by this factor so that any particular document producer will only ever make O(log(n)) roundtrips, while also only ever grabbing at most twice the number of documents needed.
