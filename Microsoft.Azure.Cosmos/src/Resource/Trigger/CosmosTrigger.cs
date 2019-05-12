@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosTriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -72,12 +72,12 @@ namespace Microsoft.Azure.Cosmos
         ///  This reads an existing trigger
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosTriggerResponse response = await cosmosContainer.Triggers["ExistingId"].ReadAsync();
+        /// TriggerResponse response = await cosmosContainer.Triggers["ExistingId"].ReadAsync();
         /// CosmosTriggerSettings settings = response;
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosTriggerResponse> ReadAsync(
+        public virtual Task<TriggerResponse> ReadAsync(
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosTriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the updated resource record.
+        /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerSettings"/> is not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -130,11 +130,11 @@ namespace Microsoft.Azure.Cosmos
         ///     TriggerType = TriggerType.Post
         /// };
         /// 
-        /// CosmosTriggerResponse response = await this.cosmosTrigger.ReplaceAsync(settings);
+        /// TriggerResponse response = await this.cosmosTrigger.ReplaceAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosTriggerResponse> ReplaceAsync(
+        public virtual Task<TriggerResponse> ReplaceAsync(
                     CosmosTriggerSettings triggerSettings,
                     CosmosRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosTriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> which will contain information about the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> which will contain information about the request issued.</returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
         ///     <listheader>
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
         /// This examples gets a reference to an existing trigger and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosTriggerResponse response = await this.cosmosContainer.Triggers["taxUdfId"].DeleteAsync();
+        /// TriggerResponse response = await this.cosmosContainer.Triggers["taxUdfId"].DeleteAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -175,11 +175,11 @@ namespace Microsoft.Azure.Cosmos
         /// This examples containers an existing reference to a trigger and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosTriggerResponse response = await this.cosmosTaxUdf.DeleteAsync();
+        /// TriggerResponse response = await this.cosmosTaxUdf.DeleteAsync();
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosTriggerResponse> DeleteAsync(
+        public virtual Task<TriggerResponse> DeleteAsync(
             CosmosRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal virtual Task<CosmosTriggerResponse> ProcessAsync(
+        internal virtual Task<TriggerResponse> ProcessAsync(
             object partitionKey,
             Stream streamPayload,
             OperationType operationType,

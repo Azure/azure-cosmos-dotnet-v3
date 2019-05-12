@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Executes the context to feed the next page of results.
         /// </summary>
         /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on, which in return provides a FeedResponse of documents.</returns>
-        public abstract Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token);
+        /// <returns>A task to await on, which in return provides a DoucmentFeedResponse of documents.</returns>
+        public abstract Task<QueryResponse> ExecuteNextAsync(CancellationToken token);
     }
 }

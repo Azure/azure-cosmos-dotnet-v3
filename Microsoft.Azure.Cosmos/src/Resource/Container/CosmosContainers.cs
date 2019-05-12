@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="containerSettings"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -61,11 +61,11 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// CosmosContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosContainerResponse> CreateContainerAsync(
+        public abstract Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
                     CosmosRequestOptions requestOptions = null,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -102,11 +102,11 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosContainerResponse> CreateContainerAsync(
+        public abstract Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="containerSettings"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -154,11 +154,11 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// CosmosContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerSettings containerSettings,
             int? throughput = null,
             CosmosRequestOptions requestOptions = null,
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -196,11 +196,11 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosContainerResponse> CreateContainerIfNotExistsAsync(
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainerIterator();
+        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainerIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosContainerSettings setting in await feedIterator.FetchNextSetAsync())
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<CosmosContainerSettings> GetContainerIterator(
+        public abstract FeedIterator<CosmosContainerSettings> GetContainerIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosDatabase db = this.cosmosClient.Databases["myDatabaseId"];
-        /// CosmosDatabaseResponse response = await db.ReadAsync();
+        /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="CosmosQueryRequestOptions"/></param>
-        public abstract CosmosFeedIterator GetContainerStreamIterator(
+        public abstract FeedIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             CosmosQueryRequestOptions requestOptions = null);

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await base.ChangeFeedTestInit();
 
             string PartitionKey = "/pk";
-            CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
-            CosmosStoredProcedureResponse storedProcedureResponse =
+            StoredProcedureResponse storedProcedureResponse =
                 await this.Container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);

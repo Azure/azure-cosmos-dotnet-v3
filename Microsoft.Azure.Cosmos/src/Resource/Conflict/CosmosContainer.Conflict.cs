@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflictSettings"/>
-        public abstract Task<CosmosItemResponse<T>> ReadConflictSourceItemAsync<T>(
+        public abstract Task<ItemResponse<T>> ReadConflictSourceItemAsync<T>(
             object partitionKey,
             CosmosConflictSettings cosmosConflict,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -41,16 +41,16 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator conflictIterator = await cosmosContainer.GetConflictsIterator();
+        /// FeedIterator conflictIterator = await cosmosContainer.GetConflictsIterator();
         /// do
         /// {
-        ///     CosmosQueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
+        ///     QueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
         /// }
         /// while (conflictIterator.HasMoreResults);
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<CosmosConflictSettings> GetConflictsIterator(
+        public abstract FeedIterator<CosmosConflictSettings> GetConflictsIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -62,16 +62,16 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
+        /// FeedIterator conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
         /// do
         /// {
-        ///     CosmosQueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
+        ///     QueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
         /// }
         /// while (conflictIterator.HasMoreResults);
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator GetConflictsStreamIterator(
+        public abstract FeedIterator GetConflictsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null);
     }

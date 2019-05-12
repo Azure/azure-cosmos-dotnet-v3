@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
@@ -107,14 +107,14 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             if(this.innerExecutionContext == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
             }
 
-            CosmosQueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
+            QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
             response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
 
             return response;
@@ -146,10 +146,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     containerSettings = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
                 }
 
-                if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
-                {
-                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(containerSettings.GetNoneValue());
-                }
             }
             else
             {
@@ -350,10 +346,20 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> targetRanges;
             if (queryRequestOptions.PartitionKey != null)
             {
+                PartitionKeyInternal partitionKeyInternal = null;
+                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                {
+                    partitionKeyInternal = collection.GetNoneValue();
+                }
+                else
+                {
+                    partitionKeyInternal = new PartitionKey(queryRequestOptions.PartitionKey).InternalKey;
+                }
+
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
                     resourceLink,
                     collection.ResourceId,
-                    new PartitionKey(queryRequestOptions.PartitionKey).InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
+                    partitionKeyInternal.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {

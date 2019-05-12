@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return;
                 }
 
-                FeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(collectionSelfLink);
+                DocumentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(collectionSelfLink);
                 readFeedCount++;
 
                 foreach (var doc in response)
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string continuationToken = null;
                 try
                 {
-                    FeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(collectionSelfLink, new FeedOptions { RequestContinuation = continuationToken });
+                    DoucmentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(collectionSelfLink, new FeedOptions { RequestContinuation = continuationToken });
                     readFeedCount++;
                     continuationToken = response.ResponseContinuation;
 
