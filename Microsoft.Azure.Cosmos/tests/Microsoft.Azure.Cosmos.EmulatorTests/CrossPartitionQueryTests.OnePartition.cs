@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
@@ -1352,8 +1353,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes()
         {
-            Trace.TraceInformation("Testing");
-
             AggregateQueryMixedTypes args = new AggregateQueryMixedTypes()
             {
                 PartitionKey = "key",
@@ -1560,9 +1559,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 writer.WriteEndDocument();
             }
 
-
-            string normalizedBaseline = File.ReadAllText(baselinePath).Replace(Environment.NewLine, "");
-            string normalizedOutput = File.ReadAllText(outputPath).Replace(Environment.NewLine, ""); Assert.AreEqual(File.ReadAllText(baselinePath), File.ReadAllText(outputPath));
+            Regex r = new Regex(">\\s+");
+            string normalizedBaseline = r.Replace(File.ReadAllText(baselinePath), ">");
+            string normalizedOutput = r.Replace(File.ReadAllText(outputPath), ">");
 
             Assert.AreEqual(normalizedBaseline, normalizedOutput);
         }
