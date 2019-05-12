@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("kirankk")]
         public void PublicDirectTypes()
         {
             Assembly directAssembly = typeof(IStoreClient).Assembly;
@@ -54,7 +53,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("kirankk")]
         public void RMContractTest()
         {
             Trace.TraceInformation($"{Documents.RMResources.PartitionKeyAndEffectivePartitionKeyBothSpecified} " +
@@ -62,7 +60,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        [Owner("kirankk")]
         public void CustomJsonReaderTest()
         {
             // Contract validation that JsonReaderFactory is present 
