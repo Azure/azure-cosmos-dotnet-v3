@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             bool startFromBeginning
             )
         {
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions();
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
             if (startTime.HasValue)
             {
                 requestOptions.StartTime = startTime.Value;

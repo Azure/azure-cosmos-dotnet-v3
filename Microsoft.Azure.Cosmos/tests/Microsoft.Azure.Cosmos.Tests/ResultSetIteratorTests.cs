@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private int? MaxItemCount { get; set; }
         private string ContinuationToken { get; set; }
-        private CosmosQueryRequestOptions Options { get; set; }
+        private QueryRequestOptions Options { get; set; }
         private CancellationToken CancellationToken { get; set; }
         private bool ContinueNextExecution { get; set; }
 
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestIteratorContract()
         {
             this.ContinuationToken = null;
-            this.Options = new CosmosQueryRequestOptions();
+            this.Options = new QueryRequestOptions();
             this.CancellationToken = new CancellationTokenSource().Token;
             this.ContinueNextExecution = true;
 
@@ -54,9 +54,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ValidateFillCosmosQueryRequestOptions()
+        public void ValidateFillQueryRequestOptions()
         {
-            Mock<CosmosQueryRequestOptions> options = new Mock<CosmosQueryRequestOptions>() { CallBase = true };
+            Mock<QueryRequestOptions> options = new Mock<QueryRequestOptions>() { CallBase = true };
 
             CosmosRequestMessage request = new CosmosRequestMessage
             {
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private Task<CosmosResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {

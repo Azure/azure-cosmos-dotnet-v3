@@ -318,10 +318,10 @@ namespace Microsoft.Azure.Cosmos.Query
                         cosmosRequestMessage.Headers.Add(
                             HttpConstants.HttpHeaders.IsContinuationExpected,
                             this.queryContext.IsContinuationExpected.ToString());
-                        CosmosQueryRequestOptions.FillContinuationToken(
+                        QueryRequestOptions.FillContinuationToken(
                             cosmosRequestMessage,
                             this.BackendContinuationToken);
-                        CosmosQueryRequestOptions.FillMaxItemCount(
+                        QueryRequestOptions.FillMaxItemCount(
                             cosmosRequestMessage,
                             pageSize);
                     });
