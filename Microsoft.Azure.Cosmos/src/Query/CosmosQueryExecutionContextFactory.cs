@@ -192,8 +192,11 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken)
         {
             if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo?.RewrittenQuery))
             {
-                cosmosQueryContext.SqlQuerySpec = new SqlQuerySpec(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery);
+                cosmosQueryContext.SqlQuerySpec = new SqlQuerySpec(
+                    partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
+                    cosmosQueryContext.SqlQuerySpec.Parameters);
             }
 
             // Figure out the optimal page size.
