@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using System.Net;
 
     /// <summary>
     /// CosmosParallelItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -200,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 CultureInfo.InvariantCulture,
                                 "Invalid Range in the continuation token {0} for Parallel~Context.",
                                 requestContinuation));
-                            throw new BadRequestException(RMResources.InvalidContinuationToken);
+                            throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                         }
                     }
 
@@ -210,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             CultureInfo.InvariantCulture,
                             "Invalid format for continuation token {0} for Parallel~Context.",
                             requestContinuation));
-                        throw new BadRequestException(RMResources.InvalidContinuationToken);
+                        throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                     }
                 }
                 catch (JsonException ex)
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         requestContinuation,
                         ex.Message));
 
-                    throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
+                    throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                 }
 
                 filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);
