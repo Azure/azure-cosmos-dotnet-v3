@@ -740,20 +740,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await resultSet.FetchNextSetAsync();
                 Assert.Fail("Expected query to fail");
             }
-            catch (AggregateException e)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                CosmosException exception = e.InnerException as CosmosException;
-
-                if (exception == null)
-                {
-                    throw e;
-                }
-
-                if (exception.StatusCode != HttpStatusCode.BadRequest)
-                {
-                    throw e;
-                }
-
                 Assert.IsTrue(exception.Message.Contains("continuation token limit specified is not large enough"));
             }
 
@@ -1026,7 +1014,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 StringContent itemContent = new StringContent(itemDefinition);
                 requestUri = new Uri(baseUri, resourceLink);
                 response = await client.PostAsync(requestUri.ToString(), itemContent);
-                Assert.IsTrue(response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Conflict, response.ToString());
+                Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.Conflict, response.ToString());
             }
         }
 
