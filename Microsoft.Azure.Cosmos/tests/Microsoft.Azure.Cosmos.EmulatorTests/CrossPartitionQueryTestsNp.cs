@@ -1525,7 +1525,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(normalizedBaseline, normalizedOutput);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestQueryDistinct()
         {
@@ -2354,7 +2353,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestQueryCrossPartitionTopOrderBy()
         {
