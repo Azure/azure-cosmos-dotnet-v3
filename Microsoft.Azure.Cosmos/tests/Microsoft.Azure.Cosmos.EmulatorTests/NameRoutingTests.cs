@@ -451,11 +451,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.Items.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument.Id, myDocument);
 
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
-            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
-            cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             myDocument.Title = "My old Book";
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await collection.Items.ReplaceItemAsync(myDocument.Id, myDocument.Id, myDocument);
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
-            cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
         }
 
@@ -791,7 +791,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // 1. DC -> GW: address resolver to resolve collectionFullName. 
                 // 2. GW -> MC: call mc to resolve collectionFullName.
                 // 3. MC : return NotFoundException
-                ContainerResponse containerResponse = await cosmosContainerResponse.Container.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                ContainerResponse containerResponse = await cosmosContainerResponse.Container.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.IsNull(containerResponse.Resource);
                 Assert.AreEqual(containerResponse.StatusCode, HttpStatusCode.NotFound);
                 Assert.IsNull(containerResponse.Headers[HttpConstants.HttpHeaders.RequestValidationFailure]);
@@ -1781,7 +1781,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await collection.ReplaceAsync(containerSetting);
 
                 // Read collection.
-                ContainerResponse containerResponse = await collection.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                ContainerResponse containerResponse = await collection.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.IsTrue(int.Parse(containerResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture) >= 0);
 
                 // Delete and re-create the collection with the same name.
@@ -1790,7 +1790,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Read the new collection.
                 // The gateway's cache is stale at this point. This test verifies that the gateway should be able to refresh the cache and returns the response.
-                containerResponse = await collection.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                containerResponse = await collection.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.AreEqual(100, int.Parse(containerResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture));
 
                 // Scenario 2: name based collection put.

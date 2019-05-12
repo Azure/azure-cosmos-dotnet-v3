@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal CosmosRequestOptions RequestOptions { get; set; }
+        internal RequestOptions RequestOptions { get; set; }
 
         internal ResourceType ResourceType { get; set; }
 

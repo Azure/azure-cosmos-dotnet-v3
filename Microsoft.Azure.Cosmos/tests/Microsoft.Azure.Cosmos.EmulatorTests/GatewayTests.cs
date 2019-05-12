@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document.CustomProperty1 = property1;
             document.CustomProperty2 = property2;
 
-            RequestOptions options = new RequestOptions();
+            Documents.Client.RequestOptions options = new Documents.Client.RequestOptions();
             if (pretrigger != null)
             {
                 options.PreTriggerInclude = new[] { pretrigger };
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     Paths = new Collection<string> { "/customerid" }
                                 }
                             },
-                            new RequestOptions { OfferThroughput = TestCommon.MinimumOfferThroughputToCreateElasticCollectionInTests });
+                            new Documents.Client.RequestOptions { OfferThroughput = TestCommon.MinimumOfferThroughputToCreateElasticCollectionInTests });
                         documentCollections.Add(collection);
                     }
                     else
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document.CustomProperty1 = "a";
             document.CustomProperty2 = "b";
 
-            ResourceResponse<Document> docResponse = client.CreateDocumentAsync(collection1.AltLink, document, new RequestOptions { PreTriggerInclude = new List<string> { "t1" } }).Result;
+            ResourceResponse<Document> docResponse = client.CreateDocumentAsync(collection1.AltLink, document, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "t1" } }).Result;
             Assert.IsTrue((docId + "t1").Equals(docResponse.Resource.Id, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -1012,7 +1012,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             try
             {
-                dbToCreate = client.CreateDatabaseAsync(dbToCreate, new RequestOptions { PreTriggerInclude = new List<string> { "t1" } }).Result;
+                dbToCreate = client.CreateDatabaseAsync(dbToCreate, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "t1" } }).Result;
             }
             catch (Exception e)
             {
@@ -1148,7 +1148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, request4).Result;
 
-            ResourceResponse<Document> docrequest4 = client.CreateDocumentAsync(collection3, new Document { Id = "noname" }, new RequestOptions { PreTriggerInclude = new List<string> { "request4" } }).Result;
+            ResourceResponse<Document> docrequest4 = client.CreateDocumentAsync(collection3, new Document { Id = "noname" }, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "request4" } }).Result;
             Assert.IsTrue(docrequest4.Resource.Id == "noheaders");
             Assert.IsTrue(docrequest4.ResponseHeaders["Test"] == null);
 
@@ -1170,7 +1170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             retrievedTrigger = CreateTriggerAndValidateAsync(client, collection3, responseQuotaHeader).Result;
 
-            Book docresponseQuotaHeader = (dynamic)client.CreateDocumentAsync(collection3, new Book { Id = "quotaDocument" }, new RequestOptions { PostTriggerInclude = new List<string> { "responseQuotaHeader" } }).Result.Resource;
+            Book docresponseQuotaHeader = (dynamic)client.CreateDocumentAsync(collection3, new Book { Id = "quotaDocument" }, new Documents.Client.RequestOptions { PostTriggerInclude = new List<string> { "responseQuotaHeader" } }).Result.Resource;
             Assert.IsTrue(docresponseQuotaHeader.Author.Contains("collectionSize"));
             Assert.IsTrue(docresponseQuotaHeader.Title.Contains("collectionSize"));
 
@@ -1289,7 +1289,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             exceptionThrown = false;
             try
             {
-                Document doc5 = client.CreateDocumentAsync(collection4, new Document { Id = "Doc5" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } }).Result.Resource;
+                Document doc5 = client.CreateDocumentAsync(collection4, new Document { Id = "Doc5" }, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } }).Result.Resource;
             }
             catch (Exception e)
             {
@@ -1303,7 +1303,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             exceptionThrown = false;
             try
             {
-                ResourceResponse<Document> docMultiple1 = client.CreateDocumentAsync(collection4, new Document { Id = "multipleHeaders1" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1" } }).Result;
+                ResourceResponse<Document> docMultiple1 = client.CreateDocumentAsync(collection4, new Document { Id = "multipleHeaders1" }, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1" } }).Result;
             }
             catch (Exception e)
             {
@@ -2170,7 +2170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Paths = new Collection<string> { "/partitionKey" }
                         }
                     },
-                    new RequestOptions { OfferThroughput = 12000 }); // Ensuring read-only scripts work on partitioned collecitons.
+                    new Documents.Client.RequestOptions { OfferThroughput = 12000 }); // Ensuring read-only scripts work on partitioned collecitons.
 
                 // Create documents in the collection.
                 var docBatch = new List<DocumentWithPK>();
@@ -2200,7 +2200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Execute read-only stored procedure and verify all created documents are read.
                 string result = await lockedClient.ExecuteStoredProcedureAsync<string>(sproc.SelfLink,
-                    new RequestOptions { PartitionKey = new PartitionKey("0") });
+                    new Documents.Client.RequestOptions { PartitionKey = new PartitionKey("0") });
 
                 for (int i = 0; i < 10; ++i)
                 {
@@ -2250,7 +2250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Body = badScript
             };
             StoredProcedure retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedure).Result;
-            RequestOptions requestOptions = new RequestOptions();
+            Documents.Client.RequestOptions requestOptions = new Documents.Client.RequestOptions();
             requestOptions.PartitionKey = new PartitionKey("test");
             for (int numExec = 0; numExec < 3; numExec++)
             {
@@ -2828,7 +2828,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Id = Guid.NewGuid().ToString(),
                         PartitionKey = new PartitionKeyDefinition { Paths = new Collection<string> { "/" + DocumentWithPK.PartitionKeyPropertyName } },
                     },
-                    new RequestOptions { OfferThroughput = 15000 });
+                    new Documents.Client.RequestOptions { OfferThroughput = 15000 });
 
                 int pkRangeId = await GetPKRangeIdForPartitionKey(client, db.Id, coll.Id, coll.PartitionKey, pk1);
                 Assert.AreEqual(pkRangeId, await GetPKRangeIdForPartitionKey(client, db.Id, coll.Id, coll.PartitionKey, pk2));
@@ -2863,7 +2863,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 var sprocResponse = await client.ExecuteStoredProcedureAsync<BulkInsertStoredProcedureResult>(
                     bulkInsertSprocUri.ToString(),
-                    new RequestOptions { PartitionKeyRangeId = pkRangeId.ToString() },
+                    new Documents.Client.RequestOptions { PartitionKeyRangeId = pkRangeId.ToString() },
                     new dynamic[] { docBatch, sprocOptions });
 
                 Assert.AreEqual(0, sprocResponse.Response.ErrorCode);
@@ -2958,7 +2958,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 var collSpec = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
                 collSpec.PartitionKey.Paths.Add("/id");
-                DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, db, collSpec, new RequestOptions { OfferThroughput = 12000 });
+                DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, db, collSpec, new Documents.Client.RequestOptions { OfferThroughput = 12000 });
 
                 // Create a few docs.
                 for (int i = 0; i < 10; ++i)
@@ -3016,7 +3016,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Paths = new Collection<string> { "/customerid" }
                     }
                 },
-                new RequestOptions { OfferThroughput = 12000 });
+                new Documents.Client.RequestOptions { OfferThroughput = 12000 });
 
             StoredProcedure sproc =
                 client.CreateStoredProcedureAsync(UriFactory.CreateDocumentCollectionUri(database.Id, collection.Id),
@@ -3029,13 +3029,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Execute stored procedure by passing in stored procedure self-link
             string output = client.ExecuteStoredProcedureAsync<string>(sproc.SelfLink,
-                new RequestOptions { PartitionKey = new PartitionKey("1") }, "DocumentDB").Result;
+                new Documents.Client.RequestOptions { PartitionKey = new PartitionKey("1") }, "DocumentDB").Result;
             Assert.IsTrue(String.CompareOrdinal(output, "Hello World, DocumentDB!") == 0);
 
             // Execute stored procedure by passing in stored procedure URI
             output = client.ExecuteStoredProcedureAsync<string>(
                 UriFactory.CreateStoredProcedureUri(database.Id, collection.Id, "HelloWorld"),
-                new RequestOptions { PartitionKey = new PartitionKey("1") }, "DocumentDB").Result;
+                new Documents.Client.RequestOptions { PartitionKey = new PartitionKey("1") }, "DocumentDB").Result;
             Assert.IsTrue(String.CompareOrdinal(output, "Hello World, DocumentDB!") == 0);
 
             client.DeleteStoredProcedureAsync(UriFactory.CreateStoredProcedureUri(database.Id, collection.Id, sproc.Id)).Wait();
@@ -3222,7 +3222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(inheritFromDocument.PUBLISHTIME, inheritFromDocumentReturned2.PUBLISHTIME, "PUBLISHTIME dont match");
             Assert.AreEqual(inheritFromDocument.authors[0], inheritFromDocumentReturned2.authors[0], "authors dont match");
 
-            RequestOptions requestOptions = new RequestOptions();
+            Documents.Client.RequestOptions requestOptions = new Documents.Client.RequestOptions();
             requestOptions.PartitionKey = new PartitionKey("test");
             CustomerObjectFromDocument inheritFromDocumentReturned3 = (dynamic)client.ReadDocumentAsync(inheritFromDocumentReturned, requestOptions).Result.Resource;
             inheritFromDocumentReturned3.BookId = "isbn56789";
@@ -3302,39 +3302,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document.StringField = "222";
 
             Logger.LogLine("Adding Document with exclusion");
-            dynamic retrievedDocument = await collection.Items.CreateItemAsync(documentName, document, new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
+            dynamic retrievedDocument = await collection.Items.CreateItemAsync(documentName, document, new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            FeedIterator<Document> queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText : @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions : new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+            FeedIterator<Document> queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText : @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions : new QueryRequestOptions { EnableCrossPartitionQuery = true});
 
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to include in index");
-            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName, id: documentName, item: (Document)retrievedDocument, requestOptions: new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Include });
+            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName, id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Include });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
-            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName,id: documentName, item : (Document)retrievedDocument, requestOptions: new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
+            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName,id: documentName, item : (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
-            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName, id: documentName, item: (Document)retrievedDocument, requestOptions: new CosmosItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
+            retrievedDocument = await collection.Items.ReplaceItemAsync(partitionKey: documentName, id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Delete document");
             await collection.Items.DeleteItemAsync<Document>(partitionKey:  documentName, id: documentName);
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             await database.DeleteAsync();

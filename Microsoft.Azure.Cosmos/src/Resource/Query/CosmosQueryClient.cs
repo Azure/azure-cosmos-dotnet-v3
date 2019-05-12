@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosQueryRequestOptions requestOptions,
+            QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken);

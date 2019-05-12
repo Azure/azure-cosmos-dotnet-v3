@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the read resource record.
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public virtual Task<TriggerResponse> ReadAsync(
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replaces a <see cref="CosmosTriggerSettings"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="triggerSettings">The <see cref="CosmosTriggerSettings"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> containing the updated resource record.
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<TriggerResponse> ReplaceAsync(
                     CosmosTriggerSettings triggerSettings,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a <see cref="CosmosTriggerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="CosmosTriggerSettings"/> which will contain information about the request issued.</returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public virtual Task<TriggerResponse> DeleteAsync(
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             Stream streamPayload,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(

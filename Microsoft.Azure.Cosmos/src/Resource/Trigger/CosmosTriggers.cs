@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="triggerSettings">The <see cref="CosmosTriggerSettings"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerSettings"/> is not set.</exception>
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         ///         TriggerType = TriggerType.Pre
         ///     });
         ///
-        /// CosmosItemRequestOptions options = new CosmosItemRequestOptions()
+        /// ItemRequestOptions options = new ItemRequestOptions()
         /// {
         ///     PreTriggers = new List<string>() { cosmosTrigger.Id },
         /// };
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<TriggerResponse> CreateTriggerAsync(
             CosmosTriggerSettings triggerSettings,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<FeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
@@ -181,8 +181,8 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosTriggerSettings>(response),
                 cancellationToken: cancellationToken);
