@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public ResourceType ResourceTypeEnum { get; }
         public OperationType OperationTypeEnum { get; }
         public Type ResourceType { get; }
-        public SqlQuerySpec SqlQuerySpec { get; }
+        public SqlQuerySpec SqlQuerySpec { get; internal set; }
         public CosmosQueryRequestOptions QueryRequestOptions { get; }
         public bool IsContinuationExpected { get; }
         public bool AllowNonValueAggregateQuery { get; }

@@ -76,6 +76,10 @@ namespace Microsoft.Azure.Cosmos
         {
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
+
+            // V3 always assumes assemblies exists
+            // Shall revisit on feedback
+            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
         }
 
         /// <summary>

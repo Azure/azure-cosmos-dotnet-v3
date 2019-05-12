@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="CrossPartitionQueryTests.cs" company="Microsoft Corporation">
+// <copyright file="CrossPartitionQueryTestsNp.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
@@ -30,10 +30,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Query.ParallelQuery;
 
     /// <summary>
-    /// Tests for CrossPartitionQueryTests.
+    /// Tests for CrossPartitionQueryTestsNp.
     /// </summary>
     [TestClass]
-    public class CrossPartitionQueryTests
+    public class CrossPartitionQueryTestsNp
     {
         private static readonly string[] NoDocuments = new string[] { };
         private CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
@@ -63,13 +63,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.database.DeleteAsync();
         }
 
-        [TestMethod]
-        public void ServiceInteropUsedByDefault()
-        {
-            // Test initialie does load CosmosClient
-            Assert.IsFalse(CustomTypeExtensions.ByPassQueryParsing());
-        }
-
         private static string GetApiVersion()
         {
             return HttpConstants.Versions.CurrentVersion;
@@ -95,44 +88,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<CosmosContainer> CreatePartitionContainer(string partitionKey = "/id", Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            CosmosContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings
-                {
-                    Id = Guid.NewGuid().ToString() + "container",
-                    IndexingPolicy = indexingPolicy == null ? new Cosmos.IndexingPolicy
-                    {
-                        IncludedPaths = new Collection<Cosmos.IncludedPath>
-                        {
-                            new Cosmos.IncludedPath
-                            {
-                                Path = "/*",
-                                Indexes = new Collection<Cosmos.Index>
-                                {
-                                    Cosmos.Index.Range(Cosmos.DataType.Number),
-                                    Cosmos.Index.Range(Cosmos.DataType.String),
-                                }
-                            }
-                        }
-                    } : indexingPolicy,
-                    PartitionKey = new PartitionKeyDefinition
-                    {
-                        Paths = new Collection<string> { partitionKey },
-                        Kind = PartitionKind.Hash
-                    }
-                },
-                // This throughput needs to be about half the max with multi master
-                // otherwise it will create about twice as many partitions.
-                25000);
+            string containerName = Guid.NewGuid().ToString() + "container";
+            await CosmosItemTests.CreateNonPartitionContainerItem(this.database.Id, containerName);
 
-            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
-            Assert.AreEqual(5, ranges.Count());
-
-            return containerResponse;
+            return this.database.Containers[containerName];
         }
 
         private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedContainerAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            CosmosContainer partitionedCollection = await this.CreatePartitionContainer(partitionKey, indexingPolicy);
+            CosmosContainer npCollection = await this.CreatePartitionContainer(partitionKey, indexingPolicy);
             List<Document> insertedDocuments = new List<Document>();
             string jObjectPartitionKey = partitionKey.Remove(0, 1);
             foreach (string document in documents)
@@ -144,12 +108,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                object pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
-                insertedDocuments.Add((await partitionedCollection.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
-
+                insertedDocuments.Add((await npCollection.Items.CreateItemAsync<JObject>(CosmosContainerSettings.NonePartitionKeyValue, documentObject)).Resource.ToObject<Document>());
             }
 
-            return new Tuple<CosmosContainer, List<Document>>(partitionedCollection, insertedDocuments);
+            return new Tuple<CosmosContainer, List<Document>>(npCollection, insertedDocuments);
         }
 
         private async Task CleanUp()
@@ -455,21 +417,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task RandomlyThrowException(Exception exception = null)
         {
-            await CrossPartitionQueryTests.NoOp();
+            await CrossPartitionQueryTestsNp.NoOp();
             Random random = new Random();
             if (random.Next(0, 2) == 0)
             {
                 throw exception;
             }
-        }
-
-        [TestMethod]
-        public async Task TestBadQueriesOverMultiplePartitions()
-        {
-            await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CrossPartitionQueryTests.NoDocuments,
-                this.TestBadQueriesOverMultiplePartitionsHelper);
         }
 
         [TestMethod]
@@ -511,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestBadQueriesOverMultiplePartitionsHelper(CosmosContainer container, IEnumerable<Document> documents)
         {
-            await CrossPartitionQueryTests.NoOp();
+            await CrossPartitionQueryTestsNp.NoOp();
             try
             {
                 CosmosResultSetIterator<Document> resultSetIterator = container.Items.CreateItemQuery<Document>(
@@ -540,13 +493,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
-                CrossPartitionQueryTests.NoDocuments,
+                CrossPartitionQueryTestsNp.NoDocuments,
                 this.TestQueryCrossParitionPartitionProviderInvalidHelper);
         }
 
         private async Task TestQueryCrossParitionPartitionProviderInvalidHelper(CosmosContainer container, IEnumerable<Document> documents)
         {
-            await CrossPartitionQueryTests.NoOp();
+            await CrossPartitionQueryTestsNp.NoOp();
             try
             {
                 /// note that there is no space before the from clause thus this query should fail 
@@ -613,14 +566,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<(string, string)> queries = new List<(string, string)>()
                 {
                     ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
-                    (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
-                    (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
+                    //(@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
+                    //(@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
                     ($@"SELECT TOP 10 * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"")", expectedResult),
-                    (@"SELECT TOP 10 * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
-                    (@"SELECT TOP 10 VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
+                    //(@"SELECT TOP 10 * FROM Root r WHERE r.prop BETWEEN 1 AND 3", expectedResult),
+                    //(@"SELECT TOP 10 VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7", expectedResult),
                     ($@"SELECT * FROM Root r WHERE r.id IN (""{expected[0]}"", ""{expected[1]}"", ""{expected[2]}"") ORDER BY r.prop", expectedOrderByResult),
-                    (@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop", expectedOrderByResult),
-                    (@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7 ORDER BY r.prop", expectedOrderByResult),
+                    //(@"SELECT * FROM Root r WHERE r.prop BETWEEN 1 AND 3 ORDER BY r.prop", expectedOrderByResult),
+                    //(@"SELECT VALUE r FROM Root r JOIN c IN r.shortArray WHERE c.a BETWEEN 5 and 7 ORDER BY r.prop", expectedOrderByResult),
                 };
 
 
@@ -644,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     CosmosResultSetIterator<Document> resultSetIterator = container.Items.CreateItemQuery<Document>(
                         sqlQueryText: queryAndExpectedResult.Item1,
-                        partitionKey: keys[i],
+                        partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                         maxItemCount: 1);
 
                     List<Document> result = new List<Document>();
@@ -654,7 +607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     string resultDocIds = string.Join(",", result.Select(doc => doc.Id));
-                    Assert.AreEqual(queryAndExpectedResult.Item2, resultDocIds);
+                    Assert.AreEqual(queryAndExpectedResult.Item2, resultDocIds, queryAndExpectedResult.Item1);
                 }
             }
         }
@@ -684,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Query with partition key should be done in one round trip.
             CosmosResultSetIterator<dynamic> resultSetIterator = container.Items.CreateItemQuery<dynamic>(
                 "SELECT * FROM c WHERE c.pk = 'doc5'",
-                partitionKey: "doc5");
+                partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
 
             CosmosQueryResponse<dynamic> response = await resultSetIterator.FetchNextSetAsync();
             Assert.AreEqual(1, response.Count());
@@ -692,7 +645,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             resultSetIterator = container.Items.CreateItemQuery<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'",
-               partitionKey: "doc10");
+               partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
 
             response = await resultSetIterator.FetchNextSetAsync();
             Assert.AreEqual(0, response.Count());
@@ -711,7 +664,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Ignore]
         public async Task TestQueryWithSpecialPartitionKeys()
         {
-            await CrossPartitionQueryTests.NoOp();
+            await CrossPartitionQueryTestsNp.NoOp();
             QueryWithSpecialPartitionKeysArgs[] queryWithSpecialPartitionKeyArgsList = new QueryWithSpecialPartitionKeysArgs[]
             {
                 new QueryWithSpecialPartitionKeysArgs()
@@ -767,14 +720,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // since the query callback inserts some documents (thus has side effects).
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Direct,
-                    CrossPartitionQueryTests.NoDocuments,
+                    CrossPartitionQueryTestsNp.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
                     testArg,
                     "/" + testArg.Name);
 
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Gateway,
-                    CrossPartitionQueryTests.NoDocuments,
+                    CrossPartitionQueryTestsNp.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
                     testArg,
                     "/" + testArg.Name);
@@ -1321,7 +1274,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryCrossPartitionAggregateFunctionsEmptyPartitionsHelper(CosmosContainer container, IEnumerable<Document> documents, AggregateQueryEmptyPartitionsArgs args)
         {
-            await CrossPartitionQueryTests.NoOp();
+            await CrossPartitionQueryTestsNp.NoOp();
             int numDocuments = args.NumDocuments;
             string partitionKey = args.PartitionKey;
             string uniqueField = args.UniqueField;
@@ -1360,8 +1313,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypes()
         {
-            Trace.TraceInformation("Testing");
-
             AggregateQueryMixedTypes args = new AggregateQueryMixedTypes()
             {
                 PartitionKey = "key",
@@ -1467,7 +1418,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IEnumerable<Document> documents,
             AggregateQueryMixedTypes args)
         {
-            await CrossPartitionQueryTests.NoOp();
+            await CrossPartitionQueryTestsNp.NoOp();
             string partitionKey = args.PartitionKey;
             string field = args.Field;
             string[] typeOnlyPartitionKeys = new string[]
@@ -1586,7 +1537,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             for (int i = 0; i < numberOfDocuments; i++)
             {
-                Person person = CrossPartitionQueryTests.GetRandomPerson(rand);
+                Person person = CrossPartitionQueryTestsNp.GetRandomPerson(rand);
                 for (int j = 0; j < rand.Next(0, 4); j++)
                 {
                     people.Add(person);
@@ -1933,7 +1884,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryCrossPartitionTopOrderByDifferentDimensionHelper(CosmosContainer container, IEnumerable<Document> documents)
         {
-            await CrossPartitionQueryTests.NoOp();
+            await CrossPartitionQueryTestsNp.NoOp();
 
             string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
             List<Document> query = await this.RunQuery<Document>(
@@ -2018,7 +1969,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Random random = new Random(1234);
             for (int i = 0; i < numberOfDocuments; ++i)
             {
-                MixedTypedDocument mixedTypeDocument = CrossPartitionQueryTests.GenerateMixedTypeDocument(random);
+                MixedTypedDocument mixedTypeDocument = CrossPartitionQueryTestsNp.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
                     documents.Add(JsonConvert.SerializeObject(mixedTypeDocument)); ;
@@ -3046,7 +2997,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Random random = new Random(1234);
             for (int i = 0; i < numberOfDocuments; ++i)
             {
-                MultiOrderByDocument multiOrderByDocument = CrossPartitionQueryTests.GenerateMultiOrderByDocument(random);
+                MultiOrderByDocument multiOrderByDocument = CrossPartitionQueryTestsNp.GenerateMultiOrderByDocument(random);
                 int numberOfDuplicates = 5;
 
                 for (int j = 0; j < numberOfDuplicates; j++)
@@ -3505,11 +3456,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //            headerKeyValues.Add(new { Key = key, Values = e.DocumentServiceRequest.Headers.GetValues(key)?.ToList() });
         //        }
 
-        //        CrossPartitionQueryTests.responseLengthBytes.Value.IncrementBy(e.DocumentServiceResponse.ResponseBody.Length);
+        //        CrossPartitionQueryTestsNp.responseLengthBytes.Value.IncrementBy(e.DocumentServiceResponse.ResponseBody.Length);
         //        Console.WriteLine("{0} : DocumentServiceResponse: Query {1}, OuterActivityId: {2}, Length: {3}, Request op type: {4}, resource type: {5}, continuation: {6}, headers: {7}",
         //            DateTime.UtcNow,
         //            e.DocumentServiceRequest.QueryString,
-        //            CrossPartitionQueryTests.outerCosmosQueryResponseActivityId.Value,
+        //            CrossPartitionQueryTestsNp.outerCosmosQueryResponseActivityId.Value,
         //            e.DocumentServiceResponse.ResponseBody.Length,
         //            e.DocumentServiceRequest.OperationType,
         //            e.DocumentServiceRequest.ResourceType,
@@ -3616,6 +3567,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int? maxItemCount = null,
             CosmosQueryRequestOptions requestOptions = null)
         {
+            requestOptions = requestOptions ?? new CosmosQueryRequestOptions();
+            requestOptions.PartitionKey = CosmosContainerSettings.NonePartitionKeyValue;
+
             CosmosResultSetIterator<T> resultSetIterator = container.Items.CreateItemQuery<T>(
                 query,
                 maxConcurrency: maxConcurrency,
@@ -3718,28 +3672,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static Pet GetRandomPet(Random rand)
         {
-            string name = CrossPartitionQueryTests.GetRandomName(rand);
-            int age = CrossPartitionQueryTests.GetRandomAge(rand);
+            string name = CrossPartitionQueryTestsNp.GetRandomName(rand);
+            int age = CrossPartitionQueryTestsNp.GetRandomAge(rand);
             return new Pet(name, age);
         }
 
         public static Person GetRandomPerson(Random rand)
         {
-            string name = CrossPartitionQueryTests.GetRandomName(rand);
-            City city = CrossPartitionQueryTests.GetRandomCity(rand);
-            double income = CrossPartitionQueryTests.GetRandomIncome(rand);
+            string name = CrossPartitionQueryTestsNp.GetRandomName(rand);
+            City city = CrossPartitionQueryTestsNp.GetRandomCity(rand);
+            double income = CrossPartitionQueryTestsNp.GetRandomIncome(rand);
             List<Person> people = new List<Person>();
             if (rand.Next(0, 11) % 10 == 0)
             {
                 for (int i = 0; i < rand.Next(0, 5); i++)
                 {
-                    people.Add(CrossPartitionQueryTests.GetRandomPerson(rand));
+                    people.Add(CrossPartitionQueryTestsNp.GetRandomPerson(rand));
                 }
             }
 
             Person[] children = people.ToArray();
-            int age = CrossPartitionQueryTests.GetRandomAge(rand);
-            Pet pet = CrossPartitionQueryTests.GetRandomPet(rand);
+            int age = CrossPartitionQueryTestsNp.GetRandomAge(rand);
+            Pet pet = CrossPartitionQueryTestsNp.GetRandomPet(rand);
             Guid guid = Guid.NewGuid();
             return new Person(name, city, income, children, age, pet, guid);
         }

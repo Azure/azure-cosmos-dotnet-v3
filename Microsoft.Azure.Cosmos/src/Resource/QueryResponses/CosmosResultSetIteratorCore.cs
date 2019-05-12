@@ -66,18 +66,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<CosmosQueryResponse> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<CosmosQueryResponse> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return this.nextResultSetDelegate(this.continuationToken, this.queryOptions, this.state, cancellationToken)
-                .ContinueWith(task =>
-                {
-                    CosmosQueryResponse response = task.Result;
-                    this.continuationToken = response.ContinuationToken;
-                    this.HasMoreResults = response.GetHasMoreResults();
-                    return response;
-                }, cancellationToken);
+            CosmosQueryResponse response = await this.nextResultSetDelegate(this.continuationToken, this.queryOptions, this.state, cancellationToken);
+            this.continuationToken = response.ContinuationToken;
+            this.HasMoreResults = response.GetHasMoreResults();
+            return response;
         }
     }
 
@@ -141,19 +137,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<CosmosQueryResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<CosmosQueryResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken)
-                .ContinueWith(task =>
-                {
-                    CosmosQueryResponse<T> response = task.Result;
-                    this.HasMoreResults = response.GetHasMoreResults();
-                    this.continuationToken = response.InternalContinuationToken;
-                    
-                    return response;
-                }, cancellationToken);
+            CosmosQueryResponse<T> response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken);
+            this.HasMoreResults = response.GetHasMoreResults();
+            this.continuationToken = response.InternalContinuationToken;
+            return response;
+
         }
 
         internal static CosmosQueryResponse<T> CreateCosmosQueryResponse(
