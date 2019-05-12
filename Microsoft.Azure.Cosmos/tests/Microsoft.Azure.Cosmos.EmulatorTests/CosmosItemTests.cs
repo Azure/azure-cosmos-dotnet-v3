@@ -754,20 +754,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await resultSet.FetchNextSetAsync();
                 Assert.Fail("Expected query to fail");
             }
-            catch (AggregateException e)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                CosmosException exception = e.InnerException as CosmosException;
-
-                if (exception == null)
-                {
-                    throw e;
-                }
-
-                if (exception.StatusCode != HttpStatusCode.BadRequest)
-                {
-                    throw e;
-                }
-
                 Assert.IsTrue(exception.Message.Contains("Syntax error, incorrect syntax near"));
             }
         }
