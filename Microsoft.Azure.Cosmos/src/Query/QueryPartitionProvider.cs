@@ -219,10 +219,9 @@ namespace Microsoft.Azure.Cosmos.Query
             if (exception != null)
             {
                 DefaultTrace.TraceInformation("QueryEngineConfiguration: " + this.queryengineConfiguration);
-                CosmosResponseMessage responseMsg = new CosmosResponseMessage(HttpStatusCode.BadRequest, null, exception.ToString());
 
                 throw new CosmosException(
-                    responseMsg,
+                    HttpStatusCode.BadRequest,
                     "Message: " + serializedQueryExecutionInfo);
             }
 

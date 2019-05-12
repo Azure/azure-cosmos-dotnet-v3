@@ -1158,8 +1158,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (Exception e)
                 {
-                    Assert.IsTrue(e.GetBaseException().Message.Contains("Query contains 1 or more unsupported features. Upgrade your SDK to a version that does support the requested features:"),
-                        e.GetBaseException().Message);
+                    Assert.IsTrue(e.Message.Contains("Query contains 1 or more unsupported features. Upgrade your SDK to a version that does support the requested features:"),
+                        e.Message);
                 }
             }
         }
@@ -3010,6 +3010,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException dce)
             {
                 Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+            }
+            catch(AggregateException aggrEx)
+            {
+                Assert.Fail(aggrEx.ToString());
             }
 
             try
