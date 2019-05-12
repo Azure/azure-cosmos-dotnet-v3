@@ -63,25 +63,6 @@ namespace Microsoft.Azure.Cosmos
 
         [TestMethod]
         [Owner("kirankk")]
-        public void RestVersionSettable()
-        {
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
-        }
-
-        [TestMethod]
-        [Owner("kirankk")]
-        public void ReqeustOptionsAutoScaleSettingsTest()
-        {
-            IEnumerable<string> propertiesWithScaleInName = typeof(Documents.Client.RequestOptions)
-                .GetProperties()
-                .Select(e => e.Name)
-                .Where(e => e.IndexOf("Scale", StringComparison.OrdinalIgnoreCase) > 0);
-
-            Assert.AreEqual(0, propertiesWithScaleInName.Count(), string.Join(",", propertiesWithScaleInName.ToArray()));
-        }
-
-        [TestMethod]
-        [Owner("kirankk")]
         public void CustomJsonReaderTest()
         {
             // Contract validation that JsonReaderFactory is present 
