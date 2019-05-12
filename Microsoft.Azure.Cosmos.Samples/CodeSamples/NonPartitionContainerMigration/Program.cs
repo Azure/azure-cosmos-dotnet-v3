@@ -12,27 +12,29 @@
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
 
-    // ----------------------------------------------------------------------------------------------------------
-    // Prerequisites - 
-    // 
-    // 1. An Azure Cosmos account - 
-    //    https://azure.microsoft.com/en-us/itemation/articles/itemdb-create-account/
-    //
-    // 2. Microsoft.Azure.Cosmos NuGet package - 
-    //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
-    // ----------------------------------------------------------------------------------------------------------
-    // Sample - Demonstrates the basic CRUD operations on Container that is migrated from Non-Partitioned mode to
-    // Partitioned mode.
-    //
-    // These include the following operations:
-    //    1. Document CRUD operations in the same logical partition as pre-migration
-    //    2. Document CRUD operations with a partition key value on the migrated container
-    //    3. Migration of documents inserted without partition key into a logical parition with a valid partition key value
-    //
-    //
-    // Note: This sample is written for V3 SDK and since V3 SDK doesn't allow creating a container without partition key,
-    //       this sample uses REST API to perform such operation.
-    // ----------------------------------------------------------------------------------------------------------
+    /// <summary>
+    /// ----------------------------------------------------------------------------------------------------------
+    /// Prerequisites - 
+    /// 
+    /// 1. An Azure Cosmos account - 
+    ///    https://azure.microsoft.com/en-us/itemation/articles/itemdb-create-account/
+    ///
+    /// 2. Microsoft.Azure.Cosmos NuGet package - 
+    ///    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
+    /// ----------------------------------------------------------------------------------------------------------
+    /// Sample - Demonstrates the basic CRUD operations on Container that is migrated from Non-Partitioned mode to
+    /// Partitioned mode.
+    ///
+    /// These include the following operations:
+    ///    1. Document CRUD operations in the same logical partition as pre-migration
+    ///    2. Document CRUD operations with a partition key value on the migrated container
+    ///    3. Migration of documents inserted without partition key into a logical parition with a valid partition key value
+    ///
+    ///
+    /// Note: This sample is written for V3 SDK and since V3 SDK doesn't allow creating a container without partition key,
+    ///       this sample uses REST API to perform such operation.
+    /// ----------------------------------------------------------------------------------------------------------
+    /// </summary>
 
     public class Program
     {
