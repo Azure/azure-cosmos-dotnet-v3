@@ -731,21 +731,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await resultSet.FetchNextSetAsync();
                 Assert.Fail("Expected query to fail");
             }
-            catch (Exception e)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                CosmosException exception = e.InnerException as CosmosException;
-
-                if (exception == null)
-                {
-                    throw e;
-                }
-
-                if (exception.StatusCode != HttpStatusCode.BadRequest)
-                {
-                    throw e;
-                }
-
-                Assert.IsTrue(exception.Message.Contains("continuation token limit specified is not large enough"));
+                Assert.IsTrue(exception.Message.Contains("continuation token limit specified is not large enough"), exception.Message);
             }
 
             try
@@ -757,21 +745,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await resultSet.FetchNextSetAsync();
                 Assert.Fail("Expected query to fail");
             }
-            catch (AggregateException e)
+            catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
-                CosmosException exception = e.InnerException as CosmosException;
-
-                if (exception == null)
-                {
-                    throw e;
-                }
-
-                if (exception.StatusCode != HttpStatusCode.BadRequest)
-                {
-                    throw e;
-                }
-
-                Assert.IsTrue(exception.Message.Contains("Syntax error, incorrect syntax near"));
+                Assert.IsTrue(exception.Message.Contains("Syntax error, incorrect syntax near"), exception.Message);
             }
         }
 
@@ -971,6 +947,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateNonPartitionedContainer()
         {
+            await CosmosItemTests.CreateNonPartitionedContainer(this.database.Id, 
+                CosmosItemTests.nonPartitionContainerId);
+        }
+
+        internal static async Task CreateNonPartitionedContainer(
+            string dbName,
+            string containerName)
+        {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
@@ -978,18 +962,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Uri baseUri = new Uri(endpoint);
             string verb = "POST";
             string resourceType = "colls";
-            string resourceId = string.Format("dbs/{0}", this.database.Id);
-            string resourceLink = string.Format("dbs/{0}/colls", this.database.Id);
+            string resourceId = string.Format("dbs/{0}", dbName);
+            string resourceLink = string.Format("dbs/{0}/colls", dbName);
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
             client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
 
-            string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Add("authorization", authHeader);
-            string containerDefinition = "{\n  \"id\": \"" + nonPartitionContainerId + "\"\n}";
+            string containerDefinition = "{\n  \"id\": \"" + containerName + "\"\n}";
             StringContent containerContent = new StringContent(containerDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
-            await client.PostAsync(requestUri.ToString(), containerContent);
+            HttpResponseMessage response = await client.PostAsync(requestUri.ToString(), containerContent);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, response.ToString());
         }
 
         private async Task CreateItemInNonPartitionedContainer(string itemId)
@@ -1003,16 +988,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceType = "docs";
             string resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, nonPartitionContainerId);
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, nonPartitionContainerId);
-            string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
             client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
-            string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: itemId));
-            StringContent itemContent = new StringContent(itemDefinition);
-            Uri requestUri = new Uri(baseUri, resourceLink);
-            await client.PostAsync(requestUri.ToString(), itemContent);
+            string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: nonPartitionItemId));
+            {
+                StringContent itemContent = new StringContent(itemDefinition);
+                Uri requestUri = new Uri(baseUri, resourceLink);
+                HttpResponseMessage response = await client.PostAsync(requestUri.ToString(), itemContent);
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, response.ToString());
+            }
         }
 
         private async Task CreateUndefinedPartitionItem()
@@ -1035,7 +1023,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             resourceType = "docs";
             resourceId = string.Format("dbs/{0}/colls/{1}", this.database.Id, this.Container.Id);
             resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, this.Container.Id);
-            string authHeader = this.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
+            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Remove("authorization");
             client.DefaultRequestHeaders.Add("authorization", authHeader);
@@ -1047,7 +1035,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await client.PostAsync(requestUri.ToString(), itemContent);
         }
 
-        private string GenerateMasterKeyAuthorizationSignature(string verb, string resourceId, string resourceType, string key, string keyType, string tokenVersion)
+        private static string GenerateMasterKeyAuthorizationSignature(string verb, string resourceId, string resourceType, string key, string keyType, string tokenVersion)
         {
             System.Security.Cryptography.HMACSHA256 hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
 
