@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     TriggerType = Cosmos.TriggerType.Pre
                 });
 
-            CosmosItemRequestOptions options = new CosmosItemRequestOptions()
+            ItemRequestOptions options = new ItemRequestOptions()
             {
                 PreTriggers = new List<string>() { cosmosTrigger.Id },
             };

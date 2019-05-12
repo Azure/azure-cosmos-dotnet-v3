@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestCosmosQueryPartitionKeyDefinition()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions();
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
             queryRequestOptions.Properties = new Dictionary<string, object>()
             {
                 {"x-ms-query-partitionkey-definition", partitionKeyDefinition }

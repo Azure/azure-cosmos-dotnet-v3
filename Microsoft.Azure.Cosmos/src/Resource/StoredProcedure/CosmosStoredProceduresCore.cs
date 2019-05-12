@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
@@ -97,8 +97,8 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosStoredProcedureSettings>(response),
                 cancellationToken: cancellationToken);
