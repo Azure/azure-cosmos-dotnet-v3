@@ -851,6 +851,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore] // Flaky
         [TestMethod]
         public void TestLazyIndexAllTerms()
         {

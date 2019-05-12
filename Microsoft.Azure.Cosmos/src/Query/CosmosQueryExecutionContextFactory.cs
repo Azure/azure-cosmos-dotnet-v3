@@ -16,12 +16,14 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
     /// </summary>
     internal class CosmosQueryExecutionContextFactory : IDocumentQueryExecutionContext
     {
+        internal const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private IDocumentQueryExecutionContext innerExecutionContext;
         private CosmosQueryContext cosmosQueryContext;
 
@@ -110,11 +112,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     collection = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
                 }
-
-                if (this.cosmosQueryContext.QueryRequestOptions != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null && this.cosmosQueryContext.QueryRequestOptions.PartitionKey.Equals(PartitionKey.None))
-                {
-                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
-                }
             }
 
             if(collection == null)
@@ -142,10 +139,31 @@ namespace Microsoft.Azure.Cosmos.Query
             //todo:elasticcollections this may rely on information from collection cache which is outdated
             //if collection is deleted/created with same name.
             //need to make it not rely on information from collection cache.
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
-                queryClient: this.cosmosQueryContext.QueryClient,
+            PartitionKeyDefinition partitionKeyDefinition;
+            object partitionKeyDefinitionObject;
+            if (this.cosmosQueryContext.QueryRequestOptions?.Properties != null
+                && this.cosmosQueryContext.QueryRequestOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+            {
+                if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
+                {
+                    partitionKeyDefinition = definition;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        "partitionkeydefinition has invalid type",
+                        nameof(partitionKeyDefinitionObject));
+                }
+            }
+            else
+            {
+                partitionKeyDefinition = collection.PartitionKey;
+            }
+
+            // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.cosmosQueryContext.QueryClient.GetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec: this.cosmosQueryContext.SqlQuerySpec,
-                partitionKeyDefinition: collection.PartitionKey,
+                partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: this.cosmosQueryContext.AllowNonValueAggregateQuery,
@@ -173,6 +191,14 @@ namespace Microsoft.Azure.Cosmos.Query
             string collectionRid,
             CancellationToken cancellationToken)
         {
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo?.RewrittenQuery))
+            {
+                cosmosQueryContext.SqlQuerySpec = new SqlQuerySpec(
+                    partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
+                    cosmosQueryContext.SqlQuerySpec.Parameters);
+            }
+
             // Figure out the optimal page size.
             long initialPageSize = cosmosQueryContext.QueryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
 
@@ -256,10 +282,21 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> targetRanges;
             if (queryRequestOptions.PartitionKey != null)
             {
+                // Dis-ambiguate the NonePK if used 
+                PartitionKeyInternal partitionKeyInternal = null;
+                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                {
+                    partitionKeyInternal = collection.GetNoneValue();
+                }
+                else
+                {
+                    partitionKeyInternal = new PartitionKey(queryRequestOptions.PartitionKey).InternalKey;
+                }
+
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
                     resourceLink,
                     collection.ResourceId,
-                    new PartitionKey(queryRequestOptions.PartitionKey).InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
+                    partitionKeyInternal.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {
@@ -279,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return targetRanges;
         }
 
-        public static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+        public static Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -290,12 +327,13 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
 
-            QueryPartitionProvider queryPartitionProvider = await queryClient.GetQueryPartitionProviderAsync(cancellationToken);
-            return queryPartitionProvider.GetPartitionedQueryExecutionInfo(sqlQuerySpec, 
-                partitionKeyDefinition, 
-                requireFormattableOrderByQuery, 
-                isContinuationExpected, 
-                allowNonValueAggregateQuery);
+            return queryClient.GetPartitionedQueryExecutionInfoAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                requireFormattableOrderByQuery,
+                isContinuationExpected,
+                allowNonValueAggregateQuery,
+                cancellationToken);
         }
 
 
