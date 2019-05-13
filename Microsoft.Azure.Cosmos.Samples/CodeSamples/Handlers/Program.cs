@@ -47,16 +47,15 @@
             }
 
             // Connecting to Emulator. Change if you want a live account
-            CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(endpoint,
-                authKey);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(endpoint, authKey);
 
-            cosmosConfiguration.AddCustomHandlers(
+            cosmosClientBuilder.AddCustomHandlers(
                 new LoggingHandler(),
                 new ConcurrencyHandler(),
                 new ThrottlingHandler()
                 );
 
-            CosmosClient client = new CosmosClient(cosmosConfiguration);
+            CosmosClient client = cosmosClientBuilder.Build();
 
             CosmosDatabaseResponse databaseResponse = await client.Databases.CreateDatabaseIfNotExistsAsync("mydb");
             CosmosDatabase database = databaseResponse.Database;
@@ -102,10 +101,11 @@
 
             // Concurrency
 
-            List<Task<CosmosItemResponse<Item>>> tasks = new List<Task<CosmosItemResponse<Item>>>();
-
-            tasks.Add(UpdateItemForConcurrency(container, accessCondition, item));
-            tasks.Add(UpdateItemForConcurrency(container, accessCondition, item));
+            List<Task<CosmosItemResponse<Item>>> tasks = new List<Task<CosmosItemResponse<Item>>>
+            {
+                UpdateItemForConcurrency(container, accessCondition, item),
+                UpdateItemForConcurrency(container, accessCondition, item)
+            };
 
             try
             {
@@ -113,7 +113,7 @@
             }
             catch (CosmosException ex)
             {
-                // Verify that our custom handler catched the scenario
+                // Verify that our custom handler caught the scenario
                 Debug.Assert(999.Equals(ex.SubStatusCode));
             }
 

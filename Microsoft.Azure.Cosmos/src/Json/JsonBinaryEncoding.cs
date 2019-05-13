@@ -85,6 +85,9 @@ namespace Microsoft.Azure.Cosmos.Json
             "properties",
             "type",
             "value",
+            "Feature",
+            "FeatureCollection",
+            "_id",
         };
 
         /// <summary>

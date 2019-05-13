@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string continuationToken = null;
-            FeedResponse<T> pagedResult = null;
+            DocumentFeedResponse<T> pagedResult = null;
             do
             {
                 if (!string.IsNullOrEmpty(continuationToken))
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string continuationToken = null;
-            FeedResponse<T> pagedResult = null;
+            DocumentFeedResponse<T> pagedResult = null;
             do
             {
                 if (!string.IsNullOrEmpty(continuationToken))
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        private static FeedResponse<T> ReadScriptFeedDirect<T>(
+        private static DocumentFeedResponse<T> ReadScriptFeedDirect<T>(
             DocumentClient client,
             string resourceIdOrFullName,
             INameValueCollection localHeaders) where T : Resource, new()
@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         DocumentServiceResponse response = client.StoreModel.ProcessMessageAsync(request).Result;
 
                         FeedResource<T> feedResource = response.GetResource<FeedResource<T>>();
-                        return new FeedResponse<T>(feedResource, feedResource.Count, response.Headers);
+                        return new DocumentFeedResponse<T>(feedResource, feedResource.Count, response.Headers);
                     }
                 }
             }
@@ -688,12 +688,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task.Delay(TestCommon.serverStalenessIntervalInSeconds * 1000);
             }
         }
-        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
+        public static DocumentFeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
         {
             return client.ReadFeedWithRetry<T>(resourceIdOrFullName, out INameValueCollection ignored, headers);
         }
 
-        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
+        public static DocumentFeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
         {
             int nMaxRetry = 5;
 
@@ -1079,7 +1079,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public static FeedResponse<T> ReadFeed<T>(
+        public static DocumentFeedResponse<T> ReadFeed<T>(
             this DocumentClient client,
             string resourceIdOrFullName,
             INameValueCollection headers = null) where T : Resource, new()
@@ -1087,7 +1087,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return client.ReadFeed<T>(resourceIdOrFullName, out INameValueCollection ignored, headers);
         }
 
-        public static FeedResponse<T> ReadFeed<T>(
+        public static DocumentFeedResponse<T> ReadFeed<T>(
             this DocumentClient client,
             string resourceIdOrFullName,
             out INameValueCollection responseHeaders,
@@ -1131,7 +1131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 responseHeaders = result.Headers;
                 FeedResource<T> feedResource = result.GetResource<FeedResource<T>>();
 
-                return new FeedResponse<T>(feedResource,
+                return new DocumentFeedResponse<T>(feedResource,
                     feedResource.Count,
                     result.Headers);
             }
@@ -1319,7 +1319,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await TestCommon.DeleteAllDatabasesAsyncWorker(client);
 
                     // Offer read feed not supported in v3 SDK
-                    //FeedResponse<Offer> offerResponse = client.ReadOffersFeedAsync().Result;
+                    //DoucmentFeedResponse<Offer> offerResponse = client.ReadOffersFeedAsync().Result;
                     //if (offerResponse.Count != 0)
                     //{
                     //    // Number of offers should have been 0 after deleting all the databases
@@ -1383,7 +1383,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<CosmosDatabase> databases = new List<CosmosDatabase>();
 
-            CosmosFeedIterator<CosmosDatabaseSettings> resultSetIterator = client.Databases.GetDatabaseIterator(maxItemCount: 10);
+            FeedIterator<CosmosDatabaseSettings> resultSetIterator = client.Databases.GetDatabaseIterator(maxItemCount: 10);
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
@@ -1411,7 +1411,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, CosmosDatabase database)
         {
             //Delete them in chunks of 10.
-            CosmosFeedIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator(maxItemCount: 10);
+            FeedIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator(maxItemCount: 10);
             while (resultSetIterator.HasMoreResults)
             {
                 List<Task> deleteCollectionTasks = new List<Task>(10);

@@ -53,7 +53,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOperationType == OperationType.Upsert ||
                 requestOperationType == OperationType.ReadFeed ||
                 requestOperationType == OperationType.Query ||
-                requestOperationType == OperationType.SqlQuery;
+                requestOperationType == OperationType.SqlQuery ||
+                requestOperationType == OperationType.QueryPlan;
         }
 
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)

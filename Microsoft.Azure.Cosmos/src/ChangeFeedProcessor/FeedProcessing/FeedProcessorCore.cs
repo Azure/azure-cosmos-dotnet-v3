@@ -22,12 +22,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly ProcessorSettings settings;
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
-        private readonly CosmosFeedIterator resultSetIterator;
+        private readonly FeedIterator resultSetIterator;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
-            CosmosFeedIterator resultSetIterator, 
+            FeedIterator resultSetIterator, 
             ProcessorSettings settings, 
             PartitionCheckpointer checkpointer, 
             CosmosJsonSerializer cosmosJsonSerializer)

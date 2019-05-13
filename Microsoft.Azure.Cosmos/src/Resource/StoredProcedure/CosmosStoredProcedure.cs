@@ -26,10 +26,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -48,23 +48,23 @@ namespace Microsoft.Azure.Cosmos
         ///  This reads an existing stored procedure.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosStoredProcedureResponse response = await this.cosmosContainer.StoredProcedures["ExistingId"].ReadAsync();
+        /// StoredProcedureResponse response = await this.cosmosContainer.StoredProcedures["ExistingId"].ReadAsync();
         /// CosmosStoredProcedureSettings settings = response;
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosStoredProcedureResponse> ReadAsync(
-                    CosmosRequestOptions requestOptions = null,
+        public abstract Task<StoredProcedureResponse> ReadAsync(
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Replaces a <see cref="CosmosStoredProcedureSettings"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="body">The JavaScript function to replace the existing resource with.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the updated resource record.
+        /// A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="body"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -96,21 +96,21 @@ namespace Microsoft.Azure.Cosmos
         ///     }"
         /// };
         /// 
-        /// CosmosStoredProcedureResponse response = await this.cosmosStoredProcedure.ReplaceAsync(settings);
+        /// StoredProcedureResponse response = await this.cosmosStoredProcedure.ReplaceAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosStoredProcedureResponse> ReplaceAsync(
+        public abstract Task<StoredProcedureResponse> ReplaceAsync(
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Delete a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> which will contain information about the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> which will contain information about the request issued.</returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
         ///     <listheader>
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
         /// This examples gets a reference to an existing stored procedure and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosStoredProcedureResponse response = await this.cosmosContainer.StoredProcedures["taxUdfId"].DeleteAsync();
+        /// StoredProcedureResponse response = await this.cosmosContainer.StoredProcedures["taxUdfId"].DeleteAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -133,12 +133,12 @@ namespace Microsoft.Azure.Cosmos
         /// This examples containers an existing reference to a stored procedure and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosStoredProcedureResponse response = await this.cosmosTaxStoredProcedure.DeleteAsync();
+        /// StoredProcedureResponse response = await this.cosmosTaxStoredProcedure.DeleteAsync();
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosStoredProcedureResponse> DeleteAsync(
-                    CosmosRequestOptions requestOptions = null,
+        public abstract Task<StoredProcedureResponse> DeleteAsync(
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="input">The JSON serializable input parameters.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosStoredProcedureRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <example>
@@ -180,15 +180,15 @@ namespace Microsoft.Azure.Cosmos
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
+        /// ItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
         /// Console.WriteLine("sprocResponse.Resource");
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
+        public abstract Task<ItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
-            CosmosStoredProcedureRequestOptions requestOptions = null,
+            StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }
 }

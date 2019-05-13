@@ -5,11 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using System.IO;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientConfiguration clientConfiguration,
             CosmosJsonSerializer cosmosJsonSerializer,
             CosmosResponseFactory cosmosResponseFactory,
-            CosmosRequestHandler requestHandler,
+            RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             IDocumentQueryClient documentQueryClient)
         {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosResponseFactory ResponseFactory { get; }
 
-        internal override CosmosRequestHandler RequestHandler { get; }
+        internal override RequestInvokerHandler RequestHandler { get; }
 
         internal override CosmosClientConfiguration ClientConfiguration { get; }
 
@@ -87,40 +87,38 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            return ExecUtils.ProcessResourceOperationStreamAsync(
-                requestHandler: this.RequestHandler,
-                cosmosContainerCore: cosmosContainerCore,
+            return this.RequestHandler.SendAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                cancellationToken: cancellationToken);
+                cancellation: cancellationToken);
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            return ExecUtils.ProcessResourceOperationAsync<T>(
-                requestHandler: this.RequestHandler,
+            return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -130,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
     }
 }

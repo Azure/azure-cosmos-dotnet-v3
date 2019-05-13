@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
     /// </summary>
     /// <typeparam name="T">The feed type.</typeparam>
-    internal class FeedResponse<T> : IEnumerable<T>, IDynamicMetaObjectProvider, IFeedResponse<T>
+    internal class DocumentFeedResponse<T> : IEnumerable<T>, IDynamicMetaObjectProvider, IDocumentFeedResponse<T>
     {
         private readonly IEnumerable<T> inner;
         private INameValueCollection responseHeaders;
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Constructor exposed for mocking purposes.
         /// </summary>
-        public FeedResponse()
+        public DocumentFeedResponse()
         {
         }
 
@@ -41,13 +41,13 @@ namespace Microsoft.Azure.Cosmos
         /// Constructor exposed for mocking purposes.
         /// </summary>
         /// <param name="result"></param>
-        public FeedResponse(IEnumerable<T> result)
+        public DocumentFeedResponse(IEnumerable<T> result)
             : this()
         {
             this.inner = result != null ? result : Enumerable.Empty<T>();
         }
 
-        internal FeedResponse(
+        internal DocumentFeedResponse(
             IEnumerable<T> result,
             int count,
             INameValueCollection responseHeaders,
@@ -69,13 +69,13 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseLengthBytes = responseLengthBytes;
         }
 
-        internal FeedResponse(IEnumerable<T> result, int count, INameValueCollection responseHeaders, long responseLengthBytes)
+        internal DocumentFeedResponse(IEnumerable<T> result, int count, INameValueCollection responseHeaders, long responseLengthBytes)
             : this(result, count, responseHeaders)
         {
             this.ResponseLengthBytes = responseLengthBytes;
         }
 
-        internal FeedResponse(
+        internal DocumentFeedResponse(
             IEnumerable<T> result,
             int count,
             INameValueCollection responseHeaders,
@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos
 
         private class ResourceFeedDynamicObject : DynamicMetaObject
         {
-            public ResourceFeedDynamicObject(FeedResponse<T> parent, Expression expression)
+            public ResourceFeedDynamicObject(DocumentFeedResponse<T> parent, Expression expression)
                 : base(expression, BindingRestrictions.Empty, parent)
             {
 
@@ -501,7 +501,7 @@ namespace Microsoft.Azure.Cosmos
 
             public override DynamicMetaObject BindConvert(ConvertBinder binder)
             {
-                Type baseFeedType = typeof(FeedResponse<bool>).GetGenericTypeDefinition();
+                Type baseFeedType = typeof(DocumentFeedResponse<bool>).GetGenericTypeDefinition();
 
                 if (binder.Type != typeof(IEnumerable) && (!binder.Type.IsGenericType() || (binder.Type.GetGenericTypeDefinition() != baseFeedType &&
                     binder.Type.GetGenericTypeDefinition() != typeof(IEnumerable<string>).GetGenericTypeDefinition() &&

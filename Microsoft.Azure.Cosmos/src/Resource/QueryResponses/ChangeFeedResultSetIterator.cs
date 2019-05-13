@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
 
-    internal class ChangeFeedResultSetIterator<T> : CosmosDefaultResultSetIterator<T>
+    internal class ChangeFeedResultSetIterator<T> : FeedIteratorCore<T>
     {
         internal ChangeFeedResultSetIterator(
             int? maxItemCount,
             string continuationToken,
-            CosmosQueryRequestOptions options,
+            QueryRequestOptions options,
             NextResultSetDelegate nextDelegate,
             object state = null) : base(maxItemCount, continuationToken, options, nextDelegate, state)
         {

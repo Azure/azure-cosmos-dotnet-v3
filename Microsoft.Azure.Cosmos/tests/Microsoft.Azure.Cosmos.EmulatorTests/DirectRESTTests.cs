@@ -968,22 +968,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestPartitionedQueryExecutionInfoInDocumentClientExceptionWithIsContinuationExpectedHeader()
         {
-            DocumentClient client = TestCommon.CreateClient(true);
+            CosmosClient client = TestCommon.CreateCosmosClient(true);
 
-            Database database = null;
+            CosmosDatabase database = null;
             try
             {
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
-                database = await client.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                database = await client.Databases.CreateDatabaseAsync(uniqDatabaseName );
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
-                DocumentCollection collection = await client.CreateDocumentCollectionAsync(
-                    database.SelfLink,
-                    new DocumentCollection
+                CosmosContainer container = await database.Containers.CreateContainerAsync(
+                    new CosmosContainerSettings
                     {
                         Id = uniqCollectionName,
                         PartitionKey = new PartitionKeyDefinition
@@ -992,11 +990,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Version = PartitionKeyDefinitionVersion.V1
                         }
                     },
-                    new RequestOptions { OfferThroughput = 10000 });
+                    throughput : 10000);
 
                 string uniqSinglePartitionCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
-
-                var partitionedCollectionUri = new Uri(this.baseUri, new Uri(collection.SelfLink + "docs", UriKind.Relative));
+                string resourceId = string.Format("dbs/{0}/colls/{1}", database.Id, container.Id);
+                var partitionedCollectionUri = new Uri(this.baseUri, new Uri(resourceId + "/docs", UriKind.Relative));
 
 
                 SqlQuerySpec querySpec = new SqlQuerySpec
@@ -1013,10 +1011,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         OrderByExpressions = new string[] { },
                         Aggregates = new AggregateOperator[] { AggregateOperator.Average },
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
+                        HasSelectValue = true,
                     },
                     QueryRanges = new List<Range<string>>()
                     {
-                        Range<string>.GetPointRange(PartitionKeyInternal.FromObjectArray(new object[] { 1 }, true).GetEffectivePartitionKeyString(collection.PartitionKey)),
+                        Range<string>.GetPointRange(PartitionKeyInternal.FromObjectArray(new object[] { 1 }, true).GetEffectivePartitionKeyString(await ((CosmosContainerCore)container).GetPartitionKeyDefinitionAsync())),
                     },
                 };
 
@@ -1029,6 +1028,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         OrderByExpressions = new string[] { },
                         Aggregates = new AggregateOperator[] { AggregateOperator.Average },
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
+                        HasSelectValue = true,
                     },
                     QueryRanges = new List<Range<string>>()
                     {
@@ -1047,7 +1047,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 })
                 {
                     foreach (var collectionTuple in new[] {
-                        Tuple.Create(collection, partitionedCollectionUri, true),
+                        Tuple.Create(container, partitionedCollectionUri, true),
                     })
                     {
                         foreach (var versionTuple in new[] {
@@ -1060,7 +1060,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             PartitionedQueryExecutionInfo queryInfoForPartitionedCollection = queryTuple.Item3;
                             PartitionedQueryExecutionInfo queryInfoForSinglePartitionCollection = queryTuple.Item4;
 
-                            DocumentCollection currentCollection = collectionTuple.Item1;
+                            CosmosContainer currentCollection = collectionTuple.Item1;
                             Uri uri = collectionTuple.Item2;
                             bool isPartitionedCollectionUri = collectionTuple.Item3;
 
@@ -1072,7 +1072,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 using (HttpClient httpClient = CreateHttpClient(version))
                                 {
                                     var headers = new StringKeyValueCollection();
-                                    httpClient.AddMasterAuthorizationHeader("post", currentCollection.ResourceId, "docs", headers, this.masterKey);
+                                    resourceId = string.Format("dbs/{0}/colls/{1}", database.Id, currentCollection.Id);
+                                    httpClient.AddMasterAuthorizationHeader("post", resourceId, "docs", headers, this.masterKey);
                                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
                                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
@@ -1127,7 +1128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (database != null)
                 {
-                    await client.DeleteDatabaseAsync(database);
+                    await database.DeleteAsync();
                 }
             }
         }

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
-    internal class CosmosChangeFeedResultSetIteratorCore : CosmosFeedIterator
+    internal class ChangeFeedResultSetIteratorCore : FeedIterator
     {
         private const int DefaultMaxItemCount = 100;
         private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
@@ -29,12 +29,12 @@ namespace Microsoft.Azure.Cosmos
         private string partitionKeyRangeId;
         private int? maxItemCount;
 
-        internal CosmosChangeFeedResultSetIteratorCore(
+        internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
             CosmosContainerCore cosmosContainer,
             string continuationToken,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions options)
         {
             if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The query options for the result set
         /// </summary>
-        protected readonly CosmosChangeFeedRequestOptions changeFeedOptions;
+        protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -128,12 +128,12 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            bool pageSizeError = response.ErrorMessage.Contains(CosmosChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
+            bool pageSizeError = response.ErrorMessage.Contains(ChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
             if (pageSizeError)
             {
                 if (!this.maxItemCount.HasValue)
                 {
-                    this.maxItemCount = CosmosChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
+                    this.maxItemCount = ChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
                 }
                 else if (this.maxItemCount <= 1)
                 {
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options,
+            ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
@@ -162,9 +162,9 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: options,
                 cosmosContainerCore: this.cosmosContainer,
                 requestEnricher: request => {
-                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                    CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
+                    ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                    ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
                 responseCreator: response => response,
                 partitionKey: null,

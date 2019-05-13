@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
         /// This means that if you have a long running query this function will take a very long time to return.
         /// </remarks>
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             while (!this.IsDone)
             {
-                CosmosQueryResponse result = await base.DrainAsync(int.MaxValue, token);
+                QueryResponse result = await base.DrainAsync(int.MaxValue, token);
                 if (!result.IsSuccessStatusCode)
                 {
                     return result;
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 result: finalResult,
                 count: finalResult.Count,
                 responseLengthBytes: responseLengthBytes,

@@ -33,13 +33,13 @@ namespace Microsoft.Azure.Cosmos
     ///     .UseParameter("@expensive", 9000)
     ///     .UseParameter("@status", "Done");
     ///
-    /// CosmosResultSetIterator<double> setIterator = this.container.Items.CreateItemQuery<double>(
+    /// FeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
     ///     sqlQueryDefinition: sqlQuery,
     ///     partitionKey: "Done");
     ///
-    /// while (setIterator.HasMoreResults)
+    /// while (feedIterator.HasMoreResults)
     /// {
-    ///     foreach (var tax in await setIterator.FetchNextSetAsync())
+    ///     foreach (var tax in await feedIterator.FetchNextSetAsync())
     ///     {
     ///         Console.WriteLine(tax);
     ///     }
