@@ -7,7 +7,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <ClientVersion>3.0.0.12-preview</ClientVersion>
-    <DirectVersion>3.0.0.27-preview</DirectVersion>
+    <DirectVersion>3.0.0.28-preview</DirectVersion>
     <Version Condition=" '$(IsNightly)' == '1' ">$(ClientVersion)-nightly$(CurrentDate)</Version>
     <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(ClientVersion)</Version>
     <FileVersion>$(VersionPrefix)</FileVersion>
@@ -61,5 +61,5 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;NETSTANDARD20</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
-  </PropertyGroup> 
+  </PropertyGroup>
 </Project>

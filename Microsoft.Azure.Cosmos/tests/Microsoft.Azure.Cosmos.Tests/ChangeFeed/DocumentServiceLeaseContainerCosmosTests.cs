@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<int>(), 
                 It.IsAny<int?>(), 
                 It.IsAny<string>(), 
-                It.IsAny<CosmosQueryRequestOptions>()))
+                It.IsAny<QueryRequestOptions>()))
                 .Returns(()=>
                 {
                     return mockedQuery.Object;

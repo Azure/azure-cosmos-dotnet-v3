@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.Query
         public virtual ResourceType ResourceTypeEnum { get; }
         public virtual OperationType OperationTypeEnum { get; }
         public virtual Type ResourceType { get; }
-        public virtual SqlQuerySpec SqlQuerySpec { get; }
-        public virtual CosmosQueryRequestOptions QueryRequestOptions { get; }
+        public SqlQuerySpec SqlQuerySpec { get; internal set; }
+        public virtual QueryRequestOptions QueryRequestOptions { get; }
         public virtual bool IsContinuationExpected { get; }
         public virtual bool AllowNonValueAggregateQuery { get; }
         public virtual Uri ResourceLink { get; }
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
             OperationType operationType,
             Type resourceType,
             SqlQuerySpec sqlQuerySpecFromUser,
-            CosmosQueryRequestOptions queryRequestOptions,
+            QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool getLazyFeedResponse,
             Guid correlatedActivityId,
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken cancellationToken,
             Action<CosmosRequestMessage> requestEnricher = null)
         {
-            CosmosQueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
+            QueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
 
             return await this.QueryClient.ExecuteItemQueryAsync(
                            this.ResourceLink,

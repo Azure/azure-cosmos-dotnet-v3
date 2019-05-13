@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Uri LinkUri { get; }
 
         public override Task<DatabaseResponse> ReadAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.ReadStreamAsync(
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<DatabaseResponse> DeleteAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> ReadStreamAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> DeleteStreamAsync(
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<CosmosResponseMessage> ProcessAsync(
             OperationType operationType,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.clientContext.ProcessResourceOperationStreamAsync(
