@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosContainersCore : CosmosContainers
     {
         private readonly CosmosDatabaseCore database;
-        
         private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
 
         internal CosmosContainersCore(

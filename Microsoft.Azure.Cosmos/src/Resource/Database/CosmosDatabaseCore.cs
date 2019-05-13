@@ -23,8 +23,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal CosmosDatabaseCore() { }
 
-        
-
         internal CosmosDatabaseCore(
             CosmosClientContext clientContext,
             string databaseId)
