@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             return ExecUtils.ProcessResourceOperationAsync(
                 client,
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         internal static Task<T> ProcessResourceOperationAsync<T>(
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             return ExecUtils.ProcessResourceOperationAsync(
                 client,
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: null,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         internal static Task<T> ProcessResourceOperationAsync<T>(
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Stream streamPayload,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             return ExecUtils.ProcessResourceOperationAsync(
                 client,
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: null,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (client == null)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         internal static async Task<T> ProcessResourceOperationAsync<T>(
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (requestHandler == null)
             {

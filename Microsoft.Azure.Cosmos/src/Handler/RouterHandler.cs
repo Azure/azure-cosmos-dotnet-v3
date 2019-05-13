@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public override Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request, 
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             CosmosRequestHandler targetHandler = null;
             if (request.IsPartitionedFeedOperation)
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 targetHandler = pointOperationHandler;
             }
 
-            return targetHandler.SendAsync(request, cancellationToken);
+            return targetHandler.SendAsync(request, cancellation);
         }
     }
 }

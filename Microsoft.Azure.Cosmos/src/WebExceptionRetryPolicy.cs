@@ -27,7 +27,7 @@
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception, 
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             TimeSpan backoffTime = TimeSpan.FromSeconds(0);
 
@@ -59,7 +59,7 @@
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage, 
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             throw new NotImplementedException();
         }

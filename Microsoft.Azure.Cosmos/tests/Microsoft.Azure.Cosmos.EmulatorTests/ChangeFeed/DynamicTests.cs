@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 10000,
-                cancellationToken: this.cancellationToken);
+                cancellation: this.cancellation);
             this.Container = response;
         }
 

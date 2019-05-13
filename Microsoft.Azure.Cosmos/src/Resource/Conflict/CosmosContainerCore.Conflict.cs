@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> DeleteConflictAsync(
             object partitionKey,
             string id,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             if (partitionKey == null)
             {
@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         public override async Task<ItemResponse<T>> ReadConflictSourceItemAsync<T>(
             object partitionKey,
             CosmosConflictSettings cosmosConflict,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             if (partitionKey == null)
             {
@@ -60,8 +60,8 @@ namespace Microsoft.Azure.Cosmos
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
             CosmosDatabaseCore databaseCore = (CosmosDatabaseCore) this.Database;
-            string databaseResourceId = await databaseCore.GetRID(cancellationToken);
-            string containerResourceId = await this.GetRID(cancellationToken);
+            string databaseResourceId = await databaseCore.GetRID(cancellation);
+            string containerResourceId = await this.GetRID(cancellation);
 
             Uri dbLink = this.ClientContext.CreateLink(
                 parentLink: string.Empty,
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
 
             return await this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             return this.ClientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
                 resourceUri: this.LinkUri,
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this,
                 partitionKey: null,
                 streamPayload: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         private Task<FeedResponse<CosmosConflictSettings>> ConflictsFeedRequestExecutor(
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<CosmosConflictSettings>>(
                 resourceUri: this.LinkUri,
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosConflictSettings>(response),
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
     }
 }

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
-                    cancellationToken: cancellation);
+                    cancellation: cancellation);
 
             if (partitionedQueryExecutionInfo == null ||
                 partitionedQueryExecutionInfo.QueryRanges == null ||

@@ -120,9 +120,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains documents from this execution context.
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drains.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellation">The cancellation token.</param>
         /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
-        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellation)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints
             // 1) We fully drain from the left most partition before moving on to the next partition
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
             // This might be the first time we have seen this document producer tree so we need to buffer documents
             if (currentItemProducerTree.Current == null)
             {
-                await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
+                await this.MoveNextHelperAsync(currentItemProducerTree, cancellation);
             }
 
             int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query
             for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
             {
                 results.Add(currentItemProducerTree.Current);
-                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellation))
                 {
                     break;
                 }

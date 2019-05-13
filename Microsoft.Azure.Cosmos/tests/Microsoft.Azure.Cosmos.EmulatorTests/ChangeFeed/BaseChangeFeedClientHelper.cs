@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             string PartitionKey = "/id";
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: "monitored", partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
+                cancellation: this.cancellation);
             this.Container = response;
 
 
             response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: "leases", partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
+                cancellation: this.cancellation);
 
             this.LeaseContainer = response;
         }

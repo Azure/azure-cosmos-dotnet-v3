@@ -35,29 +35,29 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.sessionContainer = sessionContainer;
         }
 
-        protected override Task<CosmosContainerSettings> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellationToken)
+        protected override Task<CosmosContainerSettings> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellation)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
-                  () => this.ReadCollectionAsync(PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false), cancellationToken, retryPolicyInstance),
+                  () => this.ReadCollectionAsync(PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false), cancellation, retryPolicyInstance),
                   retryPolicyInstance,
-                  cancellationToken);
+                  cancellation);
         }
 
-        protected override Task<CosmosContainerSettings> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellationToken)
+        protected override Task<CosmosContainerSettings> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellation)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
-                () => this.ReadCollectionAsync(resourceAddress, cancellationToken, retryPolicyInstance),
+                () => this.ReadCollectionAsync(resourceAddress, cancellation, retryPolicyInstance),
                 retryPolicyInstance,
-                cancellationToken);
+                cancellation);
         }
 
-        private async Task<CosmosContainerSettings> ReadCollectionAsync(string collectionLink, CancellationToken cancellationToken, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<CosmosContainerSettings> ReadCollectionAsync(string collectionLink, CancellationToken cancellation, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
 
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                    OperationType.Read,

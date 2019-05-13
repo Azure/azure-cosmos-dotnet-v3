@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class TaskHelper
     {
-        static public Task InlineIfPossible(Func<Task> function, IRetryPolicy retryPolicy, CancellationToken cancellationToken = default(CancellationToken))
+        static public Task InlineIfPossible(Func<Task> function, IRetryPolicy retryPolicy, CancellationToken cancellation = default(CancellationToken))
         {
             if (SynchronizationContext.Current == null)
             {
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         await function();
                         return 0;
-                    }, retryPolicy, cancellationToken);
+                    }, retryPolicy, cancellation);
                 }
             }
             else
@@ -45,12 +45,12 @@ namespace Microsoft.Azure.Cosmos
                     {
                         await function();
                         return 0;
-                    }, retryPolicy, cancellationToken));
+                    }, retryPolicy, cancellation));
                 }
             }
         }
 
-        static public Task<TResult> InlineIfPossible<TResult>(Func<Task<TResult>> function, IRetryPolicy retryPolicy, CancellationToken cancellationToken = default(CancellationToken))
+        static public Task<TResult> InlineIfPossible<TResult>(Func<Task<TResult>> function, IRetryPolicy retryPolicy, CancellationToken cancellation = default(CancellationToken))
         {
             if (SynchronizationContext.Current == null)
             {
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
                     return BackoffRetryUtility<TResult>.ExecuteAsync(() =>
                     {
                         return function();
-                    }, retryPolicy, cancellationToken);
+                    }, retryPolicy, cancellation);
                 }
             }
             else
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                     return Task.Run(() => BackoffRetryUtility<TResult>.ExecuteAsync(() =>
                     {
                         return function();
-                    }, retryPolicy, cancellationToken));
+                    }, retryPolicy, cancellation));
                 }
             }
         }

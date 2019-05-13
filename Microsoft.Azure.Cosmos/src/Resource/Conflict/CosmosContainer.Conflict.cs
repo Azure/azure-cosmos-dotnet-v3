@@ -14,24 +14,24 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="id">The conflict id.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
             object partitionKey,
             string id,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Reads the item that originated the conflict.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract Task<ItemResponse<T>> ReadConflictSourceItemAsync<T>(
             object partitionKey,
             CosmosConflictSettings cosmosConflict,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Obtains an iterator to go through the <see cref="CosmosConflictSettings"/> on an Azure Cosmos container.

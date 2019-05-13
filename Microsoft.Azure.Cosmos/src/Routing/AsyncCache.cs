@@ -80,17 +80,17 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <param name="key">Key for which to get a value.</param>
         /// <param name="obsoleteValue">Value which is obsolete and needs to be refreshed.</param>
         /// <param name="singleValueInitFunc">Initialization function.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="cancellation">Cancellation token.</param>
         /// <param name="forceRefresh">Skip cached value and generate new value.</param>
         /// <returns>Cached value or value returned by initialization function.</returns>
         public async Task<TValue> GetAsync(
            TKey key,
            TValue obsoleteValue,
            Func<Task<TValue>> singleValueInitFunc,
-           CancellationToken cancellationToken,
+           CancellationToken cancellation,
            bool forceRefresh = false)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
 
             AsyncLazy<TValue> initialLazyValue;
 
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
             }
 
-            AsyncLazy<TValue> newLazyValue = new AsyncLazy<TValue>(singleValueInitFunc, cancellationToken);
+            AsyncLazy<TValue> newLazyValue = new AsyncLazy<TValue>(singleValueInitFunc, cancellation);
 
             // Update the new task in the cache - compare-and-swap style.
             AsyncLazy<TValue> actualValue = this.values.AddOrUpdate(

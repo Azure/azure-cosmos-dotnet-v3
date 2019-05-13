@@ -96,33 +96,33 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellation = default(CancellationToken))
         {
-            return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellationToken);
+            return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellation);
         }
 
         /// <summary>
         /// Executes the query and retrieves the next page of results as dynamic objects in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
+        /// <param name="cancellation">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellation = default(CancellationToken))
         {
-            return this.ExecuteNextAsync<dynamic>(cancellationToken);
+            return this.ExecuteNextAsync<dynamic>(cancellation);
         }
         #endregion IDocumentQuery<TResource>
 
         #region Private
-        public Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
+        public Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellation)
         {
             IDocumentClientRetryPolicy retryPolicy = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
-                () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellationToken), retryPolicy, cancellationToken);
+                () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellation), retryPolicy, cancellation);
         }
 
-        private async Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation)
         {
-            using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellationToken))
+            using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellation))
             {
                 this.lastStatusCode = response.StatusCode;
                 this.nextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation)
         {
             INameValueCollection headers = new StringKeyValueCollection();
 
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     request.RouteTo(new PartitionKeyRangeIdentity(this.feedOptions.PartitionKeyRangeId));
                 }
 
-                return await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken);
+                return await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellation);
             }
         }
 

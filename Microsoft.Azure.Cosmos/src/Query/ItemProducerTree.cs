@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.ExecuteWithSplitProofing(
                 function: this.TryMoveNextAsyncImplementation,
                 functionNeedsBeReexecuted: false,
-                cancellationToken: token);
+                cancellation: token);
         }
 
         /// <summary>
@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.ExecuteWithSplitProofing(
                 function: this.TryMoveNextIfNotSplitAsyncImplementation,
                 functionNeedsBeReexecuted: false,
-                cancellationToken: token);
+                cancellation: token);
         }
 
         /// <summary>
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.ExecuteWithSplitProofing(
                 function: this.BufferMoreDocumentsImplementation,
                 functionNeedsBeReexecuted: true,
-                cancellationToken: token);
+                cancellation: token);
         }
 
         /// <summary>
@@ -611,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="function">The function to execute in a split proof manner.</param>
         /// <param name="functionNeedsBeReexecuted">If the function needs to be re-executed after split.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellation">The cancellation token.</param>
         /// <remarks>
         /// <para>
         /// This function is thread safe meaning that if multiple functions want to execute in a split proof manner,
@@ -632,16 +632,16 @@ namespace Microsoft.Azure.Cosmos.Query
         private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> ExecuteWithSplitProofing(
             Func<CancellationToken, Task<(bool successfullyMovedNext, QueryResponse failureResponse)>> function,
             bool functionNeedsBeReexecuted,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
 
             while (true)
             {
                 try
                 {
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
-                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await function(cancellationToken);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await function(cancellation);
                     if (response.failureResponse == null || !ItemProducerTree.IsSplitException(response.failureResponse))
                     {
                         return response;
@@ -664,7 +664,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                         if (!this.deferFirstPage)
                         {
-                            await replacementItemProducerTree.MoveNextAsync(cancellationToken);
+                            await replacementItemProducerTree.MoveNextAsync(cancellation);
                         }
 
                         replacementItemProducerTree.Filter = splitItemProducerTree.Root.Filter;

@@ -168,9 +168,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains a page of documents from this context.
         /// </summary>
         /// <param name="maxElements">The maximum number of elements.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellation">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellation)
         {
             //// In order to maintain the continuation token for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellation))
                 {
                     break;
                 }
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="sortOrders">The sort orders.</param>
         /// <param name="orderByExpressions">The order by expressions.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellation">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
             SqlQuerySpec sqlQuerySpec,
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Query
             int initialPageSize,
             SortOrder[] sortOrders,
             string[] orderByExpressions,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             try
             {
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         partitionKeyRanges,
                         initialPageSize,
                         sqlQuerySpecForInit,
-                        token: cancellationToken,
+                        token: cancellation,
                         targetRangeToContinuationMap: null,
                         deferFirstPage: false,
                         filter: null,
@@ -341,10 +341,10 @@ namespace Microsoft.Azure.Cosmos.Query
                                         itemProducerTree,
                                         sortOrders,
                                         continuationToken,
-                                        cancellationToken);
+                                        cancellation);
                                 }
                             },
-                            cancellationToken);
+                            cancellation);
                     }
                 }
             }
@@ -414,13 +414,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="producer">The producer to filter down.</param>
         /// <param name="sortOrders">The sort orders.</param>
         /// <param name="continuationToken">The continuation token.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellation">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         private async Task FilterAsync(
             ItemProducerTree producer,
             SortOrder[] sortOrders,
             OrderByContinuationToken continuationToken,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             // When we resume a query on a partition there is a possibility that we only read a partial page from the backend
             // meaning that will we repeat some documents if we didn't do anything about it. 
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellation);
                     if (!moveNextResponse.successfullyMovedNext)
                     {
                         if(moveNextResponse.failureResponse != null)

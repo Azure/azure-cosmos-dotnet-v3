@@ -90,15 +90,15 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.innerClient.GetPartitionKeyRangeCacheAsync();
         }
 
-        public async Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken)
+        public async Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellation)
         {
             if (this.queryPartitionProvider == null)
             {
-                await this.semaphore.WaitAsync(cancellationToken);
+                await this.semaphore.WaitAsync(cancellation);
 
                 if (this.queryPartitionProvider == null)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    cancellation.ThrowIfCancellationRequested();
                     this.queryPartitionProvider = new QueryPartitionProvider(await this.innerClient.GetQueryEngineConfiguration());
                 }
 
@@ -108,14 +108,14 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.queryPartitionProvider;
         }
 
-        public Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        public Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation)
         {
-            return this.innerClient.ExecuteQueryAsync(request, retryPolicyInstance, cancellationToken);
+            return this.innerClient.ExecuteQueryAsync(request, retryPolicyInstance, cancellation);
         }
 
-        public Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        public Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation)
         {
-            return this.innerClient.ReadFeedAsync(request, retryPolicyInstance, cancellationToken);
+            return this.innerClient.ReadFeedAsync(request, retryPolicyInstance, cancellation);
         }
 
         public async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()

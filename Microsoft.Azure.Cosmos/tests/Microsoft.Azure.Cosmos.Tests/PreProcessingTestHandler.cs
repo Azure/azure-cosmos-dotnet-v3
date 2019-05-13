@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         internal const string StatusCodeName = "x-test-requesting-statuscode";
 
-        public override Task<CosmosResponseMessage> SendAsync(CosmosRequestMessage request, CancellationToken cancellationToken)
+        public override Task<CosmosResponseMessage> SendAsync(CosmosRequestMessage request, CancellationToken cancellation)
         {
             CosmosResponseMessage httpResponse = null;
             if (request.Properties.TryGetValue(PreProcessingTestHandler.StatusCodeName, out object statusCodeOut))

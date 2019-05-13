@@ -161,11 +161,11 @@ namespace Microsoft.Azure.Cosmos.Query
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
 
-            QueryPartitionProvider queryPartitionProvider = await this.client.GetQueryPartitionProviderAsync(cancellationToken);
+            QueryPartitionProvider queryPartitionProvider = await this.client.GetQueryPartitionProviderAsync(cancellation);
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(
                 this.QuerySpec,
                 partitionKeyDefinition,
@@ -174,14 +174,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery);
         }
 
-        public virtual async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellationToken)
+        public virtual async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellation)
         {
             if (this.IsDone)
             {
                 throw new InvalidOperationException(RMResources.DocumentQueryExecutionContextIsDone);
             }
 
-            this.lastPage = await this.ExecuteInternalAsync(cancellationToken);
+            this.lastPage = await this.ExecuteInternalAsync(cancellation);
             return this.lastPage;
         }
 
@@ -338,12 +338,12 @@ namespace Microsoft.Azure.Cosmos.Query
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestLazyAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             DocumentServiceResponse documentServiceResponse = await this.ExecuteQueryRequestInternalAsync(
                 request,
                 retryPolicyInstance,
-                cancellationToken);
+                cancellation);
 
             return this.GetFeedResponse(request, documentServiceResponse);
         }
@@ -351,53 +351,53 @@ namespace Microsoft.Azure.Cosmos.Query
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             return await (this.ShouldExecuteQueryRequest ?
-                this.ExecuteQueryRequestAsync(request, retryPolicyInstance, cancellationToken) :
-                this.ExecuteReadFeedRequestAsync(request, retryPolicyInstance, cancellationToken));
+                this.ExecuteQueryRequestAsync(request, retryPolicyInstance, cancellation) :
+                this.ExecuteReadFeedRequestAsync(request, retryPolicyInstance, cancellation));
         }
 
         public async Task<DocumentFeedResponse<T>> ExecuteRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             return await (this.ShouldExecuteQueryRequest ?
-                this.ExecuteQueryRequestAsync<T>(request, retryPolicyInstance, cancellationToken) :
-                this.ExecuteReadFeedRequestAsync<T>(request, retryPolicyInstance, cancellationToken));
+                this.ExecuteQueryRequestAsync<T>(request, retryPolicyInstance, cancellation) :
+                this.ExecuteReadFeedRequestAsync<T>(request, retryPolicyInstance, cancellation));
         }
 
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            return this.GetFeedResponse(request, await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellationToken));
+            return this.GetFeedResponse(request, await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellation));
         }
 
         public async Task<DocumentFeedResponse<T>> ExecuteQueryRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellationToken));
+            return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellation));
         }
 
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteReadFeedRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            return this.GetFeedResponse(request, await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken));
+            return this.GetFeedResponse(request, await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellation));
         }
 
         public async Task<DocumentFeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            return this.GetFeedResponse<T>(await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken));
+            return this.GetFeedResponse<T>(await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellation));
         }
 
         public void PopulatePartitionKeyRangeInfo(DocumentServiceRequest request, PartitionKeyRange range, string collectionRid)
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public abstract void Dispose();
 
-        protected abstract Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
+        protected abstract Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellation);
 
         protected async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
         {
@@ -517,11 +517,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private async Task<DocumentServiceResponse> ExecuteQueryRequestInternalAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             try
             {
-                return await this.client.ExecuteQueryAsync(request, retryPolicyInstance, cancellationToken);
+                return await this.client.ExecuteQueryAsync(request, retryPolicyInstance, cancellation);
             }
             finally
             {

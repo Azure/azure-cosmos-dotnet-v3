@@ -50,13 +50,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The database id.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
         public abstract Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default(CancellationToken));
+                CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Check if a database exists, and if it doesn't, create it.
@@ -73,13 +73,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The database id.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
         public abstract Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Gets an iterator to go through all the databases for the account
@@ -136,12 +136,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="streamPayload">The database settings</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
         public abstract Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                Stream streamPayload,
                int? throughput = null,
                RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
+               CancellationToken cancellation = default(CancellationToken));
     }
 }

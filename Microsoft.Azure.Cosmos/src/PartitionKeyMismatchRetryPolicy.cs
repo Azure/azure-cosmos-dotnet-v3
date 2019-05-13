@@ -43,11 +43,11 @@ namespace Microsoft.Azure.Cosmos
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="exception">Exception that occured when the operation was tried</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellation"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             DocumentClientException clientException = exception as DocumentClientException;
 
@@ -61,18 +61,18 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(shouldRetryResult);
             }
 
-            return this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
+            return this.nextRetryPolicy.ShouldRetryAsync(exception, cancellation);
         }
 
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellation"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(shouldRetryResult);
             }
 
-            return this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+            return this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellation);
         }
 
         /// <summary>

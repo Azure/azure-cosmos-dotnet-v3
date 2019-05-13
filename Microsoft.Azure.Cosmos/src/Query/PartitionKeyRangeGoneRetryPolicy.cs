@@ -36,43 +36,43 @@ namespace Microsoft.Azure.Cosmos
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="exception">Exception that occured when the operation was tried</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellation"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             DocumentClientException clientException = exception as DocumentClientException;
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(clientException?.StatusCode,
                 clientException?.GetSubStatus(),
-                cancellationToken);
+                cancellation);
             if (shouldRetryResult != null)
             {
                 return shouldRetryResult;
             }
 
-            return this.nextRetryPolicy != null ? await this.nextRetryPolicy?.ShouldRetryAsync(exception, cancellationToken) : ShouldRetryResult.NoRetry();
+            return this.nextRetryPolicy != null ? await this.nextRetryPolicy?.ShouldRetryAsync(exception, cancellation) : ShouldRetryResult.NoRetry();
         }
 
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellation"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
-                cancellationToken);
+                cancellation);
             if (shouldRetryResult != null)
             {
                 return shouldRetryResult;
             }
 
-            return this.nextRetryPolicy != null ? await this.nextRetryPolicy?.ShouldRetryAsync(cosmosResponseMessage, cancellationToken) : ShouldRetryResult.NoRetry();
+            return this.nextRetryPolicy != null ? await this.nextRetryPolicy?.ShouldRetryAsync(cosmosResponseMessage, cancellation) : ShouldRetryResult.NoRetry();
         }
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (!statusCode.HasValue
                 && (!subStatusCode.HasValue
@@ -108,8 +108,8 @@ namespace Microsoft.Azure.Cosmos
                     null,
                     AuthorizationTokenType.PrimaryMasterKey))
                 {
-                    CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                    CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, cancellationToken);
+                    CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellation);
+                    CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, cancellation);
                     if (routingMap != null)
                     {
                         // Force refresh.
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
                                 collection.ResourceId,
                                 routingMap,
                                 request,
-                                cancellationToken);
+                                cancellation);
                     }
                 }
 

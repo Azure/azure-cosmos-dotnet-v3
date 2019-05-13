@@ -28,13 +28,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public override async Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request, 
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             try
             {
                 using (new ActivityScope(Guid.NewGuid()))
                 {
-                    DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
+                    DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellation);
                     return response.ToCosmosResponseMessage(request);
                 }
             }
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal Task<DocumentServiceResponse> ProcessMessageAsync(
             CosmosRequestMessage request, 
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (request == null)
             {
@@ -80,17 +80,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
             if (request.OperationType == OperationType.Upsert)
             {
-                return this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
+                return this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellation);
             }
             else
             {
-                return storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+                return storeProxy.ProcessMessageAsync(serviceRequest, cancellation);
             }
         }
 
-        private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)
+        private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellation)
         {
-            DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+            DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellation);
             this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
             return response;
         }

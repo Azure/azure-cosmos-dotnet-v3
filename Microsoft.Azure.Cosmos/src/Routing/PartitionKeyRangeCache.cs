@@ -93,14 +93,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             try
             {
                 return await this.routingMapCache.GetAsync(
                     collectionRid,
                     previousValue,
-                    () => this.GetRoutingMapForCollectionAsync(collectionRid, previousValue, cancellationToken),
+                    () => this.GetRoutingMapForCollectionAsync(collectionRid, previousValue, cancellation),
                     CancellationToken.None);
             }
             catch (DocumentClientException ex)
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private async Task<CollectionRoutingMap> GetRoutingMapForCollectionAsync(
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
             string changeFeedNextIfNoneMatch = previousRoutingMap == null ? null : previousRoutingMap.ChangeFeedNextIfNoneMatch;
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
                     () => ExecutePartitionKeyRangeReadChangeFeed(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
-                    cancellationToken))
+                    cancellation))
                 {
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];

@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos
 
     internal class NullRequestSigner : IRequestSigner
     {
-        public Task SignRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public Task SignRequestAsync(DocumentServiceRequest request, CancellationToken cancellation)
         {
             return Task.FromResult(0);
         }
 
-        public Task ReauthorizeSystemKeySignedRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
+        public Task ReauthorizeSystemKeySignedRequestAsync(DocumentServiceRequest request, CancellationToken cancellation)
         {
             return Task.FromResult(0);
         }

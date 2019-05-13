@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             string targetRID,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
             {
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
+                Offer offer = await this.ReadOfferAsync(targetRID, cancellation);
                 return this.GetThroughputIfExists(offer);
             }
             catch (DocumentClientException dce)
@@ -65,11 +65,11 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<CosmosOfferResult> ReplaceThroughputIfExistsAsync(
             string targetRID,
             int targetThroughput,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             try
             {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
+                Offer offer = await this.ReadOfferAsync(targetRID, cancellation);
                 if (offer == null)
                 {
                     throw new ArgumentOutOfRangeException("Throughput is not configured");
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 OfferV2 newOffer = new OfferV2(offerV2, targetThroughput);
-                Offer replacedOffer = await this.ReplaceOfferAsync(targetRID, newOffer, cancellationToken);
+                Offer replacedOffer = await this.ReplaceOfferAsync(targetRID, newOffer, cancellation);
                 offerV2 = replacedOffer as OfferV2;
                 Debug.Assert(offerV2 != null);
 
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<Offer> ReadOfferAsync(string targetRID,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
             {
@@ -158,16 +158,16 @@ namespace Microsoft.Azure.Cosmos
                                             .Where(offer => offer.OfferResourceId == targetRID)
                                             .AsDocumentQuery();
 
-            return this.SingleOrDefaultAsync<Offer>(offerQuery, cancellationToken);
+            return this.SingleOrDefaultAsync<Offer>(offerQuery, cancellation);
         }
 
         private Task<T> SingleOrDefaultAsync<T>(
             IDocumentQuery<T> offerQuery,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (offerQuery.HasMoreResults)
             {
-                return offerQuery.ExecuteNextAsync<T>(cancellationToken)
+                return offerQuery.ExecuteNextAsync<T>(cancellation)
                     .ContinueWith(nextAsyncTask =>
                     {
                         DocumentFeedResponse<T> offerFeedResponse = nextAsyncTask.Result;
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
                             return Task.FromResult(offerFeedResponse.Single());
                         }
 
-                        return SingleOrDefaultAsync(offerQuery, cancellationToken);
+                        return SingleOrDefaultAsync(offerQuery, cancellation);
                     })
                     .Unwrap();
             }
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<Offer> ReplaceOfferAsync(
                         string targetRID,
                         Offer targetOffer,
-                        CancellationToken cancellationToken = default(CancellationToken))
+                        CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
             {

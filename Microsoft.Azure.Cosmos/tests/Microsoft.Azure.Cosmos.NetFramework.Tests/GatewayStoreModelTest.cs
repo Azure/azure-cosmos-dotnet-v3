@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                 this.sendFunc = func;
             }
 
-            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellation)
             {
                 return await this.sendFunc(request);
             }

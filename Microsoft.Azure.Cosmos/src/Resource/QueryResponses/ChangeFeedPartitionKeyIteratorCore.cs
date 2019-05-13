@@ -54,13 +54,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellation = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
 
-            return this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
+            return this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellation)
                 .ContinueWith(task =>
                 {
                     CosmosResponseMessage response = task.Result;
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                     this.HasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
                     response.Headers.Continuation = this.continuationToken;
                     return response;
-                }, cancellationToken);
+                }, cancellation);
         }
 
         private Task<CosmosResponseMessage> NextResultSetDelegate(
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyRangeId,
             int? maxItemCount,
             ChangeFeedRequestOptions options,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
     }
 }

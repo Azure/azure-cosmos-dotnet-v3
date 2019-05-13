@@ -35,9 +35,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
             DocumentClientException clientException = exception as DocumentClientException;
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 clientException?.StatusCode,
@@ -48,12 +48,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return Task.FromResult(shouldRetryResult);
             }
 
-            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(exception, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
+            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(exception, cancellation) : Task.FromResult(ShouldRetryResult.NoRetry());
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage httpResponseMessage,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             ShouldRetryResult shouldRetryResult =  this.ShouldRetryInternal(
                 httpResponseMessage.StatusCode,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return Task.FromResult(shouldRetryResult);
             }
 
-            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
+            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellation) : Task.FromResult(ShouldRetryResult.NoRetry());
         }
 
         private ShouldRetryResult ShouldRetryInternal(

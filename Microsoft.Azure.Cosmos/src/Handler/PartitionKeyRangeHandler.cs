@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public override async Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             CosmosResponseMessage response = null;
             string originalContinuation = request.Headers.Continuation;
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
 
-                response = await base.SendAsync(request, cancellationToken);
+                response = await base.SendAsync(request, cancellation);
 
                 if (!response.IsSuccessStatusCode)
                 {

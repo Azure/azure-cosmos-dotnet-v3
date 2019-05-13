@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            CancellationToken cancellationToken);
+            CancellationToken cancellation);
 
         internal abstract Task<QueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellationToken);
+            CancellationToken cancellation);
 
         internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
             Uri resourceUri,
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellationToken);
+            CancellationToken cancellation);
 
         internal abstract Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
 

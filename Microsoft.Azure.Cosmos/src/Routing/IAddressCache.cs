@@ -23,13 +23,13 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <param name="partitionKeyRangeIdentity">This parameter will be supplied in both client SDK and Gateway. In Gateway it will be absent only in case <see cref="DocumentServiceRequest.ServiceIdentity"/> is not <c>null</c>.</param>
         /// <param name="serviceIdentity">This parameter will be only supplied in Gateway. FabricAddressCache ignores <paramref name="partitionKeyRangeIdentity"/>.</param>
         /// <param name="forceRefreshPartitionAddresses">Whether addresses need to be refreshed as previously resolved addresses were determined to be outdated.</param>
-        /// <param name="cancellationToken">Instance of <see cref="CancellationToken"/>.</param>
+        /// <param name="cancellation">Instance of <see cref="CancellationToken"/>.</param>
         /// <returns>Physical addresses.</returns>
         Task<PartitionAddressInformation> TryGetAddresses(
             DocumentServiceRequest request,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
             ServiceIdentity serviceIdentity,
             bool forceRefreshPartitionAddresses,
-            CancellationToken cancellationToken);
+            CancellationToken cancellation);
     }
 }

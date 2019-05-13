@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Common
 
     internal sealed class AsyncLazy<T> : Lazy<Task<T>>
     {
-        public AsyncLazy(Func<T> valueFactory, CancellationToken cancellationToken)
-            : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(valueFactory, cancellationToken)) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
+        public AsyncLazy(Func<T> valueFactory, CancellationToken cancellation)
+            : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(valueFactory, cancellation)) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
         {
         }
 
-        public AsyncLazy(Func<Task<T>> taskFactory, CancellationToken cancellationToken)
-            : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(taskFactory, cancellationToken).Unwrap()) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
+        public AsyncLazy(Func<Task<T>> taskFactory, CancellationToken cancellation)
+            : base(() => Task.Factory.StartNewOnCurrentTaskSchedulerAsync(taskFactory, cancellation).Unwrap()) // Task.Factory.StartNew() allows specifying task scheduler to use which is critical for compute gateway to track physical consumption.
         {
         }
     }

@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             
         }
 
-        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellation = default(CancellationToken))
         {
             this.ApplySessionToken(request);
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
-                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
+                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellation);
             }
             catch (DocumentClientException exception)
             {
@@ -99,13 +99,13 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<CosmosAccountSettings> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<CosmosAccountSettings> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellation = default(CancellationToken))
         {
             CosmosAccountSettings databaseAccount = null;
 
             // Get the ServiceDocumentResource from the gateway.
             using (HttpResponseMessage responseMessage =
-                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellationToken))
+                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellation))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {

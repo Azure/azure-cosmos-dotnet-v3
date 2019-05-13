@@ -86,14 +86,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy);
         }
 
-        private async Task CreateDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellationToken)
+        private async Task CreateDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellation)
         {
             int writeCount = 0;
 
             int i = 0;
             while (i < 50000)
             {
-                if (cancellationToken.IsCancellationRequested)
+                if (cancellation.IsCancellationRequested)
                 {
                     Logger.LogLine("WriteCount: {0}", writeCount);
                     return;
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task ReadDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellationToken)
+        private async Task ReadDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellation)
         {
             int readFeedCount = 0;
             int readCount = 0;
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int i = 0;
             while (i < 50000)
             {
-                if (cancellationToken.IsCancellationRequested)
+                if (cancellation.IsCancellationRequested)
                 {
                     Logger.LogLine("ReadFeedCount: {0}, ReadCount: {1}", readFeedCount, readCount);
                     return;
@@ -223,13 +223,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task CreateDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellationToken)
+        private async Task CreateDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellation)
         {
             this.isWriteExceptionCaught = false;
             int writeCount = 0;
             while (true)
             {
-                if (cancellationToken.IsCancellationRequested)
+                if (cancellation.IsCancellationRequested)
                 {
                     Logger.LogLine("WriteCount: {0}", writeCount);
                     return;
@@ -248,14 +248,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task ReadDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellationToken)
+        private async Task ReadDocumentsAsync(string collectionSelfLink, DocumentClient client, CancellationToken cancellation)
         {
             this.isReadExceptionCaught = false;
             int readFeedCount = 0;
             int readCount = 0;
             while (true)
             {
-                if (cancellationToken.IsCancellationRequested)
+                if (cancellation.IsCancellationRequested)
                 {
                     Logger.LogLine("ReadFeedCount: {0}, ReadCount: {1}", readFeedCount, readCount);
                     return;

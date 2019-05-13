@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRanges">The partition key ranges.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="requestContinuation">The request continuation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellation">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a PipelinedDocumentQueryExecutionContext.</returns>
         public static async Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             string requestContinuation,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             DefaultTrace.TraceInformation(
                 string.Format(
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return await OrderByDocumentQueryExecutionContext.CreateAsync(
                     constructorParams,
                     initParams,
-                    cancellationToken);
+                    cancellation);
             };
 
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelComponentFunc = async (continuationToken) =>
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return await ParallelDocumentQueryExecutionContext.CreateAsync(
                     constructorParams,
                     initParams,
-                    cancellationToken);
+                    cancellation);
             };
 
             return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRanges">The partition key ranges.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="requestContinuation">The request continuation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <param name="cancellation">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosPipelinedItemQueryExecutionContext.</returns>
         public static async Task<CosmosQueryExecutionContext> CreateAsync(
             CosmosQueryContext constructorParams,
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             string requestContinuation,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             DefaultTrace.TraceInformation(
                 string.Format(
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return await CosmosOrderByItemQueryExecutionContext.CreateAsync(
                     constructorParams,
                     initParams,
-                    cancellationToken);
+                    cancellation);
             };
 
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelComponentFunc = async (continuationToken) =>
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return await CosmosParallelItemQueryExecutionContext.CreateAsync(
                     constructorParams,
                     initParams,
-                    cancellationToken);
+                    cancellation);
             };
 
             return (CosmosQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(

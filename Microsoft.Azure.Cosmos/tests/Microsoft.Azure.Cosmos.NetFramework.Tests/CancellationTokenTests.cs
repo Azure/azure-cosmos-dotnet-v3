@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (CancellationTokenSource source = new CancellationTokenSource())
             {
-                CancellationToken cancellationToken = source.Token;
+                CancellationToken cancellation = source.Token;
 
                 int run = 0;
                 Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
                         AuthorizationTokenType.PrimaryMasterKey,
                         null))
                     {
-                        await storeModel.ProcessMessageAsync(request, cancellationToken);
+                        await storeModel.ProcessMessageAsync(request, cancellation);
                     }
                 }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             // Cancellation deadline is before Request timeout
             using (CancellationTokenSource source = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
             {
-                CancellationToken cancellationToken = source.Token;
+                CancellationToken cancellation = source.Token;
 
                 Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
                 {
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                         AuthorizationTokenType.PrimaryMasterKey,
                         null))
                     {
-                        await storeModel.ProcessMessageAsync(request, cancellationToken);
+                        await storeModel.ProcessMessageAsync(request, cancellation);
                     }
                 }
                 Assert.Fail();
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                 this.sendFunc = func;
             }
 
-            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellation)
             {
                 return await this.sendFunc(request);
             }

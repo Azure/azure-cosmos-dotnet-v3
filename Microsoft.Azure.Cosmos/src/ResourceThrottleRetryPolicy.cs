@@ -43,13 +43,13 @@ namespace Microsoft.Azure.Cosmos
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="exception">Exception that occured when the operation was tried</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellation"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception, 
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
             if (exception is DocumentClientException)
             {
                 DocumentClientException dce = (DocumentClientException)exception;
@@ -76,13 +76,13 @@ namespace Microsoft.Azure.Cosmos
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellation"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
             if (!this.IsValidThrottleStatusCode(cosmosResponseMessage?.StatusCode))
             {
                 DefaultTrace.TraceError(

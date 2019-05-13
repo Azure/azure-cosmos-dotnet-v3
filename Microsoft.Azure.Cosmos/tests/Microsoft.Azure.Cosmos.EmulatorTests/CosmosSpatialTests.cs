@@ -18,7 +18,7 @@
         private CosmosDefaultJsonSerializer jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;
-        protected CancellationToken cancellationToken;
+        protected CancellationToken cancellation;
         protected CosmosClient cosmosClient = null;
         protected CosmosDatabase database = null;
 
@@ -26,18 +26,18 @@
         public async Task TestInitialize()
         {
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.cancellationToken = this.cancellationTokenSource.Token;
+            this.cancellation = this.cancellationTokenSource.Token;
 
             this.cosmosClient = TestCommon.CreateCosmosClient();
             this.database = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString(),
-                cancellationToken: this.cancellationToken);
+                cancellation: this.cancellation);
 
             this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: Documents.ConsistencyLevel.Session);
 
             string PartitionKey = "/partitionKey";
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellationToken: this.cancellationToken);
+                cancellation: this.cancellation);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
@@ -62,7 +62,7 @@
             {
                 await this.database.DeleteAsync(
                     requestOptions: null,
-                    cancellationToken: this.cancellationToken);
+                    cancellation: this.cancellation);
             }
 
             this.cancellationTokenSource?.Cancel();

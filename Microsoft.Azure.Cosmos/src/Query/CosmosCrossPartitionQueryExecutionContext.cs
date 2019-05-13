@@ -349,11 +349,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// A helper to move next and set the failure response if one is received
         /// </summary>
         /// <param name="itemProducerTree">The item producer tree</param>
-        /// <param name="cancellationToken">The cancellation token</param>
+        /// <param name="cancellation">The cancellation token</param>
         /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
-        protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
+        protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellation)
         {
-            (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
+            (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellation);
             if (moveNextResponse.failureResponse != null)
             {
                 this.FailureResponse = moveNextResponse.failureResponse;
@@ -366,11 +366,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains documents from this component. This has the common drain logic for each implementation.
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drain.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
+        /// <param name="cancellation">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        public async override Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public async override Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellation)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            cancellation.ThrowIfCancellationRequested();
 
             // The initialization or previous Drain Async failed. Just return the failure.
             if (this.FailureResponse != null)
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             // Drain the results. If there is no results and a failure then return the failure.
-            IList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellationToken);
+            IList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellation);
             if ((results == null || results.Count == 0) && this.FailureResponse != null)
             {
                 this.Stop();

@@ -24,20 +24,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.leaseRenewInterval = leaseRenewInterval;
         }
 
-        public override async Task RunAsync(CancellationToken cancellationToken)
+        public override async Task RunAsync(CancellationToken cancellation)
         {
             try
             {
                 DefaultTrace.TraceInformation("Lease with token {0}: renewer task started.", this.lease.CurrentLeaseToken);
-                await Task.Delay(TimeSpan.FromTicks(this.leaseRenewInterval.Ticks / 2), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromTicks(this.leaseRenewInterval.Ticks / 2), cancellation).ConfigureAwait(false);
 
                 while (true)
                 {
                     await this.RenewAsync().ConfigureAwait(false);
-                    await Task.Delay(this.leaseRenewInterval, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(this.leaseRenewInterval, cancellation).ConfigureAwait(false);
                 }
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
                 DefaultTrace.TraceInformation("Lease with token {0}: renewer task stopped.", this.lease.CurrentLeaseToken);
             }

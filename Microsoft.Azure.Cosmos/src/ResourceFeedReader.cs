@@ -104,16 +104,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Retrieves the next page of results from the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
+        /// <param name="cancellation">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The response from a single call to ReadFeed for the specified resource.</returns>
-        public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellation = default(CancellationToken))
         {
-            return TaskHelper.InlineIfPossible(() => this.ExecuteNextAsyncInternal(cancellationToken), null, cancellationToken);
+            return TaskHelper.InlineIfPossible(() => this.ExecuteNextAsyncInternal(cancellation), null, cancellation);
         }
 
-        private async Task<DocumentFeedResponse<T>> ExecuteNextAsyncInternal(CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<T>> ExecuteNextAsyncInternal(CancellationToken cancellation)
         {
-            return await this.documentQuery.ExecuteNextAsync<T>(cancellationToken);
+            return await this.documentQuery.ExecuteNextAsync<T>(cancellation);
         }
     }
 }

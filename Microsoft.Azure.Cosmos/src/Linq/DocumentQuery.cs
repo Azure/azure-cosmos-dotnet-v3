@@ -203,16 +203,16 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Executes the query to retrieve the next page of results.
         /// </summary>
         /// <returns></returns>        
-        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellation = default(CancellationToken))
         {
-            return this.ExecuteNextAsync<dynamic>(cancellationToken);
+            return this.ExecuteNextAsync<dynamic>(cancellation);
         }
 
         /// <summary>
         /// Executes the query to retrieve the next page of results.
         /// </summary>
         /// <returns></returns>
-        public Task<DocumentFeedResponse<TResponse>> ExecuteNextAsync<TResponse>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResponse>> ExecuteNextAsync<TResponse>(CancellationToken cancellation = default(CancellationToken))
         {
             try
             {
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 this.executeNextAysncMetrics.Start();
-                return TaskHelper.InlineIfPossible(() => this.ExecuteNextPrivateAsync<TResponse>(cancellationToken), null, cancellationToken);
+                return TaskHelper.InlineIfPossible(() => this.ExecuteNextPrivateAsync<TResponse>(cancellation), null, cancellation);
             }
             finally
             {
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return new Uri(this.client.ServiceEndpoint, this.documentsFeedOrDatabaseLink).ToString();
         }
 
-        private Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(bool isContinuationExpected, CancellationToken cancellationToken)
+        private Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(bool isContinuationExpected, CancellationToken cancellation)
         {
             return DocumentQueryExecutionContextFactory.CreateDocumentQueryExecutionContextAsync(
                 this.client,
@@ -303,19 +303,19 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.feedOptions,
                 this.documentsFeedOrDatabaseLink,
                 isContinuationExpected,
-                cancellationToken,
+                cancellation,
                 this.CorrelatedActivityId);
         }
 
-        internal async Task<List<T>> ExecuteAllAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<List<T>> ExecuteAllAsync(CancellationToken cancellation = default(CancellationToken))
         {
             List<T> result = new List<T>();
             using (IDocumentQueryExecutionContext localQueryExecutionContext =
-                await TaskHelper.InlineIfPossible(() => this.CreateDocumentQueryExecutionContextAsync(false, cancellationToken), null, cancellationToken))
+                await TaskHelper.InlineIfPossible(() => this.CreateDocumentQueryExecutionContextAsync(false, cancellation), null, cancellation))
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
-                    DocumentFeedResponse<T> partialResult = await (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken), null, cancellationToken);
+                    DocumentFeedResponse<T> partialResult = await (dynamic)TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(cancellation), null, cancellation);
                     result.AddRange(partialResult);
                 }
             }
@@ -323,19 +323,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
-        private async Task<DocumentFeedResponse<TResponse>> ExecuteNextPrivateAsync<TResponse>(CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<TResponse>> ExecuteNextPrivateAsync<TResponse>(CancellationToken cancellation)
         {
             if (this.queryExecutionContext == null)
             {
-                this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
+                this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellation);
             }
             else if (this.queryExecutionContext.IsDone)
             {
                 this.queryExecutionContext.Dispose();
-                this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
+                this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellation);
             }
 
-            DocumentFeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken);
+            DocumentFeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextFeedResponseAsync(cancellation);
             DocumentFeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
                 response, 
                 this.resourceTypeEnum,

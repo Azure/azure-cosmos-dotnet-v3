@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             dynamic testItem,
             ItemRequestOptions requestOptions = null)
         {
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            TestHandler testHandler = new TestHandler((request, cancellation) =>
             {
                 Assert.Fail("Null partition key should be blocked without the correct request option");
                 return null;
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosResponseMessage response = null;
             HttpStatusCode httpStatusCode = HttpStatusCode.OK;
             int testHandlerHitCount = 0;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            TestHandler testHandler = new TestHandler((request, cancellation) =>
             {
                 Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"/dbs/testdb/colls/testcontainer"));
                 Assert.AreEqual(requestOptions, request.RequestOptions);

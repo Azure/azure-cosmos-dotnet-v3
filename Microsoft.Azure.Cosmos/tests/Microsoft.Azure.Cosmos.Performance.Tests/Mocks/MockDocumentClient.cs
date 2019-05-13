@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             gatewayStoreModel.Setup(
                 storeModel => storeModel.ProcessMessageAsync(
                     It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
-                    .Returns((DocumentServiceRequest documentServiceRequest, CancellationToken cancellationToken) => MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest));
+                    .Returns((DocumentServiceRequest documentServiceRequest, CancellationToken cancellation) => MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest));
 
             return gatewayStoreModel.Object;
         }

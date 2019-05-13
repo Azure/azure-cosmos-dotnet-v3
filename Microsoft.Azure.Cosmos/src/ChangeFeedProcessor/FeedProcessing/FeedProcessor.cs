@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <summary>
         /// Perform feed processing.
         /// </summary>
-        /// <param name="cancellationToken">Cancellation token to be used to stop processing</param>
+        /// <param name="cancellation">Cancellation token to be used to stop processing</param>
         /// <returns>A <see cref="Task"/>.</returns>
-        public abstract Task RunAsync(CancellationToken cancellationToken);
+        public abstract Task RunAsync(CancellationToken cancellation);
     }
 }

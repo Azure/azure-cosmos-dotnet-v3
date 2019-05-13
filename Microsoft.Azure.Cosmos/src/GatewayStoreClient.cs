@@ -39,9 +39,9 @@ namespace Microsoft.Azure.Cosmos
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
-           CancellationToken cancellationToken)
+           CancellationToken cancellation)
         {
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, cancellationToken))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, cancellation))
             {
                 return await GatewayStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
             }
@@ -70,9 +70,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellation = default(CancellationToken))
         {
-            return this.httpClient.SendHttpAsync(requestMessage, cancellationToken);
+            return this.httpClient.SendHttpAsync(requestMessage, cancellation);
         }
 
         internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
-           CancellationToken cancellationToken)
+           CancellationToken cancellation)
         {
             Func<Task<HttpResponseMessage>> funcDelegate = async () =>
             {
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellationToken);
+                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(requestMessage, cancellation);
 
                         DateTime receivedTimeUtc = DateTime.UtcNow;
                         double durationInMilliSeconds = (receivedTimeUtc - sendTimeUtc).TotalMilliseconds;
@@ -347,9 +347,9 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (TaskCanceledException ex)
                     {
-                        if (!cancellationToken.IsCancellationRequested)
+                        if (!cancellation.IsCancellationRequested)
                         {
-                            // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
+                            // throw timeout if the cancellation is not canceled (i.e. httpClient timed out)
                             throw new RequestTimeoutException(ex, requestMessage.RequestUri);
                         }
                         else
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            return await BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(funcDelegate, new WebExceptionRetryPolicy(), cancellationToken);
+            return await BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(funcDelegate, new WebExceptionRetryPolicy(), cancellation);
         }
     }
 }

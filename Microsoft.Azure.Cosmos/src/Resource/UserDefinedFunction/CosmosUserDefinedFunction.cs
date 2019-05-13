@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// Reads a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the read resource record.
         /// </returns>
@@ -80,14 +80,14 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<UserDefinedFunctionResponse> ReadAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="userDefinedFunctionSettings">The <see cref="CosmosUserDefinedFunctionSettings"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> containing the updated resource record.
         /// </returns>
@@ -128,21 +128,21 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<UserDefinedFunctionResponse> ReplaceAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         /// <summary>
         /// Delete a <see cref="CosmosUserDefinedFunctionSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionSettings"/> which will contain information about the request issued.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -172,14 +172,14 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<UserDefinedFunctionResponse> DeleteAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: null,
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         internal virtual Task<UserDefinedFunctionResponse> ProcessAsync(
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
 
             return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(this, response);
         }

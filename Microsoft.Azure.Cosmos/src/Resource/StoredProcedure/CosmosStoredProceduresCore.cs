@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     string body,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosStoredProcedureSettings>>(
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosStoredProcedureSettings>(response),
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
     }
 }

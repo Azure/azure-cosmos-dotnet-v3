@@ -26,16 +26,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="document">the document object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <param name="disableAutomaticIdGeneration">Disables the automatic id generation, will throw an exception if id is missing.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> CreateDocumentAsync(Uri documentCollectionUri, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> CreateDocumentAsync(Uri documentCollectionUri, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellation = default(CancellationToken))
         {
             if (documentCollectionUri == null)
             {
                 throw new ArgumentNullException("documentCollectionUri");
             }
 
-            return this.CreateDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellationToken);
+            return this.CreateDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellation);
         }
 
 
@@ -184,16 +184,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="document">the document object.</param>
         /// <param name="options">The request options for the request.</param>
         /// <param name="disableAutomaticIdGeneration">Disables the automatic id generation, will throw an exception if id is missing.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> UpsertDocumentAsync(Uri documentCollectionUri, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> UpsertDocumentAsync(Uri documentCollectionUri, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellation = default(CancellationToken))
         {
             if (documentCollectionUri == null)
             {
                 throw new ArgumentNullException("documentCollectionUri");
             }
 
-            return this.UpsertDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellationToken);
+            return this.UpsertDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellation);
         }
 
         /// <summary>
@@ -282,15 +282,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="documentUri">the URI of the document to delete.</param>
         /// <param name="options">The request options for the request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellation = default(CancellationToken))
         {
             if (documentUri == null)
             {
                 throw new ArgumentNullException("documentUri");
             }
-            return this.DeleteDocumentAsync(documentUri.OriginalString, options, cancellationToken);
+            return this.DeleteDocumentAsync(documentUri.OriginalString, options, cancellation);
         }
 
         /// <summary>
@@ -377,15 +377,15 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentUri">the URI of the document to be updated.</param>
         /// <param name="document">the updated document.</param>
         /// <param name="options">The request options for the request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellation = default(CancellationToken))
         {
             if (documentUri == null)
             {
                 throw new ArgumentNullException("documentUri");
             }
-            return this.ReplaceDocumentAsync(documentUri.OriginalString, document, options, cancellationToken);
+            return this.ReplaceDocumentAsync(documentUri.OriginalString, document, options, cancellation);
         }
 
         /// <summary>
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="documentUri">A URI to the Document resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Document"/> containing the read resource record.
         /// </returns>
@@ -582,13 +582,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellation = default(CancellationToken))
         {
             if (documentUri == null)
             {
                 throw new ArgumentNullException("documentUri");
             }
-            return this.ReadDocumentAsync(documentUri.OriginalString, options, cancellationToken);
+            return this.ReadDocumentAsync(documentUri.OriginalString, options, cancellation);
         }
 
         /// <summary>
@@ -596,7 +596,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="documentUri">A URI to the Document resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Document"/> containing the read resource record.
         /// </returns>
@@ -635,13 +635,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellation = default(CancellationToken))
         {
             if (documentUri == null)
             {
                 throw new ArgumentNullException("documentUri");
             }
-            return this.ReadDocumentAsync<T>(documentUri.OriginalString, options, cancellationToken);
+            return this.ReadDocumentAsync<T>(documentUri.OriginalString, options, cancellation);
         }
 
         /// <summary>
@@ -1074,15 +1074,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="documentsUri">the URI for the documents.</param>
         /// <param name="options">The request options for the request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentsUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentsUri, FeedOptions options = null, CancellationToken cancellation = default(CancellationToken))
         {
             if (documentsUri == null)
             {
                 throw new ArgumentNullException("documentsUri");
             }
-            return this.ReadDocumentFeedAsync(documentsUri.OriginalString, options, cancellationToken);
+            return this.ReadDocumentFeedAsync(documentsUri.OriginalString, options, cancellation);
         }
 
         /// <summary>
@@ -1199,16 +1199,16 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="TValue">the type of the stored procedure's return value.</typeparam>
         /// <param name="storedProcedureUri">the URI of the stored procedure to be executed.</param>
         /// <param name="options">The request options for the request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <param name="procedureParams">the parameters for the stored procedure execution.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(Uri storedProcedureUri, Documents.Client.RequestOptions options, CancellationToken cancellationToken = default(CancellationToken), params dynamic[] procedureParams)
+        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(Uri storedProcedureUri, Documents.Client.RequestOptions options, CancellationToken cancellation = default(CancellationToken), params dynamic[] procedureParams)
         {
             if (storedProcedureUri == null)
             {
                 throw new ArgumentNullException("storedProcedureUri");
             }
-            return this.ExecuteStoredProcedureAsync<TValue>(storedProcedureUri.OriginalString, options, cancellationToken, procedureParams);
+            return this.ExecuteStoredProcedureAsync<TValue>(storedProcedureUri.OriginalString, options, cancellation, procedureParams);
         }
 
         /// <summary>

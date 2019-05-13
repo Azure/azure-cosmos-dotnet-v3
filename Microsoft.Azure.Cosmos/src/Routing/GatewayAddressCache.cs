@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string databaseName,
             CosmosContainerSettings collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             List<Task<FeedResource<Address>>> tasks = new List<Task<FeedResource<Address>>>();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
             ServiceIdentity serviceIdentity,
             bool forceRefreshPartitionAddresses,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (request == null)
             {
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: forceRefreshPartitionAddresses),
-                        cancellationToken,
+                        cancellation,
                         forceRefresh: true);
 
                     DateTime ignoreDateTime;
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
-                        cancellationToken);
+                        cancellation);
                 }
 
                 int targetReplicaSetSize = this.serviceConfigReader.UserReplicationPolicy.MaxReplicaSetSize;

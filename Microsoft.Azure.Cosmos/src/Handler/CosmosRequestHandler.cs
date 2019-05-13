@@ -25,18 +25,18 @@ namespace Microsoft.Azure.Cosmos
         /// Processes the current <see cref="CosmosRequestMessage"/> in the current handler and sends the current <see cref="CosmosRequestMessage"/> to the next handler in the chain.
         /// </summary>
         /// <param name="request"><see cref="CosmosRequestMessage"/> received by the handler.</param>
-        /// <param name="cancellationToken"><see cref="CancellationToken"/> received by the handler.</param>
+        /// <param name="cancellation"><see cref="CancellationToken"/> received by the handler.</param>
         /// <returns>An instance of <see cref="CosmosResponseMessage"/>.</returns>
         public virtual Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (this.InnerHandler == null)
             {
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            return this.InnerHandler.SendAsync(request, cancellationToken);
+            return this.InnerHandler.SendAsync(request, cancellation);
         }
     }
 }

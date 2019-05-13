@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public override Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             if (request == null)
             {
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return this.client.DocumentClient.EnsureValidClientAsync()
-                .ContinueWith(task => request.AssertPartitioningDetailsAsync(this.client, cancellationToken))
+                .ContinueWith(task => request.AssertPartitioningDetailsAsync(this.client, cancellation))
                 .ContinueWith(task =>
                 {
                     if (task.IsFaulted)
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
 
                     this.FillMultiMasterContext(request);
-                    return base.SendAsync(request, cancellationToken);
+                    return base.SendAsync(request, cancellation);
                 })
                 .Unwrap();
         }

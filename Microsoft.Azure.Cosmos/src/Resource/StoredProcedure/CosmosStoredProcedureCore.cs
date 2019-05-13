@@ -38,20 +38,20 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<StoredProcedureResponse> ReadAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellation = default(CancellationToken))
         {
             return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         public override Task<StoredProcedureResponse> ReplaceAsync(
                     string body,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(body))
             {
@@ -69,26 +69,26 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         public override Task<StoredProcedureResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+                    CancellationToken cancellation = default(CancellationToken))
         {
             return this.ProcessAsync(
                 partitionKey: null,
                 streamPayload: null,
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
         }
 
         public override Task<ItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellation = default(CancellationToken))
         {
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: parametersStream,
                 requestEnricher: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
 
             return this.clientContext.ResponseFactory.CreateItemResponse<TOutput>(response);
         }
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: null,
-                cancellationToken: cancellationToken);
+                cancellation: cancellation);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this, response);
         }

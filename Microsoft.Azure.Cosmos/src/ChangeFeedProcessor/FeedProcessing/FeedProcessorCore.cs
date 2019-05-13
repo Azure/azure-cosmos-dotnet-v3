@@ -39,11 +39,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.cosmosJsonSerializer = cosmosJsonSerializer;
         }
 
-        public override async Task RunAsync(CancellationToken cancellationToken)
+        public override async Task RunAsync(CancellationToken cancellation)
         {
             string lastContinuation = this.settings.StartContinuation;
 
-            while (!cancellationToken.IsCancellationRequested)
+            while (!cancellation.IsCancellationRequested)
             {
                 TimeSpan delay = this.settings.FeedPollDelay;
 
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     do
                     {
-                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellation).ConfigureAwait(false);
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
                             DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
@@ -69,14 +69,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         lastContinuation = response.Headers.Continuation;
                         if (this.resultSetIterator.HasMoreResults)
                         {
-                            await this.DispatchChanges(response, cancellationToken).ConfigureAwait(false);
+                            await this.DispatchChanges(response, cancellation).ConfigureAwait(false);
                         }
                     }
-                    while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
+                    while (this.resultSetIterator.HasMoreResults && !cancellation.IsCancellationRequested);
                 }
                 catch (TaskCanceledException canceledException)
                 {
-                    if (cancellationToken.IsCancellationRequested)
+                    if (cancellation.IsCancellationRequested)
                     {
                         throw;
                     }
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     // ignore as it is caused by Cosmos DB client when StopAsync is called
                 }
 
-                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delay, cancellation).ConfigureAwait(false);
             }
         }
 
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        private Task DispatchChanges(CosmosResponseMessage response, CancellationToken cancellationToken)
+        private Task DispatchChanges(CosmosResponseMessage response, CancellationToken cancellation)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.settings.LeaseToken, response, this.checkpointer);
             Collection<T> asFeedResponse;
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);
             asReadOnlyList.AddRange(asFeedResponse);
 
-            return this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellationToken);
+            return this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellation);
         }
     }
 }

@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.DispatchPeriod = estimationPeriod;
         }
 
-        public async Task DispatchEstimation(long estimation, CancellationToken cancellationToken)
+        public async Task DispatchEstimation(long estimation, CancellationToken cancellation)
         {
             try
             {
-                await this.dispatchEstimation(estimation, cancellationToken).ConfigureAwait(false);
+                await this.dispatchEstimation(estimation, cancellation).ConfigureAwait(false);
             }
             catch (Exception userException)
             {
