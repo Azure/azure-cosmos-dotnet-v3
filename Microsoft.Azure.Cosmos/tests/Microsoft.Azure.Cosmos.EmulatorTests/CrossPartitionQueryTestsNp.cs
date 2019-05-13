@@ -2787,6 +2787,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore] // Flaky 
         public async Task TestQueryCrossPartitionWithContinuations()
         {
             int numberOfDocuments = 1 << 2;
