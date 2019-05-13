@@ -368,17 +368,17 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public override IOrderedQueryable<T> CosmosItemQuery<T>(CosmosQueryRequestOptions requestOptions, object partitionKey = null)
+        public override IOrderedQueryable<T> CosmosItemQuery<T>(QueryRequestOptions requestOptions, object partitionKey = null)
         {
             if(requestOptions == null)
             {
-                throw new ArgumentException("CosmosQueryRequestOptions cannot be null");
+                throw new ArgumentNullException("CosmosQueryRequestOptions cannot be null");
             }
 
-            if (!requestOptions.AllowQuerySync)
+            if (!requestOptions.AllowSynchronousQueryExecution)
             {
-                throw new NotSupportedException("To use Linq query please set AllowQuerySync in CosmosQueryRequestOptions true or" +
-                    " use CreateItemQuery api returning CosmosFeedIterator which excecute asynchronously via CosmosFeedIterator");
+                throw new NotSupportedException("To use LINQ query please set "+ nameof(requestOptions.AllowSynchronousQueryExecution) + " in CosmosQueryRequestOptions true or" +
+                    " use CreateItemQuery returning CosmosFeedIterator which execute asynchronously via CosmosFeedIterator");
             }
 
             if(partitionKey != null)
@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.EnableCrossPartitionQuery = true;
             }
 
-            return this.clientContext.DocumentClient.CreateDocumentQuery<T>(this.container.LinkUri, requestOptions.ToFeedOptions());
+            return new CosmosLINQQuery<T>(this.container, this.clientContext.JsonSerializer, this.queryClient, requestOptions);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(

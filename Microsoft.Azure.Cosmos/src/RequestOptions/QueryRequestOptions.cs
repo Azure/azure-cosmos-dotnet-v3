@@ -123,13 +123,13 @@ namespace Microsoft.Azure.Cosmos
         public virtual string RequestContinuation { get; set; }
 
         /// <summary>
-        /// Gets or sets the option which enable user to allow query execution syncronously via linq IOrderedQueryable.
-        /// This flag needs to set to true in CosmosItemQuery api returning linq IOrderedQueryable otherwise exception will be thrown.
+        /// Gets or sets the option which enable user to allow query execution synchronously via LINQ IOrderedQueryable.
+        /// This flag needs to set to true in CosmosItemQuery returning LINQ IOrderedQueryable otherwise exception will be thrown.
         /// </summary>
         /// <remarks>
-        /// This flag wont be applicable on CosmosItemQuery api returning CosmosFeedIterator as it is always excecute asynchronously.
+        /// This flag won't be applicable on CosmosItemQuery returning CosmosFeedIterator as it is always execute asynchronously.
         /// </remarks>
-        public virtual bool AllowQuerySync { get; set; }
+        public virtual bool AllowSynchronousQueryExecution { get; set; }
 
         /// <summary>
         /// Gets or sets the number of concurrent operations run client side during 
