@@ -784,7 +784,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
-            int maxConcurrency,
+            int? maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);

@@ -521,7 +521,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithContinuationTokens<T>(
             CosmosContainer container,
             string query,
-            int maxItemCount,
+            int? maxConcurrency = 2,
+            int? maxItemCount = null,
             QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
@@ -546,12 +547,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
+            int? maxConcurrency = 2,
+            int? maxItemCount = null,
             QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
             FeedIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
                 sqlQueryText: query,
-                maxConcurrency: 2,
+                maxConcurrency: maxConcurrency,
+                maxItemCount: maxItemCount,
                 requestOptions: queryRequestOptions);
 
             while (itemQuery.HasMoreResults)
@@ -711,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            Assert.AreEqual(0, (await this.RunQuery<Document>(
+            Assert.AreEqual(0, (await CrossPartitionQueryTests.RunQuery<Document>(
                 container,
                 @"SELECT * FROM Root r WHERE false",
                 maxConcurrency: 1)).Count);
@@ -1173,21 +1177,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    QueryRequestOptions feedOptions = new QueryRequestOptions
+                    foreach(string query in new string[] { "SELECT * FROM c", "SELECT * FROM c ORDER BY c._ts"})
                     {
-                        EnableCrossPartitionQuery = true,
-                        MaxBufferedItemCount = 7000,
-                        MaxConcurrency = maxDegreeOfParallelism,
-                        MaxItemCount = maxItemCount
-                    };
+                        QueryRequestOptions feedOptions = new QueryRequestOptions
+                        {
+                            EnableCrossPartitionQuery = true,
+                            MaxBufferedItemCount = 7000,
+                            MaxConcurrency = maxDegreeOfParallelism,
+                            MaxItemCount = maxItemCount
+                        };
 
-                    List<JToken> actualFromQueryWithoutContinutionTokens;
-                    actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
-                        container,
-                        "SELECT * FROM c",
-                        feedOptions);
+                        List<JToken> queryResults = await RunQuery<JToken>(
+                            container,
+                            "SELECT * FROM c",
+                            maxDegreeOfParallelism,
+                            maxItemCount,
+                            feedOptions);
 
-                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                        Assert.AreEqual(documents.Count(), queryResults.Count);
+                    }
                 }
             }
         }
@@ -1244,13 +1252,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxItemCount = maxItemCount,
                     };
 
-                    List<JToken> actualFromQueryWithoutContinutionTokens;
-                    actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
+                    List<JToken> queryResults = await RunQuery<JToken>(
                         container,
                         "SELECT * FROM c ORDER BY c._ts",
+                        maxDegreeOfParallelism,
+                        maxItemCount,
                         feedOptions);
 
-                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                    Assert.AreEqual(documents.Count(), queryResults.Count);
                 }
             }
         }
@@ -1273,8 +1282,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 EnableCrossPartitionQuery = true,
                 MaxBufferedItemCount = 7000,
-                MaxConcurrency = 10,
-                MaxItemCount = 10,
             };
 
             string aggregateWithoutValue = "SELECT COUNT(1) FROM c";
@@ -1288,15 +1295,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 multipleAggregates
             };
 
-
             foreach (string unsupportedQuery in unsupportedQueries)
             {
                 try
                 {
-                    await QueryWithoutContinuationTokens<JToken>(
+                    await RunQuery<JToken>(
                         container,
                         unsupportedQuery,
-                        feedOptions);
+                        maxConcurrency: 10,
+                        maxItemCount: 10,
+                        queryRequestOptions: feedOptions);
                     Assert.Fail("Expected query to fail due it not being supported.");
                 }
                 catch (Exception e)
@@ -1497,7 +1505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (Tuple<string, object> data in datum)
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
-                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(
+                    dynamic aggregate = (await RunQuery<dynamic>(
                         container,
                         query)).Single();
                     object expected = data.Item2;
@@ -1599,7 +1607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<dynamic> items = await this.RunQuery<dynamic>(
+                    List<dynamic> items = await CrossPartitionQueryTests.RunQuery<dynamic>(
                     container,
                     query,
                     maxConcurrency: 10);
@@ -1802,7 +1810,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             StringSplitOptions.None)
                             .Select(x => x.Trim()));
 
-                    List<dynamic> items = await this.RunQuery<dynamic>(
+                    List<dynamic> items = await CrossPartitionQueryTests.RunQuery<dynamic>(
                         container,
                         query,
                         10,
@@ -2194,7 +2202,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await CrossPartitionQueryTests.NoOp();
 
             string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
-            List<Document> query = await this.RunQuery<Document>(
+            List<Document> query = await CrossPartitionQueryTests.RunQuery<Document>(
                 container,
                 "SELECT r.id FROM r ORDER BY r.prop DESC",
                 maxItemCount: 1,
@@ -2259,6 +2267,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<JToken> actualFromQueryWithoutContinutionTokens = await QueryWithContinuationTokens<JToken>(
                         container,
                         "SELECT * FROM c ORDER BY c.field",
+                        maxDegreeOfParallelism,
                         maxItemCount,
                         feedOptions);
 
@@ -2553,12 +2562,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         };
 
                         List<JToken> actualFromQueryWithoutContinutionTokens;
-                        actualFromQueryWithoutContinutionTokens = await this.RunQuery<JToken>(
+                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
                             container,
                             query,
                             maxItemCount: 16,
                             maxConcurrency: 10,
-                            requestOptions: feedOptions);
+                            queryRequestOptions: feedOptions);
 #if false
                         For now we can not serve the query through continuation tokens correctly.
                         This is because we allow order by on mixed types but not comparisions across types
@@ -2716,7 +2725,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableCrossPartitionQuery = true
             };
 
-            List<Document> queryEmptyResult = await this.RunQuery<Document>(
+            List<Document> queryEmptyResult = await RunQuery<Document>(
                 container,
                 emptyQueryText,
                 maxConcurrency: 1);
@@ -2946,33 +2955,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            // Check error on skip take for partitioned collection.
-            try
-            {
-                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
-                {
-                    EnableCrossPartitionQuery = true,
-                    MaxItemCount = 3,
-                    MaxBufferedItemCount = 1000,
-                    EnableCrossPartitionSkipTake = false,
-                };
-
-                string query = "SELECT * FROM c OFFSET 10 LIMIT 10";
-                List<JToken> actualFromQueryWithContinutionToken = await QueryWithoutContinuationTokens<JToken>(
-                    container,
-                    query,
-                    queryRequestOptions);
-
-                Assert.Fail("Expected exception for Cross Partition OFFSET LIMIT");
-            }
-            catch (Exception ex)
-            {
-                if (!(ex.Message.Contains("Cross Partition OFFSET / LIMIT is not supported.")))
-                {
-                    Assert.Fail("Wrong exception");
-                }
-            }
-
             foreach (int offsetCount in new int[] { 0, 1, 10, 100, documents.Count() })
             {
                 foreach (int limitCount in new int[] { 0, 1, 10, 100, documents.Count() })
@@ -2987,9 +2969,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
                         {
-                            MaxItemCount = 3,
+                            MaxItemCount = pageSize,
                             MaxBufferedItemCount = 1000,
-                            EnableCrossPartitionSkipTake = true,
+                            MaxConcurrency = 2,
                         };
 
                         IEnumerable<JToken> expectedResults = documents.Select(document => document.propertyBag);
@@ -3003,16 +2985,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         expectedResults = expectedResults.Skip(offsetCount);
                         expectedResults = expectedResults.Take(limitCount);
 
-                        List<JToken> actualFromQueryWithoutContinutionToken = await QueryWithoutContinuationTokens<JToken>(
+                        List<JToken> queryResults = await RunQuery<JToken>(
                             container,
                             query,
-                            queryRequestOptions);
+                            queryRequestOptions: queryRequestOptions);
                         Assert.IsTrue(
-                            expectedResults.SequenceEqual(actualFromQueryWithoutContinutionToken, JsonTokenEqualityComparer.Value),
+                            expectedResults.SequenceEqual(queryResults, JsonTokenEqualityComparer.Value),
                             $@"
                                 {query} (without continuations) didn't match
                                 expected: {JsonConvert.SerializeObject(expectedResults)}
-                                actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionToken)}");
+                                actual: {JsonConvert.SerializeObject(queryResults)}");
                     }
                 }
             }
@@ -3242,63 +3224,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (string query in queries)
             {
-                List<Document> expectedValues = await this.RunQuery<Document>(
+                List<Document> queryResultsWithoutContinuationTokens = await QueryWithoutContinuationTokens<Document>(
                     container,
                     query,
                     maxConcurrency: 0);
 
                 foreach (int pageSize in new int[] { 1, documentCount / 2, documentCount })
                 {
-                    List<Document> retrievedDocuments = new List<Document>();
-
-                    FeedIterator<Document> documentQuery;
-                    string continuationToken = default(string);
-                    bool hasMoreResults;
-
-                    do
-                    {
-                        QueryRequestOptions feedOptions = new QueryRequestOptions
-                        {
-                            MaxBufferedItemCount = 10000,
-                        };
-
-                        documentQuery = container.Items.CreateItemQuery<Document>(
-                            query,
-                            maxConcurrency: 10000,
-                            maxItemCount: pageSize,
-                            continuationToken: continuationToken,
-                            requestOptions: feedOptions);
-
-                        FeedResponse<Document> response;
-                        try
-                        {
-                            response = await documentQuery.FetchNextSetAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            throw ex;
-                        }
-
-                        Assert.IsTrue(
-                            response.Count() <= pageSize,
-                            string.Format(
-                            CultureInfo.InvariantCulture,
-                            "Actual result count {0} should be less or equal to requested page size {1}. Query: {2}, Continuation: {3}, Results.Count: {4}",
-                            response.Count(),
-                            pageSize,
-                            query,
-                            continuationToken,
-                            retrievedDocuments.Count));
-                        continuationToken = response.Continuation;
-                        retrievedDocuments.AddRange(response);
-
-                        hasMoreResults = documentQuery.HasMoreResults;
-                    } while (hasMoreResults);
+                    List<Document> queryResultsWithContinuationTokens = await QueryWithContinuationTokens<Document>(
+                        container,
+                        query);
 
                     Assert.AreEqual(
-                        string.Join(", ", expectedValues.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
-                        string.Join(", ", retrievedDocuments.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
-                        string.Format(CultureInfo.InvariantCulture, "query: {0}, page size: {1}", query, pageSize));
+                        string.Join(", ", queryResultsWithoutContinuationTokens.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
+                        string.Join(", ", queryResultsWithContinuationTokens.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
+                        $"query: {query}, page size: {pageSize}");
                 }
             }
         }
@@ -3652,13 +3592,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 MaxBufferedItemCount = 1000,
                             };
 
-                            List<List<object>> actualFromQueryWithoutContinutionToken = await this.RunQuery<List<object>>(
+                            List<List<object>> actual = await RunQuery<List<object>>(
                                 container,
                                 query,
                                 maxItemCount: 3,
                                 maxConcurrency: 10,
-                                requestOptions: feedOptions);
-                            this.AssertMultiOrderByResults(expected, actualFromQueryWithoutContinutionToken, query + "(without continuations)");
+                                queryRequestOptions: feedOptions);
+                            this.AssertMultiOrderByResults(expected, actual, query);
                         }
                     }
                 }
@@ -3876,26 +3816,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //    this.responseLengthBytes.Value = null;
         //}
 
-        private async Task<List<T>> RunQuery<T>(
+        private static async Task<List<T>> RunQuery<T>(
             CosmosContainer container,
             string query,
-            int maxConcurrency,
+            int maxConcurrency = 2,
             int? maxItemCount = null,
-            QueryRequestOptions requestOptions = null)
+            QueryRequestOptions queryRequestOptions = null)
         {
-            FeedIterator<T> resultSetIterator = container.Items.CreateItemQuery<T>(
+            List<T> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokens<T>(
+                container, 
                 query,
-                maxConcurrency: maxConcurrency,
-                maxItemCount: maxItemCount,
-                requestOptions: requestOptions);
+                maxConcurrency,
+                maxItemCount,
+                queryRequestOptions);
+            List<T> queryResultsWithContinuationTokens = await QueryWithContinuationTokens<T>(
+                container, 
+                query,
+                maxConcurrency,
+                maxItemCount, 
+                queryRequestOptions);
 
-            List<T> items = new List<T>();
-            while (resultSetIterator.HasMoreResults)
-            {
-                items.AddRange(await resultSetIterator.FetchNextSetAsync());
-            }
+            List<JToken> queryResultsWithoutContinuationTokenAsJTokens = queryResultsWithoutContinuationToken
+                .Select(x => JToken.FromObject(x)).ToList();
 
-            return items;
+            List<JToken> queryResultsWithContinuationTokensAsJTokens = queryResultsWithContinuationTokens
+                .Select(x => JToken.FromObject(x)).ToList();
+
+            Assert.IsTrue(
+                queryResultsWithoutContinuationTokenAsJTokens
+                    .SequenceEqual(queryResultsWithContinuationTokensAsJTokens, JsonTokenEqualityComparer.Value),
+                $"{query} returned different results with and without continuation tokens.");
+
+            return queryResultsWithoutContinuationToken;
         }
 
         private async Task<List<T>> RunSinglePartitionQuery<T>(
