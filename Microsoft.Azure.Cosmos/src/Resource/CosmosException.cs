@@ -18,6 +18,16 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseMessageHeaders Headers = null;
 
         internal CosmosException(
+            HttpStatusCode statusCode,
+            string message,
+            Error error = null) :
+            base(message)
+        {
+            this.StatusCode = statusCode;
+            this.Error = error;
+        }
+
+        internal CosmosException(
             CosmosResponseMessage cosmosResponseMessage, 
             string message,
             Error error = null) :
@@ -30,7 +40,6 @@ namespace Microsoft.Azure.Cosmos
                 this.ActivityId = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
                 this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
-                this.Error = error;
                 if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
@@ -39,6 +48,8 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
+
+            this.Error = error;
         }
 
         /// <summary>

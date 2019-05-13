@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
-                CosmosRequestOptions requestOptions = null,
+                RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                Stream streamPayload,
                int? throughput = null,
-               CosmosRequestOptions requestOptions = null,
+               RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
     }
 }

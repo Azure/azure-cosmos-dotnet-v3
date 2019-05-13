@@ -4,34 +4,48 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
+    using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// The cosmos stored procedure request options
+    /// Cosmos item request options
     /// </summary>
-    public class CosmosStoredProcedureRequestOptions : CosmosRequestOptions
+    public class ItemRequestOptions : RequestOptions
     {
         /// <summary>
-        ///  Gets or sets the <see cref="EnableScriptLogging"/> for the current request in the Azure Cosmos DB service.
+        /// Gets or sets the trigger to be invoked before the operation in the Azure Cosmos DB service.
         /// </summary>
+        /// <value>
+        /// The trigger to be invoked before the operation.
+        /// </value>
         /// <remarks>
-        /// <para>
-        /// EnableScriptLogging is used to enable/disable logging in JavaScript stored procedures.
-        /// By default script logging is disabled.
-        /// The log can also be accessible in response header (x-ms-documentdb-script-log-results).
-        /// </para>
+        /// Only valid when used with Create, Replace and Delete methods for documents.
+        /// Currently only one PreTrigger is permitted per operation.
         /// </remarks>
-        /// <example>
-        /// To log, use the following in store procedure:
-        /// <code language="JavaScript">
-        /// <![CDATA[
-        /// console.log("This is trace log");
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual bool EnableScriptLogging { get; set; }
+        internal IEnumerable<string> PreTriggers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the trigger to be invoked after the operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The trigger to be invoked after the operation.
+        /// </value>
+        /// <remarks>
+        /// Only valid when used with Create, Replace and Delete methods for documents.
+        /// Currently only one PreTrigger is permitted per operation.
+        /// </remarks>
+        internal IEnumerable<string> PostTriggers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the indexing directive (Include or Exclude) for the request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The indexing directive to use with a request.
+        /// </value>
+        /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
+        /// <seealso cref="IndexingDirective"/>
+        public virtual IndexingDirective? IndexingDirective { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -50,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// In some scenarios you need to manage this Session yourself;
         /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> of the write action on one node
+        /// you would have to send the SessionToken from <see cref="ItemResponse{T}"/> of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
         /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
         /// the read could potentially land on a different node to the write request, where the session was created.
@@ -85,13 +99,23 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
         public override void FillRequestOptions(CosmosRequestMessage request)
         {
-            if (this.EnableScriptLogging)
+            if (this.PreTriggers != null && this.PreTriggers.Any())
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.EnableLogging, bool.TrueString);
+                request.Headers.Add(HttpConstants.HttpHeaders.PreTriggerInclude, this.PreTriggers);
             }
 
-            CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
-            CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
+            if (this.PostTriggers != null && this.PostTriggers.Any())
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PostTriggerInclude, this.PostTriggers);
+            }
+
+            if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.IndexingDirective, this.IndexingDirective.Value.ToString());
+            }
+
+            RequestOptions.SetSessionToken(request, this.SessionToken);
+            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             base.FillRequestOptions(request);
         }

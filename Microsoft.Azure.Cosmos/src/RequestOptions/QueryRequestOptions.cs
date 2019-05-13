@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos query request options
     /// </summary>
-    public class CosmosQueryRequestOptions : CosmosRequestOptions
+    public class QueryRequestOptions : RequestOptions
     {
         /// <summary>
         ///  Gets or sets the <see cref="ResponseContinuationTokenLimitInKb"/> request option for document query requests in the Azure Cosmos DB service.
@@ -168,8 +168,8 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
             request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery ? bool.TrueString : bool.FalseString);
 
-            CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
-            CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
+            RequestOptions.SetSessionToken(request, this.SessionToken);
+            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
@@ -205,9 +205,9 @@ namespace Microsoft.Azure.Cosmos
             base.FillRequestOptions(request);
         }
 
-        internal CosmosQueryRequestOptions Clone()
+        internal QueryRequestOptions Clone()
         {
-            CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 AccessCondition = this.AccessCondition,
                 RequestContinuation = this.RequestContinuation,
