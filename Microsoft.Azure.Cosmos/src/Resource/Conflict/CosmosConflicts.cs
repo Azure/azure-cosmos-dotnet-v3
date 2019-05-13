@@ -7,31 +7,41 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
 
-    public abstract partial class CosmosContainer
+    /// <summary>
+    /// Operations for reading/querying conflicts in a Azure Cosmos container.
+    /// </summary>
+    public abstract class CosmosConflicts
     {
         /// <summary>
         /// Delete a conflict from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="id">The conflict id.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="partitionKey">The partition key for the conflict.</param>
+        /// <param name="conflict">The conflict to delete.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
             object partitionKey,
-            string id,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CosmosConflictSettings conflict,
+            CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Reads the item that originated the conflict.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflictSettings"/>
-        public abstract Task<ItemResponse<T>> ReadConflictSourceItemAsync<T>(
+        public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
             object partitionKey,
             CosmosConflictSettings cosmosConflict,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellation = default(CancellationToken));
+
+        /// <summary>
+        /// Reads the content of the Conflict resource in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="cosmosConflict">The conflict for which we want to read the content of.</param>
+        /// <seealso cref="CosmosConflictSettings"/>
+        public abstract T ReadConflictContent<T>(CosmosConflictSettings cosmosConflict);
 
         /// <summary>
         /// Obtains an iterator to go through the <see cref="CosmosConflictSettings"/> on an Azure Cosmos container.
@@ -41,12 +51,13 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = await cosmosContainer.GetConflictsIterator();
-        /// do
+        /// FeedIterator<CosmosConflictSettings> conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
+        /// while (conflictIterator.HasMoreResults)
         /// {
-        ///     QueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
+        ///     foreach(CosmosConflictSettings item in await conflictIterator.FetchNextSetAsync())
+        ///     {
+        ///     }
         /// }
-        /// while (conflictIterator.HasMoreResults);
         /// ]]>
         /// </code>
         /// </example>
@@ -62,12 +73,13 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
-        /// do
+        /// FeedIterator conflictIterator = await cosmosContainer.Conflicts.GetConflictsStreamIterator();
+        /// while (conflictIterator.HasMoreResults)
         /// {
-        ///     QueryResponse<CosmosConflict> conflicts = await conflictIterator.FetchNextAsync();
+        ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
+        ///     {
+        ///     }
         /// }
-        /// while (conflictIterator.HasMoreResults);
         /// ]]>
         /// </code>
         /// </example>
