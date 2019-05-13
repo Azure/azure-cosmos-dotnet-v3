@@ -186,7 +186,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
                requestContinuation,
-                constructorParams.FeedOptions.EnableCrossPartitionSkipTake,
                 createOrderByComponentFunc,
                 createParallelComponentFunc));
         }
@@ -252,7 +251,6 @@ namespace Microsoft.Azure.Cosmos.Query
                partitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
                requestContinuation,
-               constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake,
                createOrderByComponentFunc,
                createParallelComponentFunc));
         }
@@ -261,7 +259,6 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryInfo queryInfo,
             int initialPageSize,
             string requestContinuation,
-            bool enableCrossPartitionSkipTake,
             Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
         {
@@ -301,11 +298,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasOffset)
             {
-                if (!enableCrossPartitionSkipTake)
-                {
-                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
-                }
-
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
@@ -318,11 +310,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasLimit)
             {
-                if (!enableCrossPartitionSkipTake)
-                {
-                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
-                }
-
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
