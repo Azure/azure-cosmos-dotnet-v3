@@ -438,13 +438,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemSinglePartitionQueryStream()
         {
-            IList<ToDoActivity> deleteList = await this.CreateRandomItems(101, randomPartitionKey: true);
+            //Create a 101 random items with random guid PK values
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems( pkCount: 101, perPKItemCount: 1, randomPartitionKey: true);
+
+            // Create 10 items with same pk value
+            IList<ToDoActivity> findItems = await this.CreateRandomItems(pkCount: 1, perPKItemCount: 10, randomPartitionKey: false);
+
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
 
-            ToDoActivity find = deleteList.First();
+            string findPkValue = findItems.First().status;
             double totalRequstCharge = 0;
             CosmosFeedIterator setIterator =
-                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 1, partitionKey: find.status);
+                this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 1, partitionKey: findPkValue);
+
+            List<ToDoActivity> foundItems = new List<ToDoActivity>();
             while (setIterator.HasMoreResults)
             {
                 CosmosResponseMessage iter = await setIterator.FetchNextSetAsync();
@@ -452,14 +459,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
                 ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
-                if(response.Length > 0)
-                {
-                    Assert.AreEqual(1, response.Length);
-                    ToDoActivity found = response.First();
-                    Assert.AreEqual(find.status, found.status);
-                }
+                foundItems.AddRange(response);
             }
 
+            Assert.AreEqual(findItems.Count, foundItems.Count);
+            Assert.IsFalse(foundItems.Any(x => !string.Equals(x.status, findPkValue)), "All the found items should have the same PK value");
             Assert.IsTrue(totalRequstCharge > 0);
         }
 
@@ -609,7 +613,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateMaxItemCountOnItemQuery()
         {
-            IList<ToDoActivity> deleteList = await this.CreateRandomItems(6, randomPartitionKey: false);
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(pkCount: 1, perPKItemCount: 6, randomPartitionKey: false);
 
             ToDoActivity toDoActivity = deleteList.First();
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
@@ -870,7 +874,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
-            Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
+            Assert.IsFalse(!randomPartitionKey && pkCount > 1);
 
             List<ToDoActivity> createdList = new List<ToDoActivity>();
             for (int i = 0; i < pkCount; i++)
