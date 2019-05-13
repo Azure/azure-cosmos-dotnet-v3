@@ -50,6 +50,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Gateway = 0x2,
         }
 
+        [FlagsAttribute]
+        private enum CollectionTypes
+        {
+            None = 0,
+            NonPartitioned = 0x1,
+            SinglePartition = 0x2,
+            MultiPartition = 0x4,
+        }
+
         [TestInitialize]
         public async Task Initialize()
         {
@@ -93,7 +102,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return ranges;
         }
 
-        private async Task<CosmosContainer> CreatePartitionContainer(string partitionKey = "/id", Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        private async Task<CosmosContainer> CreateMultiPartitionContainer(
+            string partitionKey = "/id",
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+                throughput: 25000,
+                partitionKey: partitionKey,
+                indexingPolicy: indexingPolicy);
+
+            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
+            Assert.IsTrue(
+                ranges.Count() > 1, 
+                $"{nameof(CreateMultiPartitionContainer)} failed to create a container with more than 1 physical partition.");
+
+            return containerResponse;
+        }
+
+        private async Task<CosmosContainer> CreateSinglePartitionContainer(
+            string partitionKey = "/id",
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+                throughput: 400,
+                partitionKey: partitionKey,
+                indexingPolicy: indexingPolicy);
+
+            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
+            Assert.AreEqual(1, ranges.Count());
+
+            return containerResponse;
+        }
+
+        private async Task<ContainerResponse> CreatePartitionedContainer(
+            int throughput,
+            string partitionKey = "/id",
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             ContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings
@@ -122,17 +166,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 // This throughput needs to be about half the max with multi master
                 // otherwise it will create about twice as many partitions.
-                25000);
-
-            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
-            Assert.AreEqual(5, ranges.Count());
+                throughput);
 
             return containerResponse;
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedContainerAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null)
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreateSinglePartitionContainerAndIngestDocuments(
+            IEnumerable<string> documents,
+            string partitionKey = "/id",
+            Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            CosmosContainer partitionedCollection = await this.CreatePartitionContainer(partitionKey, indexingPolicy);
+            return await this.CreateContainerAndIngestDocuments(
+                CollectionTypes.SinglePartition, 
+                documents, 
+                partitionKey,
+                indexingPolicy);
+        }
+
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreateMultiPartitionContainerAndIngestDocuments(
+            IEnumerable<string> documents,
+            string partitionKey = "/id",
+            Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            return await this.CreateContainerAndIngestDocuments(
+                CollectionTypes.MultiPartition,
+                documents,
+                partitionKey,
+                indexingPolicy);
+        }
+
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreateContainerAndIngestDocuments(
+            CollectionTypes collectionType,
+            IEnumerable<string> documents,
+            string partitionKey = "/id",
+            Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            CosmosContainer cosmosContainer;
+            switch (collectionType)
+            {
+                case CollectionTypes.SinglePartition:
+                    cosmosContainer = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
+                    break;
+                case CollectionTypes.MultiPartition:
+                    cosmosContainer = await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy);
+                    break;
+                default:
+                    throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
+            }
+
             List<Document> insertedDocuments = new List<Document>();
             string jObjectPartitionKey = partitionKey.Remove(0, 1);
             foreach (string document in documents)
@@ -145,11 +226,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
                 object pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
-                insertedDocuments.Add((await partitionedCollection.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
+                insertedDocuments.Add((await cosmosContainer.Items.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
 
             }
 
-            return new Tuple<CosmosContainer, List<Document>>(partitionedCollection, insertedDocuments);
+            return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
         }
 
         private async Task CleanUp()
@@ -206,6 +287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateIngestQueryDelete(
             ConnectionModes connectionModes,
+            CollectionTypes collectionTypes,
             IEnumerable<string> documents,
             Query query,
             string partitionKey = "/id",
@@ -219,6 +301,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<object>(
                 connectionModes,
+                collectionTypes,
                 documents,
                 queryWrapper,
                 null,
@@ -229,6 +312,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateIngestQueryDelete<T>(
             ConnectionModes connectionModes,
+            CollectionTypes collectionTypes,
             IEnumerable<string> documents,
             Query<T> query,
             T testArgs,
@@ -238,6 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 connectionModes,
+                collectionTypes,
                 documents,
                 query,
                 cosmosClientFactory ?? this.CreateDefaultCosmosClient,
@@ -266,6 +351,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <returns>A task to await on.</returns>
         private async Task CreateIngestQueryDelete<T>(
            ConnectionModes connectionModes,
+           CollectionTypes collectionTypes,
            IEnumerable<string> documents,
            Query<T> query,
            CosmosClientFactory cosmosClientFactory,
@@ -279,10 +365,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>
+                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>();
+                    foreach (CollectionTypes collectionType in Enum.GetValues(collectionTypes.GetType()).Cast<Enum>().Where(collectionTypes.HasFlag))
                     {
-                        this.CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy)
-                    };
+                        if (collectionType == CollectionTypes.None)
+                        {
+                            continue;
+                        }
+
+                        Task<Tuple<CosmosContainer, List<Document>>> createContainerTask;
+                        switch (collectionType)
+                        {
+                            case CollectionTypes.SinglePartition:
+                                createContainerTask = Task.Run(() => this.CreateSinglePartitionContainerAndIngestDocuments(
+                                    documents, 
+                                    partitionKey, 
+                                    indexingPolicy));
+                                break;
+                            case CollectionTypes.MultiPartition:
+                                createContainerTask = Task.Run(() => this.CreateMultiPartitionContainerAndIngestDocuments(
+                                    documents,
+                                    partitionKey,
+                                    indexingPolicy));
+                                break;
+                            default:
+                                throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
+                        }
+
+                        createContainerTasks.Add(createContainerTask);
+                    }
 
                     Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
 
@@ -297,7 +408,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionMode targetConnectionMode = GetTargetConnectionMode(connectionMode);
                         CosmosClient cosmosClient = cosmosClientFactory(targetConnectionMode);
 
-                        Assert.AreEqual(targetConnectionMode, cosmosClient.Configuration.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
+                        Assert.AreEqual(
+                            targetConnectionMode,
+                            cosmosClient.Configuration.ConnectionMode,
+                            "Test setup: Invalid connection policy applied to CosmosClient");
                         cosmosClients.Add(cosmosClient);
                     }
 
@@ -312,7 +426,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
                                 {
                                     CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].Containers[containerAndDocuments.Item1.Id];
-                                    queryTasks.Add(query(container, containerAndDocuments.Item2, testArgs));
+                                    Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
+                                    queryTasks.Add(queryTask);
                                 }
                             }
 
@@ -504,6 +619,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
                 CrossPartitionQueryTests.NoDocuments,
                 this.TestBadQueriesOverMultiplePartitionsHelper);
         }
@@ -537,6 +653,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
                 CrossPartitionQueryTests.NoDocuments,
                 this.TestQueryCrossParitionPartitionProviderInvalidHelper);
         }
@@ -584,6 +701,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryWithPartitionKeyHelper,
                 "/key");
@@ -657,7 +775,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TestQueryMultiplePartitionsSinglePartitionKey()
+        public async Task TestQuerySinglePartitionKey()
         {
             string[] documents = new[]
             {
@@ -671,12 +789,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
-                this.TestQueryMultiplePartitionsSinglePartitionKeyHelper,
+                this.TestQuerySinglePartitionKeyHelper,
                 "/pk");
         }
 
-        private async Task TestQueryMultiplePartitionsSinglePartitionKeyHelper(CosmosContainer container, IEnumerable<Document> documents)
+        private async Task TestQuerySinglePartitionKeyHelper(
+            CosmosContainer container, 
+            IEnumerable<Document> documents)
         {
             // Query with partition key should be done in one round trip.
             FeedIterator<dynamic> resultSetIterator = container.Items.CreateItemQuery<dynamic>(
@@ -764,6 +885,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // since the query callback inserts some documents (thus has side effects).
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Direct,
+                    CollectionTypes.SinglePartition,
+                    CrossPartitionQueryTests.NoDocuments,
+                    this.TestQueryWithSpecialPartitionKeysHelper,
+                    testArg,
+                    "/" + testArg.Name);
+
+                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Direct,
+                    CollectionTypes.MultiPartition,
                     CrossPartitionQueryTests.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
                     testArg,
@@ -771,6 +901,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Gateway,
+                    CollectionTypes.SinglePartition,
+                    CrossPartitionQueryTests.NoDocuments,
+                    this.TestQueryWithSpecialPartitionKeysHelper,
+                    testArg,
+                    "/" + testArg.Name);
+
+                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Gateway,
+                    CollectionTypes.MultiPartition,
                     CrossPartitionQueryTests.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
                     testArg,
@@ -981,6 +1120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<QueryCrossPartitionWithLargeNumberOfKeysArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionWithLargeNumberOfKeysHelper,
                 args,
@@ -1020,6 +1160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestBasicCrossPartitionQueryHelper);
         }
@@ -1068,6 +1209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     CosmosQueryExecutionContextFactory.TestFlag = testFlag;
                     await this.CreateIngestQueryDelete(
                         ConnectionModes.Direct,
+                        CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                         documents,
                         this.TestQueryPlanGatewayAndServiceInteropHelper);
                 }
@@ -1118,6 +1260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 NoDocuments,
                 this.TestUnsupportedQueriesHelper);
         }
@@ -1209,6 +1352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<AggregateTestArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsAsync,
                 aggregateTestArgs,
@@ -1418,6 +1562,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<AggregateQueryEmptyPartitionsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsEmptyPartitionsHelper,
                 args,
@@ -1551,6 +1696,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<AggregateQueryMixedTypes>(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper,
                 args,
@@ -1712,6 +1858,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryDistinct,
                 "/id");
@@ -2036,6 +2183,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionTopOrderByDifferentDimensionHelper,
                 "/key");
@@ -2088,6 +2236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IEnumerable<string> documents = specialStrings.Select((specialString) => $@"{{ ""field"" : ""{specialString}""}}");
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestOrderByNonAsciiCharactersHelper);
         }
@@ -2197,6 +2346,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             await this.CreateIngestQueryDelete<Tuple<OrderByTypes[], Action<Exception>>>(
                                 ConnectionModes.Direct,
+                                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                                 documents,
                                 this.TestMixedTypeOrderByHelper,
                                 new Tuple<OrderByTypes[], Action<Exception>>(orderByTypes, expectedExcpetionHandler),
@@ -2525,6 +2675,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<string>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionTopOrderByHelper,
                 partitionKey,
@@ -2752,6 +2903,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionTopHelper,
                 "/" + partitionKey);
@@ -2784,6 +2936,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionOffsetLimit,
                 "/id");
@@ -2980,6 +3133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<CrossPartitionWithContinuationsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionWithContinuationsHelper,
                 args,
@@ -3011,7 +3165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
             }
-            catch(AggregateException aggrEx)
+            catch (AggregateException aggrEx)
             {
                 Assert.Fail(aggrEx.ToString());
             }
@@ -3324,6 +3478,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestMultiOrderByQueriesHelper,
                 "/" + nameof(MultiOrderByDocument.PartitionKey),
