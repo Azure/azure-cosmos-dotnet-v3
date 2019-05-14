@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for the conflict.</param>
         /// <param name="conflict">The conflict to delete.</param>
         /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
             object partitionKey,
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
         /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The current state of the item associated with the conflict.</returns>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
             object partitionKey,
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// Reads the content of the Conflict resource in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="cosmosConflict">The conflict for which we want to read the content of.</param>
+        /// <returns>The content of the conflict.</returns>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract T ReadConflictContent<T>(CosmosConflictSettings cosmosConflict);
 
@@ -48,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <returns>An iterator to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -70,6 +74,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <returns>An iterator to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
