@@ -164,6 +164,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientConfiguration.ConnectionMode"/>
         /// <seealso cref="CosmosClientConfiguration.MaxConnectionLimit"/>
         public virtual CosmosClientBuilder UseConnectionModeGateway(int? maxConnectionLimit = null)
