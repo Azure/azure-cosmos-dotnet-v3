@@ -318,10 +318,10 @@ namespace Microsoft.Azure.Cosmos.Query
                         cosmosRequestMessage.Headers.Add(
                             HttpConstants.HttpHeaders.IsContinuationExpected,
                             this.queryContext.IsContinuationExpected.ToString());
-                        CosmosQueryRequestOptions.FillContinuationToken(
+                        QueryRequestOptions.FillContinuationToken(
                             cosmosRequestMessage,
                             this.BackendContinuationToken);
-                        CosmosQueryRequestOptions.FillMaxItemCount(
+                        QueryRequestOptions.FillMaxItemCount(
                             cosmosRequestMessage,
                             pageSize);
                     });
@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Query
             if (this.queryContext.ResourceTypeEnum.IsPartitioned())
             {
                 // If the request already has the logical partition key,
-                // then we shouldn't add the physical partiton key range id.
+                // then we shouldn't add the physical partition key range id.
 
                 bool hasPartitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey) != null;
                 if (!hasPartitionKey)

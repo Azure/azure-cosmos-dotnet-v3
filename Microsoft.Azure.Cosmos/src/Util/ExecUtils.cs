@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             Func<CosmosResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             Stream streamPayload,
             Func<CosmosResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
             Object partitionKey,
             Stream streamPayload,
