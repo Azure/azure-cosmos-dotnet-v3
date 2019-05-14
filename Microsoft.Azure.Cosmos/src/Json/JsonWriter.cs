@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             // For now short circuit this to false until we figure out how to optimize this.
-            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat && false;
+            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
 
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
 
