@@ -8,10 +8,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosConflictTests
@@ -30,14 +32,50 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public async Task ReadCurrentGetsCorrectRID()
+        {
+            const string expectedRID = "something";
+            const string partitionKey = "pk";
+            Uri expectedRequestUri = new Uri($"/dbs/conflictsDb/colls/test/docs/{expectedRID}", UriKind.Relative);
+            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+                Assert.AreEqual(OperationType.Read, request.OperationType);
+                Assert.AreEqual(ResourceType.Document, request.ResourceType);
+                Assert.AreEqual(expectedRequestUri, request.RequestUri);
+                return TestHandler.ReturnSuccess();
+            });
+
+            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            conflictSettings.SourceResourceId = expectedRID;
+
+            await container.Conflicts.ReadCurrentAsync<JObject>(partitionKey, conflictSettings);
+        }
+
+        [TestMethod]
+        public void ReadConflictContentDeserializesContent()
+        {
+            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+                return TestHandler.ReturnSuccess();
+            });
+
+            JObject someJsonObject = new JObject();
+            someJsonObject["id"] = Guid.NewGuid().ToString();
+            someJsonObject["someInt"] = 2;
+
+            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            conflictSettings.Content = someJsonObject.ToString();
+
+            Assert.AreEqual(someJsonObject.ToString(), container.Conflicts.ReadConflictContent<JObject>(conflictSettings).ToString());
+        }
+
         private static CosmosContainerCore GetMockedContainer(Func<CosmosRequestMessage,
             CancellationToken, Task<CosmosResponseMessage>> handlerFunc)
         {
-            return new CosmosContainerCore(CosmosConflictTests.GetMockedClientContext(handlerFunc), MockCosmosUtil.CreateMockDatabase().Object, "conflicts");
+            return new CosmosContainerCore(CosmosConflictTests.GetMockedClientContext(handlerFunc), MockCosmosUtil.CreateMockDatabase("conflictsDb").Object, "conflicts");
         }
 
-        private static CosmosClientContext GetMockedClientContext(Func<CosmosRequestMessage,
-            CancellationToken, Task<CosmosResponseMessage>> handlerFunc)
+        private static CosmosClientContext GetMockedClientContext(
+            Func<CosmosRequestMessage, CancellationToken, Task<CosmosResponseMessage>> handlerFunc)
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
@@ -59,13 +97,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 handler = handler.InnerHandler;
             }
 
+            CosmosJsonSerializer cosmosJsonSerializer = new CosmosDefaultJsonSerializer();
+
+            CosmosResponseFactory responseFactory = new CosmosResponseFactory(cosmosJsonSerializer);
+
             return new CosmosClientContextCore(
                 client: client,
                 clientConfiguration: null,
-                cosmosJsonSerializer: null,
-                cosmosResponseFactory: null,
+                cosmosJsonSerializer: cosmosJsonSerializer,
+                cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
-                documentClient: null,
+                documentClient: new MockDocumentClient(),
                 documentQueryClient: new Mock<Query.IDocumentQueryClient>().Object);
         }
     }
