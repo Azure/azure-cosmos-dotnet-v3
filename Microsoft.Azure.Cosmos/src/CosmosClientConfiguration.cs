@@ -24,11 +24,6 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultMaxConcurrentConnectionLimit = 50;
 
         /// <summary>
-        /// Default request timeout
-        /// </summary>
-        private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
-
-        /// <summary>
         /// Default connection mode
         /// </summary>
         private const ConnectionMode DefaultConnectionMode = ConnectionMode.Direct;
@@ -42,6 +37,11 @@ namespace Microsoft.Azure.Cosmos
         private const string ConnectionStringAccountKey = "AccountKey";
 
         private const ApiType DefaultApiType = ApiType.None;
+
+        /// <summary>
+        /// Default request timeout
+        /// </summary>
+        private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers = null;
         private int maxConnectionLimit = CosmosClientConfiguration.DefaultMaxConcurrentConnectionLimit;
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         /// <example>

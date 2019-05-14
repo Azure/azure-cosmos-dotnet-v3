@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="coordinates">
         /// List of positions through which the line string goes.
         /// </param>
-        public LineString(IList<Position> coordinates) : this(coordinates, new GeometryParams())
+        public LineString(IList<Position> coordinates)
+            : this(coordinates, new GeometryParams())
         {
         }
 
@@ -51,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal LineString() : base(GeometryType.LineString, new GeometryParams())
+        internal LineString()
+            : base(GeometryType.LineString, new GeometryParams())
         {
         }
 

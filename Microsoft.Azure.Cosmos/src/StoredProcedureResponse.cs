@@ -5,16 +5,16 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net;
     using System.Collections.Specialized;
     using System.Globalization;
     using System.IO;
+    using System.Net;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
-    using Newtonsoft.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the response returned from a database stored procedure in the Azure Cosmos DB service. Wraps the response body and headers.
@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public StoredProcedureResponse()
         {
-
         }
 
         internal StoredProcedureResponse(DocumentServiceResponse response, JsonSerializerSettings serializerSettings = null)
@@ -237,6 +236,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return source.responseBody;
         }
-
     }
 }

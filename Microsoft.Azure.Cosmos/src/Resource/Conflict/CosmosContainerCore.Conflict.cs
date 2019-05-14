@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
-            CosmosDatabaseCore databaseCore = (CosmosDatabaseCore) this.Database;
+            CosmosDatabaseCore databaseCore = (CosmosDatabaseCore)this.Database;
             string databaseResourceId = await databaseCore.GetRID(cancellationToken);
             string containerResourceId = await this.GetRID(cancellationToken);
 

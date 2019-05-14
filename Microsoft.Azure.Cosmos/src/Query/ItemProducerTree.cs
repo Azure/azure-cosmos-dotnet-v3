@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="ItemProducerTree.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -37,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal sealed class ItemProducerTree : IEnumerable<ItemProducerTree>
     {
-
         /// <summary>
         /// The child partitions of this node in the tree that are added after a split.
         /// </summary>

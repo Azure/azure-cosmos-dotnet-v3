@@ -1,15 +1,13 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="OrderByConsumeComparer.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 {
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
 
     /// <summary>

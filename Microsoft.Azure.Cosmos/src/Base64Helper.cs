@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                 
                 byte currentCharacter = 0;
                 while (currentReadOffset < allocationSize && 
-                    '\0' != (currentCharacter = Marshal.ReadByte(unmanagedString, currentReadOffset)))
+                    (currentCharacter = Marshal.ReadByte(unmanagedString, currentReadOffset)) != '\0')
                 {
                     uint currentValue = 0;
                     int nBits = 0;

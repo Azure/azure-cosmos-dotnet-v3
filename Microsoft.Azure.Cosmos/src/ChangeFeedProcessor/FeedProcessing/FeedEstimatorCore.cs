@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal sealed class FeedEstimatorCore : FeedEstimator
     {
-        private static TimeSpan DefaultMonitoringDelay = TimeSpan.FromSeconds(5);
+        private static TimeSpan defaultMonitoringDelay = TimeSpan.FromSeconds(5);
         private readonly ChangeFeedEstimatorDispatcher dispatcher;
         private readonly RemainingWorkEstimator remainingWorkEstimator;
         private readonly TimeSpan monitoringDelay;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         {
             this.dispatcher = dispatcher;
             this.remainingWorkEstimator = remainingWorkEstimator;
-            this.monitoringDelay = dispatcher.DispatchPeriod ?? FeedEstimatorCore.DefaultMonitoringDelay;
+            this.monitoringDelay = dispatcher.DispatchPeriod ?? FeedEstimatorCore.defaultMonitoringDelay;
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)

@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos
     /// <typeparam name="T">The feed type.</typeparam>
     internal class DocumentFeedResponse<T> : IEnumerable<T>, IDynamicMetaObjectProvider, IDocumentFeedResponse<T>
     {
+        internal readonly string disallowContinuationTokenMessage;
         private readonly IEnumerable<T> inner;
-        private INameValueCollection responseHeaders;
         private readonly Dictionary<string, long> usageHeaders;
         private readonly Dictionary<string, long> quotaHeaders;
         private readonly bool useETagAsContinuation;
-        private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;
-        internal readonly string disallowContinuationTokenMessage;
+        private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;        
+        private INameValueCollection responseHeaders;
 
         /// <summary>
         /// Constructor exposed for mocking purposes.
@@ -438,7 +438,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.quotaHeaders.Add(Constants.Quota.Collection, long.Parse(headerMaxQuotaWords[i + 1], CultureInfo.InvariantCulture));
                     this.usageHeaders.Add(Constants.Quota.Collection, long.Parse(headerCurrentUsageWords[i + 1], CultureInfo.InvariantCulture));
-
                 }
                 else if (string.Equals(
                     headerMaxQuotaWords[i],
@@ -496,7 +495,6 @@ namespace Microsoft.Azure.Cosmos
             public ResourceFeedDynamicObject(DocumentFeedResponse<T> parent, Expression expression)
                 : base(expression, BindingRestrictions.Empty, parent)
             {
-
             }
 
             public override DynamicMetaObject BindConvert(ConvertBinder binder)

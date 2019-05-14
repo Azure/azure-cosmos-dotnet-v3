@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
         /// CosmosClient client = cosmosClientBuilder.Build();
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         /// <example>
@@ -70,6 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
+        /// <returns>An instance of <see cref="CosmosClient"/>.</returns>
         public virtual CosmosClient Build()
         {
             CosmosClientConfiguration copyOfConfig = this.cosmosClientConfiguration.Clone();
@@ -93,9 +94,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// A suffix to be added to the default user-agent for the Azure Cosmos DB service.
         /// </summary>
+        /// <param name="userAgentSuffix">A string to use as suffix in the User Agent.</param>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         public virtual CosmosClientBuilder UseUserAgentSuffix(string userAgentSuffix)
         {
             this.cosmosClientConfiguration.UserAgentSuffix = userAgentSuffix;
@@ -118,6 +121,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientConfiguration.CurrentRegion"/>
         public virtual CosmosClientBuilder UseCurrentRegion(string cosmosRegion)
         {
@@ -128,7 +132,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets the request timeout in seconds when connecting to the Azure Cosmos DB service.
         /// </summary>
+        /// <param name="requestTimeout">A time to use as timeout for operations.</param>
         /// <value>Default value is 60 seconds.</value>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientConfiguration.RequestTimeout"/>
         public virtual CosmosClientBuilder UseRequestTimeout(TimeSpan requestTimeout)
         {
@@ -142,6 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientConfiguration.ConnectionMode"/>
         public virtual CosmosClientBuilder UseConnectionModeDirect()
         {
@@ -176,6 +183,8 @@ namespace Microsoft.Azure.Cosmos
         /// the order listed. The InvokerHandler.InnerHandler is required to be null to allow the
         /// pipeline to chain the handlers.
         /// </summary>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <param name="handlers">A list of <see cref="CosmosRequestHandler"/> instaces to add to the pipeline.</param>
         /// <seealso cref="CosmosClientConfiguration.CustomHandlers"/>
         public virtual CosmosClientBuilder AddCustomHandlers(params CosmosRequestHandler[] handlers)
         {
@@ -205,6 +214,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
         /// </para>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientConfiguration.MaxRetryWaitTimeOnThrottledRequests"/>
         /// <seealso cref="CosmosClientConfiguration.MaxRetryAttemptsOnThrottledRequests"/>
         public virtual CosmosClientBuilder UseThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, int maxRetryAttemptsOnThrottledRequests)

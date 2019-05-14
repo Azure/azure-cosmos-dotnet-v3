@@ -349,16 +349,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
+        /// <param name="resourceId">The resource identifier for the container.</param>
+        /// <returns>An instance of <see cref="CosmosContainerSettings"/>.</returns>
+        protected internal static CosmosContainerSettings CreateWithResourceId(string resourceId)
         {
-            if (string.IsNullOrEmpty(resoruceId))
+            if (string.IsNullOrEmpty(resourceId))
             {
-                throw new ArgumentNullException(nameof(resoruceId));
+                throw new ArgumentNullException(nameof(resourceId));
             }
 
             return new CosmosContainerSettings()
             {
-                ResourceId = resoruceId,
+                ResourceId = resourceId,
             };
         }
 
@@ -385,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
-        /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
+        /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The Resource Id associated with the resource.

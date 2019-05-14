@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
 
-
         public GatewayAddressCache(
             Uri serviceEndpoint,
             Protocol protocol,
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.suboptimalPartitionForceRefreshIntervalInSeconds = suboptimalPartitionForceRefreshIntervalInSeconds;
 
             this.httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
-            if(requestTimeout != null)
+            if (requestTimeout != null)
             {
                 this.httpClient.Timeout = requestTimeout;
             }

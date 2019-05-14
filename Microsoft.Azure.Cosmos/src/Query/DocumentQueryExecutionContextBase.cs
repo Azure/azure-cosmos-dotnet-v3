@@ -22,10 +22,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
-    using Newtonsoft.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
@@ -98,9 +98,9 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly FeedOptions feedOptions;
         private readonly string resourceLink;
         private readonly bool getLazyFeedResponse;
+        private readonly Guid correlatedActivityId;
         private bool isExpressionEvaluated;
         private DocumentFeedResponse<CosmosElement> lastPage;
-        private readonly Guid correlatedActivityId;
 
         protected DocumentQueryExecutionContextBase(
            InitParams initParams)
@@ -629,7 +629,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private DocumentFeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)
         {
-
             long responseLengthBytes = response.ResponseBody.CanSeek ? response.ResponseBody.Length : 0;
             IEnumerable<T> responseFeed = response.GetQueryResponse<T>(this.resourceType, this.getLazyFeedResponse, out int itemCount);
 

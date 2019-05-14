@@ -490,6 +490,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> GetItemIterator<T>(
             int? maxItemCount = null,
             string continuationToken = null);
@@ -523,6 +524,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator GetItemStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
@@ -570,6 +572,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator CreateItemQueryAsStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
@@ -619,6 +622,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator CreateItemQueryAsStream(
             string sqlQueryText,
             int maxConcurrency,
@@ -661,6 +665,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             object partitionKey,
@@ -701,6 +706,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             object partitionKey,
@@ -742,6 +748,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
@@ -782,6 +789,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             int maxConcurrency,
@@ -792,20 +800,23 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
         /// </summary>
-        /// <param name="workflowName">application name</param>
+        /// <param name="workflowName">A name that identifies the work that the Processor will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns></returns>
+        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string workflowName, 
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
-        /// <param name="workflowName">application name</param>
         /// </summary>
+        /// <param name="workflowName">A name that identifies the work associated with the Processor the Estimator is going to measure.</param>
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
-        /// <returns></returns>
+        /// <remarks>
+        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="workflowName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
+        /// </remarks>
+        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName, 
             Func<long, CancellationToken, Task> estimationDelegate, 

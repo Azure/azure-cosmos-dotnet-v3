@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="latitude">
         /// Latitude value.
         /// </param>
-        public Position(double longitude, double latitude) : this(longitude, latitude, null)
+        public Position(double longitude, double latitude)
+            : this(longitude, latitude, null)
         {
         }
 
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
                 throw new ArgumentException("coordinates");
             }
 
-           this.Coordinates = new ReadOnlyCollection<double>(coordinates);
+            this.Coordinates = new ReadOnlyCollection<double>(coordinates);
         }
 
         /// <summary>

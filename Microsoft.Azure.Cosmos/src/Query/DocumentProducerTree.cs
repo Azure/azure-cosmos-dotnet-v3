@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DocumentProducerTree.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -433,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public async Task<bool> MoveNextAsync(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
-                function:this.MoveNextAsyncImplementation,
+                function: this.MoveNextAsyncImplementation,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }
@@ -447,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public async Task<bool> MoveNextIfNotSplit(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
-                function:this.MoveNextIfNotSplitAsyncImplementation,
+                function: this.MoveNextIfNotSplitAsyncImplementation,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }
@@ -460,7 +458,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public Task BufferMoreDocuments(CancellationToken token)
         {
             return this.ExecuteWithSplitProofing(
-                function:this.BufferMoreDocumentsImplementation,
+                function: this.BufferMoreDocumentsImplementation,
                 functionNeedsBeReexecuted: true,
                 cancellationToken: token);
         }

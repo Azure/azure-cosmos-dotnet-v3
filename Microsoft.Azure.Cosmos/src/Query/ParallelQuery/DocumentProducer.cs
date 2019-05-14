@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DocumentProducer.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -644,11 +642,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     return page;
                 }),
-                onError: ((exceptionDispatchInfo) => 
+                onError: (exceptionDispatchInfo) => 
                 {
                     exceptionDispatchInfo.Throw();
                     return null;
-                }));
+                });
 
             this.previousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = feedResponse.ResponseContinuation;

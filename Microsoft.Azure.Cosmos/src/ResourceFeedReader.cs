@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Resource"/>
     /// <seealso cref="DocumentClient"/>
     /// <seealso cref="ResourceFeedReaderClientExtensions"/>
-    internal sealed class ResourceFeedReader<T> : IEnumerable<T> where T : JsonSerializable, new()
+    internal sealed class ResourceFeedReader<T> : IEnumerable<T>
+        where T : JsonSerializable, new()
     {
         private readonly DocumentQuery<T> documentQuery;
 

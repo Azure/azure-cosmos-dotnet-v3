@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JsonNavigator.JsonBinaryNavigator.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -35,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentNullException($"{nameof(buffer)} can not be null");
                 }
 
-                if(buffer.Length < 1)
+                if (buffer.Length < 1)
                 {
                     throw new ArgumentException($"{nameof(buffer)} must have at least one byte.");
                 }
