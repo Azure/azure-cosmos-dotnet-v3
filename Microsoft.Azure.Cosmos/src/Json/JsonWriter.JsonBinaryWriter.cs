@@ -310,9 +310,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 this.JsonObjectState.RegisterToken(jsonTokenType);
 
-                foreach (byte byteValue in rawJsonToken)
+                if (rawJsonToken is ArraySegment<byte> jsonArraySegment)
                 {
-                    this.binaryWriter.Write(byteValue);
+                    this.binaryWriter.Write(jsonArraySegment.Array, jsonArraySegment.Offset, jsonArraySegment.Count);
+                }
+                else
+                {
+                    this.binaryWriter.Write(rawJsonToken.ToArray());
                 }
 
                 this.bufferedContexts.Peek().Count++;
