@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             const string expectedRID = "something";
             const string partitionKey = "pk";
+            // Using "test" as container name because the Mocked DocumentClient has it hardcoded
             Uri expectedRequestUri = new Uri($"/dbs/conflictsDb/colls/test/docs/{expectedRID}", UriKind.Relative);
             CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.Read, request.OperationType);
@@ -68,10 +69,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(someJsonObject.ToString(), container.Conflicts.ReadConflictContent<JObject>(conflictSettings).ToString());
         }
 
+        [TestMethod]
+        public async Task DeleteSendsCorrectPayload()
+        {
+            const string expectedId = "something";
+            const string partitionKey = "pk";
+            Uri expectedRequestUri = new Uri($"/dbs/conflictsDb/colls/conflictsColl/conflicts/{expectedId}", UriKind.Relative);
+            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+                Assert.AreEqual(OperationType.Delete, request.OperationType);
+                Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
+                Assert.AreEqual(expectedRequestUri, request.RequestUri);
+                return TestHandler.ReturnSuccess();
+            });
+
+            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            conflictSettings.Id = expectedId;
+
+            await container.Conflicts.DeleteConflictAsync(partitionKey, conflictSettings);
+        }
+
         private static CosmosContainerCore GetMockedContainer(Func<CosmosRequestMessage,
             CancellationToken, Task<CosmosResponseMessage>> handlerFunc)
         {
-            return new CosmosContainerCore(CosmosConflictTests.GetMockedClientContext(handlerFunc), MockCosmosUtil.CreateMockDatabase("conflictsDb").Object, "conflicts");
+            return new CosmosContainerCore(CosmosConflictTests.GetMockedClientContext(handlerFunc), MockCosmosUtil.CreateMockDatabase("conflictsDb").Object, "conflictsColl");
         }
 
         private static CosmosClientContext GetMockedClientContext(
