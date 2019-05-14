@@ -171,7 +171,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOperationType == OperationType.Upsert ||
                 requestOperationType == OperationType.ReadFeed ||
                 requestOperationType == OperationType.Query ||
-                requestOperationType == OperationType.SqlQuery;
+                requestOperationType == OperationType.SqlQuery ||
+                requestOperationType == OperationType.Batch;
         }
 
         internal static bool IsAllowedRequestHeader(string headerName)
@@ -332,6 +333,7 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.Upsert ||
                 request.OperationType == OperationType.Query ||
                 request.OperationType == OperationType.SqlQuery ||
+                request.OperationType == OperationType.Batch ||
                 request.OperationType == OperationType.ExecuteJavaScript)
             {
                 httpMethod = HttpMethod.Post;
