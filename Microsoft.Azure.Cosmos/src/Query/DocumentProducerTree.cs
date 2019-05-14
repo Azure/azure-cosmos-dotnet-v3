@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public DocumentProducerTree(
             PartitionKeyRange partitionKeyRange,
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
+            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<DocumentFeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<DocumentProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<DocumentProducerTree> documentProducerTreeComparer,
@@ -544,7 +544,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>A function that given a partition key range and continuation token will create a document producer.</returns>
         private static Func<PartitionKeyRange, string, DocumentProducerTree> CreateDocumentProducerTreeCallback(
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
+            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<DocumentFeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             Action<DocumentProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
             IComparer<DocumentProducerTree> documentProducerTreeComparer,

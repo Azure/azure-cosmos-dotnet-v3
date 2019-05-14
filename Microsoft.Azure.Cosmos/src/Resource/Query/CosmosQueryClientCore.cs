@@ -35,11 +35,6 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
-        internal override IDocumentClientRetryPolicy GetRetryPolicy()
-        {
-            return this.DocumentQueryClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-        }
-
         internal override Task<CollectionCache> GetCollectionCacheAsync()
         {
             return this.DocumentQueryClient.GetCollectionCacheAsync();
@@ -67,11 +62,11 @@ namespace Microsoft.Azure.Cosmos
                 allowNonValueAggregateQuery);
         }
 
-        internal override async Task<CosmosQueryResponse> ExecuteItemQueryAsync(
+        internal override async Task<QueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosQueryRequestOptions requestOptions,
+            QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
@@ -88,6 +83,34 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(requestOptions, resourceType, message);
+        }
+
+        internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            Action<CosmosRequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: null,
+                partitionKey: null,
+                cosmosContainerCore: this.cosmosContainerCore,
+                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken))
+            {
+                // Syntax exception are argument exceptions and thrown to the user.
+                message.EnsureSuccessStatusCode();
+                partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+            }
+                
+            return partitionedQueryExecutionInfo;
         }
 
         internal override Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
@@ -168,8 +191,8 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        private CosmosQueryResponse GetCosmosElementResponse(
-            CosmosQueryRequestOptions requestOptions,
+        private QueryResponse GetCosmosElementResponse(
+            QueryRequestOptions requestOptions,
             ResourceType resourceType,
             CosmosResponseMessage cosmosResponseMessage)
         {
@@ -177,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
-                    return CosmosQueryResponse.CreateFailure(
+                    return QueryResponse.CreateFailure(
                         CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),
                         cosmosResponseMessage.StatusCode,
                         cosmosResponseMessage.RequestMessage,
@@ -239,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 int itemCount = cosmosArray.Count;
-                return CosmosQueryResponse.CreateSuccess(
+                return QueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
                     responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers),

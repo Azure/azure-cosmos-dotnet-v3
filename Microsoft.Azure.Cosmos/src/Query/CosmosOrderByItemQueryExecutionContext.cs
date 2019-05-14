@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using System.Net;
 
     /// <summary>
     /// CosmosOrderByItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -385,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
                     this.TraceWarning($"Order by continuation token can not be empty: {requestContinuation}.");
-                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                    throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                 }
 
                 foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
@@ -393,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
                         this.TraceWarning($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
-                        throw new BadRequestException(RMResources.InvalidContinuationToken);
+                        throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                     }
                 }
 
@@ -403,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 this.TraceWarning($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
 
-                throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
+                throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
             }
         }
 
@@ -478,7 +479,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                     CultureInfo.InvariantCulture,
                                     "Invalid Rid in the continuation token {0} for OrderBy~Context.",
                                     continuationToken.CompositeContinuationToken.Token));
-                                throw new BadRequestException(RMResources.InvalidContinuationToken);
+                                throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                             }
 
                             resourceIds.Add(orderByResult.Rid, rid);
@@ -492,7 +493,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                     CultureInfo.InvariantCulture,
                                     "Invalid Rid in the continuation token {0} for OrderBy~Context.",
                                     continuationToken.CompositeContinuationToken.Token));
-                                throw new BadRequestException(RMResources.InvalidContinuationToken);
+                                throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                             }
 
                             continuationRidVerified = true;
@@ -517,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
                     if (!moveNextResponse.successfullyMovedNext)
                     {
                         if(moveNextResponse.failureResponse != null)

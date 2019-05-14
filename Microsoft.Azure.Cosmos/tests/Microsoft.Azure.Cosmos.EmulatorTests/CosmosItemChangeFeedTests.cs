@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateRandomItems(batchSize, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
             {
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Insert another batch of 25 and use the last continuation token from the first cycle
             await this.CreateRandomItems(batchSize, randomPartitionKey: true);
-            CosmosFeedIterator setIteratorNew =
+            FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(lastcontinuation);
 
             while (setIteratorNew.HasMoreResults)
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string corruptedTokenSerialized = JsonConvert.SerializeObject(corruptedTokens);
 
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedIterator setIteratorNew =
+            FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
             CosmosResponseMessage responseMessage =
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateRandomItems(2, randomPartitionKey: true);
             CosmosItemsCore itemsCore = (CosmosItemsCore)this.Container.Items;
-            CosmosFeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
             {
@@ -211,9 +211,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (true)
             {
-                CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
+                ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue };
 
-                CosmosFeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
+                FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (CosmosResponseMessage responseMessage =
                     await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StandByFeedIterator_VerifyRefreshIsCalledOnSplit()
         {
-            CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(this.Container, "", 100, new CosmosChangeFeedRequestOptions());
+            CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(this.Container, "", 100, new ChangeFeedRequestOptions());
             using (CosmosResponseMessage responseMessage =
                     await iterator.FetchNextSetAsync(this.cancellationToken))
             {
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private class CosmosChangeFeedResultSetIteratorCoreMock : CosmosChangeFeedResultSetIteratorCore
+        private class CosmosChangeFeedResultSetIteratorCoreMock : ChangeFeedResultSetIteratorCore
         {
             public int Iteration = 0;
             public bool HasCalledForceRefresh = false;
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosContainerCore cosmosContainer,
                 string continuationToken,
                 int? maxItemCount,
-                CosmosChangeFeedRequestOptions options) : base(
+                ChangeFeedRequestOptions options) : base(
                     clientContext: cosmosContainer.ClientContext,
                     cosmosContainer: cosmosContainer,
                     continuationToken: continuationToken,
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string continuationToken,
                 string partitionKeyRangeId,
                 int? maxItemCount,
-                CosmosChangeFeedRequestOptions options,
+                ChangeFeedRequestOptions options,
                 CancellationToken cancellationToken)
             {
                 if (this.Iteration++ == 0)

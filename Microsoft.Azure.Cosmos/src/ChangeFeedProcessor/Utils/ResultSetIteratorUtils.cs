@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
     internal static class ResultSetIteratorUtils
     {
-        public static CosmosChangeFeedPartitionKeyResultSetIteratorCore BuildResultSetIterator(
+        public static ChangeFeedPartitionKeyResultSetIteratorCore BuildResultSetIterator(
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             bool startFromBeginning
             )
         {
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions();
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
             if (startTime.HasValue)
             {
                 requestOptions.StartTime = startTime.Value;
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 requestOptions.StartTime = DateTime.MinValue;
             }
 
-            return new CosmosChangeFeedPartitionKeyResultSetIteratorCore(
+            return new ChangeFeedPartitionKeyResultSetIteratorCore(
                 partitionKeyRangeId: partitionKeyRangeId,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,

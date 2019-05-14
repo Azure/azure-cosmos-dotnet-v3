@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal CosmosRequestOptions RequestOptions { get; set; }
+        internal RequestOptions RequestOptions { get; set; }
 
         internal ResourceType ResourceType { get; set; }
 
@@ -155,8 +155,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
             }
-#endif
-#if !DEBUG
+#else
             await Task.CompletedTask;
 #endif
         }

@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            CosmosContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Body = UserDefinedFunctionsTests.function,
             };
 
-            CosmosUserDefinedFunctionResponse response =
+            UserDefinedFunctionResponse response =
                 await this.scripts.CreateUserDefinedFunctionAsync(settings);
             double reqeustCharge = response.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosUserDefinedFunctionSettings updatedSettings = response.Resource;
             updatedSettings.Body = @"function(amt) { return amt * 0.42; }";
 
-            CosmosUserDefinedFunctionResponse replaceResponse = await this.scripts.ReplaceUserDefinedFunctionAsync(updatedSettings);
+            UserDefinedFunctionResponse replaceResponse = await this.scripts.ReplaceUserDefinedFunctionAsync(updatedSettings);
             UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(updatedSettings, replaceResponse);
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");
             
-             CosmosFeedIterator<dynamic> feedIterator = this.container.Items.CreateItemQuery<dynamic>(
+             FeedIterator<dynamic> feedIterator = this.container.Items.CreateItemQuery<dynamic>(
                  sqlQueryDefinition: sqlQuery,
                  partitionKey: "Done");
 
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await CreateRandomUdf();
 
             HashSet<string> settings = new HashSet<string>();
-            CosmosFeedIterator<CosmosUserDefinedFunctionSettings> iter = this.scripts.GetUserDefinedFunctionIterator(); ;
+            FeedIterator<CosmosUserDefinedFunctionSettings> iter = this.scripts.GetUserDefinedFunctionIterator(); ;
             while (iter.HasMoreResults)
             {
                 foreach (CosmosUserDefinedFunctionSettings storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
         }
 
-        private static void ValidateUserDefinedFunctionSettings(CosmosUserDefinedFunctionSettings udfSettings, CosmosUserDefinedFunctionResponse cosmosResponse)
+        private static void ValidateUserDefinedFunctionSettings(CosmosUserDefinedFunctionSettings udfSettings, UserDefinedFunctionResponse cosmosResponse)
         {
             CosmosUserDefinedFunctionSettings settings = cosmosResponse.Resource;
             Assert.AreEqual(udfSettings.Body, settings.Body,
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cosmosResponse.CurrentResourceQuotaUsage);
         }
 
-        private async Task<CosmosUserDefinedFunctionResponse> CreateRandomUdf()
+        private async Task<UserDefinedFunctionResponse> CreateRandomUdf()
         {
             string id = Guid.NewGuid().ToString();
             string function = UserDefinedFunctionsTests.function;
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             //Create a user defined function 
-            CosmosUserDefinedFunctionResponse createResponse = await this.scripts.CreateUserDefinedFunctionAsync(
+            UserDefinedFunctionResponse createResponse = await this.scripts.CreateUserDefinedFunctionAsync(
                 userDefinedFunctionSettings: settings,
                 cancellation: this.cancellationToken);
 

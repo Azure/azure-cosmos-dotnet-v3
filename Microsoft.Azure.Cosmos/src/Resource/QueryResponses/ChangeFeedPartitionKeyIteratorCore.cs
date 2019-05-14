@@ -12,24 +12,31 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Change Feed Iterator for a particular Partition Key Range
     /// </summary>
-    internal class CosmosChangeFeedPartitionKeyResultSetIteratorCore : CosmosFeedIterator
+    internal class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
     {
         private readonly CosmosClientContext clientContext;
         private readonly CosmosContainerCore cosmosContainer;
-        private readonly CosmosChangeFeedRequestOptions changeFeedOptions;
+        private readonly ChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
         private string partitionKeyRangeId;
 
-        internal CosmosChangeFeedPartitionKeyResultSetIteratorCore(
+        internal ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
             CosmosContainerCore cosmosContainer,
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions options)
         {
-            if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
-            if (partitionKeyRangeId == null) throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            if (cosmosContainer == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosContainer));
+            }
+
+            if (partitionKeyRangeId == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            }
 
             this.clientContext = clientContext;
             this.cosmosContainer = cosmosContainer;
@@ -69,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options,
+            ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
@@ -79,10 +86,11 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                requestEnricher: request => {
-                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                    CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
+                requestEnricher: request =>
+                {
+                    ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                    ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
                 responseCreator: response => response,
                 partitionKey: null,

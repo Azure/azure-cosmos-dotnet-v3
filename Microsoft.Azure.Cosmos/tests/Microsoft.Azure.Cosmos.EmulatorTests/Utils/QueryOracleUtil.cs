@@ -638,7 +638,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 IDocumentQuery<Document> selectAllQuery = client.CreateDocumentQuery(collectionLink, feedOptions: new FeedOptions { MaxItemCount = pageSize, EnableScanInQuery = allowScan, EnableCrossPartitionQuery = true }).AsDocumentQuery();
                 while (selectAllQuery.HasMoreResults)
                 {
-                    FeedResponse<dynamic> queryResultsPage = await selectAllQuery.ExecuteNextAsync();
+                    DocumentFeedResponse<dynamic> queryResultsPage = await selectAllQuery.ExecuteNextAsync();
                     System.Diagnostics.Trace.TraceInformation("ReadFeed continuation token: {0}, SessionToken: {1}", queryResultsPage.ResponseContinuation, queryResultsPage.SessionToken);
                     queriedDocuments.AddRange(queryResultsPage);
                 }
@@ -688,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 while (docQuery.HasMoreResults)
                 {
                     DateTime startTime = DateTime.Now;
-                    FeedResponse<dynamic> queryResultsPage = await QueryWithRetry(docQuery, query.ToString());
+                    DocumentFeedResponse<dynamic> queryResultsPage = await QueryWithRetry(docQuery, query.ToString());
                     activityIDsAllQueryPages.Add(queryResultsPage.ActivityId);
                     totalQueryLatencyAllPages += (DateTime.Now - startTime);
                     foreach (JObject result in queryResultsPage)
@@ -744,7 +744,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             }
         }
 
-        private static async Task<FeedResponse<dynamic>> QueryWithRetry(IDocumentQuery<dynamic> query, string queryString)
+        private static async Task<DocumentFeedResponse<dynamic>> QueryWithRetry(IDocumentQuery<dynamic> query, string queryString)
         {
             int nMaxRetry = 5;
 

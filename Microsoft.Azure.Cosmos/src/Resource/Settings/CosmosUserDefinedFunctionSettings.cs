@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
     ///     .UseParameter("@expensive", 9000)
     ///     .UseParameter("@status", "Done");
     ///
-    /// CosmosFeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
+    /// FeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
     ///     sqlQueryDefinition: sqlQuery,
     ///     partitionKey: "Done");
     ///
