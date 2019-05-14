@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <summary>
-        /// Get <see cref="CosmosUserDefinedFunctionSettings"/> implicitly from <see cref="CosmosUserDefinedFunctionResponse"/>
+        /// Get <see cref="CosmosUserDefinedFunctionSettings"/> implicitly from <see cref="UserDefinedFunctionResponse"/>
         /// </summary>
         /// <param name="response">UserDefinedFunctionResponse</param>
         public static implicit operator CosmosUserDefinedFunctionSettings(UserDefinedFunctionResponse response)

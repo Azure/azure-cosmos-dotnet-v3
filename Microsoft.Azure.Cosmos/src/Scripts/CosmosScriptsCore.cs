@@ -24,10 +24,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             this.clientContext = clientContext;
         }
 
-        public override Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
+        public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellation = default(CancellationToken))
         {
             CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings(id, body);
@@ -40,20 +40,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosStoredProcedureSettings>(
+            return new FeedIteratorCore<CosmosStoredProcedureSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
                 this.StoredProcedureFeedRequestExecutor);
         }
 
-        public override Task<CosmosStoredProcedureResponse> ReadStoredProcedureAsync(
+        public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -69,10 +69,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosStoredProcedureResponse> ReplaceStoredProcedureAsync(
+        public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
             string id,
             string body,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellation = default(CancellationToken))
         {
             CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings(id, body);
@@ -85,9 +85,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosStoredProcedureResponse> DeleteStoredProcedureAsync(
+        public override Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -103,11 +103,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosStoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
+        public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
             object partitionKey,
             string id,
             TInput input,
-            CosmosStoredProcedureRequestOptions requestOptions = null,
+            StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -144,9 +144,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponse<TOutput>(response);
         }
 
-        public override Task<CosmosTriggerResponse> CreateTriggerAsync(
+        public override Task<TriggerResponse> CreateTriggerAsync(
             CosmosTriggerSettings triggerSettings, 
-            CosmosRequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null, 
             CancellationToken cancellation = default(CancellationToken))
         {
             if (triggerSettings == null)
@@ -172,20 +172,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public override FeedIterator<CosmosTriggerSettings> GetTriggerIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosTriggerSettings>(
+            return new FeedIteratorCore<CosmosTriggerSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
                 this.ContainerFeedRequestExecutor);
         }
 
-        public override Task<CosmosTriggerResponse> ReadTriggerAsync(
+        public override Task<TriggerResponse> ReadTriggerAsync(
             string id,
-            CosmosRequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null, 
             CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -201,9 +201,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosTriggerResponse> ReplaceTriggerAsync(
+        public override Task<TriggerResponse> ReplaceTriggerAsync(
             CosmosTriggerSettings triggerSettings, 
-            CosmosRequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null, 
             CancellationToken cancellation = default(CancellationToken))
         {
             if (triggerSettings == null)
@@ -229,9 +229,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosTriggerResponse> DeleteTriggerAsync(
+        public override Task<TriggerResponse> DeleteTriggerAsync(
             string id,
-            CosmosRequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null, 
             CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -247,9 +247,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
+        public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings, 
-            CosmosRequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null, 
             CancellationToken cancellation = default(CancellationToken))
         {
             if (userDefinedFunctionSettings == null)
@@ -275,20 +275,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public override FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosUserDefinedFunctionSettings>(
+            return new FeedIteratorCore<CosmosUserDefinedFunctionSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
                 this.UserDefinedFunctionFeedRequestExecutor);
         }
 
-        public override Task<CosmosUserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
+        public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
             string id, 
-            CosmosRequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null, 
             CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -304,9 +304,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosUserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
+        public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings, 
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellation = default(CancellationToken))
         {
             if (userDefinedFunctionSettings == null)
@@ -332,9 +332,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override Task<CosmosUserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
+        public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
             string id, 
-            CosmosRequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null, 
             CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -350,10 +350,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        private Task<CosmosFeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellation)
         {
@@ -366,10 +366,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        private Task<CosmosFeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
+        private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellation)
         {
@@ -382,10 +382,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        private Task<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>> UserDefinedFunctionFeedRequestExecutor(
+        private Task<FeedResponse<CosmosUserDefinedFunctionSettings>> UserDefinedFunctionFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellation)
         {
@@ -398,11 +398,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        private Task<CosmosStoredProcedureResponse> ProcessStoredProcedureOperationAsync(
+        private Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
             string id,
             OperationType operationType,
             Stream streamPayload,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellation)
         {
             Uri linkUri = this.clientContext.CreateLink(
@@ -418,11 +418,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        private Task<CosmosStoredProcedureResponse> ProcessStoredProcedureOperationAsync(
+        private Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellation)
         {
             Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
@@ -437,11 +437,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
-        private Task<CosmosTriggerResponse> ProcessTriggerOperationAsync(
+        private Task<TriggerResponse> ProcessTriggerOperationAsync(
             string id,
             OperationType operationType,
             Stream streamPayload,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellation)
         {
             Uri linkUri = this.clientContext.CreateLink(
@@ -457,11 +457,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        private Task<CosmosTriggerResponse> ProcessTriggerOperationAsync(
+        private Task<TriggerResponse> ProcessTriggerOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellation)
         {
             Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             OperationType operationType,
             object partitionKey,
             Stream streamPayload,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellation)
         {
             return this.clientContext.ProcessResourceOperationStreamAsync(
@@ -497,11 +497,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellation);
         }
 
-        private Task<CosmosUserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
+        private Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
             string id,
             OperationType operationType,
             Stream streamPayload,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellation)
         {
             Uri linkUri = this.clientContext.CreateLink(
@@ -517,11 +517,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        private Task<CosmosUserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
+        private Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellation)
         {
             Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
@@ -536,17 +536,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
 
-        private Task<CosmosFeedResponse<T>> GetIterator<T>(
+        private Task<FeedResponse<T>> GetIterator<T>(
             int? maxItemCount,
             string continuationToken,
             ResourceType resourceType,
             object state,
-            CosmosRequestOptions options,
+            RequestOptions options,
             CancellationToken cancellation)
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<T>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<T>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: resourceType,
                 operationType: OperationType.ReadFeed,
@@ -556,8 +556,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: null,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
                 cancellationToken: cancellation);

@@ -11,12 +11,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// The cosmos stored procedure response
     /// </summary>
-    public class CosmosStoredProcedureExecuteResponse<T> : CosmosResponse<T>
+    public class StoredProcedureExecuteResponse<T> : Response<T>
     {
         /// <summary>
-        /// Create a <see cref="CosmosStoredProcedureExecuteResponse{T}"/> as a no-op for mock testing
+        /// Create a <see cref="StoredProcedureExecuteResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        public CosmosStoredProcedureExecuteResponse() : base()
+        public StoredProcedureExecuteResponse() : base()
         {
 
         }
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal CosmosStoredProcedureExecuteResponse(
+        internal StoredProcedureExecuteResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
            T response) : base(
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <value>
         /// Output from console.log() statements in a stored procedure.
         /// </value>
-        /// <seealso cref="CosmosStoredProcedureRequestOptions.EnableScriptLogging"/>
+        /// <seealso cref="StoredProcedureRequestOptions.EnableScriptLogging"/>
         public virtual string ScriptLog
         {
             get
