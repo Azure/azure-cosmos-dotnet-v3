@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
             mockContainer
-                .Setup(c => c.ReadAsync(It.IsAny<CosmosContainerRequestOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(c => c.ReadAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
             Mock<CosmosContainers> mockContainers = new Mock<CosmosContainers>();
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
                     It.IsAny<int?>(), 
-                    It.IsAny<CosmosRequestOptions>(), 
+                    It.IsAny<RequestOptions>(), 
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerResponse response = await CosmosContainerFluentDefinitionForCreate.CreateAsync();
 
-            mockContainer.Verify(c => c.ReadAsync(It.IsAny<CosmosContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockContainer.Verify(c => c.ReadAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.CreateContainerAsync(
                     It.IsAny<CosmosContainerSettings>(),
                     It.Is<int?>((rus) => rus == throughput),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             mockContainers.Verify(c => c.CreateContainerAsync(
                     It.IsAny<CosmosContainerSettings>(),
                     It.Is<int?>((rus) => rus == throughput),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.TimeToLivePropertyPath.Equals(path)),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             mockContainers.Verify(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.TimeToLivePropertyPath.Equals(path)),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             mockContainers.Verify(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             mockContainers.Verify(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             mockContainers.Verify(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             mockContainers.Verify(c => c.CreateContainerAsync(
                     It.Is<CosmosContainerSettings>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),
                     It.IsAny<int?>(),
-                    It.IsAny<CosmosRequestOptions>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
         }
     }
