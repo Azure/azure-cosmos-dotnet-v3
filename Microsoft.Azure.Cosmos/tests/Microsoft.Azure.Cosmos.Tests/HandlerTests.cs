@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // User operations
             foreach (HttpStatusCode code in testHttpStatusCodes)
             {
-                CosmosItemRequestOptions options = new CosmosItemRequestOptions();
+                ItemRequestOptions options = new ItemRequestOptions();
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Meta-data operations
             foreach (HttpStatusCode code in testHttpStatusCodes)
             {
-                CosmosContainerRequestOptions options = new CosmosContainerRequestOptions();
+                ContainerRequestOptions options = new ContainerRequestOptions();
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string PropertyKey = "propkey";
             const string Condition = "*";
             object propertyValue = Encoding.UTF8.GetBytes("test");
-            CosmosRequestOptions options = new CosmosItemRequestOptions
+            RequestOptions options = new ItemRequestOptions
             {
                 Properties = new Dictionary<string, object>(new List<KeyValuePair<string, object>> {
                     new KeyValuePair<string, object>(PropertyKey, propertyValue)
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             const string Condition = "*";
             const string SessionToken = "test";
-            CosmosItemRequestOptions options = new CosmosItemRequestOptions
+            ItemRequestOptions options = new ItemRequestOptions
             {
                 AccessCondition = new AccessCondition
                 {

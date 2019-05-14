@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(request));
             }
 
-            CosmosRequestOptions promotedRequestOptions = request.RequestOptions;
+            RequestOptions promotedRequestOptions = request.RequestOptions;
             if (promotedRequestOptions != null)
             {
                 // Fill request options
@@ -43,17 +43,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // Validate the request consistency compatibility with account consistency
                 // Type based access context for requested consistency preferred for performance
                 Cosmos.ConsistencyLevel? consistencyLevel = null;
-                if (promotedRequestOptions is CosmosItemRequestOptions)
+                if (promotedRequestOptions is ItemRequestOptions)
                 {
-                    consistencyLevel = (promotedRequestOptions as CosmosItemRequestOptions).ConsistencyLevel;
+                    consistencyLevel = (promotedRequestOptions as ItemRequestOptions).ConsistencyLevel;
                 }
-                else if (promotedRequestOptions is CosmosQueryRequestOptions)
+                else if (promotedRequestOptions is QueryRequestOptions)
                 {
-                    consistencyLevel = (promotedRequestOptions as CosmosQueryRequestOptions).ConsistencyLevel;
+                    consistencyLevel = (promotedRequestOptions as QueryRequestOptions).ConsistencyLevel;
                 }
-                else if (promotedRequestOptions is CosmosStoredProcedureRequestOptions)
+                else if (promotedRequestOptions is StoredProcedureRequestOptions)
                 {
-                    consistencyLevel = (promotedRequestOptions as CosmosStoredProcedureRequestOptions).ConsistencyLevel;
+                    consistencyLevel = (promotedRequestOptions as StoredProcedureRequestOptions).ConsistencyLevel;
                 }
 
                 if (consistencyLevel.HasValue)
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
             object partitionKey,
             Stream streamPayload,
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
             object partitionKey,
             Stream streamPayload,

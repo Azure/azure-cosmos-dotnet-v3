@@ -21,19 +21,20 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosDatabasesCore : CosmosDatabases
     {
-        private readonly CosmosClientContext clientContext;
         private readonly ConcurrentDictionary<string, CosmosDatabase> databasesCache;
 
         protected internal CosmosDatabasesCore(CosmosClientContext clientContext)
         {
-            this.clientContext = clientContext;
+            this.ClientContext = clientContext;
             this.databasesCache = new ConcurrentDictionary<string, CosmosDatabase>();
         }
+
+        internal CosmosClientContext ClientContext { get; }
 
         public override Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
-                CosmosRequestOptions requestOptions = null,
+                RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosDatabaseSettings databaseSettings = this.PrepareCosmosDatabaseSettings(id);
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             // Doing a Read before Create will give us better latency for existing databases
@@ -84,17 +85,17 @@ namespace Microsoft.Azure.Cosmos
                 // TODO: Argument check and singleton database
                 this.databasesCache.GetOrAdd(
                     id,
-                    keyName => new CosmosDatabaseCore(this.clientContext, keyName));
+                    keyName => new CosmosDatabaseCore(this.ClientContext, keyName));
 
 
         public override Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                 Stream streamPayload,
                 int? throughput = null,
-                CosmosRequestOptions requestOptions = null,
+                RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
@@ -118,14 +119,14 @@ namespace Microsoft.Azure.Cosmos
                 Id = id
             };
 
-            this.clientContext.ValidateResource(databaseSettings.Id);
+            this.ClientContext.ValidateResource(databaseSettings.Id);
             return databaseSettings;
         }
 
         internal Task<DatabaseResponse> CreateDatabaseAsync(
                     CosmosDatabaseSettings databaseSettings,
                     int? throughput = null,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateDatabaseStreamAsync(
@@ -134,20 +135,20 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateDatabaseResponse(this[databaseSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this[databaseSettings.Id], response);
         }
 
         private Task<FeedResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
             Debug.Assert(state == null);
 
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosDatabaseSettings>>(
+            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<CosmosDatabaseSettings>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,
@@ -157,10 +158,10 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosDatabaseSettings>(response),
+                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosDatabaseSettings>(response),
                 cancellationToken: cancellationToken);
         }
     }
