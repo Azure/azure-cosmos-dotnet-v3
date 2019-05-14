@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         public static async Task<string> GetMonitoredContainerRidAsync(
             this CosmosContainer monitoredContainer,
             string suggestedMonitoredRid,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             if (!string.IsNullOrEmpty(suggestedMonitoredRid))
             {

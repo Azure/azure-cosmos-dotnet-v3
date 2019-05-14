@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Replace a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ContainerResponse> ReplaceAsync(
             CosmosContainerSettings containerSettings,
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Delete a <see cref="CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ContainerResponse> DeleteAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Gets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<int?> ReadProvisionedThroughputAsync(
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task ReplaceProvisionedThroughputAsync(
             int throughput,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public abstract Task<CosmosResponseMessage> ReadStreamAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Replace a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<CosmosResponseMessage> ReplaceStreamAsync(
             Stream streamPayload,
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Delete a <see cref="CosmosContainerSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -243,6 +243,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
         public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
     }
 }

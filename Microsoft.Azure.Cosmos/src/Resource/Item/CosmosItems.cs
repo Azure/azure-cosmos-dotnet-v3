@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellation = default);
 
         /// <summary>
         /// Creates a item as an asynchronous operation in the Azure Cosmos service.
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             T item,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Reads a item from the Azure Cosmos service as an asynchronous operation.
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellation = default);
 
         /// <summary>
         /// Reads a item from the Azure Cosmos service as an asynchronous operation.
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Upserts an item stream as an asynchronous operation in the Azure Cosmos service.
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellation = default);
 
         /// <summary>
         /// Upserts an item as an asynchronous operation in the Azure Cosmos service.
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             T item,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellation = default);
 
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             T item,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellation = default);
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Gets an iterator to go through all the items for the container

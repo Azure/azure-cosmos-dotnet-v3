@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellation = default)
         {
             if (containerSettings == null)
             {
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
 
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerSettings containerSettings,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             if (containerSettings == null)
             {
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
             return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellation);
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                     Stream streamPayload,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellation = default)
         {
             return this.ProcessCollectionCreateAsync(
                 streamPayload: streamPayload,
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             int? throughput,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             return this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.database.LinkUri,

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellation = default(CancellationToken))
+                CancellationToken cancellation = default)
         {
             CosmosDatabaseSettings databaseSettings = this.PrepareCosmosDatabaseSettings(id);
             return this.CreateDatabaseAsync(
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             // Doing a Read before Create will give us better latency for existing databases
             CosmosDatabase database = this[id];
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
                 Stream streamPayload,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellation = default(CancellationToken))
+                CancellationToken cancellation = default)
         {
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
             return this.clientContext.ProcessResourceOperationStreamAsync(
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosDatabaseSettings databaseSettings,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellation = default)
         {
             Task<CosmosResponseMessage> response = this.CreateDatabaseStreamAsync(
                 streamPayload: CosmosResource.ToStream(databaseSettings),

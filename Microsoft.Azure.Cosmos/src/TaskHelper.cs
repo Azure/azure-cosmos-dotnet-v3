@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class TaskHelper
     {
-        static public Task InlineIfPossible(Func<Task> function, IRetryPolicy retryPolicy, CancellationToken cancellation = default(CancellationToken))
+        static public Task InlineIfPossible(Func<Task> function, IRetryPolicy retryPolicy, CancellationToken cancellation = default)
         {
             if (SynchronizationContext.Current == null)
             {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        static public Task<TResult> InlineIfPossible<TResult>(Func<Task<TResult>> function, IRetryPolicy retryPolicy, CancellationToken cancellation = default(CancellationToken))
+        static public Task<TResult> InlineIfPossible<TResult>(Func<Task<TResult>> function, IRetryPolicy retryPolicy, CancellationToken cancellation = default)
         {
             if (SynchronizationContext.Current == null)
             {

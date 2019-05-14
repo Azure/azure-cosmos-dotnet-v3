@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<TriggerResponse> CreateTriggerAsync(
             CosmosTriggerSettings triggerSettings,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellation = default);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Check if a container exists, and if it doesn't, create it.
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerSettings containerSettings,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Check if a container exists, and if it doesn't, create it.
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyPath,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Gets an iterator to go through all the containers for the database
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Gets an iterator to go through all the containers for the database

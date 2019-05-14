@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
            Func<Task<CosmosResponseMessage>> callbackMethod,
            Func<CosmosResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
            Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
-           CancellationToken cancellation = default(CancellationToken))
+           CancellationToken cancellation = default)
         {
             while (true)
             {

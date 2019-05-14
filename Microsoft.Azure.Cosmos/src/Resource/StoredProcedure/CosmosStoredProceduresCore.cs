@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     string body,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellation = default)
         {
             if (string.IsNullOrEmpty(id))
             {

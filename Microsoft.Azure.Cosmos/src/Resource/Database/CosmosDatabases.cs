@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
-                CancellationToken cancellation = default(CancellationToken));
+                CancellationToken cancellation = default);
 
         /// <summary>
         /// Check if a database exists, and if it doesn't, create it.
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellation = default);
 
         /// <summary>
         /// Gets an iterator to go through all the databases for the account
@@ -142,6 +142,6 @@ namespace Microsoft.Azure.Cosmos
                Stream streamPayload,
                int? throughput = null,
                RequestOptions requestOptions = null,
-               CancellationToken cancellation = default(CancellationToken));
+               CancellationToken cancellation = default);
     }
 }

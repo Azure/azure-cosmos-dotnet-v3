@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<TriggerResponse> ReadAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             return this.ProcessAsync(
                 partitionKey: null,
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<TriggerResponse> ReplaceAsync(
                     CosmosTriggerSettings triggerSettings,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellation = default)
         {
             return this.ProcessAsync(
                 partitionKey: null,
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public virtual Task<TriggerResponse> DeleteAsync(
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellation = default)
         {
             return this.ProcessAsync(
                 partitionKey: null,
