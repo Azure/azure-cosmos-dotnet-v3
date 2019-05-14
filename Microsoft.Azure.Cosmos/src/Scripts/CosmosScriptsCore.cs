@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProceduresIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override FeedIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public override FeedIterator<CosmosTriggerSettings> GetTriggersIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellation: cancellation);
         }
 
-        public override FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public override FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionsIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
