@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements to drain (you might get less).</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task that when awaited on will return a feed response.</returns>
-        public abstract Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token);
+        public abstract Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.
@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token that doesn't get used.</param>
         /// <returns>A dummy task to await on.</returns>
-        protected override Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
+        protected override Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             throw new NotImplementedException();
         }

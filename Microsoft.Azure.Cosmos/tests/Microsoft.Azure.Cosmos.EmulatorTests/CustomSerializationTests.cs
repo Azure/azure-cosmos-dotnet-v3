@@ -282,27 +282,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
             //create and read
-            CosmosItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
-            CosmosItemResponse<TestDocument> readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
-            CosmosItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
             readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            CosmosItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
+            ItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
             readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
-            CosmosFeedIterator<TestDocument> setIterator =
+            FeedIterator<TestDocument> feedIterator =
                container.Items.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
-            CosmosFeedResponse<TestDocument> queryResponse = await setIterator.FetchNextSetAsync();
+            FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
             AssertEqual(testDocument, queryResponse.First());
 
             //Will add LINQ test once it is available with new V3 OM 
@@ -460,10 +460,10 @@ function bulkImport(docs) {
             }
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");
-            CosmosFeedIterator<MyObject> setIterator1 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator1 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition2 = new CosmosSqlQueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
-            CosmosFeedIterator<MyObject> setIterator2 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator2 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
 
             List<MyObject> list1 = new List<MyObject>();
             List<MyObject> list2 = new List<MyObject>();

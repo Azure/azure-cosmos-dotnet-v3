@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using System.Net;
 
     /// <summary>
     /// CosmosParallelItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drains.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that when awaited on returns a FeedResponse of results.</returns>
+        /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
         public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints
@@ -200,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 CultureInfo.InvariantCulture,
                                 "Invalid Range in the continuation token {0} for Parallel~Context.",
                                 requestContinuation));
-                            throw new BadRequestException(RMResources.InvalidContinuationToken);
+                            throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                         }
                     }
 
@@ -210,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             CultureInfo.InvariantCulture,
                             "Invalid format for continuation token {0} for Parallel~Context.",
                             requestContinuation));
-                        throw new BadRequestException(RMResources.InvalidContinuationToken);
+                        throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                     }
                 }
                 catch (JsonException ex)
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         requestContinuation,
                         ex.Message));
 
-                    throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
+                    throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                 }
 
                 filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);

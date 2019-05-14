@@ -27,10 +27,10 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
         }
 
-        public override Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
+        public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -63,11 +63,11 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
 
-        public override CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosStoredProcedureSettings>(
+            return new FeedIteratorCore<CosmosStoredProcedureSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -79,15 +79,15 @@ namespace Microsoft.Azure.Cosmos
             this.container,
             id);
 
-        private Task<CosmosFeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
+        private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosStoredProcedureSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosStoredProcedureSettings>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ReadFeed,
@@ -97,8 +97,8 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosStoredProcedureSettings>(response),
                 cancellationToken: cancellationToken);

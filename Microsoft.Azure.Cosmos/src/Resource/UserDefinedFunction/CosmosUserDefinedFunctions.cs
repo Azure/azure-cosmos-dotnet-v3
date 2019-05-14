@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="userDefinedFunctionSettings">The <see cref="CosmosUserDefinedFunctionSettings"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionSettings"/> is not set.</exception>
@@ -78,13 +78,13 @@ namespace Microsoft.Azure.Cosmos
         ///     .UseParameter("@expensive", 9000)
         ///     .UseParameter("@status", "Done");
         ///
-        /// CosmosResultSetIterator<double> setIterator = this.container.Items.CreateItemQuery<double>(
+        /// FeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
         ///     sqlQueryDefinition: sqlQuery,
         ///     partitionKey: "Done");
         ///
-        /// while (setIterator.HasMoreResults)
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach (var tax in await setIterator.FetchNextSetAsync())
+        ///     foreach (var tax in await feedIterator.FetchNextSetAsync())
         ///     {
         ///         Console.WriteLine(tax);
         ///     }
@@ -92,9 +92,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
+        public virtual Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
@@ -120,10 +120,10 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosResultSetIterator<CosmosUserDefinedFunctionSettings> setIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
-        /// while (setIterator.HasMoreResults)
+        /// FeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
+        /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosUserDefinedFunctionSettings settings in await setIterator.FetchNextSetAsync())
+        ///     foreach(CosmosUserDefinedFunctionSettings settings in await feedIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(settings.Id); 
         ///     }
@@ -131,11 +131,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosFeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosUserDefinedFunctionSettings>(
+            return new FeedIteratorCore<CosmosUserDefinedFunctionSettings>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosUserDefinedFunction userDefinedFunction = this.cosmosContainer.UserDefinedFunction["myUserDefinedFunctionId"];
-        /// CosmosUserDefinedFunctionResponse response = await userDefinedFunction.ReadAsync();
+        /// UserDefinedFunctionResponse response = await userDefinedFunction.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -163,16 +163,16 @@ namespace Microsoft.Azure.Cosmos
             this.container, 
             id);
 
-        private Task<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosUserDefinedFunctionSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosUserDefinedFunctionSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosUserDefinedFunctionSettings>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.ReadFeed,
@@ -182,8 +182,8 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosUserDefinedFunctionSettings>(response),
                 cancellationToken: cancellationToken);

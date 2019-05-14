@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos query request options
     /// </summary>
-    public class CosmosQueryRequestOptions : CosmosRequestOptions
+    public class QueryRequestOptions : RequestOptions
     {
         /// <summary>
         ///  Gets or sets the <see cref="ResponseContinuationTokenLimitInKb"/> request option for document query requests in the Azure Cosmos DB service.
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// In some scenarios you need to manage this Session yourself;
         /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="CosmosQueryResponse{T}"/> of the write action on one node
+        /// you would have to send the SessionToken from <see cref="QueryResponse{T}"/> of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
         /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
         /// the read could potentially land on a different node to the write request, where the session was created.
@@ -159,8 +159,8 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
             request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery ? bool.TrueString : bool.FalseString);
 
-            CosmosRequestOptions.SetSessionToken(request, this.SessionToken);
-            CosmosRequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
+            RequestOptions.SetSessionToken(request, this.SessionToken);
+            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
@@ -196,9 +196,9 @@ namespace Microsoft.Azure.Cosmos
             base.FillRequestOptions(request);
         }
 
-        internal CosmosQueryRequestOptions Clone()
+        internal QueryRequestOptions Clone()
         {
-            CosmosQueryRequestOptions queryRequestOptions = new CosmosQueryRequestOptions
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 AccessCondition = this.AccessCondition,
                 RequestContinuation = this.RequestContinuation,

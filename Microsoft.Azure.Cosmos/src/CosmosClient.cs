@@ -5,11 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
-    using System.Text;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB database account.
@@ -75,6 +76,10 @@ namespace Microsoft.Azure.Cosmos
         {
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
+
+            // V3 always assumes assemblies exists
+            // Shall revisit on feedback
+            ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
         }
 
         /// <summary>
@@ -189,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosDatabase database = this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-        /// CosmosContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
         ///]]>
         /// </code>
         /// </example>
@@ -202,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
-        internal CosmosRequestHandler RequestHandler { get; private set; }
+        internal RequestInvokerHandler RequestHandler { get; private set; }
         internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
 
         internal CosmosResponseFactory ResponseFactory =>

@@ -193,12 +193,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_ContinuationIsSet()
+        public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions(){ };
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions(){ };
 
-            CosmosChangeFeedRequestOptions.FillContinuationToken(request, "something");
+            ChangeFeedRequestOptions.FillContinuationToken(request, "something");
             requestOptions.FillRequestOptions(request);
 
             Assert.AreEqual("something", request.Headers.IfNoneMatch);
@@ -206,41 +206,41 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_DefaultValues()
+        public void ChangeFeedRequestOptions_DefaultValues()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { };
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
 
             requestOptions.FillRequestOptions(request);
 
-            Assert.AreEqual(CosmosChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_MaxItemSizeIsSet()
+        public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions() { };
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
 
-            CosmosChangeFeedRequestOptions.FillMaxItemCount(request, 10);
+            ChangeFeedRequestOptions.FillMaxItemCount(request, 10);
             requestOptions.FillRequestOptions(request);
 
             Assert.AreEqual("10", request.Headers[Documents.HttpConstants.HttpHeaders.PageSize]);
-            Assert.AreEqual(CosmosChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
+            Assert.AreEqual(ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue, request.Headers.IfNoneMatch);
             Assert.IsNull(request.Headers[Documents.HttpConstants.HttpHeaders.IfModifiedSince]);
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_ContinuationBeatsStartTime()
+        public void ChangeFeedRequestOptions_ContinuationBeatsStartTime()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions()
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 StartTime = new DateTime(1985, 1, 1)
             };
 
-            CosmosChangeFeedRequestOptions.FillContinuationToken(request, "something");
+            ChangeFeedRequestOptions.FillContinuationToken(request, "something");
             requestOptions.FillRequestOptions(request);
 
             Assert.AreEqual("something", request.Headers.IfNoneMatch);
@@ -248,10 +248,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_AddsStartTime()
+        public void ChangeFeedRequestOptions_AddsStartTime()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions()
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 StartTime = new DateTime(1985, 1, 1, 0, 0,0, DateTimeKind.Utc)
             };
@@ -263,12 +263,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void CosmosChangeFeedRequestOptions_AddsPartitionKeyRangeId()
+        public void ChangeFeedRequestOptions_AddsPartitionKeyRangeId()
         {
             CosmosRequestMessage request = new CosmosRequestMessage();
-            CosmosChangeFeedRequestOptions requestOptions = new CosmosChangeFeedRequestOptions();
+            ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
 
-            CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, "randomPK");
+            ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, "randomPK");
 
             Assert.AreEqual("randomPK", request.PartitionKeyRangeId);
         }
