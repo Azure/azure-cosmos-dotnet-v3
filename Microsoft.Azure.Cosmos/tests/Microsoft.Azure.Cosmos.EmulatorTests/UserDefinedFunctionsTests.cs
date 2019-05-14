@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await CreateRandomUdf();
 
             HashSet<string> settings = new HashSet<string>();
-            FeedIterator<CosmosUserDefinedFunctionSettings> iter = this.scripts.GetUserDefinedFunctionIterator(); ;
+            FeedIterator<CosmosUserDefinedFunctionSettings> iter = this.scripts.GetUserDefinedFunctionsIterator(); ;
             while (iter.HasMoreResults)
             {
                 foreach (CosmosUserDefinedFunctionSettings storedProcedureSettingsEntry in await iter.FetchNextSetAsync())

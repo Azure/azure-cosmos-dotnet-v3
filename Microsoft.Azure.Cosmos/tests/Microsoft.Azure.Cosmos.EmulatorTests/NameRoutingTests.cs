@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // 
                     // read databaseCollection feed.
-                    FeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = cosmosScripts.GetStoredProcedureIterator();
+                    FeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = cosmosScripts.GetStoredProceduresIterator();
                     List<CosmosStoredProcedureSettings> storedProcedures = new List<CosmosStoredProcedureSettings>();
                     while (storedProcedureIter.HasMoreResults)
                     {
