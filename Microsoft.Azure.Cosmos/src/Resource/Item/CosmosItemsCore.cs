@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -525,8 +526,60 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-            return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
+            try
+            {
+                CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
+                return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
+            }
+            catch (DocumentClientException exception)
+            {
+                CosmosResponseMessage message = exception.ToCosmosResponseMessage(request: null);
+                return QueryResponse.CreateFailure(
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(message.Headers),
+                    requestMessage: null,
+                    errorMessage: message.ErrorMessage,
+                    statusCode: message.StatusCode,
+                    error: message.Error);
+            }
+            catch (CosmosException exception)
+            {
+                return QueryResponse.CreateFailure(
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(exception.Headers),
+                    requestMessage: null,
+                    errorMessage: exception.Message,
+                    statusCode: exception.StatusCode,
+                    error: exception.Error);
+            }
+            catch (AggregateException ae)
+            {
+                AggregateException innerExceptions = ae.Flatten();
+                Exception exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException);
+                CosmosException cosmosException = exception as CosmosException;
+                if (cosmosException != null)
+                {
+                    return QueryResponse.CreateFailure(
+                        responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosException.Headers),
+                        requestMessage: null,
+                        errorMessage: cosmosException.Message,
+                        statusCode: cosmosException.StatusCode,
+                        error: cosmosException.Error);
+                }
+
+                exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
+                DocumentClientException documentException = ae.InnerException as DocumentClientException;
+                if (documentException == null)
+                {
+                    CosmosResponseMessage message = documentException.ToCosmosResponseMessage(request: null);
+                    return QueryResponse.CreateFailure(
+                        responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(message.Headers),
+                        requestMessage: null,
+                        errorMessage: message.ErrorMessage,
+                        statusCode: message.StatusCode,
+                        error: message.Error);
+                }
+
+                throw;
+            }
         }
 
         internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)

@@ -75,8 +75,12 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            request.Properties.Remove(nameof(DocumentClientException));
-            request.Properties.Add(nameof(DocumentClientException), dce);
+            if (request != null)
+            {
+                request.Properties.Remove(nameof(DocumentClientException));
+                request.Properties.Add(nameof(DocumentClientException), dce);
+            }
+
             return cosmosResponse;
         }
 
