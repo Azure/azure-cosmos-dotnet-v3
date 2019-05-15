@@ -35,9 +35,57 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
-        internal override Task<CollectionCache> GetCollectionCacheAsync()
+        internal override async Task<(CosmosContainerSettings settings, QueryResponse failedResponse)> GetContainerSettingsCacheAsync(
+            ResourceType resourceType,
+            Uri resourceLink,
+            CancellationToken cancellation)
         {
-            return this.DocumentQueryClient.GetCollectionCacheAsync();
+            cancellation.ThrowIfCancellationRequested();
+
+            CosmosContainerSettings containerSettings = null;
+            // Collection cache currently throws when not found. 
+            // https://github.com/Azure/azure-cosmos-dotnet-v3/issues/275
+            try
+            {
+                if (resourceType.IsCollectionChild())
+                {
+                    CollectionCache collectionCache = await this.DocumentQueryClient.GetCollectionCacheAsync();
+                    using (
+                        DocumentServiceRequest request = DocumentServiceRequest.Create(
+                            OperationType.Query,
+                            resourceType,
+                            resourceLink.OriginalString,
+                            AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
+                    {
+                        containerSettings = await collectionCache.ResolveCollectionAsync(request, cancellation);
+                    }
+                }
+            }
+            catch (DocumentClientException dce)
+            {
+                QueryResponse failed = QueryResponse.CreateFailure(new CosmosQueryResponseMessageHeaders(null, null),
+                  dce.StatusCode ?? HttpStatusCode.NotFound,
+                  requestMessage: null,
+                  errorMessage: dce.RawErrorMessage,
+                  error: dce.Error);
+
+                DefaultTrace.TraceInformation($"Container not found for {resourceLink}, resourceType: {resourceType}, error {dce.ToString()}");
+
+                return (null, failed);
+            }
+
+            if (containerSettings == null)
+            {
+                QueryResponse failed = QueryResponse.CreateFailure(new CosmosQueryResponseMessageHeaders(null, null),
+                 HttpStatusCode.NotFound,
+                 requestMessage: null,
+                 errorMessage: $"Container not found for {resourceLink}, resourceType: {resourceType}",
+                 error: null);
+
+                return (null, failed);
+            }
+
+            return (containerSettings, null);
         }
 
         internal override Task<IRoutingMapProvider> GetRoutingMapProviderAsync()
@@ -109,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
                 message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
-                
+
             return partitionedQueryExecutionInfo;
         }
 
@@ -157,8 +205,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(collectionResourceId));
             }
 
-            if (providedRanges == null || 
-                !providedRanges.Any() || 
+            if (providedRanges == null ||
+                !providedRanges.Any() ||
                 providedRanges.Any(x => x == null))
             {
                 throw new ArgumentNullException(nameof(providedRanges));
@@ -174,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 // Return NotFoundException this time. Next query will succeed.
                 // This can only happen if collection is deleted/created with same name and client was not restarted
                 // in between.
-                CollectionCache collectionCache = await this.GetCollectionCacheAsync();
+                CollectionCache collectionCache = await this.DocumentQueryClient.GetCollectionCacheAsync();
                 collectionCache.Refresh(resourceLink);
             }
 

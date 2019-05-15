@@ -426,7 +426,6 @@ namespace Microsoft.Azure.Cosmos.Query
             Func<ItemProducerTree, Task> filterCallback,
             CancellationToken token)
         {
-            CollectionCache collectionCache = await this.queryContext.QueryClient.GetCollectionCacheAsync();
             this.TraceInformation(string.Format(
                 CultureInfo.InvariantCulture,
                 "parallel~contextbase.initializeasync, queryspec {0}, maxbuffereditemcount: {1}, target partitionkeyrange count: {2}, maximumconcurrencylevel: {3}, documentproducer initial page size {4}",

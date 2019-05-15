@@ -67,12 +67,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             bool isContinuationExpected = true;
             CancellationTokenSource cancellation = new CancellationTokenSource();
             CancellationToken token = cancellation.Token;
-
-            Mock<CollectionCache> mockCollectionCache = new Mock<CollectionCache>();
-            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), token)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));
+            Uri resourceLink = new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative);
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
-            client.Setup(x => x.GetCollectionCacheAsync()).Returns(Task.FromResult(mockCollectionCache.Object));
+            client.Setup(x => x.GetContainerSettingsCacheAsync(ResourceType.Document, resourceLink, token)).Returns(Task.FromResult<(CosmosContainerSettings, QueryResponse)>((new CosmosContainerSettings("mockContainer", "/pk"), null)));
             client.Setup(x => x.ByPassQueryParsing()).Returns(false);
             client.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec,
@@ -89,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQuerySpec,
                 queryRequestOptions: queryRequestOptions,
-                resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
+                resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));

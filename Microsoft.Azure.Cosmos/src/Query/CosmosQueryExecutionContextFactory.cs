@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly CosmosQueryContext cosmosQueryContext;
         private CosmosQueryExecutionContext innerExecutionContext;
+        private QueryResponse cachedFailure;
 
         /// <summary>
         /// Test flag for making the query use the opposite code path for query plan retrieval.
@@ -85,6 +86,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 cloneQueryRequestOptions.MaxItemCount = int.MaxValue;
             }
 
+            this.cachedFailure = null;
+
             this.cosmosQueryContext = new CosmosQueryContext(
                   client: client,
                   resourceTypeEnum: resourceTypeEnum,
@@ -103,15 +106,20 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.innerExecutionContext != null ? this.innerExecutionContext.IsDone : false;
+                return this.cachedFailure != null || (this.innerExecutionContext != null ? this.innerExecutionContext.IsDone : false);
             }
         }
 
         public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
-            if(this.innerExecutionContext == null)
+            if (this.innerExecutionContext == null && this.cachedFailure == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
+            }
+
+            if (this.cachedFailure != null)
+            {
+                return this.cachedFailure;
             }
 
             QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
@@ -132,27 +140,17 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            CosmosContainerSettings containerSettings = null;
-            if (this.cosmosQueryContext.ResourceTypeEnum.IsCollectionChild())
+            (CosmosContainerSettings containerSettings, QueryResponse failure) response = await this.cosmosQueryContext.QueryClient.GetContainerSettingsCacheAsync(
+                    this.cosmosQueryContext.ResourceTypeEnum,
+                        this.cosmosQueryContext.ResourceLink,
+                        cancellationToken);
+
+            if (response.failure != null)
             {
-                CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
-                using (
-                    DocumentServiceRequest request = DocumentServiceRequest.Create(
-                        OperationType.Query,
-                        this.cosmosQueryContext.ResourceTypeEnum,
-                        this.cosmosQueryContext.ResourceLink.OriginalString,
-                        AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
-                {
-                    containerSettings = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                }
+                this.cachedFailure = response.failure;
             }
 
-            if (containerSettings == null)
-            {
-                throw new ArgumentException($"The container was not found for resource: {this.cosmosQueryContext.ResourceLink.OriginalString} ");
-            }
-
-            return containerSettings;
+            return response.containerSettings;
         }
 
         private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
@@ -161,6 +159,17 @@ namespace Microsoft.Azure.Cosmos.Query
             cancellationToken.ThrowIfCancellationRequested();
 
             CosmosContainerSettings containerSettings = await this.GetContainerSettingsAsync(cancellationToken);
+            if (this.cachedFailure != null && containerSettings != null)
+            {
+                return null;
+            }
+
+            // The container does not exist. No need to create the execution context.
+            if (this.cachedFailure != null)
+            {
+                return null;
+            }
+
             this.cosmosQueryContext.ContainerResourceId = containerSettings.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -215,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Query
                    this.cosmosQueryContext.QueryRequestOptions);
 
             CosmosQueryContext rewrittenComosQueryContext;
-            if(!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
             {
                 // We need pass down the rewritten query.
                 SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()

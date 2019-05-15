@@ -17,7 +17,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class CosmosQueryClient
     {
-        internal abstract Task<CollectionCache> GetCollectionCacheAsync();
+        internal abstract Task<(CosmosContainerSettings settings, QueryResponse failedResponse)> GetContainerSettingsCacheAsync(
+            ResourceType resourceType,
+            Uri resourceLink,
+            CancellationToken cancellation);
 
         internal abstract Task<IRoutingMapProvider> GetRoutingMapProviderAsync();
 
