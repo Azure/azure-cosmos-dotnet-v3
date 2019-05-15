@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="triggerSettings">The <see cref="CosmosTriggerSettings"/> object.</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerSettings"/> is not set.</exception>
@@ -83,20 +83,20 @@ namespace Microsoft.Azure.Cosmos
         ///         TriggerType = TriggerType.Pre
         ///     });
         ///
-        /// CosmosItemRequestOptions options = new CosmosItemRequestOptions()
+        /// ItemRequestOptions options = new ItemRequestOptions()
         /// {
         ///     PreTriggers = new List<string>() { cosmosTrigger.Id },
         /// };
         ///
         /// // Create a new item with trigger set in the request options
-        /// CosmosItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+        /// ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
         /// double itemTax = createdItem.Resource.tax;
         /// ]]>
         /// </code>
         /// </example>
-        public virtual Task<CosmosTriggerResponse> CreateTriggerAsync(
+        public virtual Task<TriggerResponse> CreateTriggerAsync(
             CosmosTriggerSettings triggerSettings,
-            CosmosRequestOptions requestOptions = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosTriggerSettings> feedIterator = this.container.Triggers.GetTriggerIterator();
+        /// FeedIterator<CosmosTriggerSettings> feedIterator = this.container.Triggers.GetTriggerIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosTriggerSettings settings in await feedIterator.FetchNextSetAsync())
@@ -133,11 +133,11 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosFeedIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public FeedIterator<CosmosTriggerSettings> GetTriggerIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new CosmosDefaultResultSetIterator<CosmosTriggerSettings>(
+            return new FeedIteratorCore<CosmosTriggerSettings>(
                 maxItemCount,
                 continuationToken, 
                 null, 
@@ -156,22 +156,22 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosTrigger trigger = this.cosmosContainer.Tirggers["myTriggerId"];
-        /// CosmosTriggerResponse response = await trigger.ReadAsync();
+        /// TriggerResponse response = await trigger.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
         public CosmosTrigger this[string id] => new CosmosTrigger(this.clientContext, this.container, id);
 
-        private Task<CosmosFeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
             int? maxItemCount,
             string continuationToken,
-            CosmosRequestOptions options,
+            RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<CosmosFeedResponse<CosmosTriggerSettings>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosTriggerSettings>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: OperationType.ReadFeed,
@@ -181,8 +181,8 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 requestEnricher: request =>
                 {
-                    CosmosQueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosQueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosTriggerSettings>(response),
                 cancellationToken: cancellationToken);

@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
                 return offerQuery.ExecuteNextAsync<T>(cancellationToken)
                     .ContinueWith(nextAsyncTask =>
                     {
-                        FeedResponse<T> offerFeedResponse = nextAsyncTask.Result;
+                        DocumentFeedResponse<T> offerFeedResponse = nextAsyncTask.Result;
                         if (offerFeedResponse.Any())
                         {
                             return Task.FromResult(offerFeedResponse.Single());

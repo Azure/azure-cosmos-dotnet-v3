@@ -4,16 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos container request options
     /// </summary>
-    public class CosmosContainerRequestOptions : CosmosRequestOptions
+    public class ContainerRequestOptions : RequestOptions
     {
         /// <summary>
         ///  Gets or sets the <see cref="PopulateQuotaInfo"/> for document collection read requests in the Azure Cosmos DB service.

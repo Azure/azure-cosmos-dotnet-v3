@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
                 DefaultTrace.TraceInformation("Lease with token {0} update conflict. Reading the current version of lease.", lease.CurrentLeaseToken);
 
-                CosmosItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReadItemAsync<DocumentServiceLeaseCore>(
+                ItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReadItemAsync<DocumentServiceLeaseCore>(
                     partitionKey, itemId).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
-                CosmosItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReplaceItemAsync<DocumentServiceLeaseCore>(
+                ItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReplaceItemAsync<DocumentServiceLeaseCore>(
                     partitionKey,
                     itemId, 
                     lease, 
@@ -103,10 +103,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
         }
 
-        private CosmosItemRequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
+        private ItemRequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
         {
             var ifMatchCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = lease.ConcurrencyToken };
-            return new CosmosItemRequestOptions { AccessCondition = ifMatchCondition };
+            return new ItemRequestOptions { AccessCondition = ifMatchCondition };
         }
     }
 }

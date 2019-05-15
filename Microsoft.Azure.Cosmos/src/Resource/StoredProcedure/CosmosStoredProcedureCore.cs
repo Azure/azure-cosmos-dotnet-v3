@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal Uri LinkUri { get; }
 
-        public override Task<CosmosStoredProcedureResponse> ReadAsync(
-                    CosmosRequestOptions requestOptions = null,
+        public override Task<StoredProcedureResponse> ReadAsync(
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -48,9 +48,9 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<CosmosStoredProcedureResponse> ReplaceAsync(
+        public override Task<StoredProcedureResponse> ReplaceAsync(
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(body))
@@ -72,8 +72,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<CosmosStoredProcedureResponse> DeleteAsync(
-                    CosmosRequestOptions requestOptions = null,
+        public override Task<StoredProcedureResponse> DeleteAsync(
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessAsync(
@@ -84,10 +84,10 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<CosmosItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
+        public override Task<ItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
             object partitionKey,
             TInput input,
-            CosmosStoredProcedureRequestOptions requestOptions = null,
+            StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
@@ -116,11 +116,11 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateItemResponse<TOutput>(response);
         }
 
-        internal Task<CosmosStoredProcedureResponse> ProcessAsync(
+        internal Task<StoredProcedureResponse> ProcessAsync(
             object partitionKey,
             Stream streamPayload,
             OperationType operationType,
-            CosmosRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(

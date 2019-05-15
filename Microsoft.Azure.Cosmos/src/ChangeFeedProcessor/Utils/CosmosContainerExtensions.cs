@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             return response;
         }
 
-        public static async Task<CosmosItemResponse<T>> TryCreateItemAsync<T>(
+        public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(
             this CosmosContainer container, 
             object partitionKey, 
             T item)
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             this CosmosContainer container,
             object partitionKey,
             string itemId,
-            CosmosItemRequestOptions cosmosItemRequestOptions = null)
+            ItemRequestOptions cosmosItemRequestOptions = null)
         {
             var response = await container.Items.DeleteItemAsync<T>(partitionKey, itemId, cosmosItemRequestOptions).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound)

@@ -5,11 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
-    using System.Text;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB database account.
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosDatabase database = this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-        /// CosmosContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
         ///]]>
         /// </code>
         /// </example>
@@ -202,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
-        internal CosmosRequestHandler RequestHandler { get; private set; }
+        internal RequestInvokerHandler RequestHandler { get; private set; }
         internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
 
         internal CosmosResponseFactory ResponseFactory =>

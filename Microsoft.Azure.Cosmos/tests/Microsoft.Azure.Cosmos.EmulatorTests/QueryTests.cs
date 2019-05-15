@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // default page size, expect 100 documents
-            FeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.AreEqual(100, result.Count);
 
             // dynamic page size (-1), expect all documents to be returned
@@ -934,7 +934,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyRangeId = doc.SessionToken.Split(':')[0];
             Assert.AreNotEqual(ranges.First().Id, partitionKeyRangeId);
 
-            FeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(coll.SelfLink, new FeedOptions { PartitionKeyRangeId = partitionKeyRangeId });
+            DocumentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync(coll.SelfLink, new FeedOptions { PartitionKeyRangeId = partitionKeyRangeId });
             Assert.AreEqual(1, response.Count);
 
             response = await client.ReadDocumentFeedAsync(coll.SelfLink, new FeedOptions { PartitionKeyRangeId = ranges.First(r => r.Id != partitionKeyRangeId).Id });
@@ -1429,7 +1429,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MaxDegreeOfParallelism = 10,
                 MaxBufferedItemCount = 5000
             };
-            FeedResponse<dynamic> response = null;
+            DocumentFeedResponse<dynamic> response = null;
             startTime = DateTime.Now;
             List<dynamic> result = new List<dynamic>();
             do
@@ -1603,7 +1603,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 coll,
                 "SELECT * FROM r",
                 new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1 }).AsDocumentQuery();
-            FeedResponse<dynamic> resultSeq = null;
+            DocumentFeedResponse<dynamic> resultSeq = null;
             while (true)
             {
                 resultSeq = await seqQuery.ExecuteNextAsync();
@@ -1619,7 +1619,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 coll,
                 "SELECT * FROM r",
                 new FeedOptions { EnableCrossPartitionQuery = true, MaxItemCount = 1, MaxDegreeOfParallelism = 1 }).AsDocumentQuery();
-            FeedResponse<dynamic> resultParallel = null;
+            DocumentFeedResponse<dynamic> resultParallel = null;
             while (true)
             {
                 resultParallel = await parallelQuery.ExecuteNextAsync();
@@ -2004,7 +2004,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IDocumentQuery<dynamic> documentQuery = client.CreateDocumentQuery(coll, "SELECT TOP 1 * FROM c", feedOptions).AsDocumentQuery();
 
-            FeedResponse<dynamic> feedResonse = await documentQuery.ExecuteNextAsync();
+            DocumentFeedResponse<dynamic> feedResonse = await documentQuery.ExecuteNextAsync();
 
             QueryMetrics queryMetrics = QueryMetrics.CreateFromIEnumerable(feedResonse.QueryMetrics.Values);
 
@@ -2081,7 +2081,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string query = "SELECT r.id FROM root r WHERE r._ts > 0";
 
             FeedOptions feedOptions;
-            FeedResponse<dynamic> result;
+            DocumentFeedResponse<dynamic> result;
             QueryMetrics queryMetrics;
 
             // With ForceQueryScan
@@ -2320,7 +2320,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             FeedOptions feedOptions = new FeedOptions() { ResponseContinuationTokenLimitInKb = 0, MaxItemCount = 10, EnableCrossPartitionQuery = partitionedCollection };
-            FeedResponse<dynamic> result = null;
+            DocumentFeedResponse<dynamic> result = null;
 
             try
             {
@@ -2434,7 +2434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // simple validations - existence - yes & no
-            FeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected no metrics headers for query");
 
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
@@ -2483,7 +2483,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             query,
                                 feedOptions).AsDocumentQuery())
                         {
-                            FeedResponse<Document> response = await documentQuery.ExecuteNextAsync<Document>();
+                            DocumentFeedResponse<Document> response = await documentQuery.ExecuteNextAsync<Document>();
                             string responseQueryMetrics = response.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics];
 
                             ValidateQueryMetrics(QueryMetrics.CreateFromDelimitedString(responseQueryMetrics));

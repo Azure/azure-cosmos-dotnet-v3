@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos stored procedure id</param>
         /// <param name="body">The JavaScript function that is the body of the stored procedure</param>
-        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="CosmosRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="CosmosStoredProcedureSettings"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="id"/> or <paramref name="body"/> is not set.</exception>
@@ -75,15 +75,15 @@ namespace Microsoft.Azure.Cosmos
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
+        /// ItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
         /// Console.WriteLine("sprocResponse.Resource");
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosStoredProcedureResponse> CreateStoredProcedureAsync(
+        public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
                     string id,
                     string body,
-                    CosmosRequestOptions requestOptions = null,
+                    RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the stored procedures under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosFeedIterator<CosmosStoredProcedureSettings> feedIterator = this.container.StoredProcedures.GetStoredProcedureIterator();
+        /// FeedIterator<CosmosStoredProcedureSettings> feedIterator = this.container.StoredProcedures.GetStoredProcedureIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosStoredProcedureSettings settings in await feedIterator.FetchNextSetAsync())
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosFeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public abstract FeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosStoredProcedure storedProcedure = this.cosmosContainer.StoredProcedures["myStoredProcedureId"];
-        /// CosmosStoredProcedureResponse response = await storedProcedure.ReadAsync();
+        /// StoredProcedureResponse response = await storedProcedure.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
