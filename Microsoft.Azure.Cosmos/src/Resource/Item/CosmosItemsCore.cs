@@ -552,14 +552,16 @@ namespace Microsoft.Azure.Cosmos
                 return new CosmosQueryResponse(
                         errorMessage: exception.Message,
                         httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
-                        retryAfter: exception.RetryAfter);
+                        retryAfter: exception.RetryAfter,
+                        responseHeaders: exception.Headers);
             }
             catch (CosmosException exception)
             {
                 return new CosmosQueryResponse(
                         errorMessage: exception.Message,
                         httpStatusCode: exception.StatusCode,
-                        retryAfter: exception.RetryAfter);
+                        retryAfter: exception.RetryAfter,
+                        responseHeaders: exception.Headers?.CosmosMessageHeaders);
             }
             catch (AggregateException ae)
             {
@@ -569,9 +571,10 @@ namespace Microsoft.Azure.Cosmos
                 if (cosmosException != null)
                 {
                     return new CosmosQueryResponse(
-                         errorMessage: cosmosException.Message,
-                         httpStatusCode: cosmosException.StatusCode,
-                         retryAfter: cosmosException.RetryAfter);
+                        errorMessage: cosmosException.Message,
+                        httpStatusCode: cosmosException.StatusCode,
+                        retryAfter: cosmosException.RetryAfter,
+                        responseHeaders: cosmosException.Headers?.CosmosMessageHeaders);
                 }
 
                 exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
@@ -581,7 +584,8 @@ namespace Microsoft.Azure.Cosmos
                     return new CosmosQueryResponse(
                           errorMessage: documentException.Message,
                           httpStatusCode: documentException.StatusCode.HasValue ? documentException.StatusCode.Value : HttpStatusCode.InternalServerError,
-                          retryAfter: documentException.RetryAfter);
+                          retryAfter: documentException.RetryAfter,
+                          responseHeaders: documentException.Headers);
                 }
 
                 throw;

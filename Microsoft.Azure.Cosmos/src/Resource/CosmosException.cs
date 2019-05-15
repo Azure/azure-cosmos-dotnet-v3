@@ -15,8 +15,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class CosmosException : Exception
     {
-        private readonly CosmosResponseMessageHeaders Headers = null;
-
         internal CosmosException(
             CosmosResponseMessage cosmosResponseMessage, 
             string message,
@@ -97,6 +95,8 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Error Error { get; }
 
         internal TimeSpan? RetryAfter { get; }
+
+        internal CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
