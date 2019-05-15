@@ -14,6 +14,7 @@
         private static readonly QueryFeatures SupportedQueryFeatures =
             QueryFeatures.Aggregate
             | QueryFeatures.Distinct
+            | QueryFeatures.GroupBy
             | QueryFeatures.MultipleOrderBy
             | QueryFeatures.OffsetAndLimit
             | QueryFeatures.OrderBy
@@ -29,7 +30,7 @@
         {
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
-            return queryPlanHandler.GetQueryPlan(
+            return queryPlanHandler.GetQueryPlanAsync(
                     sqlQuerySpec,
                     partitionKeyDefinition,
                     SupportedQueryFeatures,

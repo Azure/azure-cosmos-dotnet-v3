@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             this.queryClient = queryClient;
         }
 
-        public async Task<PartitionedQueryExecutionInfo> GetQueryPlan(
+        public async Task<PartitionedQueryExecutionInfo> GetQueryPlanAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryFeatures supportedQueryFeatures,
@@ -76,6 +76,9 @@ namespace Microsoft.Azure.Cosmos
             private static readonly ArgumentException QueryContainsUnsupportedCompositeAggregate = new ArgumentException(
                 QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.CompositeAggregate)));
 
+            private static readonly ArgumentException QueryContainsUnsupportedGroupBy = new ArgumentException(
+                QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.GroupBy)));
+
             private static readonly ArgumentException QueryContainsUnsupportedMultipleAggregates = new ArgumentException(
                 QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.MultipleAggregates)));
 
@@ -106,6 +109,11 @@ namespace Microsoft.Azure.Cosmos
                     exceptions);
 
                 QueryPlanExceptionFactory.AddExceptionsForDistinctQueries(
+                    queryInfo,
+                    supportedQueryFeatures,
+                    exceptions);
+
+                QueryPlanExceptionFactory.AddExceptionForGroupByQueries(
                     queryInfo,
                     supportedQueryFeatures,
                     exceptions);
@@ -214,6 +222,20 @@ namespace Microsoft.Azure.Cosmos
                         {
                             exceptions.Value.Add(QueryContainsUnsupportedMultipleOrderBy);
                         }
+                    }
+                }
+            }
+
+            private static void AddExceptionForGroupByQueries(
+                QueryInfo queryInfo,
+                QueryFeatures supportedQueryFeatures,
+                Lazy<List<Exception>> exceptions)
+            {
+                if (queryInfo.HasGroupBy)
+                {
+                    if (!supportedQueryFeatures.HasFlag(QueryFeatures.GroupBy))
+                    {
+                        exceptions.Value.Add(QueryContainsUnsupportedGroupBy);
                     }
                 }
             }
