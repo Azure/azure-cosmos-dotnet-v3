@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQueryResponse(
             string errorMessage,
             HttpStatusCode httpStatusCode,
-            TimeSpan retryAfter,
+            TimeSpan? retryAfter,
             INameValueCollection responseHeaders = null)
         {
             this.continuationToken = null;

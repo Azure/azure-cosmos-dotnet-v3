@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -553,18 +554,37 @@ namespace Microsoft.Azure.Cosmos
                         httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
                         retryAfter: exception.RetryAfter);
             }
-            catch (AggregateException ae)
+            catch (CosmosException exception)
             {
-                DocumentClientException exception = ae.InnerException as DocumentClientException;
-                if (exception == null)
-                {
-                    throw;
-                }
-
                 return new CosmosQueryResponse(
                         errorMessage: exception.Message,
-                        httpStatusCode: exception.StatusCode.HasValue ? exception.StatusCode.Value : HttpStatusCode.InternalServerError,
+                        httpStatusCode: exception.StatusCode,
                         retryAfter: exception.RetryAfter);
+            }
+            catch (AggregateException ae)
+            {
+                AggregateException innerExceptions = ae.Flatten();
+                Exception exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException);
+                CosmosException cosmosException = exception as CosmosException;
+                if (cosmosException != null)
+                {
+                    return new CosmosQueryResponse(
+                         errorMessage: cosmosException.Message,
+                         httpStatusCode: cosmosException.StatusCode,
+                         retryAfter: cosmosException.RetryAfter);
+                }
+
+                exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
+                DocumentClientException documentException = ae.InnerException as DocumentClientException;
+                if (documentException == null)
+                {
+                    return new CosmosQueryResponse(
+                          errorMessage: documentException.Message,
+                          httpStatusCode: documentException.StatusCode.HasValue ? documentException.StatusCode.Value : HttpStatusCode.InternalServerError,
+                          retryAfter: documentException.RetryAfter);
+                }
+
+                throw;
             }
         }
 
