@@ -352,9 +352,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> CreateItemQuery<T>(
-            string sqlQueryText,
-            int maxConcurrency,
-            int? maxItemCount = null,
+            string sqlQueryText, 
+            int? maxConcurrency, 
+            int? maxItemCount = null, 
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
