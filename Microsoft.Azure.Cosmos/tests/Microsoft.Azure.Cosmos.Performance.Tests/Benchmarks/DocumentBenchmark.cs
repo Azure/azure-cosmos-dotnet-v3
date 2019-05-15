@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task UpsertItem()
         {
             var response = await this.container.Items.UpsertItemAsync(
-                Constants.ValidOperationId,
-                this.baseItem);
+                this.baseItem,
+                new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
                 throw new Exception();
@@ -75,9 +75,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task UpsertItemAsStream()
         {
             this.baseStream.Position = 0;
-            var response = await this.container.Items.UpsertItemStreamAsync(
-                    Constants.ValidOperationId,
-                    this.baseStream);
+            var response = await this.container.Items.UpsertItemStreamAsync(                    
+                    this.baseStream,
+                    new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
             if ((int)response.StatusCode > 300 || response.Content.Length == 0)
             {
                 throw new Exception();
@@ -139,10 +139,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpdateItem()
         {
-            var response = await this.container.Items.ReplaceItemAsync(
-                Constants.ValidOperationId,
+            var response = await this.container.Items.ReplaceItemAsync(                
                 Constants.ValidOperationId, 
-                this.baseItem);
+                this.baseItem,
+                new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Resource == null)
             {
                 throw new Exception();

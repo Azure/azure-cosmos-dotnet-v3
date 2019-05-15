@@ -288,13 +288,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
-            ItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument, new ItemRequestOptions { PartitionKey = testDocument.Name  });
             readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            ItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
+            ItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Id, testDocument, new ItemRequestOptions { PartitionKey = testDocument.Name });
             readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);

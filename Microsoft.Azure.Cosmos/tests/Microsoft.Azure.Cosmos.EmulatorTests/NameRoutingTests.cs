@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     // 
-                    await container.Items.ReplaceItemAsync<dynamic>(partitionKey: doc3Id, id: doc3Id, item: new { id = doc3Id, Description = "test" });
+                    await container.Items.ReplaceItemAsync<dynamic>(id: doc3Id, item: new { id = doc3Id, Description = "test" }, requestOptions: new ItemRequestOptions { PartitionKey = doc3Id });
                     doc3 = await container.Items.DeleteItemAsync<Document>(partitionKey: resourceRandomId, id: resourceRandomId);
 
                     // read databaseCollection feed.
@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             myDocument.Title = "My new Book";
             // Testing the ReplaceDocumentAsync API with DocumentUri as the parameter
-            ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.Items.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument.Id, myDocument);
+            ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.Items.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument, new ItemRequestOptions { PartitionKey = myDocument.Id });
 
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
             FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             myDocument.Title = "My old Book";
             // Testing the ReplaceDocumentAsync API with Document SelfLink as the parameter
-            await collection.Items.ReplaceItemAsync(myDocument.Id, myDocument.Id, myDocument);
+            await collection.Items.ReplaceItemAsync(myDocument.Id, myDocument, new ItemRequestOptions { PartitionKey = myDocument.Id });
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
             cosmosResultSet = collection.Items.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
@@ -1144,7 +1144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     documentCreated.Id = resourceName;
-                    Document document = await coll1.Items.ReplaceItemAsync<Document>(documentCreated.Id, documentCreated.Id, documentCreated);
+                    Document document = await coll1.Items.ReplaceItemAsync<Document>(documentCreated.Id, documentCreated, new ItemRequestOptions { PartitionKey = documentCreated.Id });
                     Assert.Fail("Should have thrown exception in here");
                 }
                 catch (ArgumentException e)

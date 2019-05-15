@@ -105,14 +105,13 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override Task<CosmosResponseMessage> UpsertItemStreamAsync(
-                    object partitionKey,
+        public override async Task<CosmosResponseMessage> UpsertItemStreamAsync(                    
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
-                partitionKey,
+            return await this.ProcessItemStreamAsync(
+                await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken),
                 null,
                 streamPayload,
                 OperationType.Upsert,
@@ -120,14 +119,12 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> UpsertItemAsync<T>(
-            object partitionKey,
+        public override Task<ItemResponse<T>> UpsertItemAsync<T>(            
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(
-                partitionKey: partitionKey,
+            Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(                
                 streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -135,15 +132,14 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override Task<CosmosResponseMessage> ReplaceItemStreamAsync(
-                    object partitionKey,
+        public override async Task<CosmosResponseMessage> ReplaceItemStreamAsync(                    
                     string id,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
-                partitionKey,
+            return await this.ProcessItemStreamAsync(
+                await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken),
                 id,
                 streamPayload,
                 OperationType.Replace,
@@ -151,15 +147,13 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
-            object partitionKey,
+        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(            
             string id,
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(
-               partitionKey: partitionKey,
+            Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(               
                id: id,
                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                requestOptions: requestOptions,
@@ -483,14 +477,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosObject cosmosObject = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
             string[] tokens = await this.container.GetPartitionKeyPathTokensAsync(cancellationToken);
-            cosmosObject = cosmosObject[tokens[0]] as CosmosObject;
-
-            if(tokens.Length == 1)
-            {
-                return this.CosmosElementToObject(cosmosObject);
-            }
-
-            for(int i = 1; i < tokens.Length - 1; i++)
+            
+            for(int i = 0; i < tokens.Length - 1; i++)
             {
                 cosmosObject = cosmosObject[tokens[i]] as CosmosObject;
             }
@@ -499,8 +487,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private object CosmosElementToObject(CosmosElement cosmosElement)
-        {            
-            if(cosmosElement.Type == CosmosElementType.String)
+        {
+            if (cosmosElement.Type == CosmosElementType.Array ||
+                cosmosElement.Type == CosmosElementType.Object ||
+                cosmosElement.Type == CosmosElementType.Binary)
+            {
+                throw new InvalidOperationException(
+                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue));
+            }
+
+            if (cosmosElement.Type == CosmosElementType.String)
             {
                 CosmosString cosmosString = cosmosElement as CosmosString;
                 return cosmosString.Value;
@@ -523,15 +519,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosGuid cosmosGuid = cosmosElement as CosmosGuid;
                 return cosmosGuid.Value;
             }
-
-            if (cosmosElement.Type == CosmosElementType.Array ||
-                cosmosElement.Type == CosmosElementType.Object ||
-                cosmosElement.Type == CosmosElementType.Binary)
-            {
-                throw new InvalidOperationException(
-                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue));
-            }
-
+            
             return null;
         }
 
