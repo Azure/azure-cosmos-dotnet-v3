@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
                 this.StatusCode = cosmosResponseMessage.StatusCode;
                 this.Headers = cosmosResponseMessage.Headers;
                 this.ActivityId = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
-                this.RetryAfter = this.Headers.RetryAfter;
+                this.RetryAfter = this.Headers?.RetryAfter;
                 this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
                 this.Error = error;
