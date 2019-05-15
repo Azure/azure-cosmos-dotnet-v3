@@ -287,6 +287,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 };
             }
 
+            if (queryInfo.HasGroupBy)
+            {
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                createComponentFunc = async (continuationToken) =>
+                {
+                    return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        continuationToken,
+                        createSourceCallback);
+                };
+            }
+
             if (queryInfo.HasDistinct)
             {
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;

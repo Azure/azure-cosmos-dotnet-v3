@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
-            if(this.innerExecutionContext == null)
+            if (this.innerExecutionContext == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
             }
@@ -207,6 +207,18 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             }
 
+            // For now we are only allowing GROUP BY in queries that have a logical partition key in the request options
+            if (partitionedQueryExecutionInfo.QueryInfo.HasGroupBy)
+            {
+                // NOTE. This partition key field is BOGUS, since we can not differeniate between JSON null and not set.
+                // It also won't allow for composite partition key in the future
+                // It also won't alow us to differeniate between HASH and RANGE partitioning
+                if (this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null)
+                {
+                    throw new ArgumentException("GROUP BY is only supported in queries that target a single logical partition key.");
+                }
+            }
+
             List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
                    this.cosmosQueryContext.QueryClient,
                    this.cosmosQueryContext.ResourceLink.OriginalString,
@@ -215,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Query
                    this.cosmosQueryContext.QueryRequestOptions);
 
             CosmosQueryContext rewrittenComosQueryContext;
-            if(!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
             {
                 // We need pass down the rewritten query.
                 SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
