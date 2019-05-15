@@ -526,6 +526,7 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
+            // This catches exception thrown by the caches and converts it to QueryResponse
             try
             {
                 CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
