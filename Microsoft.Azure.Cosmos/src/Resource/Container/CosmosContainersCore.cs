@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosContainersCore : CosmosContainers
     {
         private readonly CosmosDatabaseCore database;
-        private readonly CosmosClientContext clientContext;
         private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
 
         internal CosmosContainersCore(
@@ -30,9 +29,11 @@ namespace Microsoft.Azure.Cosmos
             CosmosDatabaseCore database)
         {
             this.database = database;
-            this.clientContext = clientContext;
+            this.ClientContext = clientContext;
             this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
         }
+
+        internal CosmosClientContext ClientContext { get; }
 
         public override Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellation: cancellation);
 
-            return this.clientContext.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
         }
         
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 this.containerCache.GetOrAdd(
                     id,
                     keyName => new CosmosContainerCore(
-                        this.clientContext, 
+                        this.ClientContext, 
                         this.database, 
                         keyName));
 
@@ -161,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
         internal void ValidateContainerSettings(CosmosContainerSettings containerSettings)
         {
             containerSettings.ValidateRequiredProperties();
-            this.clientContext.ValidateResource(containerSettings.Id);
+            this.ClientContext.ValidateResource(containerSettings.Id);
         }
 
         internal Task<CosmosResponseMessage> ProcessCollectionCreateAsync(
@@ -170,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellation = default)
         {
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellation)
         {
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.ReadFeed,
@@ -214,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosContainerSettings>>(
+            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<CosmosContainerSettings>>(
                 resourceUri: this.database.LinkUri,
                 resourceType: ResourceType.Collection,
                 operationType: OperationType.ReadFeed,
@@ -227,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(request, continuationToken);
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosContainerSettings>(response),
+                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosContainerSettings>(response),
                 cancellation: cancellation);
         }
     }
