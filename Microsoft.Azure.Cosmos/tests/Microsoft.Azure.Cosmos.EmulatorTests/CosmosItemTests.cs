@@ -553,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string findPkValue = findItems.First().status;
             double totalRequstCharge = 0;
-            CosmosFeedIterator setIterator =
+            FeedIterator setIterator =
                 this.Container.Items.CreateItemQueryAsStream(sql, maxConcurrency: 1, partitionKey: findPkValue);
 
             List<ToDoActivity> foundItems = new List<ToDoActivity>();
@@ -620,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
-                CosmosQueryRequestOptions options = new CosmosQueryRequestOptions()
+                QueryRequestOptions options = new QueryRequestOptions()
                 {
                     Properties = new Dictionary<string, object>()
                     {
