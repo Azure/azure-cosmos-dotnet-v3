@@ -3786,7 +3786,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>())))))
             };
 
-            // Test query can not run without a partition key
+            // Test query can not run without enable group by flag.
             foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
             {
                 try
@@ -3795,16 +3795,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         container,
                         query,
                         maxConcurrency: 2,
-                        maxItemCount: int.MaxValue);
+                        maxItemCount: int.MaxValue,
+                        requestOptions: new QueryRequestOptions()
+                        {
+                            PartitionKey = Undefined.Value,
+                            EnableGroupBy = false
+                        });
 
-                    Assert.Fail("Expected query to fail if it has a continuation");
+                    Assert.Fail($"Expected query to fail if {nameof(QueryRequestOptions.EnableGroupBy)} is not set to {true}");
+                }
+                catch (Exception e) when ((e.GetBaseException() is NotSupportedException baseException) && baseException.Message.Contains("Cross Partition GROUP BY is not supported."))
+                {
+                }
+            }
+
+            // Test query can not run without a partition key.
+            foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
+            {
+                try
+                {
+                    List<JToken> actual = await RunQuery<JToken>(
+                        container,
+                        query,
+                        maxConcurrency: 2,
+                        maxItemCount: int.MaxValue,
+                        requestOptions: new QueryRequestOptions()
+                        {
+                            EnableGroupBy = true
+                        });
+
+                    Assert.Fail("Expected query to fail if it does not have a partition key.");
                 }
                 catch (Exception e) when ((e.GetBaseException() is ArgumentException baseException) && baseException.Message.Contains("GROUP BY is only supported in queries that target a single logical partition key."))
                 {
                 }
             }
 
-            // Test that query is only allowed to run for one continuation
+            // Test that query is only allowed to run for one continuation.
             foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
             {
                 try
@@ -3818,16 +3845,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestOptions: new QueryRequestOptions()
                         {
                             PartitionKey = Undefined.Value,
+                            EnableGroupBy = true
                         });
 
-                    Assert.Fail("Expected query to fail if it has a continuation");
+                    Assert.Fail("Expected query to fail if it has a continuation.");
                 }
                 catch (Exception e) when ((e.GetBaseException() is CosmosException baseException) && baseException.Message.Contains("GROUP BY queries can not span multiple continuations."))
                 {
                 }
             }
 
-            // Test query correctness
+            // Test query correctness.
             foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
             {
                 List<JToken> actual = await RunQuery<JToken>(
@@ -3838,6 +3866,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: new QueryRequestOptions()
                     {
                         PartitionKey = Undefined.Value,
+                        EnableGroupBy = true
                     });
                 HashSet<JToken> actualSet = new HashSet<JToken>(actual, JsonTokenEqualityComparer.Value);
                 Assert.AreEqual(actualSet.Count, actual.Count);

@@ -149,6 +149,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool EnableCrossPartitionSkipTake { get; set; }
 
+        internal bool EnableGroupBy { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -214,6 +216,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
+                EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties
             };
 
@@ -233,6 +236,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
+                EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties,
             };
         }

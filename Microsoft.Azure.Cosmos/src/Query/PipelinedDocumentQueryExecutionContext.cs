@@ -185,8 +185,9 @@ namespace Microsoft.Azure.Cosmos.Query
             return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                 partitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
-               requestContinuation,
+                requestContinuation,
                 constructorParams.FeedOptions.EnableCrossPartitionSkipTake,
+                constructorParams.FeedOptions.EnableGroupBy,
                 createOrderByComponentFunc,
                 createParallelComponentFunc));
         }
@@ -253,6 +254,7 @@ namespace Microsoft.Azure.Cosmos.Query
                initialPageSize,
                requestContinuation,
                constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake,
+               constructorParams.QueryRequestOptions.EnableGroupBy,
                createOrderByComponentFunc,
                createParallelComponentFunc));
         }
@@ -262,6 +264,7 @@ namespace Microsoft.Azure.Cosmos.Query
             int initialPageSize,
             string requestContinuation,
             bool enableCrossPartitionSkipTake,
+            bool enableGroupBy,
             Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
         {
@@ -289,6 +292,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasGroupBy)
             {
+                if (!enableGroupBy)
+                {
+                    throw new NotSupportedException("Cross Partition GROUP BY is not supported.");
+                }
+
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
