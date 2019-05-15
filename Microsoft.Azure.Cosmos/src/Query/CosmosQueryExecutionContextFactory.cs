@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // NOTE. This partition key field is BOGUS, since we can not differeniate between JSON null and not set.
                 // It also won't allow for composite partition key in the future
                 // It also won't alow us to differeniate between HASH and RANGE partitioning
-                if (this.cosmosQueryContext.QueryRequestOptions.PartitionKey != null)
+                if (this.cosmosQueryContext.QueryRequestOptions.PartitionKey == null)
                 {
                     throw new ArgumentException("GROUP BY is only supported in queries that target a single logical partition key.");
                 }

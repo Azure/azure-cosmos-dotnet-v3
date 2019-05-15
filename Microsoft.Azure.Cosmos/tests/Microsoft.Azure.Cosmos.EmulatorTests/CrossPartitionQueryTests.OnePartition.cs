@@ -3674,7 +3674,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
-                this.TestGroupByQueryHelper);
+                this.TestGroupByQueryHelper,
+                partitionKey: "/undefined");
         }
 
         private async Task TestGroupByQueryHelper(
@@ -3785,13 +3786,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>())))))
             };
 
-            foreach((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
+            // Test query can not run without a partition key
+            foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
+            {
+                try
+                {
+                    List<JToken> actual = await RunQuery<JToken>(
+                        container,
+                        query,
+                        maxConcurrency: 2,
+                        maxItemCount: int.MaxValue);
+
+                    Assert.Fail("Expected query to fail if it has a continuation");
+                }
+                catch (Exception e) when ((e.GetBaseException() is ArgumentException baseException) && baseException.Message.Contains("GROUP BY is only supported in queries that target a single logical partition key."))
+                {
+                }
+            }
+
+            // Test that query is only allowed to run for one continuation
+            foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
+            {
+                try
+                {
+                    // MaxItemCount = 1 forces a continuation
+                    List<JToken> actual = await RunQuery<JToken>(
+                        container,
+                        query,
+                        maxConcurrency: 2,
+                        maxItemCount: 1,
+                        requestOptions: new QueryRequestOptions()
+                        {
+                            PartitionKey = Undefined.Value,
+                        });
+
+                    Assert.Fail("Expected query to fail if it has a continuation");
+                }
+                catch (Exception e) when ((e.GetBaseException() is CosmosException baseException) && baseException.Message.Contains("GROUP BY queries can not span multiple continuations."))
+                {
+                }
+            }
+
+            // Test query correctness
+            foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
             {
                 List<JToken> actual = await RunQuery<JToken>(
                     container,
                     query,
                     maxConcurrency: 2,
-                    maxItemCount: int.MaxValue);
+                    maxItemCount: int.MaxValue,
+                    requestOptions: new QueryRequestOptions()
+                    {
+                        PartitionKey = Undefined.Value,
+                    });
                 HashSet<JToken> actualSet = new HashSet<JToken>(actual, JsonTokenEqualityComparer.Value);
                 Assert.AreEqual(actualSet.Count, actual.Count);
 

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         }
 
         public override async Task<QueryResponse> DrainAsync(
-            int maxElements, 
+            int maxElements,
             CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             // For now the only thing this class is doing is making sure the query does not have continuations
-            if(sourcePage.Headers.Continuation != null)
+            if (sourcePage.Headers.Continuation != null)
             {
                 QueryResponse failedQueryResponse = QueryResponse.CreateFailure(
                     sourcePage.QueryHeaders,
@@ -52,6 +52,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     requestMessage: null,
                     errorMessage: "GROUP BY queries can not span multiple continuations.",
                     error: null);
+
+                return failedQueryResponse;
             }
 
             return sourcePage;
