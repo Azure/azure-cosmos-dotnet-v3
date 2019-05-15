@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosQueryResponse : IDisposable
     {
         private bool _isDisposed = false;
-        private readonly INameValueCollection _responseHeaders = null;
         private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
         private readonly string disallowContinuationTokenMessage;
         private readonly string continuationToken;
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             string disallowContinuationTokenMessage,
             IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
         {
-            this._responseHeaders = responseHeaders;
+            this.ResponseHeaders = responseHeaders;
             this._queryMetrics = queryMetrics;
             this.Content = content;
             this.Count = count;
@@ -55,12 +54,12 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQueryResponse(
             string errorMessage,
             HttpStatusCode httpStatusCode,
-            TimeSpan retryAfter,
+            TimeSpan? retryAfter,
             INameValueCollection responseHeaders = null)
         {
             this.continuationToken = null;
             this.Content = null;
-            this._responseHeaders = responseHeaders;
+            this.ResponseHeaders = responseHeaders;
             this.StatusCode = httpStatusCode;
             this.RetryAfter = retryAfter;
             this.ErrorMessage = errorMessage;
@@ -102,8 +101,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual int Count { get; }
 
-        internal TimeSpan? RetryAfter { get; }
-
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
         /// </summary>
@@ -114,13 +111,13 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                if (this._responseHeaders == null)
+                if (this.ResponseHeaders == null)
                 {
                     return 0;
                 }
 
                 return Helpers.GetHeaderValueDouble(
-                    this._responseHeaders,
+                    this.ResponseHeaders,
                     HttpConstants.HttpHeaders.RequestCharge,
                     0);
             }
@@ -136,12 +133,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                if (this._responseHeaders == null)
+                if (this.ResponseHeaders == null)
                 {
                     return null;
                 }
 
-                return this._responseHeaders[HttpConstants.HttpHeaders.ActivityId];
+                return this.ResponseHeaders[HttpConstants.HttpHeaders.ActivityId];
             }
         }
 
@@ -149,6 +146,10 @@ namespace Microsoft.Azure.Cosmos
         /// Returns true if the operation succeeded
         /// </summary>
         public virtual bool IsSuccess => this.StatusCode == HttpStatusCode.OK;
+
+        internal TimeSpan? RetryAfter { get; }
+
+        internal INameValueCollection ResponseHeaders { get; }
 
         internal static CosmosQueryResponse CreateResponse(
             FeedResponse<CosmosElement> feedResponse,

@@ -15,8 +15,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class CosmosException : Exception
     {
-        private readonly CosmosResponseMessageHeaders Headers = null;
-
         internal CosmosException(
             CosmosResponseMessage cosmosResponseMessage, 
             string message,
@@ -28,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
                 this.StatusCode = cosmosResponseMessage.StatusCode;
                 this.Headers = cosmosResponseMessage.Headers;
                 this.ActivityId = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
+                this.RetryAfter = this.Headers?.RetryAfter;
                 this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
                 this.Error = error;
@@ -94,6 +93,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the internal error object
         /// </summary>
         internal virtual Error Error { get; }
+
+        internal TimeSpan? RetryAfter { get; }
+
+        internal CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
