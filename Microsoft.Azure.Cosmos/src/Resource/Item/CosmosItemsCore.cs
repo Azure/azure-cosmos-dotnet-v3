@@ -491,9 +491,9 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosElement.Type == CosmosElementType.Array ||
                 cosmosElement.Type == CosmosElementType.Object ||
                 cosmosElement.Type == CosmosElementType.Binary)
-            {
+            {                                                
                 throw new InvalidOperationException(
-                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue));
+                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
             }
 
             if (cosmosElement.Type == CosmosElementType.String)

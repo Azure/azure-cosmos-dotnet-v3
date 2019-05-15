@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
@@ -91,13 +92,80 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainerCore container = new CosmosContainerCore(context, database, "testContainer");
             CosmosItemsCore items = new CosmosItemsCore(container.ClientContext, container);
 
-            TestPOCO poco = new TestPOCO
+            DateTime dateTime = new DateTime(2019, 05, 15, 12, 1, 2, 3, DateTimeKind.Utc);
+            Guid guid = Guid.NewGuid();
+
+            //Test supported types
+            List<dynamic> supportedTypesToTest = new List<dynamic> {
+                new { nested = new { pk = true } },
+                new { nested = new { pk = false } },
+                new { nested = new { pk = byte.MaxValue } },
+                new { nested = new { pk = sbyte.MaxValue } },
+                new { nested = new { pk = short.MaxValue } },
+                new { nested = new { pk = ushort.MaxValue } },
+                new { nested = new { pk = int.MaxValue } },
+                new { nested = new { pk = uint.MaxValue } },
+                new { nested = new { pk = long.MaxValue } },
+                new { nested = new { pk = ulong.MaxValue } },
+                new { nested = new { pk = float.MaxValue } },
+                new { nested = new { pk = double.MaxValue } },
+                new { nested = new { pk = decimal.MaxValue } },
+                new { nested = new { pk = char.MaxValue } },
+                new { nested = new { pk = "test" } },
+                new { nested = new { pk = dateTime } },
+                new { nested = new { pk = guid } }
+            };
+            
+            foreach(dynamic poco in supportedTypesToTest)
             {
-                nested = new Nested { pk = 138 }
+
+                object pk = await items.GetPartitionKeyValueFromStreamAsync(new CosmosDefaultJsonSerializer().ToStream(poco), new ItemRequestOptions());
+                if(pk is bool)
+                {
+                    Assert.AreEqual(poco.nested.pk, (bool)pk);
+                }
+                else if (pk is double)
+                {
+                    if (poco.nested.pk is float)
+                    {
+                        Assert.AreEqual(poco.nested.pk, Convert.ToSingle(pk));
+                    }
+                    else if (poco.nested.pk is double)
+                    {
+                        Assert.AreEqual(poco.nested.pk, Convert.ToDouble(pk));
+                    }
+                    else if (poco.nested.pk is decimal)
+                    {
+                        Assert.AreEqual(Convert.ToDouble(poco.nested.pk), (double)pk);
+                    }
+                }
+                else if (pk is string)
+                {
+                    if(poco.nested.pk is DateTime)
+                    {
+                        Assert.AreEqual(poco.nested.pk.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), (string)pk);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(poco.nested.pk.ToString(), (string)pk);
+                    }
+                    
+                }                
+            }
+
+            //Unsupported types should throw
+            List<dynamic> unsupportedTypesToTest = new List<dynamic> {
+                new { nested = new { pk = new { test = "test" } } },
+                new { nested = new { pk = new int[]{ 1, 2, 3 } } },                
+                new { nested = new { pk = new ArraySegment<byte>{ } } },               
             };
 
-            double pk = (double) await items.GetPartitionKeyValueFromStreamAsync(new CosmosDefaultJsonSerializer().ToStream(poco), new ItemRequestOptions());
-            Assert.AreEqual(poco.nested.pk, pk);
+            foreach(dynamic poco in unsupportedTypesToTest)
+            {                   
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => {
+                    await items.GetPartitionKeyValueFromStreamAsync(new CosmosDefaultJsonSerializer().ToStream(poco), new ItemRequestOptions());
+                });                                
+            }
         }
 
         private async Task VerifyItemNullExceptions(
@@ -328,15 +396,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
-        }
-
-        private class Nested
-        {
-            public int pk { get; set; }
-        }
-        private class TestPOCO
-        {
-            public Nested nested { get; set; }
-        }
+        }        
     }
 }
