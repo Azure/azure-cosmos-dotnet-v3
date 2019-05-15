@@ -43,8 +43,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task InsertItem()
         {
             var response = await this.container.Items.CreateItemAsync(
-                Constants.ValidOperationId,
-                this.baseItem);
+                this.baseItem,
+                new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
                 throw new Exception();

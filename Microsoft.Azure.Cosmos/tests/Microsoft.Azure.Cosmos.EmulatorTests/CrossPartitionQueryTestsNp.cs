@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                insertedDocuments.Add((await npCollection.Items.CreateItemAsync<JObject>(CosmosContainerSettings.NonePartitionKeyValue, documentObject)).Resource.ToObject<Document>());
+                insertedDocuments.Add((await npCollection.Items.CreateItemAsync<JObject>(documentObject, new ItemRequestOptions { PartitionKey = CosmosContainerSettings.NonePartitionKeyValue })).Resource.ToObject<Document>());
             }
 
             return new Tuple<CosmosContainer, List<Document>>(npCollection, insertedDocuments);
@@ -746,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
             Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
 
-            ItemResponse<SpecialPropertyDocument> response = await container.Items.CreateItemAsync<SpecialPropertyDocument>(testArgs.Value, specialPropertyDocument);
+            ItemResponse<SpecialPropertyDocument> response = await container.Items.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument, new ItemRequestOptions { PartitionKey = testArgs.Value });
             dynamic returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 

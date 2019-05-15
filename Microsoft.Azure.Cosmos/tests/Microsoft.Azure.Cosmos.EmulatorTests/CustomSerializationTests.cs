@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
             //create and read
-            ItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument, new ItemRequestOptions { PartitionKey = testDocument.Name });
             ItemResponse<TestDocument> readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
@@ -456,7 +456,7 @@ function bulkImport(docs) {
             for (int i = 0; i < documentCount; ++i)
             {
                 var newDocument = new MyObject(i);
-                var createdDocument = await container.Items.CreateItemAsync<MyObject>(newDocument.pk, newDocument);
+                var createdDocument = await container.Items.CreateItemAsync<MyObject>(newDocument, new ItemRequestOptions { PartitionKey = newDocument.pk });
             }
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");

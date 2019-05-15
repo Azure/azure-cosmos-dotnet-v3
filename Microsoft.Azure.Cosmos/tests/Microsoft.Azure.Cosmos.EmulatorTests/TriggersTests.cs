@@ -102,9 +102,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemRequestOptions options = new ItemRequestOptions()
             {
                 PreTriggers = new List<string>() { cosmosTrigger.Id },
+                PartitionKey = item.status
             };
 
-            ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+            ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item, options);
 
             double itemTax = createdItem.Resource.tax;
             Assert.AreEqual(item.cost * .20, itemTax);

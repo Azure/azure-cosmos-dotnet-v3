@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestGetPartitionValueFromStreamKey()
+        public async Task TestGetPartitionKeyValueFromStreamAsync()
         {
             CosmosClientContextCore context = new CosmosClientContextCore(
                 client: null,
@@ -93,11 +93,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestPOCO poco = new TestPOCO
             {
-                Nested = new Nested { Pk = 138 }
+                nested = new Nested { pk = 138 }
             };
 
-            string pk = (string) await items.GetPartitionKeyValueFromStream(new CosmosDefaultJsonSerializer().ToStream(poco));
-            Assert.AreEqual(poco.Nested.Pk, int.Parse(pk));
+            double pk = (double) await items.GetPartitionKeyValueFromStreamAsync(new CosmosDefaultJsonSerializer().ToStream(poco), new ItemRequestOptions());
+            Assert.AreEqual(poco.nested.pk, pk);
         }
 
         private async Task VerifyItemNullExceptions(
@@ -119,7 +119,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
                 await container.Items.CreateItemAsync<dynamic>(
-                    partitionKey: null,
                     item: testItem,
                     requestOptions: requestOptions);
             }, "CreateItemAsync should throw ArgumentNullException without the correct request option set.");
@@ -163,7 +162,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
                     await container.Items.CreateItemStreamAsync(
-                        partitionKey: null,
                         streamPayload: itemStream,
                         requestOptions: requestOptions);
                 }, "CreateItemAsync should throw ArgumentNullException without the correct request option set.");
@@ -232,7 +230,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                                         .Containers["testcontainer"];
 
             ItemResponse<dynamic> itemResponse = await container.Items.CreateItemAsync<dynamic>(
-                partitionKey: partitionKey,
                 item: testItem,
                 requestOptions: requestOptions);
             Assert.IsNotNull(itemResponse);
@@ -273,7 +270,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
                 using (CosmosResponseMessage streamResponse = await container.Items.CreateItemStreamAsync(
-                    partitionKey: partitionKey,
                     streamPayload: itemStream))
                 {
                     Assert.IsNotNull(streamResponse);
@@ -335,11 +331,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private class Nested
         {
-            public int Pk { get; set; }
+            public int pk { get; set; }
         }
         private class TestPOCO
         {
-            public Nested Nested { get; set; }
+            public Nested nested { get; set; }
         }
     }
 }

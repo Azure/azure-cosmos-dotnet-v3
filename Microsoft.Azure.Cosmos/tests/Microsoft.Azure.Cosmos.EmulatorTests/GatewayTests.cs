@@ -1378,7 +1378,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer collection = await database.Containers.CreateContainerAsync(inputCollection);
 
             Document documentDefinition = new Document() { Id = Guid.NewGuid().ToString() };
-            Document document = await collection.Items.CreateItemAsync<Document>(documentDefinition.Id, documentDefinition);
+            Document document = await collection.Items.CreateItemAsync<Document>(documentDefinition, new ItemRequestOptions { PartitionKey = documentDefinition.Id });
             string script = @"function() {
                 var output = 0;
                 function callback(err, docFeed, responseOptions) {
@@ -3081,7 +3081,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             poco.authors.Add("Mark Twain");
 
-            ItemResponse<CustomerPOCO> doc = await collection.Items.CreateItemAsync(poco.id, poco);
+            ItemResponse<CustomerPOCO> doc = await collection.Items.CreateItemAsync(poco, new ItemRequestOptions { PartitionKey = poco.id });
 
             // This tests that the existing ReadDocumentAsync API works as expected, you can only access Document properties
             ItemResponse<CustomerPOCO> documentResponse = await collection.Items.ReadItemAsync<CustomerPOCO>(partitionKey :poco.id, id : poco.id);
@@ -3122,7 +3122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             objectFromResource.authors.Add("Ernest Hemingway");
 
-            ItemResponse<CustomerObjectFromResource> doc = await collection.Items.CreateItemAsync(objectFromResource.id, objectFromResource);
+            ItemResponse<CustomerObjectFromResource> doc = await collection.Items.CreateItemAsync(objectFromResource, new ItemRequestOptions { PartitionKey = objectFromResource.id });
             // This tests that the existing ReadDocumentAsync API works as expected, you can only access Document properties
             ItemResponse<CustomerObjectFromResource> documentResponse = await collection.Items.ReadItemAsync<CustomerObjectFromResource>(partitionKey: objectFromResource.pk, id: objectFromResource.id);
             Assert.AreEqual(documentResponse.StatusCode, HttpStatusCode.OK);
@@ -3302,7 +3302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document.StringField = "222";
 
             Logger.LogLine("Adding Document with exclusion");
-            dynamic retrievedDocument = await collection.Items.CreateItemAsync(documentName, document, new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
+            dynamic retrievedDocument = await collection.Items.CreateItemAsync(document, new ItemRequestOptions { PartitionKey = documentName, IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
             FeedIterator<Document> queriedDocuments = collection.Items.CreateItemQuery<Document>(sqlQueryText : @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions : new QueryRequestOptions { EnableCrossPartitionQuery = true});

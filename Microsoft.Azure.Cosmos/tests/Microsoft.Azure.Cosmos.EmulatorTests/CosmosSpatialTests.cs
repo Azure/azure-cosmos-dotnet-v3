@@ -81,7 +81,7 @@
                 multiPolygon = this.GetMultiPoygon(),
             };
 
-            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
+            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(item: spatialItem, requestOptions: new ItemRequestOptions { PartitionKey = spatialItem.partitionKey });
             Assert.IsNotNull(createResponse);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
@@ -117,7 +117,7 @@
                 polygon = this.GetPolygon(),
             };
 
-            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
+            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(item: spatialItem, requestOptions: new ItemRequestOptions { PartitionKey = spatialItem.partitionKey });
             Assert.IsNotNull(createResponse);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
@@ -142,7 +142,7 @@
                 lineString = this.GetLineString(),
             };
 
-            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
+            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(item: spatialItem, requestOptions: new ItemRequestOptions { PartitionKey = spatialItem.partitionKey });
             Assert.IsNotNull(createResponse);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
@@ -166,7 +166,7 @@
                 id = Guid.NewGuid().ToString(),
                 point = this.GetPoint(),
             };
-            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(partitionKey: spatialItem.partitionKey, item: spatialItem);
+            ItemResponse<SpatialItem> createResponse = await this.Container.Items.CreateItemAsync<SpatialItem>(item: spatialItem, requestOptions: new ItemRequestOptions { PartitionKey = spatialItem.partitionKey });
             Assert.IsNotNull(createResponse);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 

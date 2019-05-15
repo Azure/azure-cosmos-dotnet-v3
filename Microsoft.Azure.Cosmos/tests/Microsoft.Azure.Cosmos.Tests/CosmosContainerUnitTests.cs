@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainerCore container = new CosmosContainerCore(context, database, "testContainer");
             Documents.PartitionKeyDefinition partitionKeyDefinition = await container.GetPartitionKeyDefinitionAsync();
             string[] tokens = partitionKeyDefinition.Paths[0].Split('/', System.StringSplitOptions.RemoveEmptyEntries);
-            CollectionAssert.AreEqual(tokens, await container.GetPartitionKeyPathTokens());
+            CollectionAssert.AreEqual(tokens, await container.GetPartitionKeyPathTokensAsync());
         }
     }
 }

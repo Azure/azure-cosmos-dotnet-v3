@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
         }
 
-        internal async Task<string[]> GetPartitionKeyPathTokens(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             if(partitionKeyPathTokens != null)
             {

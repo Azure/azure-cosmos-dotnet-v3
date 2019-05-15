@@ -125,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null);
+            const string pkPath = "/nested/pk";
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
@@ -139,12 +140,21 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         Kind = PartitionKind.Hash,
                         Paths = new Collection<string>()
                         {
-                            "/pk"
+                            pkPath
                         }
                     };
 
                     return Task.FromResult(cosmosContainerSetting);
                 });
+            this.collectionCache.Setup
+                    (m =>
+                        m.ResolveByNameAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test", new Collection<string>() { pkPath })));
+
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(

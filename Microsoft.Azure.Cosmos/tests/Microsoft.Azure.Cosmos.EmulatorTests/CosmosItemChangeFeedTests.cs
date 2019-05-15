@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     createdList.Add(temp);
 
-                    await this.Container.Items.CreateItemAsync<ToDoActivity>(partitionKey: temp.status, item: temp);
+                    await this.Container.Items.CreateItemAsync<ToDoActivity>(item: temp, requestOptions: new ItemRequestOptions { PartitionKey = temp.status });
                 }
             }
 

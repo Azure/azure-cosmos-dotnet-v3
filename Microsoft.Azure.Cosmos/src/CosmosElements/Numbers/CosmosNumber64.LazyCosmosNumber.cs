@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class LazyCosmosNumber64 : CosmosNumber64
         {
-            private const long MaxSafeInteger = 2 ^ 53 - 1;
+            private readonly long MaxSafeInteger = (long)Math.Pow(2, 53 - 1);
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
 
