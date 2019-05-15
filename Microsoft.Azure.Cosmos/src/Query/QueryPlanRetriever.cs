@@ -13,7 +13,6 @@
     {
         private static readonly QueryFeatures SupportedQueryFeatures =
             QueryFeatures.Aggregate
-            | QueryFeatures.CompositeAggregate
             | QueryFeatures.Distinct
             | QueryFeatures.GroupBy
             | QueryFeatures.MultipleOrderBy
