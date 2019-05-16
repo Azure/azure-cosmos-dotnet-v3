@@ -547,7 +547,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
-            int? maxConcurrency = 2,
+            int maxConcurrency = 2,
             int? maxItemCount = null,
             QueryRequestOptions queryRequestOptions = null)
         {
@@ -1189,12 +1189,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         List<JToken> queryResults = await RunQuery<JToken>(
                             container,
-                            "SELECT * FROM c",
+                            query,
                             maxDegreeOfParallelism,
                             maxItemCount,
                             feedOptions);
 
-                        Assert.AreEqual(documents.Count(), queryResults.Count);
+                        Assert.AreEqual(
+                            documents.Count(), 
+                            queryResults.Count, 
+                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                     }
                 }
             }
