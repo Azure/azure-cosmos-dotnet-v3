@@ -51,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
-                allowNonValueAggregateQuery: false);
+                allowNonValueAggregateQuery: false,
+                hasLogicalPartitionKey: false);
 
             if (queryExecutionInfo == null ||
                 queryExecutionInfo.QueryRanges == null ||

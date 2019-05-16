@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken);
 
         internal abstract Task<QueryResponse> ExecuteItemQueryAsync(
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
+            PartitionKey partitionKey,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 

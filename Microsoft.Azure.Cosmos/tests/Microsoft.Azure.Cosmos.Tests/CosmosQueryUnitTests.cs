@@ -63,8 +63,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(@"select * from t where t.something = 42 ");
+            bool requireFormattableOrderByQuery = true;
             bool allowNonValueAggregateQuery = true;
             bool isContinuationExpected = true;
+            bool hasLogicalPartitionKey = false;
             CancellationTokenSource cancellation = new CancellationTokenSource();
             CancellationToken token = cancellation.Token;
 
@@ -77,9 +79,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             client.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec,
                 partitionKeyDefinition,
-                true,
+                requireFormattableOrderByQuery,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
+                hasLogicalPartitionKey,
                 token)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
 
             CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(

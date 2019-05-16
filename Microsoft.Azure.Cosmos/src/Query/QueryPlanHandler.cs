@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<PartitionedQueryExecutionInfo> GetQueryPlan(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
+            PartitionKey partitionKey,
             QueryFeatures supportedQueryFeatures,
             CancellationToken cancellation)
         {
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
+                    hasLogicalPartitionKey: partitionKey != null,
                     cancellationToken: cancellation);
 
             if (partitionedQueryExecutionInfo == null ||

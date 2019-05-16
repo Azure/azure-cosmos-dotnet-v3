@@ -171,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
                     this.cosmosQueryContext.QueryClient,
                     this.cosmosQueryContext.SqlQuerySpec,
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey as PartitionKey,
                     this.cosmosQueryContext.ResourceLink,
                     cancellationToken);
             }
@@ -204,6 +205,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.cosmosQueryContext.QueryClient,
                     this.cosmosQueryContext.SqlQuerySpec,
                     partitionKeyDefinition,
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey as PartitionKey,
                     cancellationToken);
             }
 
@@ -389,6 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
@@ -399,6 +402,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
+                hasLogicalPartitionKey,
                 cancellationToken);
         }
 
