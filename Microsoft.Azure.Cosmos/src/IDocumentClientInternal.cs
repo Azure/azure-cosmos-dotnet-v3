@@ -6,6 +6,6 @@
 
     internal interface IDocumentClientInternal : IDocumentClient
     {
-        Task<CosmosAccountSettings> GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellation = default);
+        Task<CosmosAccountSettings> GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellation = default(CancellationToken));
     }
 }

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<StoredProcedureResponse> ReadAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default)
+                    CancellationToken cancellation = default(CancellationToken))
         {
             return this.ProcessAsync(
                 partitionKey: null,
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<StoredProcedureResponse> ReplaceAsync(
                     string body,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default)
+                    CancellationToken cancellation = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(body))
             {
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<StoredProcedureResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default)
+                    CancellationToken cancellation = default(CancellationToken))
         {
             return this.ProcessAsync(
                 partitionKey: null,
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
 

@@ -65,7 +65,7 @@
         /// <returns>The maximum value in the sequence.</returns>
         public static Task<TSource> MaxAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<TSource>(
                 Expression.Call(
@@ -83,7 +83,7 @@
         /// <returns>The minimum value in the sequence.</returns>
         public static Task<TSource> MinAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<TSource>(
                 Expression.Call(
@@ -100,7 +100,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal> AverageAsync(
             this IQueryable<decimal> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<decimal>(
                 Expression.Call(
@@ -117,7 +117,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal?> AverageAsync(
             this IQueryable<decimal?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<decimal?>(
                 Expression.Call(
@@ -134,7 +134,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> AverageAsync(
             this IQueryable<double> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double>(
                 Expression.Call(
@@ -151,7 +151,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> AverageAsync(
             this IQueryable<double?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double?>(
                 Expression.Call(
@@ -168,7 +168,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<float> AverageAsync(
             this IQueryable<float> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<float>(
                 Expression.Call(
@@ -185,7 +185,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<float?> AverageAsync(
             this IQueryable<float?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<float?>(
                 Expression.Call(
@@ -202,7 +202,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> AverageAsync(
             this IQueryable<int> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double>(
                 Expression.Call(
@@ -219,7 +219,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> AverageAsync(
             this IQueryable<int?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double?>(
                 Expression.Call(
@@ -236,7 +236,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> AverageAsync(
             this IQueryable<long> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double>(
                 Expression.Call(
@@ -253,7 +253,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> AverageAsync(
             this IQueryable<long?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double?>(
                 Expression.Call(
@@ -270,7 +270,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal> SumAsync(
             this IQueryable<decimal> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<decimal>(
                 Expression.Call(
@@ -287,7 +287,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal?> SumAsync(
             this IQueryable<decimal?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<decimal?>(
                 Expression.Call(
@@ -304,7 +304,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> SumAsync(
             this IQueryable<double> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double>(
                 Expression.Call(
@@ -321,7 +321,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> SumAsync(
             this IQueryable<double?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<double?>(
                 Expression.Call(
@@ -338,7 +338,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<float> SumAsync(
             this IQueryable<float> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<float>(
                 Expression.Call(
@@ -355,7 +355,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<float?> SumAsync(
             this IQueryable<float?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<float?>(
                 Expression.Call(
@@ -372,7 +372,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<int> SumAsync(
             this IQueryable<int> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<int>(
                 Expression.Call(
@@ -389,7 +389,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<int?> SumAsync(
             this IQueryable<int?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<int?>(
                 Expression.Call(
@@ -406,7 +406,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<long> SumAsync(
             this IQueryable<long> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<long>(
                 Expression.Call(
@@ -423,7 +423,7 @@
         /// <returns>The average value in the sequence.</returns>
         public static Task<long?> SumAsync(
             this IQueryable<long?> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<long?>(
                 Expression.Call(
@@ -441,7 +441,7 @@
         /// <returns>The number of elements in the input sequence.</returns>
         public static Task<int> CountAsync<TSource>(
             this IQueryable<TSource> source,
-            CancellationToken cancellation = default)
+            CancellationToken cancellation = default(CancellationToken))
         {
             return ((IDocumentQueryProvider)source.Provider).ExecuteAsync<int>(
                 Expression.Call(

@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             
         }
 
-        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellation = default)
+        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellation = default(CancellationToken))
         {
             this.ApplySessionToken(request);
 
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<CosmosAccountSettings> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellation = default)
+        public virtual async Task<CosmosAccountSettings> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellation = default(CancellationToken))
         {
             CosmosAccountSettings databaseAccount = null;
 

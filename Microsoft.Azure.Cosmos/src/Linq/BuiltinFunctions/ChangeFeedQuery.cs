@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellation = default)
+        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellation = default(CancellationToken))
         {
             return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellation);
         }
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="cancellation">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellation = default)
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellation = default(CancellationToken))
         {
             return this.ExecuteNextAsync<dynamic>(cancellation);
         }

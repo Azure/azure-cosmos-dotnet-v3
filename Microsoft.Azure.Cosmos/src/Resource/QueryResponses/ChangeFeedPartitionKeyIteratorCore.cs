@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellation = default)
+        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellation = default(CancellationToken))
         {
             cancellation.ThrowIfCancellationRequested();
 

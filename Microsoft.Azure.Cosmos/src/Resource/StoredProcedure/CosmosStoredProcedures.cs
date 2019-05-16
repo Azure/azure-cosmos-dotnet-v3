@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     string body,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default);
+                    CancellationToken cancellation = default(CancellationToken));
 
         /// <summary>
         /// Gets an iterator to go through all the stored procedures for the container
