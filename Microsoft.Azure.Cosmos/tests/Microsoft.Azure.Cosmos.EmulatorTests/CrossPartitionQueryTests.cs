@@ -1790,7 +1790,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-
             string filename = $"CrossPartitionQueryTests.AggregateMixedTypes";
             string outputPath = $"{filename}_output.xml";
             string baselinePath = $"{filename}_baseline.xml";
@@ -2022,21 +2021,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         documentsFromWithDistinct.AddRange(cosmosQueryResponse);
                     }
 
-                    try
+                    Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
+                    for (int i = 0; i < documentsFromWithDistinct.Count; i++)
                     {
-                        Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
-                        for (int i = 0; i < documentsFromWithDistinct.Count; i++)
-                        {
-                            JToken documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
-                            JToken documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
-                            Assert.IsTrue(
-                                JsonTokenEqualityComparer.Value.Equals(documentFromWithDistinct, documentFromWithoutDistinct),
-                                $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a container");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        throw e;
+                        JToken documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
+                        JToken documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
+                        Assert.IsTrue(
+                            JsonTokenEqualityComparer.Value.Equals(documentFromWithDistinct, documentFromWithoutDistinct),
+                            $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a container");
                     }
                 }
             }
@@ -3841,10 +3833,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryRequestOptions);
 
             List<JToken> queryResultsWithoutContinuationTokenAsJTokens = queryResultsWithoutContinuationToken
-                .Select(x => JToken.FromObject(x)).ToList();
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
 
             List<JToken> queryResultsWithContinuationTokensAsJTokens = queryResultsWithContinuationTokens
-                .Select(x => JToken.FromObject(x)).ToList();
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
 
             Assert.IsTrue(
                 queryResultsWithoutContinuationTokenAsJTokens
