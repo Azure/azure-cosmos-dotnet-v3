@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionMode targetConnectionMode = GetTargetConnectionMode(connectionMode);
                         CosmosClient cosmosClient = cosmosClientFactory(targetConnectionMode);
 
-                        Assert.AreEqual(targetConnectionMode, cosmosClient.Configuration.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
+                        Assert.AreEqual(targetConnectionMode, cosmosClient.ClientOptions.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
                         cosmosClients.Add(cosmosClient);
                     }
 
