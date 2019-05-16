@@ -25,7 +25,7 @@
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
-            PartitionKey partitionKey,
+            object partitionKey,
             CancellationToken cancellationToken)
         {
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
@@ -41,7 +41,7 @@
         public static Task<PartitionedQueryExecutionInfo> GetQueryPlanThroughGatewayAsync(
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
-            PartitionKey partitionKey,
+            object partitionKey,
             Uri resourceLink,
             CancellationToken cancellationToken)
         {

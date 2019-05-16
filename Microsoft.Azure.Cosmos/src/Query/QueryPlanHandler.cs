@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<PartitionedQueryExecutionInfo> GetQueryPlan(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
-            PartitionKey partitionKey,
+            object partitionKey,
             QueryFeatures supportedQueryFeatures,
             CancellationToken cancellation)
         {

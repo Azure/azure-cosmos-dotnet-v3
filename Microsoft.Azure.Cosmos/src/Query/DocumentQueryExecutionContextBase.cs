@@ -171,7 +171,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
-                allowNonValueAggregateQuery);
+                allowNonValueAggregateQuery,
+                hasLogicalPartitionKey: false);
         }
 
         public virtual async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellationToken)

@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            PartitionKey partitionKey,
+            object partitionKey,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {

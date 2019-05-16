@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
                     this.cosmosQueryContext.QueryClient,
                     this.cosmosQueryContext.SqlQuerySpec,
-                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey as PartitionKey,
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey,
                     this.cosmosQueryContext.ResourceLink,
                     cancellationToken);
             }
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.cosmosQueryContext.QueryClient,
                     this.cosmosQueryContext.SqlQuerySpec,
                     partitionKeyDefinition,
-                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey as PartitionKey,
+                    this.cosmosQueryContext.QueryRequestOptions.PartitionKey,
                     cancellationToken);
             }
 
