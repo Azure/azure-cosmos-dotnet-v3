@@ -2638,6 +2638,73 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey);
         }
 
+        private async Task TestQueryCrossPartitionTopHelper(CosmosContainer container, IEnumerable<Document> documents)
+        {
+            List<string> queryFormats = new List<string>()
+            {
+                "SELECT {0} TOP {1} * FROM c",
+                // Can't do order by since order by needs to look at all partitions before returning a single document =>
+                // thus we can't tell how many documents the SDK needs to recieve.
+                //"SELECT {0} TOP {1} * FROM c ORDER BY c._ts",
+
+                // Can't do aggregates since that also retrieves more documents than the user sees
+                //"SELECT {0} TOP {1} VALUE AVG(c._ts) FROM c",
+            };
+
+            foreach (string queryFormat in queryFormats)
+            {
+                foreach (bool useDistinct in new bool[] { true, false })
+                {
+                    foreach (int topCount in new int[] { 0, 1, 10 })
+                    {
+                        foreach (int pageSize in new int[] { 1, 10 })
+                        {
+                            // Run the query and use the query metrics to make sure the query didn't grab more documents
+                            // than needed.
+
+                            string query = string.Format(queryFormat, useDistinct ? "DISTINCT" : string.Empty, topCount);
+                            FeedOptions feedOptions = new FeedOptions
+                            {
+                                MaxBufferedItemCount = 1000,
+
+                            };
+
+                            // Max DOP needs to be 0 since the query needs to run in serial => 
+                            // otherwise the parallel code will prefetch from other partitions,
+                            // since the first N-1 partitions might be empty.
+                            FeedIterator<dynamic> documentQuery = container.Items.CreateItemQuery<dynamic>(
+                                    query,
+                                    maxConcurrency: 0,
+                                    maxItemCount: pageSize);
+
+                            //QueryMetrics aggregatedQueryMetrics = QueryMetrics.Zero;
+                            int numberOfDocuments = 0;
+                            while (documentQuery.HasMoreResults)
+                            {
+                                FeedResponse<dynamic> FeedResponse = await documentQuery.FetchNextSetAsync();
+
+                                numberOfDocuments += FeedResponse.Count();
+                                //foreach (QueryMetrics queryMetrics in FeedResponse.QueryMetrics.Values)
+                                //{
+                                //    aggregatedQueryMetrics += queryMetrics;
+                                //}
+                            }
+
+                            Assert.IsTrue(
+                                numberOfDocuments <= topCount,
+                                $"Received {numberOfDocuments} documents with query: {query} and pageSize: {pageSize}");
+                            //if (!useDistinct)
+                            //{
+                            //    Assert.IsTrue(
+                            //        aggregatedQueryMetrics.OutputDocumentCount <= topCount,
+                            //        $"Received {aggregatedQueryMetrics.OutputDocumentCount} documents query: {query} and pageSize: {pageSize}");
+                            //}
+                        }
+                    }
+                }
+            }
+        }
+
         [TestMethod]
         public async Task TestQueryCrossPartitionOffsetLimit()
         {
@@ -2667,7 +2734,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionOffsetLimit,
-                "/id");
+                "/undefined");
         }
 
         private async Task TestQueryCrossPartitionOffsetLimit(
@@ -2748,70 +2815,97 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task TestQueryCrossPartitionTopHelper(CosmosContainer container, IEnumerable<Document> documents)
+        [TestMethod]
+        public async Task TestQueryCrossPartitionOffsetLimitPushdown()
         {
-            List<string> queryFormats = new List<string>()
-            {
-                "SELECT {0} TOP {1} * FROM c",
-                // Can't do order by since order by needs to look at all partitions before returning a single document =>
-                // thus we can't tell how many documents the SDK needs to recieve.
-                //"SELECT {0} TOP {1} * FROM c ORDER BY c._ts",
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
 
-                // Can't do aggregates since that also retrieves more documents than the user sees
-                //"SELECT {0} TOP {1} VALUE AVG(c._ts) FROM c",
-            };
+            Random rand = new Random(seed);
+            List<Person> people = new List<Person>();
 
-            foreach (string queryFormat in queryFormats)
+            for (int i = 0; i < numberOfDocuments; i++)
             {
-                foreach (bool useDistinct in new bool[] { true, false })
+                Person person = GetRandomPerson(rand);
+                for (int j = 0; j < rand.Next(0, 4); j++)
                 {
-                    foreach (int topCount in new int[] { 0, 1, 10 })
+                    people.Add(person);
+                }
+            }
+
+            List<string> documents = new List<string>();
+            people = people.OrderBy((person) => Guid.NewGuid()).ToList();
+            foreach (Person person in people)
+            {
+                documents.Add(JsonConvert.SerializeObject(person));
+            }
+
+            await CreateIngestQueryDelete(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                documents,
+                this.TestQueryCrossPartitionOffsetLimitPushdown,
+                "/city");
+        }
+
+        private async Task TestQueryCrossPartitionOffsetLimitPushdown(
+            CosmosContainer container,
+            IEnumerable<Document> documents)
+        {
+            // Test that having a logical partition key pushes down the OFFSET
+            {
+                // The key here is that the number of roundtrips should go down if we push down the OFFSET,
+                // since LIMIT = 0 in this case.
+                string query = $@"
+                            SELECT *
+                            FROM c
+                            ORDER BY c._ts
+                            OFFSET 10 LIMIT 10";
+
+                QueryRequestOptions optionsWithoutLogicalPartitionKey = new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    EnableCrossPartitionSkipTake = true,
+                };
+
+                QueryRequestOptions optionsWithLogicalPartitionKey = new QueryRequestOptions()
+                {
+                    EnableCrossPartitionSkipTake = true,
+                    PartitionKey = City.LosAngeles.ToString(),
+                };
+
+                int numIterationsWithoutLogicalPartitionKey = 0;
+                {
+                    // This one should take OFFSET + LIMIT roundtrips
+                    FeedIterator<JToken> itemQuery = container.Items.CreateItemQuery<JToken>(
+                    sqlQueryText: query,
+                    maxConcurrency: 2,
+                    maxItemCount: 1,
+                    requestOptions: optionsWithoutLogicalPartitionKey);
+
+                    while (itemQuery.HasMoreResults)
                     {
-                        foreach (int pageSize in new int[] { 1, 10 })
-                        {
-                            // Run the query and use the query metrics to make sure the query didn't grab more documents
-                            // than needed.
-
-                            string query = string.Format(queryFormat, useDistinct ? "DISTINCT" : string.Empty, topCount);
-                            FeedOptions feedOptions = new FeedOptions
-                            {
-                                MaxBufferedItemCount = 1000,
-
-                            };
-
-                            // Max DOP needs to be 0 since the query needs to run in serial => 
-                            // otherwise the parallel code will prefetch from other partitions,
-                            // since the first N-1 partitions might be empty.
-                            FeedIterator<dynamic> documentQuery = container.Items.CreateItemQuery<dynamic>(
-                                    query,
-                                    maxConcurrency: 0,
-                                    maxItemCount: pageSize);
-
-                            //QueryMetrics aggregatedQueryMetrics = QueryMetrics.Zero;
-                            int numberOfDocuments = 0;
-                            while (documentQuery.HasMoreResults)
-                            {
-                                FeedResponse<dynamic> FeedResponse = await documentQuery.FetchNextSetAsync();
-
-                                numberOfDocuments += FeedResponse.Count();
-                                //foreach (QueryMetrics queryMetrics in FeedResponse.QueryMetrics.Values)
-                                //{
-                                //    aggregatedQueryMetrics += queryMetrics;
-                                //}
-                            }
-
-                            Assert.IsTrue(
-                                numberOfDocuments <= topCount,
-                                $"Received {numberOfDocuments} documents with query: {query} and pageSize: {pageSize}");
-                            //if (!useDistinct)
-                            //{
-                            //    Assert.IsTrue(
-                            //        aggregatedQueryMetrics.OutputDocumentCount <= topCount,
-                            //        $"Received {aggregatedQueryMetrics.OutputDocumentCount} documents query: {query} and pageSize: {pageSize}");
-                            //}
-                        }
+                        await itemQuery.FetchNextSetAsync();
+                        numIterationsWithoutLogicalPartitionKey++;
                     }
                 }
+
+                int numIterationsWithLogicalPartitionKey = 0;
+                {
+                    // This one should just take LIMIT roundtrips
+                    FeedIterator<JToken> itemQuery = container.Items.CreateItemQuery<JToken>(
+                    sqlQueryText: query,
+                    maxConcurrency: 2,
+                    maxItemCount: 1,
+                    requestOptions: optionsWithLogicalPartitionKey);
+
+                    while (itemQuery.HasMoreResults)
+                    {
+                        await itemQuery.FetchNextSetAsync();
+                        numIterationsWithLogicalPartitionKey++;
+                    }
+                }
+
+                Assert.IsTrue(numIterationsWithLogicalPartitionKey < numIterationsWithoutLogicalPartitionKey);
             }
         }
 
