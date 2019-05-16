@@ -2975,6 +2975,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxItemCount = pageSize,
                             MaxBufferedItemCount = 1000,
                             MaxConcurrency = 2,
+                            EnableCrossPartitionSkipTake = true,
                         };
 
                         IEnumerable<JToken> expectedResults = documents.Select(document => document.propertyBag);
