@@ -28,12 +28,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryContext cosmosQueryContext;
         private CosmosQueryExecutionContext innerExecutionContext;
 
-        /// <summary>
-        /// Test flag for making the query use the opposite code path for query plan retrieval.
-        /// If the SDK would have went to Gateway, then it will use ServiceInterop and visa versa.
-        /// </summary>
-        public static bool TestFlag = true;
-
         public CosmosQueryExecutionContextFactory(
             CosmosQueryClient client,
             ResourceType resourceTypeEnum,
@@ -164,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.cosmosQueryContext.ContainerResourceId = containerSettings.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            if (this.cosmosQueryContext.QueryClient.ByPassQueryParsing() || TestFlag)
+            if (this.cosmosQueryContext.QueryClient.ByPassQueryParsing())
             {
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                 // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
