@@ -62,6 +62,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosClientContext ClientContext { get; }
 
+        private string[] partitionKeyPathTokens;
+
         public override Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -208,40 +210,31 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
         }
 
-        internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellation = default(CancellationToken))
         {
             if(partitionKeyPathTokens != null)
             {
                 return partitionKeyPathTokens;
             }
 
-            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
-            if (partitionKeyDefinition == null || partitionKeyDefinition.Paths.Count == 0)
+            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellation);
+            if(partitionKeyDefinition?.Paths == null)
             {
-                throw new ArgumentException("Partition key path not found");
+                throw new ArgumentException("Partition key path not found.");
+            }
+
+            if(partitionKeyDefinition.Paths.Count > 1)
+            {
+                throw new InvalidOperationException("Multiple partition keys not supported.");
             }
 
             string path = partitionKeyDefinition.Paths[0];
+            partitionKeyPathTokens = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
-            //faster than string.Spilt
-            partitionKeyPathTokens = new string[path.Count(x => x == '/')];
-            int index = 0;
-            int tokenCount = 0;
-            int nextId = path.IndexOf('/');            
-            do
+            if(partitionKeyPathTokens.Length < 1)
             {
-                index = nextId;
-                nextId = path.IndexOf('/', index + 1);
-                if (nextId == -1)
-                {
-                    partitionKeyPathTokens[tokenCount++] = path.Substring(index + 1);
-                }
-                else
-                {
-                    partitionKeyPathTokens[tokenCount++] = path.Substring(index + 1, nextId - index - 1);
-                }
+                throw new ArgumentOutOfRangeException("No partition key tokens found.");
             }
-            while (nextId > -1);
 
             return partitionKeyPathTokens;
         }
@@ -284,9 +277,7 @@ namespace Microsoft.Azure.Cosmos
                 })
                 .Unwrap();
         }
-
-        private string[] partitionKeyPathTokens;
-
+        
         private Task<CosmosResponseMessage> ProcessStreamAsync(
             Stream streamPayload,
             OperationType operationType,

@@ -12,6 +12,10 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Query;
+    using Moq;
 
     [TestClass]
     public class CosmosContainerSettingsTests
@@ -148,5 +152,26 @@ namespace Microsoft.Azure.Cosmos
 
             return input;
         }
+
+        [TestMethod]
+        public async Task TestGetPartitionKeyPathTokens()
+        {
+            DocumentClient documentClient = new MockDocumentClient();
+            Routing.ClientCollectionCache collectionCache = await documentClient.GetCollectionCacheAsync();
+            CosmosClientContextCore context = new CosmosClientContextCore(
+                client: null,
+                clientConfiguration: null,
+                cosmosJsonSerializer: null,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: documentClient,
+                documentQueryClient: new Mock<IDocumentQueryClient>().Object
+            );
+            CosmosDatabaseCore database = new CosmosDatabaseCore(context, "testDatabase");
+            CosmosContainerCore container = new CosmosContainerCore(context, database, "testContainer");
+            Documents.PartitionKeyDefinition partitionKeyDefinition = await container.GetPartitionKeyDefinitionAsync();
+            string[] tokens = partitionKeyDefinition.Paths[0].Split('/', StringSplitOptions.RemoveEmptyEntries);
+            CollectionAssert.AreEqual(tokens, await container.GetPartitionKeyPathTokensAsync());
+        }       
     }
 }

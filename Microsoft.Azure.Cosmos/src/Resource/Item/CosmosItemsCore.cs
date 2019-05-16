@@ -461,22 +461,27 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        internal async Task<object> GetPartitionKeyValueFromStreamAsync(Stream stream, ItemRequestOptions itemRequestOptions, CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<object> GetPartitionKeyValueFromStreamAsync(Stream stream, ItemRequestOptions itemRequestOptions, CancellationToken cancellation = default(CancellationToken))
         {     
             if(itemRequestOptions?.PartitionKey != null)
             {
                 return itemRequestOptions.PartitionKey;
             }
 
-            MemoryStream memoryStream = new MemoryStream();
             stream.Position = 0;
-            stream.CopyTo(memoryStream);
-        
+
+            MemoryStream memoryStream = stream as MemoryStream;
+            if (memoryStream == null)
+            {
+                memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+            }
+                    
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosObject cosmosObject = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
-            string[] tokens = await this.container.GetPartitionKeyPathTokensAsync(cancellationToken);
+            string[] tokens = await this.container.GetPartitionKeyPathTokensAsync(cancellation);
             
             for(int i = 0; i < tokens.Length - 1; i++)
             {

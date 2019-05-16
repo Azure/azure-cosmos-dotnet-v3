@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos
                 ResourceId = resourceId,
             };
             
-            if(partitionKeyPaths != null && partitionKeyPaths.Any())
+            if(partitionKeyPaths?.Count > 0)
             {
                 container.PartitionKey = new PartitionKeyDefinition()
                 {
