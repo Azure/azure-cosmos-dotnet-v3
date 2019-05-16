@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CleanUp()
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabaseIterator();
+            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {

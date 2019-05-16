@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionIterator();
+        /// FeedIterator<CosmosUserDefinedFunctionSettings> feedIterator = this.container.UserDefinedFunctions.GetUserDefinedFunctionsIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosUserDefinedFunctionSettings settings in await feedIterator.FetchNextSetAsync())
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionIterator(
+        public FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionsIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {

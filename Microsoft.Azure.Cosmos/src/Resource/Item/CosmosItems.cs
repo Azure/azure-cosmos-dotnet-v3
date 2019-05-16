@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemIterator<ToDoActivity>();
+        /// FeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemsIterator<ToDoActivity>();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(ToDoActivity item in await feedIterator.FetchNextSetAsync())
@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<T> GetItemIterator<T>(
+        public abstract FeedIterator<T> GetItemsIterator<T>(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.Items.GetItemStreamIterator();
+        /// FeedIterator feedIterator = this.Container.Items.GetItemsStreamIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetItemStreamIterator(
+        public abstract FeedIterator GetItemsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             ItemRequestOptions requestOptions = null);
