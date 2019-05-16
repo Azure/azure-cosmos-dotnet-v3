@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -534,18 +535,12 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException exception)
             {
-                CosmosResponseMessage message = exception.ToCosmosResponseMessage(request: null);
-                return QueryResponse.CreateFailure(
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(message.Headers),
-                    requestMessage: null,
-                    errorMessage: message.ErrorMessage,
-                    statusCode: message.StatusCode,
-                    error: message.Error);
+                return exception.ToCosmosResponseMessage(request: null);
             }
             catch (CosmosException exception)
             {
-                return QueryResponse.CreateFailure(
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(exception.Headers),
+                return new CosmosResponseMessage(
+                    headers: exception.Headers,
                     requestMessage: null,
                     errorMessage: exception.Message,
                     statusCode: exception.StatusCode,
@@ -553,30 +548,10 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (AggregateException ae)
             {
-                AggregateException innerExceptions = ae.Flatten();
-                Exception exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException);
-                CosmosException cosmosException = exception as CosmosException;
-                if (cosmosException != null)
+                CosmosResponseMessage errorMessage = TransportHandler.AggregateExceptionConverter(ae, null);
+                if (errorMessage != null)
                 {
-                    return QueryResponse.CreateFailure(
-                        responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosException.Headers),
-                        requestMessage: null,
-                        errorMessage: cosmosException.Message,
-                        statusCode: cosmosException.StatusCode,
-                        error: cosmosException.Error);
-                }
-
-                exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
-                DocumentClientException documentException = ae.InnerException as DocumentClientException;
-                if (documentException == null)
-                {
-                    CosmosResponseMessage message = documentException.ToCosmosResponseMessage(request: null);
-                    return QueryResponse.CreateFailure(
-                        responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(message.Headers),
-                        requestMessage: null,
-                        errorMessage: message.ErrorMessage,
-                        statusCode: message.StatusCode,
-                        error: message.Error);
+                    return errorMessage;
                 }
 
                 throw;
