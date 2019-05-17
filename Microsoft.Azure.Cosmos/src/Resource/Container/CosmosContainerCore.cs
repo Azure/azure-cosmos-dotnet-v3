@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
         }
 
-        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerSettingsAsync(cancellationToken)
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellation);
             if(partitionKeyDefinition?.Paths == null)
             {
-                throw new ArgumentException("Partition key path not found.");
+                throw new ArgumentNullException("Partition key path cannot be null.");
             }
 
             if(partitionKeyDefinition.Paths.Count > 1)
@@ -230,11 +230,6 @@ namespace Microsoft.Azure.Cosmos
 
             string path = partitionKeyDefinition.Paths[0];
             partitionKeyPathTokens = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-            if(partitionKeyPathTokens.Length < 1)
-            {
-                throw new ArgumentOutOfRangeException("No partition key tokens found.");
-            }
 
             return partitionKeyPathTokens;
         }

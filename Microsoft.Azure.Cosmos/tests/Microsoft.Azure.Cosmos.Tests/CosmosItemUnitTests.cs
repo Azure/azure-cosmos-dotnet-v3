@@ -113,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new { nested = new { pk = char.MaxValue } },
                 new { nested = new { pk = "test" } },
                 new { nested = new { pk = dateTime } },
-                new { nested = new { pk = guid } }
+                new { nested = new { pk = guid } },
+                new { nested = new { pk = (object)null } }
             };
             
             foreach(dynamic poco in supportedTypesToTest)

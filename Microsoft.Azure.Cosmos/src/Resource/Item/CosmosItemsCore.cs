@@ -493,33 +493,33 @@ namespace Microsoft.Azure.Cosmos
 
         private object CosmosElementToObject(CosmosElement cosmosElement)
         {
-            if (cosmosElement.Type == CosmosElementType.Array ||
-                cosmosElement.Type == CosmosElementType.Object ||
-                cosmosElement.Type == CosmosElementType.Binary)
+            if (cosmosElement?.Type == CosmosElementType.Array ||
+                cosmosElement?.Type == CosmosElementType.Object ||
+                cosmosElement?.Type == CosmosElementType.Binary)
             {                                                
                 throw new InvalidOperationException(
                             string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
             }
 
-            if (cosmosElement.Type == CosmosElementType.String)
+            if (cosmosElement?.Type == CosmosElementType.String)
             {
                 CosmosString cosmosString = cosmosElement as CosmosString;
                 return cosmosString.Value;
             }
 
-            if (cosmosElement.Type == CosmosElementType.Number)
+            if (cosmosElement?.Type == CosmosElementType.Number)
             {
                 CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
                 return cosmosNumber.AsFloatingPoint();
             }
 
-            if (cosmosElement.Type == CosmosElementType.Boolean)
+            if (cosmosElement?.Type == CosmosElementType.Boolean)
             {
                 CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
                 return cosmosBool.Value;
             }
 
-            if (cosmosElement.Type == CosmosElementType.Guid)
+            if (cosmosElement?.Type == CosmosElementType.Guid)
             {
                 CosmosGuid cosmosGuid = cosmosElement as CosmosGuid;
                 return cosmosGuid.Value;
