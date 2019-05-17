@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            string partitionKey = "/id",
            Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            int retryCount = 1;
+            int retryCount = 5;
             AggregateException exceptionHistory = new AggregateException();
             while (retryCount-- > 0)
             {
