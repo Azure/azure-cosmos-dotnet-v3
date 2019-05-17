@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The default Cosmos JSON serializer
     /// </summary>
-    internal class CosmosDefaultJsonSerializer : CosmosJsonSerializer
+    internal class CosmosJsonSerializerCore : CosmosJsonSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private static readonly JsonSerializer Serializer = new JsonSerializer()
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
                     {
-                        return CosmosDefaultJsonSerializer.Serializer.Deserialize<T>(jsonTextReader);
+                        return CosmosJsonSerializerCore.Serializer.Deserialize<T>(jsonTextReader);
                     }
                 }
             }
@@ -42,12 +42,12 @@ namespace Microsoft.Azure.Cosmos
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosDefaultJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonSerializerCore.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
             {
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
                     writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    CosmosDefaultJsonSerializer.Serializer.Serialize(writer, input);
+                    CosmosJsonSerializerCore.Serializer.Serialize(writer, input);
                     writer.Flush();
                     streamWriter.Flush();
                 }

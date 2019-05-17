@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockClient.RequestHandler.InnerHandler = testHandler;
             CosmosResponseMessage streamResponse = await feedIterator.FetchNextSetAsync();
 
-            Collection<CosmosConflictSettings> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<CosmosConflictSettings>>(streamResponse.Content).Data;
+            Collection<CosmosConflictSettings> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<CosmosConflictSettings>>(streamResponse.Content).Data;
 
             Assert.AreEqual(1, response.Count());
 

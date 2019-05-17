@@ -238,12 +238,12 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// If no custom JSON converter was set it uses the default <see cref="CosmosDefaultJsonSerializer"/>
+        /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
         /// </summary>
         [JsonConverter(typeof(ClientConfigurationJsonConverter))]
         public virtual CosmosJsonSerializer CosmosJsonSerializer
         {
-            get => this.cosmosJsonSerializer ?? (this.cosmosJsonSerializer = new CosmosDefaultJsonSerializer());
+            get => this.cosmosJsonSerializer ?? (this.cosmosJsonSerializer = new CosmosJsonSerializerCore());
             internal set => this.cosmosJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosJsonSerializer));
         }
 

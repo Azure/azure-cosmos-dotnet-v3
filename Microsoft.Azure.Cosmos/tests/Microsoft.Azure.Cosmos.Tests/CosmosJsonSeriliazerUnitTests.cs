@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateSerializer()
         {
-            CosmosDefaultJsonSerializer cosmosDefaultJsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosJsonSerializerCore cosmosDefaultJsonSerializer = new CosmosJsonSerializerCore();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateJson()
         {
-            CosmosDefaultJsonSerializer cosmosDefaultJsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosJsonSerializerCore cosmosDefaultJsonSerializer = new CosmosJsonSerializerCore();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(toDoActivity))
             {
                 Assert.IsNotNull(stream);
