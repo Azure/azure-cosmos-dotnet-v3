@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 partitionKey: requestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                streamPayload: this.clientContext.UserJsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);
 
@@ -101,13 +101,13 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: null,
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                streamPayload: this.clientContext.UserJsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+                partitionedQueryExecutionInfo = this.clientContext.UserJsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
                 
             return partitionedQueryExecutionInfo;

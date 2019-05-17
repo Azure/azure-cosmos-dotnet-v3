@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
+                streamPayload: this.clientContext.DefaultJsonSerializer.ToStream(userDefinedFunctionSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

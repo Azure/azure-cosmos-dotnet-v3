@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cosmosContainerCore: null,
                 partitionKey: null,
-                streamPayload: CosmosResource.ToStream(triggerSettings),
+                streamPayload: this.clientContext.DefaultJsonSerializer.ToStream(triggerSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

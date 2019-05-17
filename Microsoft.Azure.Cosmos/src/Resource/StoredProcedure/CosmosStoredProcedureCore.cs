@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
+                streamPayload: this.clientContext.DefaultJsonSerializer.ToStream(storedProcedureSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -95,11 +95,11 @@ namespace Microsoft.Azure.Cosmos
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)
             {
-                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
+                parametersStream = this.clientContext.UserJsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
             }
             else
             {
-                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput>(input);
+                parametersStream = this.clientContext.UserJsonSerializer.ToStream<TInput>(input);
             }
 
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(

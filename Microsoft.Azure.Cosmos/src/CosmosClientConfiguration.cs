@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonConverter(typeof(ClientConfigurationJsonConverter))]
         public virtual CosmosJsonSerializer CosmosJsonSerializer
         {
-            get => this.cosmosJsonSerializer ?? (this.cosmosJsonSerializer = new CosmosJsonSerializerCore());
+            get => this.cosmosJsonSerializer;
             internal set => this.cosmosJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosJsonSerializer));
         }
 

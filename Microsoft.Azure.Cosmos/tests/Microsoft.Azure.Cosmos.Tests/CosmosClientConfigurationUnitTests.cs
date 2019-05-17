@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
             var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
             var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.IsInstanceOfType(cosmosClient.CosmosJsonSerializer, typeof(CosmosJsonSerializerWrapper));
+            Assert.IsInstanceOfType(cosmosClient.UserJsonSerializer, typeof(CosmosJsonSerializerWrapper));
         }
     }
 }
