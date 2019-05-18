@@ -62,17 +62,22 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> CreateItemAsync<T>(
+        public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
+            if (result.Item1)
+            {
+                requestOptions.PartitionKey = result.Item2;
+            }
             Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
-                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
+                streamPayload: result.Item3,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> ReadItemStreamAsync(
@@ -119,17 +124,22 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> UpsertItemAsync<T>(            
+        public override async Task<ItemResponse<T>> UpsertItemAsync<T>(            
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
+            if (result.Item1)
+            {
+                requestOptions.PartitionKey = result.Item2;
+            }
             Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(                
-                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
+                streamPayload: result.Item3,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override async Task<CosmosResponseMessage> ReplaceItemStreamAsync(                    
@@ -147,19 +157,24 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(            
+        public override async Task<ItemResponse<T>> ReplaceItemAsync<T>(            
             string id,
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
+            if (result.Item1)
+            {
+                requestOptions.PartitionKey = result.Item2;
+            }
             Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(               
                id: id,
-               streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
+               streamPayload: result.Item3,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> DeleteItemStreamAsync(
@@ -489,6 +504,20 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.CosmosElementToObject(cosmosObject[tokens[tokens.Length - 1]]);
+        }
+
+        internal async Task<Tuple<bool, object, Stream>> GetItemStreamAsync<T>(T item, CancellationToken cancellation = default(CancellationToken))
+        {
+            CosmosDefaultJsonSerializer defaultSerializer = this.clientContext.JsonSerializer as CosmosDefaultJsonSerializer;
+            if (defaultSerializer != null)
+            {
+                Stream stream = defaultSerializer.ToStream<T>(item, await this.container.GetPartitionKeyPathTokensAsync(cancellation), out object partitionKey);
+                return new Tuple<bool, object, Stream>(true, partitionKey, stream);                                    
+            }
+            else
+            {
+                return new Tuple<bool, object, Stream>(false, null, this.clientContext.JsonSerializer.ToStream<T>(item));
+            }
         }
 
         private object CosmosElementToObject(CosmosElement cosmosElement)
