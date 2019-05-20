@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosClientContext clientContext;
         private readonly CosmosContainerCore cosmosContainer;
-        private readonly CosmosChangeFeedRequestOptions changeFeedOptions;
+        private readonly ChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
         private string partitionKeyRangeId;
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions options)
         {
             if (cosmosContainer == null)
             {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
-            CosmosChangeFeedRequestOptions options,
+            ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
@@ -88,9 +88,9 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: options,
                 requestEnricher: request =>
                 {
-                    CosmosChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
-                    CosmosChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
-                    CosmosChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
+                    ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
+                    ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
+                    ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
                 responseCreator: response => response,
                 partitionKey: null,

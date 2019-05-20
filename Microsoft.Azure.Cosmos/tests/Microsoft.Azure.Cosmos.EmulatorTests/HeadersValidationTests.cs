@@ -564,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Lazy-indexing collection.
                 {
-                    ContainerResponse collectionResponse = await lazyContainer.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                    ContainerResponse collectionResponse = await lazyContainer.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                     Assert.IsTrue(int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionLazyIndexingProgress], CultureInfo.InvariantCulture) >= 0,
                         "Expect lazy indexer progress when reading lazy collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Consistent-indexing collection.
                 {
-                    ContainerResponse collectionResponse = await consistentContainer.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                    ContainerResponse collectionResponse = await consistentContainer.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading consistent collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // None-indexing collection.
                 {
-                    ContainerResponse collectionResponse = await noneIndexContainer.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                    ContainerResponse collectionResponse = await noneIndexContainer.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading none-index collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),

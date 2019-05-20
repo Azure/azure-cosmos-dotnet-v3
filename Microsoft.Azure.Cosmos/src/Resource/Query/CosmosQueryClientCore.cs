@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosQueryRequestOptions requestOptions,
+            QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private QueryResponse GetCosmosElementResponse(
-            CosmosQueryRequestOptions requestOptions,
+            QueryRequestOptions requestOptions,
             ResourceType resourceType,
             CosmosResponseMessage cosmosResponseMessage)
         {
