@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellation = default(CancellationToken))
+        public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellation.ThrowIfCancellationRequested();
 
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal async Task<bool> ShouldRetryFailureAsync(
             CosmosResponseMessage response, 
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
             {

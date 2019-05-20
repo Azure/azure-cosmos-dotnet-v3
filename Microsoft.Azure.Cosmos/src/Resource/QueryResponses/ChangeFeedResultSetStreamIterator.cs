@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellation = default(CancellationToken))
+        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellation)
                 .ContinueWith(task =>

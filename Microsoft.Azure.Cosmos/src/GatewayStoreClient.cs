@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellation = default(CancellationToken))
+        internal Task<HttpResponseMessage> SendHttpAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.httpClient.SendHttpAsync(requestMessage, cancellation);
         }

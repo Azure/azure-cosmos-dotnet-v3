@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<StoredProcedureResponse> ReadAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Replaces a <see cref="CosmosStoredProcedureSettings"/> in the Azure Cosmos service as an asynchronous operation.
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<StoredProcedureResponse> ReplaceAsync(
                     string body,
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Delete a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<StoredProcedureResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken));
+                    CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service.
@@ -189,6 +189,6 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellationToken = default(CancellationToken));
     }
 }

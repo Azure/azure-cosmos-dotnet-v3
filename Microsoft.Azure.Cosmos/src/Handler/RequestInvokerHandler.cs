@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (responseCreator == null)
             {
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (resourceUri == null)
             {

@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             CosmosUserDefinedFunctionSettings userDefinedFunctionSettings,
             RequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
                 partitionKey,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             T item,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
                 partitionKey: partitionKey,
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
                 partitionKey,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.ReadItemStreamAsync(
                 partitionKey: partitionKey,
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
                 partitionKey,
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             T item,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(
                 partitionKey: partitionKey,
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
                     string id,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
                 partitionKey,
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             T item,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(
                partitionKey: partitionKey,
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessItemStreamAsync(
                 partitionKey,
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
             object partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.DeleteItemStreamAsync(
                partitionKey: partitionKey,
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             int? maxItemCount = null,
             ChangeFeedRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 

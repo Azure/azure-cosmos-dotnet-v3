@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.ReadStreamAsync(
                 requestOptions: requestOptions,
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ContainerResponse> ReplaceAsync(
             CosmosContainerSettings containerSettings,
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             this.ClientContext.ValidateResource(containerSettings.Id);
 
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ContainerResponse> DeleteAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
                 requestOptions: requestOptions,
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<int?> ReadProvisionedThroughputAsync(
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellation);
             if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task ReplaceProvisionedThroughputAsync(
             int throughput,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(throughput, cancellation);
             if (offerResult.StatusCode != HttpStatusCode.OK)
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<CosmosResponseMessage> DeleteStreamAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
                streamPayload: null,
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> ReplaceStreamAsync(
             Stream streamPayload,
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
                 streamPayload: streamPayload,
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<CosmosResponseMessage> ReadStreamAsync(
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
                 streamPayload: null,
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetRID(cancellation)
                 .ContinueWith(task => task.Result == null ?
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
             int targetThroughput,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetRID(cancellation)
                  .ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellation), cancellation)
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellation"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
-        internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellation = default(CancellationToken))
+        internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellation);
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellation);
         }
 
-        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellation = default(CancellationToken))
+        internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetCachedContainerSettingsAsync(cancellation)
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellation);
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// For non-existing container will throw <see cref="DocumentClientException"/> with 404 as status code
         /// </remarks>
-        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellation = default(CancellationToken))
+        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellation);
             return containerSettings.GetNoneValue();
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: this.LinkUri,

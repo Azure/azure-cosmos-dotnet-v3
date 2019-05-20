@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellation = default(CancellationToken))
+        public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellation);
             this.continuationToken = response.Headers.Continuation;
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellation = default(CancellationToken))
+        public override async Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellation.ThrowIfCancellationRequested();
 

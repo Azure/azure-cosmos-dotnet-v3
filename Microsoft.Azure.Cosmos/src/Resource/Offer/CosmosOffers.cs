@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             string targetRID,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
             {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<CosmosOfferResult> ReplaceThroughputIfExistsAsync(
             string targetRID,
             int targetThroughput,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<Offer> ReadOfferAsync(string targetRID,
-                    CancellationToken cancellation = default(CancellationToken))
+                    CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
             {
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<Offer> ReplaceOfferAsync(
                         string targetRID,
                         Offer targetOffer,
-                        CancellationToken cancellation = default(CancellationToken))
+                        CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
             {
