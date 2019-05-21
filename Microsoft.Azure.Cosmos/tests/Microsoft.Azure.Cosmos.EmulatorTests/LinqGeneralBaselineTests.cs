@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using BaselineTest;
     using Microsoft.Azure.Documents;
 
-    [Ignore]
     [TestClass]
     [TestCategory("Quarantine")]
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -730,6 +729,567 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        [Owner("khdang")]
+        [Ignore]
+        public void TestSkipTake()
+        {
+            //TODO
+            //V2 using V3 pipeline causing issue on accessing Continuation in CosmosQueryResponseMessageHeaders
+            //This will be fine once we convert these test cases to use V3 pipeline
+
+            var inputs = new List<LinqTestInput>();
+
+            // --------------------------------
+            // Skip - Take combinations
+            // --------------------------------
+
+            inputs.Add(new LinqTestInput(
+                "Skip", b => getQuery(b)
+                .Skip(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take", b => getQuery(b)
+                .Skip(1).Take(2)));
+
+            inputs.Add(new LinqTestInput(
+                "Skip(negative number) -> Take", b => getQuery(b)
+                .Skip(-1).Take(1),
+                ErrorMessages.ExpressionMustBeNonNegativeInteger));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take(negative number)", b => getQuery(b)
+                .Skip(1).Take(-2),
+                ErrorMessages.ExpressionMustBeNonNegativeInteger));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Skip -> Take", b => getQuery(b)
+                .Skip(1).Skip(2).Take(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Take", b => getQuery(b)
+                .Skip(3).Take(5).Take(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Skip -> Take", b => getQuery(b)
+                .Skip(1).Take(2).Skip(3).Take(4),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Take -> Skip", b => getQuery(b)
+                .Skip(1).Take(2).Take(3).Skip(4),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Skip -> Take -> Take", b => getQuery(b)
+                .Skip(5).Skip(2).Take(10).Take(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Skip", b => getQuery(b)
+                .Take(7).Skip(3),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Take -> Skip", b => getQuery(b)
+                .Take(2).Take(3).Skip(5),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Skip -> Skip", b => getQuery(b)
+                .Take(3).Skip(1).Skip(2),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Take -> Skip -> Skip", b => getQuery(b)
+                .Take(5).Take(3).Skip(1).Skip(1),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Skip -> Take -> Skip", b => getQuery(b)
+                .Take(10).Skip(2).Take(5).Skip(1),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Skip -> Skip -> Take", b => getQuery(b)
+                .Take(10).Skip(4).Skip(2).Take(2),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            // --------------------------
+            // Select + Skip & Take
+            // --------------------------
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Skip -> Take", b => getQuery(b)
+                .Select(f => f.FamilyId).Skip(1).Take(2)));
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Take -> Skip", b => getQuery(b)
+                .Select(f => f.FamilyId).Take(2).Skip(1),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Skip -> Take -> Select", b => getQuery(b)
+                .Select(f => f.FamilyId).Skip(7).Take(13).Select(f => f.Count())));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Select -> Take -> Skip", b => getQuery(b)
+                .Skip(5).Take(11).Select(f => f.Children.Count()).Take(7).Skip(3),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Select -> Take", b => getQuery(b)
+                .Skip(10).Select(f => f.FamilyId).Take(7)));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Select -> Skip", b => getQuery(b)
+                .Take(7).Select(f => f.FamilyId).Skip(3),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            // ------------------------------
+            // SelectMany + Skip & Take
+            // ------------------------------
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children).Skip(7).Take(5)));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> Skip -> Take -> SelectMany", b => getQuery(b)
+                .SelectMany(f => f.Children).Skip(11).Take(3).SelectMany(c => c.Pets),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> SelectMany -> Take -> Skip -> SelectMany", b => getQuery(b)
+                .Skip(1).SelectMany(f => f.Children).Take(13).Skip(3).SelectMany(c => c.Pets),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> SelectMany -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children).SelectMany(c => c.Pets).Skip(3).Take(4)));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Skip -> SelectMany -> Skip -> SelectMany", b => getQuery(b)
+                .Take(50).Skip(25).SelectMany(f => f.Children).Skip(10).SelectMany(c => c.Pets),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // ---------------------------
+            // Where + Skip & Take
+            // ---------------------------
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Skip -> Take", b => getQuery(b)
+                .Where(f => f.IsRegistered).Skip(3).Take(5)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Skip -> Take -> Where -> Skip -> Take", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0).Skip(7).Take(11).Where(f => f.Tags.Count() > 2).Skip(1).Take(3),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Where -> Skip", b => getQuery(b)
+                .Skip(1).Take(25).Where(f => f.Int > 10).Skip(5),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Where -> Skip", b => getQuery(b)
+                .Take(25).Where(f => f.FamilyId.Contains("A")).Skip(10),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Take -> Skip -> Where", b => getQuery(b)
+                .Where(f => f.Children.Count() > 1).Take(10).Skip(3).Where(f => f.Int > 0),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // ---------------------------
+            // OrderBy + Skip & Take
+            // ---------------------------
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> Skip -> Take", b => getQuery(b)
+                .OrderBy(f => f.Int).Skip(3).Take(7)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> Skip -> Take -> OrderBy -> Take -> Skip", b => getQuery(b)
+                .OrderBy(f => f.Int).Skip(3).Take(11).OrderBy(f => f.FamilyId).Take(7).Skip(1),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> OrderBy", b => getQuery(b)
+                .Skip(3).Take(43).OrderBy(f => f.IsRegistered),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> OrderByDescending -> Skip", b => getQuery(b)
+                .Take(50).OrderByDescending(f => f.Int).Skip(13),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> OrderByDescending -> Take", b => getQuery(b)
+                .Skip(7).OrderByDescending(f => f.Int).Take(17),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // ---------------------------
+            // Distinct + Skip & Take
+            // ---------------------------
+
+            inputs.Add(new LinqTestInput(
+                "Distinct -> Skip -> Take", b => getQuery(b)
+                .Distinct().Skip(3).Take(7)));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Distinct", b => getQuery(b)
+                .Skip(3).Take(11).Distinct(),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Select -> Distinct -> Skip -> Take -> Distinct -> Skip", b => getQuery(b)
+                .Skip(10).Take(60).Select(f => f.Int).Distinct().Skip(15).Take(20).Distinct().Skip(7),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Distinct -> Skip -> Take", b => getQuery(b)
+                .Skip(7).Distinct().Skip(20).Take(10),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Skip -> Distinct -> Skip", b => getQuery(b)
+                .Take(30).Skip(10).Distinct().Skip(7),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // ---------------------------------------------------------------------------------
+            // Select, SelectMany, Where, OrderBy, Distinct with Skip & Take in between
+            // ---------------------------------------------------------------------------------
+
+            // Select, SelectMany
+
+            inputs.Add(new LinqTestInput(
+                "Select(new) -> SelectMany -> Skip -> Take", b => getQuery(b)
+                .Select(f => new { f.FamilyId, f.Children }).SelectMany(c => c.Children).Skip(3).Take(10)));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> Select -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children).Select(c => c.GivenName).Skip(7).Take(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> SelectMany -> Skip -> Select -> Take", b => getQuery(b)
+                .Skip(10).Take(20).SelectMany(f => f.Children).Skip(3).Select(c => c.GivenName).Take(5),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> SelectMany -> Take -> Skip -> Select -> Take", b => getQuery(b)
+                .Skip(10).SelectMany(f => f.Children).Take(10).Skip(1).Select(c => c.FamilyName).Take(7),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> SelectMany -> Skip -> Select -> Take", b => getQuery(b)
+                .Take(30).SelectMany(f => f.Children).Skip(10).Select(c => c.Grade).Take(3),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            // Select, Where
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Where -> Skip -> Take", b => getQuery(b)
+                .Select(f => f.Children).Where(c => c.Count() > 0).Skip(3).Take(7)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Skip -> Take -> Select -> Skip", b => getQuery(b)
+                .Where(f => f.IsRegistered).Skip(7).Take(3).Select(f => f.FamilyId).Skip(2),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Select, OrderBy
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Skip -> Take -> OrderBy", b => getQuery(b)
+                .Select(f => f.FamilyId).Skip(1).Take(2).OrderBy(s => s),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "OrderByDescending -> Take -> Skip -> Select", b => getQuery(b)
+                .OrderByDescending(f => f.Int).Take(10).Skip(3).Select(f => f.Int + 1),
+                ErrorMessages.OrderByInSubqueryNotSuppported));
+
+            // Select, Distinct
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Select -> Distinct -> Skip -> Take", b => getQuery(b)
+                .Take(7).Select(f => f.Int).Distinct().Skip(1).Take(5),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            // SelectMany, Where
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> Where -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children).Where(c => c.Grade > 100).Skip(10).Take(20)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Skip -> SelectMany -> Take", b => getQuery(b)
+                .Where(f => f.IsRegistered).Skip(10).SelectMany(f => f.Children).Take(7),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // SelectMany, OrderBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> Skip -> SelectMany -> SelectMany", b => getQuery(b)
+                .OrderBy(f => f.Int).Skip(10).SelectMany(f => f.Children).SelectMany(c => c.Pets),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> OrderBy -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20),
+                ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+
+            // SelectMany, Distinct
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> Distinct -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children).Distinct().Skip(7).Take(11)));
+
+            inputs.Add(new LinqTestInput(
+                "Distinct -> Skip -> SelectMany", b => getQuery(b)
+                .Distinct().Skip(3).SelectMany(f => f.Children),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Where, OrderBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> Where -> Skip -> Take", b => getQuery(b)
+                .OrderBy(f => f.Int).Where(f => f.IsRegistered).Skip(11).Take(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Where -> Take -> OrderBy", b => getQuery(b)
+                .Skip(20).Where(f => f.Children.Count() > 0).Take(10).OrderBy(f => f.Int),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Where, Distinct
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Skip -> Take -> Distinct", b => getQuery(b)
+                .Where(f => f.IsRegistered).Skip(3).Take(17).Distinct(),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Distinct -> Where -> Take", b => getQuery(b)
+                .Skip(22).Distinct().Where(f => f.Parents.Count() > 0).Take(7),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // -----------------------------------------
+            // All basic operations with Skip & Take
+            // -----------------------------------------
+
+            // Start with Select
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Where -> OrderBy -> Skip -> Take", b => getQuery(b)
+                .Select(f => f.FamilyId).Where(id => id.Count() > 10).OrderBy(id => id).Skip(1).Take(10)));
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Where -> OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
+                .Select(f => f.FamilyId).Where(id => id.Count() > 10).OrderBy(id => id).Skip(1).Take(10)
+                .Select(id => id + "_suffix").Where(id => id.Count() > 12).Skip(2).Take(4),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Skip -> OrderBy -> Skip -> Distinct -> Skip", b => getQuery(b)
+                .Select(f => f.Records).Skip(5).OrderBy(r => r.Transactions.Count()).Skip(1).Distinct().Skip(3),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(new(new(new(new))))) -> (Skip -> Select) x 6 -> Skip -> Where -> Take", b => getQuery(b)
+                .Select(f => new { f.FamilyId, L1 = new { L2 = new { L3 = new { L4 = new { f.Records } } } } })
+                .Skip(1).Select(f => f.L1)
+                .Skip(2).Select(f => f.L2)
+                .Skip(3).Select(f => f.L3)
+                .Skip(4).Select(f => f.L4)
+                .Skip(5).Select(f => f.Records)
+                .Skip(6).Select(f => f.Transactions)
+                .Skip(7).Where(t => t.Count() > 100)
+                .Take(20),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select -> (Skip -> Select -> Where -> OrderBy -> Distinct -> Take) x 3 -> Skip -> Take", b => getQuery(b)
+                .Select(f => new { L1 = f })
+                .Skip(1).Select(f => f.L1).Where(f => f.Int > 10).OrderBy(f => f.FamilyId).Distinct().Take(100)
+                .Skip(2).Select(f => new { L2 = f }).Where(f => f.L2.FamilyId.CompareTo("A") > 0).OrderBy(f => f.L2.Int).Distinct().Take(50)
+                .Skip(3).Select(f => f.L2).Where(f => f.Children.Count() > 1).OrderBy(f => f.IsRegistered).Distinct().Take(40)
+                .Skip(4).Take(25),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Start with Distinct
+
+            inputs.Add(new LinqTestInput(
+                "Distinct -> Select -> Where -> Skip -> Take", b => getQuery(b)
+                .Distinct().Select(f => f.Records).Where(r => r.Transactions.Count() > 2).Skip(1).Take(10)));
+
+            // Start with Where
+
+            inputs.Add(new LinqTestInput(
+                "Where -> OrderBy -> Skip -> Take", b => getQuery(b)
+                .Where(f => f.Int > 10).OrderBy(f => f.FamilyId).Skip(1).Take(5)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
+                .Where(f => f.Int > 10).OrderBy(f => f.FamilyId).Skip(1).Take(5)
+                .Select(f => f.Records).Where(r => r.Transactions != null).Skip(1).Take(3),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Skip -> Take -> SelectMany -> OrderBy -> Skip -> Take", b => getQuery(b)
+                .Where(f => f.Int > 20).Skip(5).Take(20)
+                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(5).Take(10),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Start with OrderBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
+                .OrderBy(f => f.Int).Skip(1).Take(10)
+                .Select(f => f.Records).Where(r => r.Transactions.Count() > 10).Skip(2).Take(3),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Start with Skip
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
+                .Skip(1).Take(10).Select(f => f.Children.Count()).Where(c => c > 1).Skip(1).Take(4),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Skip -> Take -> Where -> Skip -> Take -> OrderBy -> Skip -> Take -> Select -> Skip -> Distinct -> Skip -> Take", b => getQuery(b)
+                .Skip(2).Take(10).Where(f => f.Int > 10)
+                .Skip(1).Take(9).OrderBy(f => f.FamilyId)
+                .Skip(3).Take(5).Select(f => f.Children.Count())
+                .Skip(1).Distinct()
+                .Skip(1).Take(1),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Start with Take
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Skip -> OrderBy -> Skip -> Take", b => getQuery(b)
+                .Take(10).Skip(2).Where(f => f.IsRegistered).OrderBy(f => f.Int).Skip(1).Take(9),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> Distinct -> Select -> Where -> Skip -> Take", b => getQuery(b)
+                .Take(10).Distinct().Select(f => f.Children).Where(c => c.Count() > 0).Skip(2).Take(5),
+                ErrorMessages.TopInSubqueryNotSupported));
+
+            // -----------------------------------------------------------------------------
+            // All basic operations with Skip & Take with SelectMany in the middle
+            // -----------------------------------------------------------------------------
+
+            // SelectMany after Take
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Skip -> Take -> SelectMany -> Skip -> Take", b => getQuery(b)
+                .Select(f => f.Records).Skip(1).Take(10)
+                .SelectMany(r => r.Transactions).Skip(1).Take(9),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // SelectMany after Where
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> Skip -> Take", b => getQuery(b)
+                .Where(f => f.IsRegistered)
+                .SelectMany(f => f.Children).OrderBy(c => c.Grade).Skip(10).Take(20),
+                ErrorMessages.OrderByCorrelatedCollectionNotSupported));
+
+            // Start with SelectMany
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> Select -> Skip -> Take -> Select -> Where -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children)
+                    .Select(c => c.FamilyName).Skip(1).Take(20)
+                    .Select(n => n.Count()).Where(l => l > 10).Skip(2).Take(50),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // -------------------------------------------------------------
+            // Nested Skip & Take in Select, SelectMany, Where, OrderBy
+            // -------------------------------------------------------------
+
+            // Nested with Select
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(Where -> Skip)) -> Where", b => getQuery(b)
+                .Select(f => new {
+                    id = f.FamilyId,
+                    GoodChildren = f.Children.Where(c => c.Grade > 75).Skip(1)
+                })
+                .Where(f => f.GoodChildren.Count() > 0),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select(Skip -> Take) -> Skip -> Take", b => getQuery(b)
+                .Select(f => f.Children.Skip(1).Take(1)).Skip(3).Take(10),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(Skip -> Take, Skip, Take) -> Skip -> Take -> Where", b => getQuery(b)
+                .Select(f => new {
+                    v0 = f.Children.Skip(1).Take(2),
+                    v1 = f.Parents.Skip(1),
+                    v2 = f.Records.Transactions.Take(10)
+                })
+                .Skip(1).Take(20).Where(f => f.v0.Count() > 0).Take(10),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(SelectMany -> SelectMany -> Distinct, OrderByDescending -> Take -> SelectMany -> Skip, Select -> OrderBy -> Skip -> Take -> Sum) -> Where -> Skip -> Take -> SelectMany -> Skip -> Take", b => getQuery(b)
+                .Select(f => new {
+                    v0 = f.Children.SelectMany(c => c.Pets.Skip(1).SelectMany(p => p.GivenName).Distinct()),
+                    v1 = f.Children.OrderByDescending(c => c.Grade).Take(2).SelectMany(c => c.Pets.Select(p => p.GivenName).Skip(2)),
+                    v2 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Sum()
+                })
+                .Where(f => f.v2 > 100).Skip(5).Take(20)
+                .SelectMany(f => f.v1).Distinct().Skip(3).Take(22),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "Select -> Skip -> SelectMany(Skip -> OrderBy)", b => getQuery(b)
+                .Select(f => f.Records).Skip(1).SelectMany(r => r.Transactions.Skip(10).OrderBy(t => t.Date)),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Nested with Where
+
+            inputs.Add(new LinqTestInput(
+                "Where -> Where(Skip -> Take -> Count) - > Skip -> Take", b => getQuery(b)
+                .Where(f => f.Children.Count() > 2).Where(f => f.Children.Skip(1).Take(10).Count() > 1).Skip(1).Take(10),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Nested with OrderBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(Skip -> Take -> Count) -> Skip -> Take", b => getQuery(b)
+                .OrderBy(f => f.Children.Skip(1).Take(5).Count()),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            // Nested with SelectMany
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany(Skip -> Take) -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children.Skip(1).Take(2)).Skip(3).Take(20),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany(Skip -> Take) -> Skip -> Take -> SelectMany(Skip -> Take) -> Skip -> Take", b => getQuery(b)
+                .SelectMany(f => f.Children.Skip(1).Take(2)).Skip(3).Take(20)
+                .SelectMany(c => c.Pets.Skip(1).Take(2)).Skip(1).Take(10),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany(Where -> OrderBy -> Skip -> Distinct)", b => getQuery(b)
+                .SelectMany(f => f.Children.Where(c => c.Grade > 10).OrderBy(c => c.Grade).Skip(1).Distinct()),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany(Skip -> SelectMany(Skip -> Select) -> Take)", b => getQuery(b)
+                .SelectMany(f => f.Children.Skip(1).SelectMany(c => c.Pets.Skip(1).Select(p => p.GivenName)).Take(10)),
+                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         [Ignore]
         public void TestUnsupportedScenarios()
         {
@@ -823,8 +1383,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        [Ignore]
         public void TestDistinctTranslation()
         {
+            //TODO
+            //V2 using V3 pipeline causing issue on accessing Continuation in CosmosQueryResponseMessageHeaders
+            //This will be fine once we convert these test cases to use V3 pipeline
+
             var inputs = new List<LinqTestInput>();
 
             // Simple distinct
@@ -914,7 +1479,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 "SelectMany(Select obj) -> Distinct",
                 b => getQuery(b).SelectMany(f => f.Parents).Distinct()));
 
-            inputs.Add(new LinqTestInput("SelectMany(SelectMany(Where -> Select)) -> Distinct",
+            inputs.Add(new LinqTestInput(
+                "SelectMany(SelectMany(Where -> Select)) -> Distinct",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
                     .SelectMany(child => child.Pets
@@ -922,7 +1488,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .Select(pet => pet)))
                     .Distinct()));
 
-            inputs.Add(new LinqTestInput("SelectMany(SelectMany(Where -> Select -> Distinct))",
+            inputs.Add(new LinqTestInput(
+                "SelectMany(SelectMany(Where -> Select -> Distinct))",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
                     .SelectMany(child => child.Pets
@@ -930,7 +1497,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .Select(pet => pet)
                     .Distinct()))));
 
-            inputs.Add(new LinqTestInput("SelectMany(SelectMany(Where -> Select -> Select) -> Distinct)",
+            inputs.Add(new LinqTestInput(
+                "SelectMany(SelectMany(Where -> Select -> Select) -> Distinct)",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
                     .SelectMany(child => child.Pets
@@ -939,7 +1507,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .Select(name => name.Count())))
                     .Distinct()));
 
-            inputs.Add(new LinqTestInput("SelectMany(SelectMany(Where -> Select new {} -> Select) -> Distinct)",
+            inputs.Add(new LinqTestInput(
+                "SelectMany(SelectMany(Where -> Select new {} -> Select) -> Distinct)",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
                     .SelectMany(child => child.Pets
@@ -952,7 +1521,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         }).Select(p => p.child))
                     .Distinct())));
 
-            inputs.Add(new LinqTestInput("SelectMany(SelectMany(Where -> Select new {}) -> Distinct)",
+            inputs.Add(new LinqTestInput(
+                "SelectMany(SelectMany(Where -> Select new {}) -> Distinct)",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
                     .SelectMany(child => child.Pets
@@ -965,7 +1535,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         })))
                     .Distinct()));
 
-            inputs.Add(new LinqTestInput("SelectMany(SelectMany(Where -> Select new {} -> Distinct))",
+            inputs.Add(new LinqTestInput(
+                "SelectMany(SelectMany(Where -> Select new {} -> Distinct))",
                 b => getQuery(b)
                 .SelectMany(family => family.Children
                     .SelectMany(child => child.Pets
@@ -1458,7 +2029,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             foreach (dynamic myBook in queryResponse)
             {
-                Assert.AreEqual(myBook.Title, "MyBook");
+                Assert.AreEqual(myBook.Title.ToString(), "MyBook");
             }
 
             client.DeleteDocumentCollectionAsync(collection.SelfLink).Wait();

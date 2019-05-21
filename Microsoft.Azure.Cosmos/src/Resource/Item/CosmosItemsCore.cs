@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override FeedIterator<T> GetItemIterator<T>(
+        public override FeedIterator<T> GetItemsIterator<T>(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ItemFeedRequestExecutor<T>);
         }
 
-        public override FeedIterator GetItemStreamIterator(
+        public override FeedIterator GetItemsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             ItemRequestOptions requestOptions = null)

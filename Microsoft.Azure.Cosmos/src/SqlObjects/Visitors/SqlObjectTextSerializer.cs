@@ -221,6 +221,17 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.writer.Write(")");
         }
 
+        public override void Visit(SqlGroupByClause sqlGroupByClause)
+        {
+            this.writer.Write("GROUP BY ");
+            sqlGroupByClause.Expressions[0].Accept(this);
+            for (int i = 1; i < sqlGroupByClause.Expressions.Count; i++)
+            {
+                this.writer.Write(", ");
+                sqlGroupByClause.Expressions[i].Accept(this);
+            }
+        }
+
         public override void Visit(SqlIdentifier sqlIdentifier)
         {
             this.writer.Write(sqlIdentifier.Value);
@@ -341,7 +352,24 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             // We have to use InvariantCulture due to number formatting.
             // "1234.1234" is correct while "1234,1234" is incorrect.
-            this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
+            if (sqlNumberLiteral.Value.IsDouble)
+            {
+                string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
+                double literalValue = 0.0;
+                if (!sqlNumberLiteral.Value.IsNaN && 
+                    !sqlNumberLiteral.Value.IsInfinity && 
+                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) || 
+                    !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
+                {
+                    literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
+                }
+
+                this.writer.Write(literalString);
+            }
+            else
+            {
+                this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
+            }
         }
 
         public override void Visit(SqlNumberPathExpression sqlNumberPathExpression)
@@ -483,6 +511,12 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 this.WriteDelimiter("");
                 sqlQuery.WhereClause.Accept(this);
+            }
+
+            if (sqlQuery.GroupByClause != null)
+            {
+                sqlQuery.GroupByClause.Accept(this);
+                this.writer.Write(" ");
             }
 
             if (sqlQuery.OrderbyClause != null)

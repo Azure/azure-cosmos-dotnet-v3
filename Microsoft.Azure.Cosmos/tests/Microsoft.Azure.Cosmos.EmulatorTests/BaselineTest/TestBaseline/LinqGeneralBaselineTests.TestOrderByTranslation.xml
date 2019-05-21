@@ -251,7 +251,6 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: Method 'ThenBy' is not supported., ]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

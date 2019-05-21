@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private const int SqlFromClauseHashCode = 52588336;
         private const int SqlFunctionCallScalarExpressionHashCode = 496783446;
         private const int SqlFunctionCallScalarExpressionUdfHashCode = 1547906315;
+        private const int SqlGroupByClauseHashCode = 130396242;
         private const int SqlIdentifierHashCode = -1664307981;
         private const int SqlIdentifierPathExpressionHashCode = -1445813508;
         private const int SqlInputPathCollectionHashCode = -209963066;
@@ -220,6 +221,17 @@ namespace Microsoft.Azure.Cosmos.Sql
             for (int i = 0; i < sqlFunctionCallScalarExpression.Arguments.Count; i++)
             {
                 hashCode = CombineHashes(hashCode, sqlFunctionCallScalarExpression.Arguments[i].Accept(this));
+            }
+
+            return hashCode;
+        }
+
+        public override int Visit(SqlGroupByClause sqlGroupByClause)
+        {
+            int hashCode = SqlGroupByClauseHashCode;
+            for (int i = 0; i < sqlGroupByClause.Expressions.Count; i++)
+            {
+                hashCode = CombineHashes(hashCode, sqlGroupByClause.Expressions[i].Accept(this));
             }
 
             return hashCode;
@@ -447,6 +459,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             if (sqlQuery.WhereClause != null)
             {
                 hashCode = CombineHashes(hashCode, sqlQuery.WhereClause.Accept(this));
+            }
+
+            if (sqlQuery.GroupByClause != null)
+            {
+                hashCode = CombineHashes(hashCode, sqlQuery.GroupByClause.Accept(this));
             }
 
             if (sqlQuery.OrderbyClause != null)

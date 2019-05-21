@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         FromClause,
         FunctionCallScalarExpression,
         GeoNearCallScalarExpression, // Used in Mongo
+        GroupByClause,
         Identifier,
         IdentifierPathExpression,
         InScalarExpression,

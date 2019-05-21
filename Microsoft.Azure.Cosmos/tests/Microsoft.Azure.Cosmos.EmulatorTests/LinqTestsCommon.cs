@@ -8,11 +8,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Text.RegularExpressions;
+    using System.Transactions;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
@@ -20,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    public class LinqTestsCommon
+    internal class LinqTestsCommon
     {
         /// <summary>
         /// Compare two list of anonymous objects
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="queryResults"></param>
         /// <param name="dataResults"></param>
         /// <returns></returns>
-        private static bool compareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults)
+        private static bool CompareListOfAnonymousType(List<object> queryResults, List<dynamic> dataResults)
         {
             return queryResults.SequenceEqual(dataResults);
         }
@@ -74,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="queryResults">A list representing the query restuls from CosmosDB</param>
         /// <param name="dataResults">A list representing the linQ query results from the original data</param>
         /// <returns>true if the two </returns>
-        private static bool compareListOfArrays(List<object> queryResults, List<dynamic> dataResults)
+        private static bool CompareListOfArrays(List<object> queryResults, List<dynamic> dataResults)
         {
             if (NestedListsSequenceEqual(queryResults, dataResults)) return true;
 
@@ -182,11 +184,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 dynamic firstElem = dataResultsList.FirstOrDefault();
                 if (firstElem is IEnumerable)
                 {
-                    resultMatched &= compareListOfArrays(queryResultsList, dataResultsList);
+                    resultMatched &= CompareListOfArrays(queryResultsList, dataResultsList);
                 }
                 else if (LinqTestsCommon.IsAnonymousType(firstElem.GetType()))
                 {
-                    resultMatched &= compareListOfAnonymousType(queryResultsList, dataResultsList);
+                    resultMatched &= CompareListOfAnonymousType(queryResultsList, dataResultsList);
                 }
                 else if (LinqTestsCommon.IsNumber(firstElem))
                 {
@@ -277,11 +279,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="client">the DocumentClient that is used to create the data</param>
         /// <param name="collection">the target collection</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
-        internal static Func<bool, IQueryable<T>> GenerateTestData<T>(Func<Random, T> func, int count, DocumentClient client, DocumentCollection collection)
+        public static Func<bool, IQueryable<T>> GenerateTestData<T>(Func<Random, T> func, int count, DocumentClient client, DocumentCollection collection)
         {
             List<T> data = new List<T>();
             int seed = DateTime.Now.Millisecond;
             Random random = new Random(seed);
+            Debug.WriteLine("Random seed: {0}", seed);
             LinqTestInput.RandomSeed = seed;
             for (int i = 0; i < count; ++i)
             {
@@ -293,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 client.CreateDocumentAsync(collection, obj).Wait();
             }
 
-            var feedOptions = new FeedOptions() { EnableScanInQuery = true };
+            var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionSkipTake = true };
             var query = client.CreateDocumentQuery<T>(collection, feedOptions);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
@@ -301,12 +304,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
             // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
             // to this getQuery method.
-            Func<bool, IQueryable<T>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+            IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
 
             return getQuery;
         }
 
-        internal static Func<bool, IQueryable<Family>> GenerateFamilyData(
+        public static Func<bool, IQueryable<Family>> GenerateFamilyData(
             DocumentClient client,
             Database testDb,
             out DocumentCollection testCollection)
@@ -341,14 +344,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const int MaxPets = MaxChild;
             const int MaxThings = MaxChild;
             const int MaxGrade = 101;
-            Func<Random, Family> createDataObj = random =>
+            const int MaxTransaction = 20;
+            const int MaxTransactionMinuteRange = 200;
+            int MaxTransactionType = Enum.GetValues(typeof(TransactionType)).Length;
+            Family createDataObj(Random random)
             {
-                var obj = new Family();
-                obj.FamilyId = random.NextDouble() < 0.05 ? "some id" : Guid.NewGuid().ToString();
-                obj.IsRegistered = random.NextDouble() < 0.5;
-                obj.NullableInt = random.NextDouble() < 0.5 ? (int?)random.Next() : null;
-                obj.Int = random.NextDouble() < 0.5 ? 5 : random.Next();
-                obj.Parents = new Parent[random.Next(2) + 1];
+                var obj = new Family
+                {
+                    FamilyId = random.NextDouble() < 0.05 ? "some id" : Guid.NewGuid().ToString(),
+                    IsRegistered = random.NextDouble() < 0.5,
+                    NullableInt = random.NextDouble() < 0.5 ? (int?)random.Next() : null,
+                    Int = random.NextDouble() < 0.5 ? 5 : random.Next(),
+                    Parents = new Parent[random.Next(2) + 1]
+                };
                 for (int i = 0; i < obj.Parents.Length; ++i)
                 {
                     obj.Parents[i] = new Parent()
@@ -356,6 +364,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                         FamilyName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
                         GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength))
                     };
+                }
+
+                obj.Tags = new string[random.Next(MaxChild)];
+                for (int i = 0; i < obj.Tags.Length; ++i)
+                {
+                    obj.Tags[i] = (i + random.Next(30, 36)).ToString();
                 }
 
                 obj.Children = new Child[random.Next(MaxChild)];
@@ -388,14 +402,31 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                             LinqTestsCommon.RandomString(random, random.Next(MaxThingStringLength)));
                     }
                 }
+
+                obj.Records = new Logs
+                {
+                    LogId = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
+                    Transactions = new Transaction[random.Next(MaxTransaction)]
+                };
+                for (int i = 0; i < obj.Records.Transactions.Length; ++i)
+                {
+                    var transaction = new Transaction()
+                    {
+                        Amount = random.Next(),
+                        Date = DateTime.Now.AddMinutes(random.Next(MaxTransactionMinuteRange)),
+                        Type = (TransactionType)(random.Next(MaxTransactionType))
+                    };
+                    obj.Records.Transactions[i] = transaction;
+                }
+
                 return obj;
-            };
+            }
 
             Func<bool, IQueryable<Family>> getQuery = LinqTestsCommon.GenerateTestData(createDataObj, Records, client, testCollection);
             return getQuery;
         }
 
-        internal static Func<bool, IQueryable<Data>> GenerateSimpleData(
+        public static Func<bool, IQueryable<Data>> GenerateSimpleData(
             DocumentClient client,
             Database testDb,
             out DocumentCollection testCollection)
@@ -406,7 +437,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 testDb.GetLink(),
                 new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
 
-            Random random = new Random();
+            int seed = DateTime.Now.Millisecond;
+            Random random = new Random(seed);
+            Debug.WriteLine("Random seed: {0}", seed);
             List<Data> testData = new List<Data>();
             for (int index = 0; index < DocumentCount; index++)
             {
@@ -429,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
             // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
             // to this getQuery method.
-            Func<bool, IQueryable<Data>> getQuery = useQuery => useQuery ? query : testData.AsQueryable();
+            IQueryable<Data> getQuery(bool useQuery) => useQuery ? query : testData.AsQueryable();
             return getQuery;
         }
 
@@ -438,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             var querySqlStr = string.Empty;
             try
             {
-                var compiledQuery = input.expression.Compile();
+                var compiledQuery = input.Expression.Compile();
 
                 var queryResults = compiledQuery(true);
                 querySqlStr = JObject.Parse(queryResults.ToString()).GetValue("query", StringComparison.Ordinal).ToString();
@@ -465,15 +498,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     e = e.InnerException;
                 }
 
-                string message = e.ToString();
+                string message = null;
                 bool hasFailed = false;
-                if (input.errorMessage != null && !message.Contains(input.errorMessage))
+                if (input.errorMessage != null && !e.Message.Contains(input.errorMessage))
                 {
-                    message = $"Expecting error containing message [[{input.errorMessage}]]. Actual: [[{message}]]";
+                    message = $"Expecting error containing message [[{input.errorMessage}]]. Actual: [[{e.Message}]]";
                     hasFailed = true;
                 }
                 else if (input.errorMessage == null)
                 {
+                    message = e.Message;
                     hasFailed = true;
                 }
 
@@ -487,9 +521,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public const string OrderByCorrelatedCollectionNotSupported = "Order-by over correlated collections is not supported.";
         public const string TopInSubqueryNotSupported = "'TOP' is not supported in subqueries.";
         public const string OrderByInSubqueryNotSuppported = "'ORDER BY' is not supported in subqueries.";
+        public const string OffsetLimitInSubqueryNotSupported = "'OFFSET LIMIT' clause is not supported in subqueries.";
         public const string OrderbyItemExpressionCouldNotBeMapped = "ORDER BY item expression could not be mapped to a document path.";
         public const string CrossPartitionQueriesOnlySupportValueAggregateFunc = "Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.";
         public const string MemberIndexerNotSupported = "The specified query includes 'member indexer' which is currently not supported.";
+        public const string IncorrectNumberOfArguments = "Incorrect number of arguments";
+        public const string ExpressionMustBeNonNegativeInteger = "expression must be a non-negative integer";
     }
 
     /// <summary>
@@ -528,14 +565,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     public class LinqTestInput : BaselineTestInput
     {
         internal static Regex classNameRegex = new Regex("(value\\(.+?\\+)?\\<\\>.+?__([A-Za-z]+)((\\d+_\\d+(`\\d+\\[.+?\\])?\\)(\\.value)?)|\\d+`\\d+)");
-        internal static Regex invokeCompileRegex = new Regex("Invoke\\([^.]+\\.[^.,]+(\\.Compile\\(\\))?, b\\)(\\.Cast\\(\\))?");
+        internal static Regex invokeCompileRegex = new Regex("(Convert\\()?Invoke\\([^.]+\\.[^.,]+(\\.Compile\\(\\))?, b\\)(\\.Cast\\(\\))?(\\))?");
 
         // As the tests are executed sequentially
         // We can store the random seed in a static variable for diagnostics
         internal static int RandomSeed = -1;
 
         internal int randomSeed = -1;
-        internal Expression<Func<bool, IQueryable>> expression { get; }
+        internal Expression<Func<bool, IQueryable>> Expression { get; }
         internal string errorMessage;
         internal string expressionStr;
 
@@ -547,18 +584,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal LinqTestInput(string description, Expression<Func<bool, IQueryable>> expr, string errorMsg = null, bool skipVerification = false, string expressionStr = null)
             : base(description)
         {
-            if (expr == null)
-            {
-                throw new ArgumentNullException($"{nameof(expr)} must not be null.");
-            }
-
-            this.expression = expr;
+            this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.errorMessage = errorMsg;
             this.skipVerification = skipVerification;
             this.expressionStr = expressionStr;
         }
 
-        public static string CleanUpInputExpression(string input)
+        public static string FilterInputExpression(string input)
         {
             var expressionSb = new StringBuilder(input);
             // simplify full qualified class name
@@ -585,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return expressionSb.ToString();
         }
 
-        public override void SerializeAsXML(XmlWriter xmlWriter)
+        public override void SerializeAsXml(XmlWriter xmlWriter)
         {
             if (xmlWriter == null)
             {
@@ -594,13 +626,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
             if (this.expressionStr == null)
             {
-                this.expressionStr = LinqTestInput.CleanUpInputExpression(this.expression.Body.ToString());
+                this.expressionStr = LinqTestInput.FilterInputExpression(this.Expression.Body.ToString());
             }
 
-            if (this.expressionStr == null)
-            {
-                this.expressionStr = LinqTestInput.CleanUpInputExpression(this.expression.Body.ToString());
-            }
 
             xmlWriter.WriteStartElement("Description");
             xmlWriter.WriteCData(this.Description);
@@ -619,20 +647,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
     public class LinqTestOutput : BaselineTestOutput
     {
-        internal static Regex sdkVersion = new Regex("documentdb-dotnet-sdk[^]]+");
-        internal static Regex activityId = new Regex("ActivityId:.+", RegexOptions.Multiline);
+        internal static Regex sdkVersion = new Regex("(,\\W*)?documentdb-dotnet-sdk[^]]+");
+        internal static Regex activityId = new Regex("(,\\W*)?ActivityId:.+", RegexOptions.Multiline);
         internal static Regex newLine = new Regex("(\r\n|\r|\n)");
 
         internal string SqlQuery { get; }
-        internal string errorMessage { get; private set; }
-        internal bool failed { get; private set; }
+        internal string ErrorMessage { get; private set; }
+        internal bool Failed { get; private set; }
 
-        private static Dictionary<string, string> newlineKeywords = new Dictionary<string, string>() {
+        private static readonly Dictionary<string, string> newlineKeywords = new Dictionary<string, string>() {
             { "SELECT", "\nSELECT" },
             { "FROM", "\nFROM" },
             { "WHERE", "\nWHERE" },
             { "JOIN", "\nJOIN" },
             { "ORDER BY", "\nORDER BY" },
+            { "OFFSET", "\nOFFSET" },
             { " )", "\n)" }
         };
 
@@ -653,8 +682,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal LinqTestOutput(string sqlQuery, string errorMsg = null, bool hasFailed = false)
         {
             this.SqlQuery = FormatSql(sqlQuery);
-            this.errorMessage = errorMsg;
-            this.failed = hasFailed;
+            this.ErrorMessage = errorMsg;
+            this.Failed = hasFailed;
         }
 
         public static String FormatSql(string sqlQuery)
@@ -696,21 +725,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return sb.ToString();
         }
 
-        public override void SerializeAsXML(XmlWriter xmlWriter)
+        public override void SerializeAsXml(XmlWriter xmlWriter)
         {
             xmlWriter.WriteStartElement(nameof(SqlQuery));
             xmlWriter.WriteCData(this.SqlQuery);
             xmlWriter.WriteEndElement();
-            if (this.errorMessage != null)
+            if (this.ErrorMessage != null)
             {
                 xmlWriter.WriteStartElement("ErrorMessage");
-                xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(errorMessage));
+                xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(ErrorMessage));
                 xmlWriter.WriteEndElement();
             }
 
-            if (this.failed)
+            if (this.Failed)
             {
-                xmlWriter.WriteElementString("Failed", this.failed.ToString());
+                xmlWriter.WriteElementString("Failed", this.Failed.ToString());
             }
         }
     }
