@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the container's settings by using the internal cache.
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
         /// </summary>
-        /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellationToken.</param>
+        /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
         internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {

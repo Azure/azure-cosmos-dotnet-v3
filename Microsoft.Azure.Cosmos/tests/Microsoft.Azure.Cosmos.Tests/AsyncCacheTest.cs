@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// Thread 1 enqueues a task and is currently awaiting its completion
         /// Before the task is completed, Thread 2 requests the same key
         /// Because it's concurrent it'll get back the task from Thread1.
-        /// If thread 1 then cancels (passed in cancellationToken token gets canceled)
+        /// If thread 1 then cancels (passed in cancellation token gets canceled)
         /// then Thread 2 will also fail with the same exception.
         /// </summary>
         [TestMethod]
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             // set up two threads that are concurrently updating the async cache for the same key.
-            // the only difference is that one thread passes in a cancellationToken token
+            // the only difference is that one thread passes in a cancellation token
             // and the other does not.
             Task<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: cancellationTokenSource.Token);
 
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(getTask2.IsCompleted);
             Assert.IsFalse(getTask1.IsCompleted);
             
-            // cancel the first task's cancellationToken token.
+            // cancel the first task's cancellation token.
             cancellationTokenSource.Cancel();
 
             // neither task is complete at this point.
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             try
             {
                 await getTask1;
-                Assert.Fail("Should fail because of cancellationToken.");
+                Assert.Fail("Should fail because of cancellation.");
             }
             catch (TaskCanceledException)
             {
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             // set up two threads that are concurrently updating the async cache for the same key.
-            // the only difference is that one thread passes in a cancellationToken token
+            // the only difference is that one thread passes in a cancellation token
             // and the other does not.
             Task<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: cancellationTokenSource.Token);
 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(getTask2.IsCompleted);
             Assert.IsFalse(getTask1.IsCompleted);
 
-            // cancel the first task's cancellationToken token.
+            // cancel the first task's cancellation token.
             cancellationTokenSource.Cancel();
 
             // neither task is complete at this point.
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             try
             {
                 await getTask1;
-                Assert.Fail("Should fail because of cancellationToken.");
+                Assert.Fail("Should fail because of cancellation.");
             }
             catch (Exception e)
             {
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             try
             {
                 await getTask2;
-                Assert.Fail("Should fail because of cancellationToken.");
+                Assert.Fail("Should fail because of cancellation.");
             }
             catch (Exception e)
             {
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             // set up two threads that are concurrently updating the async cache for the same key.
-            // the only difference is that one thread passes in a cancellationToken token
+            // the only difference is that one thread passes in a cancellation token
             // and the other does not.
             Task<int> getTask1 = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc1, cancellationToken: CancellationToken.None);
 

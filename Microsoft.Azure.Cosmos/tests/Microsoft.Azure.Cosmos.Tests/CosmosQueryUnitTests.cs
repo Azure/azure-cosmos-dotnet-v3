@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 try
                 {
                     QueryResponse response = await component.DrainAsync(1, cancellationTokenSource.Token);
-                    Assert.Fail("cancellationToken token should have thrown an exception");
+                    Assert.Fail("cancellation token should have thrown an exception");
                 }
                 catch (OperationCanceledException e)
                 {

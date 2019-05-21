@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Drains at most 'maxElements' documents from the <see cref="AggregateDocumentQueryExecutionComponent"/> .
         /// </summary>
         /// <param name="maxElements">This value is ignored, since the aggregates are aggregated for you.</param>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>The aggregate result after all the continuations have been followed.</returns>
         /// <remarks>
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.

@@ -61,7 +61,7 @@
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
         /// <param name="source">A sequence of values to determine the maximum of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The maximum value in the sequence.</returns>
         public static Task<TSource> MaxAsync<TSource>(
             this IQueryable<TSource> source,
@@ -79,7 +79,7 @@
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
         /// <param name="source">A sequence of values to determine the minimum of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The minimum value in the sequence.</returns>
         public static Task<TSource> MinAsync<TSource>(
             this IQueryable<TSource> source,
@@ -96,7 +96,7 @@
         /// Computes the average of a sequence of <see cref="Decimal" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal> AverageAsync(
             this IQueryable<decimal> source,
@@ -113,7 +113,7 @@
         /// Computes the average of a sequence of <see cref="Nullable{Decimal}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal?> AverageAsync(
             this IQueryable<decimal?> source,
@@ -130,7 +130,7 @@
         /// Computes the average of a sequence of <see cref="Double" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> AverageAsync(
             this IQueryable<double> source,
@@ -147,7 +147,7 @@
         /// Computes the average of a sequence of <see cref="Nullable{Double}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> AverageAsync(
             this IQueryable<double?> source,
@@ -164,7 +164,7 @@
         /// Computes the average of a sequence of <see cref="Single" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<float> AverageAsync(
             this IQueryable<float> source,
@@ -181,7 +181,7 @@
         /// Computes the average of a sequence of <see cref="Nullable{Single}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<float?> AverageAsync(
             this IQueryable<float?> source,
@@ -198,7 +198,7 @@
         /// Computes the average of a sequence of <see cref="Int32" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> AverageAsync(
             this IQueryable<int> source,
@@ -215,7 +215,7 @@
         /// Computes the average of a sequence of <see cref="Nullable{Int32}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> AverageAsync(
             this IQueryable<int?> source,
@@ -232,7 +232,7 @@
         /// Computes the average of a sequence of <see cref="Int64" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> AverageAsync(
             this IQueryable<long> source,
@@ -249,7 +249,7 @@
         /// Computes the average of a sequence of <see cref="Nullable{Int64}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> AverageAsync(
             this IQueryable<long?> source,
@@ -266,7 +266,7 @@
         /// Computes the sum of a sequence of <see cref="Decimal" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal> SumAsync(
             this IQueryable<decimal> source,
@@ -283,7 +283,7 @@
         /// Computes the sum of a sequence of <see cref="Nullable{Decimal}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<decimal?> SumAsync(
             this IQueryable<decimal?> source,
@@ -300,7 +300,7 @@
         /// Computes the sum of a sequence of <see cref="Double" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double> SumAsync(
             this IQueryable<double> source,
@@ -317,7 +317,7 @@
         /// Computes the sum of a sequence of <see cref="Nullable{Double}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<double?> SumAsync(
             this IQueryable<double?> source,
@@ -334,7 +334,7 @@
         /// Computes the sum of a sequence of <see cref="Single" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<float> SumAsync(
             this IQueryable<float> source,
@@ -351,7 +351,7 @@
         /// Computes the sum of a sequence of <see cref="Nullable{Single}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<float?> SumAsync(
             this IQueryable<float?> source,
@@ -368,7 +368,7 @@
         /// Computes the sum of a sequence of <see cref="Int32" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<int> SumAsync(
             this IQueryable<int> source,
@@ -385,7 +385,7 @@
         /// Computes the sum of a sequence of <see cref="Nullable{Int32}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<int?> SumAsync(
             this IQueryable<int?> source,
@@ -402,7 +402,7 @@
         /// Computes the sum of a sequence of <see cref="Int64" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<long> SumAsync(
             this IQueryable<long> source,
@@ -419,7 +419,7 @@
         /// Computes the sum of a sequence of <see cref="Nullable{Int64}" /> values.
         /// </summary>
         /// <param name="source">A sequence of values to calculate the average of.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
         public static Task<long?> SumAsync(
             this IQueryable<long?> source,
@@ -437,7 +437,7 @@
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
         /// <param name="source">The sequence that contains the elements to be counted.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The number of elements in the input sequence.</returns>
         public static Task<int> CountAsync<TSource>(
             this IQueryable<TSource> source,

@@ -391,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Moves to the next document in the producer.
         /// </summary>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document.</returns>
         public async Task<bool> MoveNextAsync(CancellationToken token)
         {
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Buffers more documents if the producer is empty.
         /// </summary>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         public async Task BufferMoreIfEmpty(CancellationToken token)
         {
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Buffers more documents in the producer.
         /// </summary>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         public async Task BufferMoreDocuments(CancellationToken token)
         {
@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Implementation of move next async.
         /// After this function is called the wrapper function determines if a distinct document has been read and updates the 'isActive' flag.
         /// </summary>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
         private async Task<bool> MoveNextAsyncImplementation(CancellationToken token)
         {
@@ -622,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Tries to the move to the next page in the document producer.
         /// </summary>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>Whether the operation was successful.</returns>
         private async Task<bool> MoveNextPage(CancellationToken token)
         {

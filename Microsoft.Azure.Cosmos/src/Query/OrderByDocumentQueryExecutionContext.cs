@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="constructorParams">The parameters for the base class constructor.</param>
         /// <param name="initParams">The parameters to initialize the base class.</param>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on, which in turn creates an OrderByDocumentQueryExecutionContext.</returns>
         public static async Task<OrderByDocumentQueryExecutionContext> CreateAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains a page of documents from this context.
         /// </summary>
         /// <param name="maxElements">The maximum number of elements.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
         public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="sortOrders">The sort orders.</param>
         /// <param name="orderByExpressions">The order by expressions.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
           string requestContinuation,
@@ -405,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="producer">The producer to filter down.</param>
         /// <param name="sortOrders">The sort orders.</param>
         /// <param name="continuationToken">The continuation token.</param>
-        /// <param name="cancellationToken">The cancellationToken token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         private async Task FilterAsync(
             DocumentProducerTree producer,

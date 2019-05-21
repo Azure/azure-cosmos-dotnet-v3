@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// This method is abstract and meant for the concrete classes to implement.
         /// </summary>
         /// <param name="maxElements">The maximum number of elements to drain (you might get less).</param>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>A task that when awaited on will return a feed response.</returns>
         public abstract Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token);
 
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="deferFirstPage">Whether or not we should defer the fetch of the first page from each partition.</param>
         /// <param name="filter">The filter to inject in the predicate.</param>
         /// <param name="filterCallback">The callback used to filter each partition.</param>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
         protected async Task InitializeAsync(
             string collectionRid,
@@ -639,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Placeholder function to implement DocumentQueryExecutionContextBase class.
         /// </summary>
-        /// <param name="token">The cancellationToken token that doesn't get used.</param>
+        /// <param name="token">The cancellation token that doesn't get used.</param>
         /// <returns>A dummy task to await on.</returns>
         protected override Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="resourceUnitUsage">The amount of RUs that the producer just consumed.</param>
         /// <param name="queryMetrics">The query metrics that the producer just got back from the backend.</param>
         /// <param name="responseLengthBytes">The length of the response the producer just got back in bytes.</param>
-        /// <param name="token">The cancellationToken token.</param>
+        /// <param name="token">The cancellation token.</param>
         /// <remarks>
         /// This function is by nature a bit racy.
         /// A query might be fully drained but a background task is still fetching documents so this will get called after the context is done.
@@ -888,7 +888,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Entry point for the function to start fetching.
             /// </summary>
-            /// <param name="token">The cancellationToken token.</param>
+            /// <param name="token">The cancellation token.</param>
             /// <returns>A task to await on.</returns>
             public override Task StartAsync(CancellationToken token)
             {
