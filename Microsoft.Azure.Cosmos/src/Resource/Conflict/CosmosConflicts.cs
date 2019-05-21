@@ -17,26 +17,41 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">The partition key for the conflict.</param>
         /// <param name="conflict">The conflict to delete.</param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
             object partitionKey,
             CosmosConflictSettings conflict,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the item that originated the conflict.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The current state of the item associated with the conflict.</returns>
         /// <seealso cref="CosmosConflictSettings"/>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<CosmosConflictSettings> conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
+        /// while (conflictIterator.HasMoreResults)
+        /// {
+        ///     foreach(CosmosConflictSettings item in await conflictIterator.FetchNextSetAsync())
+        ///     {
+        ///         MyClass intendedChanges = cosmosContainer.Conflicts.ReadConflictContent<MyClass>(item);
+        ///         ItemResponse<MyClass> currentState = await cosmosContainer.Conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
             object partitionKey,
             CosmosConflictSettings cosmosConflict,
-            CancellationToken cancellation = default(CancellationToken));
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the content of the Conflict resource in the Azure Cosmos DB service.
@@ -44,6 +59,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosConflict">The conflict for which we want to read the content of.</param>
         /// <returns>The content of the conflict.</returns>
         /// <seealso cref="CosmosConflictSettings"/>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<CosmosConflictSettings> conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
+        /// while (conflictIterator.HasMoreResults)
+        /// {
+        ///     foreach(CosmosConflictSettings item in await conflictIterator.FetchNextSetAsync())
+        ///     {
+        ///         MyClass intendedChanges = cosmosContainer.Conflicts.ReadConflictContent<MyClass>(item);
+        ///         ItemResponse<MyClass> currentState = await cosmosContainer.Conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+
         public abstract T ReadConflictContent<T>(CosmosConflictSettings cosmosConflict);
 
         /// <summary>

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> DeleteConflictAsync(
             object partitionKey,
             CosmosConflictSettings conflict, 
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (partitionKey == null)
             {
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
-                cancellationToken: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         public override FeedIterator<CosmosConflictSettings> GetConflictsIterator(
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
             object partitionKey, 
             CosmosConflictSettings cosmosConflict, 
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (partitionKey == null)
             {
@@ -94,8 +94,8 @@ namespace Microsoft.Azure.Cosmos
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
             CosmosDatabaseCore databaseCore = (CosmosDatabaseCore)this.container.Database;
-            string databaseResourceId = await databaseCore.GetRID(cancellation);
-            string containerResourceId = await this.container.GetRID(cancellation);
+            string databaseResourceId = await databaseCore.GetRID(cancellationToken);
+            string containerResourceId = await this.container.GetRID(cancellationToken);
 
             Uri dbLink = this.clientContext.CreateLink(
                 parentLink: string.Empty,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
-                cancellationToken: cancellation);
+                cancellationToken: cancellationToken);
 
             return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
