@@ -1,25 +1,19 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CrossPartitionQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
-    using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
     using Common;
     using ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -126,8 +120,8 @@ namespace Microsoft.Azure.Cosmos.Query
             string rewrittenQuery,
             IComparer<DocumentProducerTree> moveNextComparer,
             Func<DocumentProducerTree, int> fetchPrioirtyFunction,
-            IEqualityComparer<CosmosElement> equalityComparer) :
-            base(initParams)
+            IEqualityComparer<CosmosElement> equalityComparer)
+            : base(initParams)
         {
             if (!string.IsNullOrWhiteSpace(rewrittenQuery))
             {
@@ -351,7 +345,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Pushes a document producer back to the queue.
         /// </summary>
-        /// <returns>The current document producer tree that should be drained from.</returns>
         public void PushCurrentDocumentProducerTree(DocumentProducerTree documentProducerTree)
         {
             this.documentProducerForest.Enqueue(documentProducerTree);

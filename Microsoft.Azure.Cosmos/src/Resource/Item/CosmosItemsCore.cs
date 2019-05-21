@@ -495,10 +495,10 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<FeedResponse<T>> ItemFeedRequestExecutor<T>(
             int? maxItemCount,
-           string continuationToken,
-           RequestOptions options,
-           object state,
-           CancellationToken cancellationToken)
+            string continuationToken,
+            RequestOptions options,
+            object state,
+            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<FeedResponse<T>>(

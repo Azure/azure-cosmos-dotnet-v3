@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
     ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
     /// }
-    ///]]>
+    /// ]]>
     /// </code>
     /// </example>
     /// 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
     ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
     /// }
-    ///]]>
+    /// ]]>
     /// </code>
     /// </example>
     /// 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
     ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
     /// }
-    ///]]>
+    /// ]]>
     /// </code>
     /// </example>
     public class CosmosClient : IDisposable
@@ -95,11 +95,11 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     // Create a database and other CosmosClient operations
         /// }
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
-        public CosmosClient(string connectionString) :
-            this(new CosmosClientOptions(connectionString))
+        public CosmosClient(string connectionString)
+            : this(new CosmosClientOptions(connectionString))
         {
         }
 
@@ -118,13 +118,13 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     // Create a database and other CosmosClient operations
         /// }
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         public CosmosClient(
             string accountEndPoint,
-            string accountKey) :
-            this(new CosmosClientOptions(accountEndPoint, accountKey))
+            string accountKey)
+            : this(new CosmosClientOptions(accountEndPoint, accountKey))
         {
         }
 
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     // Create a database and other CosmosClient operations
         /// }
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         internal CosmosClient(CosmosClientOptions cosmosClientConfiguration)
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// CosmosDatabase database = this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
         /// ContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         public virtual CosmosDatabases Databases { get; private set; }
@@ -237,8 +237,7 @@ namespace Microsoft.Azure.Cosmos
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                 this,
                 this.DocumentClient.ResetSessionTokenRetryPolicy,
-                this.ClientOptions.CustomHandlers
-            );
+                this.ClientOptions.CustomHandlers);
 
             // DocumentClient is not initialized with any consistency overrides so default is backend consistency
             this.AccountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;

@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="StoredProcedureResponse"/> as a no-op for mock testing
         /// </summary>
-        public StoredProcedureResponse() : base()
+        public StoredProcedureResponse()
+            : base()
         {
-
         }
 
         /// <summary>
@@ -29,7 +29,8 @@ namespace Microsoft.Azure.Cosmos
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
            CosmosStoredProcedureSettings cosmosStoredProcedureSettings,
-           CosmosStoredProcedure storedProcedure) : base(
+           CosmosStoredProcedure storedProcedure)
+            : base(
                httpStatusCode,
                headers,
                cosmosStoredProcedureSettings)

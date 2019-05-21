@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos
     {
         private const uint SHA256HashOutputSizeInBytes = 32; // SHA256 => 256 bits => 32 bytes
 
-        private IntPtr algorithmHandle;
         private readonly SecureString key;
         private readonly int keyLength;
+        private IntPtr algorithmHandle;
 
         public SecureStringHMACSHA256Helper(SecureString base64EncodedKey)
         {
@@ -75,7 +75,6 @@ namespace Microsoft.Azure.Cosmos
         /// SHA256 HMAC of the payload, and destroy the native memory containing the decoded key.
         /// </summary>
         /// <param name="bytesToHash">payload that is hashed</param>
-        /// <returns></returns>
         public byte[] ComputeHash(byte[] bytesToHash)
         {
             IntPtr hashHandle = IntPtr.Zero;

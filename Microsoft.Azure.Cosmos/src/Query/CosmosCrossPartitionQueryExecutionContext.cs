@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosCrossPartitionQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -31,10 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal abstract class CosmosCrossPartitionQueryExecutionContext : CosmosQueryExecutionComponent, IDocumentQueryExecutionComponent
     {
-        private CosmosQueryContext queryContext;
-
-        private QueryRequestOptions queryRequestOptions;
-
         /// <summary>
         /// When a document producer tree successfully fetches a page we increase the page size by this factor so that any particular document producer will only ever make O(log(n)) roundtrips, while also only ever grabbing at most twice the number of documents needed.
         /// </summary>
@@ -74,6 +68,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The actual max buffered item count after all the optimizations have been made it in the create document query execution context layer.
         /// </summary>
         private readonly long actualMaxBufferedItemCount;
+
+        private CosmosQueryContext queryContext;
+
+        private QueryRequestOptions queryRequestOptions;
 
         /// <summary>
         /// This stores all the query metrics which have been grouped by partition id.
@@ -314,7 +312,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Pushes a document producer back to the queue.
         /// </summary>
-        /// <returns>The current document producer tree that should be drained from.</returns>
         public void PushCurrentItemProducerTree(ItemProducerTree itemProducerTree)
         {
             this.itemProducerForest.Enqueue(itemProducerTree);

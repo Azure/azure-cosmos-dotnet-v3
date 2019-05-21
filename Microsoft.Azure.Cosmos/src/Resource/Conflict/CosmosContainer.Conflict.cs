@@ -7,6 +7,17 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
 
+    /// <summary>
+    /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
+    /// 
+    /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
+    /// </summary>
+    /// <remarks>
+    ///  Note: all these operations make calls against a fixed budget.
+    ///  You should design your system such that these calls scale sub linearly with your application.
+    ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
+    ///  do this once on application start up.
+    /// </remarks>
     public abstract partial class CosmosContainer
     {
         /// <summary>
@@ -16,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The conflict id.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflictSettings"/>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
             object partitionKey,
             string id,
@@ -28,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <seealso cref="CosmosConflictSettings"/>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public abstract Task<ItemResponse<T>> ReadConflictSourceItemAsync<T>(
             object partitionKey,
             CosmosConflictSettings cosmosConflict,
@@ -50,6 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the conflicts</returns>
         public abstract FeedIterator<CosmosConflictSettings> GetConflictsIterator(
             int? maxItemCount = null,
             string continuationToken = null);
@@ -71,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the conflicts</returns>
         public abstract FeedIterator GetConflictsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null);

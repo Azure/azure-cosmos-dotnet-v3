@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class GatewayAccountReader 
     {
-        private Uri serviceEndpoint;
-        private ApiType apiType;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IComputeHash authKeyHashFunction;
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
         private readonly HttpMessageHandler messageHandler;
+        private Uri serviceEndpoint;
+        private ApiType apiType;
 
         public GatewayAccountReader(Uri serviceEndpoint,
                                                  IComputeHash stringHMACSHA256Helper,
@@ -63,8 +63,8 @@ namespace Microsoft.Azure.Cosmos
                 string xDate = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
                 httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
-                    INameValueCollection headersCollection = new StringKeyValueCollection();
-                    headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
+                INameValueCollection headersCollection = new StringKeyValueCollection();
+                headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
                 authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                     HttpConstants.HttpMethods.Get,

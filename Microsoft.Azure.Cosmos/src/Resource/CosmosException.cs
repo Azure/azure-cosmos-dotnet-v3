@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosException(
             HttpStatusCode statusCode,
             string message,
-            Error error = null) :
-            base(message)
+            Error error = null)
+            : base(message)
         {
             this.StatusCode = statusCode;
             this.Error = error;
@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosException(
             CosmosResponseMessage cosmosResponseMessage, 
             string message,
-            Error error = null) :
-            base(message)
+            Error error = null)
+            : base(message)
         {
             if (cosmosResponseMessage != null)
             {
@@ -55,12 +55,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosException"/>
         /// </summary>
+        /// <param name="message">The message associated with the exception.</param>
+        /// <param name="statusCode">The <see cref="HttpStatusCode"/> associated with the exception.</param>
+        /// <param name="subStatusCode">A sub status code associated with the exception.</param>
+        /// <param name="activityId">An ActivityId associated with the operation that generated the exception.</param>
+        /// <param name="requestCharge">A request charge associated with the operation that generated the exception.</param>
         public CosmosException(
             string message,
             HttpStatusCode statusCode,
             int subStatusCode,
             string activityId,
-            double requestCharge) : base(message)
+            double requestCharge)
+            : base(message)
         {
             this.SubStatusCode = subStatusCode;
             this.StatusCode = statusCode;
@@ -111,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="headerName"></param>
         /// <param name="value"></param>
-        /// <returns></returns>
+        /// <returns>A value indicating if the header was read.</returns>
         public virtual bool TryGetHeader(string headerName, out string value)
         {
             if (this.Headers == null)
@@ -126,6 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a custom string with all the relevant exception information
         /// </summary>
+        /// <returns>A string representation of the exception.</returns>
         public override string ToString()
         {
             return $"CosmosRequestException;StatusCode={this.StatusCode};SubStatusCode={this.SubStatusCode};ActivityId={this.ActivityId ?? string.Empty};RequestCharge={this.RequestCharge};Message={this.Message};";

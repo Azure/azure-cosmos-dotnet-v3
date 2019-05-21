@@ -24,16 +24,16 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AddressResolver : IAddressResolver
     {
-        private CollectionCache collectionCache;
-        private ICollectionRoutingMapCache collectionRoutingMapCache;
-        private IAddressCache addressCache;
-
         private readonly IMasterServiceIdentityProvider masterServiceIdentityProvider;
 
         private readonly IRequestSigner requestSigner;
         private readonly string location;
 
         private readonly PartitionKeyRangeIdentity masterPartitionKeyRangeIdentity = new PartitionKeyRangeIdentity(PartitionKeyRange.MasterPartitionKeyRangeId);
+
+        private CollectionCache collectionCache;
+        private ICollectionRoutingMapCache collectionRoutingMapCache;
+        private IAddressCache addressCache;
 
         public AddressResolver(IMasterServiceIdentityProvider masterServiceIdentityProvider, IRequestSigner requestSigner, string location)
         {
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">Request for which the partition endpoint resolution is to be performed</param>
         /// <param name="forceRefreshPartitionAddresses">Force refresh the partition's endpoint</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns></returns>
+        /// <returns>An instance of <see cref="ResolutionResult"/>.</returns>
         private async Task<ResolutionResult> ResolveAddressesAndIdentityAsync(
             DocumentServiceRequest request,
             bool forceRefreshPartitionAddresses,
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
                     request.ForceNameCacheRefresh = true;
                     collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                    if(collection.ResourceId != routingMap.CollectionUniqueId)
+                    if (collection.ResourceId != routingMap.CollectionUniqueId)
                     {
                         // Collection cache was stale. We resolved to new Rid. routing map cache is potentially stale
                         // for this new collection rid. Mark it as such.
@@ -395,7 +395,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new NotFoundException() { ResourceAddress = request.ResourceAddress };
             }
         }
-
 
         private async Task<ResolutionResult> TryResolveServerPartitionAsync(
             DocumentServiceRequest request,

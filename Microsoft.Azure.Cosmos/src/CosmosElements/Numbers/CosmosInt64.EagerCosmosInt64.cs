@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosInt64.EagerCosmosInt64.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     internal abstract partial class CosmosInt64 : CosmosNumber

@@ -1,12 +1,9 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Sql;
-    using Microsoft.Azure.Cosmos.SystemFunctions;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -14,8 +11,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Reflection;
     using Microsoft.Azure.Cosmos;
-    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
+    using Microsoft.Azure.Cosmos.Spatial;
+    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Cosmos.SystemFunctions;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal abstract class BuiltinFunctionVisitor
     {
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Method could be an extension method
             if (methodCallExpression.Method.IsStatic && methodCallExpression.Method.IsExtensionMethod())
             {
-                if(methodCallExpression.Arguments.Count < 1)
+                if (methodCallExpression.Arguments.Count < 1)
                 {
                     // Extension methods should has at least 1 argument, this should never happen
                     // Throwing ArgumentException instead of assert
