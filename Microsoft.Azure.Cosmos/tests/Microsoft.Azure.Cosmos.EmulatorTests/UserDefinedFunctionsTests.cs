@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Create a user defined function 
             UserDefinedFunctionResponse createResponse = await this.scripts.CreateUserDefinedFunctionAsync(
                 userDefinedFunctionSettings: settings,
-                cancellation: this.cancellationToken);
+                cancellationToken: this.cancellationToken);
 
             ValidateUserDefinedFunctionSettings(settings, createResponse);
 
