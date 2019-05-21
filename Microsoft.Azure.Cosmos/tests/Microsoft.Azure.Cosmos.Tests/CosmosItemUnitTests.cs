@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientContextCore context = new CosmosClientContextCore(
                 client: null,
                 clientConfiguration: null,
-                cosmosJsonSerializer: new CosmosDefaultJsonSerializer(),
+                cosmosJsonSerializer: new CosmosJsonSerializerWrapper(new CosmosDefaultJsonSerializer()),
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: new MockDocumentClient(),
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             context = new CosmosClientContextCore(
                 client: null,
                 clientConfiguration: null,
-                cosmosJsonSerializer: new CosmosJsonSerializerWrapper(new CosmosDefaultJsonSerializer()),
+                cosmosJsonSerializer: new CosmosJsonSerializerWrapper(new CustomCosmosJsonSerializer()),
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: new MockDocumentClient(),
@@ -441,6 +441,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
-        }        
+        }
+
+        private class CustomCosmosJsonSerializer : CosmosJsonSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                return default(T);
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                var memoryStream = new MemoryStream();                
+                return memoryStream;
+            }
+        }
     }
 }

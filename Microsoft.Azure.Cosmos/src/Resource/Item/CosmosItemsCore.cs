@@ -53,8 +53,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.ProcessItemStreamAsync(
-                await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken),
+            return await this.WriteItemStreamAsync(                
                 null,
                 streamPayload,
                 OperationType.Create,
@@ -115,8 +114,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.ProcessItemStreamAsync(
-                await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken),
+            return await this.WriteItemStreamAsync(                
                 null,
                 streamPayload,
                 OperationType.Upsert,
@@ -148,8 +146,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.ProcessItemStreamAsync(
-                await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken),
+            return await this.WriteItemStreamAsync(
                 id,
                 streamPayload,
                 OperationType.Replace,
@@ -453,6 +450,22 @@ namespace Microsoft.Azure.Cosmos
                 hasMoreResults: !cosmosQueryExecution.IsDone);
         }
 
+        internal async Task<CosmosResponseMessage> WriteItemStreamAsync(
+            string itemId,
+            Stream streamPayload,
+            OperationType operationType,
+            ItemRequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            return await this.ProcessItemStreamAsync(
+                await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken),
+                null,
+                streamPayload,
+                OperationType.Create,
+                requestOptions,
+                cancellationToken);
+        }
+
         internal Task<CosmosResponseMessage> ProcessItemStreamAsync(
             object partitionKey,
             string itemId,
@@ -508,7 +521,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<Tuple<bool, object, Stream>> GetItemStreamAsync<T>(T item, CancellationToken cancellation = default(CancellationToken))
         {
-            CosmosDefaultJsonSerializer defaultSerializer = this.clientContext.JsonSerializer as CosmosDefaultJsonSerializer;
+            //until https://github.com/Azure/azure-cosmos-dotnet-v3/pull/291 is merged and can just compare DefaultJsonSerializer and UserJsonSerializer
+            CosmosJsonSerializerWrapper wrapperSerializer = (this.clientContext.JsonSerializer as CosmosJsonSerializerWrapper);
+            CosmosDefaultJsonSerializer defaultSerializer = wrapperSerializer.InternalJsonSerializer as CosmosDefaultJsonSerializer;
             if (defaultSerializer != null)
             {
                 Stream stream = defaultSerializer.ToStream<T>(item, await this.container.GetPartitionKeyPathTokensAsync(cancellation), out object partitionKey);

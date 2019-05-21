@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resourceId, Collection<string> partitionKeyPaths = null)
+        internal static CosmosContainerSettings CreateWithResourceId(string resourceId, Collection<string> partitionKeyPaths = null)
         {
             if (string.IsNullOrEmpty(resourceId))
             {

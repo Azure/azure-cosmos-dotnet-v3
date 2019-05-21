@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -210,6 +211,12 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
         }
 
+        internal virtual Task<Collection<string>> GetPartitionKeyPathsAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.GetCachedContainerSettingsAsync(cancellationToken)
+                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey.Paths, cancellationToken);
+        }
+
         internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellation = default(CancellationToken))
         {
             if(partitionKeyPathTokens != null)
@@ -217,18 +224,14 @@ namespace Microsoft.Azure.Cosmos
                 return partitionKeyPathTokens;
             }
 
-            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellation);
-            if(partitionKeyDefinition?.Paths == null)
-            {
-                throw new ArgumentNullException("Partition key path cannot be null.");
-            }
+            Collection<string> partitionKeyPaths = await this.GetPartitionKeyPathsAsync(cancellation);
 
-            if(partitionKeyDefinition.Paths.Count > 1)
+            if(partitionKeyPaths.Count != 1)
             {
                 throw new InvalidOperationException("Multiple partition keys not supported.");
             }
 
-            string path = partitionKeyDefinition.Paths[0];
+            string path = partitionKeyPaths[0];
             partitionKeyPathTokens = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
             return partitionKeyPathTokens;
