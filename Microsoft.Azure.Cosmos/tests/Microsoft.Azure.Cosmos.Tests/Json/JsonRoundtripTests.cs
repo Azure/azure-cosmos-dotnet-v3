@@ -1025,7 +1025,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             // Do the actual roundtrips
             this.MultiSerializationRoundTrip(input);
-            this.NewtonsoftWrapperRoundTrip(input);
+            // this.NewtonsoftWrapperRoundTrip(input);
         }
 
         /// <summary>

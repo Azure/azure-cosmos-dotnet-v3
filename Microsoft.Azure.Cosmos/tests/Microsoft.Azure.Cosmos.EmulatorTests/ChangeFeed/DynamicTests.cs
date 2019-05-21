@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        [Ignore("Emulator is failing due to socket issues")]
         public async Task TestReducePageSizeScenario()
         {
             int partitionKey = 0;
