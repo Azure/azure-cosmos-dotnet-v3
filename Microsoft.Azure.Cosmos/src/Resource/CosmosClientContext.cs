@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
-        internal abstract CosmosClientConfiguration ClientConfiguration { get; }
+        internal abstract CosmosClientOptions ClientOptions { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
