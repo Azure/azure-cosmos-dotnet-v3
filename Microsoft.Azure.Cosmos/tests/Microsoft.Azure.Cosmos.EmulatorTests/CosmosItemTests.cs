@@ -315,13 +315,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int pageSize = 1;
             ItemRequestOptions requestOptions = new ItemRequestOptions();
             FeedIterator feedIterator =
-                this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+                this.Container.Items.GetItemsStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
 
             while (feedIterator.HasMoreResults)
             {
                 if (useStatelessIterator)
                 {
-                    feedIterator = this.Container.Items.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+                    feedIterator = this.Container.Items.GetItemsStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
                 }
 
                 using (CosmosResponseMessage responseMessage =
@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
             HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
             FeedIterator<ToDoActivity> feedIterator =
-                this.Container.Items.GetItemIterator<ToDoActivity>();
+                this.Container.Items.GetItemsIterator<ToDoActivity>();
             while (feedIterator.HasMoreResults)
             {
                 foreach (ToDoActivity toDoActivity in await feedIterator.FetchNextSetAsync(this.cancellationToken))
@@ -860,7 +860,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Reading all items on fixed container.
                 feedIterator = fixedContainer.Items
-                    .GetItemIterator<dynamic>(maxItemCount: 10);
+                    .GetItemsIterator<dynamic>(maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();

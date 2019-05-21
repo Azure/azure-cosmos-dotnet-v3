@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
 
-        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProcedureIterator(
+        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProceduresIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
