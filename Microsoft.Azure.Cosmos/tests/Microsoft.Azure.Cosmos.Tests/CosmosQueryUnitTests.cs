@@ -65,11 +65,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(@"select * from t where t.something = 42 ");
             bool allowNonValueAggregateQuery = true;
             bool isContinuationExpected = true;
-            CancellationTokenSource cancellationToken = new CancellationTokenSource();
-            CancellationToken token = cancellationToken.Token;
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            CancellationToken cancellationtoken = cancellationTokenSource.Token;
 
             Mock<CollectionCache> mockCollectionCache = new Mock<CollectionCache>();
-            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), token)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));
+            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), cancellationtoken)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             client.Setup(x => x.GetCollectionCacheAsync()).Returns(Task.FromResult(mockCollectionCache.Object));
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 true,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
-                token)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
+                cancellationtoken)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
 
             CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
                 client: client.Object,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            await factory.ExecuteNextAsync(token);
+            await factory.ExecuteNextAsync(cancellationtoken);
         }
 
         private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponse response)> GetAllExecutionComponents()
