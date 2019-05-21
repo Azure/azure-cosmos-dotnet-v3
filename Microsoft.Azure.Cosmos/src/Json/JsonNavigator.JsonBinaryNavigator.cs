@@ -452,9 +452,20 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="jsonNode">The json node of interest</param>
             /// <param name="bufferedRawJson">The raw json.</param>
             /// <returns>True if bufferedRawJson was set. False otherwise.</returns>
-            public override bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out IReadOnlyList<byte> bufferedRawJson)
+            public override bool TryGetBufferedRawJson(
+                IJsonNavigatorNode jsonNode,
+                out IReadOnlyList<byte> bufferedRawJson)
             {
-                throw new NotImplementedException();
+                if (jsonNode == null || !(jsonNode is BinaryNode jsonBinaryNode))
+                {
+                    bufferedRawJson = default(IReadOnlyList<byte>);
+                    return false;
+                }
+
+                int nodeLength = (int)JsonBinaryEncoding.GetValueLength(this.buffer, (long)jsonBinaryNode.Offset);
+                bufferedRawJson = new ArraySegment<byte>(this.buffer, jsonBinaryNode.Offset, nodeLength);
+
+                return true;
             }
 
             private int GetValueCount(long offset, long length)

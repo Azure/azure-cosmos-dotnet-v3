@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// Note: all these operations make calls against a fixed budget.
     /// You should design your system such that these calls scale sub-linearly with your application.
-    /// For instance, do not call `containers.GetContainerIterator()` before every single `item.read()` call, to ensure the container exists;
+    /// For instance, do not call `containers.GetContainersIterator()` before every single `item.read()` call, to ensure the container exists;
     /// do this once on application start up.
     /// </summary>
     public abstract class CosmosContainers
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainerIterator();
+        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainersIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosContainerSettings setting in await feedIterator.FetchNextSetAsync())
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator<CosmosContainerSettings> GetContainerIterator(
+        public abstract FeedIterator<CosmosContainerSettings> GetContainersIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator GetContainerStreamIterator(
+        public abstract FeedIterator GetContainersStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);

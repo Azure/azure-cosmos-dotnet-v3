@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             return new CosmosClientContextCore(
                 client: client,
-                clientConfiguration: null,
+                clientOptions: null,
                 cosmosJsonSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: client.RequestHandler,

@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return mockDB;
         }
 
-        public static CosmosClientConfiguration GetDefaultConfiguration()
+        public static CosmosClientOptions GetDefaultConfiguration()
         {
-            return new CosmosClientConfiguration(accountEndPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
+            return new CosmosClientOptions(accountEndPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)
