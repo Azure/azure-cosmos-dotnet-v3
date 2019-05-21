@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             //TODO
             // Test Case failing for Abs decimal and Abs int
-            // Abs decimal is working when we are using Epsilon as 5 instead if 6 decimal in LinqTestsCommon.ValidateResults(), it's a bug , need to get fix
+            // Abs decimal is working when we are using Epsilon as 5 instead of 6 in LinqTestsCommon.ValidateResults(), it's a bug , need to get fix
             // Abs int is not getting auto converted from decimal values in V3 code FeedResponseBinder.ConvertCosmosElementFeed, hence throwing error, need to discuss
 
             const int Records = 20;
@@ -587,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Replace
             inputs.Add(new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))));
             inputs.Add(new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))));
-            //TODO TrimEnd and TrimStart not working for LINQ on .NET core however working on .NET Framework
+            //TODO TrimEnd and TrimStart not working for LINQ on .NET core however working on .NET Framework, need to discuss
             // TrimEnd
             //inputs.Add(new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())));
             //StartsWith

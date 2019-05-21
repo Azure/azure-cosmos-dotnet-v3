@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using BaselineTest;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
-    using System.Resources;
 
     [TestClass]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>

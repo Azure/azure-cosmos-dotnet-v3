@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 client.CreateDocumentAsync(collection, obj).Wait();
             }
 
-            var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionSkipTake = true };
+            var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionSkipTake = true , EnableCrossPartitionQuery = true};
             var query = client.CreateDocumentQuery<T>(collection, feedOptions);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
@@ -316,9 +316,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             // The test collection should have range index on string properties
             // for the orderby tests
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
             var newCol = new DocumentCollection()
             {
                 Id = Guid.NewGuid().ToString(),
+                PartitionKey = partitionKeyDefinition,
                 IndexingPolicy = new IndexingPolicy()
                 {
                     IncludedPaths = new System.Collections.ObjectModel.Collection<IncludedPath>()
@@ -432,10 +434,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             out DocumentCollection testCollection)
         {
             const int DocumentCount = 10;
-
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
             testCollection = client.CreateDocumentCollectionAsync(
                 testDb.GetLink(),
-                new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
+                new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             int seed = DateTime.Now.Millisecond;
             Random random = new Random(seed);
@@ -455,7 +457,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = client.CreateDocumentQuery<Data>(testCollection.GetLink()).AsQueryable();
+            var query = client.CreateDocumentQuery<Data>(testCollection.GetLink(), feedOptions).AsQueryable();
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.

@@ -2060,7 +2060,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             //Unfiltered execution.
-            IOrderedQueryable<Book> bookDocQuery = LinqGeneralBaselineTests.client.CreateDocumentQuery<Book>(testCollection);
+            IOrderedQueryable<Book> bookDocQuery = LinqGeneralBaselineTests.client.CreateDocumentQuery<Book>(testCollection, new FeedOptions { EnableCrossPartitionQuery = true});
             Func<bool, IQueryable<Book>> getBookQuery = useQuery => useQuery ? bookDocQuery : new List<Book>().AsQueryable();
 
             var inputs = new List<LinqTestInput>();
@@ -2106,7 +2106,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateDynamicAttachmentQuery() //Ensure query on custom property of attachment.
         {
-            IOrderedQueryable<SpecialAttachment2> attachmentQuery = client.CreateDocumentQuery<SpecialAttachment2>(testCollection);
+            IOrderedQueryable<SpecialAttachment2> attachmentQuery = client.CreateDocumentQuery<SpecialAttachment2>(testCollection, new FeedOptions { EnableCrossPartitionQuery = true});
             var myDocument = new Document();
             Func<bool, IQueryable<SpecialAttachment2>> getAttachmentQuery = useQuery => useQuery ? attachmentQuery : new List<SpecialAttachment2>().AsQueryable();
 
