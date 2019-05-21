@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the read resource record.
         /// </returns>
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which will contain information about the request issued.</returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list>
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
         /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
         /// <param name="throughput">The cosmos database throughput.</param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
         /// </returns>
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
         public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,

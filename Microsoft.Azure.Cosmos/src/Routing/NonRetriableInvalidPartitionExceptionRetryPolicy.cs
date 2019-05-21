@@ -37,9 +37,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             DocumentClientException clientException = exception as DocumentClientException;
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 clientException?.StatusCode,
@@ -50,12 +50,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return Task.FromResult(shouldRetryResult);
             }
 
-            return this.nextPolicy.ShouldRetryAsync(exception, cancellation);
+            return this.nextPolicy.ShouldRetryAsync(exception, cancellationToken);
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage, 
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             // Its used by query/feed and are not yet needed.
             throw new NotImplementedException();

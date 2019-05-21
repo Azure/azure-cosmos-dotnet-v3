@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,
                     allowNonValueAggregateQuery: false,
-                    cancellation: token);
+                    cancellationToken: token);
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(
                         resourceTypeEnum,
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> targetRanges,
             string collectionRid,
             bool isContinuationExpected,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             // Figure out the optimal page size.
             long initialPageSize = constructorParams.FeedOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 targetRanges,
                 (int)initialPageSize,
                 constructorParams.FeedOptions.RequestContinuation,
-                cancellation);
+                cancellationToken);
         }
 
         /// <summary>

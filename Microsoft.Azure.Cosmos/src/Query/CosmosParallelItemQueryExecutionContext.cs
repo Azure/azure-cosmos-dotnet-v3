@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="constructorParams">The params the construct the base class.</param>
         /// <param name="initParams">The params to initialize the cross partition context.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosParallelItemQueryExecutionContext.</returns>
         public static async Task<CosmosParallelItemQueryExecutionContext> CreateAsync(
             CosmosQueryContext constructorParams,
@@ -120,9 +120,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains documents from this execution context.
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drains.</param>
-        /// <param name="cancellation">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellationToken token.</param>
         /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
-        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellation)
+        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints
             // 1) We fully drain from the left most partition before moving on to the next partition
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
             // This might be the first time we have seen this document producer tree so we need to buffer documents
             if (currentItemProducerTree.Current == null)
             {
-                await this.MoveNextHelperAsync(currentItemProducerTree, cancellation);
+                await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
             }
 
             int itemsLeftInCurrentPage = currentItemProducerTree.ItemsLeftInCurrentPage;
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query
             for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
             {
                 results.Add(currentItemProducerTree.Current);
-                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellation))
+                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
                 {
                     break;
                 }
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRanges">The partition key ranges to drain documents from.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="requestContinuation">The continuation token to resume from.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
             SqlQuerySpec sqlQuerySpec,

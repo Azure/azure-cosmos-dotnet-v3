@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellation: this.cancellation);
+                cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             this.container = response;
             this.jsonSerializer = new CosmosDefaultJsonSerializer();

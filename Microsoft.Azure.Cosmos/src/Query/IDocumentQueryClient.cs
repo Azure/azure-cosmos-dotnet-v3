@@ -28,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
         Task<IRoutingMapProvider> GetRoutingMapProviderAsync();
 
-        Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellation);
+        Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken);
 
-        Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation);
+        Task<DocumentServiceResponse> ExecuteQueryAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken);
 
-        Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation);
+        Task<DocumentServiceResponse> ReadFeedAsync(DocumentServiceRequest request, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken);
 
         Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
 

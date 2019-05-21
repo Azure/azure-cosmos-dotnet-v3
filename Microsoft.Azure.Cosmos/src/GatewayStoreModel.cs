@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
-                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellation);
+                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
             }
             catch (DocumentClientException exception)
             {
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Get the ServiceDocumentResource from the gateway.
             using (HttpResponseMessage responseMessage =
-                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellation))
+                await this.gatewayStoreClient.SendHttpAsync(requestMessage, cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {

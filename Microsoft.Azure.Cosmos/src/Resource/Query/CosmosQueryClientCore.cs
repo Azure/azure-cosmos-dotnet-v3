@@ -51,9 +51,9 @@ namespace Microsoft.Azure.Cosmos
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            QueryPartitionProvider queryPartitionProvider = await this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellation);
+            QueryPartitionProvider queryPartitionProvider = await this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(
                 sqlQuerySpec,
                 partitionKeyDefinition,
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(requestOptions, resourceType, message);
         }
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
-                cancellation: cancellation))
+                cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();

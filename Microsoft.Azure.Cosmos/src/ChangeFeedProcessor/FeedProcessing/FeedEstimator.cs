@@ -12,6 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     /// </summary>
     internal abstract class FeedEstimator
     {
-        public abstract Task RunAsync(CancellationToken cancellation);
+        public abstract Task RunAsync(CancellationToken cancellationToken);
     }
 }

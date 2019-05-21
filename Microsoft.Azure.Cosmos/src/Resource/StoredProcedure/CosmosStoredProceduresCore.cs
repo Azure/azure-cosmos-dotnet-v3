@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestEnricher: null,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this[id], response);
         }
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosStoredProcedureSettings>>(
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosStoredProcedureSettings>(response),
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
     }
 }

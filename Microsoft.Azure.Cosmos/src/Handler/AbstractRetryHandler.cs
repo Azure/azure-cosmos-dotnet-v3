@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public override async Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request, 
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicy(request);
 
@@ -27,17 +27,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return await RetryHandler.ExecuteHttpRequestAsync(
                     callbackMethod: () =>
                     {
-                        return base.SendAsync(request, cancellation);
+                        return base.SendAsync(request, cancellationToken);
                     },
                     callShouldRetry: (cosmosResponseMessage, token) =>
                     {
-                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellation);
+                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
                     },
                     callShouldRetryException: (exception, token) =>
                     {
-                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellation);
+                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
                     },
-                    cancellation: cancellation);
+                    cancellationToken: cancellationToken);
             }
             catch (DocumentClientException ex)
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             while (true)
             {
-                cancellation.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
                 ShouldRetryResult result;
 
                 try
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         return cosmosResponseMessage;
                     }
 
-                    result = await callShouldRetry(cosmosResponseMessage, cancellation);
+                    result = await callShouldRetry(cosmosResponseMessage, cancellationToken);
                     if (!result.ShouldRetry)
                     {
                         return cosmosResponseMessage;
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 catch (HttpRequestException httpRequestException)
                 {
-                    result = await callShouldRetryException(httpRequestException, cancellation);
+                    result = await callShouldRetryException(httpRequestException, cancellationToken);
                     if (!result.ShouldRetry)
                     {
                         // Today we don't translate request exceptions into status codes since this was an error before
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 TimeSpan backoffTime = result.BackoffTime;
                 if (backoffTime != TimeSpan.Zero)
                 {
-                    await Task.Delay(result.BackoffTime, cancellation);
+                    await Task.Delay(result.BackoffTime, cancellationToken);
                 }
             }
         }

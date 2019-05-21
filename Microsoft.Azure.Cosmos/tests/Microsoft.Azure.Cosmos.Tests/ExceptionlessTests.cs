@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
                 this.sendFunc = func;
             }
 
-            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellation)
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 return await this.sendFunc(request);
             }
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos
 
             public override async Task<CosmosResponseMessage> SendAsync(
                 CosmosRequestMessage request,
-                CancellationToken cancellation)
+                CancellationToken cancellationToken)
             {
                 this.ProcessMessagesAsyncThrew = false;
                 this.SendAsyncCalls++;
@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     using (new ActivityScope(Guid.NewGuid()))
                     {
-                        DocumentServiceResponse response = await base.ProcessMessageAsync(request, cancellation);
+                        DocumentServiceResponse response = await base.ProcessMessageAsync(request, cancellationToken);
                         return response.ToCosmosResponseMessage(request);
                     }
                 }

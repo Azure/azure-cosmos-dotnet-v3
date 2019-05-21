@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellation)
+        internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
         {
             if (this.IsMasterOperation())
             {
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
 #if DEBUG
             CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
             CosmosContainerSettings collectionFromCache =
-                await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellation);
+                await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
             if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
             {
                 Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());

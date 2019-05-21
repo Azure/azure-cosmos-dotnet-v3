@@ -34,8 +34,8 @@ namespace Microsoft.Azure.Cosmos
         /// Method that is called to determine from the policy that needs to retry on the a particular status code
         /// </summary>
         /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
-        /// <param name="cancellation"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns>If the retry needs to be attempted or not</returns>
-        Task<ShouldRetryResult> ShouldRetryAsync(CosmosResponseMessage cosmosResponseMessage, CancellationToken cancellation);
+        Task<ShouldRetryResult> ShouldRetryAsync(CosmosResponseMessage cosmosResponseMessage, CancellationToken cancellationToken);
     }
 }

@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             };
 
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(propertyValue, request.Properties[PropertyKey]);
                 Assert.AreEqual(Condition, request.Headers.GetValues(HttpConstants.HttpHeaders.IfMatch).First());
                 return TestHandler.ReturnSuccess();
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SessionToken = SessionToken
             };
 
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 Assert.AreEqual(Condition, request.Headers.GetValues(HttpConstants.HttpHeaders.IfNoneMatch).First());
                 Assert.AreEqual(ConsistencyLevel.Eventual.ToString(), request.Headers.GetValues(HttpConstants.HttpHeaders.ConsistencyLevel).First());
                 Assert.AreEqual(SessionToken, request.Headers.GetValues(HttpConstants.HttpHeaders.SessionToken).First());

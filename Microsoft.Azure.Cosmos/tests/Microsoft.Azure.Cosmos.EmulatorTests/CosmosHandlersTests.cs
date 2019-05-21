@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellation: this.cancellation);
+                cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
@@ -118,14 +118,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             public Action<CosmosRequestMessage> UpdateRequestMessage = null;
 
-            public override Task<CosmosResponseMessage> SendAsync(CosmosRequestMessage request, CancellationToken cancellation)
+            public override Task<CosmosResponseMessage> SendAsync(CosmosRequestMessage request, CancellationToken cancellationToken)
             {
                 if (this.UpdateRequestMessage != null)
                 {
                     this.UpdateRequestMessage(request);
                 }
 
-                return base.SendAsync(request, cancellation);
+                return base.SendAsync(request, cancellationToken);
             }
         }
     }

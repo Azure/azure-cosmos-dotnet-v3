@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: CosmosResource.ToStream(containerSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
         }
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                 settings,
                 throughput,
                 requestOptions,
-                cancellation);
+                cancellationToken);
         }
         
         public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -87,13 +87,13 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerSettings(containerSettings);
 
             CosmosContainer cosmosContainer = this[containerSettings.Id];
-            ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellation: cancellation);
+            ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosContainerResponse;
             }
 
-            cosmosContainerResponse = await this.CreateContainerAsync(containerSettings, throughput, requestOptions, cancellation: cancellation);
+            cosmosContainerResponse = await this.CreateContainerAsync(containerSettings, throughput, requestOptions, cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosContainerResponse;
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
             // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            return await cosmosContainer.ReadAsync(cancellation: cancellation);
+            return await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
-            return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellation);
+            return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
         }
 
         public override FeedIterator<CosmosContainerSettings> GetContainerIterator(
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         public override FeedIterator GetContainerStreamIterator(
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
-               cancellation: cancellation);
+               cancellationToken: cancellationToken);
         }
 
         private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutor(
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions requestOptions,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.database.LinkUri,
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(request, continuationToken);
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-               cancellation: cancellation);
+               cancellationToken: cancellationToken);
         }
 
         private Task<FeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             Debug.Assert(state == null);
 
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosContainerSettings>(response),
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
     }
 }

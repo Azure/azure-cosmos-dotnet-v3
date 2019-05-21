@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
                 }
-                return await client.SendHttpAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellation);
+                return await client.SendHttpAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             }
         }
 
@@ -48,9 +48,9 @@ namespace Microsoft.Azure.Cosmos
             return GatewayStoreClient.ParseResponseAsync(responseMessage, serializerSettings, request);
         }
 
-        public static async Task<DocumentServiceResponse> ParseMediaResponseAsync(HttpResponseMessage responseMessage, CancellationToken cancellation)
+        public static async Task<DocumentServiceResponse> ParseMediaResponseAsync(HttpResponseMessage responseMessage, CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             if ((int)responseMessage.StatusCode < 400)
             {
                 INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);

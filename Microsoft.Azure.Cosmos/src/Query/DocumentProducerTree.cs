@@ -427,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Moves to the next item in the document producer tree.
         /// </summary>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on that returns whether we successfully moved next.</returns>
         /// <remarks>This function is split proofed.</remarks>
         public async Task<bool> MoveNextAsync(CancellationToken token)
@@ -435,34 +435,34 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.ExecuteWithSplitProofing(
                 function:this.MoveNextAsyncImplementation,
                 functionNeedsBeReexecuted: false,
-                cancellation: token);
+                cancellationToken: token);
         }
 
         /// <summary>
         /// Moves next only if the producer has not split.
         /// This is used to avoid calling move next twice during splits.
         /// </summary>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on which in turn returns whether or not we moved next.</returns>
         public async Task<bool> MoveNextIfNotSplit(CancellationToken token)
         {
             return await this.ExecuteWithSplitProofing(
                 function:this.MoveNextIfNotSplitAsyncImplementation,
                 functionNeedsBeReexecuted: false,
-                cancellation: token);
+                cancellationToken: token);
         }
 
         /// <summary>
         /// Buffers more documents in a split proof manner.
         /// </summary>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on.</returns>
         public Task BufferMoreDocuments(CancellationToken token)
         {
             return this.ExecuteWithSplitProofing(
                 function:this.BufferMoreDocumentsImplementation,
                 functionNeedsBeReexecuted: true,
-                cancellation: token);
+                cancellationToken: token);
         }
 
         /// <summary>
@@ -585,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Implementation for moving to the next item in the document producer tree.
         /// </summary>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task with whether or not move next succeeded.</returns>
         private async Task<dynamic> MoveNextAsyncImplementation(CancellationToken token)
         {
@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Implementation for moving next if the tree has not split.
         /// </summary>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on which in turn return whether we successfully moved next.</returns>
         private Task<dynamic> MoveNextIfNotSplitAsyncImplementation(CancellationToken token)
         {
@@ -622,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Implementation for buffering more documents.
         /// </summary>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on.</returns>
         private async Task<object> BufferMoreDocumentsImplementation(CancellationToken token)
         {
@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="function">The function to execute in a split proof manner.</param>
         /// <param name="functionNeedsBeReexecuted">If the function needs to be reexecuted after split.</param>
-        /// <param name="cancellation">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellationToken token.</param>
         /// <remarks>
         /// <para>
         /// This function is thread safe meaning that if multiple functions want to execute in a split proof manner,
@@ -672,16 +672,16 @@ namespace Microsoft.Azure.Cosmos.Query
         private async Task<dynamic> ExecuteWithSplitProofing(
             Func<CancellationToken, Task<dynamic>> function,
             bool functionNeedsBeReexecuted,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             while (true)
             {
                 try
                 {
                     await this.executeWithSplitProofingSemaphore.WaitAsync();
-                    return await function(cancellation);
+                    return await function(cancellationToken);
                 }
                 catch (DocumentClientException dce) when (DocumentProducerTree.IsSplitException(dce))
                 {
@@ -702,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                         if (!this.deferFirstPage)
                         {
-                            await replacementDocumentProducerTree.MoveNextAsync(cancellation);
+                            await replacementDocumentProducerTree.MoveNextAsync(cancellationToken);
                         }
 
                         replacementDocumentProducerTree.Filter = splitDocumentProducerTree.root.Filter;

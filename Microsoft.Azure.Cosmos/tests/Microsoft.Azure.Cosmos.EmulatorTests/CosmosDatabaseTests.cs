@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         protected CosmosClient cosmosClient = null;
         protected CancellationTokenSource cancellationTokenSource = null;
-        protected CancellationToken cancellation;
+        protected CancellationToken cancellationToken;
 
         [TestInitialize]
         public void TestInit()
         {
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.cancellation = this.cancellationTokenSource.Token;
+            this.cancellationToken = this.cancellationTokenSource.Token;
 
             this.cosmosClient = TestCommon.CreateCosmosClient();
         }
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(databaseSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), databaseSettings.LastModified.Value.ToString());
 
-            response = await response.Database.DeleteAsync(cancellation: this.cancellation);
+            response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         }
 
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
-            response = await response.Database.DeleteAsync(cancellation: this.cancellation);
+            response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         }
 
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 DefaultTrace.TraceInformation(hre.ToString());
             }
 
-            response = await response.Database.DeleteAsync(cancellation: this.cancellation);
+            response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         }
 
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string databaseName = Guid.NewGuid().ToString();
 
-            DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.Databases[databaseName].ReadAsync(cancellation: this.cancellation);
+            DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.Databases[databaseName].ReadAsync(cancellationToken: this.cancellationToken);
             CosmosDatabase cosmosDatabase = cosmosDatabaseResponse;
             CosmosDatabaseSettings cosmosDatabaseSettings = cosmosDatabaseResponse;
             Assert.IsNotNull(cosmosDatabase);
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cosmosDatabase);
             Assert.IsNotNull(cosmosDatabaseSettings);
 
-            cosmosDatabaseResponse = await cosmosDatabase.DeleteAsync(cancellation: this.cancellation);
+            cosmosDatabaseResponse = await cosmosDatabase.DeleteAsync(cancellationToken: this.cancellationToken);
             cosmosDatabase = cosmosDatabaseResponse;
             cosmosDatabaseSettings = cosmosDatabaseResponse;
             Assert.IsNotNull(cosmosDatabase);
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task DropNonExistingDatabase()
         {
-            DatabaseResponse response = await this.cosmosClient.Databases[Guid.NewGuid().ToString()].DeleteAsync(cancellation: this.cancellation);
+            DatabaseResponse response = await this.cosmosClient.Databases[Guid.NewGuid().ToString()].DeleteAsync(cancellationToken: this.cancellationToken);
 
             string activityId = response.ActivityId;
             double? ru = response.RequestCharge;
@@ -183,13 +183,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ReadDatabase()
         {
             DatabaseResponse createResponse = await this.CreateDatabaseHelper();
-            DatabaseResponse readResponse = await createResponse.Database.ReadAsync(cancellation: this.cancellation);
+            DatabaseResponse readResponse = await createResponse.Database.ReadAsync(cancellationToken: this.cancellationToken);
 
             Assert.AreEqual(createResponse.Database.Id, readResponse.Database.Id);
             Assert.AreEqual(createResponse.Resource.Id, readResponse.Resource.Id);
             Assert.AreNotEqual(createResponse.ActivityId, readResponse.ActivityId);
             ValidateHeaders(readResponse);
-            await createResponse.Database.DeleteAsync(cancellation: this.cancellation);
+            await createResponse.Database.DeleteAsync(cancellationToken: this.cancellationToken);
         }
 
         [TestMethod]
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<CosmosDatabaseSettings> iterator =
-                        await feedIterator.FetchNextSetAsync(this.cancellation);
+                        await feedIterator.FetchNextSetAsync(this.cancellationToken);
                     foreach (CosmosDatabaseSettings databaseSettings in iterator)
                     {
                         if (databaseIds.Contains(databaseSettings.Id))
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (CosmosDatabase database in deleteList)
                 {
-                    await database.DeleteAsync(cancellation: this.cancellation);
+                    await database.DeleteAsync(cancellationToken: this.cancellationToken);
                 }
             }
 
@@ -297,14 +297,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response = await this.cosmosClient.Databases.CreateDatabaseIfNotExistsAsync(
                     databaseId,
                     throughput,
-                    cancellation: this.cancellation);
+                    cancellationToken: this.cancellationToken);
             }
             else
             {
                 response = await this.cosmosClient.Databases.CreateDatabaseAsync(
                     databaseId,
                     throughput,
-                    cancellation: this.cancellation);
+                    cancellationToken: this.cancellationToken);
             }
 
             Assert.IsNotNull(response);

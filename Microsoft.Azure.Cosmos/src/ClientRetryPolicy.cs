@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Cosmos
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="exception">Exception that occured when the operation was tried</param>
-        /// <param name="cancellation"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             this.retryContext = null;
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
@@ -87,20 +87,20 @@ namespace Microsoft.Azure.Cosmos
                 return shouldRetryResult;
             }
 
-            return await this.throttlingRetry.ShouldRetryAsync(exception, cancellation);
+            return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
         }
 
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
         /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
-        /// <param name="cancellation"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             this.retryContext = null;
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
                 return shouldRetryResult;
             }
 
-            return await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellation);
+            return await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
         }
 
         /// <summary>

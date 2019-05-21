@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellation: this.cancellation);
+                cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Create a user defined function 
             UserDefinedFunctionResponse createResponse = await this.container.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
                 userDefinedFunctionSettings: settings,
-                cancellation: this.cancellation);
+                cancellationToken: this.cancellationToken);
 
             ValidateUserDefinedFunctionSettings(settings, createResponse);
 

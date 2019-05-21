@@ -58,14 +58,14 @@ namespace Microsoft.Azure.Cosmos.Common
         /// </summary>
         /// <param name="request">Request to resolve.</param>
         /// <param name="refreshAfter"> Time duration to refresh</param>
-        /// <param name="cancellation">Cancellation token.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Instance of <see cref="CosmosContainerSettings"/>.</returns>
         public virtual Task<CosmosContainerSettings> ResolveCollectionAsync(
             DocumentServiceRequest request,
             TimeSpan refreshAfter,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
             InternalCache cache = this.GetCache(request.Headers[HttpConstants.HttpHeaders.Version]);
 #if !NETSTANDARD16
             Debug.Assert(request.ForceNameCacheRefresh == false);
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
             }
 
-            return this.ResolveCollectionAsync(request, cancellation);
+            return this.ResolveCollectionAsync(request, cancellationToken);
         }
 
         /// <summary>
@@ -110,24 +110,24 @@ namespace Microsoft.Azure.Cosmos.Common
         /// Unless request.ForceNameCacheRefresh is equal to true, it will return the same collection.
         /// </summary>
         /// <param name="request">Request to resolve.</param>
-        /// <param name="cancellation">Cancellation token.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Instance of <see cref="CosmosContainerSettings"/>.</returns>
         public virtual async Task<CosmosContainerSettings> ResolveCollectionAsync(
             DocumentServiceRequest request,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             if (request.IsNameBased)
             {
                 if (request.ForceNameCacheRefresh)
                 {
-                    await this.RefreshAsync(request, cancellation);
+                    await this.RefreshAsync(request, cancellationToken);
                     request.ForceNameCacheRefresh = false;
                 }
 
                 CosmosContainerSettings collectionInfo = await this.ResolveByPartitionKeyRangeIdentityAsync(
                     request.Headers[HttpConstants.HttpHeaders.Version],
                     request.PartitionKeyRangeIdentity,
-                    cancellation);
+                    cancellationToken);
                 if (collectionInfo != null)
                 {
                     return collectionInfo;
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 if (request.RequestContext.ResolvedCollectionRid == null)
                 {
                     collectionInfo =
-                        await this.ResolveByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellation);
+                        await this.ResolveByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellationToken);
 
                     if (collectionInfo != null)
                     {
@@ -161,13 +161,13 @@ namespace Microsoft.Azure.Cosmos.Common
                 }
                 else
                 {
-                    return await this.ResolveByRidAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.RequestContext.ResolvedCollectionRid, cancellation);
+                    return await this.ResolveByRidAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.RequestContext.ResolvedCollectionRid, cancellationToken);
                 }
             }
             else
             {
-                return await this.ResolveByPartitionKeyRangeIdentityAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.PartitionKeyRangeIdentity, cancellation) ??
-                    await this.ResolveByRidAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellation);
+                return await this.ResolveByPartitionKeyRangeIdentityAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.PartitionKeyRangeIdentity, cancellationToken) ??
+                    await this.ResolveByRidAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellationToken);
             }
         }
 
@@ -185,11 +185,11 @@ namespace Microsoft.Azure.Cosmos.Common
             }
         }
 
-        protected abstract Task<CosmosContainerSettings> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellation);
+        protected abstract Task<CosmosContainerSettings> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellationToken);
 
-        protected abstract Task<CosmosContainerSettings> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellation);
+        protected abstract Task<CosmosContainerSettings> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellationToken);
 
-        private async Task<CosmosContainerSettings> ResolveByPartitionKeyRangeIdentityAsync(string apiVersion, PartitionKeyRangeIdentity partitionKeyRangeIdentity, CancellationToken cancellation)
+        private async Task<CosmosContainerSettings> ResolveByPartitionKeyRangeIdentityAsync(string apiVersion, PartitionKeyRangeIdentity partitionKeyRangeIdentity, CancellationToken cancellationToken)
         {
             // if request is targeted at specific partition using x-ms-documentd-partitionkeyrangeid header,
             // which contains value "<collectionrid>,<partitionkeyrangeid>", then resolve to collection rid in this header.
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Common
             {
                 try
                 {
-                    return await this.ResolveByRidAsync(apiVersion, partitionKeyRangeIdentity.CollectionRid, cancellation);
+                    return await this.ResolveByRidAsync(apiVersion, partitionKeyRangeIdentity.CollectionRid, cancellationToken);
                 }
                 catch (NotFoundException)
                 {
@@ -213,9 +213,9 @@ namespace Microsoft.Azure.Cosmos.Common
         private Task<CosmosContainerSettings> ResolveByRidAsync(
             string apiVersion,
             string resourceId,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             ResourceId resourceIdParsed = ResourceId.Parse(resourceId);
             string collectionResourceId = resourceIdParsed.DocumentCollectionId.ToString();
@@ -226,20 +226,20 @@ namespace Microsoft.Azure.Cosmos.Common
                 async () =>
                 {
                     DateTime currentTime = DateTime.UtcNow;
-                    CosmosContainerSettings collection = await this.GetByRidAsync(apiVersion, collectionResourceId, cancellation);
+                    CosmosContainerSettings collection = await this.GetByRidAsync(apiVersion, collectionResourceId, cancellationToken);
                     cache.collectionInfoByIdLastRefreshTime.AddOrUpdate(collectionResourceId, currentTime,
                              (string currentKey, DateTime currentValue) => currentTime);
                     return collection;
                 },
-                cancellation);
+                cancellationToken);
         }
 
         internal virtual async Task<CosmosContainerSettings> ResolveByNameAsync(
             string apiVersion,
             string resourceAddress,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
             InternalCache cache = this.GetCache(apiVersion);
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 async () =>
                 {
                     DateTime currentTime = DateTime.UtcNow;
-                    CosmosContainerSettings collection = await this.GetByNameAsync(apiVersion, resourceFullName, cancellation);
+                    CosmosContainerSettings collection = await this.GetByNameAsync(apiVersion, resourceFullName, cancellationToken);
                     cache.collectionInfoById.Set(collection.ResourceId, collection);
                     cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                         (string currentKey, DateTime currentValue) => currentTime);
@@ -257,10 +257,10 @@ namespace Microsoft.Azure.Cosmos.Common
                              (string currentKey, DateTime currentValue) => currentTime);
                     return collection;
                 },
-               cancellation);
+               cancellationToken);
         }
 
-        private async Task RefreshAsync(DocumentServiceRequest request, CancellationToken cancellation)
+        private async Task RefreshAsync(DocumentServiceRequest request, CancellationToken cancellationToken)
         {
             System.Diagnostics.Debug.Assert(request.IsNameBased);
             InternalCache cache = this.GetCache(request.Headers[HttpConstants.HttpHeaders.Version]);
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Common
                     async () =>
                     {
                         DateTime currentTime = DateTime.UtcNow;
-                        CosmosContainerSettings collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, cancellation);
+                        CosmosContainerSettings collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, cancellationToken);
                         cache.collectionInfoById.Set(collection.ResourceId, collection);
                         cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                         (string currentKey, DateTime currentValue) => currentTime);
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Common
                                  (string currentKey, DateTime currentValue) => currentTime);
                         return collection;
                     },
-                    cancellation);
+                    cancellationToken);
             }
             else
             {

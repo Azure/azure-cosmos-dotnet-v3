@@ -12,6 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         /// <summary>
         /// Starts the lease renewer
         /// </summary>
-        public abstract Task RunAsync(CancellationToken cancellation);
+        public abstract Task RunAsync(CancellationToken cancellationToken);
     }
 }

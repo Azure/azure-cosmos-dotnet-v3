@@ -38,9 +38,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             return this.observer.CloseAsync(context, reason);
         }
 
-        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellation)
+        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
         {
-            await this.observer.ProcessChangesAsync(context, docs, cancellation).ConfigureAwait(false);
+            await this.observer.ProcessChangesAsync(context, docs, cancellationToken).ConfigureAwait(false);
             this.processedDocCount += docs.Count;
 
             if (this.IsCheckpointNeeded())

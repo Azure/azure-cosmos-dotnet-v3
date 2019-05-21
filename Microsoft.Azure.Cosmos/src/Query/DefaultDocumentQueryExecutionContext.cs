@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<Tuple<DocumentFeedResponse<CosmosElement>, string>> ExecuteOnceAsync(
             IDocumentClientRetryPolicy retryPolicyInstance,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             // Don't reuse request, as the rest of client SDK doesn't reuse requests between retries.
             // The code leaves some temporary garbage in request (in RequestContext etc.),
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // We need to determine how to execute the request:
                 if (LogicalPartitionKeyProvided(request))
                 {
-                    feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellation);
+                    feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
                     partitionIdentifier = $"PKId({request.Headers[HttpConstants.HttpHeaders.PartitionKey]})";
                 }
                 else if (PhysicalPartitionKeyRangeIdProvided(this))
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
 
                     request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, base.PartitionKeyRangeId));
-                    feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellation);
+                    feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
                     partitionIdentifier = base.PartitionKeyRangeId;
                 }
                 else
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         // Get the routing map provider
                         CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
                         CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                        QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync(cancellation);
+                        QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync(cancellationToken);
                         IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
                         // Figure out what partition you are going to based on the range from the continuation token
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
 
                         request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, queryRoutingInfo.Item1.ResolvedRange.Id));
-                        DocumentFeedResponse<CosmosElement> response = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellation);
+                        DocumentFeedResponse<CosmosElement> response = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
 
                         // Form a composite continuation token (range + backend continuation token).
                         // If the backend continuation token was null for the range, 
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         // as the ServiceInterop dll is only available in 64-bit.
 
                         request.UseGatewayMode = true;
-                        feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellation);
+                        feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
                         partitionIdentifier = "Gateway";
                     }
                 }

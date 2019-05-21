@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         await function();
                         return 0;
-                    }, retryPolicy, cancellation);
+                    }, retryPolicy, cancellationToken);
                 }
             }
             else
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         await function();
                         return 0;
-                    }, retryPolicy, cancellation));
+                    }, retryPolicy, cancellationToken));
                 }
             }
         }
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
                     return BackoffRetryUtility<TResult>.ExecuteAsync(() =>
                     {
                         return function();
-                    }, retryPolicy, cancellation);
+                    }, retryPolicy, cancellationToken);
                 }
             }
             else
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                     return Task.Run(() => BackoffRetryUtility<TResult>.ExecuteAsync(() =>
                     {
                         return function();
-                    }, retryPolicy, cancellation));
+                    }, retryPolicy, cancellationToken));
                 }
             }
         }

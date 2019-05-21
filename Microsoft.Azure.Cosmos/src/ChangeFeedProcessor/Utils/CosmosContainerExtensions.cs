@@ -83,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 return suggestedMonitoredRid;
             }
 
-            string containerRid = await ((CosmosContainerCore)monitoredContainer).GetRID(cancellation);
-            string databaseRid = await ((CosmosDatabaseCore)((CosmosContainerCore)monitoredContainer).Database).GetRID(cancellation);
+            string containerRid = await ((CosmosContainerCore)monitoredContainer).GetRID(cancellationToken);
+            string databaseRid = await ((CosmosDatabaseCore)((CosmosContainerCore)monitoredContainer).Database).GetRID(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }
 

@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             this IEnumerable<TSource> source,
             Func<TSource, Task> worker,
             int maxParallelTaskCount = 0,
-            CancellationToken cancellation = new CancellationToken())
+            CancellationToken cancellationToken = new CancellationToken())
         {
             Debug.Assert(source != null, "source is null");
             Debug.Assert(worker != null, "worker is null");
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                                    {
                                        while (partition.MoveNext())
                                        {
-                                           cancellation.ThrowIfCancellationRequested();
+                                           cancellationToken.ThrowIfCancellationRequested();
                                            await worker(partition.Current).ConfigureAwait(false);
                                        }
                                    }

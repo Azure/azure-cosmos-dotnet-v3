@@ -349,11 +349,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// A helper to move next and set the failure response if one is received
         /// </summary>
         /// <param name="itemProducerTree">The item producer tree</param>
-        /// <param name="cancellation">The cancellation token</param>
+        /// <param name="cancellationToken">The cancellationToken token</param>
         /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
-        protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellation)
+        protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
         {
-            (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellation);
+            (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
             if (moveNextResponse.failureResponse != null)
             {
                 this.FailureResponse = moveNextResponse.failureResponse;
@@ -366,11 +366,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains documents from this component. This has the common drain logic for each implementation.
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drain.</param>
-        /// <param name="cancellation">The cancellation token to cancel tasks.</param>
+        /// <param name="cancellationToken">The cancellationToken token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        public async override Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellation)
+        public async override Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             // The initialization or previous Drain Async failed. Just return the failure.
             if (this.FailureResponse != null)
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             // Drain the results. If there is no results and a failure then return the failure.
-            IList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellation);
+            IList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellationToken);
             if ((results == null || results.Count == 0) && this.FailureResponse != null)
             {
                 this.Stop();
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The drain async logic for the different implementation 
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drain.</param>
-        /// <param name="token">The cancellation token to cancel tasks.</param>
+        /// <param name="token">The cancellationToken token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
         public abstract Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken token);
 
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="deferFirstPage">Whether or not we should defer the fetch of the first page from each partition.</param>
         /// <param name="filter">The filter to inject in the predicate.</param>
         /// <param name="filterCallback">The callback used to filter each partition.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on.</returns>
         protected async Task InitializeAsync(
             string collectionRid,
@@ -700,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="resourceUnitUsage">The amount of RUs that the producer just consumed.</param>
         /// <param name="queryMetrics">The query metrics that the producer just got back from the backend.</param>
         /// <param name="responseLengthBytes">The length of the response the producer just got back in bytes.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <remarks>
         /// This function is by nature a bit racy.
         /// A query might be fully drained but a background task is still fetching documents so this will get called after the context is done.
@@ -881,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Entry point for the function to start fetching.
             /// </summary>
-            /// <param name="token">The cancellation token.</param>
+            /// <param name="token">The cancellationToken token.</param>
             /// <returns>A task to await on.</returns>
             public override Task StartAsync(CancellationToken token)
             {

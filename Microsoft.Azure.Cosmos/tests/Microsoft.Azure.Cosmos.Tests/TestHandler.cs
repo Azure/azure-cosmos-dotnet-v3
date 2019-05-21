@@ -28,9 +28,9 @@
         }
 
         public override Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request, CancellationToken cancellation)
+            CosmosRequestMessage request, CancellationToken cancellationToken)
         {
-            return _handlerFunc(request, cancellation);
+            return _handlerFunc(request, cancellationToken);
         }
 
         public static Task<CosmosResponseMessage> ReturnSuccess()

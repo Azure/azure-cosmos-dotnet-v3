@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ConflictsFeedSetsPartitionKeyRangeIdentity()
         {
-            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellation) => {
+            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.IsNotNull(request.DocumentServiceRequest.PartitionKeyRangeIdentity);
                 return TestHandler.ReturnSuccess();
             });

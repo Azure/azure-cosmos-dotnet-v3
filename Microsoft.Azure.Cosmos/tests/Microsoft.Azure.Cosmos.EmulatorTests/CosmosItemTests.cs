@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.containerSettings = new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 this.containerSettings,
-                cancellation: this.cancellation);
+                cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 using (CosmosResponseMessage responseMessage =
-                    await feedIterator.FetchNextSetAsync(this.cancellation))
+                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.Continuation;
 
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Container.Items.GetItemIterator<ToDoActivity>();
             while (feedIterator.HasMoreResults)
             {
-                foreach (ToDoActivity toDoActivity in await feedIterator.FetchNextSetAsync(this.cancellation))
+                foreach (ToDoActivity toDoActivity in await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     if (itemIds.Contains(toDoActivity.id))
                     {

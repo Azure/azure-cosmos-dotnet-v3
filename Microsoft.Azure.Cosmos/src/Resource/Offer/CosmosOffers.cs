@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellation);
+                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
                 return this.GetThroughputIfExists(offer);
             }
             catch (DocumentClientException dce)
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellation);
+                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
                 if (offer == null)
                 {
                     throw new ArgumentOutOfRangeException("Throughput is not configured");
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 OfferV2 newOffer = new OfferV2(offerV2, targetThroughput);
-                Offer replacedOffer = await this.ReplaceOfferAsync(targetRID, newOffer, cancellation);
+                Offer replacedOffer = await this.ReplaceOfferAsync(targetRID, newOffer, cancellationToken);
                 offerV2 = replacedOffer as OfferV2;
                 Debug.Assert(offerV2 != null);
 
@@ -158,16 +158,16 @@ namespace Microsoft.Azure.Cosmos
                                             .Where(offer => offer.OfferResourceId == targetRID)
                                             .AsDocumentQuery();
 
-            return this.SingleOrDefaultAsync<Offer>(offerQuery, cancellation);
+            return this.SingleOrDefaultAsync<Offer>(offerQuery, cancellationToken);
         }
 
         private Task<T> SingleOrDefaultAsync<T>(
             IDocumentQuery<T> offerQuery,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             if (offerQuery.HasMoreResults)
             {
-                return offerQuery.ExecuteNextAsync<T>(cancellation)
+                return offerQuery.ExecuteNextAsync<T>(cancellationToken)
                     .ContinueWith(nextAsyncTask =>
                     {
                         DocumentFeedResponse<T> offerFeedResponse = nextAsyncTask.Result;
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
                             return Task.FromResult(offerFeedResponse.Single());
                         }
 
-                        return SingleOrDefaultAsync(offerQuery, cancellation);
+                        return SingleOrDefaultAsync(offerQuery, cancellationToken);
                     })
                     .Unwrap();
             }

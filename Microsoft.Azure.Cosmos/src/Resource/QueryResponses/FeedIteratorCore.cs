@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation);
+            CancellationToken cancellationToken);
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
@@ -61,11 +61,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>A query response from cosmos service</returns>
         public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellation);
+            CosmosResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken);
             this.continuationToken = response.Headers.Continuation;
             this.HasMoreResults = GetHasMoreResults(this.continuationToken, response.StatusCode);
             return response;
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation);
+            CancellationToken cancellationToken);
 
         internal readonly NextResultSetDelegate nextResultSetDelegate;
 
@@ -143,13 +143,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>A query response from cosmos service</returns>
         public override async Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
-            FeedResponse<T> response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellation);
+            FeedResponse<T> response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken);
             this.HasMoreResults = response.HasMoreResults;
             this.continuationToken = response.InternalContinuationToken;
             return response;

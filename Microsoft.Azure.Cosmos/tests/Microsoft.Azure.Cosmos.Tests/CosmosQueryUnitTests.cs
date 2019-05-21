@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 try
                 {
                     QueryResponse response = await component.DrainAsync(1, cancellationTokenSource.Token);
-                    Assert.Fail("cancellation token should have thrown an exception");
+                    Assert.Fail("cancellationToken token should have thrown an exception");
                 }
                 catch (OperationCanceledException e)
                 {
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(@"select * from t where t.something = 42 ");
             bool allowNonValueAggregateQuery = true;
             bool isContinuationExpected = true;
-            CancellationTokenSource cancellation = new CancellationTokenSource();
-            CancellationToken token = cancellation.Token;
+            CancellationTokenSource cancellationToken = new CancellationTokenSource();
+            CancellationToken token = cancellationToken.Token;
 
             Mock<CollectionCache> mockCollectionCache = new Mock<CollectionCache>();
             mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), token)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));

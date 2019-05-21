@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                cancellation: this.cancellation);
+                cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (feedIterator.HasMoreResults)
             {
                 using (CosmosResponseMessage responseMessage =
-                    await feedIterator.FetchNextSetAsync(this.cancellation))
+                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     lastcontinuation = responseMessage.Headers.Continuation;
                     List<CompositeContinuationToken> deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation);
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (setIteratorNew.HasMoreResults)
             {
                 using (CosmosResponseMessage responseMessage =
-                    await setIteratorNew.FetchNextSetAsync(this.cancellation))
+                    await setIteratorNew.FetchNextSetAsync(this.cancellationToken))
                 {
                     lastcontinuation = responseMessage.Headers.Continuation;
                     currentRange = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation)[0].Range;
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
             CosmosResponseMessage responseMessage =
-                    await setIteratorNew.FetchNextSetAsync(this.cancellation);
+                    await setIteratorNew.FetchNextSetAsync(this.cancellationToken);
 
             Assert.Fail("Should have thrown.");
         }
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (feedIterator.HasMoreResults)
             {
                 using (CosmosResponseMessage responseMessage =
-                    await feedIterator.FetchNextSetAsync(this.cancellation))
+                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     if (responseMessage.IsSuccessStatusCode)
                     {
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (CosmosResponseMessage responseMessage =
-                    await feedIterator.FetchNextSetAsync(this.cancellation))
+                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
                 {
                     continuationToken = responseMessage.Headers.Continuation;
                     if (responseMessage.IsSuccessStatusCode)
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosChangeFeedResultSetIteratorCoreMock iterator = new CosmosChangeFeedResultSetIteratorCoreMock(this.Container, "", 100, new ChangeFeedRequestOptions());
             using (CosmosResponseMessage responseMessage =
-                    await iterator.FetchNextSetAsync(this.cancellation))
+                    await iterator.FetchNextSetAsync(this.cancellationToken))
             {
                 Assert.IsTrue(iterator.HasCalledForceRefresh);
                 Assert.IsTrue(iterator.Iteration > 1);
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string partitionKeyRangeId,
                 int? maxItemCount,
                 ChangeFeedRequestOptions options,
-                CancellationToken cancellation)
+                CancellationToken cancellationToken)
             {
                 if (this.Iteration++ == 0)
                 {

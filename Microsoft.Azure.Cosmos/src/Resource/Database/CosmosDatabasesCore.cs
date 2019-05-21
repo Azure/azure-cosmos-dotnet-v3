@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseSettings: databaseSettings,
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         public override async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
@@ -53,13 +53,13 @@ namespace Microsoft.Azure.Cosmos
         {
             // Doing a Read before Create will give us better latency for existing databases
             CosmosDatabase database = this[id];
-            DatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellation: cancellation);
+            DatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosDatabaseResponse;
             }
 
-            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellation: cancellation);
+            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosDatabaseResponse;
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
             // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            return await database.ReadAsync(cancellation: cancellation);
+            return await database.ReadAsync(cancellationToken: cancellationToken);
         }
 
         public override FeedIterator<CosmosDatabaseSettings> GetDatabaseIterator(
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         internal CosmosDatabaseSettings PrepareCosmosDatabaseSettings(string id)
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: CosmosResource.ToStream(databaseSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this[databaseSettings.Id], response);
         }
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             Debug.Assert(state == null);
 
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosDatabaseSettings>(response),
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
     }
 }

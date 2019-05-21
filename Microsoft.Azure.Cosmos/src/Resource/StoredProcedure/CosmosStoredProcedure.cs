@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// Reads a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the read resource record.
         /// </returns>
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="body">The JavaScript function to replace the existing resource with.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> containing the updated resource record.
         /// </returns>
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete a <see cref="CosmosStoredProcedureSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which wraps a <see cref="CosmosStoredProcedureSettings"/> which will contain information about the request issued.</returns>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="input">The JSON serializable input parameters.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.

@@ -55,16 +55,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
-        /// <param name="cancellation">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellationToken.</param>
         /// <returns>A query response from cosmos service</returns>
         public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (this.compositeContinuationToken == null)
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                this.containerRid = await this.cosmosContainer.GetRID(cancellation);
+                this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
@@ -72,16 +72,16 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
 
-            CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellation);
-            if (await this.ShouldRetryFailureAsync(response, cancellation))
+            CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                cancellation.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
                 (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentTokenAsync();
                 currentRangeToken = currentRangeTokenForRetry;
                 this.partitionKeyRangeId = rangeIdForRetry;
                 this.continuationToken = currentRangeToken.Token;
-                response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellation);
+                response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             }
 
             // Change Feed read uses Etag for continuation
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             string partitionKeyRangeId,
             int? maxItemCount,
             ChangeFeedRequestOptions options,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.cosmosContainer.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
     }
 }

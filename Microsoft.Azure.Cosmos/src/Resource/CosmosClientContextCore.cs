@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync(
                 resourceUri: resourceUri,
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
     }
 }

@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 OperationType.Create,
                 requestOptions,
-                cancellation);
+                cancellationToken);
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 OperationType.Read,
                 requestOptions,
-                cancellation);
+                cancellationToken);
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 id: id,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 OperationType.Upsert,
                 requestOptions,
-                cancellation);
+                cancellationToken);
         }
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 OperationType.Replace,
                 requestOptions,
-                cancellation);
+                cancellationToken);
         }
 
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
                id: id,
                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                requestOptions: requestOptions,
-               cancellation: cancellation);
+               cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 OperationType.Delete,
                 requestOptions,
-                cancellation);
+                cancellationToken);
         }
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
                partitionKey: partitionKey,
                id: id,
                requestOptions: requestOptions,
-               cancellation: cancellation);
+               cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
@@ -433,10 +433,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-            QueryResponse queryResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellation);
+            QueryResponse queryResponse = await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
             queryResponse.EnsureSuccessStatusCode();
 
             return QueryResponse<T>.CreateResponse<T>(
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             CosmosItemsCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 streamPayload,
                 null,
-                cancellation);
+                cancellationToken);
         }
 
         private Task<CosmosResponseMessage> ItemStreamFeedRequestExecutor(
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 partitionKey: null,
                 streamPayload: null,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         private Task<FeedResponse<T>> ItemFeedRequestExecutor<T>(
@@ -498,7 +498,7 @@ namespace Microsoft.Azure.Cosmos
            string continuationToken,
            RequestOptions options,
            object state,
-           CancellationToken cancellation)
+           CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<FeedResponse<T>>(
@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.container,
                 partitionKey: null,
                 streamPayload: null,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         private async Task<CosmosResponseMessage> QueryRequestExecutor(
@@ -523,10 +523,10 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-            return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellation));
+            return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
         }
 
         internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)

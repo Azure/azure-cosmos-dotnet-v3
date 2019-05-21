@@ -98,31 +98,31 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
         public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellation);
+            return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellationToken);
         }
 
         /// <summary>
         /// Executes the query and retrieves the next page of results as dynamic objects in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="cancellation">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
+        /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
         public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ExecuteNextAsync<dynamic>(cancellation);
+            return this.ExecuteNextAsync<dynamic>(cancellationToken);
         }
         #endregion IDocumentQuery<TResource>
 
         #region Private
-        public Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellation)
+        public Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicy = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
-                () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellation), retryPolicy, cancellation);
+                () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellationToken), retryPolicy, cancellationToken);
         }
 
-        private async Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation)
+        private async Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellation))
+            using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellationToken))
             {
                 this.lastStatusCode = response.StatusCode;
                 this.nextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-        private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellation)
+        private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             INameValueCollection headers = new StringKeyValueCollection();
 
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     request.RouteTo(new PartitionKeyRangeIdentity(this.feedOptions.PartitionKeyRangeId));
                 }
 
-                return await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellation);
+                return await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken);
             }
         }
 

@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = this.GetPartitionRoutingHelperMock();
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
-            TestHandler testHandler = new TestHandler(async (request, cancellation) => {
+            TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
                 CosmosResponseMessage errorResponse = await TestHandler.ReturnStatusCode(HttpStatusCode.Gone);
                 errorResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
                 return errorResponse;
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
             PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(MockCosmosUtil.CreateMockCosmosClient(), partitionRoutingHelperMock.Object);
 
-            TestHandler testHandler = new TestHandler(async (request, cancellation) => {
+            TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
                 CosmosResponseMessage successResponse = await TestHandler.ReturnSuccess();
                 successResponse.Headers.Remove(HttpConstants.HttpHeaders.Continuation); //Clobber original continuation
                 return successResponse;

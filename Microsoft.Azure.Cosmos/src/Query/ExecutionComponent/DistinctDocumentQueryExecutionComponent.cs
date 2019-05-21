@@ -98,12 +98,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Drains a page of results returning only distinct elements.
         /// </summary>
         /// <param name="maxElements">The maximum number of items to drain.</param>
-        /// <param name="cancellation">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellationToken token.</param>
         /// <returns>A page of distinct results.</returns>
-        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellation)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             List<CosmosElement> distinctResults = new List<CosmosElement>();
-            QueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellation);
+            QueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
             if (!cosmosQueryResponse.IsSuccessStatusCode)
             {
                 return cosmosQueryResponse;

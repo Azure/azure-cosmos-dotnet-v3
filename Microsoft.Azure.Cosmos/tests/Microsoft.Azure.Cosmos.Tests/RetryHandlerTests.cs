@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 handlerCalls++;
                 return TestHandler.ReturnSuccess();
             });
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 if (handlerCalls == 0)
                 {
                     handlerCalls++;
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 handlerCalls++;
                 if (handlerCalls == expectedHandlerCalls)
                 {
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 handlerCalls++;
                 return TestHandler.ReturnSuccess();
             });
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 if (handlerCalls == 0)
                 {
                     handlerCalls++;
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
-            TestHandler testHandler = new TestHandler((request, cancellation) => {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
                 handlerCalls++;
                 return TestHandler.ReturnSuccess();
             });

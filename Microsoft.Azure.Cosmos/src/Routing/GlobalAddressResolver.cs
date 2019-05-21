@@ -82,10 +82,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public async Task OpenAsync(
             string databaseName,
             CosmosContainerSettings collection,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             CollectionRoutingMap routingMap =
-                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellation);
+                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken);
 
             if (routingMap == null)
             {
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
             {
-                tasks.Add(endpointCache.AddressCache.OpenAsync(databaseName, collection, ranges, cancellation));
+                tasks.Add(endpointCache.AddressCache.OpenAsync(databaseName, collection, ranges, cancellationToken));
             }
 
             await Task.WhenAll(tasks);
@@ -108,10 +108,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         public Task<PartitionAddressInformation> ResolveAsync(
             DocumentServiceRequest request,
             bool forceRefresh,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             IAddressResolver resolver = this.GetAddressResolver(request);
-            return resolver.ResolveAsync(request, forceRefresh, cancellation);
+            return resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
         /// <summary>

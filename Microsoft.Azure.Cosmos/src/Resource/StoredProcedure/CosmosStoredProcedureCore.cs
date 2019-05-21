@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         public override Task<StoredProcedureResponse> ReplaceAsync(
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         public override Task<StoredProcedureResponse> DeleteAsync(
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
 
         public override Task<ItemResponse<TOutput>> ExecuteAsync<TInput, TOutput>(
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: parametersStream,
                 requestEnricher: null,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateItemResponse<TOutput>(response);
         }
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: null,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(this, response);
         }

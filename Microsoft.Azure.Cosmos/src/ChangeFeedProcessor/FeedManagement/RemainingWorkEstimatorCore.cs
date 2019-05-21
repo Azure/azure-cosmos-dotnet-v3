@@ -53,15 +53,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.degreeOfParallelism = degreeOfParallelism;
         }
 
-        public override async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellation)
+        public override async Task<long> GetEstimatedRemainingWorkAsync(CancellationToken cancellationToken)
         {
-            IReadOnlyList<RemainingLeaseTokenWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellation);
+            IReadOnlyList<RemainingLeaseTokenWork> leaseTokens = await this.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken);
             if (leaseTokens.Count == 0) return 1;
 
             return leaseTokens.Sum(leaseToken => leaseToken.RemainingWork);
         }
 
-        public override async Task<IReadOnlyList<RemainingLeaseTokenWork>> GetEstimatedRemainingWorkPerLeaseTokenAsync(CancellationToken cancellation)
+        public override async Task<IReadOnlyList<RemainingLeaseTokenWork>> GetEstimatedRemainingWorkPerLeaseTokenAsync(CancellationToken cancellationToken)
         {
             IReadOnlyList<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
             if (leases == null || leases.Count == 0)
@@ -76,13 +76,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     List<RemainingLeaseTokenWork> partialResults = new List<RemainingLeaseTokenWork>();
                     using (partition)
                     {
-                        while (!cancellation.IsCancellationRequested && partition.MoveNext())
+                        while (!cancellationToken.IsCancellationRequested && partition.MoveNext())
                         {
                             DocumentServiceLease item = partition.Current;
                             try
                             {
                                 if (string.IsNullOrEmpty(item?.CurrentLeaseToken)) continue;
-                                long result = await this.GetRemainingWorkAsync(item, cancellation);
+                                long result = await this.GetRemainingWorkAsync(item, cancellationToken);
                                 partialResults.Add(new RemainingLeaseTokenWork(item.CurrentLeaseToken, result));
                             }
                             catch (CosmosException ex)
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return segments[1];
         }
 
-        private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellation)
+        private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
         {
             // Current lease schema maps Token to PKRangeId
             string partitionKeyRangeId = existingLease.CurrentLeaseToken;
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             try
             {
-                CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellation).ConfigureAwait(false);
+                CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     response.EnsureSuccessStatusCode();

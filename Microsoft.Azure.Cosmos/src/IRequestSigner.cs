@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos.Common
 
     internal interface IRequestSigner
     {
-        Task SignRequestAsync(DocumentServiceRequest request, CancellationToken cancellation);
+        Task SignRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken);
 
-        Task ReauthorizeSystemKeySignedRequestAsync(DocumentServiceRequest request, CancellationToken cancellation);
+        Task ReauthorizeSystemKeySignedRequestAsync(DocumentServiceRequest request, CancellationToken cancellationToken);
     }
 }

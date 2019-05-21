@@ -38,9 +38,9 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception, 
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(exception, cancellation);
+            ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(exception, cancellationToken);
 
             DocumentClientException clientException = exception as DocumentClientException;
 
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage, 
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             // Only used for collection cache whcih doesn't participate in pipeline
             throw new NotImplementedException();

@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             FeedIterator<CosmosConflictSettings> feedIterator = container.GetConflictsIterator();
 
-            TestHandler testHandler = new TestHandler((request, cancellation) =>
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.IsTrue(request.IsPartitionedFeedOperation);
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             FeedIterator feedIterator = container.GetConflictsStreamIterator();
 
-            TestHandler testHandler = new TestHandler((request, cancellation) =>
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
                 Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
@@ -172,14 +172,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuationToken,
             RequestOptions options,
             object state,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             // Validate that same contract is sent back on delegate
             Assert.IsTrue(object.ReferenceEquals(this.ContinuationToken, continuationToken));
             Assert.IsTrue(object.ReferenceEquals(this.Options, options));
 
             // CancellationToken is a struct and refs will not match
-            Assert.AreEqual(this.CancellationToken.IsCancellationRequested, cancellation.IsCancellationRequested);
+            Assert.AreEqual(this.CancellationToken.IsCancellationRequested, cancellationToken.IsCancellationRequested);
 
             return Task.FromResult(this.GetHttpResponse());
         }

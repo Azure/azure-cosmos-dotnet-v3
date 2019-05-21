@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="constructorParams">The parameters for the base class constructor.</param>
         /// <param name="initParams">The parameters to initialize the base class.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on, which in turn creates an OrderByDocumentQueryExecutionContext.</returns>
         public static async Task<OrderByDocumentQueryExecutionContext> CreateAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
@@ -167,9 +167,9 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains a page of documents from this context.
         /// </summary>
         /// <param name="maxElements">The maximum number of elements.</param>
-        /// <param name="cancellation">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellationToken token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellation)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation toke for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                await currentDocumentProducerTree.MoveNextAsync(cancellation);
+                await currentDocumentProducerTree.MoveNextAsync(cancellationToken);
 
                 this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
             }
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="sortOrders">The sort orders.</param>
         /// <param name="orderByExpressions">The order by expressions.</param>
-        /// <param name="cancellation">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellationToken token.</param>
         /// <returns>A task to await on.</returns>
         private async Task InitializeAsync(
           string requestContinuation,
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Query
           int initialPageSize,
           SortOrder[] sortOrders,
           string[] orderByExpressions,
-          CancellationToken cancellation)
+          CancellationToken cancellationToken)
         {
             try
             {
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         collectionRid,
                         partitionKeyRanges,
                         initialPageSize,
-                        token: cancellation,
+                        token: cancellationToken,
                         querySpecForInit: new SqlQuerySpec(this.QuerySpec.QueryText.Replace(FormatPlaceHolder, True), this.QuerySpec.Parameters),
                         targetRangeToContinuationMap: null,
                         deferFirstPage: false,
@@ -332,10 +332,10 @@ namespace Microsoft.Azure.Cosmos.Query
                                         documentProducerTree,
                                         sortOrders,
                                         continuationToken,
-                                        cancellation);
+                                        cancellationToken);
                                 }
                             },
-                            cancellation);
+                            cancellationToken);
                     }
                 }
             }
@@ -405,13 +405,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="producer">The producer to filter down.</param>
         /// <param name="sortOrders">The sort orders.</param>
         /// <param name="continuationToken">The continuation token.</param>
-        /// <param name="cancellation">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellationToken token.</param>
         /// <returns>A task to await on.</returns>
         private async Task FilterAsync(
             DocumentProducerTree producer,
             SortOrder[] sortOrders,
             OrderByContinuationToken continuationToken,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             // When we resume a query on a partition there is a possibility that we only read a partial page from the backend
             // meaning that will we repeat some documents if we didn't do anything about it. 
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    if (!await tree.MoveNextAsync(cancellation))
+                    if (!await tree.MoveNextAsync(cancellationToken))
                     {
                         break;
                     }

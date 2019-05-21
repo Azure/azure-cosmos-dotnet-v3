@@ -24,20 +24,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.monitoringDelay = dispatcher.DispatchPeriod ?? FeedEstimatorCore.DefaultMonitoringDelay;
         }
 
-        public override async Task RunAsync(CancellationToken cancellation)
+        public override async Task RunAsync(CancellationToken cancellationToken)
         {
-            while (!cancellation.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 TimeSpan delay = this.monitoringDelay;
 
                 try
                 {
-                    long estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkAsync(cancellation).ConfigureAwait(false);
-                    await this.dispatcher.DispatchEstimation(estimation, cancellation);
+                    long estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
+                    await this.dispatcher.DispatchEstimation(estimation, cancellationToken);
                 }
                 catch (TaskCanceledException canceledException)
                 {
-                    if (cancellation.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested)
                         throw;
 
                     DefaultTrace.TraceException(new Exception("exception within estimator", canceledException));
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     // ignore as it is caused by client
                 }
 
-                await Task.Delay(delay, cancellation).ConfigureAwait(false);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
             }
         }
     }

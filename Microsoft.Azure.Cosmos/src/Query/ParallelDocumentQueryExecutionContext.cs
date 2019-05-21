@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="constructorParams">The params the construct the base class.</param>
         /// <param name="initParams">The params to initialize the cross partition context.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on, which in turn returns a ParallelDocumentQueryExecutionContext.</returns>
         public static async Task<ParallelDocumentQueryExecutionContext> CreateAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Drains documents from this execution context.
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drains.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
         public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRanges">The partition key ranges to drain documents from.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <param name="requestContinuation">The continuation token to resume from.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="token">The cancellationToken token.</param>
         /// <returns>A task to await on.</returns>
         private Task InitializeAsync(
             string collectionRid,

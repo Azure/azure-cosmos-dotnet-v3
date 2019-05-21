@@ -148,28 +148,28 @@ namespace Microsoft.Azure.Cosmos
             this.contentStream.Write(buffer, offset, count);
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellation)
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return this.contentStream.ReadAsync(buffer, offset, count, cancellation);
+            return this.contentStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellation)
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return this.contentStream.WriteAsync(buffer, offset, count, cancellation);
+            return this.contentStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellation)
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            return this.contentStream.CopyToAsync(destination, bufferSize, cancellation);
+            return this.contentStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }
         public override void Flush()
         {
             this.contentStream.Flush();
         }
 
-        public override Task FlushAsync(CancellationToken cancellation)
+        public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            return this.contentStream.FlushAsync(cancellation);
+            return this.contentStream.FlushAsync(cancellationToken);
         }
 
         public override int ReadByte()

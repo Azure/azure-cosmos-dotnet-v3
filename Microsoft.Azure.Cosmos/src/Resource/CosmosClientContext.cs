@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
             Object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellation);
+            CancellationToken cancellationToken);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
@@ -80,6 +80,6 @@ namespace Microsoft.Azure.Cosmos
            Stream streamPayload,
            Action<CosmosRequestMessage> requestEnricher,
            Func<CosmosResponseMessage, T> responseCreator,
-           CancellationToken cancellation);
+           CancellationToken cancellationToken);
     }
 }

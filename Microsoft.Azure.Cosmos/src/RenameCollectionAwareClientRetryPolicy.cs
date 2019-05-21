@@ -43,9 +43,9 @@ namespace Microsoft.Azure.Cosmos
             this.retryPolicy.OnBeforeSendRequest(request);
         }
 
-        public async Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellation)
+        public async Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(exception, cancellation);
+            ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(exception, cancellationToken);
 
             DocumentClientException clientException = exception as DocumentClientException;
 
@@ -53,26 +53,26 @@ namespace Microsoft.Azure.Cosmos
                 clientException?.StatusCode,
                 clientException?.GetSubStatus(),
                 shouldRetry,
-                cancellation);
+                cancellationToken);
         }
 
         public async Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage cosmosResponseMessage,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetryResult = await this.retryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellation);
+            ShouldRetryResult shouldRetryResult = await this.retryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
             return await this.ShouldRetryInternalAsync(
                 cosmosResponseMessage?.StatusCode,
                 cosmosResponseMessage?.Headers.SubStatusCode,
                 shouldRetryResult,
-                cancellation);
+                cancellationToken);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
             ShouldRetryResult shouldRetryResult,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             if (this.request == null)
             {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        CosmosContainerSettings collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellation);
+                        CosmosContainerSettings collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
 
                         if (collectionInfo == null)
                         {
