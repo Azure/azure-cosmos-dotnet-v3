@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Adds a path to the current <see cref="SpatialSpec"/> definition.
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
-        /// <returns></returns>
+        /// <returns>An instance of the current <see cref="SpatialIndexFluentDefinition{T}"/>.</returns>
         public virtual SpatialIndexFluentDefinition<T> Path(string path)
         {
             if (string.IsNullOrEmpty(path))
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
         /// <param name="spatialTypes">Set of <see cref="SpatialType"/> to apply to the path.</param>
-        /// <returns></returns>
+        /// <returns>An instance of the current <see cref="SpatialIndexFluentDefinition{T}"/>.</returns>
         public virtual SpatialIndexFluentDefinition<T> Path(
             string path,
             params SpatialType[] spatialTypes)
@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Applies the current definition to the parent.
         /// </summary>
+        /// <returns>An instance of the parent.</returns>
         public virtual T Attach()
         {
             this.attachCallback(this.spatialSpec);
