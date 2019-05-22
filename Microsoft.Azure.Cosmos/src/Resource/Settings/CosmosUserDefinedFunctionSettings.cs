@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the body of the user defined function for the Azure Cosmos DB service.
+        /// Gets the body of the user defined function for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The body of the user defined function.</value>
         /// <remarks>This must be a valid JavaScript function e.g. "function (input) { return input.toLowerCase(); }".</remarks>
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual string Body { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
+        /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
         /// <remarks>
@@ -98,6 +98,6 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; internal set; }
     }
 }

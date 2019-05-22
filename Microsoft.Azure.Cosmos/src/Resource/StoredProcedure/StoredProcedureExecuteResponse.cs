@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Create a <see cref="StoredProcedureExecuteResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        public StoredProcedureExecuteResponse() : base()
+        public StoredProcedureExecuteResponse() 
+            : base()
         {
-
         }
 
         /// <summary>
@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal StoredProcedureExecuteResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           T response) : base(
-               httpStatusCode,
+           T response) 
+            : base(httpStatusCode,
                headers,
                response)
         {

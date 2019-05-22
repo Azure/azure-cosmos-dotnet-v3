@@ -18,14 +18,14 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosTriggerSettings
     {
         /// <summary>
-        /// Gets or sets the body of the trigger for the Azure Cosmos DB service.
+        /// Gets the body of the trigger for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The body of the trigger.</value>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
         public virtual string Body { get; internal set; }
 
         /// <summary>
-        /// Get or set the type of the trigger for the Azure Cosmos DB service.
+        /// Gets the type of the trigger for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The body of the trigger.</value>
         /// <seealso cref="TriggerType"/>
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual TriggerType TriggerType { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the operation the trigger is associated with for the Azure Cosmos DB service.
+        /// Gets the operation the trigger is associated with for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The operation the trigger is associated with.</value>
         /// <seealso cref="TriggerOperation"/>
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual TriggerOperation TriggerOperation { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
+        /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
         /// <remarks>

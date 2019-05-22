@@ -13,10 +13,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
     public static class ScriptsExtensions
     {
         /// <summary>
-        /// 
+        /// Obtains an accessor to Cosmos Scripts.
         /// </summary>
-        /// <param name="cosmosContainer"></param>
-        /// <returns></returns>
+        /// <param name="cosmosContainer">An existing <see cref="CosmosContainer"/>.</param>
+        /// <returns>An instance of of <see cref="CosmosScripts"/>.</returns>
         public static CosmosScripts GetScripts(this CosmosContainer cosmosContainer)
         {
             CosmosContainerCore cosmosContainerCore = (CosmosContainerCore)cosmosContainer;

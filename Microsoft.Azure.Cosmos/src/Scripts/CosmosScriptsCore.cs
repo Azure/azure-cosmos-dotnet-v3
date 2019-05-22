@@ -127,13 +127,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 parametersStream = this.clientContext.JsonSerializer.ToStream<TInput>(input);
             }
 
-            Uri LinkUri = this.clientContext.CreateLink(
+            Uri linkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
                 uriPathSegment: Paths.StoredProceduresPathSegment,
                 id: id);
 
             Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: LinkUri,
+                resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ExecuteJavaScript,
                 partitionKey: partitionKey,

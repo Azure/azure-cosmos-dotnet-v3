@@ -91,6 +91,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
         /// <example>
         /// Get an iterator for all the stored procedures under the cosmos container
         /// <code language="c#">
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///     </item>
         /// </list>
         /// </exception>
-        ///  <example>
+        /// <example>
         ///  This reads an existing stored procedure.
         /// <code language="c#">
         /// <![CDATA[
@@ -350,6 +351,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Gets an iterator to go through all the triggers for the container
         /// </summary>
+        /// <returns>An iterator to read through the existing triggers.</returns>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <example>
@@ -537,6 +539,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <returns>An iterator to read through the existing user defined functions.</returns>
         /// <example>
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">

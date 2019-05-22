@@ -45,6 +45,11 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosItems Items { get; }
 
         /// <summary>
+        /// Operations for reading/querying all conflicts
+        /// </summary>
+        public abstract CosmosConflicts Conflicts { get; }
+
+        /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>

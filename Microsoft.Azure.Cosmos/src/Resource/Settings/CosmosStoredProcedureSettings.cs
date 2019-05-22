@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosStoredProcedureSettings()
         {
-
         }
 
         internal CosmosStoredProcedureSettings(
