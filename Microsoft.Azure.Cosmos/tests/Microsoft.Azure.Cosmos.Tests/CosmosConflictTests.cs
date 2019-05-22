@@ -124,8 +124,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new CosmosClientContextCore(
                 client: client,
                 clientOptions: null,
-                userJsonSerializer: null,
-                defaultJsonSerializer: null,
+                userJsonSerializer: cosmosJsonSerializer,
+                defaultJsonSerializer: cosmosJsonSerializer,
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
                 documentClient: new MockDocumentClient(),
