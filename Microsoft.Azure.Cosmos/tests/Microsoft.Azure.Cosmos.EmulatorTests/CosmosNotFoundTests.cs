@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 var queryIterator = cosmosItems.CreateItemQueryAsStream("select * from t where true", maxConcurrency: 2);
                 this.VerifyQueryNotFoundResponse(await queryIterator.FetchNextSetAsync());
 
-                var feedIterator = cosmosItems.GetItemStreamIterator();
+                var feedIterator = cosmosItems.GetItemsStreamIterator();
                 this.VerifyNotFoundResponse(await feedIterator.FetchNextSetAsync());
 
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };
