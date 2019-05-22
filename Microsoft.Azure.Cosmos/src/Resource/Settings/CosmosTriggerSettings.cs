@@ -18,32 +18,32 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosTriggerSettings
     {
         /// <summary>
-        /// Gets the body of the trigger for the Azure Cosmos DB service.
+        /// Gets or sets the body of the trigger for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The body of the trigger.</value>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public virtual string Body { get; internal set; }
+        public virtual string Body { get; set; }
 
         /// <summary>
-        /// Gets the type of the trigger for the Azure Cosmos DB service.
+        /// Gets or sets the type of the trigger for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The body of the trigger.</value>
         /// <seealso cref="TriggerType"/>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.TriggerType)]
-        public virtual TriggerType TriggerType { get; internal set; }
+        public virtual TriggerType TriggerType { get; set; }
 
         /// <summary>
-        /// Gets the operation the trigger is associated with for the Azure Cosmos DB service.
+        /// Gets or sets the operation the trigger is associated with for the Azure Cosmos DB service.
         /// </summary>
         /// <value>The operation the trigger is associated with.</value>
         /// <seealso cref="TriggerOperation"/>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.TriggerOperation)]
-        public virtual TriggerOperation TriggerOperation { get; internal set; }
+        public virtual TriggerOperation TriggerOperation { get; set; }
 
         /// <summary>
-        /// Gets the Id of the resource in the Azure Cosmos DB service.
+        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
         /// <remarks>
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; internal set; }
+        public virtual string Id { get; set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -76,6 +76,6 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; private set; }
     }
 }
