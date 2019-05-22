@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicy(CosmosRequestMessage request)
         {
-            return  new PartitionKeyRangeGoneRetryPolicy(
+            return new PartitionKeyRangeGoneRetryPolicy(
                 await client.DocumentClient.GetCollectionCacheAsync(),
                 await client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
                 PathsHelper.GetCollectionPath(request.RequestUri.ToString()),

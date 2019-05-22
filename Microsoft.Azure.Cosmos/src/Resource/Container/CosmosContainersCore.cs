@@ -11,8 +11,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Fluent;
 
     /// <summary>
     /// Operations for creating new containers, and reading/querying all containers
@@ -115,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
         }
 
-        public override FeedIterator<CosmosContainerSettings> GetContainerIterator(
+        public override FeedIterator<CosmosContainerSettings> GetContainersIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator GetContainerStreamIterator(
+        public override FeedIterator GetContainersStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)

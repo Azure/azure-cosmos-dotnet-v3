@@ -18,8 +18,6 @@ namespace Microsoft.Azure.Cosmos.SystemFunctions
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Returns true if this property is defined otherwise returns false.</returns>
-        /// <remarks>
-        /// </remarks>
         /// <example>
         /// <code>
         /// <![CDATA[
@@ -37,8 +35,6 @@ namespace Microsoft.Azure.Cosmos.SystemFunctions
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Returns true if this property is null otherwise returns false.</returns>
-        /// <remarks>
-        /// </remarks>
         /// <example>
         /// <code>
         /// <![CDATA[

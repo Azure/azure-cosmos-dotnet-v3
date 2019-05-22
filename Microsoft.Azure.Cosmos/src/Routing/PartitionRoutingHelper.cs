@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     await routingMapProvider.TryGetRangeByEffectivePartitionKey(
                         collectionRid,
                         PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
-                        suppliedTokens);
+                    suppliedTokens);
             }
 
             // Initially currentRange will be empty
@@ -251,10 +251,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns><c>false</c> if collectionRid is likely wrong because range was not found. Cache needs to be refreshed probably.</returns>
         public virtual async Task<bool> TryAddPartitionKeyRangeToContinuationTokenAsync(
             INameValueCollection backendResponseHeaders,
             IReadOnlyList<Range<string>> providedPartitionKeyRanges,
@@ -331,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     backendResponseHeaders[HttpConstants.HttpHeaders.Continuation] = PartitionRoutingHelper.AddPartitionKeyRangeToContinuationToken(
                         backendResponseHeaders[HttpConstants.HttpHeaders.Continuation],
-                    rangeToUse);
+                        rangeToUse);
                 }
             }
 
@@ -467,7 +463,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             return min;
         }
 
-        private static T MinAfter<T>(IReadOnlyList<T> values, T minValue, IComparer<T> comparer) where T : class
+        private static T MinAfter<T>(IReadOnlyList<T> values, T minValue, IComparer<T> comparer)
+            where T : class
         {
             if (values.Count == 0)
             {

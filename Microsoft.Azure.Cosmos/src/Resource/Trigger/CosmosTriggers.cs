@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosTriggerSettings> feedIterator = this.container.Triggers.GetTriggerIterator();
+        /// FeedIterator<CosmosTriggerSettings> feedIterator = this.container.Triggers.GetTriggersIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosTriggerSettings settings in await feedIterator.FetchNextSetAsync())
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public FeedIterator<CosmosTriggerSettings> GetTriggerIterator(
+        public FeedIterator<CosmosTriggerSettings> GetTriggersIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {

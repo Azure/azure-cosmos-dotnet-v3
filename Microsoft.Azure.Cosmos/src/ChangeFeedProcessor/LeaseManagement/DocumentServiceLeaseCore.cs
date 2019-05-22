@@ -1,7 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
-
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
@@ -43,7 +42,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public string LeaseToken { get; set; }
 
         [JsonProperty("PartitionId")]
-        private string PartitionId { set { LeaseToken = value; } }
+        private string PartitionId
+        {
+            set
+            {
+                this.LeaseToken = value;
+            }
+        }
 
         [JsonIgnore]
         public override string CurrentLeaseToken => this.LeaseToken;

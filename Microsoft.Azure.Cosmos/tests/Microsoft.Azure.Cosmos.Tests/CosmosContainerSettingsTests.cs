@@ -4,10 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
-    using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -35,6 +34,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void ValidateSerialization()
+        {
+            CosmosDefaultJsonSerializer jsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosContainerSettings containerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
+            Stream basic = jsonSerializer.ToStream<CosmosContainerSettings>(containerSettings);
+            CosmosContainerSettings response = jsonSerializer.FromStream<CosmosContainerSettings>(basic);
+            Assert.AreEqual(containerSettings.Id, response.Id);
+            Assert.AreEqual(containerSettings.PartitionKeyPath, response.PartitionKeyPath);
+        }
+
+        [TestMethod]
         public void DefaultIncludesShouldNotBePopulated()
         {
             CosmosContainerSettings containerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
@@ -49,8 +59,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, containerSettings.IndexingPolicy.IncludedPaths.Count);
 
             // None indexing mode should not auto-generate the default indexing 
-            containerSettings.IndexingPolicy = new IndexingPolicy();
-            containerSettings.IndexingPolicy.IndexingMode = IndexingMode.None;
+            containerSettings.IndexingPolicy = new IndexingPolicy
+            {
+                IndexingMode = IndexingMode.None
+            };
 
             Assert.AreEqual(0, containerSettings.IndexingPolicy.IncludedPaths.Count);
             containerSettings.ValidateRequiredProperties();
@@ -79,8 +91,10 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void DefaultIndexingPolicySameAsDocumentCollection()
         {
-            CosmosContainerSettings containerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
-            containerSettings.IndexingPolicy = new IndexingPolicy();
+            CosmosContainerSettings containerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey")
+            {
+                IndexingPolicy = new IndexingPolicy()
+            };
 
             DocumentCollection dc = new DocumentCollection()
             {
@@ -114,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static void AssertSerializedPayloads(CosmosContainerSettings settings, DocumentCollection documentCollection)
         {
-            var jsonSettings = new JsonSerializerSettings
+            JsonSerializerSettings jsonSettings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore
             };
@@ -133,17 +147,19 @@ namespace Microsoft.Azure.Cosmos
 
         private static JObject OrderProeprties(JObject input)
         {
-            var props = input.Properties().ToList();
-            foreach (var prop in props)
+            System.Collections.Generic.List<JProperty> props = input.Properties().ToList();
+            foreach (JProperty prop in props)
             {
                 prop.Remove();
             }
 
-            foreach (var prop in props.OrderBy(p => p.Name))
+            foreach (JProperty prop in props.OrderBy(p => p.Name))
             {
                 input.Add(prop);
                 if (prop.Value is JObject)
+                {
                     OrderProeprties((JObject)prop.Value);
+                }
             }
 
             return input;

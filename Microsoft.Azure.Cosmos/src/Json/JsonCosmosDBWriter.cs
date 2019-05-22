@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="NewtonsoftWriter.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -21,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Json
         private readonly IJsonWriter jsonWriter;
 
         /// <summary>
-        /// Initializes a new instance of the NewtonsoftWriter class.
+        /// Initializes a new instance of the <see cref="JsonCosmosDBWriter"/> class.
         /// </summary>
         /// <param name="jsonSerializationFormat">The SerializationFormat to use.</param>
         public JsonCosmosDBWriter(JsonSerializationFormat jsonSerializationFormat)
@@ -218,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="value">The <see cref="UInt64"/> value to write.</param>
         public override void WriteValue(ulong value)
         {
-            if(value <= long.MaxValue)
+            if (value <= long.MaxValue)
             {
                 this.WriteValue((long)value);
             }

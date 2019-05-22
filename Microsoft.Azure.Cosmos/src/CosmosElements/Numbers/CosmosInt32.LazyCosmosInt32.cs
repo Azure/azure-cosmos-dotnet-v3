@@ -1,14 +1,12 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosInt32.LazyCosmosInt32.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosInt32: CosmosNumber
+    internal abstract partial class CosmosInt32 : CosmosNumber
     {
         private sealed class LazyCosmosInt32 : CosmosInt32
         {

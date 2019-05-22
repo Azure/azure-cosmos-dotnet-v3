@@ -14,9 +14,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// For example, for https://contoso.documents.azure.com:443/ and "West US", this will return https://contoso-westus.documents.azure.com:443/
         /// NOTE: This ONLY called by client first boot when the input endpoint is not available.
         /// </summary>
-        /// <param name="serviceEndpoint"></param>
-        /// <param name="location"></param>
-        /// <returns></returns>
         internal static Uri GetLocationEndpoint(Uri serviceEndpoint, string location)
         {
             UriBuilder builder = new UriBuilder(serviceEndpoint);

@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class QueryMetricsDelimitedStringWriter : QueryMetricsWriter
     {
-        private readonly StringBuilder stringBuilder;
-
         #region Constants
         // QueryMetrics
         private const string RetrievedDocumentCount = "retrievedDocumentCount";
@@ -40,6 +38,8 @@ namespace Microsoft.Azure.Cosmos
         private const string KeyValueDelimiter = "=";
         private const string KeyValuePairDelimiter = ";";
         #endregion
+
+        private readonly StringBuilder stringBuilder;
 
         public QueryMetricsDelimitedStringWriter(StringBuilder stringBuilder)
         {

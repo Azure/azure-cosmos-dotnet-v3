@@ -1,12 +1,12 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Collections;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using Microsoft.Azure.Cosmos.Collections;
 
     /// <summary>
     /// Captures APIs for responses associated with feed methods (enumeration operations) in the Azure Cosmos DB service.
