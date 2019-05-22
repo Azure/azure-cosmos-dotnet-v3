@@ -213,9 +213,9 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// For non-existing container will throw <see cref="DocumentClientException"/> with 404 as status code
         /// </remarks>
-        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellation = default(CancellationToken))
+        internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellation);
+            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
             return containerSettings.GetNoneValue();
         }
 

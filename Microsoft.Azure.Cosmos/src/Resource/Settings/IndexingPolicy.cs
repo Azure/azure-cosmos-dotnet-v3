@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     /// </remarks>
     /// <seealso cref="CosmosContainerSettings"/>
-    public sealed class IndexingPolicy 
+    public sealed class IndexingPolicy
     {
         internal const string DefaultPath = "/*";
 
