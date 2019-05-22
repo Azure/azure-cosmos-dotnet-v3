@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
-            if (result.Item1)
+            if (result.Item1 && requestOptions?.PartitionKey == null)
             {
                 requestOptions.PartitionKey = result.Item2;
             }
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
-            if (result.Item1)
+            if (result.Item1 && requestOptions?.PartitionKey == null)
             {
                 requestOptions.PartitionKey = result.Item2;
             }
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
-            if (result.Item1)
+            if (result.Item1 && requestOptions?.PartitionKey == null)
             {
                 requestOptions.PartitionKey = result.Item2;
             }
