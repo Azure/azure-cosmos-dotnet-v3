@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             CosmosScripts scripts = this.Container.GetScripts();
 
             StoredProcedureResponse storedProcedureResponse =
-                await scripts.CreateStoredProcedureAsync(sprocId, sprocBody);
+                await scripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(sprocId, sprocBody));
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 

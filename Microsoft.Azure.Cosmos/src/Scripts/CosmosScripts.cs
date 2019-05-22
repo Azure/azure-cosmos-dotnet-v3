@@ -19,12 +19,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="id">The identifier of the Stored Procedure to create.</param>
-        /// <param name="body">The JavaScript function that is the body of the stored procedure</param>
+        /// <param name="storedProcedureSettings">The Stored Procedure to create</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="CosmosStoredProcedureSettings"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">If either <paramref name="id"/> or <paramref name="body"/> is not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureSettings"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -70,9 +69,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///    }";
         ///    
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProceducreAsync(
-        ///         id: "appendString",
-        ///         body: sprocBody);
+        /// CosmosStoredProcedureSettings storedProcedure = new CosmosStoredProcedureSettings(id, sprocBody);
+        /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
         /// // Execute the stored procedure
         /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(testPartitionId, "appendString", "Item as a string: ");
@@ -81,8 +79,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    string id,
-                    string body,
+                    CosmosStoredProcedureSettings storedProcedureSettings,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -152,14 +149,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Replaces a <see cref="CosmosStoredProcedureSettings"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="id">The identifier of the Stored Procedure to replace.</param>
-        /// <param name="body">The JavaScript function to replace the existing resource with.</param>
+        /// <param name="storedProcedureSettings">The Stored Procedure to replace</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureSettings"/>.
         /// </returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="id"/>, <paramref name="body"/> are not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureSettings"/> is not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
         ///     <listheader>
@@ -191,8 +187,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            string id,
-            string body,
+            CosmosStoredProcedureSettings storedProcedureSettings,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

@@ -1392,7 +1392,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }";
             //Script cannot timeout.
             CosmosScripts cosmosScripts = collection.GetScripts();
-            CosmosStoredProcedureSettings storedProcedure = await cosmosScripts.CreateStoredProcedureAsync("scriptId", script);
+            CosmosStoredProcedureSettings storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings("scriptId", script));
             string result = await cosmosScripts.ExecuteStoredProcedureAsync<object ,string >(id : "scriptId", partitionKey : documentDefinition.Id, input : null);
             await database.DeleteAsync();
         }
@@ -1438,7 +1438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 CosmosScripts cosmosScripts = collection.GetScripts();
-                CosmosStoredProcedureSettings storedProcedure = await cosmosScripts.CreateStoredProcedureAsync("scriptId", script);
+                CosmosStoredProcedureSettings storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings("scriptId", script));
                 string result = await cosmosScripts.ExecuteStoredProcedureAsync<object, string>(document.Id, "scriptId", input: null);
             }
             catch (DocumentClientException exception)

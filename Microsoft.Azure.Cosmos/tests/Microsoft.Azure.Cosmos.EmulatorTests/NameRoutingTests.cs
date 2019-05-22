@@ -262,12 +262,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     CosmosScripts cosmosScripts = container.GetScripts();
 
-                    CosmosStoredProcedureSettings storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
+                    CosmosStoredProcedureSettings storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(myStoredProcedure.Id, myStoredProcedure.Body));
                     myStoredProcedure.Body = "function() {var x = 5;}";
-                    storedProcedure1 = await cosmosScripts.ReplaceStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
+                    storedProcedure1 = await cosmosScripts.ReplaceStoredProcedureAsync(new CosmosStoredProcedureSettings(myStoredProcedure.Id, myStoredProcedure.Body));
                     await cosmosScripts.DeleteStoredProcedureAsync(myStoredProcedure.Id);
 
-                    storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
+                    storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(myStoredProcedure.Id, myStoredProcedure.Body));
                     storedProcedure1 = await cosmosScripts.ReadStoredProcedureAsync(myStoredProcedure.Id);
 
                     // 
@@ -1737,7 +1737,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 container = client.Databases["db1"].Containers["coll1"];
                 CosmosScripts scripts = container.GetScripts();
-                CosmosStoredProcedureSettings storedProcedure = await scripts.CreateStoredProcedureAsync(id: "sproc1", body: "function() {return 1}");
+                CosmosStoredProcedureSettings storedProcedure = await scripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings("sproc1", "function() {return 1}"));
                 for (int i = 0; i < 10; i++)
                 {
                     await scripts.ExecuteStoredProcedureAsync<object, object>(partitionKey: i, id: "sproc1", input: null);

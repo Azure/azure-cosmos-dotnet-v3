@@ -25,13 +25,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    string id,
-                    string body,
+                    CosmosStoredProcedureSettings storedProcedureSettings,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings(id, body);
-
             return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
@@ -70,15 +67,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            string id,
-            string body,
+            CosmosStoredProcedureSettings storedProcedureSettings,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosStoredProcedureSettings storedProcedureSettings = new CosmosStoredProcedureSettings(id, body);
-
             return this.ProcessStoredProcedureOperationAsync(
-                id: id,
+                id: storedProcedureSettings.Id,
                 operationType: OperationType.Replace,
                 streamPayload: CosmosResource.ToStream(storedProcedureSettings),
                 requestOptions: requestOptions,
