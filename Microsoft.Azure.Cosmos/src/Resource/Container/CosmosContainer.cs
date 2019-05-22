@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract partial class CosmosContainer
+    public abstract class CosmosContainer
     {
         /// <summary>
         /// The Id of the Cosmos container
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// CosmosContainer cosmosContainer = this.database.Containers["containerId"];
         /// ContainerResponse response = cosmosContainer.DeleteAsync();
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> DeleteAsync(
@@ -163,6 +163,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>The value of the provisioned throughput if any</returns>
         public abstract Task<int?> ReadProvisionedThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -187,6 +188,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public abstract Task ReplaceProvisionedThroughputAsync(
             int throughput,
             CancellationToken cancellationToken = default(CancellationToken));

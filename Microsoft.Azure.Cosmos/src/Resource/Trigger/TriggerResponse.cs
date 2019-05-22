@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Create a <see cref="TriggerResponse"/> as a no-op for mock testing
         /// </summary>
-        public TriggerResponse() : base()
+        public TriggerResponse()
+            : base()
         {
-
         }
 
         /// <summary>
@@ -26,7 +26,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal TriggerResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosTriggerSettings cosmosTriggerSettings) : base(
+           CosmosTriggerSettings cosmosTriggerSettings)
+            : base(
                httpStatusCode,
                headers,
                cosmosTriggerSettings)

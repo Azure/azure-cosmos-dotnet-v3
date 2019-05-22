@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="ParallelDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -48,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="rewrittenQuery">The rewritten query.</param>
         private ParallelDocumentQueryExecutionContext(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
-            string rewrittenQuery) :
-            base(
+            string rewrittenQuery)
+            : base(
                 constructorParams,
                 rewrittenQuery,
                 ParallelDocumentQueryExecutionContext.MoveNextComparer,

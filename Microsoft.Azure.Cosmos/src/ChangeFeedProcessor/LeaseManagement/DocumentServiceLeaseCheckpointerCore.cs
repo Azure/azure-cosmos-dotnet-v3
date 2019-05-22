@@ -1,7 +1,6 @@
-﻿
-//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
@@ -50,6 +49,5 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     return serverLease;
                 }).ConfigureAwait(false);
         }
-
     }
 }

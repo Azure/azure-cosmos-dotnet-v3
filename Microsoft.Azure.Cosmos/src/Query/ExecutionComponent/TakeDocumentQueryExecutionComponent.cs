@@ -213,11 +213,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             /// Tries to parse out the LimitContinuationToken.
             /// </summary>
             /// <param name="value">The value to parse from.</param>
-            /// <param name="LimitContinuationToken">The result of parsing out the token.</param>
+            /// <param name="limitContinuationToken">The result of parsing out the token.</param>
             /// <returns>Whether or not the LimitContinuationToken was successfully parsed out.</returns>
-            public static bool TryParse(string value, out LimitContinuationToken LimitContinuationToken)
+            public static bool TryParse(string value, out LimitContinuationToken limitContinuationToken)
             {
-                LimitContinuationToken = default(LimitContinuationToken);
+                limitContinuationToken = default(LimitContinuationToken);
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     return false;
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
                 try
                 {
-                    LimitContinuationToken = JsonConvert.DeserializeObject<LimitContinuationToken>(value);
+                    limitContinuationToken = JsonConvert.DeserializeObject<LimitContinuationToken>(value);
                     return true;
                 }
                 catch (JsonException ex)

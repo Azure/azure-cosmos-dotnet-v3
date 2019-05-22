@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos
                     id,
                     keyName => new CosmosDatabaseCore(this.ClientContext, keyName));
 
-
         public override Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                 Stream streamPayload,
                 int? throughput = null,

@@ -19,7 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query
     internal sealed class QueryPartitionProvider : IDisposable
     {
         private static readonly int InitialBufferSize = 1024;
+#pragma warning disable SA1310 // Field names should not contain underscore
         private static readonly uint DISP_E_BUFFERTOOSMALL = 0x80020013;
+#pragma warning restore SA1310 // Field names should not contain underscore
         private static readonly PartitionedQueryExecutionInfoInternal DefaultInfoInternal = new PartitionedQueryExecutionInfoInternal
         {
             QueryInfo = new QueryInfo(),

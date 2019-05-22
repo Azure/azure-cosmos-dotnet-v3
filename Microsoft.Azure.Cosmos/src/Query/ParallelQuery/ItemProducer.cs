@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="ItemProducer.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -59,6 +57,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly IEqualityComparer<CosmosElement> equalityComparer;
 
+        private readonly CosmosQueryContext queryContext;
+
+        private readonly SqlQuerySpec querySpecForInit;
+
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
         /// </summary>
@@ -95,10 +97,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// This flag keeps track of whether we are in that scenario.
         /// </summary>
         private bool hasInitialized;
-
-        private readonly CosmosQueryContext queryContext;
-
-        private readonly SqlQuerySpec querySpecForInit;
 
         /// <summary>
         /// Need this flag so that the document producer stops buffering more results after a fatal exception.

@@ -19,12 +19,14 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal partial class CosmosContainerCore : CosmosContainer
+    internal class CosmosContainerCore : CosmosContainer
     {
         /// <summary>
         /// Only used for unit testing
         /// </summary>
-        internal CosmosContainerCore() { }
+        internal CosmosContainerCore()
+        {
+        }
 
         internal CosmosContainerCore(
             CosmosClientContext clientContext,
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Database = database;
             this.Items = new CosmosItemsCore(this.ClientContext, this);
+            this.Conflicts = new CosmosConflictsCore(this.ClientContext, this);
         }
 
         public override string Id { get; }
@@ -47,6 +50,8 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosDatabase Database { get; }
 
         public override CosmosItems Items { get; }
+
+        public override CosmosConflicts Conflicts { get; }
 
         internal virtual Uri LinkUri { get; }
 

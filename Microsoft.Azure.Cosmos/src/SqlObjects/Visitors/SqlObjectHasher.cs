@@ -1,16 +1,14 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// <copyright file="SqlObjectHasher.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using Newtonsoft.Json;
     using System;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Newtonsoft.Json;
 
     internal sealed class SqlObjectHasher : SqlObjectVisitor<int>
     {

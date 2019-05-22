@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
-        /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
+        /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The Resource Id associated with the resource.

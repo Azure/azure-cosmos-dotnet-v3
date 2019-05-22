@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="hrefType">
         /// Optional string which hints at the format used to represent CRS parameters at the provided <paramref name="href"/>.
         /// </param>
-        internal LinkedCrs(string href, string hrefType = null) : base(CrsType.Linked)
+        internal LinkedCrs(string href, string hrefType = null)
+            : base(CrsType.Linked)
         {
             if (href == null)
             {

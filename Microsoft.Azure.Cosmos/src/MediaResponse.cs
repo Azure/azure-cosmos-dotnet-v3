@@ -3,10 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Documents.Collections;
     using System.Collections.Specialized;
     using System.IO;
+    using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Represents the response associated with retrieving attachment content from the Azure Cosmos DB service.
@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public MediaResponse()
         {
-
         }
 
         /// <summary> 
@@ -107,7 +106,8 @@ namespace Microsoft.Azure.Cosmos
             get { return this.responseHeaders.ToNameValueCollection(); }
         }
 
-        internal INameValueCollection Headers {
+        internal INameValueCollection Headers
+        {
             get { return this.responseHeaders; }
             set { this.responseHeaders = value; }
         }

@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="polygons">
         /// List of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.
         /// </param>
-        public MultiPolygon(IList<PolygonCoordinates> polygons) : this(polygons, new GeometryParams())
+        public MultiPolygon(IList<PolygonCoordinates> polygons)
+            : this(polygons, new GeometryParams())
         {
         }
 
@@ -50,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal MultiPolygon() : base(GeometryType.MultiPolygon, new GeometryParams())
+        internal MultiPolygon()
+            : base(GeometryType.MultiPolygon, new GeometryParams())
         {
         }
 

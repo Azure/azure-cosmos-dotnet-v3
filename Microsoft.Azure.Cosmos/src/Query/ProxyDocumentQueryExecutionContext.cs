@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal sealed class ProxyDocumentQueryExecutionContext : IDocumentQueryExecutionContext
     {
-        private IDocumentQueryExecutionContext innerExecutionContext;
-
         private readonly IDocumentQueryClient client;
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
@@ -37,6 +35,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly bool isContinuationExpected;
 
         private readonly Guid correlatedActivityId;
+
+        private IDocumentQueryExecutionContext innerExecutionContext;
 
         private ProxyDocumentQueryExecutionContext(
             IDocumentQueryExecutionContext innerExecutionContext,

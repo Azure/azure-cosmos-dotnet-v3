@@ -96,8 +96,6 @@ namespace Microsoft.Azure.Cosmos
             this.WriteAfterRuntimeExecutionTimes();
         }
 
-
-
         protected abstract void WriteBeforeRuntimeExecutionTimes();
 
         protected abstract void WriteQueryEngineExecutionTime(TimeSpan queryEngineExecutionTime);
@@ -134,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.WriteBeforePartitionExecutionTimeline();
 
-            foreach(FetchExecutionRange fetchExecutionRange in clientSideMetrics.FetchExecutionRanges.OrderBy(fetchExecutionRange => fetchExecutionRange.StartTime))
+            foreach (FetchExecutionRange fetchExecutionRange in clientSideMetrics.FetchExecutionRanges.OrderBy(fetchExecutionRange => fetchExecutionRange.StartTime))
             {
                 this.WriteFetchExecutionRange(fetchExecutionRange);
             }

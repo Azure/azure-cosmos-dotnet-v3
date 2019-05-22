@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos
 {
@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Provides a flexible way to to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
     /// </summary>
-
     public class ChangeFeedProcessorBuilder
     {
         private const string InMemoryDefaultHostName = "InMemory";
@@ -128,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// If this is specified, StartFromBeginning is ignored.
         /// </remarks>
         /// <param name="startTime">Date and time when to start looking for changes.</param>
-        /// <returns></returns>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public virtual ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
         {
             if (startTime == null) throw new ArgumentNullException(nameof(startTime));
@@ -142,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         /// Sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxItemCount">Maximum amount of items to be returned in a Change Feed request.</param>
-        /// <returns></returns>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/>.</returns>
         public virtual ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount)
         {
             if (maxItemCount <= 0) throw new ArgumentOutOfRangeException(nameof(maxItemCount));
@@ -156,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// Sets the Cosmos Container to hold the leases state
         /// </summary>
         /// <param name="leaseContainer">Instance of a Cosmos Container to hold the leases.</param>
-        /// <returns></returns>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public virtual ChangeFeedProcessorBuilder WithCosmosLeaseContainer(CosmosContainer leaseContainer)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
