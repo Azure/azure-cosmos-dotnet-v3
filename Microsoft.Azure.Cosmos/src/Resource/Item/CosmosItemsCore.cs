@@ -69,6 +69,10 @@ namespace Microsoft.Azure.Cosmos
             Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
             if (result.Item1 && requestOptions?.PartitionKey == null)
             {
+                if(requestOptions == null)
+                {
+                    requestOptions = new ItemRequestOptions();
+                }
                 requestOptions.PartitionKey = result.Item2;
             }
             Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
@@ -130,6 +134,10 @@ namespace Microsoft.Azure.Cosmos
             Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
             if (result.Item1 && requestOptions?.PartitionKey == null)
             {
+                if (requestOptions == null)
+                {
+                    requestOptions = new ItemRequestOptions();
+                }
                 requestOptions.PartitionKey = result.Item2;
             }
             Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(                
@@ -163,6 +171,10 @@ namespace Microsoft.Azure.Cosmos
             Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, cancellationToken);
             if (result.Item1 && requestOptions?.PartitionKey == null)
             {
+                if (requestOptions == null)
+                {
+                    requestOptions = new ItemRequestOptions();
+                }
                 requestOptions.PartitionKey = result.Item2;
             }
             Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(               
@@ -514,6 +526,11 @@ namespace Microsoft.Azure.Cosmos
             for(int i = 0; i < tokens.Length - 1; i++)
             {
                 cosmosObject = cosmosObject[tokens[i]] as CosmosObject;
+            }
+
+            if(cosmosObject == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosObject));
             }
 
             return this.CosmosElementToObject(cosmosObject[tokens[tokens.Length - 1]]);

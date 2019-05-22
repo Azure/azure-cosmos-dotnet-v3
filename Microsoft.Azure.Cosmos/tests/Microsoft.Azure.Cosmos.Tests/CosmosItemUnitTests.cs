@@ -25,30 +25,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             dynamic item = new
             {
                 id = Guid.NewGuid().ToString(),
-                pk = "FF627B77-568E-4541-A47E-041EAC10E46F"
+                nested = new { pk = "FF627B77-568E-4541-A47E-041EAC10E46F" }
             };
-            await VerifyItemOperations(item.pk, "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
+            await VerifyItemOperations(item.nested.pk, "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
 
             item = new
             {
                 id = Guid.NewGuid().ToString(),
-                pk = 4567
+                nested = new { pk = 4567 }
             };
-            await VerifyItemOperations(item.pk, "[4567.0]", item);
+            await VerifyItemOperations(item.nested.pk, "[4567.0]", item);
 
             item = new
             {
                 id = Guid.NewGuid().ToString(),
-                pk = 4567.1234
+                nested = new { pk = 4567.1234 }
             };
-            await VerifyItemOperations(item.pk, "[4567.1234]", item);
+            await VerifyItemOperations(item.nested.pk, "[4567.1234]", item);
 
             item = new
             {
                 id = Guid.NewGuid().ToString(),
-                pk = true
+                nested = new { pk = true }
             };
-            await VerifyItemOperations(item.pk, "[true]", item);
+            await VerifyItemOperations(item.nested.pk, "[true]", item);
         }
 
         [TestMethod]
@@ -386,7 +386,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
                 using (CosmosResponseMessage streamResponse = await container.Items.CreateItemStreamAsync(
-                    streamPayload: itemStream))
+                    streamPayload: itemStream,
+                    requestOptions: requestOptions))
                 {
                     Assert.IsNotNull(streamResponse);
                     Assert.AreEqual(httpStatusCode, streamResponse.StatusCode);

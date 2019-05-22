@@ -63,13 +63,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public override void WriteUndefined()
         {
-            SetPartitionKey(null);
+            SetPartitionKey(Documents.Undefined.Value);
             base.WriteUndefined();
         }
         
         public override Task WriteUndefinedAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            SetPartitionKey(null);
+            SetPartitionKey(Documents.Undefined.Value);
             return base.WriteUndefinedAsync(cancellationToken);
         }
         
