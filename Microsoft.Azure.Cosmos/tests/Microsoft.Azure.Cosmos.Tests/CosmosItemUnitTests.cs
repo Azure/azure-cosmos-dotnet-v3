@@ -229,12 +229,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainer container = client.Databases["testdb"]
                                         .Containers["testcontainer"];
 
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
+            AggregateException exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
             {
                 await container.Items.CreateItemAsync<dynamic>(
                     item: testItem,
                     requestOptions: requestOptions);
-            }, "CreateItemAsync should throw ArgumentNullException without the correct request option set.");
+            });
+            Assert.IsTrue(exception.InnerException.GetType() == typeof(ArgumentNullException), 
+                "CreateItemAsync should throw ArgumentNullException without the correct request option set.");
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
@@ -244,20 +246,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestOptions: requestOptions);
             }, "ReadItemAsync should throw ArgumentNullException without the correct request option set.");
 
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
+            exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
             {
                 await container.Items.UpsertItemAsync<dynamic>(                    
                     item: testItem,
                     requestOptions: requestOptions);
-            }, "UpsertItemAsync should throw ArgumentNullException without the correct request option set.");
+            });
+            Assert.IsTrue(exception.InnerException.GetType() == typeof(ArgumentNullException),
+                "UpsertItemAsync should throw ArgumentNullException without the correct request option set.");
 
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
+            exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
             {
                 await container.Items.ReplaceItemAsync<dynamic>(                    
                     id: testItem.id,
                     item: testItem,
                     requestOptions: requestOptions);
-            }, "ReplaceItemAsync should throw ArgumentNullException without the correct request option set.");
+            });
+            Assert.IsTrue(exception.InnerException.GetType() == typeof(ArgumentNullException),
+                "ReplaceItemAsync should throw ArgumentNullException without the correct request option set.");
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
