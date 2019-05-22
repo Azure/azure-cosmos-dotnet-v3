@@ -1,15 +1,15 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
-
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
-    internal sealed class ChangeFeedObserverFactoryCore<T>: ChangeFeedObserverFactory<T>
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    internal sealed class ChangeFeedObserverFactoryCore<T> : ChangeFeedObserverFactory<T>
     {
         private readonly Func<IReadOnlyCollection<T>, CancellationToken, Task> onChanges;
 

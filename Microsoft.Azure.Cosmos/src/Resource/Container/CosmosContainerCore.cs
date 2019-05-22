@@ -23,7 +23,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only used for unit testing
         /// </summary>
-        internal CosmosContainerCore() { }
+        internal CosmosContainerCore()
+        {
+        }
 
         internal CosmosContainerCore(
             CosmosClientContext clientContext,

@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
@@ -46,7 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         internal ChangeFeedEstimatorCore(
             Func<long, CancellationToken, Task> initialEstimateDelegate,
             TimeSpan? estimatorPeriod,
-            RemainingWorkEstimator remainingWorkEstimator): this(initialEstimateDelegate, estimatorPeriod)
+            RemainingWorkEstimator remainingWorkEstimator)
+            : this(initialEstimateDelegate, estimatorPeriod)
         {
             this.remainingWorkEstimator = remainingWorkEstimator;
         }

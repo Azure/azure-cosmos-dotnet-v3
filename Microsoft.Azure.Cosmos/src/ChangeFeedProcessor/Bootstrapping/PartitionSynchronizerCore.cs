@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 {
@@ -18,7 +18,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
     internal sealed class PartitionSynchronizerCore : PartitionSynchronizer
     {
+#pragma warning disable SA1401 // Fields should be private
         internal static int DefaultDegreeOfParallelism = 25;
+#pragma warning restore SA1401 // Fields should be private
 
         private readonly CosmosContainerCore container;
         private readonly DocumentServiceLeaseContainer leaseContainer;

@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// <copyright file="SqlSelectListSpec.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
@@ -22,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
             foreach (SqlSelectItem item in items)
             {
-                if(item == null)
+                if (item == null)
                 {
                     throw new ArgumentException($"{nameof(items)} must not contain null items.");
                 }

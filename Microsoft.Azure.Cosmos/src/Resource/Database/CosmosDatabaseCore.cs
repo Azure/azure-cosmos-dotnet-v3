@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only used for unit testing
         /// </summary>
-        internal CosmosDatabaseCore() { }
+        internal CosmosDatabaseCore()
+        {
+        }
 
         internal CosmosDatabaseCore(
             CosmosClientContext clientContext,

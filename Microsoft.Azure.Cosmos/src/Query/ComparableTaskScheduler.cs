@@ -24,13 +24,13 @@ namespace Microsoft.Azure.Cosmos
         private int maximumConcurrencyLevel;
         private volatile bool isStopped;
 
-        public ComparableTaskScheduler() :
-            this(Environment.ProcessorCount)
+        public ComparableTaskScheduler()
+            : this(Environment.ProcessorCount)
         {
         }
 
-        public ComparableTaskScheduler(int maximumConcurrencyLevel) :
-            this(Enumerable.Empty<IComparableTask>(), maximumConcurrencyLevel)
+        public ComparableTaskScheduler(int maximumConcurrencyLevel)
+            : this(Enumerable.Empty<IComparableTask>(), maximumConcurrencyLevel)
         {
         }
 

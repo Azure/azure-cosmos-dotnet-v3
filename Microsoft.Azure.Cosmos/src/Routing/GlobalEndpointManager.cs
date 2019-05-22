@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
-        private int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly LocationCache locationCache;
         private readonly Uri defaultEndpoint;
@@ -34,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IDocumentClientInternal owner;
         private readonly object refreshLock;
         private readonly AsyncCache<string, CosmosAccountSettings> databaseAccountCache;
+        private int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private bool isRefreshing;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
@@ -127,7 +127,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Returns location corresponding to the endpoint
         /// </summary>
-        /// <param name="endpoint"></param>
         public string GetLocation(Uri endpoint)
         {
             return this.locationCache.GetLocation(endpoint);

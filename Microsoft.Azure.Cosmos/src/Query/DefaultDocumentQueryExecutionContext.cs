@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DefaultDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -31,13 +29,13 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly SchedulingStopwatch fetchSchedulingMetrics;
         private readonly FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
         private readonly IDictionary<string, IReadOnlyList<Range<string>>> providedRangesCache;
-        private long retries;
         private readonly PartitionRoutingHelper partitionRoutingHelper;
+        private long retries;
 
         public DefaultDocumentQueryExecutionContext(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
-            bool isContinuationExpected) :
-            base(constructorParams)
+            bool isContinuationExpected)
+            : base(constructorParams)
         {
             this.isContinuationExpected = isContinuationExpected;
             this.fetchSchedulingMetrics = new SchedulingStopwatch();
@@ -108,10 +106,12 @@ namespace Microsoft.Azure.Cosmos.Query
                                             this.retries,
                                             response.RequestCharge,
                                             this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                            string.IsNullOrEmpty(response.ResponseContinuation) ? new List<Tuple<string, SchedulingTimeSpan>>()
-                                            {
-                                                new Tuple<string, SchedulingTimeSpan>(partitionIdentifier, this.fetchSchedulingMetrics.Elapsed)
-                                            } : new List<Tuple<string, SchedulingTimeSpan>>()))
+                                            string.IsNullOrEmpty(response.ResponseContinuation) ? 
+                                            new List<Tuple<string, SchedulingTimeSpan>>()
+                                                {
+                                                    new Tuple<string, SchedulingTimeSpan>(partitionIdentifier, this.fetchSchedulingMetrics.Elapsed)
+                                                }
+                                            : new List<Tuple<string, SchedulingTimeSpan>>()))
                                 }
                             },
                             response.RequestStatistics,

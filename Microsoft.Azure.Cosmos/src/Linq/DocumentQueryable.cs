@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.Linq
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Diagnostics;
@@ -53,7 +57,7 @@
         /// </example>
         public static IDocumentQuery<T> AsDocumentQuery<T>(this IQueryable<T> query)
         {
-            return (IDocumentQuery<T>) query;
+            return (IDocumentQuery<T>)query;
         }
 
         /// <summary>
@@ -525,12 +529,12 @@
 
         internal static IOrderedQueryable<Document> CreateDocumentQuery(this IDocumentQueryClient client, string collectionLink, FeedOptions feedOptions = null, object partitionKey = null)
         {
-            return new DocumentQuery<Document>(client, ResourceType.Document, typeof (Document), collectionLink, feedOptions, partitionKey);
+            return new DocumentQuery<Document>(client, ResourceType.Document, typeof(Document), collectionLink, feedOptions, partitionKey);
         }
 
         internal static IQueryable<dynamic> CreateDocumentQuery(this IDocumentQueryClient client, string collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions = null, object partitionKey = null)
         {
-            return new DocumentQuery<Document>(client, ResourceType.Document, typeof (Document), collectionLink, feedOptions, partitionKey).AsSQL(querySpec);
+            return new DocumentQuery<Document>(client, ResourceType.Document, typeof(Document), collectionLink, feedOptions, partitionKey).AsSQL(querySpec);
         }
 
         private static MethodInfo GetMethodInfoOf<T>(Expression<Func<T>> expression)

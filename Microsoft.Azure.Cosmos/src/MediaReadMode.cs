@@ -20,6 +20,3 @@ namespace Microsoft.Azure.Cosmos
         Streamed
     }
 }
-
-
-

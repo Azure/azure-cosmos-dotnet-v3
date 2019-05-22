@@ -39,11 +39,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The Continuation Token
-        /// </summary>
-        protected string continuationToken;
-
-        /// <summary>
         /// The query options for the result set
         /// </summary>
         protected readonly RequestOptions queryOptions;
@@ -52,6 +47,11 @@ namespace Microsoft.Azure.Cosmos
         /// The state of the result set.
         /// </summary>
         protected readonly object state;
+
+        /// <summary>
+        /// The Continuation Token
+        /// </summary>
+        protected string continuationToken;
 
         /// <summary>
         /// The max item count to return as part of the query
@@ -121,11 +121,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The Continuation Token
-        /// </summary>
-        protected string continuationToken;
-
-        /// <summary>
         /// The query options for the result set
         /// </summary>
         protected readonly RequestOptions queryOptions;
@@ -134,6 +129,11 @@ namespace Microsoft.Azure.Cosmos
         /// The state of the result set.
         /// </summary>
         protected readonly object state;
+
+        /// <summary>
+        /// The Continuation Token
+        /// </summary>
+        protected string continuationToken;
 
         /// <summary>
         /// The max item count to return as part of the query

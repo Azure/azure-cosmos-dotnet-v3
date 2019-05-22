@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
@@ -17,11 +17,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
         private readonly DocumentServiceLeaseContainer leaseContainer;
 
-        public DocumentServiceLeaseStoreManagerInMemory() : this(new ConcurrentDictionary<string, DocumentServiceLease>())
+        public DocumentServiceLeaseStoreManagerInMemory()
+            : this(new ConcurrentDictionary<string, DocumentServiceLease>())
         {
         }
 
-        internal DocumentServiceLeaseStoreManagerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container): this (new DocumentServiceLeaseUpdaterInMemory(container), container)
+        internal DocumentServiceLeaseStoreManagerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container)
         {
         }
 

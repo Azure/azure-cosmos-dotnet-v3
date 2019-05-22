@@ -78,6 +78,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Set the consistency level
         /// </summary>
+        /// <param name="request">The current request.</param>
+        /// <param name="consistencyLevel">The desired Consistency level.</param>
         protected static void SetConsistencyLevel(CosmosRequestMessage request, ConsistencyLevel? consistencyLevel)
         {
             if (consistencyLevel != null && consistencyLevel.HasValue)
@@ -88,8 +90,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Set the consistency level
+        /// Set the session token
         /// </summary>
+        /// <param name="request">The current request.</param>
+        /// <param name="sessionToken">The current session token.</param>
         protected static void SetSessionToken(CosmosRequestMessage request, string sessionToken)
         {
             if (!string.IsNullOrWhiteSpace(sessionToken))
