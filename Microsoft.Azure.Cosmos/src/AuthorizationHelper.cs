@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType.ToLowerInvariant(),
                 resourceId,
                 xDate.ToLowerInvariant(),
-                xDate.Equals("", StringComparison.OrdinalIgnoreCase) ? date.ToLowerInvariant() : "");
+                xDate.Equals(string.Empty, StringComparison.OrdinalIgnoreCase) ? date.ToLowerInvariant() : string.Empty);
 
             return payLoad;
         }
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
                 return string.Empty;
             }
 
-            return headerValues[key] ?? "";
+            return headerValues[key] ?? string.Empty;
         }
 
         internal static string GetAuthorizationResourceIdOrFullName(string resourceType, string resourceIdOrFullName)

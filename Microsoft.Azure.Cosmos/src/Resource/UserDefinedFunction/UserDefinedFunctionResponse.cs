@@ -15,9 +15,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="UserDefinedFunctionResponse"/> as a no-op for mock testing
         /// </summary>
-        public UserDefinedFunctionResponse() : base()
+        public UserDefinedFunctionResponse()
+            : base()
         {
-
         }
 
         /// <summary>
@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Cosmos
           HttpStatusCode httpStatusCode,
           CosmosResponseMessageHeaders headers,
           CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings,
-          CosmosUserDefinedFunction userDefinedFunction) : base(
+          CosmosUserDefinedFunction userDefinedFunction)
+            : base(
               httpStatusCode,
               headers,
               cosmosUserDefinedFunctionSettings)

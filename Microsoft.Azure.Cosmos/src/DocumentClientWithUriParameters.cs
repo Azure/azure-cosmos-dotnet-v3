@@ -38,7 +38,6 @@ namespace Microsoft.Azure.Cosmos
             return this.CreateDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellationToken);
         }
 
-
         /// <summary>
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
@@ -322,7 +321,6 @@ namespace Microsoft.Azure.Cosmos
             }
             return this.DeleteStoredProcedureAsync(storedProcedureUri.OriginalString, options);
         }
-
 
         /// <summary>
         /// Delete a trigger as an asynchronous operation from the Azure Cosmos DB service.
@@ -948,7 +946,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="System.Threading.Tasks.Task"/>
         internal Task<ResourceResponse<Schema>> ReadSchemaAsync(Uri schemaUri, Documents.Client.RequestOptions options = null)
         {
-            if(schemaUri == null)
+            if (schemaUri == null)
             {
                 throw new ArgumentNullException("schemaUri");
             }
@@ -1219,7 +1217,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         internal Task<DocumentFeedResponse<Schema>> ReadSchemaFeedAsync(Uri schemasUri, FeedOptions options = null)
         {
-            if(schemasUri == null)
+            if (schemasUri == null)
             {
                 throw new ArgumentNullException("schemasUri");
             }
@@ -1285,7 +1283,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<DocumentCollection> CreateDocumentCollectionChangeFeedQuery(Uri databaseUri, ChangeFeedOptions feedOptions)
         {
-            if(databaseUri == null)
+            if (databaseUri == null)
             {
                 throw new ArgumentNullException(nameof(databaseUri));
             }

@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosOrderByItemQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -10,16 +8,16 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
-    using Newtonsoft.Json;
-    using ParallelQuery;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using System.Net;
+    using Newtonsoft.Json;
+    using ParallelQuery;
 
     /// <summary>
     /// CosmosOrderByItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -75,8 +73,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
         private CosmosOrderByItemQueryExecutionContext(
            CosmosQueryContext initPararms,
-            OrderByConsumeComparer consumeComparer) :
-            base(
+           OrderByConsumeComparer consumeComparer)
+            : base(
                 initPararms,
                 consumeComparer,
                 CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
@@ -124,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.ShouldIncrementSkipCount(itemProducer) ? this.skipCount + 1 : 0,
                         filter);
                 }),
-                new JsonSerializerSettings()
+                    new JsonSerializerSettings()
                 {
                     StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
                 }) : null;
@@ -521,14 +519,13 @@ namespace Microsoft.Azure.Cosmos.Query
                     (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
                     if (!moveNextResponse.successfullyMovedNext)
                     {
-                        if(moveNextResponse.failureResponse != null)
+                        if (moveNextResponse.failureResponse != null)
                         {
                             this.FailureResponse = moveNextResponse.failureResponse;
                         }
 
                         break;
                     }
-
                 }
             }
         }
@@ -718,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.AppendToBuilders(builders, inequality);
                             if (lastPrefix)
                             {
-                                this.AppendToBuilders(builders, "", "=", "=");
+                                this.AppendToBuilders(builders, string.Empty, "=", "=");
                             }
                         }
                         else

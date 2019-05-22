@@ -63,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal Point() : base(GeometryType.Point, new GeometryParams())
+        internal Point()
+            : base(GeometryType.Point, new GeometryParams())
         {
         }
 

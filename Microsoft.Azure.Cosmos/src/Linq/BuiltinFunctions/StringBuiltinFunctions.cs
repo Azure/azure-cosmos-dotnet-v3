@@ -1,10 +1,9 @@
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using Microsoft.Azure.Cosmos.Sql;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -12,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.Sql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal static class StringBuiltinFunctions
@@ -181,7 +181,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
                     SqlScalarExpression indexExpression = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
-                    SqlScalarExpression[] arguments = new SqlScalarExpression[] {
+                    SqlScalarExpression[] arguments = new SqlScalarExpression[] 
+                    {
                         memberExpression,
                         indexExpression,
                         ExpressionToSql.VisitScalarExpression(Expression.Constant(1), context)

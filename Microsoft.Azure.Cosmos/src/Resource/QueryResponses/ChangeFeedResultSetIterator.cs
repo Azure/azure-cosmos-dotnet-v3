@@ -13,7 +13,8 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             QueryRequestOptions options,
             NextResultSetDelegate nextDelegate,
-            object state = null) : base(maxItemCount, continuationToken, options, nextDelegate, state)
+            object state = null)
+            : base(maxItemCount, continuationToken, options, nextDelegate, state)
         {
         }
     }

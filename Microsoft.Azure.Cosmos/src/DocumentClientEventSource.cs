@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal DocumentClientEventSource() : base()
+        internal DocumentClientEventSource()
+            : base()
         {
         }
 
@@ -44,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [Event(1,
+#pragma warning disable SA1118 // Parameter should not span multiple lines
             Message = "HttpRequest to URI '{2}' with resourceType '{3}' and request headers: accept '{4}', " +
                       "authorization '{5}', consistencyLevel '{6}', contentType '{7}', contentEncoding '{8}', " +
                       "contentLength '{9}', contentLocation '{10}', continuation '{11}', emitVerboseTracesInQuery '{12}', " +
@@ -53,6 +55,7 @@ namespace Microsoft.Azure.Cosmos
                       "postTriggerInclude '{25}', profileRequest '{26}', resourceTokenExpiry '{27}', sessionToken '{28}', " +
                       "setCookie '{29}', slug '{30}', userAgent '{31}', xDate'{32}'. " +
                       "ActivityId {0}, localId {1}",
+#pragma warning restore SA1118 // Parameter should not span multiple lines
             Keywords = Keywords.HttpRequestAndResponse,
             Level = EventLevel.Verbose)]
         private unsafe void Request(
@@ -314,6 +317,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [Event(2,
+#pragma warning disable SA1118 // Parameter should not span multiple lines
             Message = "HttpResponse took {3}ms with status code {2} and response headers: contentType '{4}', contentEncoding '{5}', " +
                       "contentLength '{6}', contentLocation '{7}', currentMediaStorageUsageInMB '{8}', currentResourceQuotaUsage '{9}', " +
                       "databaseAccountConsumedDocumentStorageInMB '{10}', databaseAccountProvisionedDocumentStorageInMB '{11}', " +
@@ -322,6 +326,7 @@ namespace Microsoft.Azure.Cosmos
                       "ownerFullName '{20}', ownerId '{21}', requestCharge '{22}', requestValidationFailure '{23}', " +
                       "retryAfter '{24}', retryAfterInMilliseconds '{25}', serverVersion '{26}', schemaVersion '{27}', " +
                       "sessionToken '{28}', version '{29}'. ActivityId {0}, localId {1}",
+#pragma warning restore SA1118 // Parameter should not span multiple lines
             Keywords = Keywords.HttpRequestAndResponse,
             Level = EventLevel.Verbose)]
         private unsafe void Response(Guid activityId,

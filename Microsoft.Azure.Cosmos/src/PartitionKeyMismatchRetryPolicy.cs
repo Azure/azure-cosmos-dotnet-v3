@@ -14,10 +14,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class PartitionKeyMismatchRetryPolicy : IDocumentClientRetryPolicy
     {
+        private const int MaxRetries = 1;
+
         private readonly CollectionCache clientCollectionCache;
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
-
-        private const int MaxRetries = 1;
 
         private int retriesAttempted;
 

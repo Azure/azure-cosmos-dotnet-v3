@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos.Common
             this.valueEqualityComparer = valueEqualityComparer;
         }
 
-        public AsyncCache() : this(EqualityComparer<TValue>.Default)
+        public AsyncCache()
+            : this(EqualityComparer<TValue>.Default)
         {
         }
 
