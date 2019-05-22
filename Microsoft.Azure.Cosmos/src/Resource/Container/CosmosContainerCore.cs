@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -42,9 +43,6 @@ namespace Microsoft.Azure.Cosmos
             this.Database = database;
             this.Items = new CosmosItemsCore(this.ClientContext, this);
             this.Conflicts = new CosmosConflictsCore(this.ClientContext, this);
-            this.StoredProcedures = new CosmosStoredProceduresCore(this.ClientContext, this);
-            this.Triggers = new CosmosTriggers(this.ClientContext, this);
-            this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this.ClientContext, this);
         }
 
         public override string Id { get; }
@@ -55,13 +53,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosConflicts Conflicts { get; }
 
-        public override CosmosStoredProcedures StoredProcedures { get; }
-
         internal virtual Uri LinkUri { get; }
-
-        internal CosmosTriggers Triggers { get; }
-
-        internal CosmosUserDefinedFunctions UserDefinedFunctions { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
 

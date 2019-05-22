@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosUserDefinedFunctionSettings
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.UserDefinedFunction"/> class for the Azure Cosmos service.
+        /// Initializes a new instance of the <see cref="CosmosUserDefinedFunctionSettings"/> class for the Azure Cosmos service.
         /// </summary>
         public CosmosUserDefinedFunctionSettings()
         {
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The body of the user defined function.</value>
         /// <remarks>This must be a valid JavaScript function e.g. "function (input) { return input.toLowerCase(); }".</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public string Body { get; set; }
+        public virtual string Body { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
@@ -98,6 +98,6 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; protected internal set; }
+        public virtual string ETag { get; private set; }
     }
 }
