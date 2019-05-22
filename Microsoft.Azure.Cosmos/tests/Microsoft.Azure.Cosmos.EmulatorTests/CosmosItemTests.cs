@@ -1031,6 +1031,78 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /// <summary>
+        /// Stateless container re-create test. 
+        /// Create two client instnaces and do metata operations theough a single client
+        /// but do all valdiation using both clients.
+        /// </summary>
+        [TestMethod]
+        public async Task ContainterReCreateStatelessTest()
+        {
+            CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+
+            try
+            {
+                string dbName = Guid.NewGuid().ToString();
+                string containerName = Guid.NewGuid().ToString();
+
+                CosmosDatabase db1 = await cc1.Databases.CreateDatabaseAsync(dbName);
+                CosmosContainer container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+
+                CosmosResponseMessage response = await container1.Items.ReadItemStreamAsync("any", "any");
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.Accepted);
+
+                // Read through client2 -> return 404
+                CosmosContainer container2 = cc2.Databases[dbName].Containers[containerName];
+                response = await container2.Items.ReadItemStreamAsync("any", "any");
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.Accepted);
+
+                // Delete container 
+                await container1.DeleteAsync();
+
+                // Read on deleted container through client1
+                response = await container1.Items.ReadItemStreamAsync("any", "any");
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.NotFound);
+
+                // Read on deleted container through client2
+                response = await container2.Items.ReadItemStreamAsync("any", "any");
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.NotFound);
+
+                // Re-create again 
+                container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+
+                // Read through client1
+                response = await container1.Items.ReadItemStreamAsync("any", "any");
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.Accepted);
+
+                // Read through client2
+                response = await container2.Items.ReadItemStreamAsync("any", "any");
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.Accepted);
+            }
+            finally
+            {
+                cc1.Dispose();
+                cc2.Dispose();
+            }
+        }
+
+        private static async Task ExecuteQueryAsync(CosmosContainer container, HttpStatusCode expected)
+        {
+            FeedIterator iterator = container.Items.CreateItemQueryAsStream("select * from r", 1);
+            while (iterator.HasMoreResults)
+            {
+                CosmosResponseMessage response = await iterator.FetchNextSetAsync();
+                Assert.AreEqual(expected, response.StatusCode);
+            }
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && pkCount > 1);
