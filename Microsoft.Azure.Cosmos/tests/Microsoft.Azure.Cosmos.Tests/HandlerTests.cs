@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -193,6 +195,23 @@ namespace Microsoft.Azure.Cosmos.Tests
                     }
                 }
             }
+        }
+
+        [TestMethod]
+        public void TestAggregateExceptionConverter()
+        {
+            string errorMessage = "BadRequest message";
+            IEnumerable<Exception> exceptions = new List<Exception>()
+            {
+                new DocumentClientException(errorMessage, innerException: null, statusCode: HttpStatusCode.BadRequest)
+            };
+
+            AggregateException ae = new AggregateException(message: "Test AE message", innerExceptions: exceptions);
+
+            CosmosResponseMessage response = TransportHandler.AggregateExceptionConverter(ae, null);
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.IsTrue(response.ErrorMessage.StartsWith(errorMessage));
         }
 
         private class SomePayload

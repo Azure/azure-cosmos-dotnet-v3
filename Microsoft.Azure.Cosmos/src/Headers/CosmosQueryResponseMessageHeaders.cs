@@ -42,12 +42,12 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQueryResponseMessageHeaders CloneKnownProperties()
         {
             return this.CloneKnownProperties(
-                this.InternalContinuationToken, 
+                this.InternalContinuationToken,
                 this.DisallowContinuationTokenMessage);
         }
 
         internal CosmosQueryResponseMessageHeaders CloneKnownProperties(
-            string continauationToken, 
+            string continauationToken,
             string disallowContinuationTokenMessage)
         {
             return new CosmosQueryResponseMessageHeaders(continauationToken, disallowContinuationTokenMessage)
@@ -66,6 +66,11 @@ namespace Microsoft.Azure.Cosmos
         internal static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
             CosmosResponseMessageHeaders sourceHeaders)
         {
+            if (sourceHeaders == null)
+            {
+                return new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null);
+            }
+
             return new CosmosQueryResponseMessageHeaders(sourceHeaders.Continuation, null)
             {
                 RequestCharge = sourceHeaders.RequestCharge,
