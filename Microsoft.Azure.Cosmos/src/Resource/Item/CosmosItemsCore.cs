@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
                 partitionKey: partitionKey,
-                streamPayload: this.clientContext.UserJsonSerializer.ToStream<T>(item),
+                streamPayload: this.clientContext.CosmosSerializer.ToStream<T>(item),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(
                 partitionKey: partitionKey,
-                streamPayload: this.clientContext.UserJsonSerializer.ToStream<T>(item),
+                streamPayload: this.clientContext.CosmosSerializer.ToStream<T>(item),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
             Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(
                partitionKey: partitionKey,
                id: id,
-               streamPayload: this.clientContext.UserJsonSerializer.ToStream<T>(item),
+               streamPayload: this.clientContext.CosmosSerializer.ToStream<T>(item),
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
@@ -441,7 +441,7 @@ namespace Microsoft.Azure.Cosmos
 
             return QueryResponse<T>.CreateResponse<T>(
                 cosmosQueryResponse: queryResponse,
-                jsonSerializer: this.clientContext.UserJsonSerializer,
+                jsonSerializer: this.clientContext.CosmosSerializer,
                 hasMoreResults: !cosmosQueryExecution.IsDone);
         }
 

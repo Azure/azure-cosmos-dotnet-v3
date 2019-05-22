@@ -241,14 +241,14 @@ namespace Microsoft.Azure.Cosmos
             this.RequestHandler = clientPipelineBuilder.Build();
 
             this.ResponseFactory = new CosmosResponseFactory(
-                defaultJsonSerializer: this.ClientOptions.DefaultJsonSerializer,
-                userJsonSerializer: this.ClientOptions.UserJsonSerializerWithWrapperOrDefault);
+                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
+                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
             CosmosClientContext clientContext = new CosmosClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
-                userJsonSerializer: this.ClientOptions.UserJsonSerializerWithWrapperOrDefault,
-                defaultJsonSerializer: this.ClientOptions.DefaultJsonSerializer,
+                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
+                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,

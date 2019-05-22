@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cosmosContainerCore: this.container,
                 partitionKey: null,
-                streamPayload: this.clientContext.DefaultJsonSerializer.ToStream(storedProcedureSettings),
+                streamPayload: this.clientContext.SettingsSerializer.ToStream(storedProcedureSettings),
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 

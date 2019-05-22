@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessAsync(
                 partitionKey: null,
-                streamPayload: this.clientContext.DefaultJsonSerializer.ToStream(triggerSettings),
+                streamPayload: this.clientContext.SettingsSerializer.ToStream(triggerSettings),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

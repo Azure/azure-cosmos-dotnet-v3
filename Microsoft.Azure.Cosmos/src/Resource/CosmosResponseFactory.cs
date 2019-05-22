@@ -13,19 +13,19 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Cosmos JSON converter. This allows custom JSON parsers.
         /// </summary>
-        private readonly CosmosJsonSerializer userJsonSerializer;
+        private readonly CosmosJsonSerializer cosmosSerializer;
 
         /// <summary>
         /// This is used for all meta data types
         /// </summary>
-        private readonly CosmosJsonSerializer defaultJsonSerializer;
+        private readonly CosmosJsonSerializer settingsSerializer;
 
         internal CosmosResponseFactory(
             CosmosJsonSerializer defaultJsonSerializer,
             CosmosJsonSerializer userJsonSerializer)
         {
-            this.defaultJsonSerializer = defaultJsonSerializer;
-            this.userJsonSerializer = userJsonSerializer;
+            this.settingsSerializer = defaultJsonSerializer;
+            this.cosmosSerializer = userJsonSerializer;
         }
 
         internal FeedResponse<T> CreateResultSetQueryResponse<T>(
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return FeedIteratorCore<T>.CreateCosmosQueryResponse(
                 cosmosResponseMessage,
-                this.userJsonSerializer);
+                this.cosmosSerializer);
         }
 
         internal Task<ItemResponse<T>> CreateItemResponse<T>(
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.userJsonSerializer);
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosContainerSettings settings = this.ToObjectInternal<CosmosContainerSettings>(cosmosResponseMessage, this.defaultJsonSerializer);
+                CosmosContainerSettings settings = this.ToObjectInternal<CosmosContainerSettings>(cosmosResponseMessage, this.settingsSerializer);
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosDatabaseSettings settings = this.ToObjectInternal<CosmosDatabaseSettings>(cosmosResponseMessage, this.defaultJsonSerializer);
+                CosmosDatabaseSettings settings = this.ToObjectInternal<CosmosDatabaseSettings>(cosmosResponseMessage, this.settingsSerializer);
                 return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosStoredProcedureSettings settings = this.ToObjectInternal<CosmosStoredProcedureSettings>(cosmosResponseMessage, this.defaultJsonSerializer);
+                CosmosStoredProcedureSettings settings = this.ToObjectInternal<CosmosStoredProcedureSettings>(cosmosResponseMessage, this.settingsSerializer);
                 return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosTriggerSettings settings = this.ToObjectInternal<CosmosTriggerSettings>(cosmosResponseMessage, this.defaultJsonSerializer);
+                CosmosTriggerSettings settings = this.ToObjectInternal<CosmosTriggerSettings>(cosmosResponseMessage, this.settingsSerializer);
                 return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosUserDefinedFunctionSettings settings = this.ToObjectInternal<CosmosUserDefinedFunctionSettings>(cosmosResponseMessage, this.defaultJsonSerializer);
+                CosmosUserDefinedFunctionSettings settings = this.ToObjectInternal<CosmosUserDefinedFunctionSettings>(cosmosResponseMessage, this.settingsSerializer);
                 return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,

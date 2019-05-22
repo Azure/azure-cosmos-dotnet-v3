@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
-        private static readonly CosmosJsonSerializer defaultJsonSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
+        private static readonly CosmosJsonSerializer settingsSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
         private CosmosJsonSerializer userJsonSerializer;
 
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
@@ -242,10 +242,10 @@ namespace Microsoft.Azure.Cosmos
         /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
         /// </summary>
         [JsonConverter(typeof(ClientConfigurationJsonConverter))]
-        public virtual CosmosJsonSerializer UserJsonSerializer
+        public virtual CosmosJsonSerializer CosmosSerializer
         {
             get => this.userJsonSerializer;
-            internal set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.UserJsonSerializer));
+            internal set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
         }
 
         /// <summary>
@@ -254,13 +254,13 @@ namespace Microsoft.Azure.Cosmos
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
         [JsonConverter(typeof(ClientConfigurationJsonConverter))]
-        internal virtual CosmosJsonSerializer DefaultJsonSerializer => CosmosClientOptions.defaultJsonSerializer;
+        internal virtual CosmosJsonSerializer SettingsSerializer => CosmosClientOptions.settingsSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
         /// </summary>
         [JsonConverter(typeof(ClientConfigurationJsonConverter))]
-        internal virtual CosmosJsonSerializer UserJsonSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.DefaultJsonSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
+        internal virtual CosmosJsonSerializer CosmosSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.SettingsSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
