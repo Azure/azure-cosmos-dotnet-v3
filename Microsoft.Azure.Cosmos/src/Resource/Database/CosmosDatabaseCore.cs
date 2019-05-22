@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 .Unwrap();
         }
 
-        internal Task<string> GetRID(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual Task<string> GetRID(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ReadAsync(cancellationToken: cancellationToken)
                 .ContinueWith(task =>

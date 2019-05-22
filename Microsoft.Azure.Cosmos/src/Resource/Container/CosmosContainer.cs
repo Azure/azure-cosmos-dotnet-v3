@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract partial class CosmosContainer
+    public abstract class CosmosContainer
     {
         /// <summary>
         /// The Id of the Cosmos container
@@ -43,6 +43,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract CosmosItems Items { get; }
+
+        /// <summary>
+        /// Operations for reading/querying all conflicts
+        /// </summary>
+        public abstract CosmosConflicts Conflicts { get; }
 
         /// <summary>
         /// Operations for creating, reading/querying all stored procedures

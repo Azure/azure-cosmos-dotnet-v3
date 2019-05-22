@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal partial class CosmosContainerCore : CosmosContainer
+    internal class CosmosContainerCore : CosmosContainer
     {
         /// <summary>
         /// Only used for unit testing
@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Database = database;
             this.Items = new CosmosItemsCore(this.ClientContext, this);
+            this.Conflicts = new CosmosConflictsCore(this.ClientContext, this);
             this.StoredProcedures = new CosmosStoredProceduresCore(this.ClientContext, this);
             this.Triggers = new CosmosTriggers(this.ClientContext, this);
             this.UserDefinedFunctions = new CosmosUserDefinedFunctions(this.ClientContext, this);
@@ -51,6 +52,8 @@ namespace Microsoft.Azure.Cosmos
         public override CosmosDatabase Database { get; }
 
         public override CosmosItems Items { get; }
+
+        public override CosmosConflicts Conflicts { get; }
 
         public override CosmosStoredProcedures StoredProcedures { get; }
 
