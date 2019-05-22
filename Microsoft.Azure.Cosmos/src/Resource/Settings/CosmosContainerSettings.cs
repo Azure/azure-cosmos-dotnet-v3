@@ -38,11 +38,13 @@ namespace Microsoft.Azure.Cosmos
     ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
     ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync(collectionsettings);
+    /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
+    /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
     /// ]]>
     /// </code>
     /// </example>
     /// <example>
-    /// The example below deletes this collection.
+    /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
     ///     CosmosContainer container = client.Databases["dbName"].Containers["MyCollection"];
@@ -51,7 +53,6 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
-    /// <seealso cref="CosmosDatabaseSettings"/>
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
