@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.Collections.Generic;
+
     /// <summary>
     /// Defines a Cosmos SQL query
     /// </summary>
@@ -42,6 +42,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Add parameters to the SQL query
         /// </summary>
+        /// <param name="name">The name of the parameter.</param>
+        /// <param name="value">The value for the parameter.</param>
         /// <remarks>
         /// If the same name is added again it will replace the original value
         /// </remarks>
@@ -54,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An instace of <see cref="CosmosSqlQueryDefinition"/>.</returns>
         public virtual CosmosSqlQueryDefinition UseParameter(string name, object value)
         {
             if (string.IsNullOrEmpty(name))

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosConflictSettings
     {
         /// <summary>
-        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
+        /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
         /// <remarks>
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual string Id { get; internal set; }
 
         /// <summary>
-        /// Gets or sets the operation that resulted in the conflict in the Azure Cosmos DB service.
+        /// Gets the operation that resulted in the conflict in the Azure Cosmos DB service.
         /// </summary>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.OperationType)]
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <typeparam name="T">The type to use to deserialize the content.</typeparam>
         /// <param name="cosmosJsonSerializer">(Optional) <see cref="CosmosJsonSerializer"/> to use while parsing the content.</param>
-        /// <returns></returns>
+        /// <returns>An instance of T</returns>
         public virtual T GetResource<T>(CosmosJsonSerializer cosmosJsonSerializer = null)
         {
             if (!string.IsNullOrEmpty(this.Content))

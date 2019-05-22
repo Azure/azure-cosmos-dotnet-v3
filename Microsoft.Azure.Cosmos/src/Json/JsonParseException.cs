@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JsonParseException.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System.Net;
@@ -14,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Json
     internal abstract class JsonParseException : DocumentClientException
     {
         /// <summary>
-        /// Initializes a new instance of the JsonParseException class.
+        /// Initializes a new instance of the <see cref="JsonParseException"/> class.
         /// </summary>
         /// <param name="message">The exception message for the JsonParseException</param>
         protected JsonParseException(string message)
@@ -29,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Json
     internal sealed class JsonMissingClosingQuoteException : JsonParseException
     {
         /// <summary>
-        /// Initializes a new instance of the JsonMissingClosingQuoteException class.
+        /// Initializes a new instance of the <see cref="JsonMissingClosingQuoteException"/> class.
         /// </summary>
         public JsonMissingClosingQuoteException()
             : base(RMResources.JsonMissingClosingQuote)

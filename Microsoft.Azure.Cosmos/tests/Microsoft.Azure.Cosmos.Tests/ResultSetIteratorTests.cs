@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            FeedIterator<CosmosConflictSettings> feedIterator = container.GetConflictsIterator();
+            FeedIterator<CosmosConflictSettings> feedIterator = container.Conflicts.GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            FeedIterator feedIterator = container.GetConflictsStreamIterator();
+            FeedIterator feedIterator = container.Conflicts.GetConflictsStreamIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {

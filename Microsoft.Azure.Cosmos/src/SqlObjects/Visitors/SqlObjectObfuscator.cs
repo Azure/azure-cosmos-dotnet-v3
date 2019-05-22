@@ -1,17 +1,10 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// <copyright file="SqlObjectObfuscator.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
 
     internal sealed class SqlObjectObfuscator : SqlObjectVisitor<SqlObject>
     {
@@ -35,13 +28,12 @@ namespace Microsoft.Azure.Cosmos.Sql
             "type"
         };
 
+        private readonly Dictionary<string, string> obfuscatedStrings = new Dictionary<string, string>();
+        private readonly Dictionary<Number64, Number64> obfuscatedNumbers = new Dictionary<Number64, Number64>();
         private int numberSequenceNumber;
         private int stringSequenceNumber;
         private int identifierSequenceNumber;
         private int fieldNameSequenceNumber;
-
-        private readonly Dictionary<string, string> obfuscatedStrings = new Dictionary<string, string>();
-        private readonly Dictionary<Number64, Number64> obfuscatedNumbers = new Dictionary<Number64, Number64>(); 
 
         public override SqlObject Visit(SqlAliasedCollectionExpression sqlAliasedCollectionExpression)
         {
@@ -273,7 +265,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             return SqlOrderByItem.Create(
                 sqlOrderByItem.Expression.Accept(this) as SqlScalarExpression,
                 sqlOrderByItem.IsDescending);
-
         }
 
         public override SqlObject Visit(SqlProgram sqlProgram)
@@ -422,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
             else
             {
-                if(!this.obfuscatedNumbers.TryGetValue(value, out obfuscatedNumber))
+                if (!this.obfuscatedNumbers.TryGetValue(value, out obfuscatedNumber))
                 {
                     double doubleValue = Number64.ToDouble(value);
 
@@ -455,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
             else
             {
-                if(!this.obfuscatedStrings.TryGetValue(value, out obfuscatedString))
+                if (!this.obfuscatedStrings.TryGetValue(value, out obfuscatedString))
                 {
                     int sequenceNumber = ++sequence;
                     obfuscatedString = value.Length < 10 ? $"{prefix}{sequence}" : $"{prefix}{sequence}__{value.Length}";

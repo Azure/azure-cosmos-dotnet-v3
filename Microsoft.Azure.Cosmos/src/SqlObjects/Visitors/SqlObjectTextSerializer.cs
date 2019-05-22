@@ -1,16 +1,14 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// <copyright file="SqlObjectTextSerializer.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using Newtonsoft.Json;
     using System;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
@@ -475,25 +473,25 @@ namespace Microsoft.Azure.Cosmos.Sql
 
             if (sqlQuery.FromClause != null)
             {
-                this.WriteDelimiter("");
+                this.WriteDelimiter(string.Empty);
                 sqlQuery.FromClause.Accept(this);
             }
 
             if (sqlQuery.WhereClause != null)
             {
-                this.WriteDelimiter("");
+                this.WriteDelimiter(string.Empty);
                 sqlQuery.WhereClause.Accept(this);
             }
 
             if (sqlQuery.OrderbyClause != null)
             {
-                this.WriteDelimiter("");
+                this.WriteDelimiter(string.Empty);
                 sqlQuery.OrderbyClause.Accept(this);
             }
 
             if (sqlQuery.OffsetLimitClause != null)
             {
-                this.WriteDelimiter("");
+                this.WriteDelimiter(string.Empty);
                 sqlQuery.OffsetLimitClause.Accept(this);
             }
 

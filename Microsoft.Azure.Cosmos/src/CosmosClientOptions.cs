@@ -16,17 +16,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This is a configuration class that holds all the properties the CosmosClient requires.
     /// </summary>
-    public class CosmosClientConfiguration
+    public class CosmosClientOptions
     {
         /// <summary>
         /// Default max connection limit
         /// </summary>
         private const int DefaultMaxConcurrentConnectionLimit = 50;
-
-        /// <summary>
-        /// Default request timeout
-        /// </summary>
-        private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
         /// <summary>
         /// Default connection mode
@@ -43,8 +38,13 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
+        /// <summary>
+        /// Default request timeout
+        /// </summary>
+        private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
+
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers = null;
-        private int maxConnectionLimit = CosmosClientConfiguration.DefaultMaxConcurrentConnectionLimit;
+        private int maxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
         private CosmosJsonSerializer cosmosJsonSerializer = null;
 
         /// <summary>
@@ -53,17 +53,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
         /// <param name="accountKey">The key to the account.</param>
         /// <example>
-        /// The example below creates a new <see cref="CosmosClientConfiguration"/>
+        /// The example below creates a new <see cref="CosmosClientOptions"/>
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         /// <example>
-        /// The example below creates a new <see cref="CosmosClientConfiguration"/> with a ConsistencyLevel and a list of preferred locations.
+        /// The example below creates a new <see cref="CosmosClientOptions"/> with a ConsistencyLevel and a list of preferred locations.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        internal CosmosClientConfiguration(
+        internal CosmosClientOptions(
             string accountEndPoint,
             string accountKey)
         {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
-        internal CosmosClientConfiguration(string connectionString)
+        internal CosmosClientOptions(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
             {
@@ -106,9 +106,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
-            this.AccountEndPoint = new Uri(CosmosClientConfiguration.GetValueFromSqlConnectionString(builder,
-                CosmosClientConfiguration.ConnectionStringAccountEndpoint));
-            this.AccountKey = CosmosClientConfiguration.GetValueFromSqlConnectionString(builder, CosmosClientConfiguration.ConnectionStringAccountKey);
+            this.AccountEndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
+                CosmosClientOptions.ConnectionStringAccountEndpoint));
+            this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
             Initialize();
         }
 
@@ -287,9 +287,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
-        internal CosmosClientConfiguration Clone()
+        internal CosmosClientOptions Clone()
         {
-            CosmosClientConfiguration cloneConfiguration = (CosmosClientConfiguration)MemberwiseClone();
+            CosmosClientOptions cloneConfiguration = (CosmosClientOptions)MemberwiseClone();
             return cloneConfiguration;
         }
 
@@ -326,11 +326,11 @@ namespace Microsoft.Azure.Cosmos
         private void Initialize()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.MaxConnectionLimit = CosmosClientConfiguration.DefaultMaxConcurrentConnectionLimit;
-            this.RequestTimeout = CosmosClientConfiguration.DefaultRequestTimeout;
-            this.ConnectionMode = CosmosClientConfiguration.DefaultConnectionMode;
-            this.ConnectionProtocol = CosmosClientConfiguration.DefaultProtocol;
-            this.ApiType = CosmosClientConfiguration.DefaultApiType;
+            this.MaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
+            this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
+            this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
+            this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
+            this.ApiType = CosmosClientOptions.DefaultApiType;
         }
 
         private static string GetValueFromSqlConnectionString(DbConnectionStringBuilder builder, string keyName)

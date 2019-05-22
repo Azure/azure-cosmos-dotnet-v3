@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
@@ -8,7 +12,9 @@
     {
         public static CosmosElementEqualityComparer Value = new CosmosElementEqualityComparer();
 
-        private CosmosElementEqualityComparer() { }
+        private CosmosElementEqualityComparer()
+        {
+        }
 
         public bool Equals(CosmosNumber number1, CosmosNumber number2)
         {

@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case MemberBindingType.ListBinding:
                     return ConstantFolding.FoldMemberListBinding((MemberListBinding)inputExpression);
                 default:
-                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentUICulture,"Unhandled binding type '{0}'", inputExpression.BindingType));
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentUICulture, "Unhandled binding type '{0}'", inputExpression.BindingType));
             }
         }
 

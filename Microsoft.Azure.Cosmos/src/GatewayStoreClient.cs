@@ -21,8 +21,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class GatewayStoreClient : TransportClient
     {
-        private HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
+        private HttpClient httpClient;
         private JsonSerializerSettings SerializerSettings;
 
         public GatewayStoreClient(

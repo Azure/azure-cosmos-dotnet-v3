@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await container.ReadAsync();
 
                 // read documentCollection feed.
-                FeedIterator<CosmosContainerSettings> rr = database.Containers.GetContainerIterator();
+                FeedIterator<CosmosContainerSettings> rr = database.Containers.GetContainersIterator();
                 List<CosmosContainerSettings> settings = new List<CosmosContainerSettings>();
                 while (rr.HasMoreResults)
                 {
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc3 = await container.Items.DeleteItemAsync<Document>(partitionKey: resourceRandomId, id: resourceRandomId);
 
                     // read databaseCollection feed.
-                    FeedIterator<dynamic> itemIterator = container.Items.GetItemIterator<dynamic>();
+                    FeedIterator<dynamic> itemIterator = container.Items.GetItemsIterator<dynamic>();
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // 
                     // read databaseCollection feed.
-                    FeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = container.StoredProcedures.GetStoredProcedureIterator();
+                    FeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = container.StoredProcedures.GetStoredProceduresIterator();
                     List<CosmosStoredProcedureSettings> storedProcedures = new List<CosmosStoredProcedureSettings>();
                     while (storedProcedureIter.HasMoreResults)
                     {

@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CleanUp()
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabaseIterator();
+            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionMode targetConnectionMode = GetTargetConnectionMode(connectionMode);
                         CosmosClient cosmosClient = cosmosClientFactory(targetConnectionMode);
 
-                        Assert.AreEqual(targetConnectionMode, cosmosClient.Configuration.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
+                        Assert.AreEqual(targetConnectionMode, cosmosClient.ClientOptions.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
                         cosmosClients.Add(cosmosClient);
                     }
 

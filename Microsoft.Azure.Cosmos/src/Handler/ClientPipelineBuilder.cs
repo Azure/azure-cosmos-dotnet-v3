@@ -13,11 +13,11 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
-        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
-        private CosmosRequestHandler retryHandler;
         private readonly CosmosRequestHandler invalidPartitionExceptionRetryHandler;
         private readonly CosmosRequestHandler transportHandler;
         private readonly CosmosRequestHandler partitionKeyRangeGoneRetryHandler;
+        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
+        private CosmosRequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
@@ -87,6 +87,28 @@ namespace Microsoft.Azure.Cosmos
             return root;
         }
 
+        private static CosmosRequestHandler CreatePipeline(params CosmosRequestHandler[] requestHandlers)
+        {
+            CosmosRequestHandler head = null;
+            int handlerCount = requestHandlers.Length;
+            for (int i = handlerCount - 1; i >= 0; i--)
+            {
+                CosmosRequestHandler indexHandler = requestHandlers[i];
+                if (indexHandler.InnerHandler != null)
+                {
+                    throw new ArgumentOutOfRangeException($"The requestHandlers[{i}].InnerHandler is required to be null to allow the pipeline to chain the handlers.");
+                }
+
+                if (head != null)
+                {
+                    indexHandler.InnerHandler = head;
+                }
+                head = indexHandler;
+            }
+
+            return head;
+        }
+
         private ClientPipelineBuilder UseRetryPolicy(IRetryPolicyFactory retryPolicyFactory)
         {
             this.retryHandler = new RetryHandler(retryPolicyFactory);
@@ -111,28 +133,6 @@ namespace Microsoft.Azure.Cosmos
                 };
 
             return (CosmosRequestHandler)ClientPipelineBuilder.CreatePipeline(feedPipeline);
-        }
-
-        private static CosmosRequestHandler CreatePipeline(params CosmosRequestHandler[] requestHandlers)
-        {
-            CosmosRequestHandler head = null;
-            int handlerCount = requestHandlers.Length;
-            for (int i = handlerCount - 1; i >= 0; i--)
-            {
-                CosmosRequestHandler indexHandler = requestHandlers[i];
-                if (indexHandler.InnerHandler != null)
-                {
-                    throw new ArgumentOutOfRangeException($"The requestHandlers[{i}].InnerHandler is required to be null to allow the pipeline to chain the handlers.");
-                }
-
-                if (head != null)
-                {
-                    indexHandler.InnerHandler = head;
-                }
-                head = indexHandler;
-            }
-
-            return head;
         }
     }
 }

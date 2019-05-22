@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Security;
     using System.Security.Cryptography;
 
-    internal sealed class StringHMACSHA256Hash :  IComputeHash
+    internal sealed class StringHMACSHA256Hash : IComputeHash
     {
         private readonly String base64EncodedKey;
         private readonly byte[] keyBytes;
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
 
         public byte[] ComputeHash(byte[] bytesToHash)
         {
-            using ( HMACSHA256 hmacSha256 = new HMACSHA256(this.keyBytes))
+            using (HMACSHA256 hmacSha256 = new HMACSHA256(this.keyBytes))
             {
                 return hmacSha256.ComputeHash(bytesToHash);
             }

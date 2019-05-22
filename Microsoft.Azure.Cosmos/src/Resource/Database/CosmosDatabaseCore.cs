@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only used for unit testing
         /// </summary>
-        internal CosmosDatabaseCore() { }
+        internal CosmosDatabaseCore()
+        {
+        }
 
         internal CosmosDatabaseCore(
             CosmosClientContext clientContext,
@@ -126,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 .Unwrap();
         }
 
-        internal Task<string> GetRID(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual Task<string> GetRID(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ReadAsync(cancellationToken: cancellationToken)
                 .ContinueWith(task =>
