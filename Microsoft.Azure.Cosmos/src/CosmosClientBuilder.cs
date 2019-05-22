@@ -220,11 +220,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosJsonSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosJsonSerializer"/>
-        /// <seealso cref="CosmosClientConfiguration.CosmosJsonSerializer"/>
+        /// <seealso cref="CosmosClientConfiguration.UserJsonSerializer"/>
         public virtual CosmosClientBuilder UseCustomJsonSerializer(
             CosmosJsonSerializer cosmosJsonSerializer)
         {
-            this.cosmosClientConfiguration.CosmosJsonSerializer = cosmosJsonSerializer;
+            this.cosmosClientConfiguration.UserJsonSerializer = cosmosJsonSerializer;
             return this;
         }
 

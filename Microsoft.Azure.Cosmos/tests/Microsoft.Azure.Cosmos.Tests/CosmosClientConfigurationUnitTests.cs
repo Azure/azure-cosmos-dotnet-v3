@@ -159,7 +159,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
             var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
             var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.IsInstanceOfType(cosmosClient.UserJsonSerializer, typeof(CosmosJsonSerializerWrapper));
+            Assert.IsInstanceOfType(cosmosClient.Configuration.UserJsonSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(cosmosClient.Configuration.UserJsonSerializerWithWrapperOrDefault, cosmosClient.Configuration.DefaultJsonSerializer);
+
+            CosmosJsonSerializer defaultSerializer = cosmosClient.Configuration.DefaultJsonSerializer;
+            CosmosJsonSerializer mockJsonSerializer = new Mock<CosmosJsonSerializer>().Object;
+            cosmosClientBuilder.UseCustomJsonSerializer(mockJsonSerializer);
+            var cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
+            Assert.AreEqual(defaultSerializer, cosmosClientCustom.Configuration.DefaultJsonSerializer);
+            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.Configuration.UserJsonSerializer);
+            Assert.IsInstanceOfType(cosmosClientCustom.Configuration.UserJsonSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.Configuration.UserJsonSerializerWithWrapperOrDefault).InternalJsonSerializer);
         }
     }
 }

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -43,9 +42,20 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
-        private ReadOnlyCollection<CosmosRequestHandler> customHandlers = null;
-        private int maxConnectionLimit = CosmosClientConfiguration.DefaultMaxConcurrentConnectionLimit;
-        private CosmosJsonSerializer cosmosJsonSerializer = null;
+        private static readonly CosmosJsonSerializer defaultJsonSerializer;
+        private CosmosJsonSerializer userJsonSerializer;
+
+        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
+        private int maxConnectionLimit;
+
+
+        /// <summary>
+        /// The static constructor
+        /// </summary>
+        static CosmosClientConfiguration()
+        {
+            CosmosClientConfiguration.defaultJsonSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
+        }
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -90,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.AccountEndPoint = new Uri(accountEndPoint);
             this.AccountKey = accountKey;
-            Initialize();
+            this.Initialize();
         }
 
         /// <summary>
@@ -109,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
             this.AccountEndPoint = new Uri(CosmosClientConfiguration.GetValueFromSqlConnectionString(builder,
                 CosmosClientConfiguration.ConnectionStringAccountEndpoint));
             this.AccountKey = CosmosClientConfiguration.GetValueFromSqlConnectionString(builder, CosmosClientConfiguration.ConnectionStringAccountKey);
-            Initialize();
+            this.Initialize();
         }
 
         /// <summary>
@@ -241,10 +251,27 @@ namespace Microsoft.Azure.Cosmos
         /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
         /// </summary>
         [JsonConverter(typeof(ClientConfigurationJsonConverter))]
-        public virtual CosmosJsonSerializer CosmosJsonSerializer
+        public virtual CosmosJsonSerializer UserJsonSerializer
         {
-            get => this.cosmosJsonSerializer;
-            internal set => this.cosmosJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosJsonSerializer));
+            get => this.userJsonSerializer;
+            internal set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.UserJsonSerializer));
+        }
+
+        /// <summary>
+        /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
+        /// The default serializer is always used for all system owned types like CosmosDatabaseSettings.
+        /// The default serializer is used for user types if no UserJsonSerializer is specified
+        /// </summary>
+        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        internal virtual CosmosJsonSerializer DefaultJsonSerializer => CosmosClientConfiguration.defaultJsonSerializer;
+
+        /// <summary>
+        /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
+        /// </summary>
+        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        internal virtual CosmosJsonSerializer UserJsonSerializerWithWrapperOrDefault
+        {
+            get => this.userJsonSerializer == null ? this.DefaultJsonSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
         }
 
         /// <summary>
@@ -289,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosClientConfiguration Clone()
         {
-            CosmosClientConfiguration cloneConfiguration = (CosmosClientConfiguration)MemberwiseClone();
+            CosmosClientConfiguration cloneConfiguration = (CosmosClientConfiguration)this.MemberwiseClone();
             return cloneConfiguration;
         }
 
@@ -331,6 +358,8 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionMode = CosmosClientConfiguration.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientConfiguration.DefaultProtocol;
             this.ApiType = CosmosClientConfiguration.DefaultApiType;
+            this.customHandlers = null;
+            this.userJsonSerializer = null;
         }
 
         private static string GetValueFromSqlConnectionString(DbConnectionStringBuilder builder, string keyName)

@@ -205,21 +205,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual CosmosClientConfiguration Configuration { get; private set; }
 
-        /// <summary>
-        /// The default Cosmos JSON serializer that is used for meta data types like <see cref="CosmosContainerSettings"/>
-        /// </summary>
-        public virtual CosmosJsonSerializer DefaultJsonSerializer { get; private set; }
-
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
-
-        internal CosmosResponseFactory ResponseFactory => new CosmosResponseFactory(
-                defaultJsonSerializer: this.DefaultJsonSerializer,
-                userJsonSerializer: this.UserJsonSerializer);
-
-        internal CosmosJsonSerializer UserJsonSerializer { get; private set; }
+        internal CosmosResponseFactory ResponseFactory { get; private set; }
 
         /// <summary>
         /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -238,18 +228,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Configuration = configuration;
             this.DocumentClient = documentClient;
-            this.DefaultJsonSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
 
-            // Use the default serializer if no users version was specified
-            if (this.Configuration.CosmosJsonSerializer != null)
-            {
-                this.UserJsonSerializer = new CosmosJsonSerializerWrapper(this.Configuration.CosmosJsonSerializer);
-            }
-            else
-            {
-                this.UserJsonSerializer = this.DefaultJsonSerializer;
-            }
-            
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                 this,
@@ -262,11 +241,15 @@ namespace Microsoft.Azure.Cosmos
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
+            this.ResponseFactory = new CosmosResponseFactory(
+                defaultJsonSerializer: this.Configuration.DefaultJsonSerializer,
+                userJsonSerializer: this.Configuration.UserJsonSerializerWithWrapperOrDefault);
+
             CosmosClientContext clientContext = new CosmosClientContextCore(
                 client: this,
                 clientConfiguration: this.Configuration,
-                userJsonSerializer: this.UserJsonSerializer,
-                defaultJsonSerializer: this.DefaultJsonSerializer,
+                userJsonSerializer: this.Configuration.UserJsonSerializerWithWrapperOrDefault,
+                defaultJsonSerializer: this.Configuration.DefaultJsonSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
