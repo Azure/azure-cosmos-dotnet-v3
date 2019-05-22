@@ -12,7 +12,8 @@ namespace Microsoft.Azure.Cosmos
         protected ReadFeedResponse(
             IEnumerable<T> resource,
             CosmosResponseMessageHeaders responseMessageHeaders,
-            bool hasMoreResults) : base(
+            bool hasMoreResults)
+            : base(
                 httpStatusCode: HttpStatusCode.Accepted,
                 headers: responseMessageHeaders,
                 resource: resource)

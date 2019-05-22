@@ -19,7 +19,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Used for unit testing only
         /// </summary>
-        internal QueryResponse() { }
+        internal QueryResponse()
+        {
+        }
 
         private QueryResponse(
             IEnumerable<CosmosElement> result,
@@ -146,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos query response
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The type for the query response.</typeparam>
     internal class QueryResponse<T> : FeedResponse<T>
     {
         private readonly IEnumerable<CosmosElement> cosmosElements;

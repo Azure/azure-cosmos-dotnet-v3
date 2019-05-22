@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </exception>
-        ///  <example>
+        /// <example>
         ///  This reads an existing stored procedure.
         /// <code language="c#">
         /// <![CDATA[

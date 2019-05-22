@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Linq;
-    using System.Net.Http;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Documents;
@@ -15,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
 
     [TestClass]
-    public class CosmosClientConfigurationUnitTests
+    public class CosmosClientOptionsUnitTests
     {
         public const string AccountEndpoint = "https://localhost:8081/";
         public const string ConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
@@ -40,26 +39,26 @@ namespace Microsoft.Azure.Cosmos.Tests
                 accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            CosmosClientConfiguration configuration = cosmosClient.Configuration;
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
-            Assert.AreEqual(endpoint, configuration.AccountEndPoint.OriginalString, "AccountEndPoint did not save correctly");
-            Assert.AreEqual(key, configuration.AccountKey, "AccountKey did not save correctly");
+            Assert.AreEqual(endpoint, clientOptions.AccountEndPoint.OriginalString, "AccountEndPoint did not save correctly");
+            Assert.AreEqual(key, clientOptions.AccountKey, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values
-            Assert.AreNotEqual(region, configuration.CurrentRegion);
-            Assert.AreNotEqual(connectionMode, configuration.ConnectionMode);
-            Assert.AreNotEqual(maxConnections, configuration.MaxConnectionLimit);
-            Assert.AreNotEqual(requestTimeout, configuration.RequestTimeout);
-            Assert.AreNotEqual(userAgentSuffix, configuration.UserAgentSuffix);
-            Assert.AreNotEqual(apiType, configuration.ApiType);
-            Assert.IsNull(configuration.CustomHandlers);
+            Assert.AreNotEqual(region, clientOptions.CurrentRegion);
+            Assert.AreNotEqual(connectionMode, clientOptions.ConnectionMode);
+            Assert.AreNotEqual(maxConnections, clientOptions.MaxConnectionLimit);
+            Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
+            Assert.AreNotEqual(userAgentSuffix, clientOptions.UserAgentSuffix);
+            Assert.AreNotEqual(apiType, clientOptions.ApiType);
+            Assert.IsNull(clientOptions.CustomHandlers);
 
             //Verify GetConnectionPolicy returns the correct values for default
-            ConnectionPolicy policy = configuration.GetConnectionPolicy();
+            ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
             Assert.AreEqual(ConnectionMode.Direct, policy.ConnectionMode);
             Assert.AreEqual(Protocol.Tcp, policy.ConnectionProtocol);
-            Assert.AreEqual(configuration.MaxConnectionLimit, policy.MaxConnectionLimit);
-            Assert.AreEqual(configuration.RequestTimeout, policy.RequestTimeout);
+            Assert.AreEqual(clientOptions.MaxConnectionLimit, policy.MaxConnectionLimit);
+            Assert.AreEqual(clientOptions.RequestTimeout, policy.RequestTimeout);
 
             cosmosClientBuilder.UseCurrentRegion(region)
                 .UseConnectionModeGateway(maxConnections)
@@ -70,21 +69,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .UseThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            configuration = cosmosClient.Configuration;
+            clientOptions = cosmosClient.ClientOptions;
 
             //Verify all the values are updated
-            Assert.AreEqual(region, configuration.CurrentRegion);
-            Assert.AreEqual(connectionMode, configuration.ConnectionMode);
-            Assert.AreEqual(maxConnections, configuration.MaxConnectionLimit);
-            Assert.AreEqual(requestTimeout, configuration.RequestTimeout);
-            Assert.AreEqual(userAgentSuffix, configuration.UserAgentSuffix);
-            Assert.AreEqual(preProcessHandler, configuration.CustomHandlers[0]);
-            Assert.AreEqual(apiType, configuration.ApiType);
-            Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, configuration.MaxRetryAttemptsOnThrottledRequests);
-            Assert.AreEqual(maxRetryWaitTime, configuration.MaxRetryWaitTimeOnThrottledRequests);
+            Assert.AreEqual(region, clientOptions.CurrentRegion);
+            Assert.AreEqual(connectionMode, clientOptions.ConnectionMode);
+            Assert.AreEqual(maxConnections, clientOptions.MaxConnectionLimit);
+            Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
+            Assert.AreEqual(userAgentSuffix, clientOptions.UserAgentSuffix);
+            Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
+            Assert.AreEqual(apiType, clientOptions.ApiType);
+            Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnThrottledRequests);
+            Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnThrottledRequests);
 
             //Verify GetConnectionPolicy returns the correct values
-            policy = configuration.GetConnectionPolicy();
+            policy = clientOptions.GetConnectionPolicy();
             Assert.AreEqual(region, policy.PreferredLocations[0]);
             Assert.AreEqual(ConnectionMode.Gateway, policy.ConnectionMode);
             Assert.AreEqual(Protocol.Https, policy.ConnectionProtocol);
@@ -97,17 +96,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void VerifyCosmosClientConfigurationHasNoPublicSetMethods()
+        public void VerifyCosmosClientOptionsHasNoPublicSetMethods()
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
-            var type = typeof(CosmosClientConfiguration);
+            Type type = typeof(CosmosClientOptions);
 
 
-            var publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(x => x.GetSetMethod() != null && x.GetSetMethod().IsPublic).ToList();
 
-            Assert.IsFalse(publicProperties.Any(), $"CosmosClientConfiguration should be read only. These are public {string.Join(";", publicProperties.Select(x => x.Name))}");
+            Assert.IsFalse(publicProperties.Any(), $"CosmosClientOptions should be read only. These are public {string.Join(";", publicProperties.Select(x => x.Name))}");
         }
 
         [TestMethod]
@@ -119,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Inner handler is required to be null to allow the client to connect it to other handlers
             handler.InnerHandler = innerHandler;
-            new CosmosClientBuilder(CosmosClientConfigurationUnitTests.AccountEndpoint, "testKey")
+            new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, "testKey")
                 .AddCustomHandlers(handler);
         }
 
@@ -159,17 +158,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
             var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
             var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.IsInstanceOfType(cosmosClient.Configuration.UserJsonSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
-            Assert.AreEqual(cosmosClient.Configuration.UserJsonSerializerWithWrapperOrDefault, cosmosClient.Configuration.DefaultJsonSerializer);
+            Assert.IsInstanceOfType(cosmosClient.ClientOptions.UserJsonSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(cosmosClient.ClientOptions.UserJsonSerializerWithWrapperOrDefault, cosmosClient.ClientOptions.DefaultJsonSerializer);
 
-            CosmosJsonSerializer defaultSerializer = cosmosClient.Configuration.DefaultJsonSerializer;
+            CosmosJsonSerializer defaultSerializer = cosmosClient.ClientOptions.DefaultJsonSerializer;
             CosmosJsonSerializer mockJsonSerializer = new Mock<CosmosJsonSerializer>().Object;
             cosmosClientBuilder.UseCustomJsonSerializer(mockJsonSerializer);
             var cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.AreEqual(defaultSerializer, cosmosClientCustom.Configuration.DefaultJsonSerializer);
-            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.Configuration.UserJsonSerializer);
-            Assert.IsInstanceOfType(cosmosClientCustom.Configuration.UserJsonSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
-            Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.Configuration.UserJsonSerializerWithWrapperOrDefault).InternalJsonSerializer);
+            Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.DefaultJsonSerializer);
+            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.UserJsonSerializer);
+            Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.UserJsonSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.UserJsonSerializerWithWrapperOrDefault).InternalJsonSerializer);
         }
     }
 }

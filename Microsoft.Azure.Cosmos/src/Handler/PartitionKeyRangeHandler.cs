@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private PartitionRoutingHelper partitionRoutingHelper;
         public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
         {
-            if(client == null)
+            if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 object direction;
                 if (request.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out direction))
                 {
-                    rntdbEnumerationDirection = (byte)RntdbEnumerationDirection.Reverse == (byte)direction ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
+                    rntdbEnumerationDirection = (byte)direction == (byte)RntdbEnumerationDirection.Reverse ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
                 }
 
                 request.Headers.Remove(HttpConstants.HttpHeaders.IsContinuationExpected);
@@ -71,7 +71,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 startEpk = startEpk ?? PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
                 endEpk = endEpk ?? PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
 
-                List<Range<string>> providedRanges = new List<Range<string>> {
+                List<Range<string>> providedRanges = new List<Range<string>>
+                {
                     new Range<string>(
                         (string)startEpk,
                         (string)endEpk,
@@ -115,8 +116,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                 {
-                    return ((DocumentClientException)
-                        new NotFoundException(
+                    return ((DocumentClientException)new NotFoundException(
                             $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
                             ).ToCosmosResponseMessage(request);
                 }
@@ -139,8 +139,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         resolvedRangeInfo: resolvedRangeInfo,
                         direction: rntdbEnumerationDirection))
                     {
-                        return ((DocumentClientException)
-                            new NotFoundException(
+                        return ((DocumentClientException)new NotFoundException(
                                 $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Call to TryAddPartitionKeyRangeToContinuationTokenAsync failed to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
                             ).ToCosmosResponseMessage(request);
                     }

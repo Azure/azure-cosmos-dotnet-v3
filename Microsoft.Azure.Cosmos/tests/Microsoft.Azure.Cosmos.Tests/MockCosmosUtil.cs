@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Query;
@@ -46,12 +47,13 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             Uri link = new Uri($"/dbs/{dbName}", UriKind.Relative);
             Mock<CosmosDatabaseCore> mockDB = new Mock<CosmosDatabaseCore>();
             mockDB.Setup(x => x.LinkUri).Returns(link);
+            mockDB.Setup(x => x.GetRID(It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));
             return mockDB;
         }
 
-        public static CosmosClientConfiguration GetDefaultConfiguration()
+        public static CosmosClientOptions GetDefaultConfiguration()
         {
-            return new CosmosClientConfiguration(accountEndPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
+            return new CosmosClientOptions(accountEndPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

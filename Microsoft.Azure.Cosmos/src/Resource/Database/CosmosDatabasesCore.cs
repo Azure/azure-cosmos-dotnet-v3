@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             return await database.ReadAsync(cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosDatabaseSettings> GetDatabaseIterator(
+        public override FeedIterator<CosmosDatabaseSettings> GetDatabasesIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos
                 this.databasesCache.GetOrAdd(
                     id,
                     keyName => new CosmosDatabaseCore(this.ClientContext, keyName));
-
 
         public override Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                 Stream streamPayload,

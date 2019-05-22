@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             CosmosClientContext context = new CosmosClientContextCore(
                 client: null,
-                clientConfiguration: null,
+                clientOptions: null,
                 userJsonSerializer: null,
                 defaultJsonSerializer: null,
                 cosmosResponseFactory: null,

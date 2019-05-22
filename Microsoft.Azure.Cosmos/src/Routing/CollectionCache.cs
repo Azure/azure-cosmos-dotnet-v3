@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Common
             internal readonly AsyncCache<string, CosmosContainerSettings> collectionInfoById;
             internal readonly ConcurrentDictionary<string, DateTime> collectionInfoByNameLastRefreshTime;
             internal readonly ConcurrentDictionary<string, DateTime> collectionInfoByIdLastRefreshTime;
-        };
+        }
 
         /// <summary>
         /// cacheByApiList caches the collection information by API Version. In general it is expected that only a single version is populated
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Common
                              (string currentKey, DateTime currentValue) => currentTime);
                     return collection;
                 },
-               cancellationToken);
+                cancellationToken);
         }
 
         private async Task RefreshAsync(DocumentServiceRequest request, CancellationToken cancellationToken)

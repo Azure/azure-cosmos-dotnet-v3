@@ -1,6 +1,6 @@
-﻿// ----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-// ----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
@@ -13,13 +13,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     {
         private readonly Func<long, CancellationToken, Task> dispatchEstimation;
 
-        public TimeSpan? DispatchPeriod { get; private set; }
-
         public ChangeFeedEstimatorDispatcher(Func<long, CancellationToken, Task> dispatchEstimation, TimeSpan? estimationPeriod = null)
         {
             this.dispatchEstimation = dispatchEstimation;
             this.DispatchPeriod = estimationPeriod;
         }
+
+        public TimeSpan? DispatchPeriod { get; private set; }
 
         public async Task DispatchEstimation(long estimation, CancellationToken cancellationToken)
         {

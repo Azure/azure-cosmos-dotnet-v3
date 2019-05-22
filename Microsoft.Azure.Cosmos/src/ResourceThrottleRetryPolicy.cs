@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (maxWaitTimeInSeconds > int.MaxValue / 1000)
             {
-                throw new ArgumentException("maxWaitTimeInSeconds", "maxWaitTimeInSeconds must be less than " + int.MaxValue / 1000);
+                throw new ArgumentException("maxWaitTimeInSeconds", "maxWaitTimeInSeconds must be less than " + (int.MaxValue / 1000));
             }
 
             this.maxAttemptCount = maxAttemptCount;
@@ -137,7 +137,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
-        { }
+        {
+        }
 
         /// <summary>
         /// Returns True if the given <paramref name="retryAfter"/> is within retriable bounds

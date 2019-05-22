@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="TriggerResponse"/> as a no-op for mock testing
         /// </summary>
-        public TriggerResponse() : base()
+        public TriggerResponse()
+            : base()
         {
-
         }
 
         /// <summary>
@@ -27,7 +27,8 @@ namespace Microsoft.Azure.Cosmos
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
            CosmosTriggerSettings cosmosTriggerSettings,
-           CosmosTrigger trigger) : base(
+           CosmosTrigger trigger)
+            : base(
                httpStatusCode,
                headers,
                cosmosTriggerSettings)

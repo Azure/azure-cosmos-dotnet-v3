@@ -123,6 +123,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>The current provisioned throughput if any.</returns>
         public abstract Task<int?> ReadProvisionedThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -147,6 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>A Task representing the asynchronoous operation.</returns>
         public abstract Task ReplaceProvisionedThroughputAsync(
             int throughput,
             CancellationToken cancellationToken = default(CancellationToken));
