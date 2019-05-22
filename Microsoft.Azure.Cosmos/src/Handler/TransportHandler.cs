@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
                 // is removed this catch can be safely removed.
                 CosmosResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
-                if(errorMessage != null)
+                if (errorMessage != null)
                 {
                     return errorMessage;
                 }
@@ -101,8 +101,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (cosmosException != null)
             {
                 return new CosmosResponseMessage(
-                    headers: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosException.Headers),
-                    requestMessage: null,
+                    headers: cosmosException.Headers,
+                    requestMessage: request,
                     errorMessage: cosmosException.Message,
                     statusCode: cosmosException.StatusCode,
                     error: cosmosException.Error);
