@@ -50,24 +50,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosConflicts Conflicts { get; }
 
         /// <summary>
-        /// Operations for creating, reading/querying all stored procedures
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosStoredProcedureSettings settings = new CosmosStoredProcedureSettings
-        /// {
-        ///    Id = "testSProcId",
-        ///    Body = "function() { { var x = 42; } }"
-        /// };
-        ///
-        /// StoredProcedureResponse response = await cosmosContainer.StoredProcedures.CreateStoredProcedureAsync(settings);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract CosmosStoredProcedures StoredProcedures { get; }
-
-        /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>

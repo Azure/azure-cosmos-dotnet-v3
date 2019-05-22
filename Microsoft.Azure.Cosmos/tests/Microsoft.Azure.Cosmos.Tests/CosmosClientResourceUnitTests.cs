@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -40,15 +41,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             CosmosContainerCore container = new CosmosContainerCore(context, db, crId);
             Assert.AreEqual(container.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId);
-
-            CosmosStoredProcedureCore sp = new CosmosStoredProcedureCore(context, container, spId);
-            Assert.AreEqual(sp.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/sprocs/" + spId);
-
-            CosmosTrigger tr = new CosmosTrigger(context, container, trId);
-            Assert.AreEqual(tr.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/triggers/" + trId);
-
-            CosmosUserDefinedFunction udf = new CosmosUserDefinedFunction(context, container, udfId);
-            Assert.AreEqual(udf.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/udfs/" + udfId);
         }
 
         [TestMethod]
