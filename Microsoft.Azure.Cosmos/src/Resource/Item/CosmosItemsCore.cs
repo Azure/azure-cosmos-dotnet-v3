@@ -48,12 +48,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal readonly CosmosContainerCore container;
 
-        public override async Task<CosmosResponseMessage> CreateItemStreamAsync(                    
+        public override Task<CosmosResponseMessage> CreateItemStreamAsync(
+                    object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.WriteItemStreamAsync(                
+            return this.ProcessItemStreamAsync(
+                partitionKey,
                 null,
                 streamPayload,
                 OperationType.Create,
@@ -75,8 +77,10 @@ namespace Microsoft.Azure.Cosmos
                 }
                 requestOptions.PartitionKey = result.Item2;
             }
-            Task<CosmosResponseMessage> response = this.CreateItemStreamAsync(
+            Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
+                itemId: null,
                 streamPayload: result.Item3,
+                operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -113,12 +117,14 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override async Task<CosmosResponseMessage> UpsertItemStreamAsync(                    
+        public override Task<CosmosResponseMessage> UpsertItemStreamAsync(
+                    object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.WriteItemStreamAsync(                
+            return this.ProcessItemStreamAsync(
+                partitionKey,
                 null,
                 streamPayload,
                 OperationType.Upsert,
@@ -140,21 +146,25 @@ namespace Microsoft.Azure.Cosmos
                 }
                 requestOptions.PartitionKey = result.Item2;
             }
-            Task<CosmosResponseMessage> response = this.UpsertItemStreamAsync(                
+            Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(   
+                itemId: null,
                 streamPayload: result.Item3,
+                operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
             return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override async Task<CosmosResponseMessage> ReplaceItemStreamAsync(                    
+        public override Task<CosmosResponseMessage> ReplaceItemStreamAsync(
+                    object partitionKey,
                     string id,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return await this.WriteItemStreamAsync(
+            return this.ProcessItemStreamAsync(
+                partitionKey,
                 id,
                 streamPayload,
                 OperationType.Replace,
@@ -177,9 +187,10 @@ namespace Microsoft.Azure.Cosmos
                 }
                 requestOptions.PartitionKey = result.Item2;
             }
-            Task<CosmosResponseMessage> response = this.ReplaceItemStreamAsync(               
-               id: id,
+            Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(               
+               itemId: id,
                streamPayload: result.Item3,
+               operationType: OperationType.Replace,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 

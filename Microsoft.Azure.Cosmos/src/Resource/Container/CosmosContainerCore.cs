@@ -61,9 +61,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosUserDefinedFunctions UserDefinedFunctions { get; }
 
-        internal virtual CosmosClientContext ClientContext { get; }
-
-        private string[] partitionKeyPathTokens;
+        internal virtual CosmosClientContext ClientContext { get; }        
 
         public override Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
@@ -211,20 +209,15 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
         }
 
-        internal virtual Task<Collection<string>> GetPartitionKeyPathsAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual async Task<Collection<string>> GetPartitionKeyPathsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.GetCachedContainerSettingsAsync(cancellationToken)
-                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey.Paths, cancellationToken);
+            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
+            return containerSettings?.PartitionKey?.Paths;            
         }
 
-        internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellation = default(CancellationToken))
+        internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if(partitionKeyPathTokens != null)
-            {
-                return partitionKeyPathTokens;
-            }
-
-            Collection<string> partitionKeyPaths = await this.GetPartitionKeyPathsAsync(cancellation);
+            Collection<string> partitionKeyPaths = await this.GetPartitionKeyPathsAsync(cancellationToken);
 
             if(partitionKeyPaths.Count != 1)
             {
@@ -232,9 +225,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string path = partitionKeyPaths[0];
-            partitionKeyPathTokens = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-            return partitionKeyPathTokens;
+            
+            return path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
         }
 
 
