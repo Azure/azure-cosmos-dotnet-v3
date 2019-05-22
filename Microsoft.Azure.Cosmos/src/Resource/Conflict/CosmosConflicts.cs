@@ -74,7 +74,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-
         public abstract T ReadConflictContent<T>(CosmosConflictSettings cosmosConflict);
 
         /// <summary>

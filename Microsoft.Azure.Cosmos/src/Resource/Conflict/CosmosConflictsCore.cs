@@ -19,6 +19,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext clientContext,
             CosmosContainerCore container)
         {
+            if (clientContext == null)
+            {
+                throw new ArgumentNullException(nameof(clientContext));
+            }
+
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
             this.container = container;
             this.clientContext = clientContext;
         }
@@ -93,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
-            CosmosDatabaseCore databaseCore = (CosmosDatabaseCore)this.Database;
+            CosmosDatabaseCore databaseCore = (CosmosDatabaseCore)this.container.Database;
             string databaseResourceId = await databaseCore.GetRID(cancellationToken);
             string containerResourceId = await this.container.GetRID(cancellationToken);
 
@@ -128,6 +138,12 @@ namespace Microsoft.Azure.Cosmos
 
         public override T ReadConflictContent<T>(CosmosConflictSettings cosmosConflict)
         {
+            if (cosmosConflict == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosConflict));
+            }
+
+            // cosmosConflict.Content is string and converted to stream on demand for de-serialization
             if (!string.IsNullOrEmpty(cosmosConflict.Content))
             {
                 using (MemoryStream stream = new MemoryStream())
