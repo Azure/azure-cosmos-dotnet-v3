@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -64,7 +65,10 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             CosmosResponseMessage databaseResponse = this.CreateResponse();
             CosmosResponseMessage containerResponse = this.CreateResponse();
+            CosmosResponseMessage storedProcedureExecuteResponse = this.CreateResponse();
             CosmosResponseMessage storedProcedureResponse = this.CreateResponse();
+            CosmosResponseMessage triggerResponse = this.CreateResponse();
+            CosmosResponseMessage udfResponse = this.CreateResponse();
             CosmosResponseMessage itemResponse = this.CreateResponse();
             CosmosResponseMessage feedResponse = this.CreateResponse();
 
@@ -76,14 +80,16 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             // Test the user specified response
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Returns(new ToDoActivity());
             mockUserJsonSerializer.Setup(x => x.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(feedResponse.Content)).Returns(new CosmosFeedResponseUtil<ToDoActivity>() { Data = new Collection<ToDoActivity>() });
 
             // Verify all the user types use the user specified version
             await cosmosResponseFactory.CreateItemResponse<ToDoActivity>(Task.FromResult(itemResponse));
+            await cosmosResponseFactory.CreateStoredProcedureExecuteResponse<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
             cosmosResponseFactory.CreateResultSetQueryResponse<ToDoActivity>(feedResponse);
 
             // Throw if the setups were not called
-            mockUserJsonSerializer.Verify();
+            mockUserJsonSerializer.VerifyAll();
 
             // Test the system specified response
             CosmosContainerSettings containerSettings = new CosmosContainerSettings("mockId", "/pk");
@@ -97,21 +103,34 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Id = "mock"
             };
 
+            CosmosTriggerSettings cosmosTriggerSettings = new CosmosTriggerSettings()
+            {
+                Id = "mock"
+            };
+
+            CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings = new CosmosUserDefinedFunctionSettings()
+            {
+                Id = "mock"
+            };
+
             mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosDatabaseSettings>(databaseResponse.Content)).Returns(databaseSettings);
             mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosContainerSettings>(containerResponse.Content)).Returns(containerSettings);
             mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosStoredProcedureSettings>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosTriggerSettings>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosUserDefinedFunctionSettings>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
 
             Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
             Mock<CosmosDatabase> mockDatabase = new Mock<CosmosDatabase>();
-            Mock<CosmosStoredProcedure> mockStoredProcedure = new Mock<CosmosStoredProcedure>();
 
             // Verify all the system types that should always use default
             await cosmosResponseFactory.CreateContainerResponse(mockContainer.Object, Task.FromResult(containerResponse));
             await cosmosResponseFactory.CreateDatabaseResponse(mockDatabase.Object, Task.FromResult(databaseResponse));
-            await cosmosResponseFactory.CreateStoredProcedureResponse(mockStoredProcedure.Object, Task.FromResult(storedProcedureResponse));
+            await cosmosResponseFactory.CreateStoredProcedureResponse(Task.FromResult(storedProcedureResponse));
+            await cosmosResponseFactory.CreateTriggerResponse(Task.FromResult(triggerResponse));
+            await cosmosResponseFactory.CreateUserDefinedFunctionResponse(Task.FromResult(udfResponse));
 
             // Throw if the setups were not called
-            mockDefaultJsonSerializer.Verify();
+            mockDefaultJsonSerializer.VerifyAll();
         }
 
         private CosmosResponseMessage CreateResponse()
