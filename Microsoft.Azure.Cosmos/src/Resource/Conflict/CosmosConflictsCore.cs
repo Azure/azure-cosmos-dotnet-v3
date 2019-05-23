@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 null,
-                this.ConflictsFeedRequestExecutor);
+                this.ConflictsFeedRequestExecutorAsync);
         }
 
         public override FeedIterator GetConflictsStreamIterator(
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 null,
-                this.ConflictsFeedStreamRequestExecutor);
+                this.ConflictsFeedStreamRequestExecutorAsync);
         }
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
@@ -104,8 +104,8 @@ namespace Microsoft.Azure.Cosmos
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
             CosmosDatabaseCore databaseCore = (CosmosDatabaseCore)this.container.Database;
-            string databaseResourceId = await databaseCore.GetRID(cancellationToken);
-            string containerResourceId = await this.container.GetRID(cancellationToken);
+            string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
+            string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 
             Uri dbLink = this.clientContext.CreateLink(
                 parentLink: string.Empty,
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override T ReadConflictContent<T>(CosmosConflictSettings cosmosConflict)
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
             return default(T);
         }
 
-        private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutor(
+        private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosConflictSettings>> ConflictsFeedRequestExecutor(
+        private Task<FeedResponse<CosmosConflictSettings>> ConflictsFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,

@@ -395,8 +395,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <remarks>This function is split proofed.</remarks>
         public async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> MoveNextAsync(CancellationToken token)
         {
-            return await this.ExecuteWithSplitProofing(
-                function: this.TryMoveNextAsyncImplementation,
+            return await this.ExecuteWithSplitProofingAsync(
+                function: this.TryMoveNextAsyncImplementationAsync,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }
@@ -407,10 +407,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn returns whether or not we moved next.</returns>
-        public async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> MoveNextIfNotSplit(CancellationToken token)
+        public async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> MoveNextIfNotSplitAsync(CancellationToken token)
         {
-            return await this.ExecuteWithSplitProofing(
-                function: this.TryMoveNextIfNotSplitAsyncImplementation,
+            return await this.ExecuteWithSplitProofingAsync(
+                function: this.TryMoveNextIfNotSplitAsyncImplementationAsync,
                 functionNeedsBeReexecuted: false,
                 cancellationToken: token);
         }
@@ -420,10 +420,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public Task<(bool successfullyMovedNext, QueryResponse failureResponse)> BufferMoreDocuments(CancellationToken token)
+        public Task<(bool successfullyMovedNext, QueryResponse failureResponse)> BufferMoreDocumentsAsync(CancellationToken token)
         {
-            return this.ExecuteWithSplitProofing(
-                function: this.BufferMoreDocumentsImplementation,
+            return this.ExecuteWithSplitProofingAsync(
+                function: this.BufferMoreDocumentsImplementationAsync,
                 functionNeedsBeReexecuted: true,
                 cancellationToken: token);
         }
@@ -544,7 +544,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task with whether or not move next succeeded.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextAsyncImplementationAsync(CancellationToken token)
         {
             if (!this.HasMoreResults)
             {
@@ -566,14 +566,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on which in turn return whether we successfully moved next.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextIfNotSplitAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextIfNotSplitAsyncImplementationAsync(CancellationToken token)
         {
             if (this.HasSplit)
             {
                 return ItemProducer.IsDoneResponse;
             }
 
-            return await this.TryMoveNextAsyncImplementation(token);
+            return await this.TryMoveNextAsyncImplementationAsync(token);
         }
 
         /// <summary>
@@ -581,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> BufferMoreDocumentsImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> BufferMoreDocumentsImplementationAsync(CancellationToken token)
         {
             if (this.CurrentItemProducerTree == this)
             {
@@ -591,11 +591,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     return ItemProducer.IsSuccessResponse;
                 }
 
-                await this.Root.BufferMoreDocuments(token);
+                await this.Root.BufferMoreDocumentsAsync(token);
             }
             else
             {
-                await this.CurrentItemProducerTree.BufferMoreDocuments(token);
+                await this.CurrentItemProducerTree.BufferMoreDocumentsAsync(token);
             }
 
             return ItemProducer.IsSuccessResponse;
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </para>
         /// </remarks>
         /// <returns>The result of the function would have returned as if there were no splits.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> ExecuteWithSplitProofing(
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> ExecuteWithSplitProofingAsync(
             Func<CancellationToken, Task<(bool successfullyMovedNext, QueryResponse failureResponse)>> function,
             bool functionNeedsBeReexecuted,
             CancellationToken cancellationToken)
@@ -654,7 +654,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     // Repair the execution context: Get the replacement document producers and add them to the tree.
-                    List<PartitionKeyRange> replacementRanges = await this.GetReplacementRanges(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
+                    List<PartitionKeyRange> replacementRanges = await this.GetReplacementRangesAsync(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
                     foreach (PartitionKeyRange replacementRange in replacementRanges)
                     {
                         ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.Root.BackendContinuationToken);
@@ -693,7 +693,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="targetRange">The target range that got split.</param>
         /// <param name="collectionRid">The collection rid.</param>
         /// <returns>The replacement ranges for the target range that got split.</returns>
-        private async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
+        private async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
         {
             IRoutingMapProvider routingMapProvider = await this.queryClient.GetRoutingMapProviderAsync();
             List<PartitionKeyRange> replacementRanges = (

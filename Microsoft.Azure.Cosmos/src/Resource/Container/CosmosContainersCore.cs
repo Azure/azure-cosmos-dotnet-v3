@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this[containerSettings.Id], response);
         }
         
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 null,
-                this.ContainerFeedRequestExecutor);
+                this.ContainerFeedRequestExecutorAsync);
         }
         
         public override CosmosContainer this[string id] =>
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 requestOptions,
-                this.ContainerStreamFeedRequestExecutor);
+                this.ContainerStreamFeedRequestExecutorAsync);
         }
 
         public override CosmosContainerFluentDefinitionForCreate DefineContainer(
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutor(
+        private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions requestOptions,
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,

@@ -751,13 +751,13 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public Task OpenAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.InlineIfPossible(() => OpenPrivateInlineAsync(cancellationToken), null, cancellationToken);
+            return TaskHelper.InlineIfPossibleAsync(() => OpenPrivateInlineAsync(cancellationToken), null, cancellationToken);
         }
 
         private async Task OpenPrivateInlineAsync(CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
-            await TaskHelper.InlineIfPossible(() => this.OpenPrivateAsync(cancellationToken), this.ResetSessionTokenRetryPolicy.GetRequestPolicy(), cancellationToken);
+            await TaskHelper.InlineIfPossibleAsync(() => this.OpenPrivateAsync(cancellationToken), this.ResetSessionTokenRetryPolicy.GetRequestPolicy(), cancellationToken);
         }
 
         private async Task OpenPrivateAsync(CancellationToken cancellationToken)
@@ -1023,8 +1023,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTask = TaskHelper.InlineIfPossible(
-                () => this.GetInitializationTask(storeClientFactory: storeClientFactory),
+            this.initializeTask = TaskHelper.InlineIfPossibleAsync(
+                () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                 new ResourceThrottleRetryPolicy(
                     this.connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                     this.connectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
@@ -1035,7 +1035,9 @@ namespace Microsoft.Azure.Cosmos
             // be a blocking call. In such cases, the recommended approach is to "handle" the
             // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
             // and accessing the Exception property on the target task.
+#pragma warning disable VSTHRD110 // Observe result of async calls
             this.initializeTask.ContinueWith(t =>
+#pragma warning restore VSTHRD110 // Observe result of async calls
             {
                 DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception);
             }, TaskContinuationOptions.OnlyOnFaulted);
@@ -1054,9 +1056,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always called from under the lock except when called from Intilialize method during construction.
-        private async Task GetInitializationTask(IStoreClientFactory storeClientFactory)
+        private async Task GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
-            await this.InitializeGatewayConfigurationReader();
+            await this.InitializeGatewayConfigurationReaderAsync();
 
             if (this.desiredConsistencyLevel.HasValue)
             {
@@ -1303,7 +1305,9 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                TaskHelper.InlineIfPossible(() => this.EnsureValidClientAsync(), null).Wait();
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+                TaskHelper.InlineIfPossibleAsync(() => this.EnsureValidClientAsync(), null).Wait();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
                     this.accountServiceConfiguration.DefaultConsistencyLevel;
             }
@@ -1425,7 +1429,7 @@ namespace Microsoft.Azure.Cosmos
             set { this.onExecuteScalarQueryCallback = value; }
         }
 
-        internal async Task<IDictionary<string, object>> GetQueryEngineConfiguration()
+        internal async Task<IDictionary<string, object>> GetQueryEngineConfigurationAsync()
         {
             await this.EnsureValidClientAsync();
             return this.accountServiceConfiguration.QueryEngineConfiguration;
@@ -1506,7 +1510,7 @@ namespace Microsoft.Azure.Cosmos
                 // if the task has not been updated by another caller, update it
                 if (object.ReferenceEquals(this.initializeTask, initTask))
                 {
-                    this.initializeTask = this.GetInitializationTask(storeClientFactory: null);
+                    this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
                 }
 
                 initTask = this.initializeTask;
@@ -5234,8 +5238,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (StreamWriter writer = new StreamWriter(storedProcedureInputStream))
                 {
-                    writer.Write(storedProcedureInput);
-                    writer.Flush();
+                    await writer.WriteAsync(storedProcedureInput);
+                    await writer.FlushAsync();
                     storedProcedureInputStream.Position = 0;
 
                     INameValueCollection headers = this.GetRequestHeaders(options);
@@ -6511,7 +6515,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreateStoreModel(subscribeRntbdStatus: false);
         }
 
-        private async Task InitializeGatewayConfigurationReader()
+        private async Task InitializeGatewayConfigurationReaderAsync()
         {
             GatewayAccountReader accountReader = new GatewayAccountReader(
                     this.ServiceEndpoint,

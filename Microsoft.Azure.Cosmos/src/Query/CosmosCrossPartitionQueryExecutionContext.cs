@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplit(token);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplitAsync(token);
                     if (response.failureResponse != null)
                     {
                         // Set the failure so on drain it can be returned.
@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>A task to await on.</returns>
             public override Task StartAsync(CancellationToken token)
             {
-                return this.producer.BufferMoreDocuments(token);
+                return this.producer.BufferMoreDocumentsAsync(token);
             }
 
             /// <summary>

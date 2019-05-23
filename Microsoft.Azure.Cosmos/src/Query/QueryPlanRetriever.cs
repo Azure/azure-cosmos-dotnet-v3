@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
-            return queryPlanHandler.GetQueryPlan(
+            return queryPlanHandler.GetQueryPlanAsync(
                     sqlQuerySpec,
                     partitionKeyDefinition,
                     SupportedQueryFeatures,

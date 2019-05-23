@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.compositeContinuationToken == null)
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                this.containerRid = await this.cosmosContainer.GetRID(cancellationToken);
+                this.containerRid = await this.cosmosContainer.GetRIDAsync(cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
 
-            CosmosResponseMessage response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            CosmosResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 currentRangeToken = currentRangeTokenForRetry;
                 this.partitionKeyRangeId = rangeIdForRetry;
                 this.continuationToken = currentRangeToken.Token;
-                response = await this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+                response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             }
 
             // Change Feed read uses Etag for continuation
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        internal virtual Task<CosmosResponseMessage> NextResultSetDelegate(
+        internal virtual Task<CosmosResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,

@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<CosmosResponseMessage> ReadItemAsStreamAsync(
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<CosmosResponseMessage> UpsertItemAsStreamAsync(
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<CosmosResponseMessage> ReplaceItemAsStreamAsync(
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override Task<CosmosResponseMessage> DeleteItemAsStreamAsync(
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
         public override FeedIterator<T> GetItemsIterator<T>(
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 null,
-                this.ItemFeedRequestExecutor<T>);
+                this.ItemFeedRequestExecutorAsync<T>);
         }
 
         public override FeedIterator GetItemsStreamIterator(
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             ItemRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutor);
+            return new FeedIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutorAsync);
         }
 
         public override FeedIterator CreateItemQueryAsStream(
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 requestOptions,
-                this.QueryRequestExecutor,
+                this.QueryRequestExecutorAsync,
                 cosmosQueryExecution);
         }
 
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> ItemStreamFeedRequestExecutor(
+        private Task<CosmosResponseMessage> ItemStreamFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
@@ -495,7 +495,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<T>> ItemFeedRequestExecutor<T>(
+        private Task<FeedResponse<T>> ItemFeedRequestExecutorAsync<T>(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
@@ -520,7 +520,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private async Task<CosmosResponseMessage> QueryRequestExecutor(
+        private async Task<CosmosResponseMessage> QueryRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,

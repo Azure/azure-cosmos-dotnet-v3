@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public TimeSpan? DispatchPeriod { get; private set; }
 
-        public async Task DispatchEstimation(long estimation, CancellationToken cancellationToken)
+        public async Task DispatchEstimationAsync(long estimation, CancellationToken cancellationToken)
         {
             try
             {
