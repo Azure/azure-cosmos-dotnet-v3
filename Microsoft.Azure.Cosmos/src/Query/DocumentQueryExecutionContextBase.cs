@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.feedOptions.ConsistencyLevel.HasValue)
             {
-                await this.client.EnsureValidOverwrite((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);
+                await this.client.EnsureValidOverwriteAsync((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);
                 requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.feedOptions.ConsistencyLevel.Value.ToString());
             }
             else if (desiredConsistencyLevel.HasValue)
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public async Task<PartitionKeyRange> GetTargetPartitionKeyRangeById(string collectionResourceId, string partitionKeyRangeId)
+        public async Task<PartitionKeyRange> GetTargetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId)
         {
             IRoutingMapProvider routingMapProvider = await this.client.GetRoutingMapProviderAsync();
 
@@ -442,16 +442,16 @@ namespace Microsoft.Azure.Cosmos.Query
             return range;
         }
 
-        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(string collectionResourceId, string effectivePartitionKeyString)
+        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string collectionResourceId, string effectivePartitionKeyString)
         {
-            return this.GetTargetPartitionKeyRanges(collectionResourceId,
+            return this.GetTargetPartitionKeyRangesAsync(collectionResourceId,
                 new List<Range<string>>
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
                 });
         }
 
-        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(string collectionResourceId, List<Range<string>> providedRanges)
+        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string collectionResourceId, List<Range<string>> providedRanges)
         {
             if (string.IsNullOrEmpty(nameof(collectionResourceId)))
             {
@@ -489,7 +489,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         protected abstract Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
 
-        protected async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
+        protected async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
         {
             IRoutingMapProvider routingMapProvider = await this.client.GetRoutingMapProviderAsync();
             List<PartitionKeyRange> replacementRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();

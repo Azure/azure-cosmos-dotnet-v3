@@ -128,11 +128,11 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 
-    internal sealed class SpatialSpecEqualityComparer : IEqualityComparer<SpatialSpec>
+    internal sealed class SpatialSpecEqualityComparer : IEqualityComparer<SpatialPath>
     {
         public static readonly SpatialSpecEqualityComparer Singleton = new SpatialSpecEqualityComparer();
 
-        public bool Equals(SpatialSpec spatialSpec1, SpatialSpec spatialSpec2)
+        public bool Equals(SpatialPath spatialSpec1, SpatialPath spatialSpec2)
         {
             if (object.ReferenceEquals(spatialSpec1, spatialSpec2))
             {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public int GetHashCode(SpatialSpec spatialSpec)
+        public int GetHashCode(SpatialPath spatialSpec)
         {
             int hashCode = 0;
             hashCode ^= spatialSpec.Path.GetHashCode();
@@ -173,11 +173,11 @@ namespace Microsoft.Azure.Cosmos
         }
     }
 
-    internal sealed class AdditionalSpatialSpecesEqualityComparer : IEqualityComparer<Collection<SpatialSpec>>
+    internal sealed class AdditionalSpatialSpecesEqualityComparer : IEqualityComparer<Collection<SpatialPath>>
     {
         private static readonly SpatialSpecEqualityComparer spatialSpecEqualityComparer = new SpatialSpecEqualityComparer();
 
-        public bool Equals(Collection<SpatialSpec> additionalSpatialSpeces1, Collection<SpatialSpec> additionalSpatialSpeces2)
+        public bool Equals(Collection<SpatialPath> additionalSpatialSpeces1, Collection<SpatialPath> additionalSpatialSpeces2)
         {
             if (object.ReferenceEquals(additionalSpatialSpeces1, additionalSpatialSpeces2))
             {
@@ -189,16 +189,16 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            HashSet<SpatialSpec> hashedAdditionalSpatialSpeces1 = new HashSet<SpatialSpec>(additionalSpatialSpeces1, spatialSpecEqualityComparer);
-            HashSet<SpatialSpec> hashedAdditionalSpatialSpeces2 = new HashSet<SpatialSpec>(additionalSpatialSpeces2, spatialSpecEqualityComparer);
+            HashSet<SpatialPath> hashedAdditionalSpatialSpeces1 = new HashSet<SpatialPath>(additionalSpatialSpeces1, spatialSpecEqualityComparer);
+            HashSet<SpatialPath> hashedAdditionalSpatialSpeces2 = new HashSet<SpatialPath>(additionalSpatialSpeces2, spatialSpecEqualityComparer);
 
             return hashedAdditionalSpatialSpeces1.SetEquals(additionalSpatialSpeces2);
         }
 
-        public int GetHashCode(Collection<SpatialSpec> additionalSpatialSpeces)
+        public int GetHashCode(Collection<SpatialPath> additionalSpatialSpeces)
         {
             int hashCode = 0;
-            foreach (SpatialSpec spatialSpec in additionalSpatialSpeces)
+            foreach (SpatialPath spatialSpec in additionalSpatialSpeces)
             {
                 hashCode = hashCode ^ spatialSpecEqualityComparer.GetHashCode(spatialSpec);
             }

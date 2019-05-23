@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static Task<T> SetException<T>(Exception exception)
+        public static Task<T> SetExceptionAsync<T>(Exception exception)
         {
             TaskCompletionSource<T> completionSource = new TaskCompletionSource<T>();
             completionSource.SetException(exception);

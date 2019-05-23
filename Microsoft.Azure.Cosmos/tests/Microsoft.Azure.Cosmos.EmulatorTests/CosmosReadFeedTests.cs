@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ""id"": ""{i}""
                     }}";
 
-                using (CosmosResponseMessage createResponse = await this.Container.Items.CreateItemStreamAsync(
+                using (CosmosResponseMessage createResponse = await this.Container.Items.CreateItemAsStreamAsync(
                         i.ToString(),
                         CosmosReadFeedTests.GenerateStreamFromString(item),
                         requestOptions: new ItemRequestOptions()))

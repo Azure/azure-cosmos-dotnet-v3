@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return this.NextResultSetDelegate(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
+            return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
                 .ContinueWith(task =>
                 {
                     CosmosResponseMessage response = task.Result;
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> NextResultSetDelegate(
+        private Task<CosmosResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,

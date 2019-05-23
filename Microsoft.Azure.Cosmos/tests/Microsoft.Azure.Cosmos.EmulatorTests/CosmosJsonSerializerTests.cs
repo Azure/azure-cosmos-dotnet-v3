@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosJsonSerializerTests : BaseCosmosClientHelper
     {
-        private CosmosDefaultJsonSerializer jsonSerializer = null;
+        private CosmosJsonSerializerCore jsonSerializer = null;
         private CosmosContainer container = null;
 
         [TestInitialize]
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             this.container = response;
-            this.jsonSerializer = new CosmosDefaultJsonSerializer();
+            this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 
         [TestCleanup]

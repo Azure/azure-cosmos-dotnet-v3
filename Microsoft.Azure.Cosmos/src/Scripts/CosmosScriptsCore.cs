@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 maxItemCount,
                 continuationToken,
                 null,
-                this.StoredProcedureFeedRequestExecutor);
+                this.StoredProcedureFeedRequestExecutorAsync);
         }
 
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -114,11 +114,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)
             {
-                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
             }
             else
             {
-                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput>(input);
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
             }
 
             Uri linkUri = this.clientContext.CreateLink(
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponse<TOutput>(response);
+            return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 maxItemCount,
                 continuationToken,
                 null,
-                this.ContainerFeedRequestExecutor);
+                this.ContainerFeedRequestExecutorAsync);
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 maxItemCount,
                 continuationToken,
                 null,
-                this.UserDefinedFunctionFeedRequestExecutor);
+                this.UserDefinedFunctionFeedRequestExecutorAsync);
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
@@ -344,14 +344,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIterator<CosmosTriggerSettings>(
+            return this.GetIteratorAsync<CosmosTriggerSettings>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
@@ -360,14 +360,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutor(
+        private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIterator<CosmosStoredProcedureSettings>(
+            return this.GetIteratorAsync<CosmosStoredProcedureSettings>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
@@ -376,14 +376,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosUserDefinedFunctionSettings>> UserDefinedFunctionFeedRequestExecutor(
+        private Task<FeedResponse<CosmosUserDefinedFunctionSettings>> UserDefinedFunctionFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIterator<CosmosUserDefinedFunctionSettings>(
+            return this.GetIteratorAsync<CosmosUserDefinedFunctionSettings>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateStoredProcedureResponse(response);
+            return this.clientContext.ResponseFactory.CreateStoredProcedureResponseAsync(response);
         }
 
         private Task<TriggerResponse> ProcessTriggerOperationAsync(
@@ -467,7 +467,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateTriggerResponse(response);
+            return this.clientContext.ResponseFactory.CreateTriggerResponseAsync(response);
         }
 
         private Task<CosmosResponseMessage> ProcessStreamOperationAsync(
@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.clientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -527,10 +527,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 streamPayload: streamPayload,
                 cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
+            return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponseAsync(response);
         }
 
-        private Task<FeedResponse<T>> GetIterator<T>(
+        private Task<FeedResponse<T>> GetIteratorAsync<T>(
             int? maxItemCount,
             string continuationToken,
             ResourceType resourceType,

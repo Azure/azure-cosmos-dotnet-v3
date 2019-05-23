@@ -18,7 +18,8 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClientContextCore(
             CosmosClient client,
             CosmosClientOptions clientOptions,
-            CosmosJsonSerializer cosmosJsonSerializer,
+            CosmosJsonSerializer userJsonSerializer,
+            CosmosJsonSerializer defaultJsonSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
@@ -26,7 +27,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
-            this.JsonSerializer = cosmosJsonSerializer;
+            this.CosmosSerializer = userJsonSerializer;
+            this.SettingsSerializer = defaultJsonSerializer;
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
@@ -42,7 +44,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDocumentQueryClient DocumentQueryClient { get; }
 
-        internal override CosmosJsonSerializer JsonSerializer { get; }
+        internal override CosmosJsonSerializer CosmosSerializer { get; }
+
+        internal override CosmosJsonSerializer SettingsSerializer { get; }
 
         internal override CosmosResponseFactory ResponseFactory { get; }
 
@@ -83,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal override Task<CosmosResponseMessage> ProcessResourceOperationAsStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Create the object in Cosmos
-        /// using (CosmosResponseMessage response = await this.Container.Items.CreateItemStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
+        /// using (CosmosResponseMessage response = await this.Container.Items.CreateItemAsStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> CreateItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> CreateItemAsStreamAsync(
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// Read a response as a stream.
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReadItemStreamAsync("partitionKey", "id"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReadItemAsStreamAsync("partitionKey", "id"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ReadItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReadItemAsStreamAsync(
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.UpsertItemStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.UpsertItemAsStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> UpsertItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> UpsertItemAsStreamAsync(
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace an item in Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReplaceItemStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReplaceItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ReplaceItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReplaceItemAsStreamAsync(
                     object partitionKey,
                     string id,
                     Stream streamPayload,
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete an item from Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.DeleteItemStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.DeleteItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -422,7 +422,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> DeleteItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> DeleteItemAsStreamAsync(
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,

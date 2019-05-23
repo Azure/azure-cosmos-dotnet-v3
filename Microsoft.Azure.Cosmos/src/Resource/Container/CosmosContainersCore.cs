@@ -48,13 +48,13 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            Task<CosmosResponseMessage> response = this.CreateContainerStreamAsync(
-                streamPayload: CosmosResource.ToStream(containerSettings),
+            Task<CosmosResponseMessage> response = this.CreateContainerAsStreamAsync(
+                streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponse(this[containerSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this[containerSettings.Id], response);
         }
         
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 null,
-                this.ContainerFeedRequestExecutor);
+                this.ContainerFeedRequestExecutorAsync);
         }
         
         public override CosmosContainer this[string id] =>
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                         this.database, 
                         keyName));
 
-        public override Task<CosmosResponseMessage> CreateContainerStreamAsync(
+        public override Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
                     Stream streamPayload,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 requestOptions,
-                this.ContainerStreamFeedRequestExecutor);
+                this.ContainerStreamFeedRequestExecutorAsync);
         }
 
         public override CosmosContainerFluentDefinitionForCreate DefineContainer(
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
@@ -200,14 +200,14 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutor(
+        private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions requestOptions,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.ReadFeed,
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutor(
+        private Task<FeedResponse<CosmosContainerSettings>> ContainerFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,

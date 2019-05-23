@@ -152,12 +152,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             CosmosContainerSettings settings = new CosmosContainerSettings(containerName, partitionKeyDefinition);
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers.CreateContainerStreamAsync(CosmosResource.ToStream(settings)))
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers.CreateContainerAsStreamAsync(CosmosResource.ToStream(settings)))
             {
                 Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             }
 
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers[containerName].DeleteStreamAsync())
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers[containerName].DeleteAsStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
             }
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (CosmosResponseMessage message = await resultSet.FetchNextSetAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
-                    CosmosDefaultJsonSerializer defaultJsonSerializer = new CosmosDefaultJsonSerializer();
+                    CosmosJsonSerializerCore defaultJsonSerializer = new CosmosJsonSerializerCore();
                     dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.Content).DocumentCollections;
                     foreach (dynamic container in containers)
                     {

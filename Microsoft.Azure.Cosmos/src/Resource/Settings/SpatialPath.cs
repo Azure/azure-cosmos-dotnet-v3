@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Spatial index specification
     /// </summary>
-    public sealed class SpatialSpec
+    public sealed class SpatialPath
     {
         [JsonProperty(PropertyName = Constants.Properties.Types, ItemConverterType = typeof(StringEnumConverter))]
         private Collection<SpatialType> spatialTypesInternal;

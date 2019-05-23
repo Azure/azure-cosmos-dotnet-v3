@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             string lockId = this.GetStoreLockName();
             var requestOptions = new ItemRequestOptions()
             {
-                AccessCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = this.lockETag }
+                IfMatchEtag = this.lockETag,
             };
 
             var document = await this.container.TryDeleteItemAsync<LockDocument>(

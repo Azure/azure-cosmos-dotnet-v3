@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public static async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(
+        public static async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKeyAsync(
             this IRoutingMapProvider routingMapProvider,
             string collectionResourceId,
             string effectivePartitionKey)

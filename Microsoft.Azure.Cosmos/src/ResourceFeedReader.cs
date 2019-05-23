@@ -109,10 +109,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The response from a single call to ReadFeed for the specified resource.</returns>
         public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.InlineIfPossible(() => this.ExecuteNextAsyncInternal(cancellationToken), null, cancellationToken);
+            return TaskHelper.InlineIfPossible(() => this.InternalExecuteNextAsync(cancellationToken), null, cancellationToken);
         }
 
-        private async Task<DocumentFeedResponse<T>> ExecuteNextAsyncInternal(CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<T>> InternalExecuteNextAsync(CancellationToken cancellationToken)
         {
             return await this.documentQuery.ExecuteNextAsync<T>(cancellationToken);
         }
