@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Query
             set;
         }
 
-        [JsonProperty("range"), JsonConverter(typeof(RangeJsonConverter))]
+        [JsonProperty("range")]
+        [JsonConverter(typeof(RangeJsonConverter))]
         public Range<string> Range
         {
             get;

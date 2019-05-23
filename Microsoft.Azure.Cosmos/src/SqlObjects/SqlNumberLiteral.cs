@@ -1,17 +1,15 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
-// <copyright file="SqlNumberLiteral.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text;
     using Collections.Generic;
     using Newtonsoft.Json;
-    using System.Collections.Generic;
-    using System.Linq;
 
     internal sealed class SqlNumberLiteral : SqlLiteral
     {
@@ -37,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public static SqlNumberLiteral Create(double number)
         {
             SqlNumberLiteral sqlNumberLiteral;
-            if(!SqlNumberLiteral.FrequentDoubles.TryGetValue(number, out sqlNumberLiteral))
+            if (!SqlNumberLiteral.FrequentDoubles.TryGetValue(number, out sqlNumberLiteral))
             {
                 sqlNumberLiteral = new SqlNumberLiteral(number);
             }

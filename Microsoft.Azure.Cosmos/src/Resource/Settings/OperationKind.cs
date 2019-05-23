@@ -2,9 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System;
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary>
     /// These are the operation types resulted in a version conflict on a resource. 
     /// </summary>

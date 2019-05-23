@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
@@ -115,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await container.ReadAsync();
 
                 // read documentCollection feed.
-                FeedIterator<CosmosContainerSettings> rr = database.Containers.GetContainerIterator();
+                FeedIterator<CosmosContainerSettings> rr = database.Containers.GetContainersIterator();
                 List<CosmosContainerSettings> settings = new List<CosmosContainerSettings>();
                 while (rr.HasMoreResults)
                 {
@@ -148,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc3 = await container.Items.DeleteItemAsync<Document>(partitionKey: resourceRandomId, id: resourceRandomId);
 
                     // read databaseCollection feed.
-                    FeedIterator<dynamic> itemIterator = container.Items.GetItemIterator<dynamic>();
+                    FeedIterator<dynamic> itemIterator = container.Items.GetItemsIterator<dynamic>();
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
@@ -259,17 +260,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Body = "function() {var x = 10;}",
                     };
 
-                    CosmosStoredProcedure storedProcedure1 = await container.StoredProcedures.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
-                    myStoredProcedure.Body = "function() {var x = 5;}";
-                    storedProcedure1 = await storedProcedure1.ReplaceAsync(body: myStoredProcedure.Body);
-                    storedProcedure1 = await storedProcedure1.DeleteAsync();
+                    CosmosScripts cosmosScripts = container.GetScripts();
 
-                    storedProcedure1 = await container.StoredProcedures.CreateStoredProcedureAsync(id: myStoredProcedure.Id, body: myStoredProcedure.Body);
-                    storedProcedure1 = await storedProcedure1.ReadAsync();
+                    CosmosStoredProcedureSettings storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(myStoredProcedure.Id, myStoredProcedure.Body));
+                    myStoredProcedure.Body = "function() {var x = 5;}";
+                    storedProcedure1 = await cosmosScripts.ReplaceStoredProcedureAsync(new CosmosStoredProcedureSettings(myStoredProcedure.Id, myStoredProcedure.Body));
+                    await cosmosScripts.DeleteStoredProcedureAsync(myStoredProcedure.Id);
+
+                    storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(myStoredProcedure.Id, myStoredProcedure.Body));
+                    storedProcedure1 = await cosmosScripts.ReadStoredProcedureAsync(myStoredProcedure.Id);
 
                     // 
                     // read databaseCollection feed.
-                    FeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = container.StoredProcedures.GetStoredProcedureIterator();
+                    FeedIterator<CosmosStoredProcedureSettings> storedProcedureIter = cosmosScripts.GetStoredProceduresIterator();
                     List<CosmosStoredProcedureSettings> storedProcedures = new List<CosmosStoredProcedureSettings>();
                     while (storedProcedureIter.HasMoreResults)
                     {
@@ -1733,10 +1736,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
                 container = client.Databases["db1"].Containers["coll1"];
-                CosmosStoredProcedure storedProcedure = await container.StoredProcedures.CreateStoredProcedureAsync(id: "sproc1", body: "function() {return 1}");
+                CosmosScripts scripts = container.GetScripts();
+                CosmosStoredProcedureSettings storedProcedure = await scripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings("sproc1", "function() {return 1}"));
                 for (int i = 0; i < 10; i++)
                 {
-                    await storedProcedure.ExecuteAsync<object, object>(partitionKey: i, input: null);
+                    await scripts.ExecuteStoredProcedureAsync<object, object>(partitionKey: i, id: "sproc1", input: null);
                 }
             }
             finally

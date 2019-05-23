@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="ItemResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        public ItemResponse() : base()
+        public ItemResponse()
+            : base()
         {
-
         }
 
         /// <summary>
@@ -30,12 +30,12 @@ namespace Microsoft.Azure.Cosmos
         internal ItemResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            T item) : base(
+            T item)
+            : base(
                 httpStatusCode,
                 headers,
                 item)
         {
-
         }
 
         /// <summary>

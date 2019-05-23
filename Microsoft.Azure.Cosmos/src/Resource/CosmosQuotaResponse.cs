@@ -98,7 +98,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Override the to string method to return the original string from the header
         /// </summary>
-        /// <returns></returns>
         public override string ToString()
         {
             return this.source;

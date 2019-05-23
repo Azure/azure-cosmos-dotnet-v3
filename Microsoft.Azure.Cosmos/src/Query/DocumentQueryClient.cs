@@ -5,18 +5,18 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal sealed class DocumentQueryClient : IDocumentQueryClient
     {
         private readonly DocumentClient innerClient;
-        private QueryPartitionProvider queryPartitionProvider;
         private readonly SemaphoreSlim semaphore;
+        private QueryPartitionProvider queryPartitionProvider;
 
         public DocumentQueryClient(DocumentClient innerClient)
         {

@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="AggregateDocumentQueryExecutionComponent.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 {
     using System;
@@ -184,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             List<CosmosElement> result = new List<CosmosElement>();
-            foreach(CosmosElement aggregateResult in aggregateResults)
+            foreach (CosmosElement aggregateResult in aggregateResults)
             {
                 if (aggregateResult != null)
                 {

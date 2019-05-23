@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan requestTimeout,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
-            JsonSerializerSettings SerializerSettings,
+            JsonSerializerSettings serializerSettings,
             UserAgentContainer userAgent,
             ApiType apiType = ApiType.None,
             HttpMessageHandler messageHandler = null)
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
-                SerializerSettings);
+                serializerSettings);
             
         }
 

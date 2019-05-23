@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     {
         internal CosmosClientContextCore(
             CosmosClient client,
-            CosmosClientConfiguration clientConfiguration,
+            CosmosClientOptions clientOptions,
             CosmosJsonSerializer cosmosJsonSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentQueryClient documentQueryClient)
         {
             this.Client = client;
-            this.ClientConfiguration = clientConfiguration;
+            this.ClientOptions = clientOptions;
             this.JsonSerializer = cosmosJsonSerializer;
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override RequestInvokerHandler RequestHandler { get; }
 
-        internal override CosmosClientConfiguration ClientConfiguration { get; }
+        internal override CosmosClientOptions ClientOptions { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                cancellation: cancellationToken);
+                cancellationToken: cancellationToken);
         }
 
         internal override Task<T> ProcessResourceOperationAsync<T>(
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync<T>(
                 resourceUri: resourceUri,
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
         }
     }
 }

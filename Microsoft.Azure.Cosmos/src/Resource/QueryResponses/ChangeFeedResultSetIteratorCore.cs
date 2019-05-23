@@ -161,7 +161,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
                 cosmosContainerCore: this.cosmosContainer,
-                requestEnricher: request => {
+                requestEnricher: request => 
+                {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
                     ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                     ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);

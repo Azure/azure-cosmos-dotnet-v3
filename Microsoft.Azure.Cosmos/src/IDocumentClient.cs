@@ -183,7 +183,6 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="System.Threading.Tasks.Task"/>
         Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, Documents.Client.RequestOptions options = null);
 
-
         /// <summary>
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
@@ -299,7 +298,6 @@ namespace Microsoft.Azure.Cosmos
             Uri databaseUri,
             DocumentCollection documentCollection,
             Documents.Client.RequestOptions options = null);
-
 
         /// <summary>
         /// Creates a Document as an asychronous operation in the Azure Cosmos DB service.
@@ -417,7 +415,6 @@ namespace Microsoft.Azure.Cosmos
             bool disableAutomaticIdGeneration = false,
             CancellationToken cancellationToken = default(CancellationToken));
 
-
         /// <summary>
         /// Creates a stored procedure as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
@@ -479,7 +476,6 @@ namespace Microsoft.Azure.Cosmos
             Uri documentCollectionUri,
             StoredProcedure storedProcedure,
             Documents.Client.RequestOptions options = null);
-
 
         /// <summary>
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
@@ -2120,8 +2116,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="options">(Optional) The request options for the request.</param>
         /// <param name="partitionKeyRangesOrCollectionLink">The link of the resources to be read, or owner collection link, SelfLink or AltLink. E.g. /dbs/db_rid/colls/coll_rid/pkranges</param>
+        /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
         /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
         /// </returns>

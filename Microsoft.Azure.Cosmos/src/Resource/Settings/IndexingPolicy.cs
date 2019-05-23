@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     /// </para>
     /// </remarks>
     /// <seealso cref="CosmosContainerSettings"/>
-    public sealed class IndexingPolicy 
+    public sealed class IndexingPolicy
     {
         internal const string DefaultPath = "/*";
 
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialSpec> SpatialIndexes { get; set; } = new Collection<SpatialSpec>();
 
-        # region EqualityComparers
+        #region EqualityComparers
         internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
         {
             public static readonly CompositePathEqualityComparer Singleton = new CompositePathEqualityComparer();

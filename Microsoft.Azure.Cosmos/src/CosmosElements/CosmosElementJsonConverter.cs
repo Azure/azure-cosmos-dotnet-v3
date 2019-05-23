@@ -1,13 +1,17 @@
-﻿namespace Microsoft.Azure.Cosmos.CosmosElements
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    using Microsoft.Azure.Cosmos.Json.NewtonsoftInterop;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Json.NewtonsoftInterop;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class CosmosElementJsonConverter : JsonConverter
     {

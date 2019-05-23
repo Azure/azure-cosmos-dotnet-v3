@@ -1,10 +1,8 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System;
-
     /// <summary>
     /// Specifies the type of the trigger in the Azure Cosmos DB service.
     /// </summary> 

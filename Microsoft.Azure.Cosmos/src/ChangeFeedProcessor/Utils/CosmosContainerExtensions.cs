@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}",
                 optionsPrefix,
-                ((CosmosContainerCore)monitoredContainer).ClientContext.ClientConfiguration.AccountEndPoint.Host,
+                ((CosmosContainerCore)monitoredContainer).ClientContext.ClientOptions.AccountEndPoint.Host,
                 monitoredContainerRid);
         }
     }

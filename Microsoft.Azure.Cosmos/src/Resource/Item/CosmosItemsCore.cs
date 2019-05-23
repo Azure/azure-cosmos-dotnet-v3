@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
-        public override FeedIterator<T> GetItemIterator<T>(
+        public override FeedIterator<T> GetItemsIterator<T>(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -210,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ItemFeedRequestExecutor<T>);
         }
 
-        public override FeedIterator GetItemStreamIterator(
+        public override FeedIterator GetItemsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             ItemRequestOptions requestOptions = null)
@@ -495,10 +497,10 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<FeedResponse<T>> ItemFeedRequestExecutor<T>(
             int? maxItemCount,
-           string continuationToken,
-           RequestOptions options,
-           object state,
-           CancellationToken cancellationToken)
+            string continuationToken,
+            RequestOptions options,
+            object state,
+            CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<FeedResponse<T>>(
@@ -525,8 +527,35 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-            return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
+            // This catches exception thrown by the caches and converts it to QueryResponse
+            try
+            {
+                CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
+                return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
+            }
+            catch (DocumentClientException exception)
+            {
+                return exception.ToCosmosResponseMessage(request: null);
+            }
+            catch (CosmosException exception)
+            {
+                return new CosmosResponseMessage(
+                    headers: exception.Headers,
+                    requestMessage: null,
+                    errorMessage: exception.Message,
+                    statusCode: exception.StatusCode,
+                    error: exception.Error);
+            }
+            catch (AggregateException ae)
+            {
+                CosmosResponseMessage errorMessage = TransportHandler.AggregateExceptionConverter(ae, null);
+                if (errorMessage != null)
+                {
+                    return errorMessage;
+                }
+
+                throw;
+            }
         }
 
         internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)

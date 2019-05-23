@@ -38,11 +38,13 @@ namespace Microsoft.Azure.Cosmos
     ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
     ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync(collectionsettings);
+    /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
+    /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
     /// ]]>
     /// </code>
     /// </example>
     /// <example>
-    /// The example below deletes this collection.
+    /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
     ///     CosmosContainer container = client.Databases["dbName"].Containers["MyCollection"];
@@ -51,7 +53,6 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
-    /// <seealso cref="CosmosDatabaseSettings"/>
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
@@ -81,11 +82,13 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             if (!string.IsNullOrEmpty(partitionKeyPath))
             {
-                this.PartitionKey = new PartitionKeyDefinition();
-                this.PartitionKey.Paths = new Collection<string>() { partitionKeyPath };
+                this.PartitionKey = new PartitionKeyDefinition
+                {
+                    Paths = new Collection<string>() { partitionKeyPath }
+                };
             }
 
-            ValidateRequiredProperties();
+            this.ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -94,10 +97,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public virtual PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
         {
-            get
-            {
-                return (Cosmos.PartitionKeyDefinitionVersion?)this.PartitionKey?.Version;
-            }
+            get => (Cosmos.PartitionKeyDefinitionVersion?)this.PartitionKey?.Version;
 
             set
             {
@@ -126,10 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.conflictResolutionInternal;
             }
 
-            set
-            {
-                this.conflictResolutionInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
-            }
+            set => this.conflictResolutionInternal = value ?? throw new ArgumentNullException($"{nameof(value)}");
         }
 
         /// <summary>
@@ -174,7 +171,10 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                if (value == null) throw new ArgumentNullException($"{nameof(value)}");
+                if (value == null)
+                {
+                    throw new ArgumentNullException($"{nameof(value)}");
+                }
 
                 this.uniqueKeyPolicyInternal = value;
             }
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
         public virtual DateTime? LastModified { get; private set; }
 
@@ -221,7 +221,10 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                if (value == null) throw new ArgumentNullException($"{nameof(value)}");
+                if (value == null)
+                {
+                    throw new ArgumentNullException($"{nameof(value)}");
+                }
 
                 this.indexingPolicyInternal = value;
             }
@@ -231,13 +234,7 @@ namespace Microsoft.Azure.Cosmos
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public virtual string PartitionKeyPath
-        {
-            get
-            {
-                return this.PartitionKey?.Paths[0];
-            }
-        }
+        public virtual string PartitionKeyPath => this.PartitionKey?.Paths[0];
 
         /// <summary>
         /// Gets or sets the time to live base timestamp property path.
@@ -349,16 +346,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
+        /// <param name="resourceId">The resource identifier for the container.</param>
+        /// <returns>An instance of <see cref="CosmosContainerSettings"/>.</returns>
+        protected internal static CosmosContainerSettings CreateWithResourceId(string resourceId)
         {
-            if (string.IsNullOrEmpty(resoruceId))
+            if (string.IsNullOrEmpty(resourceId))
             {
-                throw new ArgumentNullException(nameof(resoruceId));
+                throw new ArgumentNullException(nameof(resourceId));
             }
 
             return new CosmosContainerSettings()
             {
-                ResourceId = resoruceId,
+                ResourceId = resourceId,
             };
         }
 
@@ -372,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
 
-            ValidateRequiredProperties();
+            this.ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -385,7 +384,7 @@ namespace Microsoft.Azure.Cosmos
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
-        /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
+        /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The Resource Id associated with the resource.
@@ -408,12 +407,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.Id == null)
             {
-                throw new ArgumentNullException(nameof(Id));
+                throw new ArgumentNullException(nameof(this.Id));
             }
 
             if (this.PartitionKey == null || this.PartitionKey.Paths.Count == 0)
             {
-                throw new ArgumentNullException(nameof(PartitionKey));
+                throw new ArgumentNullException(nameof(this.PartitionKey));
             }
 
             // HACK: Till service can handle the defaults (self-mutation)

@@ -39,7 +39,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         private bool tracedFirstExecution;
         private bool tracedLastExecution;
 
-
         // Root Query.
         public DocumentQuery(
             IDocumentQueryClient client,
@@ -100,8 +99,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             string documentsFeedOrDatabaseLink,
             Expression expression,
             FeedOptions feedOptions,
-            object partitionKey = null) :
-            this(
+            object partitionKey = null)
+            : this(
                 new DocumentQueryClient(client),
                 resourceTypeEnum,
                 resourceType,
@@ -118,8 +117,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             Type resourceType,
             string documentsFeedOrDatabaseLink,
             FeedOptions feedOptions,
-            object partitionKey = null) :
-            this(
+            object partitionKey = null)
+            : this(
                 client,
                 resourceTypeEnum,
                 resourceType,
@@ -136,8 +135,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             Type resourceType,
             string documentsFeedOrDatabaseLink,
             FeedOptions feedOptions,
-            object partitionKey = null) :
-            this(
+            object partitionKey = null)
+            : this(
                 new DocumentQueryClient(client),
                 resourceTypeEnum,
                 resourceType,
@@ -202,7 +201,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Executes the query to retrieve the next page of results.
         /// </summary>
-        /// <returns></returns>        
         public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ExecuteNextAsync<dynamic>(cancellationToken);
@@ -211,7 +209,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Executes the query to retrieve the next page of results.
         /// </summary>
-        /// <returns></returns>
         public Task<DocumentFeedResponse<TResponse>> ExecuteNextAsync<TResponse>(CancellationToken cancellationToken = default(CancellationToken))
         {
             try
@@ -252,7 +249,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <remarks>
         /// This triggers a synchronous multi-page load.
         /// </remarks>
-        /// <returns></returns>
         public IEnumerator<T> GetEnumerator()
         {
             using (IDocumentQueryExecutionContext localQueryExecutionContext =
@@ -276,7 +272,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Synchronous Multi-Page load
         /// </summary>
-        /// <returns></returns>        
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();

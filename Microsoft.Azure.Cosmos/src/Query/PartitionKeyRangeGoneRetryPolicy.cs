@@ -95,7 +95,6 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Gone
                 && subStatusCode == SubStatusCodes.PartitionKeyRangeGone)
             {
-
                 if (this.retried)
                 {
                     return ShouldRetryResult.NoRetry();

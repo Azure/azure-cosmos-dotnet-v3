@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the database under the cosmos account
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosDatabaseSettings> feedIterator = this.cosmosClient.Databases.GetDatabaseIterator();
+        /// FeedIterator<CosmosDatabaseSettings> feedIterator = this.cosmosClient.Databases.GetDatabasesIterator();
         /// {
         ///     foreach (CosmosDatabaseSettings databaseSettings in  await feedIterator.FetchNextSetAsync())
         ///     {
@@ -100,7 +100,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<CosmosDatabaseSettings> GetDatabaseIterator(
+        /// <returns>An iterator to go through the databases.</returns>
+        public abstract FeedIterator<CosmosDatabaseSettings> GetDatabasesIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 

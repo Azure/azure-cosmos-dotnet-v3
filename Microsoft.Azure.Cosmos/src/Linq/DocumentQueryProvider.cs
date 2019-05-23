@@ -14,13 +14,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
-    internal interface IDocumentQueryProvider : IQueryProvider
-    {
-        Task<TResult> ExecuteAsync<TResult>(
-            Expression expression,
-            CancellationToken cancellationToken = default(CancellationToken));
-    }
-
     internal sealed class DocumentQueryProvider : IDocumentQueryProvider
     {
         private readonly IDocumentQueryClient client;
@@ -64,9 +57,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         public IQueryable CreateQuery(Expression expression)
         {
             Type expressionType = TypeSystem.GetElementType(expression.Type);
-            Type DocumentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(expressionType);
+            Type documentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(expressionType);
             return (IQueryable)Activator.CreateInstance(
-                DocumentQueryType,
+                documentQueryType,
                 this.client,
                 this.resourceTypeEnum,
                 this.resourceType,
@@ -79,9 +72,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         //Sync execution of query via direct invoke on IQueryProvider.
         public TResult Execute<TResult>(Expression expression)
         {
-            Type DocumentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
+            Type documentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
             DocumentQuery<TResult> documentQuery = (DocumentQuery<TResult>)Activator.CreateInstance(
-                DocumentQueryType,
+                documentQueryType,
                 this.client,
                 this.resourceTypeEnum,
                 this.resourceType,
@@ -97,9 +90,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         //Sync execution of query via direct invoke on IQueryProvider.
         public object Execute(Expression expression)
         {
-            Type DocumentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(object));
+            Type documentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(object));
             DocumentQuery<object> documentQuery = (DocumentQuery<object>)Activator.CreateInstance(
-                DocumentQueryType,
+                documentQueryType,
                 this.client,
                 this.resourceTypeEnum,
                 this.resourceType,
@@ -116,9 +109,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             Expression expression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Type DocumentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
+            Type documentQueryType = typeof(DocumentQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
             DocumentQuery<TResult> documentQuery = (DocumentQuery<TResult>)Activator.CreateInstance(
-                DocumentQueryType,
+                documentQueryType,
                 this.client,
                 this.resourceTypeEnum,
                 this.resourceType,
@@ -131,5 +124,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<TResult> result = await documentQuery.ExecuteAllAsync();
             return result.FirstOrDefault();
         }
+    }
+
+    internal interface IDocumentQueryProvider : IQueryProvider
+    {
+        Task<TResult> ExecuteAsync<TResult>(
+            Expression expression,
+            CancellationToken cancellationToken = default(CancellationToken));
     }
 }

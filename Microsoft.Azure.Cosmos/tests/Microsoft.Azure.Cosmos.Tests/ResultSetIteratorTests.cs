@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            FeedIterator<CosmosConflictSettings> feedIterator = container.GetConflictsIterator();
+            FeedIterator<CosmosConflictSettings> feedIterator = container.Conflicts.GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
             Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTrigger), responseSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosTriggerSettings), responseSettings.ResourceType);
         }
 
         [TestMethod]
@@ -135,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
-            FeedIterator feedIterator = container.GetConflictsStreamIterator();
+            FeedIterator feedIterator = container.Conflicts.GetConflictsStreamIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -164,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
             Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTrigger), responseSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosTriggerSettings), responseSettings.ResourceType);
         }
 
         private Task<CosmosResponseMessage> NextResultSetDelegate(
