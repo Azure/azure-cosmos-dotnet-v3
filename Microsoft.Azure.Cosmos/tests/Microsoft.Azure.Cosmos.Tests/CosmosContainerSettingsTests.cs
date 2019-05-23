@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ValidateSerialization()
         {
-            CosmosDefaultJsonSerializer jsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             CosmosContainerSettings containerSettings = new CosmosContainerSettings("TestContainer", "/partitionKey");
             Stream basic = jsonSerializer.ToStream<CosmosContainerSettings>(containerSettings);
             CosmosContainerSettings response = jsonSerializer.FromStream<CosmosContainerSettings>(basic);

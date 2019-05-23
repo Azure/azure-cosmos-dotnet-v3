@@ -42,7 +42,8 @@ namespace Microsoft.Azure.Cosmos
         {
             using (stream)
             {
-                IEnumerable<TInput> resources = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream).Data;
+                CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream);
+                IEnumerable<TInput> resources = response.Data;
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     resource: resources,
                     responseMessageHeaders: responseMessageHeaders,

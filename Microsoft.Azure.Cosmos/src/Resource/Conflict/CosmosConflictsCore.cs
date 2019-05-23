@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
                         writer.Write(cosmosConflict.Content);
                         writer.Flush();
                         stream.Position = 0;
-                        return this.clientContext.JsonSerializer.FromStream<T>(stream);
+                        return this.clientContext.CosmosSerializer.FromStream<T>(stream);
                     }
                 }
             }
