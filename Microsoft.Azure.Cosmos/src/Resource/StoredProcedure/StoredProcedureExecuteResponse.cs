@@ -11,12 +11,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// The cosmos stored procedure response
     /// </summary>
-    public class StoredProcedureResponse : Response<CosmosStoredProcedureSettings>
+    public class StoredProcedureExecuteResponse<T> : Response<T>
     {
         /// <summary>
-        /// Create a <see cref="StoredProcedureResponse"/> as a no-op for mock testing
+        /// Create a <see cref="StoredProcedureExecuteResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        public StoredProcedureResponse()
+        public StoredProcedureExecuteResponse() 
             : base()
         {
         }
@@ -25,14 +25,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// A private constructor to ensure the factory is used to create the object.
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
-        internal StoredProcedureResponse(
+        internal StoredProcedureExecuteResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosStoredProcedureSettings cosmosStoredProcedureSettings)
-            : base(
-               httpStatusCode,
+           T response) 
+            : base(httpStatusCode,
                headers,
-               cosmosStoredProcedureSettings)
+               response)
         {
         }
 
@@ -45,12 +44,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public virtual string SessionToken => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
 
         /// <summary>
-        /// Get <see cref="CosmosStoredProcedureSettings"/> implictly from <see cref="StoredProcedureResponse"/>
+        /// Gets the output from stored procedure console.log() statements.
         /// </summary>
-        /// <param name="response">CosmosUserDefinedFunctionResponse</param>
-        public static implicit operator CosmosStoredProcedureSettings(StoredProcedureResponse response)
+        /// <value>
+        /// Output from console.log() statements in a stored procedure.
+        /// </value>
+        /// <seealso cref="StoredProcedureRequestOptions.EnableScriptLogging"/>
+        public virtual string ScriptLog
         {
-            return response.Resource;
+            get
+            {
+                string logResults = this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.LogResults);
+                return string.IsNullOrEmpty(logResults) ? logResults : Uri.UnescapeDataString(logResults);
+            }
         }
     }
 }
