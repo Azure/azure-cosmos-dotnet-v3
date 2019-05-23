@@ -15,8 +15,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class CosmosException : Exception
     {
-        private readonly CosmosResponseMessageHeaders Headers = null;
-
         internal CosmosException(
             HttpStatusCode statusCode,
             string message,
@@ -111,6 +109,11 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the internal error object
         /// </summary>
         internal virtual Error Error { get; }
+
+        /// <summary>
+        /// Gets the internal headers
+        /// </summary>
+        internal virtual CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
