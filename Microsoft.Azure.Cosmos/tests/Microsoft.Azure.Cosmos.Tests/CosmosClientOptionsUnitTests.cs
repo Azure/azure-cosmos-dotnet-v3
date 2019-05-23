@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosJsonSerializer defaultSerializer = cosmosClient.ClientOptions.SettingsSerializer;
             CosmosJsonSerializer mockJsonSerializer = new Mock<CosmosJsonSerializer>().Object;
-            cosmosClientBuilder.UseCustomJsonSerializer(mockJsonSerializer);
+            cosmosClientBuilder.WithCustomJsonSerializer(mockJsonSerializer);
             var cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
             Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.SettingsSerializer);
             Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.CosmosSerializer);
