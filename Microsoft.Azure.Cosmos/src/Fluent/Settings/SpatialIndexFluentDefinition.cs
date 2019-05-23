@@ -9,23 +9,23 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// Spatial index fluent definition.
     /// </summary>
-    /// <seealso cref="SpatialSpec"/>
+    /// <seealso cref="SpatialPath"/>
     public class SpatialIndexFluentDefinition<T>
     {
-        private readonly SpatialSpec spatialSpec = new SpatialSpec();
+        private readonly SpatialPath spatialSpec = new SpatialPath();
         private readonly T parent;
-        private readonly Action<SpatialSpec> attachCallback;
+        private readonly Action<SpatialPath> attachCallback;
 
         internal SpatialIndexFluentDefinition(
             T parent,
-            Action<SpatialSpec> attachCallback)
+            Action<SpatialPath> attachCallback)
         {
             this.parent = parent;
             this.attachCallback = attachCallback;
         }
 
         /// <summary>
-        /// Adds a path to the current <see cref="SpatialSpec"/> definition.
+        /// Adds a path to the current <see cref="SpatialPath"/> definition.
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
         /// <returns>An instance of the current <see cref="SpatialIndexFluentDefinition{T}"/>.</returns>
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Add a path to the current <see cref="SpatialSpec"/> definition with a particular set of <see cref="SpatialType"/>s.
+        /// Add a path to the current <see cref="SpatialPath"/> definition with a particular set of <see cref="SpatialType"/>s.
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
         /// <param name="spatialTypes">Set of <see cref="SpatialType"/> to apply to the path.</param>
