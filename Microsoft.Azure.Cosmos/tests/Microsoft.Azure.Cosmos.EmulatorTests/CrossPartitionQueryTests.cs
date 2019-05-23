@@ -1226,7 +1226,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxItemCount = maxItemCount
                         };
 
-                        List<JToken> queryResults = await RunQuery<JToken>(
+                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
                             container,
                             query,
                             maxDegreeOfParallelism,
@@ -1294,7 +1294,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxItemCount = maxItemCount,
                     };
 
-                    List<JToken> queryResults = await RunQuery<JToken>(
+                    List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
                         container,
                         "SELECT * FROM c ORDER BY c._ts",
                         maxDegreeOfParallelism,
@@ -1341,7 +1341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    await RunQuery<JToken>(
+                    await CrossPartitionQueryTests.RunQuery<JToken>(
                         container,
                         unsupportedQuery,
                         maxConcurrency: 10,
@@ -1547,7 +1547,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (Tuple<string, object> data in datum)
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
-                    dynamic aggregate = (await RunQuery<dynamic>(
+                    dynamic aggregate = (await CrossPartitionQueryTests.RunQuery<dynamic>(
                         container,
                         query)).Single();
                     object expected = data.Item2;
@@ -2759,7 +2759,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableCrossPartitionQuery = true
             };
 
-            List<Document> queryEmptyResult = await RunQuery<Document>(
+            List<Document> queryEmptyResult = await CrossPartitionQueryTests.RunQuery<Document>(
                 container,
                 emptyQueryText,
                 maxConcurrency: 1);
@@ -3020,7 +3020,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         expectedResults = expectedResults.Skip(offsetCount);
                         expectedResults = expectedResults.Take(limitCount);
 
-                        List<JToken> queryResults = await RunQuery<JToken>(
+                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
                             container,
                             query,
                             queryRequestOptions: queryRequestOptions);
@@ -3627,7 +3627,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 MaxBufferedItemCount = 1000,
                             };
 
-                            List<List<object>> actual = await RunQuery<List<object>>(
+                            List<List<object>> actual = await CrossPartitionQueryTests.RunQuery<List<object>>(
                                 container,
                                 query,
                                 maxItemCount: 3,
