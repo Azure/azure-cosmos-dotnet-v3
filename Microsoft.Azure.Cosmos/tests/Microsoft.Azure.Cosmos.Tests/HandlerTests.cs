@@ -103,11 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Properties = new Dictionary<string, object>(new List<KeyValuePair<string, object>> {
                     new KeyValuePair<string, object>(PropertyKey, propertyValue)
                 }),
-                AccessCondition = new AccessCondition
-                {
-                    Type = AccessConditionType.IfMatch,
-                    Condition = Condition
-                }
+                IfMatchEtag = Condition,
             };
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -136,11 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string SessionToken = "test";
             ItemRequestOptions options = new ItemRequestOptions
             {
-                AccessCondition = new AccessCondition
-                {
-                    Type = AccessConditionType.IfNoneMatch,
-                    Condition = Condition
-                },
+                IfNoneMatchEtag = Condition,
                 ConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.Eventual,
                 SessionToken = SessionToken
             };
