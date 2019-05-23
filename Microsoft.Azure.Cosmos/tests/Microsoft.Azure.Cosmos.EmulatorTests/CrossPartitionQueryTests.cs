@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     cosmosContainer = await this.CreateNonPartitionedContainer(indexingPolicy);
                     break;
 
-                case CollectionTypes.NonPartitioned | CollectionTypes.SinglePartition:
+                case CollectionTypes.SinglePartition:
                     cosmosContainer = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
                     break;
 
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     indexingPolicy));
                                 break;
 
-                            case CollectionTypes.NonPartitioned | CollectionTypes.SinglePartition:
+                            case CollectionTypes.SinglePartition:
                                 createContainerTask = Task.Run(() => this.CreateSinglePartitionContainerAndIngestDocuments(
                                     documents, 
                                     partitionKey, 
