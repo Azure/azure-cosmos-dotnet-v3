@@ -467,7 +467,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    await documentProducerTree.MoveNextIfNotSplit(token);
+                    await documentProducerTree.MoveNextIfNotSplitAsync(token);
                 }
 
                 if (filterCallback != null)
@@ -885,7 +885,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>A task to await on.</returns>
             public override Task StartAsync(CancellationToken token)
             {
-                return this.producer.BufferMoreDocuments(token);
+                return this.producer.BufferMoreDocumentsAsync(token);
             }
 
             /// <summary>

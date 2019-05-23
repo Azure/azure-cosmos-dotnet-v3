@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query
         protected override async Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-            PartitionKeyRangeCache partitionKeyRangeCache = await this.Client.GetPartitionKeyRangeCache();
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.Client.GetPartitionKeyRangeCacheAsync();
             IDocumentClientRetryPolicy retryPolicyInstance = this.Client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             retryPolicyInstance = new InvalidPartitionExceptionRetryPolicy(collectionCache, retryPolicyInstance);
             if (base.ResourceTypeEnum.IsPartitioned())
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.providedRangesCache[collection.ResourceId] = providedRanges;
             }
 
-            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                     providedRanges,
                     routingMapProvider,
                     collection.ResourceId,

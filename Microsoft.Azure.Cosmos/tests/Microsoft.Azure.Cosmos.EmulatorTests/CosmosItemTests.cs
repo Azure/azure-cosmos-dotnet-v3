@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetRID(default(CancellationToken));
+                await testContainer.GetRIDAsync(default(CancellationToken));
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -629,7 +629,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
                 // There should only be one range since the EPK option is set.
-                List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRanges(
+                List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                     queryClient: new CosmosQueryClientCore(container.ClientContext, container),
                     resourceLink: container.LinkUri.OriginalString,
                     partitionedQueryExecutionInfo: null,

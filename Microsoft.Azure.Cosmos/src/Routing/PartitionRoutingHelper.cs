@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// that collection was resolved to outdated Rid by name. Also null can be returned if <paramref name="rangeFromContinuationToken"/>
         /// is not found - this means it was split.
         /// </returns>
-        public virtual async Task<ResolvedRangeInfo> TryGetTargetRangeFromContinuationTokenRange(
+        public virtual async Task<ResolvedRangeInfo> TryGetTargetRangeFromContinuationTokenRangeAsync(
             IReadOnlyList<Range<string>> providedPartitionKeyRanges,
             IRoutingMapProvider routingMapProvider,
             string collectionRid,
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (providedPartitionKeyRanges.Count == 0)
             {
                 return new ResolvedRangeInfo(
-                    await routingMapProvider.TryGetRangeByEffectivePartitionKey(
+                    await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(
                         collectionRid,
                         PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
                     suppliedTokens);
@@ -191,11 +191,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Range<string>.MinComparer.Instance);
 
                 return new ResolvedRangeInfo(
-                    await routingMapProvider.TryGetRangeByEffectivePartitionKey(collectionRid, minimumRange.Min),
+                    await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, minimumRange.Min),
                     suppliedTokens);
             }
 
-            PartitionKeyRange targetPartitionKeyRange = await routingMapProvider.TryGetRangeByEffectivePartitionKey(collectionRid, rangeFromContinuationToken.Min);
+            PartitionKeyRange targetPartitionKeyRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, rangeFromContinuationToken.Min);
 
             if (targetPartitionKeyRange == null)
             {
@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return new ResolvedRangeInfo(targetPartitionKeyRange, suppliedTokens);
         }
 
-        public static async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, IRoutingMapProvider routingMapProvider, string collectionRid)
+        public static async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, IRoutingMapProvider routingMapProvider, string collectionRid)
         {
             return (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
         }
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             return true;
                         }
 
-                        PartitionKeyRange nextRange = await routingMapProvider.TryGetRangeByEffectivePartitionKey(collectionRid, max);
+                        PartitionKeyRange nextRange = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(collectionRid, max);
                         if (nextRange == null)
                         {
                             return false;

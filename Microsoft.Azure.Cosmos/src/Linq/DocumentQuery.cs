@@ -252,11 +252,15 @@ namespace Microsoft.Azure.Cosmos.Linq
         public IEnumerator<T> GetEnumerator()
         {
             using (IDocumentQueryExecutionContext localQueryExecutionContext =
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
                 TaskHelper.InlineIfPossible(() => this.CreateDocumentQueryExecutionContextAsync(false, CancellationToken.None), null).Result)
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
                     DocumentFeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(CancellationToken.None), null).Result;
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
                     DocumentFeedResponse<T> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<T>(
                         feedResponse, 
                         this.resourceTypeEnum,

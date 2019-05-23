@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount,
                 continuationToken,
                 options: null,
-                nextDelegate: this.DatabaseFeedRequestExecutor);
+                nextDelegate: this.DatabaseFeedRequestExecutorAsync);
         }
 
         public override CosmosDatabase this[string id] =>
@@ -134,10 +134,10 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this[databaseSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this[databaseSettings.Id], response);
         }
 
-        private Task<FeedResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutor(
+        private Task<FeedResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,

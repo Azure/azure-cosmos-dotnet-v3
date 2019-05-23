@@ -29,10 +29,10 @@ namespace Microsoft.Azure.Cosmos
                 this.jsonSerializer);
         }
 
-        internal Task<ItemResponse<T>> CreateItemResponse<T>(
+        internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 T item = this.ToObjectInternal<T>(cosmosResponseMessage);
                 return new ItemResponse<T>(
@@ -42,11 +42,11 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<ContainerResponse> CreateContainerResponse(
+        internal Task<ContainerResponse> CreateContainerResponseAsync(
             CosmosContainer container,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosContainerSettings settings = this.ToObjectInternal<CosmosContainerSettings>(cosmosResponseMessage);
                 return new ContainerResponse(
@@ -57,11 +57,11 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseResponse(
+        internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
             CosmosDatabase database,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosDatabaseSettings settings = this.ToObjectInternal<CosmosDatabaseSettings>(cosmosResponseMessage);
                 return new DatabaseResponse(
@@ -72,9 +72,9 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponse<T>(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponseAsync<T>(Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 T item = this.ToObjectInternal<T>(cosmosResponseMessage);
                 return new StoredProcedureExecuteResponse<T>(
@@ -84,9 +84,9 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<StoredProcedureResponse> CreateStoredProcedureResponse(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosStoredProcedureSettings cosmosStoredProcedure = this.ToObjectInternal<CosmosStoredProcedureSettings>(cosmosResponseMessage);
                 return new StoredProcedureResponse(
@@ -96,9 +96,9 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<TriggerResponse> CreateTriggerResponse(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<TriggerResponse> CreateTriggerResponseAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosTriggerSettings settings = this.ToObjectInternal<CosmosTriggerSettings>(cosmosResponseMessage);
                 return new TriggerResponse(
@@ -108,9 +108,9 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponseAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 CosmosUserDefinedFunctionSettings settings = this.ToObjectInternal<CosmosUserDefinedFunctionSettings>(cosmosResponseMessage);
                 return new UserDefinedFunctionResponse(
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<T> MessageHelper<T>(Task<CosmosResponseMessage> cosmosResponseTask, Func<CosmosResponseMessage, T> createResponse)
+        internal Task<T> ProcessMessageAsync<T>(Task<CosmosResponseMessage> cosmosResponseTask, Func<CosmosResponseMessage, T> createResponse)
         {
             return cosmosResponseTask.ContinueWith((action) =>
             {

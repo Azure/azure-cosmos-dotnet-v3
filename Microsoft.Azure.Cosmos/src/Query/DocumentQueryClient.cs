@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (this.queryPartitionProvider == null)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    this.queryPartitionProvider = new QueryPartitionProvider(await this.innerClient.GetQueryEngineConfiguration());
+                    this.queryPartitionProvider = new QueryPartitionProvider(await this.innerClient.GetQueryEngineConfigurationAsync());
                 }
 
                 this.semaphore.Release();
@@ -128,13 +128,13 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.innerClient.GetDesiredConsistencyLevelAsync();
         }
 
-        public Task EnsureValidOverwrite(ConsistencyLevel requestedConsistencyLevel)
+        public Task EnsureValidOverwriteAsync(ConsistencyLevel requestedConsistencyLevel)
         {
             this.innerClient.EnsureValidOverwrite(requestedConsistencyLevel);
             return CompletedTask.Instance;
         }
 
-        public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
+        public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
         {
             return this.innerClient.GetPartitionKeyRangeCacheAsync();
         }
