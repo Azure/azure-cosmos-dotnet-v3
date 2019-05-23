@@ -119,6 +119,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestConflictResolutionPolicy()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+
+            ContainerResponse containerResponse =
+                await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
+                    .WithConflictResolution()
+                        .WithLastWriterWinsResolution("/lww")
+                        .Attach()
+                    .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+            CosmosContainerSettings cosmosContainerSettings = containerResponse.Resource;
+            Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
+            Assert.AreEqual(ConflictResolutionMode.LastWriterWins, cosmosContainerSettings.ConflictResolutionPolicy.Mode);
+            Assert.AreEqual("/lww", cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath);
+            Assert.IsTrue(string.IsNullOrEmpty(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure));
+
+            // Delete container
+            await containerResponse.Container.DeleteAsync();
+
+            // Re-create with custom policy
+            string sprocName = "customresolsproc";
+            containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
+                    .WithConflictResolution()
+                        .WithCustomStoredProcedureResolution(sprocName)
+                        .Attach()
+                    .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+            cosmosContainerSettings = containerResponse.Resource;
+            Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
+            Assert.AreEqual(ConflictResolutionMode.Custom, cosmosContainerSettings.ConflictResolutionPolicy.Mode);
+            Assert.AreEqual(sprocName, cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure);
+            Assert.IsTrue(string.IsNullOrEmpty(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath));
+        }
+
+        [TestMethod]
         public async Task WithIndexingPolicy()
         {
             string containerName = Guid.NewGuid().ToString();
