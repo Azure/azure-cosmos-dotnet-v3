@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,

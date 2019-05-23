@@ -87,14 +87,14 @@ namespace Microsoft.Azure.Cosmos
                     id,
                     keyName => new CosmosDatabaseCore(this.ClientContext, keyName));
 
-        public override Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
+        public override Task<CosmosResponseMessage> CreateDatabaseAsStreamAsync(
                 Stream streamPayload,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.CreateDatabaseStreamAsync(
+            Task<CosmosResponseMessage> response = this.CreateDatabaseAsStreamAsync(
                 streamPayload: CosmosResource.ToStream(databaseSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
