@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             return new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                 this,
-                (spatialIndex) => this.AddSpatialIndex(spatialIndex));
+                (spatialIndex) => this.AddSpatialPath(spatialIndex));
         }
 
         /// <summary>
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.indexingPolicy.CompositeIndexes.Add(compositePaths);
         }
 
-        private void AddSpatialIndex(SpatialSpec spatialSpec)
+        private void AddSpatialPath(SpatialPath spatialSpec)
         {
             this.indexingPolicy.SpatialIndexes.Add(spatialSpec);
         }
