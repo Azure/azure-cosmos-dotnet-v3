@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public void AttachReturnsCorrectResponse_WithSpatialType()
         {
             Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>>();
-            Action<SpatialSpec> callback = (spatialspec) =>
+            Action<SpatialPath> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
                 Assert.AreEqual(2, spatialspec.SpatialTypes.Count);
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public void AttachReturnsCorrectResponse_WithNoSpatialType()
         {
             Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>>();
-            Action<SpatialSpec> callback = (spatialspec) =>
+            Action<SpatialPath> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
                 Assert.AreEqual(0, spatialspec.SpatialTypes.Count);

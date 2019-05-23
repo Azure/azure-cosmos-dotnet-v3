@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.indexingPolicy.CompositeIndexes.Add(compositePaths);
         }
 
-        private void AddSpatialIndex(SpatialSpec spatialSpec)
+        private void AddSpatialIndex(SpatialPath spatialSpec)
         {
             this.indexingPolicy.SpatialIndexes.Add(spatialSpec);
         }
