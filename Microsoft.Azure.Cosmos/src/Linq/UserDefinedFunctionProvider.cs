@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     /// <summary>
     /// Helper class to invoke User Defined Functions via Linq queries in the Azure Cosmos DB service.

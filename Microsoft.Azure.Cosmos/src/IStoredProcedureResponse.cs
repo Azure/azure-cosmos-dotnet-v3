@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Specialized;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     /// <summary>
     /// Interface exposed for mocking purposes for the Azure Cosmos DB service.
