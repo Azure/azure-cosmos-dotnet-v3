@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -486,8 +487,9 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
+            object partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken);
             return await this.ProcessItemStreamAsync(
-                await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken),
+                partitionKey,
                 null,
                 streamPayload,
                 OperationType.Create,
@@ -553,21 +555,34 @@ namespace Microsoft.Azure.Cosmos
 
                 if (cosmosObject == null)
                 {
-                    throw new ArgumentNullException(nameof(cosmosObject));
+                    throw new ArgumentNullException("Partition key path not found.");
                 }
             }
             
-            return this.CosmosElementToObject(cosmosObject[tokens[tokens.Length - 1]]);
+            return this.CosmosElementToObject(cosmosObject[tokens.Last()]);
         }
 
-        internal async Task<Tuple<bool, object, Stream>> GetItemStreamAsync<T>(T item, ItemRequestOptions itemRequestOptions, CancellationToken cancellation = default(CancellationToken))
+        internal async Task<Tuple<bool, object, Stream>> GetItemStreamAsync<T>(T item, 
+            ItemRequestOptions itemRequestOptions, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            //until https://github.com/Azure/azure-cosmos-dotnet-v3/pull/291 is merged and can just compare DefaultJsonSerializer and UserJsonSerializer
-            CosmosJsonSerializerWrapper wrapperSerializer = (this.clientContext.JsonSerializer as CosmosJsonSerializerWrapper);
-            CosmosDefaultJsonSerializer defaultSerializer = wrapperSerializer.InternalJsonSerializer as CosmosDefaultJsonSerializer;
-            if (defaultSerializer != null && itemRequestOptions?.PartitionKey == null)
+            if(itemRequestOptions?.PartitionKey != null)
             {
-                Stream stream = defaultSerializer.ToStream<T>(item, await this.container.GetPartitionKeyPathTokensAsync(cancellation), out object partitionKey);
+                return new Tuple<bool, object, Stream>(false, itemRequestOptions?.PartitionKey, this.clientContext.JsonSerializer.ToStream<T>(item));
+            }
+
+            //until https://github.com/Azure/azure-cosmos-dotnet-v3/pull/291 is merged and can just compare DefaultJsonSerializer and UserJsonSerializer
+            CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = (this.clientContext.JsonSerializer as CosmosJsonSerializerWrapper);
+
+            if(cosmosJsonSerializerWrapper == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosJsonSerializerWrapper));
+            }
+
+            CosmosDefaultJsonSerializer defaultSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer as CosmosDefaultJsonSerializer;
+            if (defaultSerializer != null)
+            {
+                Stream stream = defaultSerializer.ToStream<T>(item, await this.container.GetPartitionKeyPathTokensAsync(cancellationToken), out object partitionKey);
                 return new Tuple<bool, object, Stream>(true, partitionKey, stream);                                    
             }
             else
@@ -610,7 +625,7 @@ namespace Microsoft.Azure.Cosmos
                 return cosmosGuid.Value;
             }
             
-            return null;
+            throw new ArgumentException("Partition key is invalid.");
         }
 
         private Task<CosmosResponseMessage> ItemStreamFeedRequestExecutor(
@@ -674,7 +689,9 @@ namespace Microsoft.Azure.Cosmos
             return (CosmosResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
         }
 
-        internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
+        internal Uri GetResourceUri(RequestOptions requestOptions, 
+            OperationType operationType, 
+            string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {

@@ -212,7 +212,22 @@ namespace Microsoft.Azure.Cosmos
         internal virtual async Task<Collection<string>> GetPartitionKeyPathsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
-            return containerSettings?.PartitionKey?.Paths;            
+            if (containerSettings ==  null)
+            {
+                throw new ArgumentNullException(nameof(containerSettings));
+            }
+            
+            if (containerSettings.PartitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(containerSettings.PartitionKey));
+            }
+
+            if (containerSettings.PartitionKey.Paths == null)
+            {
+                throw new ArgumentNullException(nameof(containerSettings.PartitionKey.Paths));
+            }
+
+            return containerSettings.PartitionKey.Paths;            
         }
 
         internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))

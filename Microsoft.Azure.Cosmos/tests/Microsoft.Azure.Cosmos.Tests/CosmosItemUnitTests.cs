@@ -157,8 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new { nested = new { pk = char.MaxValue } },
                 new { nested = new { pk = "test" } },
                 new { nested = new { pk = dateTime } },
-                new { nested = new { pk = guid } },
-                new { nested = new { pk = (object)null } }
+                new { nested = new { pk = guid } },                
             };
             
             foreach(dynamic poco in supportedTypesToTest)
@@ -193,8 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     else
                     {
                         Assert.AreEqual(poco.nested.pk.ToString(), (string)pk);
-                    }
-                    
+                    }                    
                 }                
             }
 
@@ -211,6 +209,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     await items.GetPartitionKeyValueFromStreamAsync(new CosmosDefaultJsonSerializer().ToStream(poco), new ItemRequestOptions());
                 });                                
             }
+
+            //null should throw
+            await Assert.ThrowsExceptionAsync<ArgumentException>(async () => {
+                await items.GetPartitionKeyValueFromStreamAsync(new CosmosDefaultJsonSerializer().ToStream(new { nested = new { pk = (object)null } }), new ItemRequestOptions());
+            });
         }
 
         private async Task VerifyItemNullExceptions(

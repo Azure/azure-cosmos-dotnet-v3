@@ -20,13 +20,15 @@ namespace Microsoft.Azure.Cosmos.Json
     internal class PartitionKeyIntercepterJsonTextWriter : JsonTextWriter
     {
         private readonly ConcurrentQueue<string> partitionKeyPathTokens;
+
         /// <summary>
         /// Initializes a new instance of the Microsoft.Azure.Cosmos.Json class using
         ///  the specified System.IO.TextWriter.
         /// </summary>
         /// <param name="textWriter">The System.IO.TextWriter to write to.</param>
         /// <param name="partitionKeyPathTokens">The partition key path tokens.</param>
-        public PartitionKeyIntercepterJsonTextWriter(TextWriter textWriter, IList<string> partitionKeyPathTokens) : base(textWriter)
+        public PartitionKeyIntercepterJsonTextWriter(TextWriter textWriter, 
+            IList<string> partitionKeyPathTokens) : base(textWriter)
         {
             if(partitionKeyPathTokens != null)
             {
@@ -37,7 +39,8 @@ namespace Microsoft.Azure.Cosmos.Json
         public object PartitionKey { get; private set; }
         public bool HasPartitionKey { get; private set; }
 
-        public override void WritePropertyName(string name, bool escape)
+        public override void WritePropertyName(string name, 
+            bool escape)
         {
             IsPartOfPartitionKeyPath(name, escape);
             base.WritePropertyName(name, escape);            
@@ -49,13 +52,16 @@ namespace Microsoft.Azure.Cosmos.Json
             base.WritePropertyName(name);
         }
 
-        public override Task WritePropertyNameAsync(string name, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WritePropertyNameAsync(string name, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             IsPartOfPartitionKeyPath(name);
             return base.WritePropertyNameAsync(name, cancellationToken);
         }
 
-        public override Task WritePropertyNameAsync(string name, bool escape, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WritePropertyNameAsync(string name, 
+            bool escape, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             IsPartOfPartitionKeyPath(name, escape);
             return base.WritePropertyNameAsync(name, escape, cancellationToken);
@@ -211,260 +217,300 @@ namespace Microsoft.Azure.Cosmos.Json
             base.WriteValue(value);
         }
 
-        public override Task WriteValueAsync(char value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(char value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
 
-        public override Task WriteValueAsync(char? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(char? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
 
-        public override Task WriteValueAsync(bool? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(bool? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
 
-        public override Task WriteValueAsync(sbyte value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(sbyte value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
 
-        public override Task WriteValueAsync(object value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(object value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(long? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(long? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
 
-        public override Task WriteValueAsync(long value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(long value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(int? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(int? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(int value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(int value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(Guid? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(Guid? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(Guid value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(Guid value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(bool value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(bool value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(float? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(float? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(double? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(double? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(double value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(double value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(decimal? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(decimal? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(decimal value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(decimal value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(DateTimeOffset? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(DateTimeOffset? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(DateTimeOffset value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(DateTimeOffset value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(DateTime? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(DateTime? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(DateTime value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(DateTime value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(float value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(float value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(short value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(short value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(sbyte? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(sbyte? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(string value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(string value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(byte value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(byte value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(byte? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(byte? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
        
-        public override Task WriteValueAsync(ushort? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(ushort? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(ushort value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(ushort value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(short? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(short? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(byte[] value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(byte[] value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(Uri value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(Uri value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(ulong? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(ulong? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(ulong value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(ulong value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
        
-        public override Task WriteValueAsync(uint? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(uint? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(uint value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(uint value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(TimeSpan? value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(TimeSpan? value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
         
-        public override Task WriteValueAsync(TimeSpan value, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task WriteValueAsync(TimeSpan value, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             SetPartitionKey(value);
             return base.WriteValueAsync(value, cancellationToken);
         }
            
-        private bool SetPartitionKey(object value)
+        private void SetPartitionKey(object value)
         {
             if(partitionKeyPathTokens == null)
             {
-                return false;
+                return;
             }
 
             if(partitionKeyPathTokens.Count < 1 && !this.HasPartitionKey)
             {
                 this.PartitionKey = value;
                 HasPartitionKey = true;
-                return true;
+                return;
             }
 
-            return false;
+            return;
         }
-        private bool IsPartOfPartitionKeyPath(string value, bool escape = false)
+
+        private void IsPartOfPartitionKeyPath(string value, 
+            bool escape = false)
         {
             if(partitionKeyPathTokens == null)
             {
-                return false;
+                return;
             }
 
             if(partitionKeyPathTokens.Count < 1)
             {
-                return false;
+                return;
             }
 
             if (escape == false && partitionKeyPathTokens.TryPeek(out string pk))
@@ -472,11 +518,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 if (pk.Equals(value))
                 {
                     partitionKeyPathTokens.TryDequeue(out string result);
-                    return true;
+                    return;
                 }
             }
 
-            return false;
+            return;
         }
     }
 }
