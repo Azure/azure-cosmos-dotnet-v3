@@ -18,16 +18,21 @@ namespace Microsoft.Azure.Cosmos
         internal IDictionary<string, object> Properties { get; set; }
 
         /// <summary>
-        /// Gets or sets the condition (ETag) associated with the request in the Azure Cosmos DB service.
+        /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
-        /// <value>
-        /// The condition (ETag) associated with the request.
-        /// </value>
         /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="CosmosItems"/> such as <see cref="CosmosItems.ReplaceItemAsync{T}(object, string, T, ItemRequestOptions, System.Threading.CancellationToken)"/>
+        /// Most commonly used with the Delete* and Replace* methods of <see cref="CosmosContainer"/> such as <see cref="CosmosItems.ReplaceItemAsync{T}(object, string, T, ItemRequestOptions, System.Threading.CancellationToken)"/>
         /// but can be used with other methods like <see cref="CosmosItems.ReadItemAsync{T}(object, string, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
         /// </remarks>
-        public virtual AccessCondition AccessCondition { get; set; }
+        public virtual string IfMatchEtag { get; set; }
+
+        /// <summary>
+        /// Gets or sets the If-None-Match (ETag) associated with the request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// Most commonly used to detect changes to the resource
+        /// </remarks>
+        public virtual string IfNoneMatchEtag { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -43,12 +48,14 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (this.AccessCondition != null)
+            if (this.IfMatchEtag != null)
             {
-                string accessConditionHeaderName = (this.AccessCondition.Type == AccessConditionType.IfMatch) ?
-                        HttpConstants.HttpHeaders.IfMatch : HttpConstants.HttpHeaders.IfNoneMatch;
+                request.Headers.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatchEtag);
+            }
 
-                request.Headers.Add(accessConditionHeaderName, this.AccessCondition.Condition);
+            if (this.IfNoneMatchEtag != null)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
             }
         }
 

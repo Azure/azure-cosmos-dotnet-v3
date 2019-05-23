@@ -787,17 +787,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create an item
             ToDoActivity testItem = (await this.CreateRandomItems(1, randomPartitionKey: true)).First();
 
-            // Create an access condition that will fail because the etag will be different
-            AccessCondition accessCondition = new AccessCondition
-            {
-                // Random etag
-                Condition = Guid.NewGuid().ToString(),
-                Type = AccessConditionType.IfMatch
-            };
-
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
             {
-                AccessCondition = accessCondition
+                IfMatchEtag = Guid.NewGuid().ToString(),
             };
 
             try
