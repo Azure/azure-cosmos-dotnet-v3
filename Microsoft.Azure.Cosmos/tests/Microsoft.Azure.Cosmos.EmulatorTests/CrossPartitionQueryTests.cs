@@ -137,15 +137,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task<CosmosContainer> CreateNonPartitionedContainer(
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
-                throughput: 10000,
-                partitionKey: null,
-                indexingPolicy: indexingPolicy);
+            string containerName = Guid.NewGuid().ToString() + "container";
+            await CosmosItemTests.CreateNonPartitionedContainer(
+                this.database.Id, 
+                containerName,
+                indexingPolicy == null ? null : JsonConvert.SerializeObject(indexingPolicy));
 
-            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
-            Assert.AreEqual(1, ranges.Count());
-
-            return containerResponse;
+            return this.database.Containers[containerName];
         }
 
         private async Task<ContainerResponse> CreatePartitionedContainer(

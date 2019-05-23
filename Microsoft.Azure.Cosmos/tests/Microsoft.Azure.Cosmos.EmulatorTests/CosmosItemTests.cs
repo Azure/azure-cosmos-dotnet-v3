@@ -1065,7 +1065,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static async Task CreateNonPartitionedContainer(
             string dbName,
-            string containerName)
+            string containerName,
+            string indexingPolicyString = null)
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
@@ -1082,7 +1083,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Add("authorization", authHeader);
-            string containerDefinition = "{\n  \"id\": \"" + containerName + "\"\n}";
+            string containerDefinition = JsonConvert.SerializeObject(new DocumentCollection()
+            {
+                Id = containerName,
+                IndexingPolicy = indexingPolicyString != null ? JsonConvert.DeserializeObject<IndexingPolicy>(indexingPolicyString) : null
+            });
             StringContent containerContent = new StringContent(containerDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
             HttpResponseMessage response = await client.PostAsync(requestUri.ToString(), containerContent);
