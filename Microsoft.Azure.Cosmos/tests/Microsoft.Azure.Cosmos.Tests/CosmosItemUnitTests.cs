@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             dynamic poco = new { nested = new { pk = int.MaxValue } };
 
-            Tuple<bool, object, Stream> result = await items.GetItemStreamAsync(poco);
+            Tuple<bool, object, Stream> result = await items.GetItemStreamAsync(poco, null);
 
             Assert.IsTrue(result.Item1);
             Assert.AreEqual(poco.nested.pk, (int)result.Item2);
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             container = new CosmosContainerCore(context, database, "testContainer");
             items = new CosmosItemsCore(container.ClientContext, container);
 
-            result = await items.GetItemStreamAsync(poco);
+            result = await items.GetItemStreamAsync(poco, null);
 
             Assert.IsFalse(result.Item1);
         }
@@ -279,6 +279,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
                     await container.Items.CreateItemStreamAsync(
+                        partitionKey: null,
                         streamPayload: itemStream,
                         requestOptions: requestOptions);
                 }, "CreateItemAsync should throw ArgumentNullException without the correct request option set.");
@@ -293,14 +294,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
-                    await container.Items.UpsertItemStreamAsync(                        
+                    await container.Items.UpsertItemStreamAsync(
+                        partitionKey: null,
                         streamPayload: itemStream,
                         requestOptions: requestOptions);
                 }, "UpsertItemAsync should throw ArgumentNullException without the correct request option set.");
 
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
-                    await container.Items.ReplaceItemStreamAsync(                        
+                    await container.Items.ReplaceItemStreamAsync(
+                        partitionKey: null,
                         id: testItem.id,
                         streamPayload: itemStream,
                         requestOptions: requestOptions);
@@ -338,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(response);
             });
 
-            if(requestOptions != null)
+            if (requestOptions != null)
             {
                 requestOptions.PartitionKey = partitionKey;
             }
@@ -392,6 +395,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
                 using (CosmosResponseMessage streamResponse = await container.Items.CreateItemStreamAsync(
+                    partitionKey: partitionKey,
                     streamPayload: itemStream,
                     requestOptions: requestOptions))
                 {
@@ -414,7 +418,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.Items.UpsertItemStreamAsync(                    
+                using (CosmosResponseMessage streamResponse = await container.Items.UpsertItemStreamAsync(
+                    partitionKey: partitionKey,
                     streamPayload: itemStream,
                     requestOptions: requestOptions))
                 {
@@ -425,8 +430,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.Items.ReplaceItemStreamAsync(                    
-                    id: testItem.id,
+                using (CosmosResponseMessage streamResponse = await container.Items.ReplaceItemStreamAsync(
+                    partitionKey: partitionKey,
+                    id: testItem.id,                    
                     streamPayload: itemStream,
                     requestOptions: requestOptions))
                 {

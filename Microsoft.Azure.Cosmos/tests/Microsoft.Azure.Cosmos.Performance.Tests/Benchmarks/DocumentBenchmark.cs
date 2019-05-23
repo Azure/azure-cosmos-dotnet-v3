@@ -75,9 +75,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task UpsertItemAsStream()
         {
             this.baseStream.Position = 0;
-            var response = await this.container.Items.UpsertItemStreamAsync(                    
-                    this.baseStream,
-                    new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
+            var response = await this.container.Items.UpsertItemStreamAsync(
+                    Constants.ValidOperationId,
+                    this.baseStream);
             if ((int)response.StatusCode > 300 || response.Content.Length == 0)
             {
                 throw new Exception();

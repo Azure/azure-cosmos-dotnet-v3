@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }}";
 
                 using (CosmosResponseMessage createResponse = await this.Container.Items.CreateItemStreamAsync(
-                        CosmosReadFeedTests.GenerateStreamFromString(item),
-                        requestOptions: new ItemRequestOptions { PartitionKey = i.ToString() }))
+                        i.ToString(),
+                        CosmosReadFeedTests.GenerateStreamFromString(item)))
                 {
                     Assert.IsTrue(createResponse.IsSuccessStatusCode);
                 }
