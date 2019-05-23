@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.ReadStreamAsync(
+            Task<CosmosResponseMessage> response = this.ReadAsStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
+            Task<CosmosResponseMessage> response = this.DeleteAsStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override Task<CosmosResponseMessage> ReadStreamAsync(
+        public override Task<CosmosResponseMessage> ReadAsStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosResponseMessage> DeleteStreamAsync(
+        public override Task<CosmosResponseMessage> DeleteAsStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: this.LinkUri,
                 resourceType: ResourceType.Database,
                 operationType: operationType,

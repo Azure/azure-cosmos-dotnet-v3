@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.Scripts;
+
     /// <summary>
     /// Specifies the supported conflict resolution modes, as specified in <see cref="ConflictResolutionPolicy"/>
     /// </summary>

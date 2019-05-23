@@ -10,8 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;

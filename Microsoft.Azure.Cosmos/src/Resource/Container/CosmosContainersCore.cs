@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            Task<CosmosResponseMessage> response = this.CreateContainerStreamAsync(
+            Task<CosmosResponseMessage> response = this.CreateContainerAsStreamAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                         this.database, 
                         keyName));
 
-        public override Task<CosmosResponseMessage> CreateContainerStreamAsync(
+        public override Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
                     Stream streamPayload,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
                resourceUri: this.database.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.ReadFeed,

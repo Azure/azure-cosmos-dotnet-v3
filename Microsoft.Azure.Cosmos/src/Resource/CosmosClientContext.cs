@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
         /// in a resource can be unit tested.
         /// </summary>
-        internal abstract Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal abstract Task<CosmosResponseMessage> ProcessResourceOperationAsStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,

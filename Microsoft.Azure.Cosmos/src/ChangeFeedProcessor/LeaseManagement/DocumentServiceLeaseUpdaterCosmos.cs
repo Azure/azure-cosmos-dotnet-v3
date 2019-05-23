@@ -105,8 +105,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private ItemRequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
         {
-            var ifMatchCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = lease.ConcurrencyToken };
-            return new ItemRequestOptions { AccessCondition = ifMatchCondition };
+            return new ItemRequestOptions { IfMatchEtag = lease.ConcurrencyToken };
         }
     }
 }

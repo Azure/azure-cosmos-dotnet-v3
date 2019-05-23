@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task UpsertItemAsStream()
         {
             this.baseStream.Position = 0;
-            var response = await this.container.Items.UpsertItemStreamAsync(
+            var response = await this.container.Items.UpsertItemAsStreamAsync(
                     Constants.ValidOperationId,
                     this.baseStream);
             if ((int)response.StatusCode > 300 || response.Content.Length == 0)
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task ReadItemAsStream()
         {
-            var response = await this.container.Items.ReadItemStreamAsync(
+            var response = await this.container.Items.ReadItemAsStreamAsync(
                 Constants.ValidOperationId, 
                 Constants.ValidOperationId);
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)

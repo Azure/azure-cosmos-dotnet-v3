@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal override Task<CosmosResponseMessage> ProcessResourceOperationAsStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
