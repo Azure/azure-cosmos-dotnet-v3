@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
         /// <seealso cref="DefineContainer(string, string)"/>
-        public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
+        public abstract Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
             Stream streamPayload,
             int? throughput = null,
             RequestOptions requestOptions = null,

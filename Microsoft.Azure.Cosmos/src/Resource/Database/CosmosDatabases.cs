@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
-        public abstract Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
+        public abstract Task<CosmosResponseMessage> CreateDatabaseAsStreamAsync(
                Stream streamPayload,
                int? throughput = null,
                RequestOptions requestOptions = null,

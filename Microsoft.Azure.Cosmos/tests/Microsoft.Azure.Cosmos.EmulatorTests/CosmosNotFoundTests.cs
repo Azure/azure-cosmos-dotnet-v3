@@ -29,8 +29,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateDatabaseNotFoundResponse()
         {
             CosmosDatabase database = CosmosNotFoundTests.client.Databases[DoesNotExist];
-            this.VerifyNotFoundResponse(await database.ReadStreamAsync());
-            this.VerifyNotFoundResponse(await database.DeleteStreamAsync());
+            this.VerifyNotFoundResponse(await database.ReadAsStreamAsync());
+            this.VerifyNotFoundResponse(await database.DeleteAsStreamAsync());
         }
 
         [TestMethod]
@@ -74,15 +74,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (dbNotExist)
             {
                 Stream create = jsonSerializer.ToStream<CosmosContainerSettings>(new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk"));
-                this.VerifyNotFoundResponse(await database.Containers.CreateContainerStreamAsync(create, throughput: 500));
+                this.VerifyNotFoundResponse(await database.Containers.CreateContainerAsStreamAsync(create, throughput: 500));
             }
 
             CosmosContainer doesNotExistContainer = database.Containers[DoesNotExist];
-            this.VerifyNotFoundResponse(await doesNotExistContainer.ReadStreamAsync());
+            this.VerifyNotFoundResponse(await doesNotExistContainer.ReadAsStreamAsync());
 
             Stream replace = jsonSerializer.ToStream<CosmosContainerSettings>(new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk"));
-            this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceStreamAsync(replace));
-            this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteStreamAsync());
+            this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceAsStreamAsync(replace));
+            this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteAsStreamAsync());
 
             // Validate Child resources
             await this.ItemOperations(doesNotExistContainer, true);
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 dynamic randomItem = new { id = "test", pk = "doesnotexist" };
                 Stream create = jsonSerializer.ToStream<dynamic>(randomItem);
-                this.VerifyNotFoundResponse(await container.Items.CreateItemStreamAsync(randomItem.pk, create));
+                this.VerifyNotFoundResponse(await container.Items.CreateItemAsStreamAsync(randomItem.pk, create));
 
                 var queryIterator = cosmosItems.CreateItemQueryAsStream("select * from t where true", maxConcurrency: 2);
                 this.VerifyQueryNotFoundResponse(await queryIterator.FetchNextSetAsync());
@@ -115,17 +115,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };
                 Stream upsert = jsonSerializer.ToStream<dynamic>(randomUpsertItem);
-                this.VerifyNotFoundResponse(await cosmosItems.UpsertItemStreamAsync(
+                this.VerifyNotFoundResponse(await cosmosItems.UpsertItemAsStreamAsync(
                     partitionKey: randomUpsertItem.pk,
                     streamPayload: upsert));
             }
 
-            this.VerifyNotFoundResponse(await cosmosItems.ReadItemStreamAsync(partitionKey: DoesNotExist, id: DoesNotExist));
-            this.VerifyNotFoundResponse(await cosmosItems.DeleteItemStreamAsync(partitionKey: DoesNotExist, id: DoesNotExist));
+            this.VerifyNotFoundResponse(await cosmosItems.ReadItemAsStreamAsync(partitionKey: DoesNotExist, id: DoesNotExist));
+            this.VerifyNotFoundResponse(await cosmosItems.DeleteItemAsStreamAsync(partitionKey: DoesNotExist, id: DoesNotExist));
 
             dynamic randomReplaceItem = new { id = "test", pk = "doesnotexist", status = 42 };
             Stream replace = jsonSerializer.ToStream<dynamic>(randomReplaceItem);
-            this.VerifyNotFoundResponse(await cosmosItems.ReplaceItemStreamAsync(
+            this.VerifyNotFoundResponse(await cosmosItems.ReplaceItemAsStreamAsync(
                 partitionKey: randomReplaceItem.pk,
                 id: randomReplaceItem.id,
                 streamPayload: replace));
