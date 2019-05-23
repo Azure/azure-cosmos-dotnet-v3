@@ -209,10 +209,7 @@ namespace Microsoft.Azure.Cosmos
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
-
-        internal CosmosResponseFactory ResponseFactory =>
-            new CosmosResponseFactory(this.CosmosJsonSerializer);
-        internal CosmosJsonSerializer CosmosJsonSerializer { get; private set; }
+        internal CosmosResponseFactory ResponseFactory { get; private set; }
 
         /// <summary>
         /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -231,7 +228,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClientOptions = clientOptions;
             this.DocumentClient = documentClient;
-            this.CosmosJsonSerializer = new CosmosJsonSerializerWrapper(this.ClientOptions.CosmosJsonSerializer);
 
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
@@ -244,14 +240,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
+            this.ResponseFactory = new CosmosResponseFactory(
+                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
+                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
+
             CosmosClientContext clientContext = new CosmosClientContextCore(
-                this,
-                this.ClientOptions,
-                this.CosmosJsonSerializer,
-                this.ResponseFactory,
-                this.RequestHandler,
-                this.DocumentClient,
-                new DocumentQueryClient(this.DocumentClient));
+                client: this,
+                clientOptions: this.ClientOptions,
+                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
+                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
+                cosmosResponseFactory: this.ResponseFactory,
+                requestHandler: this.RequestHandler,
+                documentClient: this.DocumentClient,
+                documentQueryClient: new DocumentQueryClient(this.DocumentClient));
 
             this.Databases = new CosmosDatabasesCore(clientContext);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);

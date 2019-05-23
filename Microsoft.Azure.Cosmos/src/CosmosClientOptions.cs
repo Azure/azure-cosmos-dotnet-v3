@@ -43,9 +43,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
-        private ReadOnlyCollection<CosmosRequestHandler> customHandlers = null;
-        private int maxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
-        private CosmosJsonSerializer cosmosJsonSerializer = null;
+        private static readonly CosmosJsonSerializer settingsSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
+        private CosmosJsonSerializer userJsonSerializer;
+
+        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
+        private int maxConnectionLimit;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -90,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.AccountEndPoint = new Uri(accountEndPoint);
             this.AccountKey = accountKey;
-            Initialize();
+            this.Initialize();
         }
 
         /// <summary>
@@ -109,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
             this.AccountEndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
                 CosmosClientOptions.ConnectionStringAccountEndpoint));
             this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
-            Initialize();
+            this.Initialize();
         }
 
         /// <summary>
@@ -238,14 +240,28 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// If no custom JSON converter was set it uses the default <see cref="CosmosDefaultJsonSerializer"/>
+        /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
         /// </summary>
         [JsonConverter(typeof(ClientConfigurationJsonConverter))]
-        public virtual CosmosJsonSerializer CosmosJsonSerializer
+        public virtual CosmosJsonSerializer CosmosSerializer
         {
-            get => this.cosmosJsonSerializer ?? (this.cosmosJsonSerializer = new CosmosDefaultJsonSerializer());
-            internal set => this.cosmosJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosJsonSerializer));
+            get => this.userJsonSerializer;
+            internal set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
         }
+
+        /// <summary>
+        /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
+        /// The default serializer is always used for all system owned types like CosmosDatabaseSettings.
+        /// The default serializer is used for user types if no UserJsonSerializer is specified
+        /// </summary>
+        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        internal virtual CosmosJsonSerializer SettingsSerializer => CosmosClientOptions.settingsSerializer;
+
+        /// <summary>
+        /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
+        /// </summary>
+        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        internal virtual CosmosJsonSerializer CosmosSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.SettingsSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -289,7 +305,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosClientOptions Clone()
         {
-            CosmosClientOptions cloneConfiguration = (CosmosClientOptions)MemberwiseClone();
+            CosmosClientOptions cloneConfiguration = (CosmosClientOptions)this.MemberwiseClone();
             return cloneConfiguration;
         }
 
@@ -331,6 +347,8 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
+            this.customHandlers = null;
+            this.userJsonSerializer = null;
         }
 
         private static string GetValueFromSqlConnectionString(DbConnectionStringBuilder builder, string keyName)

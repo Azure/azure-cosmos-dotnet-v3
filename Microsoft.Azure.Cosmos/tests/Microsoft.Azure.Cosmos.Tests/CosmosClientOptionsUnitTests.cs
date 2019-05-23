@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosClientOptionsUnitTests
@@ -156,9 +157,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void AssertJsonSerializer()
         {
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(connectionString);
-            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.IsInstanceOfType(cosmosClient.CosmosJsonSerializer, typeof(CosmosJsonSerializerWrapper));
+            var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
+            var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            Assert.IsInstanceOfType(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, cosmosClient.ClientOptions.SettingsSerializer);
+
+            CosmosJsonSerializer defaultSerializer = cosmosClient.ClientOptions.SettingsSerializer;
+            CosmosJsonSerializer mockJsonSerializer = new Mock<CosmosJsonSerializer>().Object;
+            cosmosClientBuilder.UseCustomJsonSerializer(mockJsonSerializer);
+            var cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
+            Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.SettingsSerializer);
+            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.CosmosSerializer);
+            Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault).InternalJsonSerializer);
         }
     }
 }

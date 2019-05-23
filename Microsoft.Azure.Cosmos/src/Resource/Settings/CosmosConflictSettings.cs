@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (cosmosJsonSerializer == null)
                 {
-                    cosmosJsonSerializer = new CosmosDefaultJsonSerializer();
+                    cosmosJsonSerializer = new CosmosJsonSerializerCore();
                 }
 
                 using (MemoryStream stream = new MemoryStream())

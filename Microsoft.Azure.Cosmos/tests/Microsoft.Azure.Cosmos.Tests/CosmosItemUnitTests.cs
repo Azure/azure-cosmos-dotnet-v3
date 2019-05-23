@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestOptions: requestOptions);
             }, "DeleteItemAsync should throw ArgumentNullException without the correct request option set.");
 
-            CosmosDefaultJsonSerializer jsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(5, testHandlerHitCount, "An operation did not make it to the handler");
 
-            CosmosDefaultJsonSerializer jsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
                 using (CosmosResponseMessage streamResponse = await container.Items.CreateItemAsStreamAsync(

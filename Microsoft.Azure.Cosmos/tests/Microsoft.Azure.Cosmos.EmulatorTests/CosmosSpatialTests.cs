@@ -15,7 +15,7 @@
     {
         private CosmosContainerCore Container = null;
         private DocumentClient documentClient;
-        private CosmosDefaultJsonSerializer jsonSerializer = null;
+        private CosmosJsonSerializerCore jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
@@ -42,7 +42,7 @@
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
             this.Container = (CosmosContainerCore)response;
-            this.jsonSerializer = new CosmosDefaultJsonSerializer();
+            this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 
         [TestCleanup]

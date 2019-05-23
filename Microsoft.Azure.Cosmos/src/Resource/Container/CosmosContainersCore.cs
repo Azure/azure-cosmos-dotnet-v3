@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerSettings(containerSettings);
 
             Task<CosmosResponseMessage> response = this.CreateContainerAsStreamAsync(
-                streamPayload: CosmosResource.ToStream(containerSettings),
+                streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

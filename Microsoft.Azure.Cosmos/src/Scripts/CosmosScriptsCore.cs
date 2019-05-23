@@ -114,11 +114,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)
             {
-                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput[]>(new TInput[1] { input });
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
             }
             else
             {
-                parametersStream = this.clientContext.JsonSerializer.ToStream<TInput>(input);
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
             }
 
             Uri linkUri = this.clientContext.CreateLink(
