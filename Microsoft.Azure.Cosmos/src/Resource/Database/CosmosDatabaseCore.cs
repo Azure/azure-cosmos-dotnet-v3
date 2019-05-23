@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this, response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
 
         public override Task<DatabaseResponse> DeleteAsync(
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this, response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
 
         public override async Task<int?> ReadProvisionedThroughputAsync(
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         internal Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.GetRID(cancellationToken)
+            return this.GetRIDAsync(cancellationToken)
                 .ContinueWith(task => this.ClientContext.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
                 .Unwrap();
         }
@@ -123,12 +123,12 @@ namespace Microsoft.Azure.Cosmos
             int targetThroughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<string> rid = this.GetRID(cancellationToken);
+            Task<string> rid = this.GetRIDAsync(cancellationToken);
             return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 
-        internal virtual Task<string> GetRID(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ReadAsync(cancellationToken: cancellationToken)
                 .ContinueWith(task =>

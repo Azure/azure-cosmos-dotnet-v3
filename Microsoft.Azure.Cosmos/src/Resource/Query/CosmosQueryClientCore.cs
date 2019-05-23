@@ -123,22 +123,22 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentQueryClient.GetDesiredConsistencyLevelAsync();
         }
 
-        internal override Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
+        internal override Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel)
         {
-            return this.DocumentQueryClient.EnsureValidOverwrite(desiredConsistencyLevel);
+            return this.DocumentQueryClient.EnsureValidOverwriteAsync(desiredConsistencyLevel);
         }
 
-        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
+        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
         {
-            return this.DocumentQueryClient.GetPartitionKeyRangeCache();
+            return this.DocumentQueryClient.GetPartitionKeyRangeCacheAsync();
         }
 
-        internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(
+        internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
             string effectivePartitionKeyString)
         {
-            return this.GetTargetPartitionKeyRanges(
+            return this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
                 collectionResourceId,
                 new List<Range<string>>
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
             List<Range<string>> providedRanges)

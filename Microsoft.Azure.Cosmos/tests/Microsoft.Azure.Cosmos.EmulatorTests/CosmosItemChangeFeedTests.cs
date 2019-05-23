@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }).Result;
             }
 
-            internal override Task<CosmosResponseMessage> NextResultSetDelegate(
+            internal override Task<CosmosResponseMessage> NextResultSetDelegateAsync(
                 string continuationToken,
                 string partitionKeyRangeId,
                 int? maxItemCount,

@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out suppliedTokens);
 
                 ResolvedRangeInfo resolvedRangeInfo =
-                    await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+                    await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     serviceRequest.ForceNameCacheRefresh = true;
                     collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
-                    resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+                    resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,

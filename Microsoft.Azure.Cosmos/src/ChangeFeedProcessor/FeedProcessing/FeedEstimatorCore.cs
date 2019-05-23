@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 try
                 {
                     long estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
-                    await this.dispatcher.DispatchEstimation(estimation, cancellationToken);
+                    await this.dispatcher.DispatchEstimationAsync(estimation, cancellationToken);
                 }
                 catch (TaskCanceledException canceledException)
                 {

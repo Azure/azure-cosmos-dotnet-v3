@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    throw await GatewayStoreClient.CreateDocumentClientException(responseMessage);
+                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage);
                 }
             }
         }
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        internal static async Task<DocumentClientException> CreateDocumentClientException(HttpResponseMessage responseMessage)
+        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(HttpResponseMessage responseMessage)
         {
             // ensure there is no local ActivityId, since in Gateway mode ActivityId
             // should always come from message headers

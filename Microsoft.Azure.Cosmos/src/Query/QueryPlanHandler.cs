@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             this.queryClient = queryClient;
         }
 
-        public async Task<PartitionedQueryExecutionInfo> GetQueryPlan(
+        public async Task<PartitionedQueryExecutionInfo> GetQueryPlanAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryFeatures supportedQueryFeatures,

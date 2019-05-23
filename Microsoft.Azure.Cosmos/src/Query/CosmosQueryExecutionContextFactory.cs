@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             }
 
-            List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
+            List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRangesAsync(
                    this.cosmosQueryContext.QueryClient,
                    this.cosmosQueryContext.ResourceLink.OriginalString,
                    partitionedQueryExecutionInfo,
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 rewrittenComosQueryContext = this.cosmosQueryContext;
             }
 
-            return await CreateSpecializedDocumentQueryExecutionContext(
+            return await CreateSpecializedDocumentQueryExecutionContextAsync(
                 rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
+        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// 3. Check the effective partition key
         /// 4. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
-        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -357,21 +357,21 @@ namespace Microsoft.Azure.Cosmos.Query
                     partitionKeyInternal = new PartitionKey(queryRequestOptions.PartitionKey).InternalKey;
                 }
 
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     collection.ResourceId,
                     partitionKeyInternal.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     collection.ResourceId,
                     effectivePartitionKeyString);
             }
             else
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRanges(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     collection.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);
