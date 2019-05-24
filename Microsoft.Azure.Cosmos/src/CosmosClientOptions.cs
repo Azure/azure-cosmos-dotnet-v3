@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// This is a configuration class that holds all the properties the CosmosClient requires.
+    /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
     public class CosmosClientOptions
     {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
-        /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
+        /// Initialize a new CosmosClientOptions class that holds all the properties the CosmosClient requires.
         /// </summary>
         /// <param name="accountEndPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
         /// <param name="accountKey">The key to the account.</param>
@@ -61,18 +61,6 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosClientOptions clientOptions = new CosmosClientOptions(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <example>
-        /// The example below creates a new <see cref="CosmosClientOptions"/> with a ConsistencyLevel and a list of preferred locations.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosClientOptions cosmosConfiguration = new CosmosClientOptions(
-        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey")
-        /// .WithConsistencyLevel(ConsistencyLevel.Strong)
-        /// .WithApplicationRegion(Region.USEast2);
         /// ]]>
         /// </code>
         /// </example>
