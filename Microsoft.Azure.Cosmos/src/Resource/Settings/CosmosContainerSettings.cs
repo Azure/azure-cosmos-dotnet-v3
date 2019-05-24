@@ -419,6 +419,11 @@ namespace Microsoft.Azure.Cosmos
 
                 if (this.partitionKeyPathTokens == null)
                 {
+                    if(this.PartitionKeyPath == null)
+                    {
+                        throw new ArgumentNullException(nameof(this.PartitionKeyPath));
+                    }
+
                     this.partitionKeyPathTokens = this.PartitionKeyPath.Split(new char[] { PartitionKeyTokenDelimeter }, StringSplitOptions.RemoveEmptyEntries);
                     return this.partitionKeyPathTokens;
                 }
