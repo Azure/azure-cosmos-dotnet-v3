@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<CosmosResponseMessage> ReplaceAsStreamAsync(
             CosmosContainerSettings containerSettings, 
             ContainerRequestOptions requestOptions = null, 
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (containerSettings == null)
             {

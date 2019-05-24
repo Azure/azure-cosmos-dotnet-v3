@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerSettings containerSettings, 
             int? throughput = null, 
             RequestOptions requestOptions = null, 
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (containerSettings == null)
             {
