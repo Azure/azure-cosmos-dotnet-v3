@@ -46,11 +46,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(key, clientOptions.AccountKey, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values
-            Assert.AreNotEqual(region, clientOptions.CurrentRegion);
+            Assert.AreNotEqual(region, clientOptions.ApplicationRegion);
             Assert.AreNotEqual(connectionMode, clientOptions.ConnectionMode);
-            Assert.AreNotEqual(maxConnections, clientOptions.MaxConnectionLimit);
+            Assert.AreNotEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
-            Assert.AreNotEqual(userAgentSuffix, clientOptions.UserAgentSuffix);
+            Assert.AreNotEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
             Assert.IsNull(clientOptions.CustomHandlers);
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
             Assert.AreEqual(ConnectionMode.Direct, policy.ConnectionMode);
             Assert.AreEqual(Protocol.Tcp, policy.ConnectionProtocol);
-            Assert.AreEqual(clientOptions.MaxConnectionLimit, policy.MaxConnectionLimit);
+            Assert.AreEqual(clientOptions.GatewayModeMaxConnectionLimit, policy.MaxConnectionLimit);
             Assert.AreEqual(clientOptions.RequestTimeout, policy.RequestTimeout);
 
             cosmosClientBuilder.WithApplicationRegion(region)
@@ -73,11 +73,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             clientOptions = cosmosClient.ClientOptions;
 
             //Verify all the values are updated
-            Assert.AreEqual(region, clientOptions.CurrentRegion);
+            Assert.AreEqual(region, clientOptions.ApplicationRegion);
             Assert.AreEqual(connectionMode, clientOptions.ConnectionMode);
-            Assert.AreEqual(maxConnections, clientOptions.MaxConnectionLimit);
+            Assert.AreEqual(maxConnections, clientOptions.GatewayModeMaxConnectionLimit);
             Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
-            Assert.AreEqual(userAgentSuffix, clientOptions.UserAgentSuffix);
+            Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
             Assert.AreEqual(apiType, clientOptions.ApiType);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnThrottledRequests);
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void VerifyCosmosClientOptionsHasNoPublicSetMethods()
+        public void VerifyCosmosClientOptionsHasNonePublicNonVirtualSetMethods()
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
 
             System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => x.GetSetMethod() != null && x.GetSetMethod().IsPublic).ToList();
+                .Where(x => x.GetSetMethod() != null && x.GetSetMethod().IsPublic && (!x.GetMethod.IsVirtual || !x.SetMethod.IsVirtual)).ToList();
 
             Assert.IsFalse(publicProperties.Any(), $"CosmosClientOptions should be read only. These are public {string.Join(";", publicProperties.Select(x => x.Name))}");
         }
