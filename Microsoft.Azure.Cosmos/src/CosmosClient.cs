@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create a new CosmosClient with the cosmosClientConfiguration
+        /// Create a new CosmosClient with the cosmosClientOption
         /// </summary>
         /// <param name="clientOptions">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
         /// <example>
@@ -187,12 +187,12 @@ namespace Microsoft.Azure.Cosmos
         /// Used for unit testing only.
         /// </summary>
         internal CosmosClient(
-            CosmosClientOptions cosmosClientConfiguration,
+            CosmosClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
-            if (cosmosClientConfiguration == null)
+            if (cosmosClientOptions == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
+                throw new ArgumentNullException(nameof(cosmosClientOptions));
             }
 
             if (documentClient == null)
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(documentClient));
             }
 
-            this.Init(cosmosClientConfiguration, documentClient);
+            this.Init(cosmosClientOptions, documentClient);
         }
 
         /// <summary>

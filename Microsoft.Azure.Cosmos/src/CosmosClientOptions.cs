@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
         /// The example below creates a new <see cref="CosmosClientOptions"/>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
         /// ]]>
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the handlers run before the process
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(CosmosRequestHandler[])"/>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public virtual ReadOnlyCollection<CosmosRequestHandler> CustomHandlers
         {
             get => this.customHandlers;
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
         /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
         /// </summary>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public virtual CosmosJsonSerializer CosmosSerializer
         {
             get => this.userJsonSerializer;
@@ -256,13 +256,13 @@ namespace Microsoft.Azure.Cosmos
         /// The default serializer is always used for all system owned types like CosmosDatabaseSettings.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         internal virtual CosmosJsonSerializer SettingsSerializer => CosmosClientOptions.settingsSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
         /// </summary>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         internal virtual CosmosJsonSerializer CosmosSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.SettingsSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
 
         /// <summary>
@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The complex object passed in by the user can contain objects that can not be serialized. Instead just log the types.
         /// </summary>
-        private class ClientConfigurationJsonConverter : JsonConverter
+        private class ClientOptionJsonConverter : JsonConverter
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
