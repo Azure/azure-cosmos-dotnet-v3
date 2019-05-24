@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            CosmosItemsCore.ValidatePartitionKeysMatch(partitionKey, requestOptions);
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
@@ -69,20 +70,12 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
-
-            if (result.Item1)
-            {
-                if(requestOptions == null)
-                {
-                    requestOptions = new ItemRequestOptions();
-                }
-                requestOptions.PartitionKey = result.Item2;
-            }
-
+            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
+            
             Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
+                partitionKey: result.HasPartitionKey ? result.PartitionKey : null,
                 itemId: null,
-                streamPayload: result.Item3,
+                streamPayload: result.Stream,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -96,6 +89,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            CosmosItemsCore.ValidatePartitionKeysMatch(partitionKey, requestOptions);
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
@@ -126,6 +120,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            CosmosItemsCore.ValidatePartitionKeysMatch(partitionKey, requestOptions);
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
@@ -140,20 +135,12 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
-
-            if (result.Item1)
-            {
-                if (requestOptions == null)
-                {
-                    requestOptions = new ItemRequestOptions();
-                }
-                requestOptions.PartitionKey = result.Item2;
-            }
-
-            Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(   
+            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
+           
+            Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
+                partitionKey: result.HasPartitionKey ? result.PartitionKey : null,
                 itemId: null,
-                streamPayload: result.Item3,
+                streamPayload: result.Stream,
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -168,6 +155,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            CosmosItemsCore.ValidatePartitionKeysMatch(partitionKey, requestOptions);
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
@@ -183,20 +171,12 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Tuple<bool, object, Stream> result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
-
-            if (result.Item1)
-            {
-                if (requestOptions == null)
-                {
-                    requestOptions = new ItemRequestOptions();
-                }
-                requestOptions.PartitionKey = result.Item2;
-            }
-
-            Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(               
+            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
+            
+            Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
+               partitionKey: result.HasPartitionKey ? result.PartitionKey : null,
                itemId: id,
-               streamPayload: result.Item3,
+               streamPayload: result.Stream,
                operationType: OperationType.Replace,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
@@ -210,6 +190,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            CosmosItemsCore.ValidatePartitionKeysMatch(partitionKey, requestOptions);
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
@@ -481,13 +462,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal async Task<CosmosResponseMessage> WriteItemStreamAsync(
+            object partitionKey,
             string itemId,
             Stream streamPayload,
             OperationType operationType,
             ItemRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            object partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken);
+            if(partitionKey == null)
+            {
+                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, requestOptions, cancellationToken);
+            }
+
+            CosmosItemsCore.ValidatePartitionKeysMatch(partitionKey, requestOptions);
+
             return await this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
@@ -562,13 +550,13 @@ namespace Microsoft.Azure.Cosmos
             return this.CosmosElementToObject(cosmosObject[tokens.Last()]);
         }
 
-        internal async Task<Tuple<bool, object, Stream>> GetItemStreamAsync<T>(T item, 
+        internal async Task<(bool HasPartitionKey, object PartitionKey, Stream Stream)> GetItemStreamAsync<T>(T item, 
             ItemRequestOptions itemRequestOptions, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if(itemRequestOptions?.PartitionKey != null)
             {
-                return new Tuple<bool, object, Stream>(false, itemRequestOptions?.PartitionKey, this.clientContext.JsonSerializer.ToStream<T>(item));
+                return (HasPartitionKey: false, PartitionKey: itemRequestOptions?.PartitionKey, Stream: this.clientContext.JsonSerializer.ToStream<T>(item));
             }
 
             //until https://github.com/Azure/azure-cosmos-dotnet-v3/pull/291 is merged and can just compare DefaultJsonSerializer and UserJsonSerializer
@@ -583,11 +571,11 @@ namespace Microsoft.Azure.Cosmos
             if (defaultSerializer != null)
             {
                 Stream stream = defaultSerializer.ToStream<T>(item, await this.container.GetPartitionKeyPathTokensAsync(cancellationToken), out object partitionKey);
-                return new Tuple<bool, object, Stream>(true, partitionKey, stream);                                    
+                return (HasPartitionKey: true, PartitionKey: partitionKey, Stream: stream);                                    
             }
             else
             {
-                return new Tuple<bool, object, Stream>(false, itemRequestOptions?.PartitionKey, this.clientContext.JsonSerializer.ToStream<T>(item));
+                return (HasPartitionKey: false, PartitionKey: itemRequestOptions?.PartitionKey, Stream: this.clientContext.JsonSerializer.ToStream<T>(item));
             }
         }
 
@@ -728,6 +716,18 @@ namespace Microsoft.Azure.Cosmos
             }
 
             throw new ArgumentNullException(nameof(partitionKey));
+        }
+
+        internal static void ValidatePartitionKeysMatch(object partitionKey, 
+            ItemRequestOptions itemRequestOptions)
+        {                        
+            if(partitionKey != null && itemRequestOptions?.PartitionKey != null)
+            {
+                if(partitionKey != itemRequestOptions.PartitionKey)
+                {
+                    throw new ArgumentException($"{nameof(ItemRequestOptions.PartitionKey)} and {nameof(partitionKey)} don't match.");
+                }                
+            }
         }
 
         /// <summary>

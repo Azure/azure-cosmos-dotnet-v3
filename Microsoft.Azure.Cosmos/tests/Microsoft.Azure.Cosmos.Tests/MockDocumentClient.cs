@@ -153,8 +153,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         It.IsAny<string>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test", new Collection<string>() { pkPath })));
-
+                ).Returns(() => {
+                    CosmosContainerSettings containerSettings = CosmosContainerSettings.CreateWithResourceId("test");
+                    containerSettings.PartitionKey.Paths = new Collection<string>() { pkPath };
+                    return Task.FromResult(containerSettings);
+                });
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(

@@ -94,11 +94,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             dynamic poco = new { nested = new { pk = int.MaxValue } };
 
-            Tuple<bool, object, Stream> result = await items.GetItemStreamAsync(poco, null);
+            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await items.GetItemStreamAsync(poco, null);
 
-            Assert.IsTrue(result.Item1);
-            Assert.AreEqual(poco.nested.pk, (int)result.Item2);
-            Assert.IsTrue(result.Item3.Length > 0);
+            Assert.IsTrue(result.HasPartitionKey);
+            Assert.AreEqual(poco.nested.pk, (int)result.PartitionKey);
+            Assert.IsTrue(result.Stream.Length > 0);
 
             //not the default serializer
             context = new CosmosClientContextCore(
@@ -275,6 +275,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     id: testItem.id,
                     requestOptions: requestOptions);
             }, "DeleteItemAsync should throw ArgumentNullException without the correct request option set.");
+
+            requestOptions = null;
 
             CosmosDefaultJsonSerializer jsonSerializer = new CosmosDefaultJsonSerializer();
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
