@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            Task<CosmosResponseMessage> response = this.CreateContainerAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.CreateContainerAsStreamInternalAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,
@@ -135,16 +135,23 @@ namespace Microsoft.Azure.Cosmos
                         keyName));
 
         public override Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
-                    Stream streamPayload,
-                    int? throughput = null,
-                    RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
+            CosmosContainerSettings containerSettings, 
+            int? throughput = null, 
+            RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default)
         {
-            return this.ProcessCollectionCreateAsync(
-                streamPayload: streamPayload,
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+            if (containerSettings == null)
+            {
+                throw new ArgumentNullException(nameof(containerSettings));
+            }
+
+            this.ValidateContainerSettings(containerSettings);
+
+            Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream(containerSettings);
+            return this.CreateContainerAsStreamInternalAsync(streamPayload,
+                throughput,
+                requestOptions,
+                cancellationToken);
         }
 
         public override FeedIterator GetContainersStreamIterator(
@@ -198,6 +205,19 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
                cancellationToken: cancellationToken);
+        }
+
+        private Task<CosmosResponseMessage> CreateContainerAsStreamInternalAsync(
+                    Stream streamPayload,
+                    int? throughput = null,
+                    RequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessCollectionCreateAsync(
+                streamPayload: streamPayload,
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         private Task<CosmosResponseMessage> ContainerStreamFeedRequestExecutorAsync(

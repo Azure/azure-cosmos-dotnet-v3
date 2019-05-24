@@ -73,8 +73,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create should fail if the database does not exist
             if (dbNotExist)
             {
-                Stream create = jsonSerializer.ToStream<CosmosContainerSettings>(new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk"));
-                this.VerifyNotFoundResponse(await database.Containers.CreateContainerAsStreamAsync(create, throughput: 500));
+                CosmosContainerSettings containerSettings = new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk");
+                this.VerifyNotFoundResponse(await database.Containers.CreateContainerAsStreamAsync(containerSettings, throughput: 500));
             }
 
             CosmosContainer doesNotExistContainer = database.Containers[DoesNotExist];
