@@ -89,8 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     return mockedQuery.Object;
                 });
 
-            Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
-            return mockedContainer.Object;
+            return mockedItems.Object;
         }
 
         private static CosmosClient GetMockedClient()
