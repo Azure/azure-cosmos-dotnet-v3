@@ -267,10 +267,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
                 if (useGateway)
                 {
-                    cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).UseConnectionModeGateway();
+                    cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).WithConnectionModeGateway();
                 } else
                 {
-                    cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).UseConnectionModeDirect();
+                    cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(CustomSerializationTests.GetSerializerWithCustomConverterAndBinder())).WithConnectionModeDirect();
 
                 }
             });
@@ -447,7 +447,7 @@ function bulkImport(docs) {
                 }
             };
 
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
             CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
 
             // Create a few test documents

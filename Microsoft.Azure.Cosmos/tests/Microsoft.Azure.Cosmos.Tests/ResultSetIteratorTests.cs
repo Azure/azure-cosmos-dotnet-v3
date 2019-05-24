@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }]}";
 
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
+                (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             FeedIterator<CosmosConflictSettings> feedIterator = container.Conflicts.GetConflictsIterator();
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }]}";
 
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
+                (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             FeedIterator feedIterator = container.Conflicts.GetConflictsStreamIterator();
