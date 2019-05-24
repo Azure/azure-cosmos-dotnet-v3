@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     {
         private readonly CosmosContainers cosmosContainers;
         private UniqueKeyPolicy uniqueKeyPolicy;
+        private ConflictResolutionPolicy conflictResolutionPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -42,6 +43,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Defined the conflict resoltuion for Azure Cosmos container
+        /// </summary>
+        /// <returns>An instance of <see cref="ConflictResolutionFluentDefinition"/>.</returns>
+        public virtual ConflictResolutionFluentDefinition WithConflictResolution()
+        {
+            return new ConflictResolutionFluentDefinition(
+                this,
+                (conflictPolicy) => this.AddConflictResolution(conflictPolicy));
+        }
+
+        /// <summary>
         /// Creates a container with the current fluent definition.
         /// </summary>
         /// <param name="throughput">Desired throughput for the container</param>
@@ -66,6 +78,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 settings.UniqueKeyPolicy = this.uniqueKeyPolicy;
             }
 
+            if (this.conflictResolutionPolicy != null)
+            {
+                settings.ConflictResolutionPolicy = this.conflictResolutionPolicy;
+            }
+
             return settings;
         }
 
@@ -77,6 +94,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             }
 
             this.uniqueKeyPolicy.UniqueKeys.Add(uniqueKey);
+        }
+
+        private void AddConflictResolution(ConflictResolutionPolicy conflictResolutionPolicy)
+        {
+            this.conflictResolutionPolicy = conflictResolutionPolicy;
         }
     }
 }

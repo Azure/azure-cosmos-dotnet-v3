@@ -4,18 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosJsonSerializerTests : BaseCosmosClientHelper
@@ -57,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create a new cosmos client with the mocked cosmos json serializer
             CosmosClient mockClient = TestCommon.CreateCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseCustomJsonSerializer(mockJsonSerializer.Object));
+                (cosmosClientBuilder) => cosmosClientBuilder.WithCustomJsonSerializer(mockJsonSerializer.Object));
             CosmosContainer mockContainer = mockClient.Databases[this.database.Id].Containers[this.container.Id];
 
             //Validate that the custom json serializer is used for creating the item

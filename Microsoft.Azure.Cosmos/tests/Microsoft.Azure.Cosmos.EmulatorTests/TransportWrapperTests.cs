@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
-                    builder.UseTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
+                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
                 });
 
             CosmosDatabase database = await cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
     /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
     ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey")
-    ///     .UseCurrentRegion(LocationNames.EastUS2);
+    ///     .WithApplicationRegion(LocationNames.EastUS2);
     /// 
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {

@@ -112,8 +112,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             CosmosClient client = TestCommon.CreateCosmosClient(builder => 
                 {
-                    builder.UseConnectionModeDirect();
-                    builder.UseSendingRequestEventArgs((sender, e) =>
+                    builder.WithConnectionModeDirect();
+                    builder.WithSendingRequestEventArgs((sender, e) =>
                         {
                             if (e.DocumentServiceRequest != null)
                             {
