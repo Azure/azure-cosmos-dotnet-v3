@@ -5,18 +5,18 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal sealed class DocumentQueryClient : IDocumentQueryClient
     {
         private readonly DocumentClient innerClient;
-        private QueryPartitionProvider queryPartitionProvider;
         private readonly SemaphoreSlim semaphore;
+        private QueryPartitionProvider queryPartitionProvider;
 
         public DocumentQueryClient(DocumentClient innerClient)
         {
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (this.queryPartitionProvider == null)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    this.queryPartitionProvider = new QueryPartitionProvider(await this.innerClient.GetQueryEngineConfiguration());
+                    this.queryPartitionProvider = new QueryPartitionProvider(await this.innerClient.GetQueryEngineConfigurationAsync());
                 }
 
                 this.semaphore.Release();
@@ -128,13 +128,13 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.innerClient.GetDesiredConsistencyLevelAsync();
         }
 
-        public Task EnsureValidOverwrite(ConsistencyLevel requestedConsistencyLevel)
+        public Task EnsureValidOverwriteAsync(ConsistencyLevel requestedConsistencyLevel)
         {
             this.innerClient.EnsureValidOverwrite(requestedConsistencyLevel);
             return CompletedTask.Instance;
         }
 
-        public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
+        public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
         {
             return this.innerClient.GetPartitionKeyRangeCacheAsync();
         }

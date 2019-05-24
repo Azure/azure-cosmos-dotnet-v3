@@ -89,7 +89,6 @@ namespace Microsoft.Azure.Cosmos
                 typedResults = JsonConvert.DeserializeObject<List<T>>(jsonText, settings);
             }
 
-
             return new DocumentFeedResponse<T>(
                 typedResults,
                 dynamicFeed.Count,

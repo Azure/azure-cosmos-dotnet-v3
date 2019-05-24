@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="FetchExecutionRange.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -17,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class FetchExecutionRange
     {
         /// <summary>
-        /// Initializes a new instance of the FetchExecutionRange class.
+        /// Initializes a new instance of the <see cref="FetchExecutionRange"/> class.
         /// </summary>
         /// <param name="activityId">The activityId of the fetch</param>
         /// <param name="startTime">The start time of the fetch.</param>

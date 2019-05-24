@@ -1,13 +1,12 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JsonWriter.JsonBinaryWriter.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
 
     /// <summary>
@@ -284,9 +283,41 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="jsonTokenType">The JsonTokenType of the rawJsonToken</param>
             /// <param name="rawJsonToken">The raw json token.</param>
-            protected override void WriteRawJsonToken(JsonTokenType jsonTokenType, IReadOnlyList<byte> rawJsonToken)
+            protected override void WriteRawJsonToken(
+                JsonTokenType jsonTokenType,
+                IReadOnlyList<byte> rawJsonToken)
             {
-                throw new NotImplementedException();
+                if (rawJsonToken == null)
+                {
+                    throw new ArgumentNullException(nameof(rawJsonToken));
+                }
+
+                switch (jsonTokenType)
+                {
+                    // Supported JsonTokenTypes
+                    case JsonTokenType.String:
+                    case JsonTokenType.Number:
+                    case JsonTokenType.True:
+                    case JsonTokenType.False:
+                    case JsonTokenType.Null:
+                    case JsonTokenType.FieldName:
+                        break;
+                    default:
+                        throw new ArgumentException($"{nameof(JsonBinaryWriter)}.{nameof(WriteRawJsonToken)} can not write a {nameof(JsonTokenType)}: {jsonTokenType}");
+                }
+
+                this.JsonObjectState.RegisterToken(jsonTokenType);
+
+                if (rawJsonToken is ArraySegment<byte> jsonArraySegment)
+                {
+                    this.binaryWriter.Write(jsonArraySegment.Array, jsonArraySegment.Offset, jsonArraySegment.Count);
+                }
+                else
+                {
+                    this.binaryWriter.Write(rawJsonToken.ToArray());
+                }
+
+                this.bufferedContexts.Peek().Count++;
             }
 
             private void WriterArrayOrObjectStart(bool isArray)
@@ -402,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         // Move the cursor forward
                         this.binaryWriter.BaseStream.Seek(typeMarkerIndex + TypeMarker + TwoByteLength + (this.serializeCount ? TwoByteCount : 0) + payloadLength, SeekOrigin.Begin);
                     }
-                    else 
+                    else
                     {
                         // (payloadLength <= uint.MaxValue)
 
@@ -533,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String2ByteLength);
                             this.binaryWriter.Write((ushort)utf8String.Length);
                         }
-                        else 
+                        else
                         {
                             // (utf8String.Length < uint.MaxValue)
                             this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.String4ByteLength);

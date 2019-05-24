@@ -1,10 +1,11 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     /// <summary>
     /// Helper class to invoke User Defined Functions via Linq queries in the Azure Cosmos DB service.
@@ -16,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="udfName">the UserDefinedFunction name</param>
         /// <param name="arguments">the arguments of the UserDefinedFunction</param>
-        /// <returns></returns>
         /// <remarks>
         /// This is a stub helper method for use within LINQ expressions. Cannot be called directly. 
         /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for more details about the LINQ provider.

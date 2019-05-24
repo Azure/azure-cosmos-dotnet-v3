@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
 {
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         private static readonly TimeSpan DefaultFeedPollDelay = TimeSpan.FromSeconds(5);
         private DateTime? startTime;
 
-        /// <summary>Initializes a new instance of the <see cref="ChangeFeedLeaseOptions" /> class.</summary>
+        /// <summary>Initializes a new instance of the <see cref="ChangeFeedProcessorOptions" /> class.</summary>
         public ChangeFeedProcessorOptions()
         {
             this.FeedPollDelay = DefaultFeedPollDelay;

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -22,14 +21,12 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             string databaseId = "db1234";
             string crId = "cr42";
-            string spId = "sp9001";
-            string trId = "tr9002";
-            string udfId = "udf9003";
 
             CosmosClientContext context = new CosmosClientContextCore(
                 client: null,
-                clientConfiguration: null,
-                cosmosJsonSerializer: null,
+                clientOptions: null,
+                userJsonSerializer: null,
+                defaultJsonSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null,
@@ -40,15 +37,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             CosmosContainerCore container = new CosmosContainerCore(context, db, crId);
             Assert.AreEqual(container.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId);
-
-            CosmosStoredProcedureCore sp = new CosmosStoredProcedureCore(context, container, spId);
-            Assert.AreEqual(sp.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/sprocs/" + spId);
-
-            CosmosTrigger tr = new CosmosTrigger(context, container, trId);
-            Assert.AreEqual(tr.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/triggers/" + trId);
-
-            CosmosUserDefinedFunction udf = new CosmosUserDefinedFunction(context, container, udfId);
-            Assert.AreEqual(udf.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId + "/udfs/" + udfId);
         }
 
         [TestMethod]

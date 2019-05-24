@@ -81,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// First ring is external ring. Following rings define 'holes' in the polygon.
         /// </para>
         /// </param>
-        public Polygon(IList<LinearRing> rings) : this(rings, new GeometryParams())
+        public Polygon(IList<LinearRing> rings)
+            : this(rings, new GeometryParams())
         {
         }
 
@@ -111,7 +112,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal Polygon() : base(GeometryType.Polygon, new GeometryParams())
+        internal Polygon()
+            : base(GeometryType.Polygon, new GeometryParams())
         {
         }
 

@@ -1,6 +1,6 @@
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
@@ -59,12 +59,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     searchExpression = methodCallExpression.Arguments[1];
                 }
 
-                if(searchList == null || searchExpression == null)
+                if (searchList == null || searchExpression == null)
                 {
                     return null;
                 }
 
-                if(searchList.NodeType == ExpressionType.Constant)
+                if (searchList.NodeType == ExpressionType.Constant)
                 {
                     return VisitIN(searchExpression, (ConstantExpression)searchList, context);
                 }
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 // if the items list empty, then just return false expression
-                if(items.Count == 0)
+                if (items.Count == 0)
                 {
                     return SqlLiteralScalarExpression.SqlFalseLiteralScalarExpression;
                 }

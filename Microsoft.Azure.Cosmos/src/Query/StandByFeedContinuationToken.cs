@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Query
 {
-    using System.Collections.Generic;
     using System;
-    using System.Linq;
-    using Newtonsoft.Json;
-    using System.Threading.Tasks;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Stand by continuation token representing a contiguous read over all the ranges with continuation state across all ranges.
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
             }
-            catch(JsonReaderException ex)
+            catch (JsonReaderException ex)
             {
                 throw new ArgumentOutOfRangeException($"Provided token has an invalid format: {initialContinuationToken}", ex);
             }

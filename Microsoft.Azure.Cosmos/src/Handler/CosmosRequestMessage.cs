@@ -28,7 +28,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="CosmosRequestMessage"/>
         /// </summary>
-        public CosmosRequestMessage() { }
+        public CosmosRequestMessage()
+        {
+        }
 
         /// <summary>
         /// Create a <see cref="CosmosRequestMessage"/>
@@ -61,11 +63,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual Stream Content
         {
-            get => this._content;
+            get => this.content;
             set
             {
                 this.CheckDisposed();
-                this._content = value;
+                this.content = value;
             }
         }
 
@@ -97,13 +99,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual Dictionary<string, object> Properties => this.properties.Value;
 
-        private bool _disposed;
-
-        private Stream _content;
-
         private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(CosmosRequestMessage.CreateDictionary);
 
         private readonly Lazy<CosmosRequestMessageHeaders> headers = new Lazy<CosmosRequestMessageHeaders>(CosmosRequestMessage.CreateHeaders);
+
+        private bool disposed;
+
+        private Stream content;
 
         /// <summary>
         /// Disposes the current <see cref="CosmosRequestMessage"/>.
@@ -122,9 +124,9 @@ namespace Microsoft.Azure.Cosmos
         {
             // The reason for this type to implement IDisposable is that it contains instances of types that implement
             // IDisposable (content). 
-            if (disposing && !this._disposed)
+            if (disposing && !this.disposed)
             {
-                this._disposed = true;
+                this.disposed = true;
                 if (this.Content != null)
                 {
                     this.Content.Dispose();
@@ -195,6 +197,16 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentServiceRequest;
         }
 
+        private static Dictionary<string, object> CreateDictionary()
+        {
+            return new Dictionary<string, object>();
+        }
+
+        private static CosmosRequestMessageHeaders CreateHeaders()
+        {
+            return new CosmosRequestMessageHeaders();
+        }
+
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
             if (this.DocumentClientRetryPolicy != null)
@@ -244,20 +256,10 @@ namespace Microsoft.Azure.Cosmos
 
         private void CheckDisposed()
         {
-            if (this._disposed)
+            if (this.disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }
-        }
-
-        private static Dictionary<string, object> CreateDictionary()
-        {
-            return new Dictionary<string, object>();
-        }
-
-        private static CosmosRequestMessageHeaders CreateHeaders()
-        {
-            return new CosmosRequestMessageHeaders();
         }
     }
 }

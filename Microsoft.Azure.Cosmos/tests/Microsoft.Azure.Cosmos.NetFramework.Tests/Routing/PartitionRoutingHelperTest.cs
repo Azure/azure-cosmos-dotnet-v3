@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Tests for <see cref="PartitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange"/> method.
+        /// Tests for <see cref="PartitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync"/> method.
         /// </summary>
         [TestMethod]
         public async Task TestGetPartitionRoutingInfo()
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         for (Range<string> currentRange = startRange; currentRange != null;)
                         {
                             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
-                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null);
+                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null);
                             actualPartitionKeyRangeIds.Add(resolvedRangeInfo.ResolvedRange.Id);
                             INameValueCollection headers = new StringKeyValueCollection();
 

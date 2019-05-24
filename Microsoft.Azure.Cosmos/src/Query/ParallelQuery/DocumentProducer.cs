@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DocumentProducer.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -398,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Query
             token.ThrowIfCancellationRequested();
 
             CosmosElement originalCurrent = this.current;
-            bool movedNext = await this.MoveNextAsyncImplementation(token);
+            bool movedNext = await this.MoveNextAsyncImplementationAsync(token);
             if (!movedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.current)))
             {
                 this.isActive = false;
@@ -412,13 +410,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreIfEmpty(CancellationToken token)
+        public async Task BufferMoreIfEmptyAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             if (this.bufferedPages.Count == 0)
             {
-                await this.BufferMoreDocuments(token);
+                await this.BufferMoreDocumentsAsync(token);
             }
         }
 
@@ -427,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreDocuments(CancellationToken token)
+        public async Task BufferMoreDocumentsAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -553,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
-        private async Task<bool> MoveNextAsyncImplementation(CancellationToken token)
+        private async Task<bool> MoveNextAsyncImplementationAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -562,13 +560,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 return false;
             }
 
-            await this.BufferMoreIfEmpty(token);
+            await this.BufferMoreIfEmptyAsync(token);
 
             if (!this.hasInitialized)
             {
                 // First time calling move next async so we are just going to call movenextpage to get the ball rolling
                 this.hasInitialized = true;
-                if (await this.MoveNextPage(token))
+                if (await this.MoveNextPageAsync(token))
                 {
                     return true;
                 }
@@ -592,7 +590,7 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 // We might be at a continuation boundary so we need to move to the next page
-                if (await this.MoveNextPage(token))
+                if (await this.MoveNextPageAsync(token))
                 {
                     return true;
                 }
@@ -624,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether the operation was successful.</returns>
-        private async Task<bool> MoveNextPage(CancellationToken token)
+        private async Task<bool> MoveNextPageAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -644,11 +642,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     return page;
                 }),
-                onError: ((exceptionDispatchInfo) => 
+                onError: (exceptionDispatchInfo) => 
                 {
                     exceptionDispatchInfo.Throw();
                     return null;
-                }));
+                });
 
             this.previousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = feedResponse.ResponseContinuation;

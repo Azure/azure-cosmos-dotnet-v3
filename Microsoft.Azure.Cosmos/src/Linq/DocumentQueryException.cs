@@ -21,17 +21,15 @@ namespace Microsoft.Azure.Cosmos.Linq
         public DocumentQueryException(string message)
             : base(message, null, null)
         {
-
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.Linq.DocumentQueryException"/> class in the Azure Cosmos DB service.</summary>
         /// <param name="message">The exception message.</param>
         /// <param name="innerException">The inner exception.</param>
-        public DocumentQueryException(string message, Exception innerException) :
-            base(message, innerException, null)
+        public DocumentQueryException(string message, Exception innerException)
+            : base(message, innerException, null)
         {
-
         }
 
 #if !NETSTANDARD16
@@ -43,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         private DocumentQueryException(SerializationInfo info, StreamingContext context)
             : base(info, context, null)
         {
-
         }
 #endif
     }
