@@ -1075,11 +1075,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
 
             client.DefaultRequestHeaders.Add("authorization", authHeader);
-            string containerDefinition = JsonConvert.SerializeObject(new DocumentCollection()
+            DocumentCollection documentCollection = new DocumentCollection()
             {
-                Id = containerName,
-                IndexingPolicy = indexingPolicyString != null ? JsonConvert.DeserializeObject<IndexingPolicy>(indexingPolicyString) : null
-            });
+                Id = containerName
+            };
+            if (indexingPolicyString != null)
+            {
+                documentCollection.IndexingPolicy = JsonConvert.DeserializeObject<IndexingPolicy>(indexingPolicyString);
+            }
+            string containerDefinition = documentCollection.ToString();
             StringContent containerContent = new StringContent(containerDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
             HttpResponseMessage response = await client.PostAsync(requestUri.ToString(), containerContent);
