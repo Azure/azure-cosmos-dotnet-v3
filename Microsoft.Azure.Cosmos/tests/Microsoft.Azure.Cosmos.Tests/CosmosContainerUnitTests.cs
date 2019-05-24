@@ -35,52 +35,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Documents.PartitionKeyDefinition partitionKeyDefinition = await container.GetPartitionKeyDefinitionAsync();
             string[] tokens = partitionKeyDefinition.Paths[0].Split('/', System.StringSplitOptions.RemoveEmptyEntries);
             CollectionAssert.AreEqual(tokens, await container.GetPartitionKeyPathTokensAsync());
-        }
-        
-        [TestMethod]
-        public async Task TestGetPartitionKeyPathTokensThrowsOnMultiplePartitionKeys()
-        {
-            DocumentClient documentClient = new MockDocumentClient();
-            Routing.ClientCollectionCache collectionCache = await documentClient.GetCollectionCacheAsync();
-            CosmosClientContextCore context = new CosmosClientContextCore(
-                client: null,
-                clientConfiguration: null,
-                cosmosJsonSerializer: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: documentClient,
-                documentQueryClient: new Mock<IDocumentQueryClient>().Object
-            );
-            CosmosDatabaseCore database = new CosmosDatabaseCore(context, "testDatabase");
-            Mock<CosmosContainerCore> container = new Mock<CosmosContainerCore>();
-            container.Setup(
-                m => m.GetPartitionKeyPathsAsync(It.IsAny<CancellationToken>())
-            ).Returns(Task.FromResult(new Collection<string> { "a", "b" }));
-
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => container.Object.GetPartitionKeyPathTokensAsync());
-        }
-
-        [TestMethod]
-        public async Task TestGetPartitionKeyPathTokensThrowsOnNoPartitionKeys()
-        {
-            DocumentClient documentClient = new MockDocumentClient();
-            Routing.ClientCollectionCache collectionCache = await documentClient.GetCollectionCacheAsync();
-            CosmosClientContextCore context = new CosmosClientContextCore(
-                client: null,
-                clientConfiguration: null,
-                cosmosJsonSerializer: null,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: documentClient,
-                documentQueryClient: new Mock<IDocumentQueryClient>().Object
-            );
-            CosmosDatabaseCore database = new CosmosDatabaseCore(context, "testDatabase");
-            Mock<CosmosContainerCore> container = new Mock<CosmosContainerCore>();
-            container.Setup(
-                m => m.GetPartitionKeyPathsAsync(It.IsAny<CancellationToken>())
-            ).Returns(Task.FromResult(new Collection<string>()));
-
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => container.Object.GetPartitionKeyPathTokensAsync());
-        }
+        }                     
     }
 }

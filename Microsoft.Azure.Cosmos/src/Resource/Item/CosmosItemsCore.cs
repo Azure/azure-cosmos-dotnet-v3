@@ -65,11 +65,11 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<ItemResponse<T>> CreateItemAsync<T>(
+        public override Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
-        {                        
+        {
             Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
                 partitionKey: null,
                 itemId: null,
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> ReadItemStreamAsync(
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<ItemResponse<T>> UpsertItemAsync<T>(            
+        public override Task<ItemResponse<T>> UpsertItemAsync<T>(            
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> ReplaceItemStreamAsync(
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<ItemResponse<T>> ReplaceItemAsync<T>(            
+        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(            
             string id,
             T item,
             ItemRequestOptions requestOptions = null,
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
 
-            return await this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
+            return this.clientContext.ResponseFactory.CreateItemResponse<T>(response);
         }
 
         public override Task<CosmosResponseMessage> DeleteItemStreamAsync(
@@ -550,7 +550,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosElement?.Type == CosmosElementType.Object ||
                 cosmosElement?.Type == CosmosElementType.Binary)
             {                                                
-                throw new InvalidOperationException(
+                throw new ArgumentException(
                             string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
             }
 

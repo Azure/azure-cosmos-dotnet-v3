@@ -102,6 +102,15 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerSettingsTests.AssertSerializedPayloads(containerSettings, dc);
         }
 
+        [TestMethod]
+        public void TestGetPartitionKeyPathTokensThrowsOnMultiplePartitionKeys()
+        {
+            CosmosContainerSettings cosmosContainerSettings =
+                new CosmosContainerSettings("test", new PartitionKeyDefinition { Paths = new Collection<string> { "a", "b" } });
+
+            Assert.ThrowsException<ArgumentException>(() => cosmosContainerSettings.PartitionKeyPathTokens);
+        }
+
         private static string SerializeDocumentCollection(DocumentCollection collection)
         {
             using (MemoryStream ms = new MemoryStream())

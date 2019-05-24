@@ -209,41 +209,26 @@ namespace Microsoft.Azure.Cosmos
                             .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
         }
 
-        internal virtual async Task<Collection<string>> GetPartitionKeyPathsAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
             if (containerSettings ==  null)
             {
-                throw new ArgumentNullException(nameof(containerSettings));
+                throw new ArgumentNullException("Container from cache is null.");
             }
             
             if (containerSettings.PartitionKey == null)
             {
-                throw new ArgumentNullException(nameof(containerSettings.PartitionKey));
+                throw new ArgumentNullException("Container from cache has a null partition key.");
             }
 
             if (containerSettings.PartitionKey.Paths == null)
             {
-                throw new ArgumentNullException(nameof(containerSettings.PartitionKey.Paths));
+                throw new ArgumentNullException("Container from cache has null paths for partition key.");
             }
 
-            return containerSettings.PartitionKey.Paths;            
-        }
-
-        internal async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Collection<string> partitionKeyPaths = await this.GetPartitionKeyPathsAsync(cancellationToken);
-
-            if(partitionKeyPaths.Count != 1)
-            {
-                throw new InvalidOperationException("Multiple partition keys not supported.");
-            }
-
-            string path = partitionKeyPaths[0];
-            
-            return path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-        }
-
+            return containerSettings.PartitionKeyPathTokens;            
+        }        
 
         /// <summary>
         /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.

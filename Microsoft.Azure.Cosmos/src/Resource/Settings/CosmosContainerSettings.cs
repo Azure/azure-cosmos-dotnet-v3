@@ -65,6 +65,8 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
+        private string[] partitionKeyPathTokens;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -427,7 +429,27 @@ namespace Microsoft.Azure.Cosmos
                 && this.indexingPolicyInternal.ExcludedPaths.Count == 0)
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
+            }            
+        }
+
+        internal string[] PartitionKeyPathTokens
+        {
+            get
+            {                
+                if (this.PartitionKey.Paths.Count > 1)
+                {
+                    throw new ArgumentException("Multiple partition keys not supported.");
+                }
+
+                if(this.partitionKeyPathTokens == null)
+                {
+                    this.partitionKeyPathTokens = this.PartitionKeyPath.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    return this.partitionKeyPathTokens;
+                }
+
+                return this.partitionKeyPathTokens;
             }
+            
         }
     }
 }
