@@ -131,9 +131,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a new CosmosClient with the cosmosClientConfiguration
         /// </summary>
-        /// <param name="clientConfiguration">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
+        /// <param name="clientOptions">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
         /// <example>
-        /// This example creates a CosmosClient
+        /// This example creates a CosmosClient through explicit CosmosClientOptions
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions("accountEndpoint", "accountkey");
@@ -148,27 +148,38 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosClient(CosmosClientOptions clientConfiguration)
+        /// <example>
+        /// This example creates a CosmosClient through builder
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey")
+        /// .UseConsistencyLevel(ConsistencyLevel.Eventual)
+        /// .WithApplicationRegion("East US 2");
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClient(CosmosClientOptions clientOptions)
         {
-            if (clientConfiguration == null)
+            if (clientOptions == null)
             {
-                throw new ArgumentNullException(nameof(clientConfiguration));
+                throw new ArgumentNullException(nameof(clientOptions));
             }
 
-            CosmosClientOptions cosmosClientConfiguration = clientConfiguration.Clone();
+            CosmosClientOptions clientOptionsClone = clientOptions.Clone();
 
             DocumentClient documentClient = new DocumentClient(
-                cosmosClientConfiguration.AccountEndPoint,
-                cosmosClientConfiguration.AccountKey,
-                apitype: cosmosClientConfiguration.ApiType,
-                sendingRequestEventArgs: cosmosClientConfiguration.SendingRequestEventArgs,
-                transportClientHandlerFactory: cosmosClientConfiguration.TransportClientHandlerFactory,
-                connectionPolicy: cosmosClientConfiguration.GetConnectionPolicy(),
-                enableCpuMonitor: cosmosClientConfiguration.EnableCpuMonitor,
-                storeClientFactory: cosmosClientConfiguration.StoreClientFactory);
+                clientOptionsClone.AccountEndPoint,
+                clientOptionsClone.AccountKey,
+                apitype: clientOptionsClone.ApiType,
+                sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
+                transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
+                connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
+                enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
+                storeClientFactory: clientOptionsClone.StoreClientFactory);
 
             this.Init(
-                cosmosClientConfiguration,
+                clientOptionsClone,
                 documentClient);
         }
 

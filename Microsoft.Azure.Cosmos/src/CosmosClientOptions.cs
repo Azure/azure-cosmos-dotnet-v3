@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual int GatewayModeMaxConnectionLimit
         {
             get => this.gatewayModeMaxConnectionLimit;
-            internal set
+            set
             {
                 if (value <= 0)
                 {
