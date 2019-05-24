@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void VerifyCosmosClientOptionsHasNoPublicSetMethods()
+        public void VerifyCosmosClientOptionsHasNonePublicNonVirtualSetMethods()
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
 
             System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => x.GetSetMethod() != null && x.GetSetMethod().IsPublic).ToList();
+                .Where(x => x.GetSetMethod() != null && x.GetSetMethod().IsPublic && (!x.GetMethod.IsVirtual || !x.SetMethod.IsVirtual)).ToList();
 
             Assert.IsFalse(publicProperties.Any(), $"CosmosClientOptions should be read only. These are public {string.Join(";", publicProperties.Select(x => x.Name))}");
         }
