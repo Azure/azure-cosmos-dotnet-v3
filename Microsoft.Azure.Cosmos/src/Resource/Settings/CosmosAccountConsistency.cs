@@ -3,9 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Globalization;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -13,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the consistency policy of a database account of the Azure Cosmos DB service.
     /// </summary>
-    public sealed class CosmosConsistencySettings
+    public sealed class CosmosAccountConsistency
     {
         private const ConsistencyLevel defaultDefaultConsistencyLevel = ConsistencyLevel.Session;
 
@@ -27,32 +24,25 @@ namespace Microsoft.Azure.Cosmos
         internal const int MaxStalenessPrefixMaxValue = 1000000;
 
         /// <summary>
-        /// Default constructor for ConsistencyPolicy class in the Azure Cosmos DB service.
-        /// </summary>
-        public CosmosConsistencySettings()
-        {
-        }
-
-        /// <summary>
         /// Get or set the default consistency level in the Azure Cosmos DB service.
         /// </summary>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.DefaultConsistencyLevel)]
-        public ConsistencyLevel DefaultConsistencyLevel { get; set; }
+        public ConsistencyLevel DefaultConsistencyLevel { get; internal set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms difference in sequence numbers (aka version) in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.MaxStalenessPrefix)]
-        public int MaxStalenessPrefix { get; set; }
+        public int MaxStalenessPrefix { get; internal set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms time interval in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.MaxStalenessIntervalInSeconds)]
-        public int MaxStalenessIntervalInSeconds { get; set; }
+        public int MaxStalenessIntervalInSeconds { get; internal set; }
 
         internal Documents.ConsistencyLevel ToDirectConsistencyLevel()
         {
