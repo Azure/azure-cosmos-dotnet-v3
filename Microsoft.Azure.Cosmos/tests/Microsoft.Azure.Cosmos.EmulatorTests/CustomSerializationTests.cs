@@ -282,26 +282,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
             //create and read
-            ItemResponse<TestDocument> createResponse = await container.Items.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
-            ItemResponse<TestDocument> readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
-            ItemResponse<TestDocument> upsertResponse = await container.Items.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
-            readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
+            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            ItemResponse<TestDocument> replacedResponse = await container.Items.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
-            readResponse = await container.Items.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
+            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
-               container.Items.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
+               container.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
             FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
             AssertEqual(testDocument, queryResponse.First());
 
@@ -456,14 +456,14 @@ function bulkImport(docs) {
             for (int i = 0; i < documentCount; ++i)
             {
                 var newDocument = new MyObject(i);
-                var createdDocument = await container.Items.CreateItemAsync<MyObject>(newDocument.pk, newDocument);
+                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument.pk, newDocument);
             }
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");
-            FeedIterator<MyObject> setIterator1 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator1 = container.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition2 = new CosmosSqlQueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
-            FeedIterator<MyObject> setIterator2 = container.Items.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator2 = container.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
 
             List<MyObject> list1 = new List<MyObject>();
             List<MyObject> list2 = new List<MyObject>();

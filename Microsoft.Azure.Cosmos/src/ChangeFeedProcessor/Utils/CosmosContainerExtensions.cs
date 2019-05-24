@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             object partitionKey,
             string itemId)
         {
-            var response = await container.Items.ReadItemAsync<T>(
+            var response = await container.ReadItemAsync<T>(
                     partitionKey,
                     itemId)
                     .ConfigureAwait(false);
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             object partitionKey, 
             T item)
         {
-            var response = await container.Items.CreateItemAsync<T>(partitionKey, item).ConfigureAwait(false);
+            var response = await container.CreateItemAsync<T>(partitionKey, item).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
                 // Ignore-- document already exists.
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
-            var response = await container.Items.DeleteItemAsync<T>(partitionKey, itemId, cosmosItemRequestOptions).ConfigureAwait(false);
+            var response = await container.DeleteItemAsync<T>(partitionKey, itemId, cosmosItemRequestOptions).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return default(T);
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             object partitionKey,
             string itemId)
         {
-            var response = await container.Items.ReadItemAsStreamAsync(
+            var response = await container.ReadItemAsStreamAsync(
                         partitionKey,
                         itemId)
                         .ConfigureAwait(false);

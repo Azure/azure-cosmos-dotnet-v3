@@ -55,14 +55,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer mockContainer = mockClient.Databases[this.database.Id].Containers[this.container.Id];
 
             //Validate that the custom json serializer is used for creating the item
-            ItemResponse<ToDoActivity> response = await mockContainer.Items.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
+            ItemResponse<ToDoActivity> response = await mockContainer.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
             Assert.AreEqual(1, toStreamCount);
             Assert.AreEqual(1, fromStreamCount);
 
-            await mockContainer.Items.DeleteItemAsync<ToDoActivity>(testItem.status, testItem.id);
+            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.status, testItem.id);
         }
         
         private ToDoActivity CreateRandomToDoActivity(string pk = null)

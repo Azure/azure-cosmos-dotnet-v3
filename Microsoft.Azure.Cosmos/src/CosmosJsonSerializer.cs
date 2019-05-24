@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         /// The caller will ensure the stream is disposed. 
         /// This will prevent memory leaks if an exception is hit.
         /// </summary>
-        /// <typeparam name="T">Any typed passed to <see cref="CosmosItems"/></typeparam>
+        /// <typeparam name="T">Any typed passed to <see cref="CosmosContainer"/></typeparam>
         /// <param name="stream">The Stream response containing JSON from Cosmos</param>
         /// <returns>The object deserialized from the stream.</returns>
         public abstract T FromStream<T>(Stream stream);
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// The caller will take ownership of the stream and ensure it is correctly disposed of.
         /// Stream.CanRead must be true https://docs.microsoft.com/en-us/dotnet/api/system.io.stream.canread?view=netcore-2.0
         /// </summary>
-        /// <param name="input">Any typed passed to <see cref="CosmosItems"/></param>
+        /// <param name="input">Any typed passed to <see cref="CosmosContainer"/></param>
         /// <returns>A readable Stream containing JSON of the serialized object</returns>
         public abstract Stream ToStream<T>(T input);
     }

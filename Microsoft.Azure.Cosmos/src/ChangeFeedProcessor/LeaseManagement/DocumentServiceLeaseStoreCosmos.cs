@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             string markerDocId = this.GetStoreMarkerName();
             var containerDocument = new { id = markerDocId };
-            await this.container.Items.CreateItemAsync<dynamic>(
+            await this.container.CreateItemAsync<dynamic>(
                 this.requestOptionsFactory.GetPartitionKey(markerDocId),
                 containerDocument).ConfigureAwait(false);
         }
