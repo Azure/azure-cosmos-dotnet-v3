@@ -79,14 +79,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosDatabase database = await this.CreateDatabaseStreamHelper();
 
-            using (CosmosResponseMessage response = await database.ReadStreamAsync())
+            using (CosmosResponseMessage response = await database.ReadAsStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
                 Assert.IsTrue(response.Headers.RequestCharge > 0);
             }
 
-            using (CosmosResponseMessage response = await database.DeleteStreamAsync())
+            using (CosmosResponseMessage response = await database.DeleteAsStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = Guid.NewGuid().ToString()
             };
             
-            using (CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseStreamAsync(CosmosResource.ToStream(databaseSettings)))
+            using (CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseAsStreamAsync(CosmosResource.ToStream(databaseSettings)))
             {
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
@@ -110,14 +110,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Stream operations do not throw exceptions.
-            using (CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseStreamAsync(CosmosResource.ToStream(databaseSettings)))
+            using (CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseAsStreamAsync(CosmosResource.ToStream(databaseSettings)))
             {
                 Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
                 Assert.IsTrue(response.Headers.RequestCharge > 0);
             }
 
-            using (CosmosResponseMessage response = await this.cosmosClient.Databases[databaseSettings.Id].DeleteStreamAsync())
+            using (CosmosResponseMessage response = await this.cosmosClient.Databases[databaseSettings.Id].DeleteAsStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                 Assert.IsNotNull(response.Headers);
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 FeedIterator<CosmosDatabaseSettings> feedIterator =
-                    this.cosmosClient.Databases.GetDatabaseIterator();
+                    this.cosmosClient.Databases.GetDatabasesIterator();
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<CosmosDatabaseSettings> iterator =
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabaseSettings databaseSettings = new CosmosDatabaseSettings() { Id = databaseId };
             using(Stream streamPayload = CosmosResource.ToStream(databaseSettings))
             {
-                CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseStreamAsync(
+                CosmosResponseMessage response = await this.cosmosClient.Databases.CreateDatabaseAsStreamAsync(
                     streamPayload, 
                     throughput: 400);
 

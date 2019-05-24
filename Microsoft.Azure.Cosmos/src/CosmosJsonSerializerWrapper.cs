@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
 
-    internal class CosmosJsonSerializerWrapper: CosmosJsonSerializer
+    internal class CosmosJsonSerializerWrapper : CosmosJsonSerializer
     {
         internal CosmosJsonSerializer InternalJsonSerializer { get; }
 

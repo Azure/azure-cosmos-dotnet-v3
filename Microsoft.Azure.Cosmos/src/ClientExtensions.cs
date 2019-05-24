@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos
             // internally using SendAsync and add the additional headers to requestMessage. 
             using (HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri))
             {
-
                 if (additionalHeaders != null)
                 {
                     foreach (string header in additionalHeaders)
@@ -59,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                throw await GatewayStoreClient.CreateDocumentClientException(responseMessage);
+                throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage);
             }
         }
     }

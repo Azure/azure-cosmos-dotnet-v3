@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class QueryMetricsTextWriter : QueryMetricsWriter
     {
-        private readonly StringBuilder stringBuilder;
-
         #region Constants
         // QueryMetrics Text
         private const string ActivityIds = "Activity Ids";
@@ -111,6 +109,8 @@ namespace Microsoft.Azure.Cosmos
 
         private static readonly TextTable SchedulingMetricsTable = new TextTable(SchedulingMetricsColumns);
         #endregion
+
+        private readonly StringBuilder stringBuilder;
 
         // FetchExecutionRange state
         private string lastFetchPartitionId;

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -71,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        [Ignore("Emulator is failing due to socket issues")]
         public async Task TestReducePageSizeScenario()
         {
             int partitionKey = 0;
@@ -83,8 +85,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
+            CosmosScripts scripts = this.Container.GetScripts();
+
             StoredProcedureResponse storedProcedureResponse =
-                await this.Container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
+                await scripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(sprocId, sprocBody));
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
@@ -105,12 +109,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
 
             // Generate the payload
-            await storedProcedureResponse.StoredProcedure.ExecuteAsync<int, object>(partitionKey, 0);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 0);
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
             var content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
             await this.Container.Items.CreateItemAsync(partitionKey, JsonConvert.DeserializeObject<dynamic>(content));
 
-            await storedProcedureResponse.StoredProcedure.ExecuteAsync<int, object>(partitionKey, 3);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 3);
 
             await processor.StartAsync();
             // Letting processor initialize and pickup changes

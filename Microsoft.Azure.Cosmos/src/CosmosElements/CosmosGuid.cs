@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosString.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
@@ -31,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return new EagerCosmosGuid(value);
         }
-
 
         public override void WriteTo(IJsonWriter jsonWriter)
         {

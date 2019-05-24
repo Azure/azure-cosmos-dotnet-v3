@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
 {
@@ -13,11 +13,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
     [Serializable]
     internal class FeedSplitException : Exception
     {
-        /// <summary>
-        /// Gets the value of request continuation token.
-        /// </summary>
-        public string LastContinuation { get; }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="FeedSplitException"/> class using error message and last continuation token.
         /// </summary>
@@ -39,6 +34,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         {
             this.LastContinuation = (string)info.GetValue("LastContinuation", typeof(string));
         }
+
+        /// <summary>
+        /// Gets the value of request continuation token.
+        /// </summary>
+        public string LastContinuation { get; }
 
         /// <summary>
         /// Sets the System.Runtime.Serialization.SerializationInfo with information about the exception.

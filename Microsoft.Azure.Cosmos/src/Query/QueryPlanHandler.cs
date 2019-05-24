@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Query;
-    using System.Threading.Tasks;
     using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Documents;
 
     internal sealed class QueryPlanHandler
     {
@@ -25,13 +25,13 @@ namespace Microsoft.Azure.Cosmos
             this.queryClient = queryClient;
         }
 
-        public async Task<PartitionedQueryExecutionInfo> GetQueryPlan(
+        public async Task<PartitionedQueryExecutionInfo> GetQueryPlanAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryFeatures supportedQueryFeatures,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            cancellation.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (sqlQuerySpec == null)
             {
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
-                    cancellationToken: cancellation);
+                    cancellationToken: cancellationToken);
 
             if (partitionedQueryExecutionInfo == null ||
                 partitionedQueryExecutionInfo.QueryRanges == null ||

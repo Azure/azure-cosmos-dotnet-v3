@@ -200,7 +200,8 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
-                AccessCondition = this.AccessCondition,
+                IfMatchEtag = this.IfMatchEtag,
+                IfNoneMatchEtag = this.IfNoneMatchEtag,
                 RequestContinuation = this.RequestContinuation,
                 MaxItemCount = this.MaxItemCount,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,

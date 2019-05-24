@@ -78,11 +78,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual Stream Content
         {
-            get => this._content;
+            get => this.content;
             set
             {
                 this.CheckDisposed();
-                this._content = value;
+                this.content = value;
             }
         }
 
@@ -106,9 +106,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual Error Error { get; set; }
 
-        private bool _disposed;
+        private bool disposed;
 
-        private Stream _content;
+        private Stream content;
 
         /// <summary>
         /// Asserts if the current <see cref="HttpStatusCode"/> is a success.
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Checks if the current <see cref="CosmosResponseMessage"/> has a successful status code, otherwise, throws.
         /// </summary>
-        /// <exception cref="HttpRequestException"></exception>
+        /// <exception cref="CosmosException">An instance of <see cref="CosmosException"/> representing the error state.</exception>
         /// <returns>The current <see cref="CosmosResponseMessage"/>.</returns>
         public virtual CosmosResponseMessage EnsureSuccessStatusCode()
         {
@@ -146,7 +146,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal string GetResourceAddress()
         {
-
             string resourceLink = this.RequestMessage?.RequestUri.OriginalString;
             if (PathsHelper.TryParsePathSegments(
                 resourceLink, 
@@ -168,13 +167,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="disposing">True to dispose of content</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing && !this._disposed)
+            if (disposing && !this.disposed)
             {
-                this._disposed = true;
-                if (this._content != null)
+                this.disposed = true;
+                if (this.content != null)
                 {
-                    this._content.Dispose();
-                    this._content = null;
+                    this.content.Dispose();
+                    this.content = null;
                 }
 
                 if (this.RequestMessage != null)
@@ -187,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void CheckDisposed()
         {
-            if (this._disposed)
+            if (this.disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }

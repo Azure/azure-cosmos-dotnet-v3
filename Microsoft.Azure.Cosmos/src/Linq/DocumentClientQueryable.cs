@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<DocumentCollection> CreateDocumentCollectionChangeFeedQuery(string databaseLink, ChangeFeedOptions feedOptions)
         {
-            if(string.IsNullOrEmpty(databaseLink))
+            if (string.IsNullOrEmpty(databaseLink))
             {
                 throw new ArgumentException(nameof(databaseLink));
             }
@@ -754,7 +754,6 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Document"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         public IOrderedQueryable<Document> CreateDocumentQuery(string collectionLink, FeedOptions feedOptions = null)
-
         {
             return new DocumentQuery<Document>(this, ResourceType.Document, typeof(Document), collectionLink, feedOptions);
         }

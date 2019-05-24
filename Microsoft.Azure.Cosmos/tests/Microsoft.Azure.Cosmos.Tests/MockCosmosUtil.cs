@@ -6,8 +6,10 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -46,12 +48,13 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             Uri link = new Uri($"/dbs/{dbName}", UriKind.Relative);
             Mock<CosmosDatabaseCore> mockDB = new Mock<CosmosDatabaseCore>();
             mockDB.Setup(x => x.LinkUri).Returns(link);
+            mockDB.Setup(x => x.GetRIDAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));
             return mockDB;
         }
 
-        public static CosmosClientConfiguration GetDefaultConfiguration()
+        public static CosmosClientOptions GetDefaultConfiguration()
         {
-            return new CosmosClientConfiguration(accountEndPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
+            return new CosmosClientOptions(accountEndPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)
@@ -60,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             partitionRoutingHelperMock.Setup(
                 m => m.ExtractPartitionKeyRangeFromContinuationToken(It.IsAny<INameValueCollection>(), out It.Ref<List<CompositeContinuationToken>>.IsAny
             )).Returns(new Range<string>("A", "B", true, false));
-            partitionRoutingHelperMock.Setup(m => m.TryGetTargetRangeFromContinuationTokenRange(
+            partitionRoutingHelperMock.Setup(m => m.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 It.IsAny<IReadOnlyList<Range<string>>>(),
                 It.IsAny<IRoutingMapProvider>(),
                 It.IsAny<string>(),

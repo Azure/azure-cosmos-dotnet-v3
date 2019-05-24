@@ -1,6 +1,6 @@
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case SqlObjectKind.ConditionalScalarExpression:
                 {
                     SqlConditionalScalarExpression conditionalExpression = (SqlConditionalScalarExpression)into;
-                    if(conditionalExpression == null)
+                    if (conditionalExpression == null)
                     {
                         throw new ArgumentException();
                     }
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case SqlObjectKind.InScalarExpression:
                 {
                     SqlInScalarExpression inExpression = (SqlInScalarExpression)into;
-                    if(inExpression == null)
+                    if (inExpression == null)
                     {
                         throw new ArgumentException();
                     }

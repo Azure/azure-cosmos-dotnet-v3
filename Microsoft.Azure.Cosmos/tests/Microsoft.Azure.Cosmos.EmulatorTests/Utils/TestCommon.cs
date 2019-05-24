@@ -15,7 +15,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -73,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
             if (useGateway)
             {
-                cosmosClientBuilder.UseConnectionModeGateway();
+                cosmosClientBuilder.WithConnectionModeGateway();
             }
 
             return cosmosClientBuilder.Build();
@@ -1383,7 +1385,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<CosmosDatabase> databases = new List<CosmosDatabase>();
 
-            FeedIterator<CosmosDatabaseSettings> resultSetIterator = client.Databases.GetDatabaseIterator(maxItemCount: 10);
+            FeedIterator<CosmosDatabaseSettings> resultSetIterator = client.Databases.GetDatabasesIterator(maxItemCount: 10);
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
@@ -1411,7 +1413,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, CosmosDatabase database)
         {
             //Delete them in chunks of 10.
-            FeedIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator(maxItemCount: 10);
+            FeedIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainersIterator(maxItemCount: 10);
             while (resultSetIterator.HasMoreResults)
             {
                 List<Task> deleteCollectionTasks = new List<Task>(10);

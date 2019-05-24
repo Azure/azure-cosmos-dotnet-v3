@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             object partitionKey,
             string itemId)
         {
-            var response = await container.Items.ReadItemStreamAsync(
+            var response = await container.Items.ReadItemAsStreamAsync(
                         partitionKey,
                         itemId)
                         .ConfigureAwait(false);
@@ -83,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 return suggestedMonitoredRid;
             }
 
-            string containerRid = await ((CosmosContainerCore)monitoredContainer).GetRID(cancellationToken);
-            string databaseRid = await ((CosmosDatabaseCore)((CosmosContainerCore)monitoredContainer).Database).GetRID(cancellationToken);
+            string containerRid = await ((CosmosContainerCore)monitoredContainer).GetRIDAsync(cancellationToken);
+            string databaseRid = await ((CosmosDatabaseCore)((CosmosContainerCore)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}",
                 optionsPrefix,
-                ((CosmosContainerCore)monitoredContainer).ClientContext.ClientConfiguration.AccountEndPoint.Host,
+                ((CosmosContainerCore)monitoredContainer).ClientContext.ClientOptions.AccountEndPoint.Host,
                 monitoredContainerRid);
         }
     }

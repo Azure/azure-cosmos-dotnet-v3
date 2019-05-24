@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="PipelinedDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Query
 {
@@ -185,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                 partitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
-               requestContinuation,
+                requestContinuation,
                 createOrderByComponentFunc,
                 createParallelComponentFunc));
         }

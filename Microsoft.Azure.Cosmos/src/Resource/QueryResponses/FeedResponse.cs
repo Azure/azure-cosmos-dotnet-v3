@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public FeedResponse()
         {
-
         }
 
         /// <summary>
@@ -30,7 +29,8 @@ namespace Microsoft.Azure.Cosmos
         internal FeedResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            IEnumerable<T> resource) : base(
+            IEnumerable<T> resource)
+            : base(
                 httpStatusCode,
                 headers,
                 resource)
@@ -53,9 +53,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get an enumerator of the object
         /// </summary>
-        /// <returns></returns>
+        /// <returns>An instance of an Enumerator</returns>
         public abstract IEnumerator<T> GetEnumerator();
 
+        /// <summary>
+        /// Get an enumerator of the object
+        /// </summary>
+        /// <returns>An instance of an Enumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();

@@ -21,16 +21,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only used for unit testing
         /// </summary>
-        internal CosmosDatabaseCore() { }
-
-        private readonly CosmosClientContext clientContext;
+        internal CosmosDatabaseCore()
+        {
+        }
 
         internal CosmosDatabaseCore(
             CosmosClientContext clientContext,
             string databaseId)
         {
             this.Id = databaseId;
-            this.clientContext = clientContext;
+            this.ClientContext = clientContext;
             this.LinkUri = clientContext.CreateLink(
                 parentLink: null,
                 uriPathSegment: Paths.DatabasesPathSegment,
@@ -44,26 +44,28 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Uri LinkUri { get; }
 
+        internal CosmosClientContext ClientContext { get; }
+
         public override Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.ReadStreamAsync(
+            Task<CosmosResponseMessage> response = this.ReadAsStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateDatabaseResponse(this, response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
 
         public override Task<DatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
+            Task<CosmosResponseMessage> response = this.DeleteAsStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.clientContext.ResponseFactory.CreateDatabaseResponse(this, response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
 
         public override async Task<int?> ReadProvisionedThroughputAsync(
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override Task<CosmosResponseMessage> ReadStreamAsync(
+        public override Task<CosmosResponseMessage> ReadAsStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -99,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosResponseMessage> DeleteStreamAsync(
+        public override Task<CosmosResponseMessage> DeleteAsStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -112,8 +114,8 @@ namespace Microsoft.Azure.Cosmos
         internal Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.GetRID(cancellationToken)
-                .ContinueWith(task => this.clientContext.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
+            return this.GetRIDAsync(cancellationToken)
+                .ContinueWith(task => this.ClientContext.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 
@@ -121,12 +123,12 @@ namespace Microsoft.Azure.Cosmos
             int targetThroughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<string> rid = this.GetRID(cancellationToken);
-            return rid.ContinueWith(task => this.clientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
+            Task<string> rid = this.GetRIDAsync(cancellationToken);
+            return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 
-        internal Task<string> GetRID(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ReadAsync(cancellationToken: cancellationToken)
                 .ContinueWith(task =>
@@ -141,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.clientContext.ProcessResourceOperationStreamAsync(
+            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: this.LinkUri,
                 resourceType: ResourceType.Database,
                 operationType: operationType,

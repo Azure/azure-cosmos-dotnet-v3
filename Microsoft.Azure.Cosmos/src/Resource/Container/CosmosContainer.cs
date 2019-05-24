@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract partial class CosmosContainer
+    public abstract class CosmosContainer
     {
         /// <summary>
         /// The Id of the Cosmos container
@@ -45,22 +45,9 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosItems Items { get; }
 
         /// <summary>
-        /// Operations for creating, reading/querying all stored procedures
+        /// Operations for reading/querying all conflicts
         /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosStoredProcedureSettings settings = new CosmosStoredProcedureSettings
-        ///{
-        ///    Id = "testSProcId",
-        ///    Body = "function() { { var x = 42; } }"
-        ///};
-        ///
-        /// StoredProcedureResponse response = await cosmosContainer.StoredProcedures.CreateStoredProcedureAsync(settings);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract CosmosStoredProcedures StoredProcedures { get; }
+        public abstract CosmosConflicts Conflicts { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -154,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// CosmosContainer cosmosContainer = this.database.Containers["containerId"];
         /// ContainerResponse response = cosmosContainer.DeleteAsync();
-        ///]]>
+        /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> DeleteAsync(
@@ -181,6 +168,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>The value of the provisioned throughput if any</returns>
         public abstract Task<int?> ReadProvisionedThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -205,6 +193,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public abstract Task ReplaceProvisionedThroughputAsync(
             int throughput,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -217,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
         /// </returns>
-        public abstract Task<CosmosResponseMessage> ReadStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReadAsStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -230,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the replace resource record.
         /// </returns>
-        public abstract Task<CosmosResponseMessage> ReplaceStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReplaceAsStreamAsync(
             Stream streamPayload,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -241,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
+        public abstract Task<CosmosResponseMessage> DeleteAsStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }

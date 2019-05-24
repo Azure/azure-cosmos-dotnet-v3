@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosDefaultJsonSerializer());
+            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosJsonSerializerCore());
 
             await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     document
                 };
 
-                message.Content = (new CosmosDefaultJsonSerializer()).ToStream(cosmosFeedResponse);
+                message.Content = (new CosmosJsonSerializerCore()).ToStream(cosmosFeedResponse);
             }
 
             return message;
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             public string id { get; set; }
         }
 
-        private class CustomSerializer : CosmosDefaultJsonSerializer
+        private class CustomSerializer : CosmosJsonSerializerCore
         {
             public int FromStreamCalled = 0;
             public int ToStreamCalled = 0;
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        private class CustomSerializerFails : CosmosDefaultJsonSerializer
+        private class CustomSerializerFails : CosmosJsonSerializerCore
         {
             public override T FromStream<T>(Stream stream)
             {
