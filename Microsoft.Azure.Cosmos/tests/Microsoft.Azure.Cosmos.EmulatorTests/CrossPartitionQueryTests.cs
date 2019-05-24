@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
             Assert.IsTrue(
-                ranges.Count() > 1, 
+                ranges.Count() > 1,
                 $"{nameof(CreateMultiPartitionContainer)} failed to create a container with more than 1 physical partition.");
 
             return containerResponse;
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string containerName = Guid.NewGuid().ToString() + "container";
             await CosmosItemTests.CreateNonPartitionedContainer(
-                this.database.Id, 
+                this.database.Id,
                 containerName,
                 indexingPolicy == null ? null : JsonConvert.SerializeObject(indexingPolicy));
 
@@ -200,8 +200,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
             return await this.CreateContainerAndIngestDocuments(
-                CollectionTypes.SinglePartition, 
-                documents, 
+                CollectionTypes.SinglePartition,
+                documents,
                 partitionKey,
                 indexingPolicy);
         }
@@ -244,17 +244,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<Document> insertedDocuments = new List<Document>();
-            string jObjectPartitionKey = partitionKey.Remove(0, 1);
+
             foreach (string document in documents)
             {
                 JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
+
+                // Add an id
                 if (documentObject["id"] == null)
                 {
                     documentObject["id"] = Guid.NewGuid().ToString();
                 }
 
-                JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                object pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
+                // Get partition key value.
+                object pkValue;
+                if (partitionKey != null)
+                {
+                    string jObjectPartitionKey = partitionKey.Remove(0, 1);
+                    JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
+                    pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
+                }
+                else
+                {
+                    pkValue = CosmosContainerSettings.NonePartitionKeyValue;
+                }
+
                 insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
 
             }
@@ -413,8 +426,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             case CollectionTypes.SinglePartition:
                                 createContainerTask = Task.Run(() => this.CreateSinglePartitionContainerAndIngestDocuments(
-                                    documents, 
-                                    partitionKey, 
+                                    documents,
+                                    partitionKey,
                                     indexingPolicy));
                                 break;
 
@@ -452,30 +465,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         cosmosClients.Add(cosmosClient);
                     }
 
-                    bool succeeded = false;
-                    while (!succeeded)
+                    List<Task> queryTasks = new List<Task>();
+                    foreach (CosmosClient cosmosClient in cosmosClients)
                     {
-                        try
+                        foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            List<Task> queryTasks = new List<Task>();
-                            foreach (CosmosClient cosmosClient in cosmosClients)
-                            {
-                                foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
-                                {
-                                    CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].Containers[containerAndDocuments.Item1.Id];
-                                    Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
-                                    queryTasks.Add(queryTask);
-                                }
-                            }
-
-                            await Task.WhenAll(queryTasks);
-                            succeeded = true;
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            // SDK throws TaskCanceledException every now and then
+                            CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].Containers[containerAndDocuments.Item1.Id];
+                            Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
+                            queryTasks.Add(queryTask);
                         }
                     }
+
+                    await Task.WhenAll(queryTasks);
 
                     List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
                     foreach (CosmosContainer container in collectionsAndDocuments.Select(tuple => tuple.Item1))
@@ -837,7 +838,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestQuerySinglePartitionKeyHelper(
-            CosmosContainer container, 
+            CosmosContainer container,
             IEnumerable<Document> documents)
         {
             // Query with partition key should be done in one round trip.
@@ -1214,7 +1215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    foreach(string query in new string[] { "SELECT * FROM c", "SELECT * FROM c ORDER BY c._ts"})
+                    foreach (string query in new string[] { "SELECT * FROM c", "SELECT * FROM c ORDER BY c._ts" })
                     {
                         QueryRequestOptions feedOptions = new QueryRequestOptions
                         {
@@ -1232,8 +1233,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             feedOptions);
 
                         Assert.AreEqual(
-                            documents.Count(), 
-                            queryResults.Count, 
+                            documents.Count(),
+                            queryResults.Count,
                             $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
                     }
                 }
@@ -3857,16 +3858,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryRequestOptions queryRequestOptions = null)
         {
             List<T> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokens<T>(
-                container, 
+                container,
                 query,
                 maxConcurrency,
                 maxItemCount,
                 queryRequestOptions);
             List<T> queryResultsWithContinuationTokens = await QueryWithContinuationTokens<T>(
-                container, 
+                container,
                 query,
                 maxConcurrency,
-                maxItemCount, 
+                maxItemCount,
                 queryRequestOptions);
 
             List<JToken> queryResultsWithoutContinuationTokenAsJTokens = queryResultsWithoutContinuationToken
