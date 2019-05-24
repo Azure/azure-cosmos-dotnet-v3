@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
         /// The example below creates a new <see cref="CosmosClientOptions"/> with a ConsistencyLevel and a list of preferred locations.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
+        /// CosmosClientOptions cosmosConfiguration = new CosmosClientOptions(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
         /// .WithConsistencyLevel(ConsistencyLevel.Strong)
