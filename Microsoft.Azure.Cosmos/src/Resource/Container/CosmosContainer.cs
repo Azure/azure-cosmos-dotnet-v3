@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract class CosmosContainer
+    public abstract partial class CosmosContainer
     {
         /// <summary>
         /// The Id of the Cosmos container
@@ -31,18 +31,6 @@ namespace Microsoft.Azure.Cosmos
         /// Returns the parent database reference
         /// </summary>
         public abstract CosmosDatabase Database { get; }
-
-        /// <summary>
-        /// Operations for creating new items, and reading/querying all items
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// ItemResponse<MyCustomObject> response = await this.container.Items.CreateItemAsync<MyCustomObject>(user1);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract CosmosItems Items { get; }
 
         /// <summary>
         /// Operations for reading/querying all conflicts

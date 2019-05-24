@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(true)
                 .Returns(false);
 
-            Mock<CosmosItems> mockedItems = new Mock<CosmosItems>();
+            Mock<CosmosContainer> mockedItems = new Mock<CosmosContainer>();
             mockedItems.Setup(i => i.CreateItemQuery<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value)), 
@@ -89,11 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     return mockedQuery.Object;
                 });
 
-            Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
-            //mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
-            //mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseContainerCosmosTests.GetMockedClient());
-            mockedContainer.Setup(c => c.Items).Returns(mockedItems.Object);
-            return mockedContainer.Object;
+            return mockedItems.Object;
         }
 
         private static CosmosClient GetMockedClient()

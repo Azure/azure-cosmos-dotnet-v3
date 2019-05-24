@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             int processedDocCount = 0;
             string accumulator = string.Empty;
-            ChangeFeedProcessor processor = this.Container.Items
+            ChangeFeedProcessor processor = this.Container
                 .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             foreach (int id in Enumerable.Range(0, 10))
             {
-                await this.Container.Items.CreateItemAsync<dynamic>(partitionKey, new { id = id.ToString(), pk = partitionKey });
+                await this.Container.CreateItemAsync<dynamic>(partitionKey, new { id = id.ToString(), pk = partitionKey });
             }
 
             var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             int processedDocCount = 0;
             string accumulator = string.Empty;
-            ChangeFeedProcessor processor = this.Container.Items
+            ChangeFeedProcessor processor = this.Container
                 .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 0);
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
             var content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
-            await this.Container.Items.CreateItemAsync(partitionKey, JsonConvert.DeserializeObject<dynamic>(content));
+            await this.Container.CreateItemAsync(partitionKey, JsonConvert.DeserializeObject<dynamic>(content));
 
             await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 3);
 
