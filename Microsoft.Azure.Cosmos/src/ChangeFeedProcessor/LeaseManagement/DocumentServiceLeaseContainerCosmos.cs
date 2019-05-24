@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (string.IsNullOrEmpty(prefix))
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
-            var query = this.container.Items.CreateItemQuery<DocumentServiceLeaseCore>(
+            var query = this.container.CreateItemQuery<DocumentServiceLeaseCore>(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
                 0 /* max concurrency */);
             var leases = new List<DocumentServiceLeaseCore>();
