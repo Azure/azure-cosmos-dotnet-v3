@@ -1050,40 +1050,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosDatabase db1 = await cc1.Databases.CreateDatabaseAsync(dbName);
                 CosmosContainer container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
 
-                CosmosResponseMessage response = await container1.Items.ReadItemStreamAsync("any", "any");
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
                 await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.Accepted);
 
                 // Read through client2 -> return 404
                 CosmosContainer container2 = cc2.Databases[dbName].Containers[containerName];
-                response = await container2.Items.ReadItemStreamAsync("any", "any");
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
                 await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.Accepted);
 
                 // Delete container 
                 await container1.DeleteAsync();
 
                 // Read on deleted container through client1
-                response = await container1.Items.ReadItemStreamAsync("any", "any");
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
                 await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.NotFound);
 
                 // Read on deleted container through client2
-                response = await container2.Items.ReadItemStreamAsync("any", "any");
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
                 await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.NotFound);
 
                 // Re-create again 
                 container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
 
                 // Read through client1
-                response = await container1.Items.ReadItemStreamAsync("any", "any");
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
                 await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.Accepted);
 
                 // Read through client2
-                response = await container2.Items.ReadItemStreamAsync("any", "any");
-                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
                 await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.Accepted);
             }
             finally
