@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
+        private const char PartitionKeyTokenDelimeter = '/';
+
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
         private IndexingPolicy indexingPolicyInternal;
 
@@ -406,6 +408,25 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool HasPartitionKey => this.PartitionKey != null;
 
+        internal string[] PartitionKeyPathTokens
+        {
+            get
+            {
+                if (this.PartitionKey.Paths.Count > 1)
+                {
+                    throw new ArgumentException("Multiple partition keys not supported.");
+                }
+
+                if (this.partitionKeyPathTokens == null)
+                {
+                    this.partitionKeyPathTokens = this.PartitionKeyPath.Split(new char[] { PartitionKeyTokenDelimeter }, StringSplitOptions.RemoveEmptyEntries);
+                    return this.partitionKeyPathTokens;
+                }
+
+                return this.partitionKeyPathTokens;
+            }
+        }
+
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.
         /// </summary>
@@ -430,26 +451,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
             }            
-        }
-
-        internal string[] PartitionKeyPathTokens
-        {
-            get
-            {                
-                if (this.PartitionKey.Paths.Count > 1)
-                {
-                    throw new ArgumentException("Multiple partition keys not supported.");
-                }
-
-                if(this.partitionKeyPathTokens == null)
-                {
-                    this.partitionKeyPathTokens = this.PartitionKeyPath.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-                    return this.partitionKeyPathTokens;
-                }
-
-                return this.partitionKeyPathTokens;
-            }
-            
-        }
+        }        
     }
 }
