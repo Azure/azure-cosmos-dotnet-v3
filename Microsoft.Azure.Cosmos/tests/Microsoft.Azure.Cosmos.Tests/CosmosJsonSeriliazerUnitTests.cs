@@ -62,33 +62,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 }
             }
         }
-
-        [TestMethod]
-        public void TestPartitionKeyInterceptorJsonTextWriter()
-        {                            
-            dynamic poco = new { pk = "pk", someProp = "test", nested = new { pk = int.MaxValue } };
-
-            MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
-            {
-                List<string> tokens = new List<string> { "nested", "pk" };
-                using (PartitionKeyIntercepterJsonTextWriter writer = new PartitionKeyIntercepterJsonTextWriter(streamWriter, tokens))
-                {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    JsonSerializer serializer = new JsonSerializer()
-                    {
-                        NullValueHandling = NullValueHandling.Ignore,
-                    };
-                    serializer.Serialize(writer, poco);
-                    writer.Flush();
-                    streamWriter.Flush();
-
-                    Assert.IsTrue(writer.HasPartitionKey);
-                    Assert.AreEqual(poco.nested.pk, (int)writer.PartitionKey);
-                }
-            }
-        }
-
+        
         public class ToDoActivity
         {
             public string id { get; set; }

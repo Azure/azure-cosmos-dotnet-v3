@@ -69,13 +69,11 @@ namespace Microsoft.Azure.Cosmos
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
-        {
-            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
-            
+        {                        
             Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
-                partitionKey: result.HasPartitionKey ? result.PartitionKey : null,
+                partitionKey: null,
                 itemId: null,
-                streamPayload: result.Stream,
+                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -134,13 +132,11 @@ namespace Microsoft.Azure.Cosmos
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
-        {
-            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
-           
+        {                       
             Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
-                partitionKey: result.HasPartitionKey ? result.PartitionKey : null,
+                partitionKey: null,
                 itemId: null,
-                streamPayload: result.Stream,
+                streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -170,13 +166,11 @@ namespace Microsoft.Azure.Cosmos
             T item,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
-        {
-            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await this.GetItemStreamAsync<T>(item, requestOptions, cancellationToken);
-            
+        {                        
             Task<CosmosResponseMessage> response = this.WriteItemStreamAsync(
-               partitionKey: result.HasPartitionKey ? result.PartitionKey : null,
+               partitionKey: null,
                itemId: id,
-               streamPayload: result.Stream,
+               streamPayload: this.clientContext.JsonSerializer.ToStream<T>(item),
                operationType: OperationType.Replace,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
@@ -549,36 +543,7 @@ namespace Microsoft.Azure.Cosmos
             
             return this.CosmosElementToObject(cosmosObject[tokens.Last()]);
         }
-
-        internal async Task<(bool HasPartitionKey, object PartitionKey, Stream Stream)> GetItemStreamAsync<T>(T item, 
-            ItemRequestOptions itemRequestOptions, 
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if(itemRequestOptions?.PartitionKey != null)
-            {
-                return (HasPartitionKey: false, PartitionKey: itemRequestOptions?.PartitionKey, Stream: this.clientContext.JsonSerializer.ToStream<T>(item));
-            }
-
-            //until https://github.com/Azure/azure-cosmos-dotnet-v3/pull/291 is merged and can just compare DefaultJsonSerializer and UserJsonSerializer
-            CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = (this.clientContext.JsonSerializer as CosmosJsonSerializerWrapper);
-
-            if(cosmosJsonSerializerWrapper == null)
-            {
-                throw new ArgumentNullException(nameof(cosmosJsonSerializerWrapper));
-            }
-
-            CosmosDefaultJsonSerializer defaultSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer as CosmosDefaultJsonSerializer;
-            if (defaultSerializer != null)
-            {
-                Stream stream = defaultSerializer.ToStream<T>(item, await this.container.GetPartitionKeyPathTokensAsync(cancellationToken), out object partitionKey);
-                return (HasPartitionKey: true, PartitionKey: partitionKey, Stream: stream);                                    
-            }
-            else
-            {
-                return (HasPartitionKey: false, PartitionKey: itemRequestOptions?.PartitionKey, Stream: this.clientContext.JsonSerializer.ToStream<T>(item));
-            }
-        }
-
+            
         private object CosmosElementToObject(CosmosElement cosmosElement)
         {
             if (cosmosElement?.Type == CosmosElementType.Array ||

@@ -75,51 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemRequestOptions requestOptions = new ItemRequestOptions();
             await VerifyItemNullExceptions(testItem, requestOptions);
         }
-
-        [TestMethod]
-        public async Task TestGetItemStreamAsync()
-        {
-            CosmosClientContextCore context = new CosmosClientContextCore(
-                client: null,
-                clientConfiguration: null,
-                cosmosJsonSerializer: new CosmosJsonSerializerWrapper(new CosmosDefaultJsonSerializer()),
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: new MockDocumentClient(),
-                documentQueryClient: new Mock<IDocumentQueryClient>().Object
-            );
-            CosmosDatabaseCore database = new CosmosDatabaseCore(context, "testDatabase");
-            CosmosContainerCore container = new CosmosContainerCore(context, database, "testContainer");
-            CosmosItemsCore items = new CosmosItemsCore(container.ClientContext, container);
-
-            dynamic poco = new { nested = new { pk = int.MaxValue } };
-
-            (bool HasPartitionKey, object PartitionKey, Stream Stream) result = await items.GetItemStreamAsync(poco, null);
-
-            Assert.IsTrue(result.HasPartitionKey);
-            Assert.AreEqual(poco.nested.pk, (int)result.PartitionKey);
-            Assert.IsTrue(result.Stream.Length > 0);
-
-            //not the default serializer
-            context = new CosmosClientContextCore(
-                client: null,
-                clientConfiguration: null,
-                cosmosJsonSerializer: new CosmosJsonSerializerWrapper(new CustomCosmosJsonSerializer()),
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: new MockDocumentClient(),
-                documentQueryClient: new Mock<IDocumentQueryClient>().Object
-            );
-
-            database = new CosmosDatabaseCore(context, "testDatabase");
-            container = new CosmosContainerCore(context, database, "testContainer");
-            items = new CosmosItemsCore(container.ClientContext, container);
-
-            result = await items.GetItemStreamAsync(poco, null);
-
-            Assert.IsFalse(result.Item1);
-        }
-
+        
         [TestMethod]
         public async Task TestGetPartitionKeyValueFromStreamAsync()
         {
