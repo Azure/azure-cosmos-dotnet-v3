@@ -502,6 +502,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         exceptionHistory = new AggregateException(previousExceptions);
                     }
                 }
+                finally
+                {
+                    await this.CleanUp();
+                }
             }
 
             if (exceptionHistory.InnerExceptions.Count > 0)
