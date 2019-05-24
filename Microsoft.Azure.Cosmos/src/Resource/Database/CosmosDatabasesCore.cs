@@ -88,6 +88,23 @@ namespace Microsoft.Azure.Cosmos
                     keyName => new CosmosDatabaseCore(this.ClientContext, keyName));
 
         public override Task<CosmosResponseMessage> CreateDatabaseAsStreamAsync(
+                CosmosDatabaseSettings databaseSettings,
+                int? throughput = null,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (databaseSettings == null)
+            {
+                throw new ArgumentNullException(nameof(databaseSettings));
+            }
+
+            this.ClientContext.ValidateResource(databaseSettings.Id);
+            Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseSettings>(databaseSettings);
+
+            return this.CreateDatabaseAsStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
+        }
+
+        private Task<CosmosResponseMessage> CreateDatabaseAsStreamInternalAsync(
                 Stream streamPayload,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
@@ -128,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.CreateDatabaseAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.CreateDatabaseAsStreamInternalAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseSettings>(databaseSettings),
                 throughput: throughput,
                 requestOptions: requestOptions,

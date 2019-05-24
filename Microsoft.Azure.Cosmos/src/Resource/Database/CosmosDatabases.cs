@@ -134,13 +134,13 @@ namespace Microsoft.Azure.Cosmos
         /// documents. Since databases are an administrative resource, the Service Master Key will be
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
-        /// <param name="streamPayload">The database settings</param>
+        /// <param name="databaseSettings">The database settings</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
         public abstract Task<CosmosResponseMessage> CreateDatabaseAsStreamAsync(
-               Stream streamPayload,
+               CosmosDatabaseSettings databaseSettings,
                int? throughput = null,
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
