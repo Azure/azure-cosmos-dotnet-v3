@@ -64,6 +64,16 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (string.IsNullOrEmpty(partitionKeyPath))
+            {
+                throw new ArgumentNullException(nameof(partitionKeyPath));
+            }
+
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
 
             return this.CreateContainerAsync(
@@ -111,6 +121,16 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (string.IsNullOrEmpty(partitionKeyPath))
+            {
+                throw new ArgumentNullException(nameof(partitionKeyPath));
+            }
+
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
             return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
         }

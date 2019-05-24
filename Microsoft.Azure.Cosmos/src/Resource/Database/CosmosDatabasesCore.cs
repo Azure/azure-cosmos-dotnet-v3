@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             CosmosDatabaseSettings databaseSettings = this.PrepareCosmosDatabaseSettings(id);
             return this.CreateDatabaseAsync(
                 databaseSettings: databaseSettings,
@@ -51,6 +56,11 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             // Doing a Read before Create will give us better latency for existing databases
             CosmosDatabase database = this[id];
             DatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);

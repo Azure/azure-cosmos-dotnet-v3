@@ -73,15 +73,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create should fail if the database does not exist
             if (dbNotExist)
             {
-                CosmosContainerSettings containerSettings = new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk");
-                this.VerifyNotFoundResponse(await database.Containers.CreateContainerAsStreamAsync(containerSettings, throughput: 500));
+                CosmosContainerSettings newcontainerSettings = new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk");
+                this.VerifyNotFoundResponse(await database.Containers.CreateContainerAsStreamAsync(newcontainerSettings, throughput: 500));
             }
 
             CosmosContainer doesNotExistContainer = database.Containers[DoesNotExist];
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReadAsStreamAsync());
 
-            Stream replace = jsonSerializer.ToStream<CosmosContainerSettings>(new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk"));
-            this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceAsStreamAsync(replace));
+            CosmosContainerSettings containerSettings = new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk");
+            this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceAsStreamAsync(containerSettings));
             this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteAsStreamAsync());
 
             // Validate Child resources
