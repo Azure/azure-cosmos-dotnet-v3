@@ -2793,33 +2793,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            // Check error on skip take for partitioned collection.
-            try
-            {
-                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
-                {
-                    EnableCrossPartitionQuery = true,
-                    MaxItemCount = 3,
-                    MaxBufferedItemCount = 1000,
-                    EnableCrossPartitionSkipTake = false,
-                };
-
-                string query = "SELECT * FROM c OFFSET 10 LIMIT 10";
-                List<JToken> actualFromQueryWithContinutionToken = await QueryWithoutContinuationTokens<JToken>(
-                    container,
-                    query,
-                    queryRequestOptions);
-
-                Assert.Fail("Expected exception for Cross Partition OFFSET LIMIT");
-            }
-            catch (Exception ex)
-            {
-                if (!(ex.Message.Contains("Cross Partition OFFSET / LIMIT is not supported.")))
-                {
-                    Assert.Fail("Wrong exception");
-                }
-            }
-
             foreach (int offsetCount in new int[] { 0, 1, 10, 100, documents.Count() })
             {
                 foreach (int limitCount in new int[] { 0, 1, 10, 100, documents.Count() })
