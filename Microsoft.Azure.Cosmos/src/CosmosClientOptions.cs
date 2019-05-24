@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// This is a configuration class that holds all the properties the CosmosClient requires.
+    /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
     public class CosmosClientOptions
     {
@@ -47,10 +47,10 @@ namespace Microsoft.Azure.Cosmos
         private CosmosJsonSerializer userJsonSerializer;
 
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
-        private int maxConnectionLimit;
+        private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
-        /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
+        /// Initialize a new CosmosClientOptions class that holds all the properties the CosmosClient requires.
         /// </summary>
         /// <param name="accountEndPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
         /// <param name="accountKey">The key to the account.</param>
@@ -58,25 +58,13 @@ namespace Microsoft.Azure.Cosmos
         /// The example below creates a new <see cref="CosmosClientOptions"/>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
         /// ]]>
         /// </code>
         /// </example>
-        /// <example>
-        /// The example below creates a new <see cref="CosmosClientOptions"/> with a ConsistencyLevel and a list of preferred locations.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
-        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey")
-        /// .UseConsistencyLevel(ConsistencyLevel.Strong)
-        /// .UseCurrentRegion(Region.USEast2);
-        /// ]]>
-        /// </code>
-        /// </example>
-        internal CosmosClientOptions(
+        public CosmosClientOptions(
             string accountEndPoint,
             string accountKey)
         {
@@ -92,6 +80,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.AccountEndPoint = new Uri(accountEndPoint);
             this.AccountKey = accountKey;
+
             this.Initialize();
         }
 
@@ -100,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
-        internal CosmosClientOptions(string connectionString)
+        public CosmosClientOptions(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
             {
@@ -111,6 +100,7 @@ namespace Microsoft.Azure.Cosmos
             this.AccountEndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
                 CosmosClientOptions.ConnectionStringAccountEndpoint));
             this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
+
             this.Initialize();
         }
 
@@ -137,10 +127,10 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        public virtual string UserAgentSuffix
+        public virtual string ApplicationName
         {
             get => this.UserAgentContainer.Suffix;
-            internal set => this.UserAgentContainer.Suffix = value;
+            set => this.UserAgentContainer.Suffix = value;
         }
 
         /// <summary>
@@ -148,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
         /// are currently supported. Please update to a latest SDK version if a preferred Azure region is not listed.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
-        public virtual string CurrentRegion { get; internal set; }
+        public virtual string ApplicationRegion { get; set; }
 
         /// <summary>
         /// Gets the maximum number of concurrent connections allowed for the target
@@ -159,10 +149,10 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <value>Default value is 50.</value>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
-        public virtual int MaxConnectionLimit
+        public virtual int GatewayModeMaxConnectionLimit
         {
-            get => this.maxConnectionLimit;
-            internal set
+            get => this.gatewayModeMaxConnectionLimit;
+            set
             {
                 if (value <= 0)
                 {
@@ -174,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException("Max connection limit is only valid for ConnectionMode.Gateway.");
                 }
 
-                this.maxConnectionLimit = value;
+                this.gatewayModeMaxConnectionLimit = value;
             }
         }
 
@@ -184,17 +174,17 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>Default value is 1 minute.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
-        public virtual TimeSpan RequestTimeout { get; internal set; }
+        public virtual TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(CosmosRequestHandler[])"/>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public virtual ReadOnlyCollection<CosmosRequestHandler> CustomHandlers
         {
             get => this.customHandlers;
-            internal set
+            set
             {
                 if (value != null && value.Any(x => x == null))
                 {
@@ -221,13 +211,13 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
-        public virtual ConnectionMode ConnectionMode { get; internal set; }
+        public virtual ConnectionMode ConnectionMode { get; set; }
 
         /// <summary>
         /// The number of times to retry on throttled requests.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
-        public virtual int? MaxRetryAttemptsOnThrottledRequests { get; internal set; }
+        public virtual int? MaxRetryAttemptsOnThrottledRequests { get; set; }
 
         /// <summary>
         /// The max time to wait for retry requests. 
@@ -236,17 +226,17 @@ namespace Microsoft.Azure.Cosmos
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
-        public virtual TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; internal set; }
+        public virtual TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; set; }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
         /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
         /// </summary>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         public virtual CosmosJsonSerializer CosmosSerializer
         {
             get => this.userJsonSerializer;
-            internal set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
+            set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
         }
 
         /// <summary>
@@ -254,13 +244,13 @@ namespace Microsoft.Azure.Cosmos
         /// The default serializer is always used for all system owned types like CosmosDatabaseSettings.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         internal virtual CosmosJsonSerializer SettingsSerializer => CosmosClientOptions.settingsSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
         /// </summary>
-        [JsonConverter(typeof(ClientConfigurationJsonConverter))]
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
         internal virtual CosmosJsonSerializer CosmosSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.SettingsSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
 
         /// <summary>
@@ -313,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
-                MaxConnectionLimit = this.MaxConnectionLimit,
+                MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
@@ -321,9 +311,9 @@ namespace Microsoft.Azure.Cosmos
                 UseMultipleWriteLocations = true,
             };
 
-            if (this.CurrentRegion != null)
+            if (this.ApplicationRegion != null)
             {
-                connectionPolicy.SetCurrentLocation(this.CurrentRegion);
+                connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
             }
 
             if (this.MaxRetryAttemptsOnThrottledRequests != null && this.MaxRetryAttemptsOnThrottledRequests.HasValue)
@@ -342,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
         private void Initialize()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.MaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
+            this.GatewayModeMaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
             this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
@@ -377,7 +367,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The complex object passed in by the user can contain objects that can not be serialized. Instead just log the types.
         /// </summary>
-        private class ClientConfigurationJsonConverter : JsonConverter
+        private class ClientOptionJsonConverter : JsonConverter
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
