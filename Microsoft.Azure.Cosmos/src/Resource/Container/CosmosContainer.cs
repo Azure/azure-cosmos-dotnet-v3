@@ -201,14 +201,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replace a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="streamPayload">The <see cref="Stream"/> object.</param>
+        /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/>.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the replace resource record.
         /// </returns>
         public abstract Task<CosmosResponseMessage> ReplaceAsStreamAsync(
-            Stream streamPayload,
+            CosmosContainerSettings containerSettings,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

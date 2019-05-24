@@ -72,9 +72,13 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            this.ClientContext.ValidateResource(containerSettings.Id);
+            if (containerSettings == null)
+            {
+                throw new ArgumentNullException(nameof(containerSettings));
+            }
 
-            Task<CosmosResponseMessage> response = this.ReplaceAsStreamAsync(
+            this.ClientContext.ValidateResource(containerSettings.Id);
+            Task<CosmosResponseMessage> response = this.ReplaceAsStreamInternalAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -127,18 +131,6 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        public override Task<CosmosResponseMessage> ReplaceAsStreamAsync(
-            Stream streamPayload,
-            ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessAsStreamAsync(
-                streamPayload: streamPayload,
-                operationType: OperationType.Replace,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
         public override Task<CosmosResponseMessage> ReadAsStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -146,6 +138,23 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessAsStreamAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        public override Task<CosmosResponseMessage> ReplaceAsStreamAsync(
+            CosmosContainerSettings containerSettings, 
+            ContainerRequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (containerSettings == null)
+            {
+                throw new ArgumentNullException(nameof(containerSettings));
+            }
+
+            this.ClientContext.ValidateResource(containerSettings.Id);
+            return this.ReplaceAsStreamInternalAsync(
+                streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -238,6 +247,18 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken);
                 })
                 .Unwrap();
+        }
+
+        private Task<CosmosResponseMessage> ReplaceAsStreamInternalAsync(
+            Stream streamPayload,
+            ContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessAsStreamAsync(
+                streamPayload: streamPayload,
+                operationType: OperationType.Replace,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         private Task<CosmosResponseMessage> ProcessAsStreamAsync(
