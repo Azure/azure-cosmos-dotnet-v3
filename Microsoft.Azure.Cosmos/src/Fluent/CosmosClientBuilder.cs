@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
         /// .UseConsistencyLevel(ConsistencyLevel.Strong)
-        /// .WithApplicationRegion(Region.USEast2);
+        /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
@@ -71,9 +71,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>An instance of <see cref="CosmosClient"/>.</returns>
         public virtual CosmosClient Build()
         {
-            CosmosClientOptions copyOfConfig = this.clientOptions.Clone();
-            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {copyOfConfig.GetSerializedConfiguration()}");
-            return new CosmosClient(copyOfConfig);
+            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
+            return new CosmosClient(this.clientOptions);
         }
 
         /// <summary>
@@ -84,9 +83,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         internal virtual CosmosClient Build(DocumentClient documentClient)
         {
-            CosmosClientOptions copyOfConfig = this.clientOptions.Clone();
-            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {copyOfConfig.GetSerializedConfiguration()}");
-            return new CosmosClient(copyOfConfig, documentClient);
+            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {this.clientOptions.GetSerializedConfiguration()}");
+            return new CosmosClient(this.clientOptions, documentClient);
         }
 
         /// <summary>
@@ -99,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         public virtual CosmosClientBuilder WithApplicationName(string applicationName)
         {
-            this.clientOptions.UserAgentSuffix = applicationName;
+            this.clientOptions.ApplicationName = applicationName;
             return this;
         }
 
@@ -114,16 +112,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
-        /// .WithApplicationRegion(CosmosRegion.USEast2);
+        /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="CosmosClientOptions.CurrentRegion"/>
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
         public virtual CosmosClientBuilder WithApplicationRegion(string applicationRegion)
         {
-            this.clientOptions.CurrentRegion = applicationRegion;
+            this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
         }
 
@@ -164,14 +162,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        /// <seealso cref="CosmosClientOptions.MaxConnectionLimit"/>
+        /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
         public virtual CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
             this.clientOptions.ConnectionProtocol = Protocol.Https;
             if (maxConnectionLimit.HasValue)
             {
-                this.clientOptions.MaxConnectionLimit = maxConnectionLimit.Value;
+                this.clientOptions.GatewayModeMaxConnectionLimit = maxConnectionLimit.Value;
             }
 
             return this;

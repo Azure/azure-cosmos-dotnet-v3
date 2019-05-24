@@ -129,40 +129,57 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create a new CosmosClient with the cosmosClientConfiguration
+        /// Create a new CosmosClient with the cosmosClientOption
         /// </summary>
-        /// <param name="cosmosClientConfiguration">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
+        /// <param name="clientOptions">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
         /// <example>
-        /// This example creates a CosmosClient
+        /// This example creates a CosmosClient through explicit CosmosClientOptions
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey");
-        /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions("accountEndpoint", "accountkey");
+        /// clientOptions.ApplicationRegion = "East US 2";
+        /// clientOptions.ConnectionMode = ConnectionMode.Direct;
+        /// clientOptions.RequestTimeout = TimeSpan.FromSeconds(5);
+        /// 
+        /// using (CosmosClient client = new CosmosClient(clientOptions))
         /// {
         ///     // Create a database and other CosmosClient operations
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        internal CosmosClient(CosmosClientOptions cosmosClientConfiguration)
+        /// <example>
+        /// This example creates a CosmosClient through builder
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey")
+        /// .UseConsistencyLevel(ConsistencyLevel.Eventual)
+        /// .WithApplicationRegion("East US 2");
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClient(CosmosClientOptions clientOptions)
         {
-            if (cosmosClientConfiguration == null)
+            if (clientOptions == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
+                throw new ArgumentNullException(nameof(clientOptions));
             }
 
+            CosmosClientOptions clientOptionsClone = clientOptions.Clone();
+
             DocumentClient documentClient = new DocumentClient(
-                cosmosClientConfiguration.AccountEndPoint,
-                cosmosClientConfiguration.AccountKey,
-                apitype: cosmosClientConfiguration.ApiType,
-                sendingRequestEventArgs: cosmosClientConfiguration.SendingRequestEventArgs,
-                transportClientHandlerFactory: cosmosClientConfiguration.TransportClientHandlerFactory,
-                connectionPolicy: cosmosClientConfiguration.GetConnectionPolicy(),
-                enableCpuMonitor: cosmosClientConfiguration.EnableCpuMonitor,
-                storeClientFactory: cosmosClientConfiguration.StoreClientFactory);
+                clientOptionsClone.AccountEndPoint,
+                clientOptionsClone.AccountKey,
+                apitype: clientOptionsClone.ApiType,
+                sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
+                transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
+                connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
+                enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
+                storeClientFactory: clientOptionsClone.StoreClientFactory);
 
             this.Init(
-                cosmosClientConfiguration,
+                clientOptionsClone,
                 documentClient);
         }
 
@@ -170,12 +187,12 @@ namespace Microsoft.Azure.Cosmos
         /// Used for unit testing only.
         /// </summary>
         internal CosmosClient(
-            CosmosClientOptions cosmosClientConfiguration,
+            CosmosClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
-            if (cosmosClientConfiguration == null)
+            if (cosmosClientOptions == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
+                throw new ArgumentNullException(nameof(cosmosClientOptions));
             }
 
             if (documentClient == null)
@@ -183,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(documentClient));
             }
 
-            this.Init(cosmosClientConfiguration, documentClient);
+            this.Init(cosmosClientOptions, documentClient);
         }
 
         /// <summary>
