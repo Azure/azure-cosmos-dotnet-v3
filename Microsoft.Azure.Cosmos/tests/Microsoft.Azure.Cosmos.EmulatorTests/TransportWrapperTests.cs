@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container = await database.Containers.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
             string id1 = Guid.NewGuid().ToString();
-            TestPayload payload1 = await container.Items.CreateItemAsync<TestPayload>(id1, new TestPayload { id = id1 });
-            payload1 = await container.Items.ReadItemAsync<TestPayload>(id1, id1);
+            TestPayload payload1 = await container.CreateItemAsync<TestPayload>(id1, new TestPayload { id = id1 });
+            payload1 = await container.ReadItemAsync<TestPayload>(id1, id1);
         }
 
         private static void Interceptor(

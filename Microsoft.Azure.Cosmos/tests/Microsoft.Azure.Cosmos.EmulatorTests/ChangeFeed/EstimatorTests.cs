@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task WhenNoLeasesExistReturn1()
         {
             long? receivedEstimation = 0;
-            ChangeFeedProcessor estimator = this.Container.Items
+            ChangeFeedProcessor estimator = this.Container
                 .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task WhenLeasesHaveContinuationTokenNullReturn0()
         {
-            ChangeFeedProcessor processor = this.Container.Items
+            ChangeFeedProcessor processor = this.Container
                 .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     return Task.CompletedTask;
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
 
             long? receivedEstimation = null;
-            ChangeFeedProcessor estimator = this.Container.Items
+            ChangeFeedProcessor estimator = this.Container
                 .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task CountPendingDocuments()
         {
-            ChangeFeedProcessor processor = this.Container.Items
+            ChangeFeedProcessor processor = this.Container
                 .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     return Task.CompletedTask;
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in Enumerable.Range(0, 10))
             {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
 
             long? receivedEstimation = null;
-            ChangeFeedProcessor estimator = this.Container.Items
+            ChangeFeedProcessor estimator = this.Container
                 .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting more documents
             foreach (int id in Enumerable.Range(11, 10))
             {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
             }
 
             await estimator.StartAsync();
