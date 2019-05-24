@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         private CosmosJsonSerializer userJsonSerializer;
 
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
-        private int maxConnectionLimit;
+        private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
@@ -71,12 +71,12 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosConfiguration cosmosConfiguration = new CosmosConfiguration(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
-        /// .UseConsistencyLevel(ConsistencyLevel.Strong)
-        /// .UseCurrentRegion(Region.USEast2);
+        /// .WithConsistencyLevel(ConsistencyLevel.Strong)
+        /// .WithApplicationRegion(Region.USEast2);
         /// ]]>
         /// </code>
         /// </example>
-        internal CosmosClientOptions(
+        public CosmosClientOptions(
             string accountEndPoint,
             string accountKey)
         {
@@ -92,6 +92,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.AccountEndPoint = new Uri(accountEndPoint);
             this.AccountKey = accountKey;
+
             this.Initialize();
         }
 
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
-        internal CosmosClientOptions(string connectionString)
+        public CosmosClientOptions(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
             {
@@ -111,6 +112,7 @@ namespace Microsoft.Azure.Cosmos
             this.AccountEndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
                 CosmosClientOptions.ConnectionStringAccountEndpoint));
             this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
+
             this.Initialize();
         }
 
@@ -137,10 +139,10 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        public virtual string UserAgentSuffix
+        public virtual string ApplicationName
         {
             get => this.UserAgentContainer.Suffix;
-            internal set => this.UserAgentContainer.Suffix = value;
+            set => this.UserAgentContainer.Suffix = value;
         }
 
         /// <summary>
@@ -148,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
         /// are currently supported. Please update to a latest SDK version if a preferred Azure region is not listed.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
-        public virtual string CurrentRegion { get; internal set; }
+        public virtual string ApplicationRegion { get; set; }
 
         /// <summary>
         /// Gets the maximum number of concurrent connections allowed for the target
@@ -159,9 +161,9 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <value>Default value is 50.</value>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
-        public virtual int MaxConnectionLimit
+        public virtual int GatewayModeMaxConnectionLimit
         {
-            get => this.maxConnectionLimit;
+            get => this.gatewayModeMaxConnectionLimit;
             internal set
             {
                 if (value <= 0)
@@ -174,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException("Max connection limit is only valid for ConnectionMode.Gateway.");
                 }
 
-                this.maxConnectionLimit = value;
+                this.gatewayModeMaxConnectionLimit = value;
             }
         }
 
@@ -184,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>Default value is 1 minute.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
-        public virtual TimeSpan RequestTimeout { get; internal set; }
+        public virtual TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
@@ -194,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual ReadOnlyCollection<CosmosRequestHandler> CustomHandlers
         {
             get => this.customHandlers;
-            internal set
+            set
             {
                 if (value != null && value.Any(x => x == null))
                 {
@@ -221,13 +223,13 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
-        public virtual ConnectionMode ConnectionMode { get; internal set; }
+        public virtual ConnectionMode ConnectionMode { get; set; }
 
         /// <summary>
         /// The number of times to retry on throttled requests.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
-        public virtual int? MaxRetryAttemptsOnThrottledRequests { get; internal set; }
+        public virtual int? MaxRetryAttemptsOnThrottledRequests { get; set; }
 
         /// <summary>
         /// The max time to wait for retry requests. 
@@ -236,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
-        public virtual TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; internal set; }
+        public virtual TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; set; }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
@@ -246,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosJsonSerializer CosmosSerializer
         {
             get => this.userJsonSerializer;
-            internal set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
+            set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
         }
 
         /// <summary>
@@ -313,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
-                MaxConnectionLimit = this.MaxConnectionLimit,
+                MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
@@ -321,9 +323,9 @@ namespace Microsoft.Azure.Cosmos
                 UseMultipleWriteLocations = true,
             };
 
-            if (this.CurrentRegion != null)
+            if (this.ApplicationRegion != null)
             {
-                connectionPolicy.SetCurrentLocation(this.CurrentRegion);
+                connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
             }
 
             if (this.MaxRetryAttemptsOnThrottledRequests != null && this.MaxRetryAttemptsOnThrottledRequests.HasValue)
@@ -342,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
         private void Initialize()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.MaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
+            this.GatewayModeMaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
             this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;

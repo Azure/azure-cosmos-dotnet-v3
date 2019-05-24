@@ -131,25 +131,31 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a new CosmosClient with the cosmosClientConfiguration
         /// </summary>
-        /// <param name="cosmosClientConfiguration">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
+        /// <param name="clientConfiguration">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
         /// <example>
         /// This example creates a CosmosClient
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey");
-        /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions("accountEndpoint", "accountkey");
+        /// clientOptions.ApplicationRegion = "East US 2";
+        /// clientOptions.ConnectionMode = ConnectionMode.Direct;
+        /// clientOptions.RequestTimeout = TimeSpan.FromSeconds(5);
+        /// 
+        /// using (CosmosClient client = new CosmosClient(clientOptions))
         /// {
         ///     // Create a database and other CosmosClient operations
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        internal CosmosClient(CosmosClientOptions cosmosClientConfiguration)
+        public CosmosClient(CosmosClientOptions clientConfiguration)
         {
-            if (cosmosClientConfiguration == null)
+            if (clientConfiguration == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
+                throw new ArgumentNullException(nameof(clientConfiguration));
             }
+
+            CosmosClientOptions cosmosClientConfiguration = clientConfiguration.Clone();
 
             DocumentClient documentClient = new DocumentClient(
                 cosmosClientConfiguration.AccountEndPoint,
