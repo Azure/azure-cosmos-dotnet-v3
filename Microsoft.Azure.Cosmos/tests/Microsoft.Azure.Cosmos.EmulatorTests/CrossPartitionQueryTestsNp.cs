@@ -393,7 +393,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
-            int maxItemCount,
             QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
@@ -992,14 +991,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
-                        MaxConcurrency = maxDegreeOfParallelism
+                        MaxConcurrency = maxDegreeOfParallelism,
+                        MaxItemCount = maxItemCount
                     };
 
                     List<JToken> actualFromQueryWithoutContinutionTokens;
                     actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
                         container,
                         "SELECT * FROM c",
-                        maxItemCount,
                         feedOptions);
 
                     Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
@@ -1196,7 +1195,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (Tuple<string, object> data in datum)
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
-                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(container, query, maxItemCount: 1)).Single();
+                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(container, query)).Single();
                     object expected = data.Item2;
 
                     if (aggregate is long)
@@ -2623,7 +2622,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents.Add(JsonConvert.SerializeObject(person));
             }
 
-            await CreateIngestQueryDelete(
+            await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionOffsetLimit,
@@ -2634,34 +2633,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            // Check error on skip take for partitioned collection.
-            try
-            {
-                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
-                {
-                    EnableCrossPartitionQuery = true,
-                    MaxItemCount = 3,
-                    MaxBufferedItemCount = 1000,
-                    EnableCrossPartitionSkipTake = false,
-                };
-
-                string query = "SELECT * FROM c OFFSET 10 LIMIT 10";
-                List<JToken> actualFromQueryWithContinutionToken = await QueryWithoutContinuationTokens<JToken>(
-                    container,
-                    query,
-                    3,
-                    queryRequestOptions);
-
-                Assert.Fail("Expected exception for Cross Partition OFFSET LIMIT");
-            }
-            catch (Exception ex)
-            {
-                if (!(ex.Message.Contains("Cross Partition OFFSET / LIMIT is not supported.")))
-                {
-                    Assert.Fail("Wrong exception");
-                }
-            }
-
             foreach (int offsetCount in new int[] { 0, 1, 10, 100, documents.Count() })
             {
                 foreach (int limitCount in new int[] { 0, 1, 10, 100, documents.Count() })
@@ -2695,7 +2666,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         List<JToken> actualFromQueryWithoutContinutionToken = await QueryWithoutContinuationTokens<JToken>(
                             container,
                             query,
-                            3,
                             queryRequestOptions);
                         Assert.IsTrue(
                             expectedResults.SequenceEqual(actualFromQueryWithoutContinutionToken, JsonTokenEqualityComparer.Value),
