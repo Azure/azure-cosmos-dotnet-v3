@@ -98,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 true,
                 false);
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Assert.IsNotNull(routingMapProvider);
+
             IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(container.ResourceId, fullRange);
             return ranges;
         }
