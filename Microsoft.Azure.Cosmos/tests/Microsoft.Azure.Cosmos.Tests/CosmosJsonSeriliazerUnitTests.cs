@@ -7,14 +7,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
@@ -145,7 +142,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             return cosmosResponse;
         }
 
-        
         public class ToDoActivity
         {
             public string id { get; set; }

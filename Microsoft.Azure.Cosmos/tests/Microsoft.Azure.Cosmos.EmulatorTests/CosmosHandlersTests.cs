@@ -4,11 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosHandlersTests : BaseCosmosClientHelper
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     createdList.Add(temp);
 
-                    await this.Container.CreateItemAsync<ToDoActivity>(item: temp, requestOptions: new ItemRequestOptions { PartitionKey = temp.status });
+                    await this.Container.CreateItemAsync<ToDoActivity>(item: temp);
                 }
             }
 

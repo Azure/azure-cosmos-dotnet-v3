@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportWrapperTests;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
 
@@ -68,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateDropItemTest()
         {
             ToDoActivity testItem = this.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem, requestOptions: new ItemRequestOptions { PartitionKey = testItem.status });
+            ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
@@ -84,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id = Guid.NewGuid().ToString()
             };
 
-            ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, requestOptions: new ItemRequestOptions { PartitionKey = Undefined.Value });
+            ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
@@ -790,7 +789,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
             {
                 IfMatchEtag = Guid.NewGuid().ToString(),
-                PartitionKey = testItem.status
             };
 
             try
@@ -863,8 +861,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Adding item to fixed container with non-none PK.
                 ToDoActivityAfterMigration itemWithPK = this.CreateRandomToDoActivityAfterMigration("TestPk");
                 ItemResponse<ToDoActivityAfterMigration> createResponseWithPk = await fixedContainer.CreateItemAsync<ToDoActivityAfterMigration>(
-                 item: itemWithPK,
-                 requestOptions: new ItemRequestOptions { PartitionKey = itemWithPK.status });
+                 item: itemWithPK);
 
                 Assert.IsNotNull(createResponseWithPk.Resource);
                 Assert.AreEqual(HttpStatusCode.Created, createResponseWithPk.StatusCode);
@@ -1041,7 +1038,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     createdList.Add(temp);
 
-                    await this.Container.CreateItemAsync<ToDoActivity>(item: temp, requestOptions: new ItemRequestOptions { PartitionKey = temp.status });
+                    await this.Container.CreateItemAsync<ToDoActivity>(item: temp);
                 }
             }
 

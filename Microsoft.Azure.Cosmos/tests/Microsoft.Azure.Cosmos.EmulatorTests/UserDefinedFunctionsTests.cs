@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 1
             };
 
-            await this.container.CreateItemAsync<ToDoActivity>(item, new ItemRequestOptions { PartitionKey = item.status });
+            await this.container.CreateItemAsync<ToDoActivity>(item);
 
             CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await this.scripts.CreateUserDefinedFunctionAsync(
                 new CosmosUserDefinedFunctionSettings

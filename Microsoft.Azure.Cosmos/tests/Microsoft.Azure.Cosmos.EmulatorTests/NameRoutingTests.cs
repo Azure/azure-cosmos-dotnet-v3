@@ -129,15 +129,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //3. Document CRUD
                 Document doc1;
                 {
-                    doc1 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc1Id }, requestOptions: new ItemRequestOptions { PartitionKey = doc1Id });
+                    doc1 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc1Id });
                     doc1 = await container.ReadItemAsync<Document>(partitionKey: doc1Id, id: doc1Id);
-                    Document doc2 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc2Id }, requestOptions: new ItemRequestOptions { PartitionKey = doc2Id });
-                    Document doc3 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc3Id }, requestOptions: new ItemRequestOptions { PartitionKey = doc3Id });
+                    Document doc2 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc2Id });
+                    Document doc3 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc3Id });
 
                     // create conflict document
                     try
                     {
-                        Document doc1Conflict = await container.CreateItemAsync<Document>(item: new Document() { Id = doc1Id }, requestOptions: new ItemRequestOptions { PartitionKey = doc1Id });
+                        Document doc1Conflict = await container.CreateItemAsync<Document>(item: new Document() { Id = doc1Id });
                     }
                     catch (CosmosException e)
                     {
@@ -785,7 +785,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabase cosmosDatabase = await client.Databases.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             ContainerResponse cosmosContainerResponse = await cosmosDatabase.Containers.CreateContainerAsync(containerSetting);
             Document documentDefinition = new Document { Id = Guid.NewGuid().ToString() };
-            await cosmosContainerResponse.Container.CreateItemAsync(documentDefinition, new ItemRequestOptions { PartitionKey = documentDefinition.Id });
+            await cosmosContainerResponse.Container.CreateItemAsync(documentDefinition);
             await cosmosContainerResponse.Container.DeleteAsync();
 
             try
@@ -1141,7 +1141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // replace should fail
             Document documentDefinition = new Document() { Id = Guid.NewGuid().ToString() };
-            Document documentCreated = await coll1.CreateItemAsync(documentDefinition, new ItemRequestOptions { PartitionKey = documentDefinition.Id });
+            Document documentCreated = await coll1.CreateItemAsync(documentDefinition);
             foreach (string resourceName in forbiddenCharInNameList)
             {
                 try
@@ -1317,7 +1317,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosContainer container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
                 Document document1 = new Document { Id = "doc1" };
                 document1.SetPropertyValue("field1", 1);
-                await container.CreateItemAsync(document1, new ItemRequestOptions { PartitionKey = 1 });
+                await container.CreateItemAsync(document1);
 
                 CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
                 database = otherClient.Databases["db1"];
@@ -1329,7 +1329,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Document document2 = new Document { Id = "doc1" };
                 document2.SetPropertyValue("field2", 1);
                 container = client.Databases["db1"].Containers["coll1"];
-                await container.CreateItemAsync(document2, new ItemRequestOptions { PartitionKey = 1 });
+                await container.CreateItemAsync(document2);
             }
             finally
             {
@@ -1726,7 +1726,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosContainer container = await database.Containers.CreateContainerAsync(new CosmosContainerSettings { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
                 Document document1 = new Document { Id = "doc1" };
                 document1.SetPropertyValue("field1", 1);
-                await container.CreateItemAsync(document1, new ItemRequestOptions { PartitionKey = 1 });
+                await container.CreateItemAsync(document1);
 
                 CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
                 database = otherClient.Databases["db1"];
@@ -1776,7 +1776,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id = "id_" + Guid.NewGuid().ToString(),
                     Author = "Author_" + Guid.NewGuid().ToString(),
                 };
-                await collection.CreateItemAsync(payload, new ItemRequestOptions { PartitionKey = payload.id });
+                await collection.CreateItemAsync(payload);
 
                 // Update collection.
                 containerSetting.Id = collection.Id;
@@ -1804,7 +1804,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id = "Id_" + Guid.NewGuid().ToString(),
                     Author = "Author_" + Guid.NewGuid().ToString(),
                 };
-                await collection.CreateItemAsync(payload, new ItemRequestOptions { PartitionKey = payload.id });
+                await collection.CreateItemAsync(payload);
 
                 // Delete and re-create the collection with the same name.
                 await collection.DeleteAsync();
