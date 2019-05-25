@@ -59,17 +59,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             MultiPartition = 0x4,
         }
 
+        [ClassInitialize]
+        [ClassCleanup]
+        public static void ClassSetup(TestContext testContext = null)
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient(false);
+            CrossPartitionQueryTests.CleanUp(client).Wait();
+        }
+
         [TestInitialize]
         public async Task Initialize()
         {
-            await this.CleanUp();
             this.database = await this.Client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
-            await this.CleanUp();
             await this.database.DeleteAsync();
         }
 
@@ -292,15 +298,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
         }
 
-        private async Task CleanUp()
+        private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabasesIterator();
+            FeedIterator<CosmosDatabaseSettings> allDatabases = client.Databases.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
                 foreach (CosmosDatabaseSettings db in await allDatabases.FetchNextSetAsync())
                 {
-                    await this.Client.Databases[db.Id].DeleteAsync();
+                    await client.Databases[db.Id].DeleteAsync();
                 }
             }
         }
@@ -424,7 +430,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>();
+                    List<Tuple<CosmosContainer, List<Document>>> collectionsAndDocuments = new List<Tuple<CosmosContainer, List<Document>>>();
                     foreach (CollectionTypes collectionType in Enum.GetValues(collectionTypes.GetType()).Cast<Enum>().Where(collectionTypes.HasFlag))
                     {
                         if (collectionType == CollectionTypes.None)
@@ -459,10 +465,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
                         }
 
-                        createContainerTasks.Add(createContainerTask);
+                        collectionsAndDocuments.Add(await createContainerTask);
                     }
-
-                    Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
 
                     List<CosmosClient> cosmosClients = new List<CosmosClient>();
                     foreach (ConnectionModes connectionMode in Enum.GetValues(connectionModes.GetType()).Cast<Enum>().Where(connectionModes.HasFlag))
