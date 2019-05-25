@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
+            await this.CleanUp();
             await this.database.DeleteAsync();
         }
 
@@ -158,6 +159,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKey = "/id",
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
+            // Assert that database exists (race deletes are possible when used concurrently)
+            CosmosResponseMessage responseMessage = await this.database.ReadAsStreamAsync();
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
             ContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings
                 {
@@ -501,22 +506,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // If you made it here then it's all good
                     break;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex.GetType() != typeof(AssertFailedException))
                 {
-                    if (ex.GetType() == typeof(AssertFailedException))
-                    {
-                        throw;
-                    }
-                    else
-                    {
-                        List<Exception> previousExceptions = exceptionHistory.InnerExceptions.ToList();
-                        previousExceptions.Add(ex);
-                        exceptionHistory = new AggregateException(previousExceptions);
-                    }
-                }
-                finally
-                {
-                    await this.CleanUp();
+                    List<Exception> previousExceptions = exceptionHistory.InnerExceptions.ToList();
+                    previousExceptions.Add(ex);
+                    exceptionHistory = new AggregateException(previousExceptions);
                 }
             }
 
@@ -1269,27 +1263,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (bool testFlag in new bool[] { true, false })
             {
-                try
-                {
-                    CosmosQueryExecutionContextFactory.TestFlag = testFlag;
-                    await this.CreateIngestQueryDelete(
-                        ConnectionModes.Direct,
-                        CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                        documents,
-                        this.TestQueryPlanGatewayAndServiceInteropHelper);
-                }
-                catch (Exception e)
-                {
-                    // When Service Interop is available add back this check.
-                    if (!(e.GetBaseException() is DllNotFoundException))
-                    {
-                        throw e;
-                    }
-                }
-                finally
-                {
-                    CosmosQueryExecutionContextFactory.TestFlag = originalTestFlag;
-                }
+                CosmosQueryExecutionContextFactory.TestFlag = testFlag;
+                await this.CreateIngestQueryDelete(
+                    ConnectionModes.Direct,
+                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                    documents,
+                    this.TestQueryPlanGatewayAndServiceInteropHelper);
+                CosmosQueryExecutionContextFactory.TestFlag = originalTestFlag;
             }
         }
 
