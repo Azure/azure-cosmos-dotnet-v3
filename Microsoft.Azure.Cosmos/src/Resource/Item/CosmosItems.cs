@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
     /// </summary>
-    public abstract class CosmosItems
+    public abstract partial class CosmosContainer
     {
         /// <summary>
         /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Create the object in Cosmos
-        /// using (CosmosResponseMessage response = await this.Container.Items.CreateItemStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
+        /// using (CosmosResponseMessage response = await this.Container.Items.CreateItemAsStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> CreateItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> CreateItemAsStreamAsync(
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         /// Read a response as a stream.
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReadItemStreamAsync("partitionKey", "id"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReadItemAsStreamAsync("partitionKey", "id"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ReadItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReadItemAsStreamAsync(
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.UpsertItemStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.UpsertItemAsStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> UpsertItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> UpsertItemAsStreamAsync(
                     object partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace an item in Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReplaceItemStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReplaceItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ReplaceItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReplaceItemAsStreamAsync(
                     object partitionKey,
                     string id,
                     Stream streamPayload,
@@ -405,7 +405,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete an item from Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.DeleteItemStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.DeleteItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> DeleteItemStreamAsync(
+        public abstract Task<CosmosResponseMessage> DeleteItemAsStreamAsync(
                     object partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemIterator<ToDoActivity>();
+        /// FeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemsIterator<ToDoActivity>();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(ToDoActivity item in await feedIterator.FetchNextSetAsync())
@@ -484,7 +484,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<T> GetItemIterator<T>(
+        /// <returns>An iterator to go through the items.</returns>
+        public abstract FeedIterator<T> GetItemsIterator<T>(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -503,7 +504,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.Items.GetItemStreamIterator();
+        /// FeedIterator feedIterator = this.Container.Items.GetItemsStreamIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
@@ -517,7 +518,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetItemStreamIterator(
+        /// <returns>An iterator to go through the items.</returns>
+        public abstract FeedIterator GetItemsStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             ItemRequestOptions requestOptions = null);
@@ -564,6 +566,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator CreateItemQueryAsStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
@@ -613,6 +616,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator CreateItemQueryAsStream(
             string sqlQueryText,
             int maxConcurrency,
@@ -655,6 +659,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             object partitionKey,
@@ -695,6 +700,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             object partitionKey,
@@ -736,6 +742,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
@@ -776,6 +783,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
             int maxConcurrency,
@@ -786,20 +794,23 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
         /// </summary>
-        /// <param name="workflowName">application name</param>
+        /// <param name="workflowName">A name that identifies the work that the Processor will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns></returns>
+        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string workflowName, 
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
-        /// <param name="workflowName">application name</param>
         /// </summary>
+        /// <param name="workflowName">A name that identifies the work associated with the Processor the Estimator is going to measure.</param>
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
         /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
-        /// <returns></returns>
+        /// <remarks>
+        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="workflowName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
+        /// </remarks>
+        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName, 
             Func<long, CancellationToken, Task> estimationDelegate, 

@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
@@ -41,16 +41,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             string markerDocId = this.GetStoreMarkerName();
             var containerDocument = new { id = markerDocId };
-            await this.container.Items.CreateItemAsync<dynamic>(                
+
+            ItemRequestOptions requestOptions = new ItemRequestOptions();
+            requestOptions.PartitionKey = this.requestOptionsFactory.GetPartitionKey(markerDocId);
+            await this.container.CreateItemAsync<dynamic>(
                 containerDocument,
-                new ItemRequestOptions { PartitionKey = this.requestOptionsFactory.GetPartitionKey(markerDocId) }
-                ).ConfigureAwait(false);
+                requestOptions).ConfigureAwait(false);
         }
 
         public override async Task<bool> AcquireInitializationLockAsync(TimeSpan lockTime)
         {
             string lockId = this.GetStoreLockName();
-            var containerDocument = new LockDocument (){ Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
+            var containerDocument = new LockDocument(){ Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
             var document = await this.container.TryCreateItemAsync<LockDocument>(
                 this.requestOptionsFactory.GetPartitionKey(lockId),
                 containerDocument).ConfigureAwait(false);
@@ -69,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             string lockId = this.GetStoreLockName();
             var requestOptions = new ItemRequestOptions()
             {
-                AccessCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = this.lockETag }
+                IfMatchEtag = this.lockETag,
             };
 
             var document = await this.container.TryDeleteItemAsync<LockDocument>(

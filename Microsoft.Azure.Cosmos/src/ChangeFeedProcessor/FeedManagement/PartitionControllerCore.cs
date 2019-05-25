@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
 
             PartitionSupervisor supervisor = this.partitionSupervisorFactory.Create(lease);
-            this.ProcessPartition(supervisor, lease).LogException();
+            this.ProcessPartitionAsync(supervisor, lease).LogException();
         }
 
         public override async Task ShutdownAsync()
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
         }
 
-        private async Task ProcessPartition(PartitionSupervisor partitionSupervisor, DocumentServiceLease lease)
+        private async Task ProcessPartitionAsync(PartitionSupervisor partitionSupervisor, DocumentServiceLease lease)
         {
             try
             {

@@ -1,8 +1,7 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="IJsonNavigatorNode.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Json
 {
     /// <summary>

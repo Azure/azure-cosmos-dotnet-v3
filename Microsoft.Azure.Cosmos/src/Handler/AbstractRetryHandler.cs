@@ -14,13 +14,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal abstract class AbstractRetryHandler : CosmosRequestHandler
     {
-        internal abstract Task<IDocumentClientRetryPolicy> GetRetryPolicy(CosmosRequestMessage request);
+        internal abstract Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(CosmosRequestMessage request);
 
         public override async Task<CosmosResponseMessage> SendAsync(
             CosmosRequestMessage request, 
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicy(request);
+            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
 
             try
             {

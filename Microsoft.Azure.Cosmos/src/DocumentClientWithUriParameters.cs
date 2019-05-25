@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -37,7 +38,6 @@ namespace Microsoft.Azure.Cosmos
 
             return this.CreateDocumentAsync(documentCollectionUri.OriginalString, document, options, disableAutomaticIdGeneration, cancellationToken);
         }
-
 
         /// <summary>
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
@@ -322,7 +322,6 @@ namespace Microsoft.Azure.Cosmos
             }
             return this.DeleteStoredProcedureAsync(storedProcedureUri.OriginalString, options);
         }
-
 
         /// <summary>
         /// Delete a trigger as an asynchronous operation from the Azure Cosmos DB service.
@@ -805,7 +804,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="functionUri">A URI to the User Defined Function resource to be read.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>
-        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="CosmosUserDefinedFunction"/> containing the read resource record.
+        /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="UserDefinedFunction"/> containing the read resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="functionUri"/> is not set.</exception>
         /// <exception cref="DocumentClientException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -948,7 +947,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="System.Threading.Tasks.Task"/>
         internal Task<ResourceResponse<Schema>> ReadSchemaAsync(Uri schemaUri, Documents.Client.RequestOptions options = null)
         {
-            if(schemaUri == null)
+            if (schemaUri == null)
             {
                 throw new ArgumentNullException("schemaUri");
             }
@@ -1219,7 +1218,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         internal Task<DocumentFeedResponse<Schema>> ReadSchemaFeedAsync(Uri schemasUri, FeedOptions options = null)
         {
-            if(schemasUri == null)
+            if (schemasUri == null)
             {
                 throw new ArgumentNullException("schemasUri");
             }
@@ -1285,7 +1284,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the query result set.</returns>
         internal IDocumentQuery<DocumentCollection> CreateDocumentCollectionChangeFeedQuery(Uri databaseUri, ChangeFeedOptions feedOptions)
         {
-            if(databaseUri == null)
+            if (databaseUri == null)
             {
                 throw new ArgumentNullException(nameof(databaseUri));
             }

@@ -2,9 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// The cosmos stored procedure request options
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.EnableScriptLogging)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.EnableLogging, bool.TrueString);
+                request.Headers.Add(Documents.HttpConstants.HttpHeaders.EnableLogging, bool.TrueString);
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);

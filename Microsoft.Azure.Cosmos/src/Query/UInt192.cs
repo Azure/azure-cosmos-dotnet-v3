@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="UInt192.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -290,7 +288,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="low">The lowest 64 bits of the ulong.</param>
         /// <param name="mid">The middle 64 bits of the ulong.</param>
         /// <param name="high">The upper 64 bits of the ulong.</param>
-        /// <returns></returns>
         public static UInt192 Create(ulong low, ulong mid, ulong high)
         {
             return new UInt192(low, mid, high);

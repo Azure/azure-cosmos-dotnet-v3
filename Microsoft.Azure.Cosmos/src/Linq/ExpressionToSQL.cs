@@ -1,10 +1,8 @@
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using Microsoft.Azure.Cosmos.Spatial;
-    using Microsoft.Azure.Cosmos.Sql;
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -14,10 +12,12 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.Spatial;
+    using Microsoft.Azure.Cosmos.Sql;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
-    using Microsoft.Azure.Documents;
 
     // ReSharper disable UnusedParameter.Local
 
@@ -1109,7 +1109,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="inputExpression">The input expression</param>
         /// <param name="context">The current translation context</param>
         /// <param name="parameterName">Parameter name is merely for readability</param>
-        /// <returns></returns>
         private static Collection VisitMemberAccessCollectionExpression(Expression inputExpression, TranslationContext context, string parameterName)
         {
             SqlScalarExpression body = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
@@ -1200,7 +1199,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case LinqMethods.Take:
                     {
-                        if(context.currentQuery.HasOffsetSpec())
+                        if (context.currentQuery.HasOffsetSpec())
                         {
                             SqlLimitSpec limitSpec = ExpressionToSql.VisitTakeLimit(inputExpression.Arguments, context);
                             context.currentQuery = context.currentQuery.AddLimitSpec(limitSpec, context);
@@ -1250,7 +1249,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case LinqMethods.Any:
                     {
-                        result = new Collection("");
+                        result = new Collection(string.Empty);
                         if (inputExpression.Arguments.Count == 2)
                         {
                             // Any is translated to an SELECT VALUE EXISTS() where Any operation itself is treated as a Where.
@@ -1292,7 +1291,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             isMinMaxAvgMethod = false;
 
-            switch (methodName) {
+            switch (methodName)
+            {
                 case LinqMethods.Min:
                 case LinqMethods.Max:
                 case LinqMethods.Average:
@@ -1444,7 +1444,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="query">The SQL query object</param>
         /// <param name="context">The translation context</param>
         /// <param name="subqueryType">The subquery type</param>
-        /// <returns></returns>
         private static SqlCollection CreateSubquerySqlCollection(SqlQuery query, TranslationContext context, SqlObjectKind subqueryType)
         {
             SqlCollection subqueryCollection;
@@ -1566,7 +1565,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                collection = new Collection("");
+                collection = new Collection(string.Empty);
                 Binding binding;
                 SqlQuery query = ExpressionToSql.CreateSubquery(lambda.Body, lambda.Parameters, context);
                 SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);

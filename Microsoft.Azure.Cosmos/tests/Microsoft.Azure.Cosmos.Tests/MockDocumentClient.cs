@@ -159,6 +159,28 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     return Task.FromResult(containerSettings);
                 });
 
+            this.collectionCache.Setup
+                    (m =>
+                        m.ResolveByNameAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                ).Returns(() =>
+                {
+                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
+                    {
+                        Kind = PartitionKind.Hash,
+                        Paths = new Collection<string>()
+                        {
+                            pkPath
+                        }
+                    };
+
+                    return Task.FromResult(cosmosContainerSetting);
+                });
+
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(

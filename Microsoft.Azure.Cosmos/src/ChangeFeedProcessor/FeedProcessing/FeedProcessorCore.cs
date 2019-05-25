@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         lastContinuation = response.Headers.Continuation;
                         if (this.resultSetIterator.HasMoreResults)
                         {
-                            await this.DispatchChanges(response, cancellationToken).ConfigureAwait(false);
+                            await this.DispatchChangesAsync(response, cancellationToken).ConfigureAwait(false);
                         }
                     }
                     while (this.resultSetIterator.HasMoreResults && !cancellationToken.IsCancellationRequested);
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        private Task DispatchChanges(CosmosResponseMessage response, CancellationToken cancellationToken)
+        private Task DispatchChangesAsync(CosmosResponseMessage response, CancellationToken cancellationToken)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.settings.LeaseToken, response, this.checkpointer);
             Collection<T> asFeedResponse;
