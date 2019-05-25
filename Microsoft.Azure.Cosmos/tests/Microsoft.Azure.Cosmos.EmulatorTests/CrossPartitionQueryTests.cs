@@ -182,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // otherwise it will create about twice as many partitions.
                 throughput);
 
+            Assert.IsNotNull(containerResponse);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.IsNotNull(containerResponse.Resource);
             Assert.IsNotNull(containerResponse.Resource.ResourceId);
