@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach(dynamic poco in unsupportedTypesToTest)
             {                   
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(async () => {
                     await items.GetPartitionKeyValueFromStreamAsync(new CosmosDefaultJsonSerializer().ToStream(poco), new ItemRequestOptions());
                 });                                
             }
