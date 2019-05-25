@@ -50,10 +50,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Gateway = 0x2,
         }
 
+        [FlagsAttribute]
+        private enum CollectionTypes
+        {
+            None = 0,
+            NonPartitioned = 0x1,
+            SinglePartition = 0x2,
+            MultiPartition = 0x4,
+        }
+
+        [ClassInitialize]
+        [ClassCleanup]
+        public static void ClassSetup(TestContext testContext = null)
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient(false);
+            CrossPartitionQueryTests.CleanUp(client).Wait();
+        }
+
         [TestInitialize]
         public async Task Initialize()
         {
-            await this.CleanUp();
             this.database = await this.Client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
@@ -89,12 +105,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 true,
                 false);
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Assert.IsNotNull(routingMapProvider);
+
             IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(container.ResourceId, fullRange);
             return ranges;
         }
 
-        private async Task<CosmosContainer> CreatePartitionContainer(string partitionKey = "/id", Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        private async Task<CosmosContainer> CreateMultiPartitionContainer(
+            string partitionKey = "/id",
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
+            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+                throughput: 25000,
+                partitionKey: partitionKey,
+                indexingPolicy: indexingPolicy);
+
+            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
+            Assert.IsTrue(
+                ranges.Count() > 1,
+                $"{nameof(CreateMultiPartitionContainer)} failed to create a container with more than 1 physical partition.");
+
+            return containerResponse;
+        }
+
+        private async Task<CosmosContainer> CreateSinglePartitionContainer(
+            string partitionKey = "/id",
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            ContainerResponse containerResponse = await this.CreatePartitionedContainer(
+                throughput: 4000,
+                partitionKey: partitionKey,
+                indexingPolicy: indexingPolicy);
+
+            Assert.IsNotNull(containerResponse);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.IsNotNull(containerResponse.Resource);
+            Assert.IsNotNull(containerResponse.Resource.ResourceId);
+
+            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
+            Assert.AreEqual(1, ranges.Count());
+
+            return containerResponse;
+        }
+
+        private async Task<CosmosContainer> CreateNonPartitionedContainer(
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            string containerName = Guid.NewGuid().ToString() + "container";
+            await CosmosItemTests.CreateNonPartitionedContainer(
+                this.database.Id,
+                containerName,
+                indexingPolicy == null ? null : JsonConvert.SerializeObject(indexingPolicy));
+
+            return this.database.Containers[containerName];
+        }
+
+        private async Task<ContainerResponse> CreatePartitionedContainer(
+            int throughput,
+            string partitionKey = "/id",
+            Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            // Assert that database exists (race deletes are possible when used concurrently)
+            CosmosResponseMessage responseMessage = await this.database.ReadAsStreamAsync();
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
             ContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
                 new CosmosContainerSettings
                 {
@@ -114,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             }
                         }
                     } : indexingPolicy,
-                    PartitionKey = new PartitionKeyDefinition
+                    PartitionKey = partitionKey == null ? null : new PartitionKeyDefinition
                     {
                         Paths = new Collection<string> { partitionKey },
                         Kind = PartitionKind.Hash
@@ -122,45 +196,116 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 // This throughput needs to be about half the max with multi master
                 // otherwise it will create about twice as many partitions.
-                25000);
+                throughput);
 
-            IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
-            Assert.AreEqual(5, ranges.Count());
+            Assert.IsNotNull(containerResponse);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.IsNotNull(containerResponse.Resource);
+            Assert.IsNotNull(containerResponse.Resource.ResourceId);
 
             return containerResponse;
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreatePartitionedContainerAndIngestDocuments(IEnumerable<string> documents, string partitionKey = "/id", Cosmos.IndexingPolicy indexingPolicy = null)
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreateNonPartitionedContainerAndIngestDocuments(
+            IEnumerable<string> documents,
+            Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            CosmosContainer partitionedCollection = await this.CreatePartitionContainer(partitionKey, indexingPolicy);
+            return await this.CreateContainerAndIngestDocuments(
+                CollectionTypes.NonPartitioned,
+                documents,
+                partitionKey: null,
+                indexingPolicy: indexingPolicy);
+        }
+
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreateSinglePartitionContainerAndIngestDocuments(
+            IEnumerable<string> documents,
+            string partitionKey = "/id",
+            Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            return await this.CreateContainerAndIngestDocuments(
+                CollectionTypes.SinglePartition,
+                documents,
+                partitionKey,
+                indexingPolicy);
+        }
+
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreateMultiPartitionContainerAndIngestDocuments(
+            IEnumerable<string> documents,
+            string partitionKey = "/id",
+            Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            return await this.CreateContainerAndIngestDocuments(
+                CollectionTypes.MultiPartition,
+                documents,
+                partitionKey,
+                indexingPolicy);
+        }
+
+        private async Task<Tuple<CosmosContainer, List<Document>>> CreateContainerAndIngestDocuments(
+            CollectionTypes collectionType,
+            IEnumerable<string> documents,
+            string partitionKey = "/id",
+            Cosmos.IndexingPolicy indexingPolicy = null)
+        {
+            CosmosContainer cosmosContainer;
+            switch (collectionType)
+            {
+                case CollectionTypes.NonPartitioned:
+                    cosmosContainer = await this.CreateNonPartitionedContainer(indexingPolicy);
+                    break;
+
+                case CollectionTypes.SinglePartition:
+                    cosmosContainer = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
+                    break;
+
+                case CollectionTypes.MultiPartition:
+                    cosmosContainer = await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy);
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
+            }
+
             List<Document> insertedDocuments = new List<Document>();
-            string jObjectPartitionKey = partitionKey.Remove(0, 1);
+
             foreach (string document in documents)
             {
                 JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
+
+                // Add an id
                 if (documentObject["id"] == null)
                 {
                     documentObject["id"] = Guid.NewGuid().ToString();
                 }
 
-                JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                object pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
-                insertedDocuments.Add((await partitionedCollection.CreateItemAsync<JObject>(documentObject, new ItemRequestOptions { PartitionKey = pkValue })).Resource.ToObject<Document>());
+                // Get partition key value.
+                object pkValue;
+                if (partitionKey != null)
+                {
+                    string jObjectPartitionKey = partitionKey.Remove(0, 1);
+                    JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
+                    pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
+                }
+                else
+                {
+                    pkValue = CosmosContainerSettings.NonePartitionKeyValue;
+                }
 
+                insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(documentObject)).Resource.ToObject<Document>());
             }
 
-            return new Tuple<CosmosContainer, List<Document>>(partitionedCollection, insertedDocuments);
+            return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
         }
 
-        private async Task CleanUp()
+        private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabasesIterator();
+            FeedIterator<CosmosDatabaseSettings> allDatabases = client.Databases.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
                 foreach (CosmosDatabaseSettings db in await allDatabases.FetchNextSetAsync())
                 {
-                    await this.Client.Databases[db.Id].DeleteAsync();
+                    await client.Databases[db.Id].DeleteAsync();
                 }
             }
         }
@@ -206,6 +351,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateIngestQueryDelete(
             ConnectionModes connectionModes,
+            CollectionTypes collectionTypes,
             IEnumerable<string> documents,
             Query query,
             string partitionKey = "/id",
@@ -219,6 +365,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<object>(
                 connectionModes,
+                collectionTypes,
                 documents,
                 queryWrapper,
                 null,
@@ -229,6 +376,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateIngestQueryDelete<T>(
             ConnectionModes connectionModes,
+            CollectionTypes collectionTypes,
             IEnumerable<string> documents,
             Query<T> query,
             T testArgs,
@@ -238,6 +386,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 connectionModes,
+                collectionTypes,
                 documents,
                 query,
                 cosmosClientFactory ?? this.CreateDefaultCosmosClient,
@@ -266,6 +415,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <returns>A task to await on.</returns>
         private async Task CreateIngestQueryDelete<T>(
            ConnectionModes connectionModes,
+           CollectionTypes collectionTypes,
            IEnumerable<string> documents,
            Query<T> query,
            CosmosClientFactory cosmosClientFactory,
@@ -273,18 +423,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            string partitionKey = "/id",
            Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            int retryCount = 1;
+            int retryCount = 5;
             AggregateException exceptionHistory = new AggregateException();
             while (retryCount-- > 0)
             {
                 try
                 {
-                    List<Task<Tuple<CosmosContainer, List<Document>>>> createContainerTasks = new List<Task<Tuple<CosmosContainer, List<Document>>>>
+                    List<Tuple<CosmosContainer, List<Document>>> collectionsAndDocuments = new List<Tuple<CosmosContainer, List<Document>>>();
+                    foreach (CollectionTypes collectionType in Enum.GetValues(collectionTypes.GetType()).Cast<Enum>().Where(collectionTypes.HasFlag))
                     {
-                        this.CreatePartitionedContainerAndIngestDocuments(documents, partitionKey, indexingPolicy)
-                    };
+                        if (collectionType == CollectionTypes.None)
+                        {
+                            continue;
+                        }
 
-                    Tuple<CosmosContainer, List<Document>>[] collectionsAndDocuments = await Task.WhenAll(createContainerTasks);
+                        Task<Tuple<CosmosContainer, List<Document>>> createContainerTask;
+                        switch (collectionType)
+                        {
+                            case CollectionTypes.NonPartitioned:
+                                createContainerTask = this.CreateNonPartitionedContainerAndIngestDocuments(
+                                    documents,
+                                    indexingPolicy);
+                                break;
+
+                            case CollectionTypes.SinglePartition:
+                                createContainerTask = this.CreateSinglePartitionContainerAndIngestDocuments(
+                                    documents,
+                                    partitionKey,
+                                    indexingPolicy);
+                                break;
+
+                            case CollectionTypes.MultiPartition:
+                                createContainerTask = this.CreateMultiPartitionContainerAndIngestDocuments(
+                                    documents,
+                                    partitionKey,
+                                    indexingPolicy);
+                                break;
+
+                            default:
+                                throw new ArgumentException($"Unknown {nameof(CollectionTypes)} : {collectionType}");
+                        }
+
+                        collectionsAndDocuments.Add(await createContainerTask);
+                    }
 
                     List<CosmosClient> cosmosClients = new List<CosmosClient>();
                     foreach (ConnectionModes connectionMode in Enum.GetValues(connectionModes.GetType()).Cast<Enum>().Where(connectionModes.HasFlag))
@@ -297,33 +478,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionMode targetConnectionMode = GetTargetConnectionMode(connectionMode);
                         CosmosClient cosmosClient = cosmosClientFactory(targetConnectionMode);
 
-                        Assert.AreEqual(targetConnectionMode, cosmosClient.ClientOptions.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
+                        Assert.AreEqual(
+                            targetConnectionMode,
+                            cosmosClient.ClientOptions.ConnectionMode,
+                            "Test setup: Invalid connection policy applied to CosmosClient");
                         cosmosClients.Add(cosmosClient);
                     }
 
-                    bool succeeded = false;
-                    while (!succeeded)
+                    List<Task> queryTasks = new List<Task>();
+                    foreach (CosmosClient cosmosClient in cosmosClients)
                     {
-                        try
+                        foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            List<Task> queryTasks = new List<Task>();
-                            foreach (CosmosClient cosmosClient in cosmosClients)
-                            {
-                                foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
-                                {
-                                    CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].Containers[containerAndDocuments.Item1.Id];
-                                    queryTasks.Add(query(container, containerAndDocuments.Item2, testArgs));
-                                }
-                            }
-
-                            await Task.WhenAll(queryTasks);
-                            succeeded = true;
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            // SDK throws TaskCanceledException every now and then
+                            CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].Containers[containerAndDocuments.Item1.Id];
+                            Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
+                            queryTasks.Add(queryTask);
                         }
                     }
+
+                    await Task.WhenAll(queryTasks);
 
                     List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
                     foreach (CosmosContainer container in collectionsAndDocuments.Select(tuple => tuple.Item1))
@@ -336,18 +509,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // If you made it here then it's all good
                     break;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex.GetType() != typeof(AssertFailedException))
                 {
-                    if (ex.GetType() == typeof(AssertFailedException))
-                    {
-                        throw;
-                    }
-                    else
-                    {
-                        List<Exception> previousExceptions = exceptionHistory.InnerExceptions.ToList();
-                        previousExceptions.Add(ex);
-                        exceptionHistory = new AggregateException(previousExceptions);
-                    }
+                    List<Exception> previousExceptions = exceptionHistory.InnerExceptions.ToList();
+                    previousExceptions.Add(ex);
+                    exceptionHistory = new AggregateException(previousExceptions);
                 }
             }
 
@@ -406,7 +572,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithContinuationTokens<T>(
             CosmosContainer container,
             string query,
-            int maxItemCount,
+            int? maxConcurrency = 2,
+            int? maxItemCount = null,
             QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
@@ -431,12 +598,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
+            int maxConcurrency = 2,
+            int? maxItemCount = null,
             QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
             FeedIterator<T> itemQuery = container.CreateItemQuery<T>(
                 sqlQueryText: query,
-                maxConcurrency: 2,
+                maxConcurrency: maxConcurrency,
+                maxItemCount: maxItemCount,
                 requestOptions: queryRequestOptions);
 
             while (itemQuery.HasMoreResults)
@@ -504,6 +674,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
                 CrossPartitionQueryTests.NoDocuments,
                 this.TestBadQueriesOverMultiplePartitionsHelper);
         }
@@ -537,6 +708,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
                 CrossPartitionQueryTests.NoDocuments,
                 this.TestQueryCrossParitionPartitionProviderInvalidHelper);
         }
@@ -584,6 +756,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryWithPartitionKeyHelper,
                 "/key");
@@ -593,7 +766,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            Assert.AreEqual(0, (await this.RunQuery<Document>(
+            Assert.AreEqual(0, (await CrossPartitionQueryTests.RunQuery<Document>(
                 container,
                 @"SELECT * FROM Root r WHERE false",
                 maxConcurrency: 1)).Count);
@@ -657,7 +830,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TestQueryMultiplePartitionsSinglePartitionKey()
+        public async Task TestQuerySinglePartitionKey()
         {
             string[] documents = new[]
             {
@@ -671,12 +844,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
-                this.TestQueryMultiplePartitionsSinglePartitionKeyHelper,
+                this.TestQuerySinglePartitionKeyHelper,
                 "/pk");
         }
 
-        private async Task TestQueryMultiplePartitionsSinglePartitionKeyHelper(CosmosContainer container, IEnumerable<Document> documents)
+        private async Task TestQuerySinglePartitionKeyHelper(
+            CosmosContainer container,
+            IEnumerable<Document> documents)
         {
             // Query with partition key should be done in one round trip.
             FeedIterator<dynamic> resultSetIterator = container.CreateItemQuery<dynamic>(
@@ -764,6 +940,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // since the query callback inserts some documents (thus has side effects).
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Direct,
+                    CollectionTypes.SinglePartition,
+                    CrossPartitionQueryTests.NoDocuments,
+                    this.TestQueryWithSpecialPartitionKeysHelper,
+                    testArg,
+                    "/" + testArg.Name);
+
+                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Direct,
+                    CollectionTypes.MultiPartition,
                     CrossPartitionQueryTests.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
                     testArg,
@@ -771,6 +956,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
                     ConnectionModes.Gateway,
+                    CollectionTypes.SinglePartition,
+                    CrossPartitionQueryTests.NoDocuments,
+                    this.TestQueryWithSpecialPartitionKeysHelper,
+                    testArg,
+                    "/" + testArg.Name);
+
+                await this.CreateIngestQueryDelete<QueryWithSpecialPartitionKeysArgs>(
+                    ConnectionModes.Gateway,
+                    CollectionTypes.MultiPartition,
                     CrossPartitionQueryTests.NoDocuments,
                     this.TestQueryWithSpecialPartitionKeysHelper,
                     testArg,
@@ -981,6 +1175,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<QueryCrossPartitionWithLargeNumberOfKeysArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionWithLargeNumberOfKeysHelper,
                 args,
@@ -1020,6 +1215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestBasicCrossPartitionQueryHelper);
         }
@@ -1032,21 +1228,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
                 {
-                    QueryRequestOptions feedOptions = new QueryRequestOptions
+                    foreach (string query in new string[] { "SELECT * FROM c", "SELECT * FROM c ORDER BY c._ts" })
                     {
-                        EnableCrossPartitionQuery = true,
-                        MaxBufferedItemCount = 7000,
-                        MaxConcurrency = maxDegreeOfParallelism,
-                        MaxItemCount = maxItemCount
-                    };
+                        QueryRequestOptions feedOptions = new QueryRequestOptions
+                        {
+                            EnableCrossPartitionQuery = true,
+                            MaxBufferedItemCount = 7000,
+                            MaxConcurrency = maxDegreeOfParallelism,
+                            MaxItemCount = maxItemCount
+                        };
 
-                    List<JToken> actualFromQueryWithoutContinutionTokens;
-                    actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
-                        container,
-                        "SELECT * FROM c",
-                        feedOptions);
+                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
+                            container,
+                            query,
+                            maxDegreeOfParallelism,
+                            maxItemCount,
+                            feedOptions);
 
-                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                        Assert.AreEqual(
+                            documents.Count(),
+                            queryResults.Count,
+                            $"query: {query} failed with {nameof(maxDegreeOfParallelism)}: {maxDegreeOfParallelism}, {nameof(maxItemCount)}: {maxItemCount}");
+                    }
                 }
             }
         }
@@ -1063,26 +1266,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (bool testFlag in new bool[] { true, false })
             {
-                try
-                {
-                    CosmosQueryExecutionContextFactory.TestFlag = testFlag;
-                    await this.CreateIngestQueryDelete(
-                        ConnectionModes.Direct,
-                        documents,
-                        this.TestQueryPlanGatewayAndServiceInteropHelper);
-                }
-                catch (Exception e)
-                {
-                    // When Service Interop is available add back this check.
-                    if (!(e.GetBaseException() is DllNotFoundException))
-                    {
-                        throw e;
-                    }
-                }
-                finally
-                {
-                    CosmosQueryExecutionContextFactory.TestFlag = originalTestFlag;
-                }
+                CosmosQueryExecutionContextFactory.TestFlag = testFlag;
+                await this.CreateIngestQueryDelete(
+                    ConnectionModes.Direct,
+                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                    documents,
+                    this.TestQueryPlanGatewayAndServiceInteropHelper);
+                CosmosQueryExecutionContextFactory.TestFlag = originalTestFlag;
             }
         }
 
@@ -1102,13 +1292,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         MaxItemCount = maxItemCount,
                     };
 
-                    List<JToken> actualFromQueryWithoutContinutionTokens;
-                    actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
+                    List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
                         container,
                         "SELECT * FROM c ORDER BY c._ts",
+                        maxDegreeOfParallelism,
+                        maxItemCount,
                         feedOptions);
 
-                    Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
+                    Assert.AreEqual(documents.Count(), queryResults.Count);
                 }
             }
         }
@@ -1118,6 +1309,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 NoDocuments,
                 this.TestUnsupportedQueriesHelper);
         }
@@ -1130,8 +1322,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 EnableCrossPartitionQuery = true,
                 MaxBufferedItemCount = 7000,
-                MaxConcurrency = 10,
-                MaxItemCount = 10,
             };
 
             string aggregateWithoutValue = "SELECT COUNT(1) FROM c";
@@ -1145,15 +1335,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 multipleAggregates
             };
 
-
             foreach (string unsupportedQuery in unsupportedQueries)
             {
                 try
                 {
-                    await QueryWithoutContinuationTokens<JToken>(
+                    await CrossPartitionQueryTests.RunQuery<JToken>(
                         container,
                         unsupportedQuery,
-                        feedOptions);
+                        maxConcurrency: 10,
+                        maxItemCount: 10,
+                        queryRequestOptions: feedOptions);
                     Assert.Fail("Expected query to fail due it not being supported.");
                 }
                 catch (Exception e)
@@ -1209,6 +1400,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<AggregateTestArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsAsync,
                 aggregateTestArgs,
@@ -1353,7 +1545,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (Tuple<string, object> data in datum)
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
-                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(
+                    dynamic aggregate = (await CrossPartitionQueryTests.RunQuery<dynamic>(
                         container,
                         query)).Single();
                     object expected = data.Item2;
@@ -1418,6 +1610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<AggregateQueryEmptyPartitionsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsEmptyPartitionsHelper,
                 args,
@@ -1454,7 +1647,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<dynamic> items = await this.RunQuery<dynamic>(
+                    List<dynamic> items = await CrossPartitionQueryTests.RunQuery<dynamic>(
                     container,
                     query,
                     maxConcurrency: 10);
@@ -1551,6 +1744,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<AggregateQueryMixedTypes>(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper,
                 args,
@@ -1633,7 +1827,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-
             string filename = $"CrossPartitionQueryTests.AggregateMixedTypes";
             string outputPath = $"{filename}_output.xml";
             string baselinePath = $"{filename}_baseline.xml";
@@ -1656,7 +1849,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             StringSplitOptions.None)
                             .Select(x => x.Trim()));
 
-                    List<dynamic> items = await this.RunQuery<dynamic>(
+                    List<dynamic> items = await CrossPartitionQueryTests.RunQuery<dynamic>(
                         container,
                         query,
                         10,
@@ -1712,6 +1905,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryDistinct,
                 "/id");
@@ -1864,21 +2058,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         documentsFromWithDistinct.AddRange(cosmosQueryResponse);
                     }
 
-                    try
+                    Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
+                    for (int i = 0; i < documentsFromWithDistinct.Count; i++)
                     {
-                        Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
-                        for (int i = 0; i < documentsFromWithDistinct.Count; i++)
-                        {
-                            JToken documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
-                            JToken documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
-                            Assert.IsTrue(
-                                JsonTokenEqualityComparer.Value.Equals(documentFromWithDistinct, documentFromWithoutDistinct),
-                                $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a container");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        throw e;
+                        JToken documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
+                        JToken documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
+                        Assert.IsTrue(
+                            JsonTokenEqualityComparer.Value.Equals(documentFromWithDistinct, documentFromWithoutDistinct),
+                            $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a container");
                     }
                 }
             }
@@ -2036,6 +2223,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionTopOrderByDifferentDimensionHelper,
                 "/key");
@@ -2046,7 +2234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await CrossPartitionQueryTests.NoOp();
 
             string[] expected = new[] { "documentId2", "documentId5", "documentId8" };
-            List<Document> query = await this.RunQuery<Document>(
+            List<Document> query = await CrossPartitionQueryTests.RunQuery<Document>(
                 container,
                 "SELECT r.id FROM r ORDER BY r.prop DESC",
                 maxItemCount: 1,
@@ -2088,6 +2276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IEnumerable<string> documents = specialStrings.Select((specialString) => $@"{{ ""field"" : ""{specialString}""}}");
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestOrderByNonAsciiCharactersHelper);
         }
@@ -2110,6 +2299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<JToken> actualFromQueryWithoutContinutionTokens = await QueryWithContinuationTokens<JToken>(
                         container,
                         "SELECT * FROM c ORDER BY c.field",
+                        maxDegreeOfParallelism,
                         maxItemCount,
                         feedOptions);
 
@@ -2197,6 +2387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             await this.CreateIngestQueryDelete<Tuple<OrderByTypes[], Action<Exception>>>(
                                 ConnectionModes.Direct,
+                                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                                 documents,
                                 this.TestMixedTypeOrderByHelper,
                                 new Tuple<OrderByTypes[], Action<Exception>>(orderByTypes, expectedExcpetionHandler),
@@ -2403,12 +2594,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         };
 
                         List<JToken> actualFromQueryWithoutContinutionTokens;
-                        actualFromQueryWithoutContinutionTokens = await this.RunQuery<JToken>(
+                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
                             container,
                             query,
                             maxItemCount: 16,
                             maxConcurrency: 10,
-                            requestOptions: feedOptions);
+                            queryRequestOptions: feedOptions);
 #if false
                         For now we can not serve the query through continuation tokens correctly.
                         This is because we allow order by on mixed types but not comparisions across types
@@ -2525,6 +2716,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<string>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionTopOrderByHelper,
                 partitionKey,
@@ -2565,7 +2757,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableCrossPartitionQuery = true
             };
 
-            List<Document> queryEmptyResult = await this.RunQuery<Document>(
+            List<Document> queryEmptyResult = await CrossPartitionQueryTests.RunQuery<Document>(
                 container,
                 emptyQueryText,
                 maxConcurrency: 1);
@@ -2752,6 +2944,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionTopHelper,
                 "/" + partitionKey);
@@ -2784,6 +2977,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionOffsetLimit,
                 "/id");
@@ -2807,8 +3001,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
                         {
-                            MaxItemCount = 3,
+                            MaxItemCount = pageSize,
                             MaxBufferedItemCount = 1000,
+                            MaxConcurrency = 2,
                             EnableCrossPartitionSkipTake = true,
                         };
 
@@ -2823,16 +3018,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         expectedResults = expectedResults.Skip(offsetCount);
                         expectedResults = expectedResults.Take(limitCount);
 
-                        List<JToken> actualFromQueryWithoutContinutionToken = await QueryWithoutContinuationTokens<JToken>(
+                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
                             container,
                             query,
-                            queryRequestOptions);
+                            queryRequestOptions: queryRequestOptions);
                         Assert.IsTrue(
-                            expectedResults.SequenceEqual(actualFromQueryWithoutContinutionToken, JsonTokenEqualityComparer.Value),
+                            expectedResults.SequenceEqual(queryResults, JsonTokenEqualityComparer.Value),
                             $@"
                                 {query} (without continuations) didn't match
                                 expected: {JsonConvert.SerializeObject(expectedResults)}
-                                actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionToken)}");
+                                actual: {JsonConvert.SerializeObject(queryResults)}");
                     }
                 }
             }
@@ -2953,6 +3148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete<CrossPartitionWithContinuationsArgs>(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionWithContinuationsHelper,
                 args,
@@ -2984,7 +3180,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
             }
-            catch(AggregateException aggrEx)
+            catch (AggregateException aggrEx)
             {
                 Assert.Fail(aggrEx.ToString());
             }
@@ -3061,63 +3257,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (string query in queries)
             {
-                List<Document> expectedValues = await this.RunQuery<Document>(
+                List<Document> queryResultsWithoutContinuationTokens = await QueryWithoutContinuationTokens<Document>(
                     container,
                     query,
                     maxConcurrency: 0);
 
                 foreach (int pageSize in new int[] { 1, documentCount / 2, documentCount })
                 {
-                    List<Document> retrievedDocuments = new List<Document>();
-
-                    FeedIterator<Document> documentQuery;
-                    string continuationToken = default(string);
-                    bool hasMoreResults;
-
-                    do
-                    {
-                        QueryRequestOptions feedOptions = new QueryRequestOptions
-                        {
-                            MaxBufferedItemCount = 10000,
-                        };
-
-                        documentQuery = container.CreateItemQuery<Document>(
-                            query,
-                            maxConcurrency: 10000,
-                            maxItemCount: pageSize,
-                            continuationToken: continuationToken,
-                            requestOptions: feedOptions);
-
-                        FeedResponse<Document> response;
-                        try
-                        {
-                            response = await documentQuery.FetchNextSetAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            throw ex;
-                        }
-
-                        Assert.IsTrue(
-                            response.Count() <= pageSize,
-                            string.Format(
-                            CultureInfo.InvariantCulture,
-                            "Actual result count {0} should be less or equal to requested page size {1}. Query: {2}, Continuation: {3}, Results.Count: {4}",
-                            response.Count(),
-                            pageSize,
-                            query,
-                            continuationToken,
-                            retrievedDocuments.Count));
-                        continuationToken = response.Continuation;
-                        retrievedDocuments.AddRange(response);
-
-                        hasMoreResults = documentQuery.HasMoreResults;
-                    } while (hasMoreResults);
+                    List<Document> queryResultsWithContinuationTokens = await QueryWithContinuationTokens<Document>(
+                        container,
+                        query);
 
                     Assert.AreEqual(
-                        string.Join(", ", expectedValues.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
-                        string.Join(", ", retrievedDocuments.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
-                        string.Format(CultureInfo.InvariantCulture, "query: {0}, page size: {1}", query, pageSize));
+                        string.Join(", ", queryResultsWithoutContinuationTokens.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
+                        string.Join(", ", queryResultsWithContinuationTokens.Select(doc => doc.GetPropertyValue<int>(partitionKey))),
+                        $"query: {query}, page size: {pageSize}");
                 }
             }
         }
@@ -3297,6 +3451,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestMultiOrderByQueriesHelper,
                 "/" + nameof(MultiOrderByDocument.PartitionKey),
@@ -3470,13 +3625,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 MaxBufferedItemCount = 1000,
                             };
 
-                            List<List<object>> actualFromQueryWithoutContinutionToken = await this.RunQuery<List<object>>(
+                            List<List<object>> actual = await CrossPartitionQueryTests.RunQuery<List<object>>(
                                 container,
                                 query,
                                 maxItemCount: 3,
                                 maxConcurrency: 10,
-                                requestOptions: feedOptions);
-                            this.AssertMultiOrderByResults(expected, actualFromQueryWithoutContinutionToken, query + "(without continuations)");
+                                queryRequestOptions: feedOptions);
+                            this.AssertMultiOrderByResults(expected, actual, query);
                         }
                     }
                 }
@@ -3694,26 +3849,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //    this.responseLengthBytes.Value = null;
         //}
 
-        private async Task<List<T>> RunQuery<T>(
+        private static async Task<List<T>> RunQuery<T>(
             CosmosContainer container,
             string query,
-            int maxConcurrency,
+            int maxConcurrency = 2,
             int? maxItemCount = null,
-            QueryRequestOptions requestOptions = null)
+            QueryRequestOptions queryRequestOptions = null)
         {
-            FeedIterator<T> resultSetIterator = container.CreateItemQuery<T>(
+            List<T> queryResultsWithoutContinuationToken = await QueryWithoutContinuationTokens<T>(
+                container,
                 query,
-                maxConcurrency: maxConcurrency,
-                maxItemCount: maxItemCount,
-                requestOptions: requestOptions);
+                maxConcurrency,
+                maxItemCount,
+                queryRequestOptions);
+            List<T> queryResultsWithContinuationTokens = await QueryWithContinuationTokens<T>(
+                container,
+                query,
+                maxConcurrency,
+                maxItemCount,
+                queryRequestOptions);
 
-            List<T> items = new List<T>();
-            while (resultSetIterator.HasMoreResults)
-            {
-                items.AddRange(await resultSetIterator.FetchNextSetAsync());
-            }
+            List<JToken> queryResultsWithoutContinuationTokenAsJTokens = queryResultsWithoutContinuationToken
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
 
-            return items;
+            List<JToken> queryResultsWithContinuationTokensAsJTokens = queryResultsWithContinuationTokens
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
+            Assert.IsTrue(
+                queryResultsWithoutContinuationTokenAsJTokens
+                    .SequenceEqual(queryResultsWithContinuationTokensAsJTokens, JsonTokenEqualityComparer.Value),
+                $"{query} returned different results with and without continuation tokens.");
+
+            return queryResultsWithoutContinuationToken;
         }
 
         private async Task<List<T>> RunSinglePartitionQuery<T>(
