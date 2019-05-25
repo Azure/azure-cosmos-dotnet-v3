@@ -130,6 +130,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: partitionKey,
                 indexingPolicy: indexingPolicy);
 
+            Assert.IsNotNull(containerResponse);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.IsNotNull(containerResponse.Resource);
+            Assert.IsNotNull(containerResponse.Resource.ResourceId);
+
             IReadOnlyList<PartitionKeyRange> ranges = await this.GetPartitionKeyRanges(containerResponse);
             Assert.AreEqual(1, ranges.Count());
 
@@ -426,23 +431,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         switch (collectionType)
                         {
                             case CollectionTypes.NonPartitioned:
-                                createContainerTask = Task.Run(() => this.CreateNonPartitionedContainerAndIngestDocuments(
+                                createContainerTask = this.CreateNonPartitionedContainerAndIngestDocuments(
                                     documents,
-                                    indexingPolicy));
+                                    indexingPolicy);
                                 break;
 
                             case CollectionTypes.SinglePartition:
-                                createContainerTask = Task.Run(() => this.CreateSinglePartitionContainerAndIngestDocuments(
+                                createContainerTask = this.CreateSinglePartitionContainerAndIngestDocuments(
                                     documents,
                                     partitionKey,
-                                    indexingPolicy));
+                                    indexingPolicy);
                                 break;
 
                             case CollectionTypes.MultiPartition:
-                                createContainerTask = Task.Run(() => this.CreateMultiPartitionContainerAndIngestDocuments(
+                                createContainerTask = this.CreateMultiPartitionContainerAndIngestDocuments(
                                     documents,
                                     partitionKey,
-                                    indexingPolicy));
+                                    indexingPolicy);
                                 break;
 
                             default:
