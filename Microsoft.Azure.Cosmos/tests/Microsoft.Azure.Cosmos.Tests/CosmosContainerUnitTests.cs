@@ -23,8 +23,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Routing.ClientCollectionCache collectionCache = await documentClient.GetCollectionCacheAsync();
             CosmosClientContextCore context = new CosmosClientContextCore(
                 client: null,
-                clientConfiguration: null,
-                cosmosJsonSerializer: null,
+                clientOptions: null,
+                userJsonSerializer: null,
+                defaultJsonSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: documentClient,

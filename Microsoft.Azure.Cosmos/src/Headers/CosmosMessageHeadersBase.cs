@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the value of a particular header.
         /// </summary>
         /// <param name="headerName">Header name to look for.</param>
-        /// <returns></returns>
+        /// <returns>The header value.</returns>
         public virtual string this[string headerName]
         {
             get => this.messageHeaders.Value[headerName];
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enumerates all the HTTP headers names in the <see cref="CosmosMessageHeadersBase"/>.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>An enumator for all headers.</returns>
         public virtual IEnumerator<string> GetEnumerator()
         {
             return this.messageHeaders.Value.GetEnumerator();
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the value of a particular header.
         /// </summary>
         /// <param name="headerName">Header name.</param>
-        /// <returns></returns>
+        /// <returns>The header value.</returns>
         public virtual string Get(string headerName)
         {
             return this.messageHeaders.Value.Get(headerName);
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// Returns the header value or the default(string)
         /// </summary>
         /// <param name="headerName">Header Name</param>
-        /// <returns>Returns the header value or the default(string)</returns>
+        /// <returns>Returns the header value or the default(string).</returns>
         public virtual string GetValueOrDefault(string headerName)
         {
             if (this.TryGetValue(headerName, out string value))
@@ -132,12 +132,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <typeparam name="T">Type of the header value.</typeparam>
         /// <param name="headerName">Header name.</param>
-        /// <returns></returns>
+        /// <returns>The header value parsed for a particular type.</returns>
         public virtual T GetHeaderValue<T>(string headerName)
         {
             return this.messageHeaders.Value.GetHeaderValue<T>(headerName);
         }
 
+        /// <summary>
+        /// Enumerates all the HTTP headers names in the <see cref="CosmosMessageHeadersBase"/>.
+        /// </summary>
+        /// <returns>An enumator for all headers.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();

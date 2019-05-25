@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
+        /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
         /// <remarks>
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
         /// The ConsistencySetting.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
-        public virtual CosmosConsistencySettings ConsistencySetting { get; internal set; }
+        public virtual CosmosAccountConsistency ConsistencySetting { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount

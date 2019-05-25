@@ -19,15 +19,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
-                    builder.UseTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
+                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
                 });
 
             CosmosDatabase database = await cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
             CosmosContainer container = await database.Containers.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
             string id1 = Guid.NewGuid().ToString();
-            TestPayload payload1 = await container.Items.CreateItemAsync<TestPayload>(new TestPayload { id = id1 }, new ItemRequestOptions { PartitionKey = id1 });
-            payload1 = await container.Items.ReadItemAsync<TestPayload>(id1, id1);
+            TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = id1 }, new ItemRequestOptions { PartitionKey = id1 });
+            payload1 = await container.ReadItemAsync<TestPayload>(id1, id1);
         }
 
         private static void Interceptor(

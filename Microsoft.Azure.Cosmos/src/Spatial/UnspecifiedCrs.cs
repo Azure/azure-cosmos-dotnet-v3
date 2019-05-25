@@ -14,10 +14,10 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <summary>
         /// Initializes a new instance of the <see cref="UnspecifiedCrs"/> class.
         /// </summary>
-        public UnspecifiedCrs() : base(CrsType.Unspecified)
+        public UnspecifiedCrs()
+            : base(CrsType.Unspecified)
         {
         }
-
 
         /// <summary>
         /// Determines whether the specified <see cref="LinkedCrs"/> is equal to the current <see cref="LinkedCrs"/>.

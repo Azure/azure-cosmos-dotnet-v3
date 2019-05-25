@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
@@ -46,7 +46,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         internal ChangeFeedEstimatorCore(
             Func<long, CancellationToken, Task> initialEstimateDelegate,
             TimeSpan? estimatorPeriod,
-            RemainingWorkEstimator remainingWorkEstimator): this(initialEstimateDelegate, estimatorPeriod)
+            RemainingWorkEstimator remainingWorkEstimator)
+            : this(initialEstimateDelegate, estimatorPeriod)
         {
             this.remainingWorkEstimator = remainingWorkEstimator;
         }
@@ -123,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.remainingWorkEstimator = new RemainingWorkEstimatorCore(
                    this.documentServiceLeaseStoreManager.LeaseContainer,
                    feedCreator,
-                   this.monitoredContainer.ClientContext.Client.Configuration?.MaxConnectionLimit ?? 1);
+                   this.monitoredContainer.ClientContext.Client.ClientOptions?.GatewayModeMaxConnectionLimit ?? 1);
             }
 
             ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate, this.estimatorPeriod);

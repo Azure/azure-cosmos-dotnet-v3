@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                insertedDocuments.Add((await npCollection.Items.CreateItemAsync<JObject>(documentObject, new ItemRequestOptions { PartitionKey = CosmosContainerSettings.NonePartitionKeyValue })).Resource.ToObject<Document>());
+                insertedDocuments.Add((await npCollection.CreateItemAsync<JObject>(documentObject, new ItemRequestOptions { PartitionKey = CosmosContainerSettings.NonePartitionKeyValue })).Resource.ToObject<Document>());
             }
 
             return new Tuple<CosmosContainer, List<Document>>(npCollection, insertedDocuments);
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CleanUp()
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabaseIterator();
+            FeedIterator<CosmosDatabaseSettings> allDatabases = this.Client.Databases.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ConnectionMode targetConnectionMode = GetTargetConnectionMode(connectionMode);
                         CosmosClient cosmosClient = cosmosClientFactory(targetConnectionMode);
 
-                        Assert.AreEqual(targetConnectionMode, cosmosClient.Configuration.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
+                        Assert.AreEqual(targetConnectionMode, cosmosClient.ClientOptions.ConnectionMode, "Test setup: Invalid connection policy applied to CosmosClient");
                         cosmosClients.Add(cosmosClient);
                     }
 
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string continuationToken = null;
             do
             {
-                FeedIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
+                FeedIterator<T> itemQuery = container.CreateItemQuery<T>(
                    sqlQueryText: query,
                    maxConcurrency: 2,
                    maxItemCount: maxItemCount,
@@ -393,11 +393,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
             CosmosContainer container,
             string query,
-            int maxItemCount,
             QueryRequestOptions queryRequestOptions = null)
         {
             List<T> results = new List<T>();
-            FeedIterator<T> itemQuery = container.Items.CreateItemQuery<T>(
+            FeedIterator<T> itemQuery = container.CreateItemQuery<T>(
                 sqlQueryText: query,
                 maxConcurrency: 2,
                 requestOptions: queryRequestOptions);
@@ -467,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await CrossPartitionQueryTestsNp.NoOp();
             try
             {
-                FeedIterator<Document> resultSetIterator = container.Items.CreateItemQuery<Document>(
+                FeedIterator<Document> resultSetIterator = container.CreateItemQuery<Document>(
                     @"SELECT * FROM Root r WHERE a = 1",
                     maxConcurrency: 2);
 
@@ -506,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 /// '"code":"SC2001","message":"Identifier 'c' could not be resolved."'
                 string query = "SELECT c._ts, c.id, c.TicketNumber, c.PosCustomerNumber, c.CustomerId, c.CustomerUserId, c.ContactEmail, c.ContactPhone, c.StoreCode, c.StoreUid, c.PoNumber, c.OrderPlacedOn, c.OrderType, c.OrderStatus, c.Customer.UserFirstName, c.Customer.UserLastName, c.Customer.Name, c.UpdatedBy, c.UpdatedOn, c.ExpirationDate, c.TotalAmountFROM c ORDER BY c._ts";
                 List<Document> expectedValues = new List<Document>();
-                FeedIterator<Document> resultSetIterator = container.Items.CreateItemQuery<Document>(
+                FeedIterator<Document> resultSetIterator = container.CreateItemQuery<Document>(
                     query,
                     maxConcurrency: 0);
 
@@ -595,7 +594,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 foreach ((string, string) queryAndExpectedResult in queries)
                 {
-                    FeedIterator<Document> resultSetIterator = container.Items.CreateItemQuery<Document>(
+                    FeedIterator<Document> resultSetIterator = container.CreateItemQuery<Document>(
                         sqlQueryText: queryAndExpectedResult.Item1,
                         partitionKey: CosmosContainerSettings.NonePartitionKeyValue,
                         maxItemCount: 1);
@@ -635,7 +634,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task TestQueryMultiplePartitionsSinglePartitionKeyHelper(CosmosContainer container, IEnumerable<Document> documents)
         {
             // Query with partition key should be done in one round trip.
-            FeedIterator<dynamic> resultSetIterator = container.Items.CreateItemQuery<dynamic>(
+            FeedIterator<dynamic> resultSetIterator = container.CreateItemQuery<dynamic>(
                 "SELECT * FROM c WHERE c.pk = 'doc5'",
                 partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
 
@@ -643,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, response.Count());
             Assert.IsNull(response.Continuation);
 
-            resultSetIterator = container.Items.CreateItemQuery<dynamic>(
+            resultSetIterator = container.CreateItemQuery<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'",
                partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
 
@@ -746,12 +745,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
             Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
 
-            ItemResponse<SpecialPropertyDocument> response = await container.Items.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument, new ItemRequestOptions { PartitionKey = testArgs.Value });
+            ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument, new ItemRequestOptions { PartitionKey = testArgs.Value });
             dynamic returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
             PartitionKey key = new PartitionKey(args.ValueToPartitionKey(args.Value));
-            response = await container.Items.ReadItemAsync<SpecialPropertyDocument>(key, response.Resource.id);
+            response = await container.ReadItemAsync<SpecialPropertyDocument>(key, response.Resource.id);
             returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
@@ -788,7 +787,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     break;
             }
 
-            returnedDoc = (await container.Items.CreateItemQuery<SpecialPropertyDocument>(
+            returnedDoc = (await container.CreateItemQuery<SpecialPropertyDocument>(
                 query,
                 partitionKey: args.ValueToPartitionKey,
                 maxItemCount: 1).FetchNextSetAsync()).First();
@@ -949,7 +948,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").UseParameter("@keys", args.ExpectedPartitionKeyValues);
 
             HashSet<int> actualPartitionKeyValues = new HashSet<int>();
-            FeedIterator<int> documentQuery = container.Items.CreateItemQuery<int>(
+            FeedIterator<int> documentQuery = container.CreateItemQuery<int>(
                     sqlQueryDefinition: query,
                     maxItemCount: -1,
                     maxConcurrency: 100);
@@ -992,14 +991,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         EnableCrossPartitionQuery = true,
                         MaxBufferedItemCount = 7000,
-                        MaxConcurrency = maxDegreeOfParallelism
+                        MaxConcurrency = maxDegreeOfParallelism,
+                        MaxItemCount = maxItemCount
                     };
 
                     List<JToken> actualFromQueryWithoutContinutionTokens;
                     actualFromQueryWithoutContinutionTokens = await QueryWithoutContinuationTokens<JToken>(
                         container,
                         "SELECT * FROM c",
-                        maxItemCount,
                         feedOptions);
 
                     Assert.AreEqual(documents.Count(), actualFromQueryWithoutContinutionTokens.Count);
@@ -1148,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string message = string.Format(CultureInfo.InvariantCulture, "query: {0}, data: {1}", query, JsonConvert.SerializeObject(argument));
                         List<dynamic> items = new List<dynamic>();
 
-                        FeedIterator<dynamic> resultSetIterator = container.Items.CreateItemQuery<dynamic>(
+                        FeedIterator<dynamic> resultSetIterator = container.CreateItemQuery<dynamic>(
                             query,
                             maxConcurrency: maxDoP);
                         while (resultSetIterator.HasMoreResults)
@@ -1196,7 +1195,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (Tuple<string, object> data in datum)
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
-                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(container, query, maxItemCount: 1)).Single();
+                    dynamic aggregate = (await QueryWithoutContinuationTokens<dynamic>(container, query)).Single();
                     object expected = data.Item2;
 
                     if (aggregate is long)
@@ -1233,7 +1232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //}
 
                     // Make sure ExecuteNextAsync works for unsupported aggregate projection
-                    FeedResponse<dynamic> page = await container.Items.CreateItemQuery<dynamic>(query, maxConcurrency: 1).FetchNextSetAsync();
+                    FeedResponse<dynamic> page = await container.CreateItemQuery<dynamic>(query, maxConcurrency: 1).FetchNextSetAsync();
                 }
             }
         }
@@ -1673,7 +1672,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<JToken> documentsFromWithDistinct = new List<JToken>();
                     List<JToken> documentsFromWithoutDistinct = new List<JToken>();
 
-                    FeedIterator<JToken> documentQueryWithoutDistinct = container.Items.CreateItemQuery<JToken>(
+                    FeedIterator<JToken> documentQueryWithoutDistinct = container.CreateItemQuery<JToken>(
                         queryWithoutDistinct,
                         maxConcurrency: 100,
                         maxItemCount: pageSize);
@@ -1694,7 +1693,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
 
-                    FeedIterator<JToken> documentQueryWithDistinct = container.Items.CreateItemQuery<JToken>(
+                    FeedIterator<JToken> documentQueryWithDistinct = container.CreateItemQuery<JToken>(
                         queryWithDistinct,
                         maxConcurrency: 100,
                         maxItemCount: pageSize);
@@ -1739,7 +1738,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HashSet<JToken> documentsFromWithDistinct = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
                 HashSet<JToken> documentsFromWithoutDistinct = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
 
-                FeedIterator<JToken> documentQueryWithoutDistinct = container.Items.CreateItemQuery<JToken>(
+                FeedIterator<JToken> documentQueryWithoutDistinct = container.CreateItemQuery<JToken>(
                         queryWithoutDistinct,
                         maxItemCount: 10,
                         maxConcurrency: 100);
@@ -1753,7 +1752,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
-                FeedIterator<JToken> documentQueryWithDistinct = container.Items.CreateItemQuery<JToken>(
+                FeedIterator<JToken> documentQueryWithDistinct = container.CreateItemQuery<JToken>(
                     queryWithDistinct,
                     maxItemCount: 10,
                     maxConcurrency: 100);
@@ -1765,7 +1764,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string continuationToken = null;
                     do
                     {
-                        FeedIterator<JToken> documentQuery = container.Items.CreateItemQuery<JToken>(
+                        FeedIterator<JToken> documentQuery = container.CreateItemQuery<JToken>(
                             queryWithDistinct,
                             maxItemCount: 10,
                             maxConcurrency: 100);
@@ -1810,7 +1809,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<JToken> documentsFromWithDistinct = new List<JToken>();
                     List<JToken> documentsFromWithoutDistinct = new List<JToken>();
 
-                    FeedIterator<JToken> documentQueryWithoutDistinct = container.Items.CreateItemQuery<JToken>(
+                    FeedIterator<JToken> documentQueryWithoutDistinct = container.CreateItemQuery<JToken>(
                         sqlQueryText: queryWithoutDistinct,
                         maxConcurrency: 100,
                         maxItemCount: 1);
@@ -1831,7 +1830,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
 
-                    FeedIterator<JToken> documentQueryWithDistinct = container.Items.CreateItemQuery<JToken>(
+                    FeedIterator<JToken> documentQueryWithDistinct = container.CreateItemQuery<JToken>(
                        sqlQueryText: queryWithDistinct,
                        maxConcurrency: 100,
                        maxItemCount: 1);
@@ -1839,7 +1838,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string continuationToken = null;
                     do
                     {
-                        FeedIterator<JToken> cosmosQuery = container.Items.CreateItemQuery<JToken>(
+                        FeedIterator<JToken> cosmosQuery = container.CreateItemQuery<JToken>(
                                    sqlQueryText: queryWithDistinct,
                                    maxConcurrency: 100,
                                    maxItemCount: 1,
@@ -2536,7 +2535,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                                     DateTime startTime = DateTime.Now;
                                     List<Document> result = new List<Document>();
-                                    FeedIterator<Document> query = container.Items.CreateItemQuery<Document>(
+                                    FeedIterator<Document> query = container.CreateItemQuery<Document>(
                                         querySpec,
                                         maxConcurrency: maxDegreeOfParallelism,
                                         requestOptions: feedOptions);
@@ -2623,7 +2622,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents.Add(JsonConvert.SerializeObject(person));
             }
 
-            await CreateIngestQueryDelete(
+            await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 documents,
                 this.TestQueryCrossPartitionOffsetLimit,
@@ -2634,34 +2633,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            // Check error on skip take for partitioned collection.
-            try
-            {
-                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
-                {
-                    EnableCrossPartitionQuery = true,
-                    MaxItemCount = 3,
-                    MaxBufferedItemCount = 1000,
-                    EnableCrossPartitionSkipTake = false,
-                };
-
-                string query = "SELECT * FROM c OFFSET 10 LIMIT 10";
-                List<JToken> actualFromQueryWithContinutionToken = await QueryWithoutContinuationTokens<JToken>(
-                    container,
-                    query,
-                    3,
-                    queryRequestOptions);
-
-                Assert.Fail("Expected exception for Cross Partition OFFSET LIMIT");
-            }
-            catch (Exception ex)
-            {
-                if (!(ex.Message.Contains("Cross Partition OFFSET / LIMIT is not supported.")))
-                {
-                    Assert.Fail("Wrong exception");
-                }
-            }
-
             foreach (int offsetCount in new int[] { 0, 1, 10, 100, documents.Count() })
             {
                 foreach (int limitCount in new int[] { 0, 1, 10, 100, documents.Count() })
@@ -2695,7 +2666,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         List<JToken> actualFromQueryWithoutContinutionToken = await QueryWithoutContinuationTokens<JToken>(
                             container,
                             query,
-                            3,
                             queryRequestOptions);
                         Assert.IsTrue(
                             expectedResults.SequenceEqual(actualFromQueryWithoutContinutionToken, JsonTokenEqualityComparer.Value),
@@ -2742,7 +2712,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             // Max DOP needs to be 0 since the query needs to run in serial => 
                             // otherwise the parallel code will prefetch from other partitions,
                             // since the first N-1 partitions might be empty.
-                            FeedIterator<dynamic> documentQuery = container.Items.CreateItemQuery<dynamic>(
+                            FeedIterator<dynamic> documentQuery = container.CreateItemQuery<dynamic>(
                                     query,
                                     maxConcurrency: 0,
                                     maxItemCount: pageSize);
@@ -2843,7 +2813,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             #region BadContinuations
             try
             {
-                await container.Items.CreateItemQuery<Document>(
+                await container.CreateItemQuery<Document>(
                     "SELECT * FROM t",
                     maxConcurrency: 1,
                     continuationToken: Guid.NewGuid().ToString()).FetchNextSetAsync();
@@ -2857,7 +2827,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                await container.Items.CreateItemQuery<Document>(
+                await container.CreateItemQuery<Document>(
                     "SELECT TOP 10 * FROM r",
                     maxConcurrency: -1,
                     maxItemCount: 10,
@@ -2872,7 +2842,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                await container.Items.CreateItemQuery<Document>(
+                await container.CreateItemQuery<Document>(
                     "SELECT * FROM r ORDER BY r.field1",
                     maxConcurrency: -1,
                     maxItemCount: 10,
@@ -2887,7 +2857,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                await container.Items.CreateItemQuery<Document>(
+                await container.CreateItemQuery<Document>(
                    "SELECT * FROM r ORDER BY r.field1, r.field2",
                    maxConcurrency: -1,
                    maxItemCount: 10,
@@ -2901,7 +2871,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             #endregion
 
-            FeedResponse<Document> responseWithEmptyContinuationExpected = await container.Items.CreateItemQuery<Document>(
+            FeedResponse<Document> responseWithEmptyContinuationExpected = await container.CreateItemQuery<Document>(
                 string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
                     maxConcurrency: 10,
                     maxItemCount: -1).FetchNextSetAsync();
@@ -2947,7 +2917,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxBufferedItemCount = 10000,
                         };
 
-                        documentQuery = container.Items.CreateItemQuery<Document>(
+                        documentQuery = container.CreateItemQuery<Document>(
                             query,
                             maxConcurrency: 10000,
                             maxItemCount: pageSize,
@@ -3570,7 +3540,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestOptions = requestOptions ?? new QueryRequestOptions();
             requestOptions.PartitionKey = CosmosContainerSettings.NonePartitionKeyValue;
 
-            FeedIterator<T> resultSetIterator = container.Items.CreateItemQuery<T>(
+            FeedIterator<T> resultSetIterator = container.CreateItemQuery<T>(
                 query,
                 maxConcurrency: maxConcurrency,
                 maxItemCount: maxItemCount,
@@ -3592,7 +3562,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int? maxItemCount = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator<T> resultSetIterator = container.Items.CreateItemQuery<T>(
+            FeedIterator<T> resultSetIterator = container.CreateItemQuery<T>(
                 query,
                 partitionKey: partitionKey,
                 maxItemCount: maxItemCount,

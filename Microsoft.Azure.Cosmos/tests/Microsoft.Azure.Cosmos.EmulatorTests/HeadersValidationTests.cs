@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
                 CosmosContainer coll = await db.Containers.CreateContainerAsync(containerSetting);
                 Document documentDefinition = new Document { Id = Guid.NewGuid().ToString() };
-                ItemResponse<Document> docResult = await coll.Items.CreateItemAsync<Document>(documentDefinition, new ItemRequestOptions { PartitionKey = documentDefinition.Id });
+                ItemResponse<Document> docResult = await coll.CreateItemAsync<Document>(documentDefinition, new ItemRequestOptions { PartitionKey = documentDefinition.Id });
                 Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
                 Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentReplicaSetSize], CultureInfo.InvariantCulture) > 0);
             }
@@ -557,9 +557,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosContainer noneIndexContainer = await db.Containers.CreateContainerAsync(noneIndexCollection);
 
                 var doc = new Document() { Id = Guid.NewGuid().ToString() };
-                await lazyContainer.Items.CreateItemAsync<Document>(doc, new ItemRequestOptions { PartitionKey = doc.Id });
-                await consistentContainer.Items.CreateItemAsync<Document>(doc, new ItemRequestOptions { PartitionKey = doc.Id });
-                await noneIndexContainer.Items.CreateItemAsync<Document>(doc, new ItemRequestOptions { PartitionKey = doc.Id });
+                await lazyContainer.CreateItemAsync<Document>(doc, new ItemRequestOptions { PartitionKey = doc.Id });
+                await consistentContainer.CreateItemAsync<Document>(doc, new ItemRequestOptions { PartitionKey = doc.Id });
+                await noneIndexContainer.CreateItemAsync<Document>(doc, new ItemRequestOptions { PartitionKey = doc.Id });
 
 
                 // Lazy-indexing collection.

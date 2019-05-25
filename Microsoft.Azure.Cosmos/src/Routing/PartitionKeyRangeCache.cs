@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeId(string collectionRid, string partitionKeyRangeId)
+        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, string partitionKeyRangeId)
         {
             try
             {
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => ExecutePartitionKeyRangeReadChangeFeed(collectionRid, headers),
+                    () => ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return routingMap;
         }
 
-        private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFeed(string collectionRid, INameValueCollection headers)
+        private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFeedAsync(string collectionRid, INameValueCollection headers)
         {
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                 OperationType.ReadFeed,

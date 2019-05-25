@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
         /// </summary>
-        public ContainerResponse() : base()
+        public ContainerResponse()
+            : base()
         {
-
         }
 
         /// <summary>
@@ -27,7 +27,8 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
             CosmosContainerSettings cosmosContainerSettings,
-            CosmosContainer container) : base(
+            CosmosContainer container)
+            : base(
                 httpStatusCode,
                 headers,
                 cosmosContainerSettings)

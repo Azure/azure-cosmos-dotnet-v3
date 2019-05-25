@@ -2,21 +2,21 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System.Net;
 
     /// <summary>
     /// The cosmos trigger response
     /// </summary>
-    internal class TriggerResponse : Response<CosmosTriggerSettings>
+    public class TriggerResponse : Response<CosmosTriggerSettings>
     {
         /// <summary>
         /// Create a <see cref="TriggerResponse"/> as a no-op for mock testing
         /// </summary>
-        public TriggerResponse() : base()
+        public TriggerResponse()
+            : base()
         {
-
         }
 
         /// <summary>
@@ -26,28 +26,21 @@ namespace Microsoft.Azure.Cosmos
         internal TriggerResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosTriggerSettings cosmosTriggerSettings,
-           CosmosTrigger trigger) : base(
+           CosmosTriggerSettings cosmosTriggerSettings)
+            : base(
                httpStatusCode,
                headers,
                cosmosTriggerSettings)
         {
-            this.Trigger = trigger;
         }
 
         /// <summary>
-        /// The reference to the cosmos trigger.
-        /// This allows additional operations for the trigger
+        /// Get <see cref="CosmosTriggerSettings"/> implictly from <see cref="TriggerResponse"/>
         /// </summary>
-        public virtual CosmosTrigger Trigger { get; private set; }
-
-        /// <summary>
-        /// Get <see cref="CosmosTrigger"/> implicitly from <see cref="TriggerResponse"/>
-        /// </summary>
-        /// <param name="response">UserDefinedFunctionResponse</param>
-        public static implicit operator CosmosTrigger(TriggerResponse response)
+        /// <param name="response">CosmosUserDefinedFunctionResponse</param>
+        public static implicit operator CosmosTriggerSettings(TriggerResponse response)
         {
-            return response.Trigger;
+            return response.Resource;
         }
     }
 }

@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
                 DefaultTrace.TraceInformation("Lease with token {0} update conflict. Reading the current version of lease.", lease.CurrentLeaseToken);
 
-                ItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReadItemAsync<DocumentServiceLeaseCore>(
+                ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReadItemAsync<DocumentServiceLeaseCore>(
                     partitionKey, itemId).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             {
                 ItemRequestOptions itemRequestOptions = this.CreateIfMatchOptions(lease);
                 itemRequestOptions.PartitionKey = partitionKey;
-                ItemResponse<DocumentServiceLeaseCore> response = await this.container.Items.ReplaceItemAsync<DocumentServiceLeaseCore>(                    
+                ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReplaceItemAsync<DocumentServiceLeaseCore>(                    
                     itemId, 
                     lease,
                     itemRequestOptions).ConfigureAwait(false);
@@ -106,8 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private ItemRequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
         {
-            var ifMatchCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = lease.ConcurrencyToken };
-            return new ItemRequestOptions { AccessCondition = ifMatchCondition };
+            return new ItemRequestOptions { IfMatchEtag = lease.ConcurrencyToken };
         }
     }
 }

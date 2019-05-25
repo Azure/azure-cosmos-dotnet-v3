@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges, 
                 routingMapProvider.Object, 
                 CollectionId, 
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.Is<Range<string>>(x => x.Min == range.Min),
                 It.IsAny<bool>()
             )).Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)overlappingRanges.Take(1).ToList())).Verifiable();
-            resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+            resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
             //Reverse
             PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
-            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+            ResolvedRangeInfo resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
             //Forward
             partitionRoutingHelper = new PartitionRoutingHelper();
-            resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+            resolvedRangeInfo = await partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 providedRanges,
                 routingMapProvider.Object,
                 CollectionId,
@@ -612,7 +612,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             partitionRoutingHelperMock.Setup(
                 m => m.ExtractPartitionKeyRangeFromContinuationToken(It.IsAny<INameValueCollection>(), out It.Ref<List<CompositeContinuationToken>>.IsAny
             )).Returns(new Range<string>("A", "B", true, false));
-            partitionRoutingHelperMock.Setup(m => m.TryGetTargetRangeFromContinuationTokenRange(
+            partitionRoutingHelperMock.Setup(m => m.TryGetTargetRangeFromContinuationTokenRangeAsync(
                 It.IsAny<IReadOnlyList<Range<string>>>(),
                 It.IsAny<IRoutingMapProvider>(),
                 It.IsAny<string>(),

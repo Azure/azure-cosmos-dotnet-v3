@@ -1,13 +1,11 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosElement.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
-    using Microsoft.Azure.Cosmos.Json;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
     internal abstract class CosmosElement

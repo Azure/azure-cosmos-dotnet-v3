@@ -35,12 +35,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void BatchIsWriteOperation()
-        {
-            Assert.IsTrue(Documents.OperationType.Batch.IsWriteOperation());
-        }
-
-        [TestMethod]
         public void PublicDirectTypes()
         {
             Assembly directAssembly = typeof(IStoreClient).Assembly;

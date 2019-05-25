@@ -24,7 +24,9 @@ namespace Microsoft.Azure.Cosmos
         Exclude
     }
 
+#pragma warning disable SA1649 // File name should match first type name
     internal static class IndexingDirectiveStrings
+#pragma warning restore SA1649 // File name should match first type name
     {
         public static readonly string Default = IndexingDirective.Default.ToString();
         public static readonly string Include = IndexingDirective.Include.ToString();

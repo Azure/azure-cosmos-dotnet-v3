@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosResponseMessageHeaders : CosmosMessageHeadersBase, IEnumerable
     {
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.RequestCharge)]
-        private string _requestCharge
+        private string requestCharge
         {
             get
             {
@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        
         public virtual double RequestCharge { get; internal set; }
 
         /// <summary>
@@ -81,12 +80,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this._contentLength;
+                return this.contentLength;
             }
             set
             {
                 this.ContentLengthAsLong = value != null ? long.Parse(value, CultureInfo.InvariantCulture) : 0;
-                this._contentLength = value;
+                this.contentLength = value;
             }
         }
 
@@ -107,12 +106,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this._subStatusCodeLiteral;
+                return this.subStatusCodeLiteral;
             }
             set
             {
                 this.SubStatusCode = CosmosResponseMessageHeaders.GetSubStatusCodes(value);
-                this._subStatusCodeLiteral = value;
+                this.subStatusCodeLiteral = value;
             }
         }
 
@@ -121,20 +120,20 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this._retryAfterInternal;
+                return this.retryAfterInternal;
             }
             set
             {
                 this.RetryAfter = CosmosResponseMessageHeaders.GetRetryAfter(value);
-                this._retryAfterInternal = value;
+                this.retryAfterInternal = value;
             }
         }
 
-        private string _contentLength;
+        private string contentLength;
 
-        private string _subStatusCodeLiteral;
+        private string subStatusCodeLiteral;
 
-        private string _retryAfterInternal;
+        private string retryAfterInternal;
 
         private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<CosmosResponseMessageHeaders>();
 
@@ -144,9 +143,8 @@ namespace Microsoft.Azure.Cosmos
                     knownProperty => knownProperty.Key,
                     knownProperty => new CosmosCustomHeader(
                             () => (string)knownProperty.Value.GetValue(this),
-                            (string value) => { knownProperty.Value.SetValue(this, value); }
-                        )
-                , StringComparer.OrdinalIgnoreCase);
+                            (string value) => { knownProperty.Value.SetValue(this, value); }), 
+                    StringComparer.OrdinalIgnoreCase);
         }
 
         internal static SubStatusCodes GetSubStatusCodes(string value)

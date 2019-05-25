@@ -39,7 +39,6 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         public AsyncCollection(IProducerConsumerCollection<T> collection)
             : this(collection, int.MaxValue)
         {
-
         }
 
         public AsyncCollection(IProducerConsumerCollection<T> collection, int boundingCapacity)

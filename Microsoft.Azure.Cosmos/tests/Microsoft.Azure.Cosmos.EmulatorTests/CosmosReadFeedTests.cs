@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ""id"": ""{i}""
                     }}";
 
-                using (CosmosResponseMessage createResponse = await this.Container.Items.CreateItemStreamAsync(
+                using (CosmosResponseMessage createResponse = await this.Container.CreateItemAsStreamAsync(
                         i.ToString(),
                         CosmosReadFeedTests.GenerateStreamFromString(item)))
                 {
@@ -70,16 +70,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string lastKnownContinuationToken = null;
-            FeedIterator iter = this.Container.Database.Containers[this.Container.Id].Items
-                                .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
+            FeedIterator iter = this.Container.Database.Containers[this.Container.Id]
+                                .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
             int count = 0;
             List<string> forwardOrder = new List<string>();
             while (iter.HasMoreResults)
             {
                 if (useStatelessIteration)
                 {
-                    iter = this.Container.Database.Containers[this.Container.Id].Items
-                                        .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
+                    iter = this.Container.Database.Containers[this.Container.Id]
+                                        .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
                 }
 
                 using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
@@ -112,14 +112,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> reverseOrder = new List<string>();
 
             lastKnownContinuationToken = null;
-            iter = this.Container.Database.Containers[this.Container.Id].Items
-                    .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+            iter = this.Container.Database.Containers[this.Container.Id]
+                    .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
             while (iter.HasMoreResults)
             {
                 if (useStatelessIteration)
                 {
-                    iter = this.Container.Database.Containers[this.Container.Id].Items
-                            .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                    iter = this.Container.Database.Containers[this.Container.Id]
+                            .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                 }
 
                 using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
