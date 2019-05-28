@@ -124,20 +124,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             //    "_count": 1
             // }
 
-            Dictionary<string, CosmosElement> keyValues = new Dictionary<string, CosmosElement>();
-            CosmosString rid = CosmosString.Create(containerRid);
-            keyValues.Add("_rid", rid);
+            jsonWriter.WriteObjectStart();
 
+            // Write the rid field and value
+            jsonWriter.WriteFieldName("_rid");
+            jsonWriter.WriteStringValue(containerRid);
+
+            // Write the array of elements
             string rootName = CosmosElementSerializer.GetRootNodeName(resourceType);
-            CosmosArray arr = CosmosArray.Create(cosmosElements);
-            keyValues.Add(rootName, arr);
+            jsonWriter.WriteFieldName(rootName);
 
-            CosmosNumber64 count = CosmosNumber64.Create(arr.Count);
-            keyValues.Add("_count", count);
+            int count = 0;
+            jsonWriter.WriteArrayStart();
+            foreach(CosmosElement element in cosmosElements)
+            {
+                count++;
+                element.WriteTo(jsonWriter);
+            }
+            jsonWriter.WriteArrayEnd();
 
-            CosmosObject wrapper = CosmosObject.Create(keyValues);
+            // Write the count field and value
+            jsonWriter.WriteFieldName("_count");
+            jsonWriter.WriteNumberValue(count);
 
-            wrapper.WriteTo(jsonWriter);
+            jsonWriter.WriteObjectEnd();
 
             return new MemoryStream(jsonWriter.GetResult());
         }

@@ -412,6 +412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator queryIterator =
                 this.Container.Items.CreateItemQueryAsStream(@"select * from t where t.id != """" ", maxConcurrency: 1, maxItemCount: 4);
             FeedIterators.Add(queryIterator);
+            string previousResult = null;
 
             foreach (FeedIterator iterator in FeedIterators)
             {
@@ -421,15 +422,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     CosmosResponseMessage response = await iterator.FetchNextSetAsync(this.cancellationToken);
                     response.EnsureSuccessStatusCode();
 
-                    JsonSerializer serializer = new JsonSerializer();
-
                     using (StreamReader sr = new StreamReader(response.Content))
-                    using (JsonTextReader jtr = new JsonTextReader(sr))
                     {
-                        //string result = await sr.ReadToEndAsync();
-                        JObject jObject = serializer.Deserialize<JObject>(jtr);
+                        string jsonString = await sr.ReadToEndAsync();
+                        Assert.IsNotNull(jsonString);
+                        JObject jObject = JsonConvert.DeserializeObject<JObject>(jsonString);
                         Assert.IsNotNull(jObject["Documents"]);
-                        Assert.IsNotNull(jObject["_rid"].ToString());
+                        Assert.IsNotNull(jObject["_rid"]);
+                        Assert.IsNotNull(jObject["_count"]);
                         Assert.IsTrue(jObject["_count"].ToObject<int>() >= 0);
                         foreach (JObject item in jObject["Documents"])
                         {
@@ -446,6 +446,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(item["_etag"]);
                             Assert.IsNotNull(item["_attachments"]);
                             Assert.IsNotNull(item["_ts"]);
+                        }
+
+                        if(previousResult != null)
+                        {
+                            Assert.AreEqual(previousResult, jsonString);
+                        }
+                        else
+                        {
+                            previousResult = jsonString;
                         }
                     }
                 }

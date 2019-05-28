@@ -83,10 +83,10 @@ namespace Microsoft.Azure.Cosmos
             string containerRid)
         {
             return new CosmosQueryResponseMessageHeaders(
-                sourceHeaders.Continuation, 
-                null, 
-                resourceType, 
-                containerRid)
+                continauationToken: sourceHeaders.Continuation,
+                disallowContinuationTokenMessage: null,
+                resourceType: resourceType,
+                containerRid: containerRid)
             {
                 RequestCharge = sourceHeaders.RequestCharge,
                 ContentLength = sourceHeaders.ContentLength,

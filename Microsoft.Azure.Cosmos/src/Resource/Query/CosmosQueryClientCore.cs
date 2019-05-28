@@ -214,12 +214,8 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Error);
                 }
 
-                MemoryStream memoryStream;
-                if (cosmosResponseMessage.Content is MemoryStream)
-                {
-                    memoryStream = (MemoryStream)cosmosResponseMessage.Content;
-                }
-                else
+                MemoryStream memoryStream = cosmosResponseMessage.Content as MemoryStream;
+                if (memoryStream == null)
                 {
                     memoryStream = new MemoryStream();
                     cosmosResponseMessage.Content.CopyTo(memoryStream);
