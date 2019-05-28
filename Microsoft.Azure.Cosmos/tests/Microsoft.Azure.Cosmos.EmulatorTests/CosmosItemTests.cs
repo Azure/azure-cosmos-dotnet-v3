@@ -83,12 +83,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id = Guid.NewGuid().ToString()
             };
 
-            ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem);
+            ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, partitionKey: Undefined.Value);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
 
-            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(partitionKey: "[{}]", id: testItem.id);
+            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: "[{}]");
             Assert.IsNotNull(deleteResponse);
         }
 
@@ -841,7 +841,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ToDoActivity itemWithoutPK = this.CreateRandomToDoActivity();
                 ItemResponse<ToDoActivity> createResponseWithoutPk = await fixedContainer.CreateItemAsync<ToDoActivity>(
                  item: itemWithoutPK,
-                 requestOptions: new ItemRequestOptions { PartitionKey = CosmosContainerSettings.NonePartitionKeyValue });
+                 partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
 
                 Assert.IsNotNull(createResponseWithoutPk.Resource);
                 Assert.AreEqual(HttpStatusCode.Created, createResponseWithoutPk.StatusCode);
@@ -852,7 +852,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> updateResponseWithoutPk = await fixedContainer.ReplaceItemAsync<ToDoActivity>(                 
                  id: itemWithoutPK.id,
                  item: itemWithoutPK,
-                 requestOptions: new ItemRequestOptions { PartitionKey = CosmosContainerSettings.NonePartitionKeyValue });
+                 partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
 
                 Assert.IsNotNull(updateResponseWithoutPk.Resource);
                 Assert.AreEqual(HttpStatusCode.OK, updateResponseWithoutPk.StatusCode);

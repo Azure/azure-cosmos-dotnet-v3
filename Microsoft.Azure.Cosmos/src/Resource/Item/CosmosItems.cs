@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
+        /// <param name="partitionKey">Partitionkey for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="ItemResponse{T}"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
@@ -109,6 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
+            object partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -242,6 +244,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts an item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>        
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
+        /// <param name="partitionKey">Partitionkey for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="ItemResponse{T}"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
@@ -285,6 +288,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(            
             T item,
+            object partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -338,6 +342,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>        
         /// <param name="id">The cosmos item id, which is expected to match the value within T.</param>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer.</param>
+        /// <param name="partitionKey">Partitionkey for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -385,6 +390,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(            
             string id,
             T item,
+            object partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

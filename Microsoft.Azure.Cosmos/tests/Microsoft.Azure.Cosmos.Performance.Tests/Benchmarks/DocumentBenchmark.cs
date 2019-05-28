@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             var response = await this.container.CreateItemAsync(
                 this.baseItem,
-                new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
+                Constants.ValidOperationId);
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
                 throw new Exception();
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             var response = await this.container.UpsertItemAsync(
                 this.baseItem,
-                new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
+                Constants.ValidOperationId);
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
                 throw new Exception();
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             var response = await this.container.ReplaceItemAsync(                
                 Constants.ValidOperationId, 
                 this.baseItem,
-                new ItemRequestOptions { PartitionKey = Constants.ValidOperationId });
+                Constants.ValidOperationId);
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Resource == null)
             {
                 throw new Exception();

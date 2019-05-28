@@ -984,7 +984,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
             Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
 
-            ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument, new ItemRequestOptions { PartitionKey = testArgs.Value });
+            ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument);
             dynamic returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 

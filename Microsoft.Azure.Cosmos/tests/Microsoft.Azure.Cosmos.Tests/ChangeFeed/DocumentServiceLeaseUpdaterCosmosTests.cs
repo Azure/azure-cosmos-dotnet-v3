@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.Setup(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(options => options.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
@@ -50,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(mockedItems.Object)
                 .Verify(items => items.ReplaceItemAsync(It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(options => options.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()), Times.Once);
             Mock.Get(mockedItems.Object)
                 .Verify(items => items.ReadItemAsync<DocumentServiceLeaseCore>(It.Is<object>((pk) => pk == partitionKey),
@@ -82,7 +84,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(options => options.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
                 .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0))
                 .Returns(() =>
@@ -103,7 +106,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(mockedItems.Object)
                 .Verify(items => items.ReplaceItemAsync(It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(options => options.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
             Mock.Get(mockedItems.Object)
                 .Verify(items => items.ReadItemAsync<DocumentServiceLeaseCore>(It.Is<object>((pk) => pk == partitionKey),
@@ -136,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.Setup(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(opitons => opitons.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
                 .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0));
 
@@ -172,7 +177,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(options => options.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
                 .Throws(new CosmosException(string.Empty, HttpStatusCode.Conflict, 0, string.Empty, 0))
                 .Returns(() =>
@@ -214,7 +220,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(options => options.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
@@ -261,7 +268,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
-                It.Is<ItemRequestOptions>(options => options.PartitionKey == partitionKey),
+                It.Is<object>(pk => pk == partitionKey),
+                It.IsAny<ItemRequestOptions>(),
                 It.IsAny<CancellationToken>()))
                 .Throws(new CosmosException(string.Empty, HttpStatusCode.PreconditionFailed, 0, string.Empty, 0))
                 .Returns(() =>

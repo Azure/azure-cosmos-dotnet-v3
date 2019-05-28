@@ -1418,7 +1418,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = Guid.NewGuid().ToString()
             };
 
-            await collection.CreateItemAsync(document.Id, document);
+            await collection.CreateItemAsync(document);
 
             string script = string.Format(CultureInfo.InvariantCulture, @" function() {{
                 var client = getContext().getCollection();                
@@ -3306,7 +3306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             document.StringField = "222";
 
             Logger.LogLine("Adding Document with exclusion");
-            dynamic retrievedDocument = await collection.CreateItemAsync(document, new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
+            dynamic retrievedDocument = await collection.CreateItemAsync(document, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
             FeedIterator<Document> queriedDocuments = collection.CreateItemQuery<Document>(sqlQueryText : @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions : new QueryRequestOptions { EnableCrossPartitionQuery = true});

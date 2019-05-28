@@ -456,7 +456,7 @@ function bulkImport(docs) {
             for (int i = 0; i < documentCount; ++i)
             {
                 var newDocument = new MyObject(i);
-                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument, new ItemRequestOptions { PartitionKey = newDocument.pk });
+                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument);
             }
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");

@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     // 
-                    await container.ReplaceItemAsync<dynamic>(id: doc3Id, item: new { id = doc3Id, Description = "test" }, requestOptions: new ItemRequestOptions { PartitionKey = doc3Id });
+                    await container.ReplaceItemAsync<dynamic>(id: doc3Id, item: new { id = doc3Id, Description = "test" });
                     doc3 = await container.DeleteItemAsync<Document>(partitionKey: resourceRandomId, id: resourceRandomId);
 
                     // read databaseCollection feed.
@@ -447,11 +447,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             myDocument.Author = new LinqGeneralBaselineTests.Author { Name = "Don", Location = "France" }; //Complex Property
             myDocument.Price = 9.99;
 
-            await collection.CreateItemAsync<LinqGeneralBaselineTests.Book>(myDocument, new ItemRequestOptions { PartitionKey = myDocument.Id });
+            await collection.CreateItemAsync<LinqGeneralBaselineTests.Book>(myDocument);
 
             myDocument.Title = "My new Book";
             // Testing the ReplaceDocumentAsync API with DocumentUri as the parameter
-            ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument, new ItemRequestOptions { PartitionKey = myDocument.Id });
+            ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument);
 
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
             FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             myDocument.Title = "My old Book";
             // Testing the ReplaceDocumentAsync API with Document SelfLink as the parameter
-            await collection.ReplaceItemAsync(myDocument.Id, myDocument, new ItemRequestOptions { PartitionKey = myDocument.Id });
+            await collection.ReplaceItemAsync(myDocument.Id, myDocument);
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
             cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer collFoo = await database.Containers.CreateContainerAsync( new CosmosContainerSettings() { Id = collectionFooId, PartitionKey = partitionKeyDefinition });
             Document documentDefinition = new Document() { Id = doc1Id };
             documentDefinition.SetPropertyValue("pk", "test");
-            Document doc1 = await collFoo.CreateItemAsync<Document>(item: documentDefinition, requestOptions: new ItemRequestOptions { PartitionKey = "test" });
+            Document doc1 = await collFoo.CreateItemAsync<Document>(item: documentDefinition);
 
             RequestOptions requestOptions = new RequestOptions() { PartitionKey = new PartitionKey("test") };
             // doing a read, which cause the gateway has name->Id cache (collectionFooId -> Rid)
@@ -708,7 +708,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 documentDefinition = new Document() { Id = "docFoo1Id" + suffix };
                 documentDefinition.SetPropertyValue("pk", "test");
-                Document docFoo1 = await collFoo.CreateItemAsync<Document>(item: documentDefinition, requestOptions: new ItemRequestOptions { PartitionKey = "test" });
+                Document docFoo1 = await collFoo.CreateItemAsync<Document>(item: documentDefinition);
                 Document docFoo1Back = await collFoo.ReadItemAsync<Document>(partitionKey: "test", id: documentDefinition.Id);
             }
 
@@ -856,7 +856,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
 
-            Document doc1 = await cosmosContainer.CreateItemAsync<Document>(new Document() { Id = docId }, new ItemRequestOptions { PartitionKey = docId });
+            Document doc1 = await cosmosContainer.CreateItemAsync<Document>(new Document() { Id = docId });
 
             Document docIgnore1 = await cosmosContainer.ReadItemAsync<Document>(docId, docId);
         }
@@ -943,7 +943,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Document documentDefinition = new Document() { Id = documentId };
                 documentDefinition.SetPropertyValue("pk", "test");
-                Document doc1 = await coll1.CreateItemAsync<Document>(documentDefinition, new ItemRequestOptions { PartitionKey = "test" });
+                Document doc1 = await coll1.CreateItemAsync<Document>(documentDefinition);
 
                 // and then read it!
                 Document docIgnore = await coll1.ReadItemAsync<Document>("test", documentId, null);
@@ -969,7 +969,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosContainer coll = await db.Containers.CreateContainerAsync(containerSetting);
                 Document documentDefinition = new Document() { Id = crazyName };
                 documentDefinition.SetPropertyValue("pk", "test");
-                Document doc = await coll.CreateItemAsync<Document>(documentDefinition, new ItemRequestOptions { PartitionKey = "test" });
+                Document doc = await coll.CreateItemAsync<Document>(documentDefinition);
 
                 await db.DeleteAsync();
             }
@@ -1012,7 +1012,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create database and create collection
             CosmosDatabase database = await client.Databases.CreateDatabaseAsync(databaseId);
             CosmosContainer coll = await database.Containers.CreateContainerAsync(containerSetting);
-            Document doc1 = await coll.CreateItemAsync<Document>(new Document { Id = doc1Id }, new ItemRequestOptions { PartitionKey = doc1Id });
+            Document doc1 = await coll.CreateItemAsync<Document>(new Document { Id = doc1Id });
 
             try
             {
@@ -1130,7 +1130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    Document document = await coll1.CreateItemAsync<Document>(new Document() { Id = resourceName }, new ItemRequestOptions { PartitionKey = resourceName });
+                    Document document = await coll1.CreateItemAsync<Document>(new Document() { Id = resourceName });
                     Assert.Fail("Should have thrown exception in here");
                 }
                 catch (ArgumentException e)
@@ -1147,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     documentCreated.Id = resourceName;
-                    Document document = await coll1.ReplaceItemAsync<Document>(documentCreated.Id, documentCreated, new ItemRequestOptions { PartitionKey = documentCreated.Id });
+                    Document document = await coll1.ReplaceItemAsync<Document>(documentCreated.Id, documentCreated);
                     Assert.Fail("Should have thrown exception in here");
                 }
                 catch (ArgumentException e)
