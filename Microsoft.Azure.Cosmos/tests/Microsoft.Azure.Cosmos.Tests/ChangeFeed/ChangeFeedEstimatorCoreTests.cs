@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidCustomStore()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -47,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidContainerStore()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -67,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullStore()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -87,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -109,9 +111,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             const long remainingWork = 15;
             long estimationDelegateValue = 0;
             bool receivedEstimation = false;
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate = (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
             {
-                estimationDelegateValue = estimation;
+                estimationDelegateValue = estimation.Sum(e => e.RemainingWork);
                 receivedEstimation = true;
                 return Task.CompletedTask;
             };
@@ -145,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(remainingWork, estimationDelegateValue);
         }
 
-        private static ChangeFeedEstimatorCore CreateEstimator(Func<long, CancellationToken, Task> estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator)
+        private static ChangeFeedEstimatorCore CreateEstimator(Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator)
         {
             remainingWorkEstimator = new Mock<RemainingWorkEstimator>();
             return new ChangeFeedEstimatorCore(estimationDelegate, TimeSpan.FromSeconds(5), remainingWorkEstimator.Object);

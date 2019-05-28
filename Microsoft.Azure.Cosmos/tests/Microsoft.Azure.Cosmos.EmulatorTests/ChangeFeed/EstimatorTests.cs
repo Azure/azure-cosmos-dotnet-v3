@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             long? receivedEstimation = 0;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .CreateChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
                 {
-                    receivedEstimation = estimation;
+                    receivedEstimation = estimation.Sum(e=> e.RemainingWork);
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .CreateChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
                 {
-                    receivedEstimation = estimation;
+                    receivedEstimation = estimation.Sum(e => e.RemainingWork);
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
@@ -111,9 +111,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .CreateChangeFeedEstimatorBuilder("test", (IReadOnlyList<RemainingLeaseTokenWork> estimation, CancellationToken token) =>
                 {
-                    receivedEstimation = estimation;
+                    receivedEstimation = estimation.Sum(e => e.RemainingWork);
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();

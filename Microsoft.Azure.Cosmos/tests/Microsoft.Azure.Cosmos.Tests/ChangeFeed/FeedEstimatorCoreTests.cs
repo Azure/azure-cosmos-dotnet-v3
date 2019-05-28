@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
@@ -22,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             const long estimation = 10;
             bool detectedEstimationCorrectly = false;
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(5000);
-            ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher((long detectedEstimation, CancellationToken token) =>
+            ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher((IReadOnlyList<RemainingLeaseTokenWork> detectedEstimation, CancellationToken token) =>
             {
-                detectedEstimationCorrectly = estimation == detectedEstimation;
+                detectedEstimationCorrectly = estimation == detectedEstimation.Sum(e => e.RemainingWork);
 
                 return Task.CompletedTask;
             },  TimeSpan.FromSeconds(1));
