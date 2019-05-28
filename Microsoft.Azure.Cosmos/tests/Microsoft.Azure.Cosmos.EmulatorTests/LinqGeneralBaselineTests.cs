@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Documents;
 
     [TestClass]
-    [TestCategory("Quarantine")]
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static DocumentClient client;
