@@ -1,16 +1,16 @@
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 
 #define SUPPORT_SUBQUERIES
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Text;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Collections.Generic;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Sql;
     using static FromParameterBindings;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
@@ -65,7 +65,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         private QueryUnderConstruction inputQuery;
 
         public QueryUnderConstruction(Func<string, ParameterExpression> aliasCreatorFunc)
-            : this(aliasCreatorFunc, inputQuery: null) { }
+            : this(aliasCreatorFunc, inputQuery: null)
+        {
+        }
 
         public QueryUnderConstruction(Func<string, ParameterExpression> aliasCreatorFunc, QueryUnderConstruction inputQuery)
         {
@@ -656,7 +658,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             FromParameterBindings fromParams = inputQueryParams;
             foreach (FromParameterBindings.Binding binding in currentQueryParams.GetBindings())
             {
-                if (binding.ParameterDefinition != null && !seen.Contains(binding.Parameter.Name)) {
+                if (binding.ParameterDefinition != null && !seen.Contains(binding.Parameter.Name))
+                {
                     fromParams.Add(binding);
                     seen.Add(binding.Parameter.Name);
                 }

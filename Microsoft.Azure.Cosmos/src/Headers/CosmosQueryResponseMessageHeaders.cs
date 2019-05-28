@@ -53,12 +53,12 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosQueryResponseMessageHeaders CloneKnownProperties()
         {
             return this.CloneKnownProperties(
-                this.InternalContinuationToken, 
+                this.InternalContinuationToken,
                 this.DisallowContinuationTokenMessage);
         }
 
         internal CosmosQueryResponseMessageHeaders CloneKnownProperties(
-            string continauationToken, 
+            string continauationToken,
             string disallowContinuationTokenMessage)
         {
             return new CosmosQueryResponseMessageHeaders(
@@ -82,6 +82,15 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             string containerRid)
         {
+            if (sourceHeaders == null)
+            {
+                return new CosmosQueryResponseMessageHeaders(
+                    continauationToken: null, 
+                    disallowContinuationTokenMessage: null, 
+                    resourceType: resourceType,
+                    containerRid: containerRid);
+            }
+
             return new CosmosQueryResponseMessageHeaders(
                 continauationToken: sourceHeaders.Continuation,
                 disallowContinuationTokenMessage: null,

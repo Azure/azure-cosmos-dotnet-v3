@@ -1,13 +1,11 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="OrderByQueryResult.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -84,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 List<OrderByItem> orderByItems = new List<OrderByItem>(cosmosArray.Count);
-                foreach(CosmosElement orderByItem in cosmosArray)
+                foreach (CosmosElement orderByItem in cosmosArray)
                 {
                     orderByItems.Add(new OrderByItem(orderByItem));
                 }

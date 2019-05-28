@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
@@ -17,6 +21,7 @@
 
         private Stopwatch durationTimer = new Stopwatch();
         private int attemptCount = 1;
+
         // Don't penalise first retry with delay.
         private int currentBackoffSeconds = WebExceptionRetryPolicy.initialBackoffSeconds;
 

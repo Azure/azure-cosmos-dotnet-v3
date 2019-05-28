@@ -1,11 +1,11 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
-
-using System;
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
+    using System;
+
     internal static class ResultSetIteratorUtils
     {
         public static ChangeFeedPartitionKeyResultSetIteratorCore BuildResultSetIterator(
@@ -14,8 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             int? maxItemCount,
             CosmosContainerCore cosmosContainer,
             DateTime? startTime,
-            bool startFromBeginning
-            )
+            bool startFromBeginning)
         {
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
             if (startTime.HasValue)

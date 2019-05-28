@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
     using Microsoft.Azure.Documents;
@@ -18,10 +18,28 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosStoredProcedureSettings
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.StoredProcedure"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the Stored Procedure class for the Azure Cosmos DB service.
         /// </summary>
         public CosmosStoredProcedureSettings()
         {
+        }
+
+        internal CosmosStoredProcedureSettings(
+            string id,
+            string body)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (string.IsNullOrEmpty(body))
+            {
+                throw new ArgumentNullException(nameof(body));
+            }
+
+            this.Id = id;
+            this.Body = body;
         }
 
         /// <summary>
@@ -39,14 +57,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
-        /// Unlike <see cref="Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
-        /// </para>
-        /// <para>
-        /// When working with document resources, they too have this settable Id property. 
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
-        /// This will prevent the SDK from generating new Ids. 
         /// </para>
         /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
@@ -77,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual DateTime? LastModified { get; private set; }
 
         /// <summary>
-        /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
+        /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The Resource Id associated with the resource.

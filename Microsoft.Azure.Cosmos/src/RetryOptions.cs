@@ -1,8 +1,6 @@
-﻿// -----------------------------------------------------------------------
-//  <copyright file="RetryOptions.cs" company="Microsoft Corporation">
-//      Copyright (C) Microsoft Corporation. All rights reserved.
-//  </copyright>
-// -----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos
 {
@@ -21,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
     {
         internal const int DefaultMaxRetryWaitTimeInSeconds = 30;
         internal const int DefaultMaxRetryAttemptsOnThrottledRequests = 9;
-
 
         private int maxRetryAttemptsOnThrottledRequests;
         private int maxRetryWaitTime;
@@ -61,14 +58,17 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public int MaxRetryAttemptsOnThrottledRequests
         {
-            get { return this.maxRetryAttemptsOnThrottledRequests; }
-            set 
-            { 
+            get
+            {
+                return this.maxRetryAttemptsOnThrottledRequests;
+            }
+
+            set
+            {
                 if (value < 0)
                 {
                     throw new ArgumentException("value must be a positive integer.");
                 }
-
                 this.maxRetryAttemptsOnThrottledRequests = value;
             }
         }
@@ -92,14 +92,17 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public int MaxRetryWaitTimeInSeconds
         {
-            get { return this.maxRetryWaitTime; }
+            get
+            {
+                return this.maxRetryWaitTime;
+            }
+
             set
             {
                 if (value < 0 || value > int.MaxValue / 1000)
                 {
-                    throw new ArgumentException("value must be a positive integer between the range of 0 to " + int.MaxValue / 1000);
+                    throw new ArgumentException("value must be a positive integer between the range of 0 to " + (int.MaxValue / 1000));
                 }
-
                 this.maxRetryWaitTime = value;
             }
         }

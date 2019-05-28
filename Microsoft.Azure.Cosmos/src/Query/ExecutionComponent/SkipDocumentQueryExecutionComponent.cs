@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     result: documentsAfterSkip,
                     count: documentsAfterSkip.Count(),
                     responseHeaders: sourcePage.QueryHeaders.CloneKnownProperties(updatedContinuationToken, sourcePage.QueryHeaders.DisallowContinuationTokenMessage),
-                    responseLengthBytes: sourcePage.ResponseLengthBytes); ;
+                    responseLengthBytes: sourcePage.ResponseLengthBytes);
         }
 
         /// <summary>

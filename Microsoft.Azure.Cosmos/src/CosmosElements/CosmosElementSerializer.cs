@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosElement.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
@@ -136,11 +134,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             int count = 0;
             jsonWriter.WriteArrayStart();
-            foreach(CosmosElement element in cosmosElements)
+            foreach (CosmosElement element in cosmosElements)
             {
                 count++;
                 element.WriteTo(jsonWriter);
             }
+
             jsonWriter.WriteArrayEnd();
 
             // Write the count field and value
@@ -174,9 +173,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             Stream stream = CosmosElementSerializer.ToStream(
-                containerRid, 
-                cosmosElements, 
-                resourceType, 
+                containerRid,
+                cosmosElements,
+                resourceType,
                 cosmosSerializationOptions);
 
             IEnumerable<T> typedResults = jsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(stream).Data;

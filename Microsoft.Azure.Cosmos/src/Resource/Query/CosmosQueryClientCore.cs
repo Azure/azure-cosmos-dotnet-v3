@@ -72,14 +72,14 @@ namespace Microsoft.Azure.Cosmos
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: requestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                streamPayload: this.clientContext.CosmosSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken);
 
@@ -99,20 +99,20 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationAsStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: null,
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.JsonSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                streamPayload: this.clientContext.CosmosSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.JsonSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+                partitionedQueryExecutionInfo = this.clientContext.CosmosSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
                 
             return partitionedQueryExecutionInfo;
@@ -128,22 +128,22 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentQueryClient.GetDesiredConsistencyLevelAsync();
         }
 
-        internal override Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel)
+        internal override Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel)
         {
-            return this.DocumentQueryClient.EnsureValidOverwrite(desiredConsistencyLevel);
+            return this.DocumentQueryClient.EnsureValidOverwriteAsync(desiredConsistencyLevel);
         }
 
-        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache()
+        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
         {
-            return this.DocumentQueryClient.GetPartitionKeyRangeCache();
+            return this.DocumentQueryClient.GetPartitionKeyRangeCacheAsync();
         }
 
-        internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(
+        internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
             string effectivePartitionKeyString)
         {
-            return this.GetTargetPartitionKeyRanges(
+            return this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
                 collectionResourceId,
                 new List<Range<string>>
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+        internal override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
             List<Range<string>> providedRanges)

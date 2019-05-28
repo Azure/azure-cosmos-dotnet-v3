@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="OrderByDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -14,10 +12,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using ParallelQuery;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// OrderByDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -76,8 +74,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private OrderByDocumentQueryExecutionContext(
             DocumentQueryExecutionContextBase.InitParams initPararms,
             string rewrittenQuery,
-            OrderByConsumeComparer consumeComparer) :
-            base(
+            OrderByConsumeComparer consumeComparer)
+            : base(
                 initPararms,
                 rewrittenQuery,
                 consumeComparer,
@@ -126,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.ShouldIncrementSkipCount(documentProducer) ? this.skipCount + 1 : 0,
                         filter);
                 }),
-                DefaultJsonSerializationSettings.Value) : null;
+                    DefaultJsonSerializationSettings.Value) : null;
             }
         }
 
@@ -702,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.AppendToBuilders(builders, inequality);
                             if (lastPrefix)
                             {
-                                this.AppendToBuilders(builders, "", "=", "=");
+                                this.AppendToBuilders(builders, string.Empty, "=", "=");
                             }
                         }
                         else
