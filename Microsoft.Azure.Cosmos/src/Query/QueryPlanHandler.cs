@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
                     hasLogicalPartitionKey: partitionKey != null,
-                    cancellationToken: cancellation);
+                    cancellationToken: cancellationToken);
 
             if (partitionedQueryExecutionInfo == null ||
                 partitionedQueryExecutionInfo.QueryRanges == null ||

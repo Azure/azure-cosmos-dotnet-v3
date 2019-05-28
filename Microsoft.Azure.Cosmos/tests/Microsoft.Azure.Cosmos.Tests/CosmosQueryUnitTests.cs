@@ -68,10 +68,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             bool isContinuationExpected = true;
             bool hasLogicalPartitionKey = false;
             CancellationTokenSource cancellation = new CancellationTokenSource();
-            CancellationToken token = cancellation.Token;
+            CancellationToken cancellationToken = cancellation.Token;
 
             Mock<CollectionCache> mockCollectionCache = new Mock<CollectionCache>();
-            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), cancellationtoken)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));
+            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), cancellationToken)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             client.Setup(x => x.GetCollectionCacheAsync()).Returns(Task.FromResult(mockCollectionCache.Object));
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
                 hasLogicalPartitionKey,
-                token)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
+                cancellationToken)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
 
             CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
                 client: client.Object,
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            await factory.ExecuteNextAsync(cancellationtoken);
+            await factory.ExecuteNextAsync(cancellationToken);
         }
 
         private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponse response)> GetAllExecutionComponents()
