@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
                 try
                 {
-                    long estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
+                    IReadOnlyList<RemainingLeaseTokenWork> estimation = await this.remainingWorkEstimator.GetEstimatedRemainingWorkPerLeaseTokenAsync(cancellationToken).ConfigureAwait(false);
                     await this.dispatcher.DispatchEstimationAsync(estimation, cancellationToken);
                 }
                 catch (TaskCanceledException canceledException)

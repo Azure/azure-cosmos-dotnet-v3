@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName,
-            Func<long, CancellationToken, Task> estimationDelegate,
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
             if (workflowName == null)

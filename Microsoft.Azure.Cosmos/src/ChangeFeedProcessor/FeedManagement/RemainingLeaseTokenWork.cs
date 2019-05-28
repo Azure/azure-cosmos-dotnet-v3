@@ -2,21 +2,21 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
+namespace Microsoft.Azure.Cosmos
 {
     using System;
 
     /// <summary>
     /// Remaing estimated work on the lease token
     /// </summary>
-    internal class RemainingLeaseTokenWork
+    public class RemainingLeaseTokenWork
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="RemainingLeaseTokenWork"/> class.
         /// </summary>
         /// <param name="leaseToken">The lease token for which the remaining work is calculated</param>
         /// <param name="remainingWork">The amount of documents remaining to be processed</param>
-        public RemainingLeaseTokenWork(string leaseToken, long remainingWork)
+        internal RemainingLeaseTokenWork(string leaseToken, long remainingWork)
         {
             if (string.IsNullOrEmpty(leaseToken)) throw new ArgumentNullException(nameof(leaseToken));
 
@@ -27,11 +27,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         /// <summary>
         /// Gets the lease token for which the remaining work is calculated
         /// </summary>
-        public string LeaseToken { get; }
+        public virtual string LeaseToken { get; }
 
         /// <summary>
-        /// Gets the ammount of documents remaining to be processed.
+        /// Gets the amount of documents remaining to be processed on this particular lease.
         /// </summary>
-        public long RemainingWork { get; }
+        public virtual long RemainingWork { get; }
     }
 }

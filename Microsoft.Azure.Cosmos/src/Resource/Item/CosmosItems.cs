@@ -819,7 +819,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName, 
-            Func<long, CancellationToken, Task> estimationDelegate, 
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> estimationDelegate, 
             TimeSpan? estimationPeriod = null);
     }
 }

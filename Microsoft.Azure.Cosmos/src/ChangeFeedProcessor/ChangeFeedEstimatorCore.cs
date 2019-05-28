@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     {
         private const string EstimatorDefaultHostName = "Estimator";
 
-        private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
+        private readonly Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> initialEstimateDelegate;
         private CancellationTokenSource shutdownCts;
         private CosmosContainerCore leaseContainer;
         private string monitoredContainerRid;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private Task runAsync;
 
         public ChangeFeedEstimatorCore(
-            Func<long, CancellationToken, Task> initialEstimateDelegate, 
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> initialEstimateDelegate, 
             TimeSpan? estimatorPeriod)
         {
             if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         internal ChangeFeedEstimatorCore(
-            Func<long, CancellationToken, Task> initialEstimateDelegate,
+            Func<IReadOnlyList<RemainingLeaseTokenWork>, CancellationToken, Task> initialEstimateDelegate,
             TimeSpan? estimatorPeriod,
             RemainingWorkEstimator remainingWorkEstimator)
             : this(initialEstimateDelegate, estimatorPeriod)

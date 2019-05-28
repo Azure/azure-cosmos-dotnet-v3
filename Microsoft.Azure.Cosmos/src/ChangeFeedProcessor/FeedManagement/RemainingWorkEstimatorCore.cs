@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
     internal sealed class RemainingWorkEstimatorCore : RemainingWorkEstimator
     {
+        private const string NoLeases = "NoLeases";
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
@@ -66,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             IReadOnlyList<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
             if (leases == null || leases.Count == 0)
             {
-                return new List<RemainingLeaseTokenWork>().AsReadOnly();
+                // Maintain compatibility with GetEstimatedRemainingWorkAsync : No leases, should return 1. 
+                return new List<RemainingLeaseTokenWork>() { new RemainingLeaseTokenWork(RemainingWorkEstimatorCore.NoLeases, 1) }.AsReadOnly();
             }
 
             IEnumerable<Task<List<RemainingLeaseTokenWork>>> tasks = Partitioner.Create(leases)
