@@ -144,11 +144,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 
-        /// <summary>
-        /// Gets or sets the flag that enables skip take across partitions.
-        /// </summary>
-        internal bool EnableCrossPartitionSkipTake { get; set; }
-
         internal bool EnableGroupBy { get; set; }
 
         /// <summary>
@@ -216,7 +211,6 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKey = this.PartitionKey,
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
-                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties
             };
@@ -236,7 +230,6 @@ namespace Microsoft.Azure.Cosmos
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
-                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties,
             };

@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
+            List<PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                    this.cosmosQueryContext.QueryClient,
                    this.cosmosQueryContext.ResourceLink.OriginalString,
                    partitionedQueryExecutionInfo,
