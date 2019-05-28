@@ -227,11 +227,11 @@
             // The operation is made in batches to not lose work in case of partial execution
             int resultsFetched = 0;
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");           
-            CosmosResultSetIterator<DeviceInformationItem> setIterator = container.Items
+            CosmosFeedIterator<DeviceInformationItem> setIterator = container.Items
                 .CreateItemQuery<DeviceInformationItem>(sql, partitionKey: CosmosContainerSettings.NonePartitionKeyValue, maxItemCount: 2);
             while (setIterator.HasMoreResults)
             {
-                CosmosQueryResponse<DeviceInformationItem> queryResponse = await setIterator.FetchNextSetAsync();
+                CosmosFeedResponse<DeviceInformationItem> queryResponse = await setIterator.FetchNextSetAsync();
                 resultsFetched += queryResponse.Count();
 
                 // For the items returned with NonePartitionKeyValue
