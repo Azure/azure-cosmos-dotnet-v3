@@ -134,7 +134,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 new ChangeFeedProcessorOptions(),
                 ChangeFeedEstimatorCoreTests.GetMockedContainer("monitored"));
 
-            remainingWorkEstimator.Setup(r => r.GetEstimatedRemainingWorkAsync(It.IsAny<CancellationToken>())).ReturnsAsync(remainingWork);
+            IReadOnlyList<RemainingLeaseTokenWork> estimationList = new List<RemainingLeaseTokenWork>()
+            {
+                new RemainingLeaseTokenWork(Guid.NewGuid().ToString(), remainingWork / 3),
+                new RemainingLeaseTokenWork(Guid.NewGuid().ToString(), remainingWork / 3),
+                new RemainingLeaseTokenWork(Guid.NewGuid().ToString(), remainingWork / 3)
+            };
+
+            remainingWorkEstimator.Setup(r => r.GetEstimatedRemainingWorkPerLeaseTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync(estimationList);
 
             await estimator.StartAsync();
 
