@@ -45,8 +45,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = Guid.NewGuid().ToString(),
                 Body = TriggersTests.GetTriggerFunction(".05"),
-                TriggerOperation = Cosmos.TriggerOperation.Create,
-                TriggerType = Cosmos.TriggerType.Pre
+                TriggerOperation = Scripts.TriggerOperation.Create,
+                TriggerType = Scripts.TriggerType.Pre
             };
 
             TriggerResponse triggerResponse =
@@ -97,8 +97,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = "addTax",
                     Body = TriggersTests.GetTriggerFunction(".20"),
-                    TriggerOperation = Cosmos.TriggerOperation.All,
-                    TriggerType = Cosmos.TriggerType.Pre
+                    TriggerOperation = Scripts.TriggerOperation.All,
+                    TriggerType = Scripts.TriggerType.Pre
                 });
 
             ItemRequestOptions options = new ItemRequestOptions()
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PreTriggers = new List<string>() { cosmosTrigger.Id },
             };
 
-            ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+            ItemResponse<dynamic> createdItem = await this.container.CreateItemAsync<dynamic>(item.status, item, options);
 
             double itemTax = createdItem.Resource.tax;
             Assert.AreEqual(item.cost * .20, itemTax);
@@ -177,8 +177,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = id,
                 Body = function,
-                TriggerOperation = Cosmos.TriggerOperation.Create,
-                TriggerType = Cosmos.TriggerType.Pre
+                TriggerOperation = Scripts.TriggerOperation.Create,
+                TriggerType = Scripts.TriggerType.Pre
             };
 
             //Create a user defined function 

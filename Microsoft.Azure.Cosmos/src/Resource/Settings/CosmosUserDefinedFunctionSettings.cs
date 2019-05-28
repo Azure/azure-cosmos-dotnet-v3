@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -49,13 +48,6 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     public class CosmosUserDefinedFunctionSettings
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosUserDefinedFunctionSettings"/> class for the Azure Cosmos service.
-        /// </summary>
-        public CosmosUserDefinedFunctionSettings()
-        {
-        }
-
         /// <summary>
         /// Gets or sets the body of the user defined function for the Azure Cosmos DB service.
         /// </summary>

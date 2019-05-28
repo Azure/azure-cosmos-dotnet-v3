@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.locationCache.OnDatabaseAccountRead(databaseAccount);
                 }
 
-                this.StartRefreshLocationTimerAsync();
+                this.StartRefreshLocationTimer();
             }
             else
             {
@@ -229,8 +229,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        [SuppressMessage("", "AsyncFixer03", Justification = "Async start is by-design")]
-        private async void StartRefreshLocationTimerAsync()
+#pragma warning disable VSTHRD100 // Avoid async void methods
+        private async void StartRefreshLocationTimer()
+#pragma warning restore VSTHRD100 // Avoid async void methods
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -256,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceCritical("StartRefreshLocationTimerAsync() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
 
-                this.StartRefreshLocationTimerAsync();
+                this.StartRefreshLocationTimer();
             }
         }
 

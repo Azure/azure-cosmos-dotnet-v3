@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
     /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
     ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey")
-    ///     .UseCurrentRegion(LocationNames.EastUS2);
+    ///     .WithApplicationRegion(LocationNames.EastUS2);
     /// 
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
@@ -129,40 +129,57 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create a new CosmosClient with the cosmosClientConfiguration
+        /// Create a new CosmosClient with the cosmosClientOption
         /// </summary>
-        /// <param name="cosmosClientConfiguration">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
+        /// <param name="clientOptions">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
         /// <example>
-        /// This example creates a CosmosClient
+        /// This example creates a CosmosClient through explicit CosmosClientOptions
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey");
-        /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions("accountEndpoint", "accountkey");
+        /// clientOptions.ApplicationRegion = "East US 2";
+        /// clientOptions.ConnectionMode = ConnectionMode.Direct;
+        /// clientOptions.RequestTimeout = TimeSpan.FromSeconds(5);
+        /// 
+        /// using (CosmosClient client = new CosmosClient(clientOptions))
         /// {
         ///     // Create a database and other CosmosClient operations
         /// }
         /// ]]>
         /// </code>
         /// </example>
-        internal CosmosClient(CosmosClientOptions cosmosClientConfiguration)
+        /// <example>
+        /// This example creates a CosmosClient through builder
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey")
+        /// .UseConsistencyLevel(ConsistencyLevel.Eventual)
+        /// .WithApplicationRegion("East US 2");
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClient(CosmosClientOptions clientOptions)
         {
-            if (cosmosClientConfiguration == null)
+            if (clientOptions == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
+                throw new ArgumentNullException(nameof(clientOptions));
             }
 
+            CosmosClientOptions clientOptionsClone = clientOptions.Clone();
+
             DocumentClient documentClient = new DocumentClient(
-                cosmosClientConfiguration.AccountEndPoint,
-                cosmosClientConfiguration.AccountKey,
-                apitype: cosmosClientConfiguration.ApiType,
-                sendingRequestEventArgs: cosmosClientConfiguration.SendingRequestEventArgs,
-                transportClientHandlerFactory: cosmosClientConfiguration.TransportClientHandlerFactory,
-                connectionPolicy: cosmosClientConfiguration.GetConnectionPolicy(),
-                enableCpuMonitor: cosmosClientConfiguration.EnableCpuMonitor,
-                storeClientFactory: cosmosClientConfiguration.StoreClientFactory);
+                clientOptionsClone.AccountEndPoint,
+                clientOptionsClone.AccountKey,
+                apitype: clientOptionsClone.ApiType,
+                sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
+                transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
+                connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
+                enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
+                storeClientFactory: clientOptionsClone.StoreClientFactory);
 
             this.Init(
-                cosmosClientConfiguration,
+                clientOptionsClone,
                 documentClient);
         }
 
@@ -170,12 +187,12 @@ namespace Microsoft.Azure.Cosmos
         /// Used for unit testing only.
         /// </summary>
         internal CosmosClient(
-            CosmosClientOptions cosmosClientConfiguration,
+            CosmosClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
-            if (cosmosClientConfiguration == null)
+            if (cosmosClientOptions == null)
             {
-                throw new ArgumentNullException(nameof(cosmosClientConfiguration));
+                throw new ArgumentNullException(nameof(cosmosClientOptions));
             }
 
             if (documentClient == null)
@@ -183,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(documentClient));
             }
 
-            this.Init(cosmosClientConfiguration, documentClient);
+            this.Init(cosmosClientOptions, documentClient);
         }
 
         /// <summary>
@@ -209,10 +226,7 @@ namespace Microsoft.Azure.Cosmos
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
-
-        internal CosmosResponseFactory ResponseFactory =>
-            new CosmosResponseFactory(this.CosmosJsonSerializer);
-        internal CosmosJsonSerializer CosmosJsonSerializer { get; private set; }
+        internal CosmosResponseFactory ResponseFactory { get; private set; }
 
         /// <summary>
         /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -231,7 +245,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClientOptions = clientOptions;
             this.DocumentClient = documentClient;
-            this.CosmosJsonSerializer = new CosmosJsonSerializerWrapper(this.ClientOptions.CosmosJsonSerializer);
 
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
@@ -244,14 +257,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
+            this.ResponseFactory = new CosmosResponseFactory(
+                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
+                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
+
             CosmosClientContext clientContext = new CosmosClientContextCore(
-                this,
-                this.ClientOptions,
-                this.CosmosJsonSerializer,
-                this.ResponseFactory,
-                this.RequestHandler,
-                this.DocumentClient,
-                new DocumentQueryClient(this.DocumentClient));
+                client: this,
+                clientOptions: this.ClientOptions,
+                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
+                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
+                cosmosResponseFactory: this.ResponseFactory,
+                requestHandler: this.RequestHandler,
+                documentClient: this.DocumentClient,
+                documentQueryClient: new DocumentQueryClient(this.DocumentClient));
 
             this.Databases = new CosmosDatabasesCore(clientContext);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);

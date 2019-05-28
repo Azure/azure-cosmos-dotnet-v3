@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 1
             };
 
-            await this.container.Items.CreateItemAsync<ToDoActivity>(item.status, item);
+            await this.container.CreateItemAsync<ToDoActivity>(item.status, item);
 
             CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await this.scripts.CreateUserDefinedFunctionAsync(
                 new CosmosUserDefinedFunctionSettings
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");
             
-             FeedIterator<dynamic> feedIterator = this.container.Items.CreateItemQuery<dynamic>(
+             FeedIterator<dynamic> feedIterator = this.container.CreateItemQuery<dynamic>(
                  sqlQueryDefinition: sqlQuery,
                  partitionKey: "Done");
 

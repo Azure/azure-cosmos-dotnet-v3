@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                 //     3. Requests which target specific partition of an existing collection will use x-ms-documentdb-partitionkeyrangeid header
                 //        to send request to specific partition and will not set request.ServiceIdentity
                 ServiceIdentity identity = request.ServiceIdentity;
-                PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+                PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
                 if (addresses == null)
                 {
                     DefaultTrace.TraceInformation("Could not get addresses for explicitly specified ServiceIdentity {0}", identity);
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 ServiceIdentity serviceIdentity = this.masterServiceIdentityProvider?.MasterServiceIdentity;
                 PartitionKeyRangeIdentity partitionKeyRangeIdentity = this.masterPartitionKeyRangeIdentity;
-                PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
+                PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
                     request,
                     partitionKeyRangeIdentity,
                     serviceIdentity,
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos
 
             ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
 
-            PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
+            PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
                 request,
                 new PartitionKeyRangeIdentity(collection.ResourceId, range.Id),
                 serviceIdentity,
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos
 
             ServiceIdentity identity = routingMap.TryGetInfoByPartitionKeyRangeId(request.PartitionKeyRangeIdentity.PartitionKeyRangeId);
 
-            PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
+            PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
                 request,
                 new PartitionKeyRangeIdentity(collection.ResourceId, request.PartitionKeyRangeIdentity.PartitionKeyRangeId),
                 identity,

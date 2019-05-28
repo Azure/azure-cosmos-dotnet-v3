@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
-                await container.Items.CreateItemAsync<dynamic>(
+                await container.CreateItemAsync<dynamic>(
                     partitionKey: null,
                     item: testItem,
                     requestOptions: requestOptions);
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
-                await container.Items.ReadItemAsync<dynamic>(
+                await container.ReadItemAsync<dynamic>(
                     partitionKey: null,
                     id: testItem.id,
                     requestOptions: requestOptions);
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
-                await container.Items.UpsertItemAsync<dynamic>(
+                await container.UpsertItemAsync<dynamic>(
                     partitionKey: null,
                     item: testItem,
                     requestOptions: requestOptions);
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
-                await container.Items.ReplaceItemAsync<dynamic>(
+                await container.ReplaceItemAsync<dynamic>(
                     partitionKey: null,
                     id: testItem.id,
                     item: testItem,
@@ -124,18 +124,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
-                await container.Items.DeleteItemAsync<dynamic>(
+                await container.DeleteItemAsync<dynamic>(
                     partitionKey: null,
                     id: testItem.id,
                     requestOptions: requestOptions);
             }, "DeleteItemAsync should throw ArgumentNullException without the correct request option set.");
 
-            CosmosDefaultJsonSerializer jsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
-                    await container.Items.CreateItemStreamAsync(
+                    await container.CreateItemAsStreamAsync(
                         partitionKey: null,
                         streamPayload: itemStream,
                         requestOptions: requestOptions);
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
-                    await container.Items.ReadItemStreamAsync(
+                    await container.ReadItemAsStreamAsync(
                         partitionKey: null,
                         id: testItem.id,
                         requestOptions: requestOptions);
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
-                    await container.Items.UpsertItemStreamAsync(
+                    await container.UpsertItemAsStreamAsync(
                         partitionKey: null,
                         streamPayload: itemStream,
                         requestOptions: requestOptions);
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
-                    await container.Items.ReplaceItemStreamAsync(
+                    await container.ReplaceItemAsStreamAsync(
                         partitionKey: null,
                         id: testItem.id,
                         streamPayload: itemStream,
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
                 {
-                    await container.Items.DeleteItemStreamAsync(
+                    await container.DeleteItemAsStreamAsync(
                         partitionKey: null,
                         id: testItem.id,
                         requestOptions: requestOptions);
@@ -204,28 +204,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainer container = client.Databases["testdb"]
                                         .Containers["testcontainer"];
 
-            ItemResponse<dynamic> itemResponse = await container.Items.CreateItemAsync<dynamic>(
+            ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(
                 partitionKey: partitionKey,
                 item: testItem,
                 requestOptions: requestOptions);
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
 
-            itemResponse = await container.Items.ReadItemAsync<dynamic>(
+            itemResponse = await container.ReadItemAsync<dynamic>(
                 partitionKey: partitionKey,
                 id: testItem.id,
                 requestOptions: requestOptions);
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
 
-            itemResponse = await container.Items.UpsertItemAsync<dynamic>(
+            itemResponse = await container.UpsertItemAsync<dynamic>(
                 partitionKey: partitionKey,
                 item: testItem,
                 requestOptions: requestOptions);
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
 
-            itemResponse = await container.Items.ReplaceItemAsync<dynamic>(
+            itemResponse = await container.ReplaceItemAsync<dynamic>(
                 partitionKey: partitionKey,
                 id: testItem.id,
                 item: testItem,
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
 
-            itemResponse = await container.Items.DeleteItemAsync<dynamic>(
+            itemResponse = await container.DeleteItemAsync<dynamic>(
                 partitionKey: partitionKey,
                 id: testItem.id,
                 requestOptions: requestOptions);
@@ -242,10 +242,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(5, testHandlerHitCount, "An operation did not make it to the handler");
 
-            CosmosDefaultJsonSerializer jsonSerializer = new CosmosDefaultJsonSerializer();
+            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.Items.CreateItemStreamAsync(
+                using (CosmosResponseMessage streamResponse = await container.CreateItemAsStreamAsync(
                     partitionKey: partitionKey,
                     streamPayload: itemStream))
                 {
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.Items.ReadItemStreamAsync(
+                using (CosmosResponseMessage streamResponse = await container.ReadItemAsStreamAsync(
                     partitionKey: partitionKey,
                     id: testItem.id,
                     requestOptions: requestOptions))
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.Items.UpsertItemStreamAsync(
+                using (CosmosResponseMessage streamResponse = await container.UpsertItemAsStreamAsync(
                     partitionKey: partitionKey,
                     streamPayload: itemStream,
                     requestOptions: requestOptions))
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.Items.ReplaceItemStreamAsync(
+                using (CosmosResponseMessage streamResponse = await container.ReplaceItemAsStreamAsync(
                     partitionKey: partitionKey,
                     id: testItem.id,
                     streamPayload: itemStream,
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.Items.DeleteItemStreamAsync(
+                using (CosmosResponseMessage streamResponse = await container.DeleteItemAsStreamAsync(
                     partitionKey: partitionKey,
                     id: testItem.id,
                     requestOptions: requestOptions))

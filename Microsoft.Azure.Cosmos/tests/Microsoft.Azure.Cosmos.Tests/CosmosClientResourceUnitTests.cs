@@ -8,9 +8,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -23,14 +21,12 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             string databaseId = "db1234";
             string crId = "cr42";
-            string spId = "sp9001";
-            string trId = "tr9002";
-            string udfId = "udf9003";
 
             CosmosClientContext context = new CosmosClientContextCore(
                 client: null,
                 clientOptions: null,
-                cosmosJsonSerializer: null,
+                userJsonSerializer: null,
+                defaultJsonSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null,

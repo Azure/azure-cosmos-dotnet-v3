@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `cosmosContainer(id).read()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract class CosmosContainer
+    public abstract partial class CosmosContainer
     {
         /// <summary>
         /// The Id of the Cosmos container
@@ -31,18 +31,6 @@ namespace Microsoft.Azure.Cosmos
         /// Returns the parent database reference
         /// </summary>
         public abstract CosmosDatabase Database { get; }
-
-        /// <summary>
-        /// Operations for creating new items, and reading/querying all items
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// ItemResponse<MyCustomObject> response = await this.container.Items.CreateItemAsync<MyCustomObject>(user1);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract CosmosItems Items { get; }
 
         /// <summary>
         /// Operations for reading/querying all conflicts
@@ -206,21 +194,21 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
         /// </returns>
-        public abstract Task<CosmosResponseMessage> ReadStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReadAsStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Replace a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="streamPayload">The <see cref="Stream"/> object.</param>
+        /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/>.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the replace resource record.
         /// </returns>
-        public abstract Task<CosmosResponseMessage> ReplaceStreamAsync(
-            Stream streamPayload,
+        public abstract Task<CosmosResponseMessage> ReplaceAsStreamAsync(
+            CosmosContainerSettings containerSettings,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -230,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
+        public abstract Task<CosmosResponseMessage> DeleteAsStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.Scripts;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 

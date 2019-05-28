@@ -119,6 +119,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestConflictResolutionPolicy()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+
+            ContainerResponse containerResponse =
+                await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
+                    .WithConflictResolution()
+                        .WithLastWriterWinsResolution("/lww")
+                        .Attach()
+                    .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+            CosmosContainerSettings cosmosContainerSettings = containerResponse.Resource;
+            Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
+            Assert.AreEqual(ConflictResolutionMode.LastWriterWins, cosmosContainerSettings.ConflictResolutionPolicy.Mode);
+            Assert.AreEqual("/lww", cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath);
+            Assert.IsTrue(string.IsNullOrEmpty(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure));
+
+            // Delete container
+            await containerResponse.Container.DeleteAsync();
+
+            // Re-create with custom policy
+            string sprocName = "customresolsproc";
+            containerResponse = await this.database.Containers.DefineContainer(containerName, partitionKeyPath)
+                    .WithConflictResolution()
+                        .WithCustomStoredProcedureResolution(sprocName)
+                        .Attach()
+                    .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+            cosmosContainerSettings = containerResponse.Resource;
+            Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
+            Assert.AreEqual(ConflictResolutionMode.Custom, cosmosContainerSettings.ConflictResolutionPolicy.Mode);
+            Assert.AreEqual(sprocName, cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure);
+            Assert.IsTrue(string.IsNullOrEmpty(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath));
+        }
+
+        [TestMethod]
         public async Task WithIndexingPolicy()
         {
             string containerName = Guid.NewGuid().ToString();
@@ -214,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLive);
 
             JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
-            ItemResponse<JObject> createResponse = await cosmosContainer.Items.CreateItemAsync<JObject>(partitionKey: itemTest["users"].ToString(), item: itemTest);
+            ItemResponse<JObject> createResponse = await cosmosContainer.CreateItemAsync<JObject>(partitionKey: itemTest["users"].ToString(), item: itemTest);
             JObject responseItem = createResponse;
             Assert.IsNull(responseItem["ttl"]);
 
@@ -270,10 +313,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Creating an item and reading before expiration
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
-            ItemResponse<dynamic> createItemResponse = await cosmosContainer.Items.CreateItemAsync<dynamic>(payload.user, payload);
+            ItemResponse<dynamic> createItemResponse = await cosmosContainer.CreateItemAsync<dynamic>(payload.user, payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await cosmosContainer.Items.ReadItemAsync<dynamic>(payload.user, payload.id);
+            ItemResponse<dynamic> readItemResponse = await cosmosContainer.ReadItemAsync<dynamic>(payload.user, payload.id);
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
 

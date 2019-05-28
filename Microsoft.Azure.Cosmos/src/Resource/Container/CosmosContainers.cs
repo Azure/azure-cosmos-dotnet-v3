@@ -256,14 +256,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="streamPayload">The <see cref="CosmosContainerSettings"/> object.</param>
+        /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
         /// <seealso cref="DefineContainer(string, string)"/>
-        public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
-            Stream streamPayload,
+        public abstract Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
+            CosmosContainerSettings containerSettings,
             int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));

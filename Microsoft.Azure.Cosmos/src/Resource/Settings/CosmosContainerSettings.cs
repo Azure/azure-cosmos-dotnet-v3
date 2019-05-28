@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="resourceId">The resource identifier for the container.</param>
         /// <returns>An instance of <see cref="CosmosContainerSettings"/>.</returns>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resourceId)
+        internal static CosmosContainerSettings CreateWithResourceId(string resourceId)
         {
             if (string.IsNullOrEmpty(resourceId))
             {

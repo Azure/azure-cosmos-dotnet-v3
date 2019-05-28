@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            AssertEnums<Cosmos.TriggerOperation, Documents.TriggerOperation>();
+            AssertEnums<Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosAccountSettings.WriteLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name="region1", DatabaseAccountEndpoint = "endpoint1" } };
             cosmosAccountSettings.ReadLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name = "region2", DatabaseAccountEndpoint = "endpoint2" } };
             cosmosAccountSettings.AddressesLink = "link";
-            cosmosAccountSettings.ConsistencySetting = new CosmosConsistencySettings() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
+            cosmosAccountSettings.ConsistencySetting = new CosmosAccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
             cosmosAccountSettings.ReplicationPolicy = new ReplicationPolicy() { AsyncReplication = true };
             cosmosAccountSettings.ReadPolicy = new ReadPolicy() { PrimaryReadCoefficient = 10 };
 

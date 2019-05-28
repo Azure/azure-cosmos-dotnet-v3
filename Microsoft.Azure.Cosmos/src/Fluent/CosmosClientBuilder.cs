@@ -2,12 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
-    using System.Collections.ObjectModel;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -42,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
         /// .UseConsistencyLevel(ConsistencyLevel.Strong)
-        /// .UseCurrentRegion(Region.USEast2);
+        /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
@@ -73,9 +71,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="CosmosClient"/>.</returns>
         public virtual CosmosClient Build()
         {
-            CosmosClientOptions copyOfConfig = this.clientOptions.Clone();
-            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {copyOfConfig.GetSerializedConfiguration()}");
-            return new CosmosClient(copyOfConfig);
+            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
+            return new CosmosClient(this.clientOptions);
         }
 
         /// <summary>
@@ -86,29 +83,28 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal virtual CosmosClient Build(DocumentClient documentClient)
         {
-            CosmosClientOptions copyOfConfig = this.clientOptions.Clone();
-            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {copyOfConfig.GetSerializedConfiguration()}");
-            return new CosmosClient(copyOfConfig, documentClient);
+            DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {this.clientOptions.GetSerializedConfiguration()}");
+            return new CosmosClient(this.clientOptions, documentClient);
         }
 
         /// <summary>
         /// A suffix to be added to the default user-agent for the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="userAgentSuffix">A string to use as suffix in the User Agent.</param>
+        /// <param name="applicationName">A string to use as suffix in the User Agent.</param>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        public virtual CosmosClientBuilder UseUserAgentSuffix(string userAgentSuffix)
+        public virtual CosmosClientBuilder WithApplicationName(string applicationName)
         {
-            this.clientOptions.UserAgentSuffix = userAgentSuffix;
+            this.clientOptions.ApplicationName = applicationName;
             return this;
         }
 
         /// <summary>
         /// Set the current preferred region
         /// </summary>
-        /// <param name="cosmosRegion"><see cref="CosmosRegions"/> for a list of valid azure regions. This list may not contain the latest azure regions.</param>
+        /// <param name="applicationRegion"><see cref="CosmosRegions"/> for a list of valid azure regions. This list may not contain the latest azure regions.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/> with a of preferred region.
         /// <code language="c#">
@@ -116,16 +112,16 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
-        /// .UseCurrentRegion(CosmosRegion.USEast2);
+        /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="CosmosClientOptions.CurrentRegion"/>
-        public virtual CosmosClientBuilder UseCurrentRegion(string cosmosRegion)
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
+        public virtual CosmosClientBuilder WithApplicationRegion(string applicationRegion)
         {
-            this.clientOptions.CurrentRegion = cosmosRegion;
+            this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
         }
 
@@ -136,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>Default value is 60 seconds.</value>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.RequestTimeout"/>
-        public virtual CosmosClientBuilder UseRequestTimeout(TimeSpan requestTimeout)
+        public virtual CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout)
         {
             this.clientOptions.RequestTimeout = requestTimeout;
             return this;
@@ -150,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        public virtual CosmosClientBuilder UseConnectionModeDirect()
+        public virtual CosmosClientBuilder WithConnectionModeDirect()
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
@@ -166,14 +162,14 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        /// <seealso cref="CosmosClientOptions.MaxConnectionLimit"/>
-        public virtual CosmosClientBuilder UseConnectionModeGateway(int? maxConnectionLimit = null)
+        /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
+        public virtual CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
             this.clientOptions.ConnectionProtocol = Protocol.Https;
             if (maxConnectionLimit.HasValue)
             {
-                this.clientOptions.MaxConnectionLimit = maxConnectionLimit.Value;
+                this.clientOptions.GatewayModeMaxConnectionLimit = maxConnectionLimit.Value;
             }
 
             return this;
@@ -218,7 +214,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnThrottledRequests"/>
         /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnThrottledRequests"/>
-        public virtual CosmosClientBuilder UseThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, int maxRetryAttemptsOnThrottledRequests)
+        public virtual CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
+            int maxRetryAttemptsOnThrottledRequests)
         {
             this.clientOptions.MaxRetryWaitTimeOnThrottledRequests = maxRetryWaitTimeOnThrottledRequests;
             this.clientOptions.MaxRetryAttemptsOnThrottledRequests = maxRetryAttemptsOnThrottledRequests;
@@ -231,18 +228,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosJsonSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosJsonSerializer"/>
-        /// <seealso cref="CosmosClientOptions.CosmosJsonSerializer"/>
-        public virtual CosmosClientBuilder UseCustomJsonSerializer(
+        /// <seealso cref="CosmosClientOptions.CosmosSerializer"/>
+        public virtual CosmosClientBuilder WithCustomJsonSerializer(
             CosmosJsonSerializer cosmosJsonSerializer)
         {
-            this.clientOptions.CosmosJsonSerializer = cosmosJsonSerializer;
+            this.clientOptions.CosmosSerializer = cosmosJsonSerializer;
             return this;
         }
 
         /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
-        internal CosmosClientBuilder UseSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
+        internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
         {
             this.clientOptions.SendingRequestEventArgs = sendingRequestEventArgs;
             return this;
@@ -251,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// (Optional) transport interceptor factory
         /// </summary>
-        internal CosmosClientBuilder UseTransportClientHandlerFactory(Func<TransportClient, TransportClient> transportClientHandlerFactory)
+        internal CosmosClientBuilder WithTransportClientHandlerFactory(Func<TransportClient, TransportClient> transportClientHandlerFactory)
         {
             this.clientOptions.TransportClientHandlerFactory = transportClientHandlerFactory;
             return this;
@@ -260,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// ApiType for the account
         /// </summary>
-        internal CosmosClientBuilder UseApiType(ApiType apiType)
+        internal CosmosClientBuilder WithApiType(ApiType apiType)
         {
             this.clientOptions.ApiType = apiType;
             return this;
@@ -273,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
         /// This method enables transport client sharing among multiple cosmos client instances inside a single process.
         /// </remarks>
         /// <param name="storeClientFactory">Instance of store client factory to use to create transport client for an instance of cosmos client.</param>
-        internal CosmosClientBuilder UseStoreClientFactory(IStoreClientFactory storeClientFactory)
+        internal CosmosClientBuilder WithStoreClientFactory(IStoreClientFactory storeClientFactory)
         {
             this.clientOptions.StoreClientFactory = storeClientFactory;
             return this;
@@ -282,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Disables CPU monitoring for transport client which will inhibit troubleshooting of timeout exceptions.
         /// </summary>
-        internal CosmosClientBuilder DisableCpuMonitor()
+        internal CosmosClientBuilder WithCpuMonitorDisabled()
         {
             this.clientOptions.EnableCpuMonitor = false;
             return this;

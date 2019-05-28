@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }]}";
 
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
+                (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             FeedIterator<CosmosConflictSettings> feedIterator = container.Conflicts.GetConflictsIterator();
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }]}";
 
             CosmosClient mockClient = MockCosmosUtil.CreateMockCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.UseConnectionModeDirect());
+                (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             CosmosContainer container = mockClient.Databases["database"].Containers["container"];
             FeedIterator feedIterator = container.Conflicts.GetConflictsStreamIterator();
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockClient.RequestHandler.InnerHandler = testHandler;
             CosmosResponseMessage streamResponse = await feedIterator.FetchNextSetAsync();
 
-            Collection<CosmosConflictSettings> response = new CosmosDefaultJsonSerializer().FromStream<CosmosFeedResponseUtil<CosmosConflictSettings>>(streamResponse.Content).Data;
+            Collection<CosmosConflictSettings> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<CosmosConflictSettings>>(streamResponse.Content).Data;
 
             Assert.AreEqual(1, response.Count());
 
