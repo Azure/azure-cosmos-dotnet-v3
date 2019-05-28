@@ -1999,7 +1999,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             DocumentCollection collection = new DocumentCollection
             {
-                Id = Guid.NewGuid().ToString("N")
+                Id = Guid.NewGuid().ToString("N"),
+                PartitionKey = defaultPartitionKeyDefinition
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
@@ -2017,7 +2018,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
 
             //Read response as dynamic.
-            IQueryable<dynamic> docQuery = client.CreateDocumentQuery(collection.DocumentsLink, @"select * from root r where r.Title=""MyBook""", null);
+            IQueryable<dynamic> docQuery = client.CreateDocumentQuery(collection.DocumentsLink, @"select * from root r where r.Title=""MyBook""", new FeedOptions { EnableCrossPartitionQuery = true });
 
             IDocumentQuery<dynamic> DocumentQuery = docQuery.AsDocumentQuery();
             DocumentFeedResponse<dynamic> queryResponse = DocumentQuery.ExecuteNextAsync().Result;
@@ -2174,7 +2175,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public IQueryable<T> Query<T>() where T : BaseDocument
             {
-                var query = this.client.CreateDocumentQuery<T>(this.docCollection.DocumentsLink)
+                var query = this.client.CreateDocumentQuery<T>(this.docCollection.DocumentsLink, new FeedOptions { EnableCrossPartitionQuery = true})
                                        .Where(d => d.TypeName == "Hello");
                 var queryString = query.ToString();
                 return query;
@@ -2185,7 +2186,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void ValidateLinqOnDataDocumentType()
         {
             DocumentCollection collection = client.CreateDocumentCollectionAsync(
-                testDb.SelfLink, new DocumentCollection { Id = nameof(ValidateLinqOnDataDocumentType) }).Result.Resource;
+                testDb.SelfLink, new DocumentCollection { Id = nameof(ValidateLinqOnDataDocumentType), PartitionKey = defaultPartitionKeyDefinition }).Result.Resource;
 
             DataDocument doc = new DataDocument() { Id = Guid.NewGuid().ToString("N"), Number = 0, TypeName = "Hello" };
             client.CreateDocumentAsync(collection, doc).Wait();
@@ -2198,7 +2199,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual(doc.Id, baseDocument.Id);
 
             BaseDocument iDocument = doc;
-            IOrderedQueryable<DataDocument> q = client.CreateDocumentQuery<DataDocument>(collection.DocumentsLink);
+            IOrderedQueryable<DataDocument> q = client.CreateDocumentQuery<DataDocument>(collection.DocumentsLink, new FeedOptions { EnableCrossPartitionQuery = true});
 
             IEnumerable<DataDocument> iresult = from f in q
                                                 where f.Id == iDocument.Id
