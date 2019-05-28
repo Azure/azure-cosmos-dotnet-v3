@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 client.CreateDocumentAsync(collection, obj).Wait();
             }
 
-            var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionSkipTake = true , EnableCrossPartitionQuery = true};
+            var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true};
             var query = client.CreateDocumentQuery<T>(collection, feedOptions);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 

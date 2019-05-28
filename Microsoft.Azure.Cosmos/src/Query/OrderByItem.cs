@@ -1,15 +1,13 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="OrderByItem.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Newtonsoft.Json.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Used to represent an order by item for a cross partition ORDER BY query.

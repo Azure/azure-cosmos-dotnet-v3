@@ -152,12 +152,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             CosmosContainerSettings settings = new CosmosContainerSettings(containerName, partitionKeyDefinition);
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers.CreateContainerStreamAsync(CosmosResource.ToStream(settings)))
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers.CreateContainerAsStreamAsync(settings))
             {
                 Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             }
 
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers[containerName].DeleteStreamAsync())
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.Containers[containerName].DeleteAsStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
             }
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (CosmosResponseMessage message = await resultSet.FetchNextSetAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
-                    CosmosDefaultJsonSerializer defaultJsonSerializer = new CosmosDefaultJsonSerializer();
+                    CosmosJsonSerializerCore defaultJsonSerializer = new CosmosJsonSerializerCore();
                     dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.Content).DocumentCollections;
                     foreach (dynamic container in containers)
                     {
@@ -391,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLive);
 
             JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
-            ItemResponse<JObject> createResponse = await cosmosContainer.Items.CreateItemAsync<JObject>(partitionKey: itemTest["users"].ToString(), item: itemTest);
+            ItemResponse<JObject> createResponse = await cosmosContainer.CreateItemAsync<JObject>(partitionKey: itemTest["users"].ToString(), item: itemTest);
             JObject responseItem = createResponse;
             Assert.IsNull(responseItem["ttl"]);
 
@@ -512,10 +512,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Creating an item and reading before expiration
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
-            ItemResponse<dynamic> createItemResponse = await cosmosContainer.Items.CreateItemAsync<dynamic>(payload.user, payload);
+            ItemResponse<dynamic> createItemResponse = await cosmosContainer.CreateItemAsync<dynamic>(payload.user, payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await cosmosContainer.Items.ReadItemAsync<dynamic>(payload.user, payload.id);
+            ItemResponse<dynamic> readItemResponse = await cosmosContainer.ReadItemAsync<dynamic>(payload.user, payload.id);
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
 

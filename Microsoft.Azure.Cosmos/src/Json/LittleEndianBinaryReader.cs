@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="LittleEndianBinaryReader.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -20,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Json
         private readonly bool isLittleEndian;
 
         /// <summary>
-        /// Initializes a new instance of the LittleEndianBinaryReader class based on the specified stream and using UTF-8 encoding.
+        /// Initializes a new instance of the <see cref="LittleEndianBinaryReader"/> class based on the specified stream and using UTF-8 encoding.
         /// </summary>
         /// <param name="input">The input stream.</param>
         public LittleEndianBinaryReader(Stream input)
@@ -29,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Initializes a new instance of the LittleEndianBinaryReader class based on the specified stream and character encoding.
+        /// Initializes a new instance of the <see cref="LittleEndianBinaryReader"/> class based on the specified stream and character encoding.
         /// </summary>
         /// <param name="input">The input stream.</param>
         /// <param name="encoding">The character encoding to use.</param>
@@ -39,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Initializes a new instance of the LittleEndianBinaryReader class based on the specified stream and character encoding, and optionally leaves the stream open.
+        /// Initializes a new instance of the <see cref="LittleEndianBinaryReader"/> class based on the specified stream and character encoding, and optionally leaves the stream open.
         /// </summary>
         /// <param name="input">The input stream.</param>
         /// <param name="encoding">The character encoding to use.</param>
@@ -50,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Initializes a new instance of the LittleEndianBinaryReader class for testing purposes, since we don't want the user to be able to tell us what the endianness of the machine is.
+        /// Initializes a new instance of the <see cref="LittleEndianBinaryReader"/> class for testing purposes, since we don't want the user to be able to tell us what the endianness of the machine is.
         /// Thus this constructor is private.
         /// </summary>
         /// <param name="input">The input stream.</param>

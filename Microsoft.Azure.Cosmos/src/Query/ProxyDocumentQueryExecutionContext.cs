@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal sealed class ProxyDocumentQueryExecutionContext : IDocumentQueryExecutionContext
     {
-        private IDocumentQueryExecutionContext innerExecutionContext;
-
         private readonly IDocumentQueryClient client;
         private readonly ResourceType resourceTypeEnum;
         private readonly Type resourceType;
@@ -37,6 +35,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly bool isContinuationExpected;
 
         private readonly Guid correlatedActivityId;
+
+        private IDocumentQueryExecutionContext innerExecutionContext;
 
         private ProxyDocumentQueryExecutionContext(
             IDocumentQueryExecutionContext innerExecutionContext,
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.correlatedActivityId = correlatedActivityId;
         }
 
-        public static ProxyDocumentQueryExecutionContext CreateAsync(
+        public static ProxyDocumentQueryExecutionContext Create(
             IDocumentQueryClient client,
             ResourceType resourceTypeEnum,
             Type resourceType,
@@ -134,11 +134,11 @@ namespace Microsoft.Azure.Cosmos.Query
 
             List<PartitionKeyRange> partitionKeyRanges =
                 await
-                    queryExecutionContext.GetTargetPartitionKeyRanges(collection.ResourceId,
+                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(collection.ResourceId,
                         partitionedQueryExecutionInfo.QueryRanges);
 
             DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
-            this.innerExecutionContext = await DocumentQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContext(
+            this.innerExecutionContext = await DocumentQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContextAsync(
                 constructorParams,
                 partitionedQueryExecutionInfo,
                 partitionKeyRanges,

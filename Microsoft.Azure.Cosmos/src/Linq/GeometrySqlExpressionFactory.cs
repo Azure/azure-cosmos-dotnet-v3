@@ -1,6 +1,6 @@
-//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
-    using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.

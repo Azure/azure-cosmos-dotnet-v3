@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosResponseMessage httpResponseMessage,
             CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetryResult =  this.ShouldRetryInternal(
+            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 httpResponseMessage.StatusCode,
                 httpResponseMessage.Headers.SubStatusCode,
                 httpResponseMessage.GetResourceAddress());

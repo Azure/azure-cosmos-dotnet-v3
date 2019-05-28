@@ -3,13 +3,13 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Documents.Collections;
     using System;
     using System.IO;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Documents.Collections;
 
-    interface IMediaHandler
+    internal interface IMediaHandler
     {
         Task UploadMediaAsync(string mediaId,
             Stream mediaStream,

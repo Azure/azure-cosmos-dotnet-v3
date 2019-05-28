@@ -46,8 +46,7 @@ namespace Microsoft.Azure.Cosmos.Linq
               container,
               cosmosJsonSerializer,
               queryClient,
-              cosmosQueryRequestOptions
-              );
+              cosmosQueryRequestOptions);
             this.correlatedActivityId = Guid.NewGuid();
         }
 
@@ -55,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.Linq
           CosmosContainerCore container,
           CosmosJsonSerializer cosmosJsonSerializer,
           CosmosQueryClient queryClient,
-          QueryRequestOptions cosmosQueryRequestOptions) : this(
+          QueryRequestOptions cosmosQueryRequestOptions)
+            : this(
               container,
               cosmosJsonSerializer,
               queryClient,
@@ -87,14 +87,16 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <remarks>
         /// This triggers a synchronous multi-page load.
         /// </remarks>
-        /// <returns></returns>
+        /// <returns>IEnumerator</returns>
         public IEnumerator<T> GetEnumerator()
         {
             using (CosmosQueryExecutionContext localQueryExecutionContext = CreateCosmosQueryExecutionContext())
             {
                 while (!localQueryExecutionContext.IsDone)
                 {
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
                     QueryResponse cosmosQueryResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
                     QueryResponse<T> responseIterator = QueryResponse<T>.CreateResponse<T>(
                         cosmosQueryResponse: cosmosQueryResponse,
                         jsonSerializer: cosmosJsonSerializer,
@@ -111,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <summary>
         /// Synchronous Multi-Page load
         /// </summary>
-        /// <returns></returns>        
+        /// <returns>IEnumerator</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return this.GetEnumerator();

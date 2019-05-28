@@ -15,7 +15,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -73,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
             if (useGateway)
             {
-                cosmosClientBuilder.UseConnectionModeGateway();
+                cosmosClientBuilder.WithConnectionModeGateway();
             }
 
             return cosmosClientBuilder.Build();
@@ -1217,9 +1219,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private static CosmosConsistencySettings GetServerConsistencyPolicy()
+        private static CosmosAccountConsistency GetServerConsistencyPolicy()
         {
-            CosmosConsistencySettings consistencyPolicy = new CosmosConsistencySettings
+            CosmosAccountConsistency consistencyPolicy = new CosmosAccountConsistency
             {
                 DefaultConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.Strong
             };

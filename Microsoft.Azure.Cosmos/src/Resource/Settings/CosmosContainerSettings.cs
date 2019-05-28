@@ -38,11 +38,13 @@ namespace Microsoft.Azure.Cosmos
     ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
     ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync(collectionsettings);
+    /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
+    /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
     /// ]]>
     /// </code>
     /// </example>
     /// <example>
-    /// The example below deletes this collection.
+    /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
     ///     CosmosContainer container = client.Databases["dbName"].Containers["MyCollection"];
@@ -51,7 +53,6 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
-    /// <seealso cref="CosmosDatabaseSettings"/>
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
@@ -345,16 +346,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
-        protected internal static CosmosContainerSettings CreateWithResourceId(string resoruceId)
+        /// <param name="resourceId">The resource identifier for the container.</param>
+        /// <returns>An instance of <see cref="CosmosContainerSettings"/>.</returns>
+        internal static CosmosContainerSettings CreateWithResourceId(string resourceId)
         {
-            if (string.IsNullOrEmpty(resoruceId))
+            if (string.IsNullOrEmpty(resourceId))
             {
-                throw new ArgumentNullException(nameof(resoruceId));
+                throw new ArgumentNullException(nameof(resourceId));
             }
 
             return new CosmosContainerSettings()
             {
-                ResourceId = resoruceId,
+                ResourceId = resourceId,
             };
         }
 
@@ -381,7 +384,7 @@ namespace Microsoft.Azure.Cosmos
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
-        /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
+        /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The Resource Id associated with the resource.

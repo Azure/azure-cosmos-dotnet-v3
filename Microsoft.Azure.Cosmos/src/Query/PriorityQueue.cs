@@ -20,34 +20,34 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         private readonly List<T> queue;
         private readonly IComparer<T> comparer;
 
-        public PriorityQueue(bool isSynchronized = false) :
-            this(DefaultInitialCapacity, isSynchronized)
+        public PriorityQueue(bool isSynchronized = false)
+            : this(DefaultInitialCapacity, isSynchronized)
         {
         }
 
-        public PriorityQueue(int initialCapacity, bool isSynchronized = false) :
-            this(initialCapacity, Comparer<T>.Default, isSynchronized)
+        public PriorityQueue(int initialCapacity, bool isSynchronized = false)
+            : this(initialCapacity, Comparer<T>.Default, isSynchronized)
         {
         }
 
-        public PriorityQueue(IComparer<T> comparer, bool isSynchronized = false) :
-            this(DefaultInitialCapacity, comparer, isSynchronized)
+        public PriorityQueue(IComparer<T> comparer, bool isSynchronized = false)
+            : this(DefaultInitialCapacity, comparer, isSynchronized)
         {
         }
 
-        public PriorityQueue(IEnumerable<T> enumerable, bool isSynchronized = false) :
-            this(enumerable, Comparer<T>.Default, isSynchronized)
+        public PriorityQueue(IEnumerable<T> enumerable, bool isSynchronized = false)
+            : this(enumerable, Comparer<T>.Default, isSynchronized)
         {
         }
 
-        public PriorityQueue(IEnumerable<T> enumerable, IComparer<T> comparer, bool isSynchronized = false) :
-            this(new List<T>(enumerable), comparer, isSynchronized)
+        public PriorityQueue(IEnumerable<T> enumerable, IComparer<T> comparer, bool isSynchronized = false)
+            : this(new List<T>(enumerable), comparer, isSynchronized)
         {
             this.Heapify();
         }
 
-        public PriorityQueue(int initialCapacity, IComparer<T> comparer, bool isSynchronized = false) :
-            this(new List<T>(initialCapacity), comparer, isSynchronized)
+        public PriorityQueue(int initialCapacity, IComparer<T> comparer, bool isSynchronized = false)
+            : this(new List<T>(initialCapacity), comparer, isSynchronized)
         {
         }
 

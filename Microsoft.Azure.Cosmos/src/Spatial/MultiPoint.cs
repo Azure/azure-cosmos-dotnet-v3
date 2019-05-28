@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Initializes a new instance of the <see cref="MultiPoint" /> class.
         /// </summary>
         /// <param name="points">List of <see cref="Position"/> representing individual points.</param>
-        public MultiPoint(IList<Position> points) : this(points, new GeometryParams())
+        public MultiPoint(IList<Position> points)
+            : this(points, new GeometryParams())
         {
         }
 
@@ -50,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal MultiPoint() : base(GeometryType.MultiPoint, new GeometryParams())
+        internal MultiPoint()
+            : base(GeometryType.MultiPoint, new GeometryParams())
         {
         }
 

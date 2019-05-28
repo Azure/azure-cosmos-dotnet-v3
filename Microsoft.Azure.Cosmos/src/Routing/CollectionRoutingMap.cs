@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly HashSet<string> goneRanges;
 
         public CollectionRoutingMap(
-            CollectionRoutingMap  collectionRoutingMap,
+            CollectionRoutingMap collectionRoutingMap,
             string changeFeedNextIfNoneMatch)
         {
             this.rangeById = new Dictionary<string, Tuple<PartitionKeyRange, ServiceIdentity>>(collectionRoutingMap.rangeById);

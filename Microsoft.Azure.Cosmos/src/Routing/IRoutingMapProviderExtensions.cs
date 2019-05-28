@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos
             return StringComparer.Ordinal.Compare(left, right) < 0 ? right : left;
         }
 
-        private static bool IsSortedAndNonOverlapping<T>(IList<Range<T>> list) where T : IComparable<T>
+        private static bool IsSortedAndNonOverlapping<T>(IList<Range<T>> list)
+            where T : IComparable<T>
         {
             IComparer<T> comparer = typeof(T) == typeof(string) ? (IComparer<T>)StringComparer.Ordinal : Comparer<T>.Default;
 
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        public static async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(
+        public static async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKeyAsync(
             this IRoutingMapProvider routingMapProvider,
             string collectionResourceId,
             string effectivePartitionKey)

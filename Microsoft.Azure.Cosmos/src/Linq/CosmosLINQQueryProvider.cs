@@ -43,9 +43,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         public IQueryable CreateQuery(Expression expression)
         {
             Type expressionType = TypeSystem.GetElementType(expression.Type);
-            Type DocumentQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(expressionType);
+            Type documentQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(expressionType);
             return (IQueryable)Activator.CreateInstance(
-                DocumentQueryType,
+                documentQueryType,
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
@@ -55,9 +55,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public TResult Execute<TResult>(Expression expression)
         {
-            Type CosmosQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
+            Type cosmosQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
             CosmosLINQQuery<TResult> cosmosLINQQuery = (CosmosLINQQuery<TResult>)Activator.CreateInstance(
-                CosmosQueryType,
+                cosmosQueryType,
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
@@ -70,9 +70,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         //Sync execution of query via direct invoke on IQueryProvider.
         public object Execute(Expression expression)
         {
-            Type CosmosQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(object));
+            Type cosmosQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(object));
             CosmosLINQQuery<object> documentQuery = (CosmosLINQQuery<object>)Activator.CreateInstance(
-                CosmosQueryType,
+                cosmosQueryType,
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,

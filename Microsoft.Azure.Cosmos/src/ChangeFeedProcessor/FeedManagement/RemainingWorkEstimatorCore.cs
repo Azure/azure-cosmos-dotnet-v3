@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
-        private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosDefaultJsonSerializer();
+        private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosJsonSerializerCore();
         private readonly Func<string, string, bool, FeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
@@ -124,44 +124,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return segments[1];
         }
 
-        private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
-        {
-            // Current lease schema maps Token to PKRangeId
-            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
-            FeedIterator iterator = this.feedCreator(
-                partitionKeyRangeId,
-                existingLease.ContinuationToken,
-                string.IsNullOrEmpty(existingLease.ContinuationToken));
-
-            try
-            {
-                CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
-                if (response.StatusCode != HttpStatusCode.NotModified)
-                {
-                    response.EnsureSuccessStatusCode();
-                }
-
-                long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
-                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
-                long lastQueryLSN = items.Count > 0
-                    ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
-                    : parsedLSNFromSessionToken;
-                if (lastQueryLSN < 0)
-                {
-                    return 1;
-                }
-
-                long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
-                return leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
-            }
-            catch (Exception clientException)
-            {
-                DefaultTrace.TraceException(clientException);
-                DefaultTrace.TraceWarning("GetEstimateWork > exception: lease token '{0}'", existingLease.CurrentLeaseToken);
-                throw;
-            }
-        }
-
         private static string GetFirstItemLSN(Collection<JObject> items)
         {
             JObject item = RemainingWorkEstimatorCore.GetFirstItem(items);
@@ -212,6 +174,44 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
 
             return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.Content).Data;
+        }
+
+        private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
+        {
+            // Current lease schema maps Token to PKRangeId
+            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
+            FeedIterator iterator = this.feedCreator(
+                partitionKeyRangeId,
+                existingLease.ContinuationToken,
+                string.IsNullOrEmpty(existingLease.ContinuationToken));
+
+            try
+            {
+                CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.NotModified)
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+
+                long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+                Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
+                long lastQueryLSN = items.Count > 0
+                    ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1
+                    : parsedLSNFromSessionToken;
+                if (lastQueryLSN < 0)
+                {
+                    return 1;
+                }
+
+                long leaseTokenRemainingWork = parsedLSNFromSessionToken - lastQueryLSN;
+                return leaseTokenRemainingWork < 0 ? 0 : leaseTokenRemainingWork;
+            }
+            catch (Exception clientException)
+            {
+                DefaultTrace.TraceException(clientException);
+                DefaultTrace.TraceWarning("GetEstimateWork > exception: lease token '{0}'", existingLease.CurrentLeaseToken);
+                throw;
+            }
         }
     }
 }

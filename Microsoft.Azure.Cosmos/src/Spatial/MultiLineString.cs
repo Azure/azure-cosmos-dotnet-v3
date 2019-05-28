@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="lineStrings">
         /// List of <see cref="LineStringCoordinates"/> instances representing individual line strings.
         /// </param>
-        public MultiLineString(IList<LineStringCoordinates> lineStrings) : this(lineStrings, new GeometryParams())
+        public MultiLineString(IList<LineStringCoordinates> lineStrings)
+            : this(lineStrings, new GeometryParams())
         {
         }
 
@@ -52,7 +53,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal MultiLineString() : base(GeometryType.MultiLineString, new GeometryParams())
+        internal MultiLineString()
+            : base(GeometryType.MultiLineString, new GeometryParams())
         {
         }
 

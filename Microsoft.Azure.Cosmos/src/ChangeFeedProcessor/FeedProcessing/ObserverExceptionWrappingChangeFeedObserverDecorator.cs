@@ -1,6 +1,6 @@
-﻿// ----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-// ----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Documents;
 
-    internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator<T>: ChangeFeedObserver<T>
+    internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator<T> : ChangeFeedObserver<T>
     {
         private ChangeFeedObserver<T> changeFeedObserver;
 
