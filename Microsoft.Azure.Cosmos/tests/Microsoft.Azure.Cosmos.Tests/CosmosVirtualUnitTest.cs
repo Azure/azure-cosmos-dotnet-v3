@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -43,6 +44,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(0, nonVirtualPublic.Count,
                 "The following methods and properties should be virtual to allow unit testing:" +
                 string.Join(";", nonVirtualPublic.Select(x => $"Class:{x.Item1}; Member:{x.Item2}")));
+        }
+
+
+        [TestMethod]
+        public void VerifyClientMock()
+        {
+            Mock<CosmosDatabases> mockDatabases = new Mock<CosmosDatabases>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Databases).Returns(mockDatabases.Object);
+
+            CosmosClient client = mockClient.Object;
+            Assert.IsNotNull(client.Databases);
         }
     }
 }

@@ -83,6 +83,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Create a new CosmosClient used for mock testing
+        /// </summary>
+        protected CosmosClient()
+        {
+        }
+
+        /// <summary>
         /// Create a new CosmosClient with the connection
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. Example: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey;</param>
