@@ -94,6 +94,14 @@ namespace Microsoft.Azure.Cosmos
         public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        /// Gets or sets the partition key value for the current request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// Partition key is used to identify the target partition for this request.
+        /// </remarks>
+        public virtual object PartitionKey { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>

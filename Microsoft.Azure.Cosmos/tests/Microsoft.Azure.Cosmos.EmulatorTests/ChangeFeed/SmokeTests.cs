@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() }, new ItemRequestOptions { PartitionKey = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() }, new ItemRequestOptions { PartitionKey = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() }, new ItemRequestOptions { PartitionKey = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() }, new ItemRequestOptions { PartitionKey = id.ToString() });
             }
 
             // Waiting on all notifications to finish

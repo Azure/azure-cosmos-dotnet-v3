@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container = await db.Containers.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
             dynamic randomItem = new { id = "test", pk = "testpk" };
-            await container.CreateItemAsync(randomItem);
+            await container.CreateItemAsync(randomItem.pk, randomItem);
 
             await container.DeleteAsync();
 

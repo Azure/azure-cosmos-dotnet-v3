@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             foreach(dynamic poco in supportedTypesToTest)
             {
-                object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
+                object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco), new ItemRequestOptions());
                 if(pk is bool)
                 {
                     Assert.AreEqual(poco.nested.pk, (bool)pk);
@@ -160,13 +160,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach(dynamic poco in unsupportedTypesToTest)
             {                   
                 await Assert.ThrowsExceptionAsync<ArgumentException>(async () => {
-                    await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
+                    await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco), new ItemRequestOptions());
                 });                                
             }
 
             //null should throw
             await Assert.ThrowsExceptionAsync<ArgumentException>(async () => {
-                await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { nested = new { pk = (object)null } }));
+                await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { nested = new { pk = (object)null } }), new ItemRequestOptions());
             });
         }
 
@@ -299,6 +299,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(response);
             });
 
+            if (requestOptions != null)
+            {
+                requestOptions.PartitionKey = partitionKey;
+            }
+            else
+            {
+                requestOptions = new ItemRequestOptions { PartitionKey = partitionKey };
+            }
+
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
@@ -307,7 +316,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(
                 item: testItem,
-                partitionKey: partitionKey,
                 requestOptions: requestOptions);
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
@@ -321,7 +329,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             itemResponse = await container.UpsertItemAsync<dynamic>(                
                 item: testItem,
-                partitionKey: partitionKey,
                 requestOptions: requestOptions);
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
@@ -329,7 +336,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             itemResponse = await container.ReplaceItemAsync<dynamic>(                
                 id: testItem.id,
                 item: testItem,
-                partitionKey: partitionKey,
                 requestOptions: requestOptions);
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
