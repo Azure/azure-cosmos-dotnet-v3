@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using IndexingMode = IndexingMode;
     using ConsistencyLevel = Documents.ConsistencyLevel;
     using Microsoft.Azure.Cosmos.Scripts;
+    using RequestOptions = Documents.Client.RequestOptions;
 
     [TestClass]
     public class GatewayTests
@@ -80,16 +81,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static TValue CreateExecuteAndDeleteProcedure<TValue>(DocumentClient client, DocumentCollection collection, string transientProcedure)
+        internal static TValue CreateExecuteAndDeleteProcedure<TValue>(DocumentClient client, DocumentCollection collection, string transientProcedure, string partitionKey = null)
         {
             StoredProcedureResponse<TValue> ignored = null;
-            return GatewayTests.CreateExecuteAndDeleteProcedure(client, collection, transientProcedure, out ignored);
+            return GatewayTests.CreateExecuteAndDeleteProcedure(client, collection, transientProcedure, out ignored, partitionKey);
         }
 
         internal static TValue CreateExecuteAndDeleteProcedure<TValue>(DocumentClient client,
             DocumentCollection collection,
             string transientProcedure,
-            out StoredProcedureResponse<TValue> response)
+            out StoredProcedureResponse<TValue> response,
+            string partitionKey = null)
         {
             // create
             StoredProcedure storedProcedure = new StoredProcedure
@@ -100,7 +102,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedure retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedure).Result;
 
             // execute
-            response = client.ExecuteStoredProcedureAsync<TValue>(retrievedStoredProcedure).Result;
+            if (partitionKey != null)
+            {
+                RequestOptions requestOptions = new RequestOptions();
+                requestOptions.PartitionKey = new PartitionKey(partitionKey);
+                response = client.ExecuteStoredProcedureAsync<TValue>(retrievedStoredProcedure, requestOptions).Result;
+            }
+            else
+            {
+                response = client.ExecuteStoredProcedureAsync<TValue>(retrievedStoredProcedure).Result;
+            }
 
             // delete
             client.Delete<StoredProcedure>(retrievedStoredProcedure.GetIdOrFullName());

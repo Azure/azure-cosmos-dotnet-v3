@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             var newCol = new DocumentCollection()
             {
                 Id = Guid.NewGuid().ToString(),
+                PartitionKey = defaultPartitionKeyDefinition,
                 IndexingPolicy = new IndexingPolicy()
                 {
                     IncludedPaths = new System.Collections.ObjectModel.Collection<IncludedPath>()

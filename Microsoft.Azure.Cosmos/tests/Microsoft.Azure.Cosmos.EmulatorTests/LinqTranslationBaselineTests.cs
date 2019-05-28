@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public void TestInitialize()
         {
-            testCollection = client.CreateDocumentCollectionAsync(testDb, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
+            testCollection = client.CreateDocumentCollectionAsync(testDb, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = defaultPartitionKeyDefinition }).Result;
         }
 
         [TestCleanup]
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestLiteralSerialization()
         {
             List<DataObject> testData = new List<DataObject>();
-            var constantQuery = client.CreateDocumentQuery<DataObject>(testCollection);
+            var constantQuery = client.CreateDocumentQuery<DataObject>(testCollection, new FeedOptions { EnableCrossPartitionQuery = true});
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Byte
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Partly because IsPrimitive is not trivial to implement.
             // Therefore these methods are verified with baseline only.
             List<DataObject> data = new List<DataObject>();
-            var query = client.CreateDocumentQuery<DataObject>(testCollection);
+            var query = client.CreateDocumentQuery<DataObject>(testCollection, new FeedOptions { EnableCrossPartitionQuery = true});
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -661,7 +661,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The spatial functions are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            var query = client.CreateDocumentQuery<DataObject>(testCollection, new FeedOptions() { EnableScanInQuery = true });
+            var query = client.CreateDocumentQuery<DataObject>(testCollection, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -813,7 +813,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The UDFs invokation are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            var query = client.CreateDocumentQuery<DataObject>(testCollection, new FeedOptions() { EnableScanInQuery = true });
+            var query = client.CreateDocumentQuery<DataObject>(testCollection, new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true });
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -891,7 +891,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             var seed = generatedData.Item1;
             var data = generatedData.Item2;
 
-            var query = client.CreateDocumentQuery<DataObject>(testCollection);
+            var query = client.CreateDocumentQuery<DataObject>(testCollection, new FeedOptions { EnableCrossPartitionQuery = true});
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();

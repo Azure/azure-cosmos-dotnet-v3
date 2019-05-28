@@ -1700,7 +1700,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void ValidateLinqQueries()
         {
             DocumentCollection collection = client.CreateDocumentCollectionAsync(
-                testDb.SelfLink, new DocumentCollection { Id = Guid.NewGuid().ToString("N") }).Result.Resource;
+                testDb.SelfLink, new DocumentCollection { Id = Guid.NewGuid().ToString("N"), PartitionKey = defaultPartitionKeyDefinition }).Result.Resource;
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -1722,8 +1722,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             fList.Add(family);
 
             client.CreateDocumentAsync(collection.SelfLink, family).Wait();
-
-            IOrderedQueryable<Family> query = client.CreateDocumentQuery<Family>(collection.DocumentsLink);
+            FeedOptions feedOptions = new FeedOptions { EnableCrossPartitionQuery = true };
+            IOrderedQueryable<Family> query = client.CreateDocumentQuery<Family>(collection.DocumentsLink, feedOptions);
 
             IEnumerable<string> q1 = query.Select(f => f.Parents[0].FamilyName);
             Assert.AreEqual(q1.FirstOrDefault(), family.Parents[0].FamilyName);
@@ -1770,7 +1770,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             client.CreateDocumentAsync(collection.SelfLink, guidObject).Wait();
             var guidData = new List<GuidClass>() { guidObject };
 
-            var guid = client.CreateDocumentQuery<GuidClass>(collection.DocumentsLink);
+            var guid = client.CreateDocumentQuery<GuidClass>(collection.DocumentsLink, feedOptions);
 
             IQueryable<GuidClass> q11 = guid.Where(g => g.Id == guidObject.Id);
             Assert.AreEqual(((IEnumerable<GuidClass>)q11).FirstOrDefault().Id, guidObject.Id);
@@ -1781,7 +1781,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             ListArrayClass arrayObject = new ListArrayClass() { Id = "arrayObject", ArrayField = new int[] { 1, 2, 3 } };
             client.CreateDocumentAsync(collection.SelfLink, arrayObject).Wait();
 
-            var listArrayQuery = client.CreateDocumentQuery<ListArrayClass>(collection.DocumentsLink);
+            var listArrayQuery = client.CreateDocumentQuery<ListArrayClass>(collection.DocumentsLink, feedOptions);
 
             IEnumerable<dynamic> q13 = listArrayQuery.Where(a => a.ArrayField == arrayObject.ArrayField);
             Assert.AreEqual(q13.FirstOrDefault().Id, arrayObject.Id);
@@ -1833,7 +1833,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Document doubleQoutesDocument = new Document() { Id = doc1Id };
             client.CreateDocumentAsync(collection.DocumentsLink, doubleQoutesDocument).Wait();
 
-            var docQuery = from book in client.CreateDocumentQuery<Document>(collection.DocumentsLink)
+            var docQuery = from book in client.CreateDocumentQuery<Document>(collection.DocumentsLink, feedOptions)
                            where book.Id == doc1Id
                            select book;
 
@@ -1844,7 +1844,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             client.CreateDocumentAsync(collection.DocumentsLink, greatGreatFamily).Wait();
             var greatGreatFamilyData = new List<GreatGreatFamily>() { greatGreatFamily };
 
-            IOrderedQueryable<GreatGreatFamily> queryable = client.CreateDocumentQuery<GreatGreatFamily>(collection.DocumentsLink);
+            IOrderedQueryable<GreatGreatFamily> queryable = client.CreateDocumentQuery<GreatGreatFamily>(collection.DocumentsLink, feedOptions);
 
             IEnumerable<GreatGreatFamily> q16 = queryable.SelectMany(gf => gf.GreatFamily.Family.Children.Where(c => c.GivenName == "Jesse").Select(c => gf));
 
@@ -1854,7 +1854,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             client.CreateDocumentAsync(collection.DocumentsLink, sport).Wait();
             var sportData = new List<Sport>() { sport };
 
-            var sportQuery = client.CreateDocumentQuery<Sport>(collection.DocumentsLink);
+            var sportQuery = client.CreateDocumentQuery<Sport>(collection.DocumentsLink, feedOptions);
 
             IEnumerable<Sport> q17 = sportQuery.Where(s => s.SportName == "Tennis");
 
@@ -1864,7 +1864,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             client.CreateDocumentAsync(collection.DocumentsLink, sport2).Wait();
             var sport2Data = new List<Sport2>() { sport2 };
 
-            var sport2Query = client.CreateDocumentQuery<Sport2>(collection.DocumentsLink);
+            var sport2Query = client.CreateDocumentQuery<Sport2>(collection.DocumentsLink, feedOptions);
 
             Func<bool, IQueryable<GuidClass>> getGuidQuery = useQuery => useQuery ? guid : guidData.AsQueryable();
             Func<bool, IQueryable<ListArrayClass>> getListArrayQuery = useQuery => useQuery ? listArrayQuery : listArrayObjectData.AsQueryable();
@@ -2252,9 +2252,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         private async Task ValidateServerSideQueryEvalWithPaginationScenario()
         {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/title" }), Kind = PartitionKind.Hash };
             DocumentCollection collection = new DocumentCollection
             {
-                Id = Guid.NewGuid().ToString()
+                Id = Guid.NewGuid().ToString(),
+                PartitionKey = partitionKeyDefinition,
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
@@ -2277,13 +2279,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
 
             StoredProcedureResponse<int> scriptResponse = null;
-            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteProcedure(client, collection, script, out scriptResponse);
+            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteProcedure(client, collection, script, out scriptResponse, "My Book");
 
             int pageSize = 5;
             int totalHit = 0;
             IDocumentQuery<Book> documentQuery =
                 (from book in client.CreateDocumentQuery<Book>(
-                    collection.SelfLink, new FeedOptions { MaxItemCount = pageSize })
+                    collection.SelfLink, new FeedOptions { MaxItemCount = pageSize, EnableCrossPartitionQuery = true })
                  where book.Title == "My Book"
                  select book).AsDocumentQuery();
 

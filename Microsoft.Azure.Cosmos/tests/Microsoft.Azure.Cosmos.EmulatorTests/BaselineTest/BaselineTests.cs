@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     using System.Text.RegularExpressions;
     using System.Xml;
     using VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Base class for all baseline tests.
@@ -36,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// The file extension for xml.
         /// </summary>
         private const string XmlFileExtension = "xml";
+
+        internal PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
 
         /// <summary>
         /// Executes a whole suite of baselines, which corresponds to a visual studio test method.
