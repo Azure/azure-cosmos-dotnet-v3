@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
     internal sealed class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
+        public const string GroupByCanNotSpanContinuationsMessage = "GROUP BY queries can not span multiple continuations.";
+
         private GroupByDocumentQueryExecutionComponent(
             IDocumentQueryExecutionComponent source)
             : base(source)
@@ -50,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     sourcePage.QueryHeaders,
                     System.Net.HttpStatusCode.BadRequest,
                     requestMessage: null,
-                    errorMessage: "GROUP BY queries can not span multiple continuations.",
+                    errorMessage: GroupByDocumentQueryExecutionComponent.GroupByCanNotSpanContinuationsMessage,
                     error: null);
 
                 return failedQueryResponse;

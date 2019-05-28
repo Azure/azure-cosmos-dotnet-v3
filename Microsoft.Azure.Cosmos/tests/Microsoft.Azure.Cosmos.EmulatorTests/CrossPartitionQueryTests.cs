@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -4078,7 +4079,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     Assert.Fail("Expected query to fail if it has a continuation.");
                 }
-                catch (Exception e) when ((e.GetBaseException() is CosmosException baseException) && baseException.Message.Contains("GROUP BY queries can not span multiple continuations."))
+                catch (Exception e) when ((e.GetBaseException() is CosmosException baseException) && baseException.Message.Contains(GroupByDocumentQueryExecutionComponent.GroupByCanNotSpanContinuationsMessage))
                 {
                 }
             }
