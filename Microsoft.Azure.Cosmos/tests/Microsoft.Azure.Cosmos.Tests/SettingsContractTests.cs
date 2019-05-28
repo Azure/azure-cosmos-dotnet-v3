@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -60,6 +61,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void OperationKindMatchesDirect()
         {
             AssertEnums<Cosmos.OperationKind, Documents.OperationKind>();
+        }
+
+        [TestMethod]
+        public void TriggerOperationMatchesDirect()
+        {
+            AssertEnums<Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -390,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosAccountSettings.WriteLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name="region1", DatabaseAccountEndpoint = "endpoint1" } };
             cosmosAccountSettings.ReadLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name = "region2", DatabaseAccountEndpoint = "endpoint2" } };
             cosmosAccountSettings.AddressesLink = "link";
-            cosmosAccountSettings.ConsistencySetting = new CosmosConsistencySettings() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
+            cosmosAccountSettings.ConsistencySetting = new CosmosAccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
             cosmosAccountSettings.ReplicationPolicy = new ReplicationPolicy() { AsyncReplication = true };
             cosmosAccountSettings.ReadPolicy = new ReadPolicy() { PrimaryReadCoefficient = 10 };
 
@@ -421,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Id = id,
                 OperationKind = Cosmos.OperationKind.Create,
-                ResourceType = typeof(CosmosStoredProcedure)
+                ResourceType = typeof(CosmosStoredProcedureSettings)
             };
 
             Conflict conflict = new Conflict()
@@ -441,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(conflictDeserSettings.Id, conflictDeser.Id);
             Assert.AreEqual((int)conflictDeserSettings.OperationKind, (int)conflictDeser.OperationKind);
             Assert.AreEqual(typeof(StoredProcedure), conflictDeser.ResourceType);
-            Assert.AreEqual(typeof(CosmosStoredProcedure), conflictDeserSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosStoredProcedureSettings), conflictDeserSettings.ResourceType);
             Assert.AreEqual(conflictDeserSettings.Id, conflict.Id);
         }
 
@@ -460,7 +467,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(conflict.Id, conflictSettings.Id);
             Assert.AreEqual((int)conflictSettings.OperationKind, (int)conflict.OperationKind);
             Assert.AreEqual(typeof(Trigger), conflict.ResourceType);
-            Assert.AreEqual(typeof(CosmosTrigger), conflictSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosTriggerSettings), conflictSettings.ResourceType);
 
             Assert.AreEqual("Conflict1", conflictSettings.Id);
         }

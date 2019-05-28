@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public Response()
         {
-
         }
 
         /// <summary>
@@ -49,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get Resource implicitly from <see cref="Response{T}"/>
         /// </summary>
+        /// <param name="response">The Azure Cosmos DB service response.</param>
         public static implicit operator T(Response<T> response)
         {
             return response.Resource;

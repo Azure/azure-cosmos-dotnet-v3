@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         public PartitionKey PartitionKey { get; set; }
 
         /// <summary>
-        /// Gets or sets whether change feed in the Azure Cosmos DB service 
+        /// Gets or sets a value indicating whether change feed in the Azure Cosmos DB service 
         /// should start from beginning (true) or from current (false).
         /// By default it's start from current (false).
         /// </summary>
@@ -89,7 +89,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DateTime? StartTime
         {
-            get { return this.startTime; }
+            get
+            {
+                return this.startTime;
+            }
 
             set
             {
@@ -103,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets whether change feed in the Azure Cosmos DB service 
+        /// Gets or sets a value indicating whether change feed in the Azure Cosmos DB service 
         /// should return tentative writes in addition to committed writes.
         /// By default the flag is set to false meaning only committed writes will be sent in response.
         /// </summary>

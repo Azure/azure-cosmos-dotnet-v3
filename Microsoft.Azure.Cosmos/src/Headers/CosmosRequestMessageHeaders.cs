@@ -46,9 +46,8 @@ namespace Microsoft.Azure.Cosmos
                     knownProperty => knownProperty.Key,
                     knownProperty => new CosmosCustomHeader(
                             () => (string)knownProperty.Value.GetValue(this),
-                            (string value) => { knownProperty.Value.SetValue(this, value); }
-                        )
-                , StringComparer.OrdinalIgnoreCase);
+                            (string value) => { knownProperty.Value.SetValue(this, value); }), 
+                    StringComparer.OrdinalIgnoreCase);
         }
     }
 }

@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosQueryExecutionContextFactory.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -109,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
-            if(this.innerExecutionContext == null)
+            if (this.innerExecutionContext == null)
             {
                 this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
             }
@@ -209,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             }
 
-            List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
+            List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRangesAsync(
                    this.cosmosQueryContext.QueryClient,
                    this.cosmosQueryContext.ResourceLink.OriginalString,
                    partitionedQueryExecutionInfo,
@@ -217,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Query
                    this.cosmosQueryContext.QueryRequestOptions);
 
             CosmosQueryContext rewrittenComosQueryContext;
-            if(!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
             {
                 // We need pass down the rewritten query.
                 SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
@@ -245,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 rewrittenComosQueryContext = this.cosmosQueryContext;
             }
 
-            return await CreateSpecializedDocumentQueryExecutionContext(
+            return await CreateSpecializedDocumentQueryExecutionContextAsync(
                 rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,
@@ -253,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
+        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -340,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// 3. Check the effective partition key
         /// 4. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
-        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
@@ -361,21 +359,21 @@ namespace Microsoft.Azure.Cosmos.Query
                     partitionKeyInternal = new PartitionKey(queryRequestOptions.PartitionKey).InternalKey;
                 }
 
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     collection.ResourceId,
                     partitionKeyInternal.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkString(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
                     collection.ResourceId,
                     effectivePartitionKeyString);
             }
             else
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRanges(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     collection.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);

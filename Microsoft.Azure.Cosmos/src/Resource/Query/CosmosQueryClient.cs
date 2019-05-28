@@ -52,16 +52,16 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
 
-        internal abstract Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel);
+        internal abstract Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel);
 
-        internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache();
+        internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync();
 
-        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(
+        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
             string effectivePartitionKeyString);
 
-        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
             List<Range<string>> providedRanges);

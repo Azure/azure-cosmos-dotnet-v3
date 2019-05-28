@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="client">The <see cref="DocumentClient"/> instance.</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Database}"/> instance.</returns>
-        /// <remarks>
-        /// </remarks>
         public static ResourceFeedReader<Database> CreateDatabaseFeedReader(this DocumentClient client, FeedOptions options = null)
         {
             return new ResourceFeedReader<Database>(client, ResourceType.Database, options, null);
@@ -194,8 +192,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="client">The <see cref="DocumentClient"/> instance.</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Offer}"/> instance.</returns>
-        /// <remarks>
-        /// </remarks>
         public static ResourceFeedReader<Offer> CreateOfferFeedReader(this DocumentClient client, FeedOptions options = null)
         {
             return new ResourceFeedReader<Offer>(client, ResourceType.Offer, options, null);

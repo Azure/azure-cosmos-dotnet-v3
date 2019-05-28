@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos.Common
     using System.Collections.Generic;
     using System.Globalization;
     using System.Text;
+    using System.Threading;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using System.Threading;
 
     internal sealed class SessionContainer : ISessionContainer
     {
@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
                 if (!AreDictionariesEqual(collectionNameByResourceId, sibling.collectionNameByResourceId, (x, y) => x == y)) return false;
                 if (!AreDictionariesEqual(collectionResourceIdByName, sibling.collectionResourceIdByName, (x, y) => x == y)) return false;
-                if (!AreDictionariesEqual(sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x,y) => AreDictionariesEqual(x,y, (a,b) => a.Equals(b)))) return false;
+                if (!AreDictionariesEqual(sessionTokensRIDBased, sibling.sessionTokensRIDBased, (x, y) => AreDictionariesEqual(x, y, (a, b) => a.Equals(b)))) return false;
 
                 return true;
             }

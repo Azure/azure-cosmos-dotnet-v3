@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
-        private int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly LocationCache locationCache;
         private readonly Uri defaultEndpoint;
@@ -34,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IDocumentClientInternal owner;
         private readonly object refreshLock;
         private readonly AsyncCache<string, CosmosAccountSettings> databaseAccountCache;
+        private int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private bool isRefreshing;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
@@ -127,7 +127,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Returns location corresponding to the endpoint
         /// </summary>
-        /// <param name="endpoint"></param>
         public string GetLocation(Uri endpoint)
         {
             return this.locationCache.GetLocation(endpoint);
@@ -222,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.locationCache.OnDatabaseAccountRead(databaseAccount);
                 }
 
-                this.StartRefreshLocationTimerAsync();
+                this.StartRefreshLocationTimer();
             }
             else
             {
@@ -230,8 +229,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        [SuppressMessage("", "AsyncFixer03", Justification = "Async start is by-design")]
-        private async void StartRefreshLocationTimerAsync()
+#pragma warning disable VSTHRD100 // Avoid async void methods
+        private async void StartRefreshLocationTimer()
+#pragma warning restore VSTHRD100 // Avoid async void methods
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceCritical("StartRefreshLocationTimerAsync() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
 
-                this.StartRefreshLocationTimerAsync();
+                this.StartRefreshLocationTimer();
             }
         }
 

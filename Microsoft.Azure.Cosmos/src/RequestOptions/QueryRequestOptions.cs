@@ -200,7 +200,8 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
-                AccessCondition = this.AccessCondition,
+                IfMatchEtag = this.IfMatchEtag,
+                IfNoneMatchEtag = this.IfNoneMatchEtag,
                 RequestContinuation = this.RequestContinuation,
                 MaxItemCount = this.MaxItemCount,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
@@ -232,7 +233,6 @@ namespace Microsoft.Azure.Cosmos
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
-                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 Properties = this.Properties,
             };
         }

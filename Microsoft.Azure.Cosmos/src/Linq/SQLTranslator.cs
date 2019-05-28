@@ -1,11 +1,11 @@
-﻿//-----------------------------------------------------------------------------------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using Microsoft.Azure.Cosmos.Sql;
     using System.Linq.Expressions;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Sql;
 
     /// <summary>
     /// Wrapper class for translating LINQ to DocDB SQL.

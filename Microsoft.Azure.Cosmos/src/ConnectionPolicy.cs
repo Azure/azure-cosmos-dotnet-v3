@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
 
-            if(proximityBasedPreferredLocations != null)
+            if (proximityBasedPreferredLocations != null)
             {
                 this.preferredLocations.Clear();
                 foreach (string preferredLocation in proximityBasedPreferredLocations)
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                if(value != Protocol.Https && value != Protocol.Tcp)
+                if (value != Protocol.Https && value != Protocol.Tcp)
                 {
                     throw new ArgumentOutOfRangeException("value");
                 }

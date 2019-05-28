@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
@@ -12,19 +12,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
     {
         public static void LogException(this Task task)
         {
+#pragma warning disable VSTHRD110 // Observe result of async calls
             task.ContinueWith(_ => DefaultTrace.TraceException(task.Exception), TaskContinuationOptions.OnlyOnFaulted);
-        }
-
-        public static async Task IgnoreException(this Task task)
-        {
-            try
-            {
-                await task.ConfigureAwait(false);
-            }
-            catch (Exception)
-            {
-                // ignore
-            }
+#pragma warning restore VSTHRD110 // Observe result of async calls
         }
     }
 }

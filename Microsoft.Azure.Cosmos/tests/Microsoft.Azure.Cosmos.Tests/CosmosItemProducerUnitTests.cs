@@ -71,14 +71,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 initialPageSize: 50);
 
             // Buffer to success responses
-            await itemProducerTree.BufferMoreDocuments(cancellationTokenSource.Token);
-            await itemProducerTree.BufferMoreDocuments(cancellationTokenSource.Token);
+            await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
+            await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             // Buffer a failure
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(sqlQuerySpec, cancellationTokenSource.Token, It.IsAny<Action<CosmosRequestMessage>>())).Returns(
                 Task.FromResult(QueryResponse.CreateFailure(headers, HttpStatusCode.InternalServerError, null, "Error message", null)));
 
-            await itemProducerTree.BufferMoreDocuments(cancellationTokenSource.Token);
+            await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             // First item should be a success
             var result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(sqlQuerySpec, cancellationTokenSource.Token, It.IsAny<Action<CosmosRequestMessage>>())).
                 Throws(new Exception("Previous buffer failed. Operation should return original failure and not try again"));
 
-            await itemProducerTree.BufferMoreDocuments(cancellationTokenSource.Token);
+            await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             Assert.IsFalse(result.successfullyMovedNext);
             Assert.IsNotNull(result.failureResponse);
             Assert.IsFalse(itemProducerTree.HasMoreResults);

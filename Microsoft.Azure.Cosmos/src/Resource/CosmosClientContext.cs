@@ -29,13 +29,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract IDocumentQueryClient DocumentQueryClient { get; }
 
-        internal abstract CosmosJsonSerializer JsonSerializer { get; }
+        internal abstract CosmosJsonSerializer CosmosSerializer { get; }
+
+        internal abstract CosmosJsonSerializer SettingsSerializer { get; }
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
-        internal abstract CosmosClientConfiguration ClientConfiguration { get; }
+        internal abstract CosmosClientOptions ClientOptions { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -55,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
         /// in a resource can be unit tested.
         /// </summary>
-        internal abstract Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal abstract Task<CosmosResponseMessage> ProcessResourceOperationAsStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,

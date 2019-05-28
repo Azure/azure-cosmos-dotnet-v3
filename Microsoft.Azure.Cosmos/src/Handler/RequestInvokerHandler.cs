@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (responseCreator == null)
             {
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
-                cancellation: cancellation);
+                cancellationToken: cancellationToken);
 
             return responseCreator(responseMessage);
         }
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             object partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
-            CancellationToken cancellation = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (resourceUri == null)
             {
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     try
                     {
-                        PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellation);
+                        PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
                         request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
                     }
                     catch (DocumentClientException dce)
@@ -172,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             requestEnricher?.Invoke(request);
-            return await this.SendAsync(request, cancellation);
+            return await this.SendAsync(request, cancellationToken);
         }
 
         internal static HttpMethod GetHttpMethod(

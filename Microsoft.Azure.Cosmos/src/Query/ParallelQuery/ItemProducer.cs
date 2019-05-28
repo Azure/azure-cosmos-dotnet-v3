@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="ItemProducer.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -59,6 +57,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private readonly IEqualityComparer<CosmosElement> equalityComparer;
 
+        private readonly CosmosQueryContext queryContext;
+
+        private readonly SqlQuerySpec querySpecForInit;
+
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
         /// </summary>
@@ -95,10 +97,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// This flag keeps track of whether we are in that scenario.
         /// </summary>
         private bool hasInitialized;
-
-        private readonly CosmosQueryContext queryContext;
-
-        private readonly SqlQuerySpec querySpecForInit;
 
         /// <summary>
         /// Need this flag so that the document producer stops buffering more results after a fatal exception.
@@ -263,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Query
             token.ThrowIfCancellationRequested();
 
             CosmosElement originalCurrent = this.Current;
-            (bool successfullyMovedNext, QueryResponse failureResponse) movedNext = await this.MoveNextAsyncImplementation(token);
+            (bool successfullyMovedNext, QueryResponse failureResponse) movedNext = await this.MoveNextAsyncImplementationAsync(token);
             if (!movedNext.successfullyMovedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
                 this.IsActive = false;
@@ -277,13 +275,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreIfEmpty(CancellationToken token)
+        public async Task BufferMoreIfEmptyAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             if (this.bufferedPages.Count == 0)
             {
-                await this.BufferMoreDocuments(token);
+                await this.BufferMoreDocumentsAsync(token);
             }
         }
 
@@ -292,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreDocuments(CancellationToken token)
+        public async Task BufferMoreDocumentsAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -421,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> MoveNextAsyncImplementation(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> MoveNextAsyncImplementationAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -430,13 +428,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 return ItemProducer.IsDoneResponse;
             }
 
-            await this.BufferMoreIfEmpty(token);
+            await this.BufferMoreIfEmptyAsync(token);
 
             if (!this.hasInitialized)
             {
                 // First time calling move next async so we are just going to call movenextpage to get the ball rolling
                 this.hasInitialized = true;
-                (bool successfullyMovedNext, QueryResponse failureResponse) response = await this.TryMoveNextPage(token);
+                (bool successfullyMovedNext, QueryResponse failureResponse) response = await this.TryMoveNextPageAsync(token);
                 if (!response.successfullyMovedNext)
                 {
                     this.HasMoreResults = false;
@@ -458,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 // We might be at a continuation boundary so we need to move to the next page
-                (bool successfullyMovedNext, QueryResponse failureResponse) response = await this.TryMoveNextPage(token);
+                (bool successfullyMovedNext, QueryResponse failureResponse) response = await this.TryMoveNextPageAsync(token);
                 if (!response.successfullyMovedNext)
                 {
                     this.HasMoreResults = false;
@@ -488,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether the operation was successful.</returns>
-        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextPage(CancellationToken token)
+        private async Task<(bool successfullyMovedNext, QueryResponse failureResponse)> TryMoveNextPageAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
