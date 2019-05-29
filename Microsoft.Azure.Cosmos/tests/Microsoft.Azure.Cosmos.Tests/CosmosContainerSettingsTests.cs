@@ -173,6 +173,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return input;
-        }        
+        }
     }
 }

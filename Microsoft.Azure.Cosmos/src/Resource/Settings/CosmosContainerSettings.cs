@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos
                 && this.indexingPolicyInternal.ExcludedPaths.Count == 0)
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
-            }            
-        }        
+            }
+        }
     }
 }

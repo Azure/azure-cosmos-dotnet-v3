@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Replace a non-existing item. It should fail, and not throw an exception.
-                using (CosmosResponseMessage response = await this.Container.ReplaceItemAsStreamAsync(                    
+                using (CosmosResponseMessage response = await this.Container.ReplaceItemAsStreamAsync(
                     partitionKey: testItem.status,
                     id: testItem.id,
                     streamPayload: stream))
@@ -793,7 +793,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                ItemResponse<ToDoActivity> response = await this.Container.ReplaceItemAsync<ToDoActivity>(                    
+                ItemResponse<ToDoActivity> response = await this.Container.ReplaceItemAsync<ToDoActivity>(
                     id: testItem.id,
                     item: testItem,
                     requestOptions: itemRequestOptions);
@@ -849,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Updating item on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 itemWithoutPK.status = "updatedStatus";
-                ItemResponse<ToDoActivity> updateResponseWithoutPk = await fixedContainer.ReplaceItemAsync<ToDoActivity>(                 
+                ItemResponse<ToDoActivity> updateResponseWithoutPk = await fixedContainer.ReplaceItemAsync<ToDoActivity>(
                  id: itemWithoutPK.id,
                  item: itemWithoutPK,
                  partitionKey: CosmosContainerSettings.NonePartitionKeyValue);

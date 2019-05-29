@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
 
             Mock<CosmosContainerCore> mockedItems = new Mock<CosmosContainerCore>();
-            mockedItems.Setup(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
+            mockedItems.Setup(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
                 It.Is<object>(pk => pk == partitionKey),
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     return itemResponse.Object;
                 });
 
-            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
+            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
                 It.Is<object>(pk => pk == partitionKey),
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     return itemResponse.Object;
                 });
 
-            mockedItems.Setup(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
+            mockedItems.Setup(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
                 It.Is<object>(pk => pk == partitionKey),
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     return itemResponse.Object;
                 });
 
-            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
+            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
                 It.Is<object>(pk => pk == partitionKey),
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     return itemResponse.Object;
                 });
 
-            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
+            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
                 It.Is<object>(pk => pk == partitionKey),
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     return itemResponse.Object;
                 });
 
-            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(                
+            mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(
                 It.Is<string>((id) => id == itemId),
                 It.Is<DocumentServiceLeaseCore>((lease) => lease == leaseToUpdate),
                 It.Is<object>(pk => pk == partitionKey),

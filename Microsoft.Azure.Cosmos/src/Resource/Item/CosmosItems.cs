@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Upserts an item stream as an asynchronous operation in the Azure Cosmos service.
-        /// </summary>        
+        /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Upserts an item as an asynchronous operation in the Azure Cosmos service.
-        /// </summary>        
+        /// </summary>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
         /// <param name="partitionKey">Partitionkey for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(            
+        public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
             object partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
-        /// </summary>       
+        /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(            
+        public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(
             string id,
             T item,
             object partitionKey = null,

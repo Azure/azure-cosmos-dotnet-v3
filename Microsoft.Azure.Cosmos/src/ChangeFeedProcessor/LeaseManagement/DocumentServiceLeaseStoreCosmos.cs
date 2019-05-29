@@ -42,11 +42,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             string markerDocId = this.GetStoreMarkerName();
             var containerDocument = new { id = markerDocId };
 
-            ItemRequestOptions requestOptions = new ItemRequestOptions();
             await this.container.CreateItemAsync<dynamic>(
-                containerDocument,
-                this.requestOptionsFactory.GetPartitionKey(markerDocId),
-                requestOptions).ConfigureAwait(false);
+                item: containerDocument,
+                partitionKey: this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false);
         }
 
         public override async Task<bool> AcquireInitializationLockAsync(TimeSpan lockTime)

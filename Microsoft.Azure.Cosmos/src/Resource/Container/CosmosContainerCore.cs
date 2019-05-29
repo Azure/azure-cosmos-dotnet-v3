@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Uri LinkUri { get; }
 
-        internal virtual CosmosClientContext ClientContext { get; }        
+        internal virtual CosmosClientContext ClientContext { get; }
 
         public override Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,

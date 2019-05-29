@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
             {
-                await container.UpsertItemAsync<dynamic>(                    
+                await container.UpsertItemAsync<dynamic>(
                     item: testItem,
                     requestOptions: requestOptions);
             });
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
             {
-                await container.ReplaceItemAsync<dynamic>(                    
+                await container.ReplaceItemAsync<dynamic>(
                     id: testItem.id,
                     item: testItem,
                     requestOptions: requestOptions);
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(httpStatusCode, itemResponse.StatusCode);
 
-            itemResponse = await container.UpsertItemAsync<dynamic>(                
+            itemResponse = await container.UpsertItemAsync<dynamic>(
                 item: testItem,
                 partitionKey: partitionKey,
                 requestOptions: requestOptions);
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 using (CosmosResponseMessage streamResponse = await container.ReplaceItemAsStreamAsync(
                     partitionKey: partitionKey,
-                    id: testItem.id,                    
+                    id: testItem.id,
                     streamPayload: itemStream,
                     requestOptions: requestOptions))
                 {
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public override Stream ToStream<T>(T input)
             {
-                var memoryStream = new MemoryStream();                
+                var memoryStream = new MemoryStream();
                 return memoryStream;
             }
         }

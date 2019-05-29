@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> UpsertItemAsync<T>(            
+        public override Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
             object partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(            
+        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
             string id,
             T item,
             object partitionKey = null,
@@ -528,9 +528,10 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        internal async Task<object> GetPartitionKeyValueFromStreamAsync(Stream stream, 
+        internal async Task<object> GetPartitionKeyValueFromStreamAsync(
+            Stream stream,
             CancellationToken cancellation = default(CancellationToken))
-        {     
+        {
             if (!stream.CanSeek)
             {
                 throw new ArgumentException("Stream is needs to be seekable", nameof(stream));
@@ -685,9 +686,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal Uri GetResourceUri(RequestOptions requestOptions, 
-            OperationType operationType, 
-            string itemId)
+        internal Uri GetResourceUri(RequestOptions requestOptions, OperationType operationType, string itemId)
         {
             if (requestOptions != null && requestOptions.TryGetResourceUri(out Uri resourceUri))
             {
