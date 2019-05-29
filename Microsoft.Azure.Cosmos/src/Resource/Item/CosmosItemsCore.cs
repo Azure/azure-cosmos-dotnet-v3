@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy requestRetryPolicy = null;
             if (partitionKey == null)
@@ -495,7 +495,7 @@ namespace Microsoft.Azure.Cosmos
 
                 ShouldRetryResult retryResult = ShouldRetryResult.NoRetry();
                 if (requestRetryPolicy != null &&
-                    responseMessage?.StatusCode == HttpStatusCode.BadRequest)
+                    !responseMessage.IsSuccessStatusCode)
                 {
                     retryResult = await requestRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
                 }

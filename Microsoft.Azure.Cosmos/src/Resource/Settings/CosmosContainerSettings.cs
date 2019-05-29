@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
-        private const char PartitionKeyTokenDelimeter = '/';
+        private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
         private IndexingPolicy indexingPolicyInternal;
@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(new char[] { PartitionKeyTokenDelimeter }, StringSplitOptions.RemoveEmptyEntries);
+                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(CosmosContainerSettings.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
                 return this.partitionKeyPathTokens;
             }
         }
