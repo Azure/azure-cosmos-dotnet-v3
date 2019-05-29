@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return this.ProcessItemAsStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return this.ProcessItemAsStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return this.ProcessItemAsStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return this.ProcessItemAsStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -476,7 +476,7 @@ namespace Microsoft.Azure.Cosmos
 
             while (true)
             {
-                CosmosResponseMessage responseMessage = await this.ProcessItemStreamAsync(
+                CosmosResponseMessage responseMessage = await this.ProcessItemAsStreamAsync(
                     partitionKey,
                     itemId,
                     streamPayload,
@@ -499,7 +499,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task<CosmosResponseMessage> ProcessItemStreamAsync(
+        internal async Task<CosmosResponseMessage> ProcessItemAsStreamAsync(
             object partitionKey,
             string itemId,
             Stream streamPayload,
