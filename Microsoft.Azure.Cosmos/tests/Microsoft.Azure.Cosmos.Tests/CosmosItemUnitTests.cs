@@ -62,17 +62,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestNullItemPartitionKeyIsBlocked()
+        public async Task TestNullItemPartitionKeyBehavior()
         {
             dynamic testItem = new
             {
                 id = Guid.NewGuid().ToString()
             };
 
-            await VerifyItemNullExceptions(testItem, null);
+            await VerifyItemNullPartitionKeyExpectations(testItem, null);
 
             ItemRequestOptions requestOptions = new ItemRequestOptions();
-            await VerifyItemNullExceptions(testItem, requestOptions);
+            await VerifyItemNullPartitionKeyExpectations(testItem, requestOptions);
         }
         
         [TestMethod]
@@ -164,20 +164,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });                                
             }
 
-            //null should throw
-            await Assert.ThrowsExceptionAsync<ArgumentException>(async () => {
-                await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { nested = new { pk = (object)null } }));
-            });
+            //null should return Undefined
+            object pkValue = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { nested = new { pk = (object)null } }));
+            Assert.AreEqual(CosmosContainerSettings.UndefinedPartitionKeyValue, pkValue);
         }
 
-        private async Task VerifyItemNullExceptions(
+        private async Task VerifyItemNullPartitionKeyExpectations(
             dynamic testItem,
             ItemRequestOptions requestOptions = null)
         {
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.Fail("Null partition key should be blocked without the correct request option");
-                return null;
+                Assert.IsNotNull(request.Headers.PartitionKey);
+                Assert.AreEqual(CosmosContainerSettings.UndefinedPartitionKeyValue.ToString(), request.Headers.PartitionKey.ToString());
+
+                return Task.FromResult(new CosmosResponseMessage(HttpStatusCode.OK));
             });
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
@@ -186,14 +187,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainer container = client.Databases["testdb"]
                                         .Containers["testcontainer"];
 
-            AggregateException exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
-            {
-                await container.CreateItemAsync<dynamic>(
+            await container.CreateItemAsync<dynamic>(
                     item: testItem,
                     requestOptions: requestOptions);
-            });
-            Assert.IsTrue(exception.InnerException.GetType() == typeof(ArgumentNullException), 
-                "CreateItemAsync should throw ArgumentNullException without the correct request option set.");
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
@@ -203,24 +199,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     requestOptions: requestOptions);
             }, "ReadItemAsync should throw ArgumentNullException without the correct request option set.");
 
-            exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
-            {
-                await container.UpsertItemAsync<dynamic>(
+            await container.UpsertItemAsync<dynamic>(
                     item: testItem,
                     requestOptions: requestOptions);
-            });
-            Assert.IsTrue(exception.InnerException.GetType() == typeof(ArgumentNullException),
-                "UpsertItemAsync should throw ArgumentNullException without the correct request option set.");
 
-            exception = await Assert.ThrowsExceptionAsync<AggregateException>(async () =>
-            {
-                await container.ReplaceItemAsync<dynamic>(
+            await container.ReplaceItemAsync<dynamic>(
                     id: testItem.id,
                     item: testItem,
                     requestOptions: requestOptions);
-            });
-            Assert.IsTrue(exception.InnerException.GetType() == typeof(ArgumentNullException),
-                "ReplaceItemAsync should throw ArgumentNullException without the correct request option set.");
 
             await Assert.ThrowsExceptionAsync<ArgumentNullException>(async () =>
             {
@@ -288,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int testHandlerHitCount = 0;
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"/dbs/testdb/colls/testcontainer"));
+                Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"dbs/testdb/colls/testcontainer"));
                 Assert.AreEqual(requestOptions, request.RequestOptions);
                 Assert.AreEqual(ResourceType.Document, request.ResourceType);
                 Assert.IsNotNull(request.Headers.PartitionKey);

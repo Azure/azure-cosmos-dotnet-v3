@@ -313,13 +313,13 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents
-        /// without a value for partition key
+        /// from migrated non-partitioned containers.
         /// </summary>
         public static readonly object NonePartitionKeyValue = Microsoft.Azure.Documents.PartitionKey.None;
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents
-        /// without a value for partition key
+        /// without a value for partition key.
         /// </summary>
         public static readonly object UndefinedPartitionKeyValue = PartitionKeyInternal.Undefined;
 
@@ -366,12 +366,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(resourceId));
             }
 
-            CosmosContainerSettings container = new CosmosContainerSettings()
+            return new CosmosContainerSettings()
             {
                 ResourceId = resourceId,
             };
-                        
-            return container;
         }
 
         /// <summary>
@@ -417,22 +415,22 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                if (this.PartitionKey.Paths.Count > 1)
+                if (this.partitionKeyPathTokens != null)
                 {
-                    throw new ArgumentException("Multiple partition keys not supported.");
-                }
-
-                if (this.partitionKeyPathTokens == null)
-                {
-                    if (this.PartitionKeyPath == null)
-                    {
-                        throw new ArgumentNullException(nameof(this.PartitionKeyPath));
-                    }
-
-                    this.partitionKeyPathTokens = this.PartitionKeyPath.Split(new char[] { PartitionKeyTokenDelimeter }, StringSplitOptions.RemoveEmptyEntries);
                     return this.partitionKeyPathTokens;
                 }
 
+                if (this.PartitionKey.Paths.Count > 1)
+                {
+                    throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
+                }
+
+                if (this.PartitionKeyPath == null)
+                {
+                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
+                }
+
+                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(new char[] { PartitionKeyTokenDelimeter }, StringSplitOptions.RemoveEmptyEntries);
                 return this.partitionKeyPathTokens;
             }
         }
