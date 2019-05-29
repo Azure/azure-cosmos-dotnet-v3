@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.IO;
-    using System.Text;    
+    using System.Text;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -37,18 +37,18 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
-        
+
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
             using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonSerializerCore.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
-            {                
+            {
                 using (JsonWriter writer = new JsonTextWriter(streamWriter))
                 {
                     writer.Formatting = Newtonsoft.Json.Formatting.None;
                     CosmosJsonSerializerCore.Serializer.Serialize(writer, input);
                     writer.Flush();
-                    streamWriter.Flush();                    
+                    streamWriter.Flush();
                 }
             }
 
