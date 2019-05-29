@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -71,6 +70,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ContentType)]
         public virtual string ContentType { get; internal set; }
+
+        /// <summary>
+        /// Gets the Session Token for the current <see cref="CosmosResponseMessage"/>.
+        /// </summary>
+        /// <remarks>
+        /// Session Token is used along with Session Consistency.
+        /// </remarks>
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.SessionToken)]
+        public virtual string Session { get; internal set; }
 
         /// <summary>
         /// Gets the Content Length for the current content in the <see cref="CosmosResponseMessage"/>.

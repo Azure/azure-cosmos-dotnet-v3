@@ -1023,6 +1023,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task VerifySessionTokenPassThrough()
+        {
+            ToDoActivity temp = this.CreateRandomToDoActivity("TBD");
+
+            ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(partitionKey: temp.status, item: temp);
+
+            string sessionToken = responseAstype.Headers.Session;
+            Assert.IsNotNull(sessionToken);
+
+            CosmosResponseMessage readResponse = await this.Container.ReadItemAsStreamAsync(temp.status, temp.id, new ItemRequestOptions() { SessionToken = sessionToken });
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            Assert.IsNotNull(readResponse.Headers.Session);
+            Assert.AreEqual(sessionToken, readResponse.Headers.Session);
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && pkCount > 1);
