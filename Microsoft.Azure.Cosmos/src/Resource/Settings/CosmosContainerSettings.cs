@@ -318,6 +318,12 @@ namespace Microsoft.Azure.Cosmos
         public static readonly object NonePartitionKeyValue = Microsoft.Azure.Documents.PartitionKey.None;
 
         /// <summary>
+        /// The returned object represents a partition key value that allows creating and accessing documents
+        /// without a value for partition key
+        /// </summary>
+        public static readonly object UndefinedPartitionKeyValue = PartitionKeyInternal.Undefined;
+
+        /// <summary>
         /// The tag name to use in the documents for specifying a partition key value
         /// when inserting such documents into a migrated collection
         /// </summary>
