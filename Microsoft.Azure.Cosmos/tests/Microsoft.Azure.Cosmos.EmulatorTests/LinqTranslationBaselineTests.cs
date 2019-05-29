@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Ignore]
+        [Ignore] //TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/330
         public void TestMathFunctions()
         {
             //TODO
@@ -586,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Replace
             inputs.Add(new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))));
             inputs.Add(new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))));
-            //TODO TrimEnd and TrimStart not working for LINQ on .NET core however working on .NET Framework, need to discuss
+            //TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/330 TrimEnd and TrimStart not working for LINQ on .NET core however working on .NET Framework, need to discuss
             // TrimEnd
             //inputs.Add(new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())));
             //StartsWith

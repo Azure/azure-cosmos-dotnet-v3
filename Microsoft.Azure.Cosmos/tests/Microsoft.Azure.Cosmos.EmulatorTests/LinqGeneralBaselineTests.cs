@@ -224,6 +224,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        [Ignore] //TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/330
         public void TestSubquery()
         {
             var inputs = new List<LinqTestInput>();

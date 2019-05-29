@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (requestOptions == null)
             {
-                throw new ArgumentNullException("CosmosQueryRequestOptions cannot be null");
+                throw new ArgumentNullException(nameof(requestOptions));
             }
 
             if (!requestOptions.AllowSynchronousQueryExecution)
