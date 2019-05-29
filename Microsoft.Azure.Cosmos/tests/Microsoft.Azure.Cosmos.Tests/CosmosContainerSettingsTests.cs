@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -111,15 +110,6 @@ namespace Microsoft.Azure.Cosmos
             Documents.IndexingPolicy ip = dc.IndexingPolicy;
 
             CosmosContainerSettingsTests.AssertSerializedPayloads(containerSettings, dc);
-        }
-
-        [TestMethod]
-        public void TestGetPartitionKeyPathTokensThrowsOnMultiplePartitionKeys()
-        {
-            CosmosContainerSettings cosmosContainerSettings =
-                new CosmosContainerSettings("test", new PartitionKeyDefinition { Paths = new Collection<string> { "a", "b" } });
-
-            Assert.ThrowsException<ArgumentException>(() => cosmosContainerSettings.PartitionKeyPathTokens);
         }
 
         private static string SerializeDocumentCollection(DocumentCollection collection)

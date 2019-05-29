@@ -85,11 +85,74 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, partitionKey: Undefined.Value);
             Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
 
-            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: "[{}]");
+            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: Undefined.Value);
             Assert.IsNotNull(deleteResponse);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateDropItemPartitionKeyNotInTypeTest()
+        {
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString()
+            };
+
+            ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem);
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            Assert.IsNotNull(response.MaxResourceQuota);
+            Assert.IsNotNull(response.CurrentResourceQuotaUsage);
+
+            ItemResponse<dynamic> readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Undefined.Value);
+            Assert.IsNotNull(readResponse);
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+
+            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: Undefined.Value);
+            Assert.IsNotNull(deleteResponse);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+            readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Undefined.Value);
+            Assert.IsNotNull(readResponse);
+            Assert.AreEqual(HttpStatusCode.NotFound, readResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateDropItemMultiPartPartitionKeyTest()
+        {
+            CosmosContainer multiPartPkContainer = await this.database.Containers.CreateContainerAsync(Guid.NewGuid().ToString(), "/a/b/c");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                a = new
+                {
+                    b = new
+                    {
+                        c = "pk1",
+                    }
+                }
+            };
+
+            ItemResponse<dynamic> response = await multiPartPkContainer.CreateItemAsync<dynamic>(item: testItem);
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+
+            ItemResponse<dynamic> readResponse = await multiPartPkContainer.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: "pk1");
+            Assert.IsNotNull(readResponse);
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+
+            ItemResponse<dynamic> deleteResponse = await multiPartPkContainer.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: "pk1");
+            Assert.IsNotNull(deleteResponse);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+            readResponse = await multiPartPkContainer.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: "pk1");
+            Assert.IsNotNull(readResponse);
+            Assert.AreEqual(HttpStatusCode.NotFound, readResponse.StatusCode);
         }
 
         [TestMethod]

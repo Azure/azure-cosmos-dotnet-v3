@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null);
-            const string pkPath = "/nested/pk";
+            const string pkPath = "/pk";
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
