@@ -44,15 +44,34 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />    
   </ItemGroup>
   
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
-  </ItemGroup>
-
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[$(DirectVersion)]" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
+    <!--Direct Dependencies-->
+    <PackageReference Include="System.Configuration.ConfigurationManager" VersionOverride="4.5.0" />
+    <PackageReference Include="System.ServiceModel.Primitives" VersionOverride="4.5.0" />
+    <!--HybridRow Dependencies-->
+    <PackageReference Include="System.Memory" Version="4.5.1" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.1" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.1" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
+    <!--CD will ensure below are present before signed release build-->
+    <None Include="$(MSBuildThisFileDirectory)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\any\lib\netstandard2.0" />
+    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\any\lib\netstandard2.0" />
+    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   
   <ItemGroup>
