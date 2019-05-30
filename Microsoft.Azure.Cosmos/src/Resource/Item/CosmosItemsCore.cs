@@ -389,12 +389,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IOrderedQueryable<T> CosmosItemQuery<T>(QueryRequestOptions requestOptions, object partitionKey = null)
         {
-            if (requestOptions == null)
-            {
-                throw new ArgumentNullException(nameof(requestOptions));
-            }
-
-            if (!requestOptions.AllowSynchronousQueryExecution)
+            if (requestOptions == null || !requestOptions.AllowSynchronousQueryExecution)
             {
                 throw new NotSupportedException("To use LINQ query please set " + nameof(requestOptions.AllowSynchronousQueryExecution) + " in CosmosQueryRequestOptions true or" +
                     " use CreateItemQuery returning CosmosFeedIterator which execute asynchronously via CosmosFeedIterator");
@@ -409,7 +404,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.EnableCrossPartitionQuery = true;
             }
 
-            return new CosmosLINQQuery<T>(this, this.ClientContext.CosmosSerializer, this.queryClient, requestOptions);
+            return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, this.queryClient, requestOptions);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(

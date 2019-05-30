@@ -9,16 +9,16 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
 
     /// <summary> 
-    /// This class serve as LINQ query provider imlementing IQueryProvider.
+    /// This class serve as LINQ query provider implementing IQueryProvider.
     /// </summary> 
-    internal sealed class CosmosLINQQueryProvider : IQueryProvider
+    internal sealed class CosmosLinqQueryProvider : IQueryProvider
     {
         private readonly CosmosContainerCore container;
         private readonly CosmosQueryClient queryClient;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
 
-        public CosmosLINQQueryProvider(
+        public CosmosLinqQueryProvider(
            CosmosContainerCore container,
            CosmosJsonSerializer cosmosJsonSerializer,
            CosmosQueryClient queryClient,
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
         {
-            return new CosmosLINQQuery<TElement>(
+            return new CosmosLinqQuery<TElement>(
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public IQueryable CreateQuery(Expression expression)
         {
             Type expressionType = TypeSystem.GetElementType(expression.Type);
-            Type documentQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(expressionType);
+            Type documentQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(expressionType);
             return (IQueryable)Activator.CreateInstance(
                 documentQueryType,
                 this.container,
@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public TResult Execute<TResult>(Expression expression)
         {
-            Type cosmosQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
-            CosmosLINQQuery<TResult> cosmosLINQQuery = (CosmosLINQQuery<TResult>)Activator.CreateInstance(
+            Type cosmosQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
+            CosmosLinqQuery<TResult> cosmosLINQQuery = (CosmosLinqQuery<TResult>)Activator.CreateInstance(
                 cosmosQueryType,
                 this.container,
                 this.cosmosJsonSerializer,
@@ -70,8 +70,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         //Sync execution of query via direct invoke on IQueryProvider.
         public object Execute(Expression expression)
         {
-            Type cosmosQueryType = typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(object));
-            CosmosLINQQuery<object> documentQuery = (CosmosLINQQuery<object>)Activator.CreateInstance(
+            Type cosmosQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(object));
+            CosmosLinqQuery<object> documentQuery = (CosmosLinqQuery<object>)Activator.CreateInstance(
                 cosmosQueryType,
                 this.container,
                 this.cosmosJsonSerializer,

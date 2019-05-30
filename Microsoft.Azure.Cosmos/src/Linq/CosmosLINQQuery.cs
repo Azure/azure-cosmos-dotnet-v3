@@ -18,11 +18,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <summary> 
     /// This is the entry point for LINQ query creation/execution, it generate query provider, implements IOrderedQueryable.
     /// </summary> 
-    /// <seealso cref="CosmosLINQQueryProvider"/>  
-    internal sealed class CosmosLINQQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
+    /// <seealso cref="CosmosLinqQueryProvider"/>  
+    internal sealed class CosmosLinqQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
         private readonly Expression expression;
-        private readonly CosmosLINQQueryProvider queryProvider;
+        private readonly CosmosLinqQueryProvider queryProvider;
         private readonly Guid correlatedActivityId;
 
         private readonly CosmosContainerCore container;
@@ -30,19 +30,19 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
 
-        public CosmosLINQQuery(
+        public CosmosLinqQuery(
            CosmosContainerCore container,
            CosmosJsonSerializer cosmosJsonSerializer,
            CosmosQueryClient queryClient,
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression)
         {
-            this.container = container;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosJsonSerializer = cosmosJsonSerializer;
             this.queryClient = queryClient;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.expression = expression ?? Expression.Constant(this);
-            this.queryProvider = new CosmosLINQQueryProvider(
+            this.queryProvider = new CosmosLinqQueryProvider(
               container,
               cosmosJsonSerializer,
               queryClient,
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.correlatedActivityId = Guid.NewGuid();
         }
 
-        public CosmosLINQQuery(
+        public CosmosLinqQuery(
           CosmosContainerCore container,
           CosmosJsonSerializer cosmosJsonSerializer,
           CosmosQueryClient queryClient,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 while (!localQueryExecutionContext.IsDone)
                 {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                    QueryResponse cosmosQueryResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).Result;
+                    QueryResponse cosmosQueryResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
                     QueryResponse<T> responseIterator = QueryResponse<T>.CreateResponse<T>(
                         cosmosQueryResponse: cosmosQueryResponse,

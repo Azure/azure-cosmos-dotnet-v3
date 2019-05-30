@@ -1032,9 +1032,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queriable = linqQueryable.Where(item => (item.taskNum < 100));
                 Assert.Fail("Should throw ArgumentException on CosmosQueryRequestOptions");
             }
-            catch (ArgumentNullException exception)
+            catch (NotSupportedException exception)
             {
-                Assert.IsTrue(exception.Message.Contains("Parameter name: requestOptions"));
+                Assert.IsTrue(exception.Message.Contains("please set AllowSynchronousQueryExecution in CosmosQueryRequestOptions true"));
             }
 
             //Creating LINQ query without setting AllowSynchronousQueryExecution true.
