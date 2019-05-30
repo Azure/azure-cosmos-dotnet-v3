@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -56,6 +57,8 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
+        private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
+
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
         private IndexingPolicy indexingPolicyInternal;
 
@@ -64,6 +67,8 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
         private ConflictResolutionPolicy conflictResolutionInternal;
+
+        private string[] partitionKeyPathTokens;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
@@ -308,7 +313,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents
-        /// without a value for partition key
+        /// without a value for partition key.
         /// </summary>
         public static readonly object NonePartitionKeyValue = Microsoft.Azure.Documents.PartitionKey.None;
 
@@ -399,6 +404,30 @@ namespace Microsoft.Azure.Cosmos
         internal virtual string ResourceId { get; private set; }
 
         internal bool HasPartitionKey => this.PartitionKey != null;
+
+        internal string[] PartitionKeyPathTokens
+        {
+            get
+            {
+                if (this.partitionKeyPathTokens != null)
+                {
+                    return this.partitionKeyPathTokens;
+                }
+
+                if (this.PartitionKey.Paths.Count > 1)
+                {
+                    throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
+                }
+
+                if (this.PartitionKeyPath == null)
+                {
+                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
+                }
+
+                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(CosmosContainerSettings.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+                return this.partitionKeyPathTokens;
+            }
+        }
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.

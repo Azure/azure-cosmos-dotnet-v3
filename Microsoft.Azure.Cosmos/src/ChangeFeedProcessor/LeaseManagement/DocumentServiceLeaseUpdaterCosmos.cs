@@ -73,11 +73,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
+                ItemRequestOptions itemRequestOptions = this.CreateIfMatchOptions(lease);
                 ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReplaceItemAsync<DocumentServiceLeaseCore>(
-                    partitionKey,
-                    itemId, 
-                    lease, 
-                    this.CreateIfMatchOptions(lease)).ConfigureAwait(false);
+                    id: itemId, 
+                    item: lease,
+                    partitionKey: partitionKey,
+                    requestOptions: itemRequestOptions).ConfigureAwait(false);
 
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {

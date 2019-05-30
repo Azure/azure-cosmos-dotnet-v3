@@ -33,10 +33,10 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 documentQueryClient: new Mock<IDocumentQueryClient>().Object);
 
             CosmosDatabaseCore db = new CosmosDatabaseCore(context, databaseId);
-            Assert.AreEqual(db.LinkUri.OriginalString, "/dbs/" + databaseId);
+            Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
 
             CosmosContainerCore container = new CosmosContainerCore(context, db, crId);
-            Assert.AreEqual(container.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId);
+            Assert.AreEqual(container.LinkUri.OriginalString, "dbs/" + databaseId + "/colls/" + crId);
         }
 
         [TestMethod]

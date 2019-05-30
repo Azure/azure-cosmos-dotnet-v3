@@ -73,9 +73,9 @@ namespace Microsoft.Azure.Cosmos
             if (parentLinkLength > 0)
             {
                 stringBuilder.Append(parentLink);
+                stringBuilder.Append("/");
             }
 
-            stringBuilder.Append("/");
             stringBuilder.Append(uriPathSegment);
             stringBuilder.Append("/");
             stringBuilder.Append(idUriEscaped);

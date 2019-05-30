@@ -291,8 +291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     pkValue = CosmosContainerSettings.NonePartitionKeyValue;
                 }
 
-                insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
-
+                insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(documentObject)).Resource.ToObject<Document>());
             }
 
             return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
@@ -985,7 +984,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
             Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
 
-            ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(testArgs.Value, specialPropertyDocument);
+            ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument);
             dynamic returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 

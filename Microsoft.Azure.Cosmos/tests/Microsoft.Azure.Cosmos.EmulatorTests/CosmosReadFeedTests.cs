@@ -63,8 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 using (CosmosResponseMessage createResponse = await this.Container.CreateItemAsStreamAsync(
                         i.ToString(),
-                        CosmosReadFeedTests.GenerateStreamFromString(item),
-                        requestOptions: new ItemRequestOptions()))
+                        CosmosReadFeedTests.GenerateStreamFromString(item)))
                 {
                     Assert.IsTrue(createResponse.IsSuccessStatusCode);
                 }

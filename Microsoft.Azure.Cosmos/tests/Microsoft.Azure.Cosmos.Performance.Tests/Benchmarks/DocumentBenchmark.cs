@@ -43,8 +43,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task InsertItem()
         {
             var response = await this.container.CreateItemAsync(
-                Constants.ValidOperationId,
-                this.baseItem);
+                this.baseItem,
+                Constants.ValidOperationId);
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
                 throw new Exception();
@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task UpsertItem()
         {
             var response = await this.container.UpsertItemAsync(
-                Constants.ValidOperationId,
-                this.baseItem);
+                this.baseItem,
+                Constants.ValidOperationId);
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
                 throw new Exception();
@@ -139,10 +139,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpdateItem()
         {
-            var response = await this.container.ReplaceItemAsync(
-                Constants.ValidOperationId,
+            var response = await this.container.ReplaceItemAsync(                
                 Constants.ValidOperationId, 
-                this.baseItem);
+                this.baseItem,
+                Constants.ValidOperationId);
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Resource == null)
             {
                 throw new Exception();
