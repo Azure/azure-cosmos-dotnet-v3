@@ -37,13 +37,5 @@ namespace Microsoft.Azure.Cosmos
                 item)
         {
         }
-
-        /// <summary>
-        /// Gets the token for use with session consistency requests from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The token for use with session consistency requests.
-        /// </value>
-        public virtual string SessionToken => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
     }
 }
