@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             foreach (int id in Enumerable.Range(0, 10))
             {
-                await this.Container.CreateItemAsync<dynamic>(partitionKey, new { id = id.ToString(), pk = partitionKey });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
             }
 
             var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);

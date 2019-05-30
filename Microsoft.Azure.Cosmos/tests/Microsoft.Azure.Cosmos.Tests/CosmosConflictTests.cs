@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string expectedRID = "something";
             const string partitionKey = "pk";
             // Using "test" as container name because the Mocked DocumentClient has it hardcoded
-            Uri expectedRequestUri = new Uri($"/dbs/conflictsDb/colls/test/docs/{expectedRID}", UriKind.Relative);
+            Uri expectedRequestUri = new Uri($"dbs/conflictsDb/colls/test/docs/{expectedRID}", UriKind.Relative);
             CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.Read, request.OperationType);
                 Assert.AreEqual(ResourceType.Document, request.ResourceType);

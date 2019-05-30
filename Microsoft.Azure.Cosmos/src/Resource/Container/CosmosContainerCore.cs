@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -212,6 +211,27 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Used by typed API only. Exceptions are allowed.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns>Returns the partition key path</returns>
+        internal virtual async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
+            if (containerSettings == null)
+            {
+                throw new ArgumentOutOfRangeException($"Container {this.LinkUri.ToString()} not found");
+            }
+            
+            if (containerSettings.PartitionKey?.Paths == null)
+            {
+                throw new ArgumentOutOfRangeException($"Partition key not defined for container {this.LinkUri.ToString()}");
+            }
+
+            return containerSettings.PartitionKeyPathTokens;
+        }
+
+        /// <summary>
         /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
         /// </summary>
         /// <remarks>
@@ -248,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
                 })
                 .Unwrap();
         }
-
+        
         private Task<CosmosResponseMessage> ReplaceAsStreamInternalAsync(
             Stream streamPayload,
             ContainerRequestOptions requestOptions = null,

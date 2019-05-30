@@ -115,16 +115,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             string value1 = Guid.NewGuid().ToString();
             string value2 = "1002";
             string value3 = "20";
+            string value4 = "someSession";
             var requestHeaders = new CosmosResponseMessageHeaders();
             requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.Continuation] = value1;
             requestHeaders.CosmosMessageHeaders[WFConstants.BackendHeaders.SubStatus] = value2;
             requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = value3;
+            requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.SessionToken] = value4;
             Assert.AreEqual(value1, requestHeaders.Continuation);
             Assert.AreEqual(int.Parse(value2), (int)requestHeaders.SubStatusCode);
             Assert.AreEqual(TimeSpan.FromMilliseconds(20), requestHeaders.RetryAfter);
+            Assert.AreEqual(value4, requestHeaders.Session);
             Assert.AreEqual(value1, requestHeaders[HttpConstants.HttpHeaders.Continuation]);
             Assert.AreEqual(value2, requestHeaders[WFConstants.BackendHeaders.SubStatus]);
             Assert.AreEqual(value3, requestHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds]);
+            Assert.AreEqual(value4, requestHeaders[HttpConstants.HttpHeaders.SessionToken]);
         }
 
         [TestMethod]

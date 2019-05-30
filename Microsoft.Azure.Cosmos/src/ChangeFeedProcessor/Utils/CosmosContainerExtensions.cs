@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             object partitionKey, 
             T item)
         {
-            var response = await container.CreateItemAsync<T>(partitionKey, item).ConfigureAwait(false);
+            var response = await container.CreateItemAsync<T>(item).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
                 // Ignore-- document already exists.

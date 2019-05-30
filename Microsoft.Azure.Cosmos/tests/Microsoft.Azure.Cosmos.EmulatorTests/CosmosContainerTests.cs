@@ -61,6 +61,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerSettings.ETag);
             Assert.IsTrue(containerSettings.LastModified.HasValue);
 
+            Assert.IsNotNull(containerSettings.PartitionKeyPath);
+            Assert.IsNotNull(containerSettings.PartitionKeyPathTokens);
+            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
+            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
+
+            CosmosContainerCore containerCore = response.Container as CosmosContainerCore;
+            Assert.IsNotNull(containerCore);
+            Assert.IsNotNull(containerCore.LinkUri);
+            Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
+
             Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
         }
 
@@ -391,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(timeToLiveInSeconds, readResponse.Resource.DefaultTimeToLive);
 
             JObject itemTest = JObject.FromObject(new { id = Guid.NewGuid().ToString(), users = "testUser42" });
-            ItemResponse<JObject> createResponse = await cosmosContainer.CreateItemAsync<JObject>(partitionKey: itemTest["users"].ToString(), item: itemTest);
+            ItemResponse<JObject> createResponse = await cosmosContainer.CreateItemAsync<JObject>(item: itemTest);
             JObject responseItem = createResponse;
             Assert.IsNull(responseItem["ttl"]);
 
@@ -512,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Creating an item and reading before expiration
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
-            ItemResponse<dynamic> createItemResponse = await cosmosContainer.CreateItemAsync<dynamic>(payload.user, payload);
+            ItemResponse<dynamic> createItemResponse = await cosmosContainer.CreateItemAsync<dynamic>(payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
             ItemResponse<dynamic> readItemResponse = await cosmosContainer.ReadItemAsync<dynamic>(payload.user, payload.id);

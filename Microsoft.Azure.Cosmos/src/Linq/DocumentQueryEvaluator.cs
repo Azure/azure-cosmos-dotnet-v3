@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             Type expressionValueType = expression.Value.GetType();
-            if (!expressionValueType.IsGenericType || expressionValueType.GetGenericTypeDefinition() != typeof(DocumentQuery<bool>).GetGenericTypeDefinition())
+            if (!expressionValueType.IsGenericType || !(expressionValueType.GetGenericTypeDefinition() == typeof(DocumentQuery<bool>).GetGenericTypeDefinition() || expressionValueType.GetGenericTypeDefinition() == typeof(CosmosLINQQuery<bool>).GetGenericTypeDefinition()))
             {
                 throw new DocumentQueryException(
                     string.Format(CultureInfo.CurrentUICulture,

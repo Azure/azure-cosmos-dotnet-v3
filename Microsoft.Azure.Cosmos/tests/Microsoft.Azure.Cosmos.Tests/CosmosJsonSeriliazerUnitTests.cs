@@ -142,7 +142,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             return cosmosResponse;
         }
 
-
         public class ToDoActivity
         {
             public string id { get; set; }

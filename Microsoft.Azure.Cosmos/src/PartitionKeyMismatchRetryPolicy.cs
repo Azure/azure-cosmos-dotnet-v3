@@ -30,11 +30,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("clientCollectionCache");
             }
 
-            if (nextRetryPolicy == null)
-            {
-                throw new ArgumentNullException("nextRetryPolicy");
-            }
-
             this.clientCollectionCache = clientCollectionCache;
             this.nextRetryPolicy = nextRetryPolicy;
         }
@@ -61,6 +56,11 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(shouldRetryResult);
             }
 
+            if (this.nextRetryPolicy == null)
+            {
+                return Task.FromResult(ShouldRetryResult.NoRetry());
+            }
+
             return this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
         }
 
@@ -80,6 +80,11 @@ namespace Microsoft.Azure.Cosmos
             if (shouldRetryResult != null)
             {
                 return Task.FromResult(shouldRetryResult);
+            }
+
+            if (this.nextRetryPolicy == null)
+            {
+                return Task.FromResult(ShouldRetryResult.NoRetry());
             }
 
             return this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
@@ -115,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!string.IsNullOrEmpty(resourceIdOrFullName))
                 {
-                    this.clientCollectionCache.Refresh(resourceIdOrFullName);
+                    this.clientCollectionCache.Refresh(resourceIdOrFullName, HttpConstants.Versions.CurrentVersion);
                 }
 
                 this.retriesAttempted++;

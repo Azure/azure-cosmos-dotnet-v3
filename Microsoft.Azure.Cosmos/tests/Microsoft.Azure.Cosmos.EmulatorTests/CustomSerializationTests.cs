@@ -282,19 +282,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
             //create and read
-            ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument);
             ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
-            ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
+            ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument);
             readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
+            ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument.Id, testDocument);
             readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
@@ -456,7 +456,7 @@ function bulkImport(docs) {
             for (int i = 0; i < documentCount; ++i)
             {
                 var newDocument = new MyObject(i);
-                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument.pk, newDocument);
+                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument);
             }
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");
