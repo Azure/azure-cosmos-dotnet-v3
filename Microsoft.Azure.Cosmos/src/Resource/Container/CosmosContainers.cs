@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainersIterator();
+        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.GetContainersIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosContainerSettings setting in await feedIterator.FetchNextSetAsync())
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerResponse container = await this.cosmosDatabase.Containers.DefineContainer("TestContainer", "/partitionKey")
+        /// CosmosContainerResponse container = await this.cosmosDatabase.DefineContainer("TestContainer", "/partitionKey")
         ///     .UniqueKey()
         ///         .Path("/path1")
         ///         .Path("/path2")

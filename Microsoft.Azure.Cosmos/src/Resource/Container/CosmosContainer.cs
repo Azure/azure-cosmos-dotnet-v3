@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -61,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainer cosmosContainer = this.database.Containers["containerId"];
+        /// CosmosContainer cosmosContainer = this.database.GetContainer("containerId");
         /// CosmosContainerSettings settings = cosmosContainer.ReadAsync();
         /// ]]>
         /// </code>

@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// //Reads a Database resource where
         /// // - database_id is the ID property of the Database resource you wish to read.
-        /// CosmosDatabase database = this.cosmosClient.Databases[database_id];
+        /// CosmosDatabase database = this.cosmosClient.GetDatabase(database_id);
         /// DatabaseResponse response = await database.ReadAsync();
         /// ]]>
         /// </code>
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Delete a cosmos database
-        /// CosmosDatabase database = cosmosContainer["myDbId"];
+        /// CosmosDatabase database = cosmosClient.GetDatabase("myDbId");
         /// DatabaseResponse response = await database.DeleteAsync();
         /// ]]>
         /// </code>

@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
-    ///     CosmosDatabase db = await client.CreateAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
+    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     CosmosContainer container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
@@ -47,8 +47,8 @@ namespace Microsoft.Azure.Cosmos
     ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey"))
     /// {
-    ///     CosmosDatabase db = await client.CreateAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
+    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos
     /// using (CosmosClient cosmosClient = new CosmosClient(
     ///     connectionString: "AccountEndpoint=https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
     /// {
-    ///     CosmosDatabase db = await client.CreateAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
+    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
