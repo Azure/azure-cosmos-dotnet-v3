@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            CosmosContainer container = cosmosClient.GetDatabase(containerAndDocuments.Item1.Database.Id).GetContainer(containerAndDocuments.Item1.Id);
+                            CosmosContainer container = cosmosClient.GetContainer(containerAndDocuments.Item1.Database.Id, containerAndDocuments.Item1.Id);
                             Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
                             queryTasks.Add(queryTask);
                         }

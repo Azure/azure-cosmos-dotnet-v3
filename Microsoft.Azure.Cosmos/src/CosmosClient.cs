@@ -232,6 +232,28 @@ namespace Microsoft.Azure.Cosmos
             return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.AccountEndPoint);
         }
 
+        /// <summary>
+        /// Get cosmos container proxy. 
+        /// Proxy existence doesn't guarantee either database or container existence.
+        /// </summary>
+        /// <param name="databaseId">cosmos database name</param>
+        /// <param name="containerId">comsos container name</param>
+        /// <returns>Cosmos container proxy</returns>
+        public virtual CosmosContainer GetContainer(string databaseId, string containerId)
+        {
+            if (string.IsNullOrEmpty(databaseId))
+            {
+                throw new ArgumentNullException(nameof(databaseId));
+            }
+
+            if (string.IsNullOrEmpty(containerId))
+            {
+                throw new ArgumentNullException(nameof(containerId));
+            }
+
+            return this.GetDatabase(databaseId).GetContainer(containerId);
+        }
+
         internal void Init(
             CosmosClientOptions clientOptions,
             DocumentClient documentClient)

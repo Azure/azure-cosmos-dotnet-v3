@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            CosmosContainerCore testContainer = (CosmosContainerCore)client.GetDatabase(dbName).GetContainer(containerName);
+            CosmosContainerCore testContainer = (CosmosContainerCore)client.GetContainer(dbName, containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
