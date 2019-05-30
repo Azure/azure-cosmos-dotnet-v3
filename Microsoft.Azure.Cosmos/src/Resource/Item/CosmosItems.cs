@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Create the object in Cosmos
-        /// using (CosmosResponseMessage response = await this.Container.Items.CreateItemAsStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
+        /// using (CosmosResponseMessage response = await this.Container.CreateItemAsStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = this.cosmosContainer.Items.CreateItemAsync<ToDoActivity>(test.status, tests);
+        /// ItemResponse item = this.cosmosContainer.CreateItemAsync<ToDoActivity>(test.status, tests);
         /// ]]>
         /// </code>
         /// </example>
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// Read a response as a stream.
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReadItemAsStreamAsync("partitionKey", "id"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.ReadItemAsStreamAsync("partitionKey", "id"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// ToDoActivity toDoActivity = this.cosmosContainer.Items.ReadItemAsync<ToDoActivity>("partitionKey", "id");
+        /// ToDoActivity toDoActivity = this.cosmosContainer.ReadItemAsync<ToDoActivity>("partitionKey", "id");
         /// 
         /// ]]>
         /// </code>
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.UpsertItemAsStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.UpsertItemAsStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse<ToDoActivity> item = await this.cosmosContainer.Items.UpsertAsync<ToDoActivity>(test.status, test);
+        /// ItemResponse<ToDoActivity> item = await this.cosmosContainer.UpsertAsync<ToDoActivity>(test.status, test);
         /// ]]>
         /// </code>
         /// </example>
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace an item in Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.ReplaceItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.ReplaceItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = await this.cosmosContainer.Items.ReplaceItemAsync<ToDoActivity>(test.status, test.id, test);
+        /// ItemResponse item = await this.cosmosContainer.ReplaceItemAsync<ToDoActivity>(test.status, test.id, test);
         /// ]]>
         /// </code>
         /// </example>
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete an item from Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.Items.DeleteItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.DeleteItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// ItemResponse item = await this.cosmosContainer.Items.DeleteItemAsync<ToDoActivity>("partitionKey", "id");
+        /// ItemResponse item = await this.cosmosContainer.DeleteItemAsync<ToDoActivity>("partitionKey", "id");
         /// ]]>
         /// </code>
         /// </example>
@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.Items.GetItemsIterator<ToDoActivity>();
+        /// FeedIterator<ToDoActivity> feedIterator = this.cosmosContainer.GetItemsIterator<ToDoActivity>();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(ToDoActivity item in await feedIterator.FetchNextSetAsync())
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// FeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
+        /// FeedIterator feedIterator = this.Container.CreateItemQueryAsStream(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.Items.CreateItemQueryAsStream(
+        /// FeedIterator feedIterator = this.Container.CreateItemQueryAsStream(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
@@ -692,7 +692,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
@@ -734,7 +734,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
         ///     sqlQuery,
         ///     maxConcurrency: 2);
         ///     
@@ -775,7 +775,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.Items.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
         ///     "select * from ToDos t where t.cost > 9000",
         ///     maxConcurrency: 2);
         ///     

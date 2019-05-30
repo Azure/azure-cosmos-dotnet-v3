@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     [TestClass]
     public class CosmosVirtualUnitTest
@@ -48,14 +50,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 
 
         [TestMethod]
-        public void VerifyClientMock()
+        public async Task VerifyClientMock()
         {
-            Mock<CosmosDatabases> mockDatabases = new Mock<CosmosDatabases>();
+            Mock<DatabaseResponse> mockDbResponse = new Mock<DatabaseResponse>();
+
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockClient.Setup(x => x.Databases).Returns(mockDatabases.Object);
+            mockClient.Setup(x => x.CreateDatabaseAsync(
+                    It.IsAny<string>(), 
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockDbResponse.Object));
 
             CosmosClient client = mockClient.Object;
-            Assert.IsNotNull(client.Databases);
+            DatabaseResponse response = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Assert.IsTrue(object.ReferenceEquals(mockDbResponse.Object, response));
         }
     }
 }

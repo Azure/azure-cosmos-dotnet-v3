@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 }
             });
-            CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
+            CosmosContainer container = cosmosClient.GetContainer(databaseName, partitionedCollectionName);
 
             var rnd = new Random();
             var bytes = new byte[100];
@@ -448,7 +448,7 @@ function bulkImport(docs) {
             };
 
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
-            CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
+            CosmosContainer container = cosmosClient.GetContainer(databaseName, partitionedCollectionName);
 
             // Create a few test documents
             int documentCount = 3;

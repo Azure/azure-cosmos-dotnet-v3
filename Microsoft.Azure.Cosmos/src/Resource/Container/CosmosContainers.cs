@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `containers.GetContainersIterator()` before every single `item.read()` call, to ensure the container exists;
     /// do this once on application start up.
     /// </summary>
-    public abstract class CosmosContainers
+    public abstract partial class CosmosDatabase
     {
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainersIterator();
+        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.GetContainersIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosContainerSettings setting in await feedIterator.FetchNextSetAsync())
@@ -246,12 +246,13 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosDatabase db = this.cosmosClient.Databases["myDatabaseId"];
-        /// DatabaseResponse response = await db.ReadAsync();
+        /// CosmosDatabase db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// DatabaseResponse response = await db.GetContainer("testcontainer");
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosContainer this[string id] { get; }
+        /// <returns>Cosmos container proxy</returns>
+        public abstract CosmosContainer GetContainer(string id);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -290,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerResponse container = await this.cosmosDatabase.Containers.DefineContainer("TestContainer", "/partitionKey")
+        /// CosmosContainerResponse container = await this.cosmosDatabase.DefineContainer("TestContainer", "/partitionKey")
         ///     .UniqueKey()
         ///         .Path("/path1")
         ///         .Path("/path2")
