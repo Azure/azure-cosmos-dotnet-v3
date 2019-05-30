@@ -108,15 +108,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
 
-            ItemResponse<dynamic> readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Undefined.Value);
+            ItemResponse<dynamic> readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
             Assert.IsNotNull(readResponse);
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
 
-            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: Undefined.Value);
+            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
             Assert.IsNotNull(deleteResponse);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
-            readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Undefined.Value);
+            readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: CosmosContainerSettings.NonePartitionKeyValue);
             Assert.IsNotNull(readResponse);
             Assert.AreEqual(HttpStatusCode.NotFound, readResponse.StatusCode);
         }

@@ -160,10 +160,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         return dce.ToCosmosResponseMessage(request);
                     }
                 }
-                else if (Object.ReferenceEquals(partitionKey, CosmosContainerSettings.UndefinedPartitionKeyValue))
-                {
-                    request.Headers.PartitionKey = PartitionKeyInternal.Undefined.ToJsonString();
-                }
                 else
                 {
                     PartitionKey pk = new PartitionKey(partitionKey);

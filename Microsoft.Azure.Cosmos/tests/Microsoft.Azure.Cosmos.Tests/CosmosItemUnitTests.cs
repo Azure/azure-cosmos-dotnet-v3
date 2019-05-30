@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosItemUnitTests
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //null should return Undefined
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { pk = (object)null }));
-            Assert.AreEqual(CosmosContainerSettings.UndefinedPartitionKeyValue, pkValue);
+            Assert.AreEqual(CosmosContainerSettings.NonePartitionKeyValue, pkValue);
         }
 
         [TestMethod]
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (dynamic poco in invalidNestedItems)
             {
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
-                Assert.AreEqual(CosmosContainerSettings.UndefinedPartitionKeyValue.ToString(), pk.ToString());
+                Assert.IsTrue(object.ReferenceEquals(CosmosContainerSettings.NonePartitionKeyValue, pk));
             }
         }
 
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.IsNotNull(request.Headers.PartitionKey);
-                Assert.AreEqual(CosmosContainerSettings.UndefinedPartitionKeyValue.ToString(), request.Headers.PartitionKey.ToString());
+                Assert.AreEqual(Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.Headers.PartitionKey.ToString());
 
                 return Task.FromResult(new CosmosResponseMessage(HttpStatusCode.OK));
             });
