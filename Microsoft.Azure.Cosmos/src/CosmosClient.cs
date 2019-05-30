@@ -234,8 +234,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Get cosmos container proxy. 
-        /// Proxy existence doesn't guarantee either database or container existence.
         /// </summary>
+        /// <remarks>Proxy existence doesn't guarantee either database or container existence.</remarks>
         /// <param name="databaseId">cosmos database name</param>
         /// <param name="containerId">comsos container name</param>
         /// <returns>Cosmos container proxy</returns>
