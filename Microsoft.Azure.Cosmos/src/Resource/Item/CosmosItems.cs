@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<CosmosResponseMessage> CreateItemAsStreamAsync(
-                    object partitionKey,
+                    PartitionKey partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<CosmosResponseMessage> ReadItemAsStreamAsync(
-                    object partitionKey,
+                    PartitionKey partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> ReadItemAsync<T>(
-            object partitionKey,
+            PartitionKey partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<CosmosResponseMessage> UpsertItemAsStreamAsync(
-                    object partitionKey,
+                    PartitionKey partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<CosmosResponseMessage> ReplaceItemAsStreamAsync(
-                    object partitionKey,
+                    PartitionKey partitionKey,
                     string id,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(
             string id,
             T item,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -423,7 +423,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<CosmosResponseMessage> DeleteItemAsStreamAsync(
-                    object partitionKey,
+                    PartitionKey partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(
-            object partitionKey,
+            PartitionKey partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator CreateItemQueryAsStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator CreateItemQueryAsStream(
             string sqlQueryText,
             int maxConcurrency,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
-            object partitionKey,
+            PartitionKey partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
-            object partitionKey,
+            PartitionKey partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);

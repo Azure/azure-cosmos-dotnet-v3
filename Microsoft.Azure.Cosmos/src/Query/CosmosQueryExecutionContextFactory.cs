@@ -354,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
                 else
                 {
-                    partitionKeyInternal = new PartitionKey(queryRequestOptions.PartitionKey).InternalKey;
+                    partitionKeyInternal = new Documents.PartitionKey(queryRequestOptions.PartitionKey.Value).InternalKey;
                 }
 
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
     {
         public static async Task<T> TryGetItemAsync<T>(
             this CosmosContainer container,
-            object partitionKey,
+            PartitionKey partitionKey,
             string itemId)
         {
             var response = await container.ReadItemAsync<T>(
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 
         public static async Task<T> TryDeleteItemAsync<T>(
             this CosmosContainer container,
-            object partitionKey,
+            PartitionKey partitionKey,
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 
         public static async Task<bool> ItemExistsAsync(
             this CosmosContainer container,
-            object partitionKey,
+            PartitionKey partitionKey,
             string itemId)
         {
             var response = await container.ReadItemAsStreamAsync(
