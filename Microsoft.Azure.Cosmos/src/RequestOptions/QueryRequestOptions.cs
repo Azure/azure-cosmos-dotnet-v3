@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual string RequestContinuation { get; set; }
 
         /// <summary>
-        /// Gets or sets the option which enable user to allows query to be executed synchronously via LINQ IOrderedQueryable.
+        /// Gets or sets the option which allows the query to be executed synchronously via IOrderedQueryable.
         /// This flag needs to be set to true in CosmosItemQuery returning IOrderedQueryable otherwise exception will be thrown.
         /// <see cref="Microsoft.Azure.Cosmos.CosmosContainer.CosmosItemQuery{T}(QueryRequestOptions, object)"/>
         /// </summary>
