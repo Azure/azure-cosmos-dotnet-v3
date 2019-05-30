@@ -168,6 +168,12 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ItemResponse{T}"/> which wraps the read resource record.
         /// </returns>
+        /// <remarks>
+        /// Items contain metadata that can be obtained by mapping these metadata attributes to properties in <typeparamref name="T"/>.
+        /// * "_ts": Gets the last modified timestamp associated with the item from the Azure Cosmos DB service.
+        /// * "_etag": Gets the entity tag associated with the item from the Azure Cosmos DB service.
+        /// * "ttl": Gets the time to live in seconds of the item in the Azure Cosmos DB service.
+        /// </remarks>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
         ///     <listheader>
