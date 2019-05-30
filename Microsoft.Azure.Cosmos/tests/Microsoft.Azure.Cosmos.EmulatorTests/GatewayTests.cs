@@ -1439,7 +1439,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 CosmosScripts cosmosScripts = collection.GetScripts();
                 CosmosStoredProcedureSettings storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings("scriptId", script));
-                string result = await cosmosScripts.ExecuteStoredProcedureAsync<object, string>(document.Id, "scriptId", input: null);
+                string result = await cosmosScripts.ExecuteStoredProcedureAsync<object, string>(new Cosmos.PartitionKey(document.Id), "scriptId", input: null);
             }
             catch (DocumentClientException exception)
             {

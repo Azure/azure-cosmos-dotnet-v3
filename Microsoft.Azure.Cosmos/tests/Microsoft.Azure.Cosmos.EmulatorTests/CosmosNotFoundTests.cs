@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 dynamic randomItem = new { id = "test", pk = "doesnotexist" };
                 Stream create = jsonSerializer.ToStream<dynamic>(randomItem);
-                this.VerifyNotFoundResponse(await container.CreateItemAsStreamAsync(randomItem.pk, create));
+                this.VerifyNotFoundResponse(await container.CreateItemAsStreamAsync(new PartitionKey(randomItem.pk), create));
 
                 var queryIterator = container.CreateItemQueryAsStream("select * from t where true", maxConcurrency: 2);
                 this.VerifyQueryNotFoundResponse(await queryIterator.FetchNextSetAsync());
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };
                 Stream upsert = jsonSerializer.ToStream<dynamic>(randomUpsertItem);
                 this.VerifyNotFoundResponse(await container.UpsertItemAsStreamAsync(
-                    partitionKey: randomUpsertItem.pk,
+                    partitionKey: new Cosmos.PartitionKey(randomUpsertItem.pk),
                     streamPayload: upsert));
             }
 
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             dynamic randomReplaceItem = new { id = "test", pk = "doesnotexist", status = 42 };
             Stream replace = jsonSerializer.ToStream<dynamic>(randomReplaceItem);
             this.VerifyNotFoundResponse(await container.ReplaceItemAsStreamAsync(
-                partitionKey: randomReplaceItem.pk,
+                partitionKey: new Cosmos.PartitionKey(randomReplaceItem.pk),
                 id: randomReplaceItem.id,
                 streamPayload: replace));
         }
