@@ -56,8 +56,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
             Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));
 
-            CosmosContainer container = client.Databases["testdb"]
-                                        .Containers["testcontainer"];
+            CosmosContainer container = client.GetDatabase("testdb")
+                                        .GetContainer("testcontainer");
 
             HttpStatusCode[] testHttpStatusCodes = new HttpStatusCode[]
                                 {

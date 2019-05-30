@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,9 +15,9 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// <see cref="CosmosDatabases"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
-    internal class CosmosDatabaseCore : CosmosDatabase
+    internal partial class CosmosDatabaseCore : CosmosDatabase
     {
         /// <summary>
         /// Only used for unit testing
@@ -35,12 +36,9 @@ namespace Microsoft.Azure.Cosmos
                 parentLink: null,
                 uriPathSegment: Paths.DatabasesPathSegment,
                 id: databaseId);
-
-            this.Containers = new CosmosContainersCore(clientContext, this);
         }
 
         public override string Id { get; }
-        public override CosmosContainers Containers { get; }
 
         internal virtual Uri LinkUri { get; }
 

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// <see cref="CosmosDatabases"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
     /// <remarks>
     /// Note: all these operations make calls against a fixed budget.
@@ -19,20 +19,12 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
-    public abstract class CosmosDatabase
+    public abstract partial class CosmosDatabase
     {
         /// <summary>
         /// The Id of the Cosmos database
         /// </summary>
         public abstract string Id { get;  }
-
-        /// <summary>
-        /// An object to create a Cosmos Container or to iterate over all containers
-        /// </summary>
-        /// <remarks>
-        /// Use Containers to access a <see cref="CosmosContainer"/>
-        /// </remarks>
-        public abstract CosmosContainers Containers { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -60,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// //Reads a Database resource where
         /// // - database_id is the ID property of the Database resource you wish to read.
-        /// CosmosDatabase database = this.cosmosClient.Databases[database_id];
+        /// CosmosDatabase database = this.cosmosClient.GetDatabase(database_id);
         /// DatabaseResponse response = await database.ReadAsync();
         /// ]]>
         /// </code>
@@ -94,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Delete a cosmos database
-        /// CosmosDatabase database = cosmosContainer["myDbId"];
+        /// CosmosDatabase database = cosmosClient.GetDatabase("myDbId");
         /// DatabaseResponse response = await database.DeleteAsync();
         /// ]]>
         /// </code>

@@ -977,10 +977,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
-                database = await client.Databases.CreateDatabaseAsync(uniqDatabaseName );
+                database = await client.CreateDatabaseAsync(uniqDatabaseName );
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
-                CosmosContainer container = await database.Containers.CreateContainerAsync(
+                CosmosContainer container = await database.CreateContainerAsync(
                     new CosmosContainerSettings
                     {
                         Id = uniqCollectionName,

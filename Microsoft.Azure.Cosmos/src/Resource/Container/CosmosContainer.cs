@@ -4,15 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
     /// 
-    /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     /// <remarks>
     ///  Note: all these operations make calls against a fixed budget.
@@ -61,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainer cosmosContainer = this.database.Containers["containerId"];
+        /// CosmosContainer cosmosContainer = this.database.GetContainer("containerId");
         /// CosmosContainerSettings settings = cosmosContainer.ReadAsync();
         /// ]]>
         /// </code>

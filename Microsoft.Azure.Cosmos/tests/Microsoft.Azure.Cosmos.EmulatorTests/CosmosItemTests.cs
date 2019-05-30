@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/status";
             this.containerSettings = new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemMultiPartPartitionKeyTest()
         {
-            CosmosContainer multiPartPkContainer = await this.database.Containers.CreateContainerAsync(Guid.NewGuid().ToString(), "/a/b/c");
+            CosmosContainer multiPartPkContainer = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/a/b/c");
 
             dynamic testItem = new
             {
@@ -159,12 +159,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ReadCollectionNotExists()
         {
             string collectionName = Guid.NewGuid().ToString();
-            CosmosContainer testContainer = this.database.Containers[collectionName];
+            CosmosContainer testContainer = this.database.GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
 
             // Item -> Container -> Database contract 
             string dbName = Guid.NewGuid().ToString();
-            testContainer = this.cosmosClient.Databases[dbName].Containers[collectionName];
+            testContainer = this.cosmosClient.GetDatabase(dbName).GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
         }
 
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            CosmosContainerCore testContainer = (CosmosContainerCore)client.Databases[dbName].Containers[containerName];
+            CosmosContainerCore testContainer = (CosmosContainerCore)client.GetContainer(dbName, containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
@@ -221,8 +221,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(loopCount, count);
 
             // Create real container and address 
-            CosmosDatabase db = await client.Databases.CreateDatabaseAsync(dbName);
-            CosmosContainer container = await db.Containers.CreateContainerAsync(containerName, "/id");
+            CosmosDatabase db = await client.CreateDatabaseAsync(dbName);
+            CosmosContainer container = await db.CreateContainerAsync(containerName, "/id");
 
             // reset counter
             count = 0;
@@ -667,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // Create a container large enough to have at least 2 partitions
-                ContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk",
                     throughput: 15000);
@@ -885,7 +885,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.CreateNonPartitionedContainer();
                 await this.CreateItemInNonPartitionedContainer(nonPartitionItemId);
                 await this.CreateUndefinedPartitionItem();
-                fixedContainer = this.database.Containers[nonPartitionContainerId];
+                fixedContainer = this.database.GetContainer(nonPartitionContainerId);
 
                 ContainerResponse containerResponse = await fixedContainer.ReadAsync();
                 Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
@@ -1064,7 +1064,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await this.CreateItemInNonPartitionedContainer(Guid.NewGuid().ToString());
                 }
 
-                fixedContainer = this.database.Containers[nonPartitionContainerId];
+                fixedContainer = this.database.GetContainer(nonPartitionContainerId);
 
                 // Read the container metadata
                 ContainerResponse containerResponse = await fixedContainer.ReadAsync();
