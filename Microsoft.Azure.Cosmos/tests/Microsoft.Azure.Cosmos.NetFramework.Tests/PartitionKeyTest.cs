@@ -42,13 +42,13 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void TestPartitionKeyCompare()
         {
-            Assert.IsTrue(new PartitionKey(Undefined.Value).Equals(PartitionKey.FromJsonString("[{}]")));
-            Assert.IsTrue(new PartitionKey(null).Equals(PartitionKey.FromJsonString("[null]")));
-            Assert.IsTrue(new PartitionKey(false).Equals(PartitionKey.FromJsonString("[false]")));
-            Assert.IsTrue(new PartitionKey(true).Equals(PartitionKey.FromJsonString("[true]")));
-            Assert.IsTrue(new PartitionKey(123.456).Equals(PartitionKey.FromJsonString("[123.456]")));
-            Assert.IsTrue(new PartitionKey("PartitionKey Value").Equals(PartitionKey.FromJsonString("[\"PartitionKey Value\"]")));
-            Assert.IsTrue(new PartitionKey("null").Equals(PartitionKey.FromJsonString("[\"null\"]")));
+            Assert.IsTrue(new Documents.PartitionKey(Undefined.Value).Equals(Documents.PartitionKey.FromJsonString("[{}]")));
+            Assert.IsTrue(new Documents.PartitionKey(null).Equals(Documents.PartitionKey.FromJsonString("[null]")));
+            Assert.IsTrue(new Documents.PartitionKey(false).Equals(Documents.PartitionKey.FromJsonString("[false]")));
+            Assert.IsTrue(new Documents.PartitionKey(true).Equals(Documents.PartitionKey.FromJsonString("[true]")));
+            Assert.IsTrue(new Documents.PartitionKey(123.456).Equals(Documents.PartitionKey.FromJsonString("[123.456]")));
+            Assert.IsTrue(new Documents.PartitionKey("PartitionKey Value").Equals(Documents.PartitionKey.FromJsonString("[\"PartitionKey Value\"]")));
+            Assert.IsTrue(new Documents.PartitionKey("null").Equals(Documents.PartitionKey.FromJsonString("[\"null\"]")));
         }
     }
 }

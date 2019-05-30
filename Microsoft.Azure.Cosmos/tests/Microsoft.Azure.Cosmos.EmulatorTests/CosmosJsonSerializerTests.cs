@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, toStreamCount);
             Assert.AreEqual(1, fromStreamCount);
 
-            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.status, testItem.id);
+            await mockContainer.DeleteItemAsync<ToDoActivity>(new Cosmos.PartitionKey(testItem.status), testItem.id);
         }
         
         private ToDoActivity CreateRandomToDoActivity(string pk = null)

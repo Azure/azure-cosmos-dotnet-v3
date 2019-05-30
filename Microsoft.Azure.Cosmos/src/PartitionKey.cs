@@ -24,6 +24,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
         public PartitionKey(object partitionKeyValue)
         {
+            if (partitionKeyValue == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyValue));
+            }
+
             this.partitionKeyValue = partitionKeyValue;
             this.partitionKeyValueAsString = new Lazy<string>(this.GetPartitionKeyValueAsString);
         }

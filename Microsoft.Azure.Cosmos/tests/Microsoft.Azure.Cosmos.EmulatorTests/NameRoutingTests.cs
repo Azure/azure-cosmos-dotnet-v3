@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Document doc1;
                 {
                     doc1 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc1Id });
-                    doc1 = await container.ReadItemAsync<Document>(partitionKey: doc1Id, id: doc1Id);
+                    doc1 = await container.ReadItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(doc1Id), id: doc1Id);
                     Document doc2 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc2Id });
                     Document doc3 = await container.CreateItemAsync<Document>(item: new Document() { Id = doc3Id });
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // 
                     await container.ReplaceItemAsync<dynamic>(id: doc3Id, item: new { id = doc3Id, Description = "test" });
-                    doc3 = await container.DeleteItemAsync<Document>(partitionKey: resourceRandomId, id: resourceRandomId);
+                    doc3 = await container.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(resourceRandomId), id: resourceRandomId);
 
                     // read databaseCollection feed.
                     FeedIterator<dynamic> itemIterator = container.GetItemsIterator<dynamic>();
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         CosmosSqlQueryDefinition sqlQueryDefinition = new CosmosSqlQueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
                         FeedIterator<Document> docServiceQuery = container.CreateItemQuery<Document>(
                             sqlQueryDefinition: sqlQueryDefinition,
-                            partitionKey: doc1.Id);
+                            partitionKey: new Cosmos.PartitionKey(doc1.Id));
                         while (docServiceQuery.HasMoreResults)
                         {
                             FeedResponse<Document> r = await docServiceQuery.FetchNextSetAsync();
@@ -672,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             RequestOptions requestOptions = new RequestOptions() { PartitionKey = new PartitionKey("test") };
             // doing a read, which cause the gateway has name->Id cache (collectionFooId -> Rid)
-            Document docIgnore = await collFoo.ReadItemAsync<Document>(partitionKey: "test", id: doc1Id);
+            Document docIgnore = await collFoo.ReadItemAsync<Document>(partitionKey: new Cosmos.PartitionKey("test"), id: doc1Id);
 
             // Now delete the collection so we have 1 bindable collection left
             //DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documentDefinition = new Document() { Id = "docFoo1Id" + suffix };
                 documentDefinition.SetPropertyValue("pk", "test");
                 Document docFoo1 = await collFoo.CreateItemAsync<Document>(item: documentDefinition);
-                Document docFoo1Back = await collFoo.ReadItemAsync<Document>(partitionKey: "test", id: documentDefinition.Id);
+                Document docFoo1Back = await collFoo.ReadItemAsync<Document>(partitionKey: new Cosmos.PartitionKey("test"), id: documentDefinition.Id);
             }
 
             // Now delete the collection foo again
@@ -844,7 +844,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer cosmosContainer = await database.CreateContainerAsync(containerSetting);
             try
             {
-                ItemResponse<Document> docIgnore = await cosmosContainer.ReadItemAsync<Document>(docId, docId);
+                ItemResponse<Document> docIgnore = await cosmosContainer.ReadItemAsync<Document>(new Cosmos.PartitionKey(docId), docId);
                 Assert.IsNull(docIgnore.Resource);
                 Assert.AreEqual(docIgnore.StatusCode, HttpStatusCode.NotFound);
             }
@@ -858,7 +858,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Document doc1 = await cosmosContainer.CreateItemAsync<Document>(new Document() { Id = docId });
 
-            Document docIgnore1 = await cosmosContainer.ReadItemAsync<Document>(docId, docId);
+            Document docIgnore1 = await cosmosContainer.ReadItemAsync<Document>(new Cosmos.PartitionKey(docId), docId);
         }
 
         [TestMethod]
@@ -946,7 +946,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Document doc1 = await coll1.CreateItemAsync<Document>(documentDefinition);
 
                 // and then read it!
-                Document docIgnore = await coll1.ReadItemAsync<Document>("test", documentId, null);
+                Document docIgnore = await coll1.ReadItemAsync<Document>(new Cosmos.PartitionKey("test"), documentId, null);
                 Assert.AreEqual(docIgnore.Id, documentId);
             }
 
@@ -1017,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // the url doesn't conform to the schema at at all.
-                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(doc1Id, "dba/what/colltions/abc");
+                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(new Cosmos.PartitionKey(doc1Id), "dba/what/colltions/abc");
                 Assert.IsNull(response.Resource);
                 Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
             }
@@ -1031,7 +1031,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // the url doesn't conform to the schema at at all.
-                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(doc1Id, "dbs/what/colltions/abc");
+                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(new Cosmos.PartitionKey(doc1Id), "dbs/what/colltions/abc");
                 Assert.IsNull(response.Resource);
                 Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
             }
@@ -1044,7 +1044,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // doing a document read with collection link
-                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(doc1Id, UriFactory.CreateDocumentCollectionUri(databaseId, collectionId).ToString());
+                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(new Cosmos.PartitionKey(doc1Id), UriFactory.CreateDocumentCollectionUri(databaseId, collectionId).ToString());
                 Assert.IsNull(response.Resource);
                 Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
             }
@@ -1740,7 +1740,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosStoredProcedureSettings storedProcedure = await scripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings("sproc1", "function() {return 1}"));
                 for (int i = 0; i < 10; i++)
                 {
-                    await scripts.ExecuteStoredProcedureAsync<object, object>(partitionKey: i, id: "sproc1", input: null);
+                    await scripts.ExecuteStoredProcedureAsync<object, object>(partitionKey: new Cosmos.PartitionKey(i), id: "sproc1", input: null);
                 }
             }
             finally

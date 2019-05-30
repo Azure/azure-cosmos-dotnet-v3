@@ -1393,7 +1393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Script cannot timeout.
             CosmosScripts cosmosScripts = collection.GetScripts();
             CosmosStoredProcedureSettings storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings("scriptId", script));
-            string result = await cosmosScripts.ExecuteStoredProcedureAsync<object ,string >(id : "scriptId", partitionKey : documentDefinition.Id, input : null);
+            string result = await cosmosScripts.ExecuteStoredProcedureAsync<object ,string >(id : "scriptId", partitionKey : new Cosmos.PartitionKey(documentDefinition.Id), input : null);
             await database.DeleteAsync();
         }
 
@@ -1478,7 +1478,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string result = string.Empty;
             try
             {
-                result = cosmosScripts.ExecuteStoredProcedureAsync<string, string>("anyPk", "__.sys.echo", input).Result;
+                result = cosmosScripts.ExecuteStoredProcedureAsync<string, string>(new Cosmos.PartitionKey("anyPk"), "__.sys.echo", input).Result;
             }
             catch (DocumentClientException exception)
             {
@@ -2204,7 +2204,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Execute read-only stored procedure and verify all created documents are read.
                 string result = await lockedClient.ExecuteStoredProcedureAsync<string>(sproc.SelfLink,
-                    new Documents.Client.RequestOptions { PartitionKey = new PartitionKey("0") });
+                    new Documents.Client.RequestOptions { PartitionKey = new Documents.PartitionKey("0") });
 
                 for (int i = 0; i < 10; ++i)
                 {
@@ -2255,7 +2255,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             StoredProcedure retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedure).Result;
             Documents.Client.RequestOptions requestOptions = new Documents.Client.RequestOptions();
-            requestOptions.PartitionKey = new PartitionKey("test");
+            requestOptions.PartitionKey = new Documents.PartitionKey("test");
             for (int numExec = 0; numExec < 3; numExec++)
             {
                 client.ExecuteStoredProcedureAsync<string>(retrievedStoredProcedure, requestOptions).Wait();
@@ -2838,7 +2838,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(pkRangeId, await GetPKRangeIdForPartitionKey(client, db.Id, coll.Id, coll.PartitionKey, pk2));
 
                 ChangeFeedOptions options = new ChangeFeedOptions { StartFromBeginning = true, PartitionKeyRangeId = pkRangeId.ToString() };
-                ChangeFeedOptions options1 = new ChangeFeedOptions { PartitionKey = new PartitionKey(pk1), StartFromBeginning = true };
+                ChangeFeedOptions options1 = new ChangeFeedOptions { PartitionKey = new Documents.PartitionKey(pk1), StartFromBeginning = true };
 
                 // 1. Read empty feed, PK = PK1.
                 string accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options);
@@ -2882,12 +2882,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual("doc1_1.doc1_3.doc1_4.doc2_2.", accumulator);
 
                 // 4. Read with PK = pk2.
-                options1.PartitionKey = new PartitionKey(pk2);
+                options1.PartitionKey = new Documents.PartitionKey(pk2);
                 accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options1);
                 Assert.AreEqual("doc1_2.doc2_1.doc2_3.doc2_4.", accumulator);
 
                 // 5. Read with PK = neither PK1, nor PK2 but falls into same range.
-                options1.PartitionKey = new PartitionKey(pk3);
+                options1.PartitionKey = new Documents.PartitionKey(pk3);
                 accumulator = await ReadChangeFeedToEnd(client, coll.SelfLink, options1);
                 Assert.AreEqual(string.Empty, accumulator);
 
@@ -3033,13 +3033,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Execute stored procedure by passing in stored procedure self-link
             string output = client.ExecuteStoredProcedureAsync<string>(sproc.SelfLink,
-                new Documents.Client.RequestOptions { PartitionKey = new PartitionKey("1") }, "DocumentDB").Result;
+                new Documents.Client.RequestOptions { PartitionKey = new Documents.PartitionKey("1") }, "DocumentDB").Result;
             Assert.IsTrue(String.CompareOrdinal(output, "Hello World, DocumentDB!") == 0);
 
             // Execute stored procedure by passing in stored procedure URI
             output = client.ExecuteStoredProcedureAsync<string>(
                 UriFactory.CreateStoredProcedureUri(database.Id, collection.Id, "HelloWorld"),
-                new Documents.Client.RequestOptions { PartitionKey = new PartitionKey("1") }, "DocumentDB").Result;
+                new Documents.Client.RequestOptions { PartitionKey = new Documents.PartitionKey("1") }, "DocumentDB").Result;
             Assert.IsTrue(String.CompareOrdinal(output, "Hello World, DocumentDB!") == 0);
 
             client.DeleteStoredProcedureAsync(UriFactory.CreateStoredProcedureUri(database.Id, collection.Id, sproc.Id)).Wait();
@@ -3088,7 +3088,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<CustomerPOCO> doc = await collection.CreateItemAsync(poco);
 
             // This tests that the existing ReadDocumentAsync API works as expected, you can only access Document properties
-            ItemResponse<CustomerPOCO> documentResponse = await collection.ReadItemAsync<CustomerPOCO>(partitionKey :poco.id, id : poco.id);
+            ItemResponse<CustomerPOCO> documentResponse = await collection.ReadItemAsync<CustomerPOCO>(partitionKey : new Cosmos.PartitionKey(poco.id), id : poco.id);
             Assert.AreEqual(documentResponse.StatusCode, HttpStatusCode.OK);
             Assert.IsNotNull(documentResponse.Resource);
 
@@ -3099,7 +3099,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(customerPOCO.BookId, "isbn");
 
             // This tests the implicit operator for ReadDocumentAsync
-           CustomerPOCO  doc1 = await collection.ReadItemAsync<CustomerPOCO>(partitionKey: poco.id, id: poco.id);
+           CustomerPOCO  doc1 = await collection.ReadItemAsync<CustomerPOCO>(partitionKey: new Cosmos.PartitionKey(poco.id), id: poco.id);
             Assert.IsNotNull(doc1.id);
             await database.DeleteAsync();
 
@@ -3128,7 +3128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ItemResponse<CustomerObjectFromResource> doc = await collection.CreateItemAsync(objectFromResource);
             // This tests that the existing ReadDocumentAsync API works as expected, you can only access Document properties
-            ItemResponse<CustomerObjectFromResource> documentResponse = await collection.ReadItemAsync<CustomerObjectFromResource>(partitionKey: objectFromResource.pk, id: objectFromResource.id);
+            ItemResponse<CustomerObjectFromResource> documentResponse = await collection.ReadItemAsync<CustomerObjectFromResource>(partitionKey: new Cosmos.PartitionKey(objectFromResource.pk), id: objectFromResource.id);
             Assert.AreEqual(documentResponse.StatusCode, HttpStatusCode.OK);
             Assert.IsNotNull(documentResponse.Resource);
 
@@ -3139,7 +3139,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(customerObjectFromResource.BookId, "isbn1");
 
             // This tests the implicit operator for ReadDocumentAsync
-            CustomerObjectFromResource doc1 = await collection.ReadItemAsync<CustomerObjectFromResource>(partitionKey: customerObjectFromResource.id, id: customerObjectFromResource.id);
+            CustomerObjectFromResource doc1 = await collection.ReadItemAsync<CustomerObjectFromResource>(partitionKey: new Cosmos.PartitionKey(customerObjectFromResource.id), id: customerObjectFromResource.id);
             Assert.IsNotNull(doc1.id);
         }
 
@@ -3227,7 +3227,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(inheritFromDocument.authors[0], inheritFromDocumentReturned2.authors[0], "authors dont match");
 
             Documents.Client.RequestOptions requestOptions = new Documents.Client.RequestOptions();
-            requestOptions.PartitionKey = new PartitionKey("test");
+            requestOptions.PartitionKey = new Documents.PartitionKey("test");
             CustomerObjectFromDocument inheritFromDocumentReturned3 = (dynamic)client.ReadDocumentAsync(inheritFromDocumentReturned, requestOptions).Result.Resource;
             inheritFromDocumentReturned3.BookId = "isbn56789";
             inheritFromDocumentReturned3.pk = "test";
@@ -3335,7 +3335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Delete document");
-            await collection.DeleteItemAsync<Document>(partitionKey:  documentName, id: documentName);
+            await collection.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(documentName), id: documentName);
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
             queriedDocuments = collection.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ReadCurrentGetsCorrectRID()
         {
             const string expectedRID = "something";
-            const string partitionKey = "pk";
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("pk");
             // Using "test" as container name because the Mocked DocumentClient has it hardcoded
             Uri expectedRequestUri = new Uri($"dbs/conflictsDb/colls/test/docs/{expectedRID}", UriKind.Relative);
             CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task DeleteSendsCorrectPayload()
         {
             const string expectedId = "something";
-            const string partitionKey = "pk";
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("pk");
             Uri expectedRequestUri = new Uri($"/dbs/conflictsDb/colls/conflictsColl/conflicts/{expectedId}", UriKind.Relative);
             CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.Delete, request.OperationType);

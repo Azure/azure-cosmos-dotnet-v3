@@ -283,25 +283,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //create and read
             ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument);
-            ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
             ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument);
-            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
             ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument.Id, testDocument);
-            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
-               container.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
+               container.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: new Cosmos.PartitionKey(testDocument.Name), maxItemCount: 1);
             FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
             AssertEqual(testDocument, queryResponse.First());
 
