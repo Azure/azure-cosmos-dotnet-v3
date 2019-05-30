@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
                 this.RetryAfter = this.Headers?.RetryAfter;
                 this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
+                this.ResourceAddress = cosmosResponseMessage.GetResourceAddress();
                 this.Error = error;
                 if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
                 {
@@ -97,6 +98,8 @@ namespace Microsoft.Azure.Cosmos
         internal TimeSpan? RetryAfter { get; }
 
         internal CosmosResponseMessageHeaders Headers { get; }
+
+        internal string ResourceAddress { get; set; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
