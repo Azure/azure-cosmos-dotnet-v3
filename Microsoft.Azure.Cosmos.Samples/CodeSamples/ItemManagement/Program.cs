@@ -647,10 +647,10 @@
         private static async Task AccessMedatata()
         {
             //******************************************************************************************************************
-            // Items contain attributesthat are part of their metadata:
-            // Timestamp : Gets the last modified timestamp associated with the resource from the Azure Cosmos DB service.
-            // Etag : Gets the entity tag associated with the resource from the Azure Cosmos DB service.
-            // TimeToLive : Gets the time to live in seconds of the document in the Azure Cosmos DB service.
+            // Items contain attributes that are part of their metadata:
+            // Timestamp : Gets the last modified timestamp associated with the item from the Azure Cosmos DB service.
+            // Etag : Gets the entity tag associated with the item from the Azure Cosmos DB service.
+            // TimeToLive : Gets the time to live in seconds of the item in the Azure Cosmos DB service.
             //******************************************************************************************************************
             Console.WriteLine("\n4 - Accessing metadata");
 
