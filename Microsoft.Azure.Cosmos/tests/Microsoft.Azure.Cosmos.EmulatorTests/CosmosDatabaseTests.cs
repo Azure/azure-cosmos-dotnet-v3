@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string containerId = Guid.NewGuid().ToString();
             string partitionPath = "/users";
-            ContainerResponse containerResponse = await cosmosDatabase.Containers.CreateContainerAsync(containerId, partitionPath);
+            ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
 
             CosmosContainer container = containerResponse;

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             ToDoActivity testItem = CreateRandomToDoActivity();
-            using (CosmosResponseMessage response = await customClient.Databases[this.database.Id].Containers[this.Container.Id].CreateItemAsStreamAsync(
+            using (CosmosResponseMessage response = await customClient.Databases[this.database.Id].GetContainer(this.Container.Id).CreateItemAsStreamAsync(
                 partitionKey: testItem.status,
                 streamPayload: this.jsonSerializer.ToStream(testItem)))
             {

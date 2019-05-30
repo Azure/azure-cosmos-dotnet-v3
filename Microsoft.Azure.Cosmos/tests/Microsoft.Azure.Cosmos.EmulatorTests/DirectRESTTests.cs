@@ -980,7 +980,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 database = await client.Databases.CreateDatabaseAsync(uniqDatabaseName );
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
-                CosmosContainer container = await database.Containers.CreateContainerAsync(
+                CosmosContainer container = await database.CreateContainerAsync(
                     new CosmosContainerSettings
                     {
                         Id = uniqCollectionName,

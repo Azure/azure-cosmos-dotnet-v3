@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `containers.GetContainersIterator()` before every single `item.read()` call, to ensure the container exists;
     /// do this once on application start up.
     /// </summary>
-    public abstract class CosmosContainers
+    public abstract partial class CosmosDatabase
     {
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -247,11 +247,12 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosDatabase db = this.cosmosClient.Databases["myDatabaseId"];
-        /// DatabaseResponse response = await db.ReadAsync();
+        /// DatabaseResponse response = await db.GetContainer("testcontainer");
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosContainer this[string id] { get; }
+        /// <returns>Cosmos container proxy</returns>
+        public abstract CosmosContainer GetContainer(string id);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.

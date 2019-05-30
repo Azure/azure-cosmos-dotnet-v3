@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
 
             CosmosDatabase database = await cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            CosmosContainer container = await database.Containers.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            CosmosContainer container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
             string id1 = Guid.NewGuid().ToString();
             TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = id1 });

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
     /// 
-    /// <see cref="CosmosContainers"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     /// <remarks>
     ///  Note: all these operations make calls against a fixed budget.

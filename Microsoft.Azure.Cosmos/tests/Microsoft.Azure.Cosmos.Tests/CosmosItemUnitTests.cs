@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             CosmosContainer container = client.Databases["testdb"]
-                                        .Containers["testcontainer"];
+                                        .GetContainer("testcontainer");
 
             await container.CreateItemAsync<dynamic>(
                     item: testItem,
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (builder) => builder.AddCustomHandlers(testHandler));
 
             CosmosContainer container = client.Databases["testdb"]
-                                        .Containers["testcontainer"];
+                                        .GetContainer("testcontainer");
 
             ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(
                 item: testItem,

@@ -35,7 +35,7 @@
             this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: Documents.ConsistencyLevel.Session);
 
             string PartitionKey = "/partitionKey";
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);

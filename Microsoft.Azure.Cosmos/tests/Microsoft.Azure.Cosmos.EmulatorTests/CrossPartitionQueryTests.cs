@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 containerName,
                 indexingPolicy == null ? null : JsonConvert.SerializeObject(indexingPolicy));
 
-            return this.database.Containers[containerName];
+            return this.database.GetContainer(containerName);
         }
 
         private async Task<ContainerResponse> CreatePartitionedContainer(
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosResponseMessage responseMessage = await this.database.ReadAsStreamAsync();
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
 
-            ContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings
                 {
                     Id = Guid.NewGuid().ToString() + "container",
@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].Containers[containerAndDocuments.Item1.Id];
+                            CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].GetContainer(containerAndDocuments.Item1.Id);
                             Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
                             queryTasks.Add(queryTask);
                         }

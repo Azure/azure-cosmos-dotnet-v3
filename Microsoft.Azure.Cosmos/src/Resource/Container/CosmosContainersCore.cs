@@ -19,21 +19,9 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosContainer"/> for reading, replacing, or deleting an existing container.
     /// </summary>
-    internal class CosmosContainersCore : CosmosContainers
+    internal partial class CosmosDatabaseCore
     {
-        private readonly CosmosDatabaseCore database;
         private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
-
-        internal CosmosContainersCore(
-            CosmosClientContext clientContext,
-            CosmosDatabaseCore database)
-        {
-            this.database = database;
-            this.ClientContext = clientContext;
-            this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
-        }
-
-        internal CosmosClientContext ClientContext { get; }
 
         public override Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
@@ -54,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this[containerSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerSettings.Id), response);
         }
         
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -96,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            CosmosContainer cosmosContainer = this[containerSettings.Id];
+            CosmosContainer cosmosContainer = this.GetContainer(containerSettings.Id);
             ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
@@ -145,14 +133,16 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 this.ContainerFeedRequestExecutorAsync);
         }
-        
-        public override CosmosContainer this[string id] =>
-                this.containerCache.GetOrAdd(
-                    id,
-                    keyName => new CosmosContainerCore(
-                        this.ClientContext, 
-                        this.database, 
-                        keyName));
+
+        public override CosmosContainer GetContainer(string id)
+        {
+            return this.containerCache.GetOrAdd(
+                id,
+                keyName => new CosmosContainerCore(
+                    this.ClientContext,
+                    this,
+                    keyName));
+        }
 
         public override Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
             CosmosContainerSettings containerSettings, 
@@ -216,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationAsStreamAsync(
-               resourceUri: this.database.LinkUri,
+               resourceUri: this.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
@@ -248,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationAsStreamAsync(
-               resourceUri: this.database.LinkUri,
+               resourceUri: this.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.ReadFeed,
                cosmosContainerCore: null,
@@ -273,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(state == null);
 
             return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<CosmosContainerSettings>>(
-                resourceUri: this.database.LinkUri,
+                resourceUri: this.LinkUri,
                 resourceType: ResourceType.Collection,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,

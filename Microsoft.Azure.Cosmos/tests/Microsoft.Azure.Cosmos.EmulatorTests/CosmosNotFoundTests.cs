@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateQueryNotFoundResponse()
         {
             CosmosDatabase db = await CosmosNotFoundTests.client.Databases.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
-            CosmosContainer container = await db.Containers.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+            CosmosContainer container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
             dynamic randomItem = new { id = "test", pk = "testpk" };
             await container.CreateItemAsync(randomItem);
@@ -74,10 +74,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (dbNotExist)
             {
                 CosmosContainerSettings newcontainerSettings = new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk");
-                this.VerifyNotFoundResponse(await database.Containers.CreateContainerAsStreamAsync(newcontainerSettings, throughput: 500));
+                this.VerifyNotFoundResponse(await database.CreateContainerAsStreamAsync(newcontainerSettings, throughput: 500));
             }
 
-            CosmosContainer doesNotExistContainer = database.Containers[DoesNotExist];
+            CosmosContainer doesNotExistContainer = database.GetContainer(DoesNotExist);
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReadAsStreamAsync());
 
             CosmosContainerSettings containerSettings = new CosmosContainerSettings(id: DoesNotExist, partitionKeyPath: "/pk");
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // The database exists create a container and validate it's children
             if (!dbNotExist)
             {
-                CosmosContainer containerExists = await database.Containers.CreateContainerAsync(
+                CosmosContainer containerExists = await database.CreateContainerAsync(
                     id: "NotFoundTest" + Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk");
 
