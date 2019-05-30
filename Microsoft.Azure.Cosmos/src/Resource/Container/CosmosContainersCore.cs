@@ -21,8 +21,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal partial class CosmosDatabaseCore
     {
-        private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
-
         public override Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? throughput = null,
@@ -136,12 +134,15 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosContainer GetContainer(string id)
         {
-            return this.containerCache.GetOrAdd(
-                id,
-                keyName => new CosmosContainerCore(
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new CosmosContainerCore(
                     this.ClientContext,
                     this,
-                    keyName));
+                    id);
         }
 
         public override Task<CosmosResponseMessage> CreateContainerAsStreamAsync(

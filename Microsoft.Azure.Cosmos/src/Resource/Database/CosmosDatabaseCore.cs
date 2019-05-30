@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
                 parentLink: null,
                 uriPathSegment: Paths.DatabasesPathSegment,
                 id: databaseId);
-            this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
         }
 
         public override string Id { get; }
