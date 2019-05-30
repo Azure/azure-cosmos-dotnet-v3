@@ -496,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabase db = null;
             try
             {
-                db = await client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
                 CosmosContainerSettings containerSetting = new CosmosContainerSettings()
                 {
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task ValidateCollectionIndexProgressHeaders(CosmosClient client)
         {
-            CosmosDatabase db = await client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
             try
             {

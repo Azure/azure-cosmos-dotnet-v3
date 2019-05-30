@@ -1385,14 +1385,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<CosmosDatabase> databases = new List<CosmosDatabase>();
 
-            FeedIterator<CosmosDatabaseSettings> resultSetIterator = client.Databases.GetDatabasesIterator(maxItemCount: 10);
+            FeedIterator<CosmosDatabaseSettings> resultSetIterator = client.GetDatabasesIterator(maxItemCount: 10);
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
             {
                 foreach (CosmosDatabaseSettings database in await resultSetIterator.FetchNextSetAsync())
                 {
-                    deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.Databases[database.Id]));
+                    deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(database.Id)));
                     totalCount++;
                 }
 

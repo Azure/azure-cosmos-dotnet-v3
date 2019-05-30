@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Item -> Container -> Database contract 
             string dbName = Guid.NewGuid().ToString();
-            testContainer = this.cosmosClient.Databases[dbName].GetContainer(collectionName);
+            testContainer = this.cosmosClient.GetDatabase(dbName).GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
         }
 
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            CosmosContainerCore testContainer = (CosmosContainerCore)client.Databases[dbName].GetContainer(containerName);
+            CosmosContainerCore testContainer = (CosmosContainerCore)client.GetDatabase(dbName).GetContainer(containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(loopCount, count);
 
             // Create real container and address 
-            CosmosDatabase db = await client.Databases.CreateDatabaseAsync(dbName);
+            CosmosDatabase db = await client.CreateDatabaseAsync(dbName);
             CosmosContainer container = await db.CreateContainerAsync(containerName, "/id");
 
             // reset counter

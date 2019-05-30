@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
     ///     CosmosContainerSettings containerSettings = container.Resource;
     /// ]]>
     /// </code>
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
     ///     collectionsettings.IndexingPolicy.Automatic = true;
     ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
-    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync(collectionsettings);
+    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync(collectionsettings);
     /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
     /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
     /// ]]>
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
     /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = client.Databases["dbName"].Containers["MyCollection"];
+    ///     CosmosContainer container = client.GetDatabase("dbName"].Containers["MyCollection"];
     ///     await container.DeleteAsync();
     /// ]]>
     /// </code>

@@ -29,7 +29,7 @@
             this.cancellationToken = this.cancellationTokenSource.Token;
 
             this.cosmosClient = TestCommon.CreateCosmosClient();
-            this.database = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
 
             this.documentClient = TestCommon.CreateClient(true, defaultConsistencyLevel: Documents.ConsistencyLevel.Session);

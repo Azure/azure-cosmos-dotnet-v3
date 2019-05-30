@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
-    ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
+    ///     CosmosDatabase db = await client.CreateAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
     ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey"))
     /// {
-    ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
+    ///     CosmosDatabase db = await client.CreateAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
@@ -62,13 +62,13 @@ namespace Microsoft.Azure.Cosmos
     /// using (CosmosClient cosmosClient = new CosmosClient(
     ///     connectionString: "AccountEndpoint=https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
     /// {
-    ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
+    ///     CosmosDatabase db = await client.CreateAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
     /// </example>
-    public class CosmosClient : IDisposable
+    public partial class CosmosClient : IDisposable
     {
         private Lazy<CosmosOffers> offerSet;
 
@@ -211,20 +211,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Used for creating new databases, or querying/reading all databases.
-        /// </summary>
-        /// <example>
-        /// This example creates a cosmos database and container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosDatabase database = this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-        /// ContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual CosmosDatabases Databases { get; private set; }
-
-        /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient
         /// </summary>
         public virtual CosmosClientOptions ClientOptions { get; private set; }
@@ -278,7 +264,6 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: this.DocumentClient,
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
 
-            this.Databases = new CosmosDatabasesCore(clientContext);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 

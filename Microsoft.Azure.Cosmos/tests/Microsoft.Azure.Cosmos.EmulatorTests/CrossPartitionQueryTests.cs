@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task Initialize()
         {
-            this.database = await this.Client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
+            this.database = await this.Client.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
         [TestCleanup]
@@ -299,13 +299,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = client.Databases.GetDatabasesIterator();
+            FeedIterator<CosmosDatabaseSettings> allDatabases = client.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
                 foreach (CosmosDatabaseSettings db in await allDatabases.FetchNextSetAsync())
                 {
-                    await client.Databases[db.Id].DeleteAsync();
+                    await client.GetDatabase(db.Id).DeleteAsync();
                 }
             }
         }
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     this.Client = TestCommon.CreateCosmosClient(false);
                     this.GatewayClient = TestCommon.CreateCosmosClient(true);
-                    this.database = this.Client.Databases[this.database.Id];
+                    this.database = this.Client.GetDatabase(this.database.Id);
                 }
 
                 await function();
@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].GetContainer(containerAndDocuments.Item1.Id);
+                            CosmosContainer container = cosmosClient.GetDatabase(containerAndDocuments.Item1.Database.Id).GetContainer(containerAndDocuments.Item1.Id);
                             Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
                             queryTasks.Add(queryTask);
                         }

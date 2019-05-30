@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public ItemBenchmark()
         {
             this.clientForTests = MockDocumentClient.CreateMockCosmosClient();
-            this.container = this.clientForTests.Databases["myDB"].GetContainer("myColl");
+            this.container = this.clientForTests.GetDatabase("myDB").GetContainer("myColl");
             this.baseItem = JObject.Parse(File.ReadAllText("samplepayload.json"));
             this.baseStream = File.OpenRead("samplepayload.json");
         }

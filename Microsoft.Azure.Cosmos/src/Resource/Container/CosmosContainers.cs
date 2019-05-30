@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosDatabase db = this.cosmosClient.Databases["myDatabaseId"];
+        /// CosmosDatabase db = this.cosmosClient.GetDatabase("myDatabaseId"];
         /// DatabaseResponse response = await db.GetContainer("testcontainer");
         /// ]]>
         /// </code>
