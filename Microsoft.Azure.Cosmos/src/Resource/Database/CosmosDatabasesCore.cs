@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public partial class CosmosClient
     {
-        internal CosmosClientContext ClientContext { get; }
+        internal CosmosClientContext ClientContext { get; private set; }
 
         /// <summary>
         /// Send a request for creating a database.
