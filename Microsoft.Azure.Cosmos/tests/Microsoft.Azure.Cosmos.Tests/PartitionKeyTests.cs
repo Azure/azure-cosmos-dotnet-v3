@@ -43,16 +43,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void CanBeMocked()
-        {
-            Moq.Mock<PartitionKey> pkMock = new Moq.Mock<PartitionKey>();
-            pkMock.Setup(p => p.Value).Returns("hello");
-            pkMock.Setup(p => p.ToString()).Returns("bye");
-            Assert.AreEqual("hello", pkMock.Object.Value);
-            Assert.AreEqual("bye", pkMock.Object.ToString());
-        }
-
-        [TestMethod]
         public void TestPartitionKeyValues()
         {
             Tuple<object, string>[] testcases =
