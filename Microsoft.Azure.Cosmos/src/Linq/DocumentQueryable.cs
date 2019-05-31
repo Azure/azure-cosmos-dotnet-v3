@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static string ToSqlQueryText<T>(this IQueryable<T> query)
         {
-            return ((IDocumentQuery<T>)query).ToString();
+            return ((CosmosLinqQuery<T>)query).ToSqlQueryText();
         }
 
         /// <summary>

@@ -807,7 +807,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional)The options for the item query request.<see cref="QueryRequestOptions"/></param>
         /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
-        /// 1. This example below shows LINQ query generation  blocked execution.
+        /// 1. This example below shows LINQ query generation and blocked execution.
         /// <code language="c#">
         /// <![CDATA[
         /// public class Book 

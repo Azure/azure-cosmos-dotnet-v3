@@ -136,6 +136,17 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
             if (querySpec != null)
             {
+                return JsonConvert.SerializeObject(querySpec);
+            }
+
+            return container.LinkUri.ToString();
+        }
+
+        public string ToSqlQueryText()
+        {
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+            if (querySpec != null)
+            {
                 return (querySpec.QueryText);
             }
 
