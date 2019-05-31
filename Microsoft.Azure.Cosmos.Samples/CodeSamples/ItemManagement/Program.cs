@@ -37,7 +37,7 @@
     // 3.1 - Use ETag with ReplaceItem for optimistic concurrency
     // 3.2 - Use ETag with ReadItem to only return a result if the ETag of the request does not match
     //
-    // 4 - Access items metadata
+    // 4 - Access items system defined properties
     //-----------------------------------------------------------------------------------------------------------
     // See Also - 
     //
