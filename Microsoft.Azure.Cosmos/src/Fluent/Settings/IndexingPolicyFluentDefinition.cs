@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly IndexingPolicy indexingPolicy = new IndexingPolicy();
         private readonly T parent;
         private readonly Action<IndexingPolicy> attachCallback;
-        private PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> includedPathsBuilder;
+        private IncludedPathsFluentDefinition<IndexingPolicyFluentDefinition<T>> includedPathsBuilder;
         private PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> excludedPathsBuilder;
 
         /// <summary>
@@ -62,12 +62,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the <see cref="CosmosContainer"/>'s <see cref="IndexingPolicy.IncludedPaths"/>.
         /// </summary>
-        /// <returns>An instance of <see cref="PathsFluentDefinition{T}"/>.</returns>
-        public virtual PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> WithIncludedPaths()
+        /// <returns>An instance of <see cref="IncludedPathsFluentDefinition{T}"/>.</returns>
+        public virtual IncludedPathsFluentDefinition<IndexingPolicyFluentDefinition<T>> WithIncludedPaths()
         {
             if (this.includedPathsBuilder == null)
             {
-                this.includedPathsBuilder = new PathsFluentDefinition<IndexingPolicyFluentDefinition<T>>(
+                this.includedPathsBuilder = new IncludedPathsFluentDefinition<IndexingPolicyFluentDefinition<T>>(
                     this,
                     (paths) => this.AddIncludedPaths(paths));
             }
@@ -133,11 +133,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.indexingPolicy.SpatialIndexes.Add(spatialSpec);
         }
 
-        private void AddIncludedPaths(IEnumerable<string> paths)
+        private void AddIncludedPaths(IEnumerable<IncludedPath> paths)
         {
-            foreach (string path in paths)
+            foreach (IncludedPath path in paths)
             {
-                this.indexingPolicy.IncludedPaths.Add(new IncludedPath() { Path = path });
+                this.indexingPolicy.IncludedPaths.Add(path);
             }
         }
 

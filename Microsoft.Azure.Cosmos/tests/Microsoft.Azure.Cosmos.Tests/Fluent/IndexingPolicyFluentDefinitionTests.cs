@@ -97,6 +97,39 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         }
 
         [TestMethod]
+        public void AttachReturnsCorrectResponse_WithIncludedPathsWithIndexes()
+        {
+            Mock<CosmosContainerFluentDefinitionForCreate> mockContainerPolicyDefinition = new Mock<CosmosContainerFluentDefinitionForCreate>();
+            Action<IndexingPolicy> callback = (policy) =>
+            {
+                Assert.AreEqual(1, policy.IncludedPaths.Count);
+                Assert.AreEqual("/path1", policy.IncludedPaths[0].Path);
+                Assert.AreEqual(3, policy.IncludedPaths[0].Indexes.Count);
+                Assert.AreEqual(IndexKind.Range, policy.IncludedPaths[0].Indexes[0].Kind);
+                Assert.AreEqual(DataType.Number, ((RangeIndex)policy.IncludedPaths[0].Indexes[0]).DataType);
+                Assert.AreEqual((short)20, ((RangeIndex)policy.IncludedPaths[0].Indexes[0]).Precision);
+                Assert.AreEqual(IndexKind.Hash, policy.IncludedPaths[0].Indexes[1].Kind);
+                Assert.AreEqual(DataType.Point, ((HashIndex)policy.IncludedPaths[0].Indexes[1]).DataType);
+                Assert.AreEqual(IndexKind.Spatial, policy.IncludedPaths[0].Indexes[2].Kind);
+                Assert.AreEqual(DataType.MultiPolygon, ((SpatialIndex)policy.IncludedPaths[0].Indexes[2]).DataType);
+            };
+
+            IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate> indexingPolicyFluentDefinitionCore = new IndexingPolicyFluentDefinition<CosmosContainerFluentDefinitionForCreate>(
+                mockContainerPolicyDefinition.Object,
+                callback);
+
+            indexingPolicyFluentDefinitionCore
+                .WithIncludedPaths()
+                    .PathWithIndexes("/path1")
+                        .RangeIndex(DataType.Number, 20)
+                        .HashIndex(DataType.Point)
+                        .SpatialIndex(DataType.MultiPolygon)
+                        .Attach()
+                    .Attach()
+                .Attach();
+        }
+
+        [TestMethod]
         public void AttachReturnsCorrectResponse_WithCompositeIndex()
         {
             Mock<CosmosContainerFluentDefinitionForCreate> mockContainerPolicyDefinition = new Mock<CosmosContainerFluentDefinitionForCreate>();
