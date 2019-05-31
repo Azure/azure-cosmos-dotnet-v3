@@ -123,7 +123,7 @@
 
             await Program.UseConsistencyLevels();
 
-            await Program.AccessMedatata();
+            await Program.AccessSystemDefinedProperties();
         }
 
         /// <summary>
@@ -641,18 +641,20 @@
         }
 
         /// <summary>
-        /// 4. Access items metadata
+        /// 4. Access items system defined properties
         /// </summary>
         /// <returns></returns>
-        private static async Task AccessMedatata()
+        private static async Task AccessSystemDefinedProperties()
         {
             //******************************************************************************************************************
-            // Items contain attributes that are part of their metadata:
+            // Items contain attributes that are system defined:
             // Timestamp : Gets the last modified timestamp associated with the item from the Azure Cosmos DB service.
             // Etag : Gets the entity tag associated with the item from the Azure Cosmos DB service.
             // TimeToLive : Gets the time to live in seconds of the item in the Azure Cosmos DB service.
+            // 
+            // See also: https://docs.microsoft.com/azure/cosmos-db/databases-containers-items#azure-cosmos-containers
             //******************************************************************************************************************
-            Console.WriteLine("\n4 - Accessing metadata");
+            Console.WriteLine("\n4 - Accessing system defined properties");
 
             //read a item's metadata
 
