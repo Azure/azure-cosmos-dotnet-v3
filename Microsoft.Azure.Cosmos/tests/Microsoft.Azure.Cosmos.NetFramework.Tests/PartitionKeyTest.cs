@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (Tuple<object, string> testcase in testcases)
             {
-                Assert.AreEqual(testcase.Item2, new PartitionKey(testcase.Item1).ToString());
+                Assert.AreEqual(testcase.Item2, new Documents.PartitionKey(testcase.Item1).ToString());
             }
         }
 
