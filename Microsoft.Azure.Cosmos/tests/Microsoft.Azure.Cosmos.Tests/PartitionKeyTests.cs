@@ -41,5 +41,33 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKey pk = new PartitionKey(somePK);
             Assert.AreEqual(expected, pk.ToString());
         }
+
+        [TestMethod]
+        public void CanBeMocked()
+        {
+            Moq.Mock<PartitionKey> pkMock = new Moq.Mock<PartitionKey>();
+            pkMock.Setup(p => p.Value).Returns("hello");
+            pkMock.Setup(p => p.ToString()).Returns("bye");
+            Assert.AreEqual("hello", pkMock.Object.Value);
+            Assert.AreEqual("bye", pkMock.Object.ToString());
+        }
+
+        [TestMethod]
+        public void TestPartitionKeyValues()
+        {
+            Tuple<object, string>[] testcases =
+            {
+                Tuple.Create<object, string>(Documents.Undefined.Value, "[{}]"),
+                Tuple.Create<object, string>(false, "[false]"),
+                Tuple.Create<object, string>(true, "[true]"),
+                Tuple.Create<object, string>(123.456, "[123.456]"),
+                Tuple.Create<object, string>("PartitionKeyValue", "[\"PartitionKeyValue\"]"),
+            };
+
+            foreach (Tuple<object, string> testcase in testcases)
+            {
+                Assert.AreEqual(testcase.Item2, new PartitionKey(testcase.Item1).ToString());
+            }
+        }
     }
 }

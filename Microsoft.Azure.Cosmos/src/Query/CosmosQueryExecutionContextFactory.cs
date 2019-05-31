@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 // Dis-ambiguate the NonePK if used 
                 PartitionKeyInternal partitionKeyInternal = null;
-                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, Cosmos.PartitionKey.NonePartitionKeyValue))
                 {
                     partitionKeyInternal = collection.GetNoneValue();
                 }

@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 else
                 {
-                    pkValue = CosmosContainerSettings.NonePartitionKeyValue;
+                    pkValue = Cosmos.PartitionKey.NonePartitionKeyValue;
                 }
 
                 insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(documentObject)).Resource.ToObject<Document>());

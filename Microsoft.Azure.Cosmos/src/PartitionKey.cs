@@ -14,9 +14,35 @@ namespace Microsoft.Azure.Cosmos
         private Lazy<string> partitionKeyValueAsString;
 
         /// <summary>
+        /// The returned object represents a partition key value that allows creating and accessing documents
+        /// without a value for partition key.
+        /// </summary>
+        public static readonly PartitionKey NonePartitionKeyValue = new PartitionKey(Microsoft.Azure.Documents.PartitionKey.None);
+
+        /// <summary>
+        /// The tag name to use in the documents for specifying a partition key value
+        /// when inserting such documents into a migrated collection
+        /// </summary>
+        public static readonly string SystemKeyName = Microsoft.Azure.Documents.PartitionKey.SystemKeyName;
+
+        /// <summary>
+        /// The partition key path in the collection definition for migrated collections
+        /// </summary>
+        public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
+
+        /// <summary>
         /// Gets the value provided at initialization.
         /// </summary>
         public virtual object Value => this.partitionKeyValue;
+
+        /// <summary>
+        /// Creates a new partition key value.
+        /// </summary>
+        /// <remarks>Usable for mocking scenarios.</remarks>
+        protected PartitionKey()
+            : this(Documents.Undefined.Value)
+        {
+        }
 
         /// <summary>
         /// Creates a new partition key value.

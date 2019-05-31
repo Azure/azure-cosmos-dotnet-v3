@@ -567,14 +567,14 @@ namespace Microsoft.Azure.Cosmos
                     pathTraversal = pathTraversal[tokens[i]] as CosmosObject;
                     if (pathTraversal == null)
                     {
-                        return CosmosContainerSettings.NonePartitionKeyValue;
+                        return PartitionKey.NonePartitionKeyValue;
                     }
                 }
 
                 CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
                 if (partitionKeyValue == null)
                 {
-                    return CosmosContainerSettings.NonePartitionKeyValue;
+                    return PartitionKey.NonePartitionKeyValue;
                 }
 
                 return new PartitionKey(this.CosmosElementToPartitionKeyObject(partitionKeyValue));
