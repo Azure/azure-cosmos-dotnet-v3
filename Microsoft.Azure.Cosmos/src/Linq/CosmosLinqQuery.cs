@@ -29,24 +29,28 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosQueryClient queryClient;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
+        private readonly bool allowSynchronousQueryExecution = false;
 
         public CosmosLinqQuery(
            CosmosContainerCore container,
            CosmosJsonSerializer cosmosJsonSerializer,
            CosmosQueryClient queryClient,
            QueryRequestOptions cosmosQueryRequestOptions,
-           Expression expression)
+           Expression expression,
+           bool allowSynchronousQueryExecution)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosJsonSerializer = cosmosJsonSerializer;
             this.queryClient = queryClient;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.expression = expression ?? Expression.Constant(this);
+            this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
             this.queryProvider = new CosmosLinqQueryProvider(
               container,
               cosmosJsonSerializer,
               queryClient,
-              cosmosQueryRequestOptions);
+              cosmosQueryRequestOptions,
+              this.allowSynchronousQueryExecution);
             this.correlatedActivityId = Guid.NewGuid();
         }
 
@@ -54,13 +58,15 @@ namespace Microsoft.Azure.Cosmos.Linq
           CosmosContainerCore container,
           CosmosJsonSerializer cosmosJsonSerializer,
           CosmosQueryClient queryClient,
-          QueryRequestOptions cosmosQueryRequestOptions)
+          QueryRequestOptions cosmosQueryRequestOptions,
+          bool allowSynchronousQueryExecution)
             : this(
               container,
               cosmosJsonSerializer,
               queryClient,
               cosmosQueryRequestOptions,
-              null)
+              null,
+              allowSynchronousQueryExecution)
         {
         }
 
@@ -90,6 +96,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>IEnumerator</returns>
         public IEnumerator<T> GetEnumerator()
         {
+            if (!this.allowSynchronousQueryExecution)
+            {
+                throw new NotSupportedException("To execute LINQ query please set " + nameof(allowSynchronousQueryExecution) + " true or" +
+                    " use CreateItemQuery returning CosmosFeedIterator which execute asynchronously via CosmosFeedIterator");
+            }
+
             using (CosmosQueryExecutionContext localQueryExecutionContext = CreateCosmosQueryExecutionContext())
             {
                 while (!localQueryExecutionContext.IsDone)
@@ -124,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
             if (querySpec != null)
             {
-                return JsonConvert.SerializeObject(querySpec);
+                return (querySpec.QueryText);
             }
 
             return container.LinkUri.ToString();

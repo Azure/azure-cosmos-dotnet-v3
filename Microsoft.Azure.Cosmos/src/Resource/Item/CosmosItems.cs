@@ -802,11 +802,12 @@ namespace Microsoft.Azure.Cosmos
         /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
         /// </summary>
         /// <typeparam name="T">The type of object to query.</typeparam>
-        /// <param name="requestOptions">The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="partitionKey">(Optional) The partition key to execute the query in a particular partition.</param>
-        /// <returns>An IOrderedQueryable{T} that can evaluate the query.</returns>
+        /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
+        /// <param name="requestOptions">(Optional)The options for the item query request.<see cref="QueryRequestOptions"/></param>
+        /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
-        /// This example below queries for some book documents.
+        /// 1. This example below shows LINQ query generation  blocked execution.
         /// <code language="c#">
         /// <![CDATA[
         /// public class Book 
@@ -825,29 +826,53 @@ namespace Microsoft.Azure.Cosmos
         /// }
         ///  
         /// // Query by the Title property
-        /// Book book = container.Items.CosmosItemQuery<Book>(requestOptions)
+        /// Book book = container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true)
         ///                      .Where(b => b.Title == "War and Peace")
         ///                      .AsEnumerable()
         ///                      .FirstOrDefault();
         /// 
         /// // Query a nested property
-        /// Book otherBook = container.Items.CosmosItemQuery<Book>(requestOptions)
+        /// Book otherBook = container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true)
         ///                           .Where(b => b.Author.FirstName == "Leo")
         ///                           .AsEnumerable()
         ///                           .FirstOrDefault();
         /// 
         /// // Perform iteration on books
-        /// foreach (Book matchingBook in container.Items.CosmosItemQuery<Book>(requestOptions).Where(b => b.Price > 100))
+        /// foreach (Book matchingBook in container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true).Where(b => b.Price > 100))
         /// {
         ///     // Iterate through books
         /// }
         /// ]]>
         /// </code>
         /// </example>
+        /// <example>
+        /// 2. This example below shows LINQ query generation and asynchronous execution with FeedIterator.
+        /// <code language="c#">
+        /// <![CDATA[
+        ///
+        /// // LINQ query generation
+        /// IQueryable<Book> queryable = container.Items.CreateItemQuery<Book>()
+        ///                      .Where(b => b.Title == "War and Peace");
+        /// //Asynchronous query execution
+        /// FeedIterator<Book> setIterator = this.Container
+        ///           .CreateItemQuery<Book>(queriable.ToSqlQueryText(), maxConcurrency: 1);
+        ///           while (setIterator.HasMoreResults)
+        ///           {
+        ///           FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
+        ///            var iter = queryResponse.GetEnumerator();
+        ///            while (iter.MoveNext())
+        ///            {
+        ///             Book book = iter.Current;
+        ///            }
+        ///            }
+        ///
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <remarks>
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
-        public abstract IOrderedQueryable<T> CosmosItemQuery<T>(QueryRequestOptions requestOptions, object partitionKey = null);
+        public abstract IOrderedQueryable<T> CreateItemQuery<T>(object partitionKey = null, bool allowSynchronousQueryExecution = false, QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.

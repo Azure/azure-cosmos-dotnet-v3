@@ -17,17 +17,20 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosQueryClient queryClient;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
+        private readonly bool allowSynchronousQueryExecution;
 
         public CosmosLinqQueryProvider(
            CosmosContainerCore container,
            CosmosJsonSerializer cosmosJsonSerializer,
            CosmosQueryClient queryClient,
-           QueryRequestOptions cosmosQueryRequestOptions)
+           QueryRequestOptions cosmosQueryRequestOptions,
+           bool allowSynchronousQueryExecution)
         {
             this.container = container;
             this.cosmosJsonSerializer = cosmosJsonSerializer;
             this.queryClient = queryClient;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
+            this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
         }
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
@@ -37,7 +40,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosJsonSerializer,
                 this.queryClient,
                 this.cosmosQueryRequestOptions,
-                expression);
+                expression,
+                this.allowSynchronousQueryExecution);
         }
 
         public IQueryable CreateQuery(Expression expression)
@@ -50,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosJsonSerializer,
                 this.queryClient,
                 this.cosmosQueryRequestOptions,
-                expression);
+                expression,
+                this.allowSynchronousQueryExecution);
         }
 
         public TResult Execute<TResult>(Expression expression)
@@ -62,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosJsonSerializer,
                 this.queryClient,
                 this.cosmosQueryRequestOptions,
-                expression);
+                expression,
+                this.allowSynchronousQueryExecution);
 
             return cosmosLINQQuery.ToList().FirstOrDefault();
         }
@@ -76,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
-                this.cosmosQueryRequestOptions);
+                this.cosmosQueryRequestOptions,
+                this.allowSynchronousQueryExecution);
 
             return documentQuery.ToList().FirstOrDefault();
         }

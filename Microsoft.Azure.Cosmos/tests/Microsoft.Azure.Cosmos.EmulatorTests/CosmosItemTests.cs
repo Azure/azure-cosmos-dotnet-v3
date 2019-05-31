@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
+    using Microsoft.Azure.Cosmos.Linq;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -1007,46 +1008,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating items for query.
             IList<ToDoActivity> itemList = await CreateRandomItems(pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
-            //LINQ query execution without partition key.
-            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.CosmosItemQuery<ToDoActivity>(new QueryRequestOptions() { AllowSynchronousQueryExecution = true });
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.CreateItemQuery<ToDoActivity>();
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            //V3 Asynchronous query execution with LINQ query generation sql text.
+            FeedIterator<ToDoActivity> setIterator = this.Container
+                   .CreateItemQuery<ToDoActivity>(queriable.ToSqlQueryText(), maxConcurrency: 2);
+            int resultsFetched = 0;
+            while (setIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                resultsFetched += queryResponse.Count();
+
+                // For the items returned with NonePartitionKeyValue
+                var iter = queryResponse.GetEnumerator();
+                while (iter.MoveNext())
+                {
+                    ToDoActivity activity = iter.Current;
+                    Assert.AreEqual(42, activity.taskNum);
+                }
+                Assert.AreEqual(2, resultsFetched);
+            }
+
+            //LINQ query execution without partition key.
+            linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(allowSynchronousQueryExecution: true);
+            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+
             Assert.AreEqual(2, queriable.Count());
             Assert.AreEqual(itemList[0].id, queriable.ToList()[0].id);
             Assert.AreEqual(itemList[1].id, queriable.ToList()[1].id);
 
             //LINQ query execution with wrong partition key.
-            linqQueryable = this.Container.CosmosItemQuery<ToDoActivity>(requestOptions: new QueryRequestOptions() { AllowSynchronousQueryExecution = true }, partitionKey: "test");
+            linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(partitionKey: "test", allowSynchronousQueryExecution: true);
             queriable = linqQueryable.Where(item => (item.taskNum < 100));
             Assert.AreEqual(0, queriable.Count());
 
             //LINQ query execution with correct partition key.
-            linqQueryable = this.Container.CosmosItemQuery<ToDoActivity>(requestOptions: new QueryRequestOptions() { AllowSynchronousQueryExecution = true }, partitionKey: itemList[1].status);
+            linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(partitionKey: itemList[1].status, allowSynchronousQueryExecution: true, requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual });
             queriable = linqQueryable.Where(item => (item.taskNum < 100));
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
 
-            //Creating LINQ query with null requestOptions.
+            //Creating LINQ query without setting allowSynchronousQueryExecution true.
             try
             {
-                linqQueryable = this.Container.CosmosItemQuery<ToDoActivity>(requestOptions: null, partitionKey: itemList[0].status);
+                linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(partitionKey: itemList[0].status);
                 queriable = linqQueryable.Where(item => (item.taskNum < 100));
-                Assert.Fail("Should throw ArgumentException on CosmosQueryRequestOptions");
-            }
-            catch (NotSupportedException exception)
-            {
-                Assert.IsTrue(exception.Message.Contains("please set AllowSynchronousQueryExecution in CosmosQueryRequestOptions true"));
-            }
-
-            //Creating LINQ query without setting AllowSynchronousQueryExecution true.
-            try
-            {
-                linqQueryable = this.Container.CosmosItemQuery<ToDoActivity>(requestOptions: new QueryRequestOptions(), partitionKey: itemList[0].status);
-                queriable = linqQueryable.Where(item => (item.taskNum < 100));
+                queriable.ToList();
                 Assert.Fail("Should throw NotSupportedException");
             }
             catch (NotSupportedException exception)
             {
-                Assert.IsTrue(exception.Message.Contains("please set AllowSynchronousQueryExecution in CosmosQueryRequestOptions true"));
+                Assert.IsTrue(exception.Message.Contains("To execute LINQ query please set allowSynchronousQueryExecution true"));
             }
         }
         // Move the data from None Partition to other logical partitions
