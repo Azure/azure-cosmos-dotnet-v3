@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
             if (partitionKey != null)
             {
-                requestOptions.PartitionKey = partitionKey;
+                requestOptions.PartitionKey = new PartitionKey(partitionKey);
             }
             else
             {

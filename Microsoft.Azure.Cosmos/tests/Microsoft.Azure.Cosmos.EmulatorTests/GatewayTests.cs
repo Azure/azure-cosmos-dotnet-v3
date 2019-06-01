@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (partitionKey != null)
             {
                 RequestOptions requestOptions = new RequestOptions();
-                requestOptions.PartitionKey = new PartitionKey(partitionKey);
+                requestOptions.PartitionKey = new Documents.PartitionKey(partitionKey);
                 response = client.ExecuteStoredProcedureAsync<TValue>(retrievedStoredProcedure, requestOptions).Result;
             }
             else
