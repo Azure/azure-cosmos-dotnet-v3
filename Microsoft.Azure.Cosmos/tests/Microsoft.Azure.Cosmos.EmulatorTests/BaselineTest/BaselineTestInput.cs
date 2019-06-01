@@ -37,6 +37,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// The derived class will have to override this, since every input is serialized a little differently.
         /// </summary>
         /// <param name="xmlWriter">The xml writer to use.</param>
-        public abstract void SerializeAsXML(XmlWriter xmlWriter);
+        public abstract void SerializeAsXml(XmlWriter xmlWriter);
     }
 }

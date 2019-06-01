@@ -172,7 +172,6 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: The right hand side of string.CompareTo() comparison must be constant '0', ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -183,7 +182,6 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: The right hand side of string.CompareTo() comparison must be constant '0', ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -194,7 +192,6 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: The right hand side of string.CompareTo() comparison must be constant '0', ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -205,7 +202,6 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>='), ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -216,7 +212,6 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>='), ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -227,7 +222,6 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>='), ]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

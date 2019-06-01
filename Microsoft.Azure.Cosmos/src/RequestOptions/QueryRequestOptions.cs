@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 MaxDegreeOfParallelism = this.MaxConcurrency.HasValue ? this.MaxConcurrency.Value : 0,
-                PartitionKey = new Documents.PartitionKey(this.PartitionKey.Value),
+                PartitionKey = this.PartitionKey != null ? new Documents.PartitionKey(this.PartitionKey) : null,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,

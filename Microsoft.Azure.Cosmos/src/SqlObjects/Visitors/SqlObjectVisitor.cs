@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlFromClause sqlObject);
         public abstract void Visit(SqlFunctionCallScalarExpression sqlObject);
         public abstract void Visit(SqlGeoNearCallScalarExpression sqlObject);
+        public abstract void Visit(SqlGroupByClause sqlObject);
         public abstract void Visit(SqlIdentifier sqlObject);
         public abstract void Visit(SqlIdentifierPathExpression sqlObject);
         public abstract void Visit(SqlInputPathCollection sqlObject);
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlFromClause sqlObject);
         public abstract TResult Visit(SqlFunctionCallScalarExpression sqlObject);
         public abstract TResult Visit(SqlGeoNearCallScalarExpression sqlObject);
+        public abstract TResult Visit(SqlGroupByClause sqlObject);
         public abstract TResult Visit(SqlIdentifier sqlObject);
         public abstract TResult Visit(SqlIdentifierPathExpression sqlObject);
         public abstract TResult Visit(SqlInputPathCollection sqlObject);
@@ -127,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TOutput Visit(SqlFromClause sqlObject, TInput input);
         public abstract TOutput Visit(SqlFunctionCallScalarExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlGeoNearCallScalarExpression sqlObject, TInput input);
+        public abstract TOutput Visit(SqlGroupByClause sqlObject, TInput input);
         public abstract TOutput Visit(SqlIdentifier sqlObject, TInput input);
         public abstract TOutput Visit(SqlIdentifierPathExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlInputPathCollection sqlObject, TInput input);

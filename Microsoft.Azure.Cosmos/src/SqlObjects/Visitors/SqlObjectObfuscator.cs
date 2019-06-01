@@ -127,6 +127,17 @@ namespace Microsoft.Azure.Cosmos.Sql
                 items);
         }
 
+        public override SqlObject Visit(SqlGroupByClause sqlGroupByClause)
+        {
+            SqlScalarExpression[] expressions = new SqlScalarExpression[sqlGroupByClause.Expressions.Count];
+            for (int i = 0; i < sqlGroupByClause.Expressions.Count; i++)
+            {
+                expressions[i] = sqlGroupByClause.Expressions[i].Accept(this) as SqlScalarExpression;
+            }
+
+            return SqlGroupByClause.Create(expressions);
+        }
+
         public override SqlObject Visit(SqlIdentifier sqlIdentifier)
         {
             return SqlIdentifier.Create(
@@ -294,6 +305,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                 sqlQuery.SelectClause.Accept(this) as SqlSelectClause,
                 sqlQuery.FromClause?.Accept(this) as SqlFromClause,
                 sqlQuery.WhereClause?.Accept(this) as SqlWhereClause,
+                sqlQuery.GroupByClause?.Accept(this) as SqlGroupByClause,
                 sqlQuery.OrderbyClause?.Accept(this) as SqlOrderbyClause,
                 sqlQuery.OffsetLimitClause?.Accept(this) as SqlOffsetLimitClause);
         }
