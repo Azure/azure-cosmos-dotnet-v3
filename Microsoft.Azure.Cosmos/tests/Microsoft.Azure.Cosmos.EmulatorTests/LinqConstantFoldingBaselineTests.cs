@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
     public class LinqConstantFoldingBaselineTests : BaselineTests<LinqExpressionInput, LinqExpressionOutput>
     {
         [TestMethod]
+        [Owner("khdang")]
         public void TestUnaryOperators()
         {
             List<LinqExpressionInput> inputs = new List<LinqExpressionInput>();
@@ -46,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        [Owner("khdang")]
         public void TestBinaryOperators()
         {
             var inputs = new List<LinqExpressionInput>();
@@ -98,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        [Owner("khdang")]
         public void TestOtherExpressions()
         {
             List<LinqExpressionInput> inputs = new List<LinqExpressionInput>();
@@ -160,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
                 this.errorMessage = errorMsg;
             }
 
-            public override void SerializeAsXML(XmlWriter xmlWriter)
+            public override void SerializeAsXml(XmlWriter xmlWriter)
             {
                 if (xmlWriter == null)
                 {
@@ -195,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
                 this.errorMessage = errorMsg;
             }
 
-            public override void SerializeAsXML(XmlWriter xmlWriter)
+            public override void SerializeAsXml(XmlWriter xmlWriter)
             {
                 if (this.errorMessage == null)
                 {

@@ -486,5 +486,16 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("ValueAndAnonymousTypesAndGeometryOnly", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Sorry, we are currently experiencing high demand in this region, and cannot fulfill your request at this time. We work continuously to bring more and more capacity online, and encourage you to try again shortly. Please do not hesitate to contact us via Azure support at any time or for any reason using this link http://aka.ms/azuresupport..
+        /// </summary>
+        internal static string AllServicePoolsEmpty
+        {
+            get
+            {
+                return ResourceManager.GetString("AllServicePoolsEmpty", resourceCulture);
+            }
+        }
     }
 }

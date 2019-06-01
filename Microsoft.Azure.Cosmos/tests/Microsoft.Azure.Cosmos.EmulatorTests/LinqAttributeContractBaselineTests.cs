@@ -20,9 +20,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
     /// </summary>
-    [Ignore]
     [TestClass]
-    [TestCategory("Quarantine")]
     public class LinqAttributeContractBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static Func<bool, IQueryable<Datum>> getQuery;
@@ -61,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             var newCol = new DocumentCollection()
             {
                 Id = Guid.NewGuid().ToString(),
+                PartitionKey = defaultPartitionKeyDefinition,
                 IndexingPolicy = new IndexingPolicy()
                 {
                     IncludedPaths = new System.Collections.ObjectModel.Collection<IncludedPath>()
