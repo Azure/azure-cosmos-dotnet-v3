@@ -36,6 +36,8 @@
     // 3. Using ETags to control execution
     // 3.1 - Use ETag with ReplaceItem for optimistic concurrency
     // 3.2 - Use ETag with ReadItem to only return a result if the ETag of the request does not match
+    //
+    // 4 - Access items system defined properties
     //-----------------------------------------------------------------------------------------------------------
     // See Also - 
     //
@@ -120,6 +122,8 @@
             await Program.UseETags();
 
             await Program.UseConsistencyLevels();
+
+            await Program.AccessSystemDefinedProperties();
         }
 
         /// <summary>
@@ -634,6 +638,35 @@
 
 
             Console.WriteLine("Read doc with StatusCode of {0}", response.StatusCode);
+        }
+
+        /// <summary>
+        /// 4. Access items system defined properties
+        /// </summary>
+        /// <returns></returns>
+        private static async Task AccessSystemDefinedProperties()
+        {
+            //******************************************************************************************************************
+            // Items contain attributes that are system defined:
+            // Timestamp : Gets the last modified timestamp associated with the item from the Azure Cosmos DB service.
+            // Etag : Gets the entity tag associated with the item from the Azure Cosmos DB service.
+            // TimeToLive : Gets the time to live in seconds of the item in the Azure Cosmos DB service.
+            // 
+            // See also: https://docs.microsoft.com/azure/cosmos-db/databases-containers-items#azure-cosmos-containers
+            //******************************************************************************************************************
+            Console.WriteLine("\n4 - Accessing system defined properties");
+
+            //read a item's metadata
+
+            Metadata itemResponse = await container.Items.ReadItemAsync<Metadata>(
+                partitionKey: "Account1",
+                id: "SalesOrder1");
+
+            Console.WriteLine("ETag of read item - {0}", itemResponse.Etag);
+
+            Console.WriteLine("TimeToLive of read item - {0}", itemResponse.TimeToLive);
+
+            Console.WriteLine("Timestamp of read item - {0}", itemResponse.Timestamp.ToShortDateString());
         }
 
         private static async Task UseConsistencyLevels()
