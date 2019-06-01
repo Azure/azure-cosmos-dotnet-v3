@@ -72,17 +72,17 @@ namespace Microsoft.Azure.Cosmos
             CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
             if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
             {
-                return offerResult.Throughput;
+                return offerResult.RequestUnits;
             }
 
             throw offerResult.CosmosException;
         }
 
         public override async Task ReplaceProvisionedThroughputAsync(
-            int throughput,
+            int requestUnits,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(throughput, cancellationToken);
+            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(requestUnits, cancellationToken);
             if (offerResult.StatusCode != HttpStatusCode.OK)
             {
                 throw offerResult.CosmosException;
@@ -118,11 +118,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
-            int targetThroughput,
+            int targetRequestUnits,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<string> rid = this.GetRIDAsync(cancellationToken);
-            return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
+            return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetRequestUnits, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 
