@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    ItemResponse<dynamic> response = await client.GetContainer("test", "test").CreateItemAsync<dynamic>(item: new { id = "id" }, partitionKey: "id");
+                    ItemResponse<dynamic> response = await client.GetContainer("test", "test").CreateItemAsync<dynamic>(item: new { id = "id" }, partitionKey: new Cosmos.PartitionKey("id"));
                 }
             }
             catch (CosmosException)

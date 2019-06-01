@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity testItem = CreateRandomToDoActivity();
             using (CosmosResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemAsStreamAsync(
-                partitionKey: testItem.status,
+                partitionKey: new Cosmos.PartitionKey(testItem.status),
                 streamPayload: this.jsonSerializer.ToStream(testItem)))
             {
                 Assert.IsNotNull(response);

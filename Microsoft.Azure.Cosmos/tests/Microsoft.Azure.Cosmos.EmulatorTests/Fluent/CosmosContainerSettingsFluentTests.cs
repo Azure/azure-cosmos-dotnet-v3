@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await cosmosContainer.CreateItemAsync<dynamic>(payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await cosmosContainer.ReadItemAsync<dynamic>(payload.user, payload.id);
+            ItemResponse<dynamic> readItemResponse = await cosmosContainer.ReadItemAsync<dynamic>(new Cosmos.PartitionKey(payload.user), payload.id);
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
 

@@ -27,28 +27,28 @@ namespace Microsoft.Azure.Cosmos.Tests
                 id = Guid.NewGuid().ToString(),
                 pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
             };
-            await VerifyItemOperations(item.pk, "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
+            await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
 
             item = new
             {
                 id = Guid.NewGuid().ToString(),
                 pk = 4567,
             };
-            await VerifyItemOperations(item.pk, "[4567.0]", item);
+            await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[4567.0]", item);
 
             item = new
             {
                 id = Guid.NewGuid().ToString(),
                 pk = 4567.1234,
             };
-            await VerifyItemOperations(item.pk, "[4567.1234]", item);
+            await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[4567.1234]", item);
 
             item = new
             {
                 id = Guid.NewGuid().ToString(),
                 pk = true,
             };
-            await VerifyItemOperations(item.pk, "[true]", item);
+            await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[true]", item);
         }
 
         [TestMethod]
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 id = Guid.NewGuid().ToString()
             };
 
-            await VerifyItemOperations(Undefined.Value, "[{}]", testItem);
+            await VerifyItemOperations(new Cosmos.PartitionKey(Undefined.Value), "[{}]", testItem);
         }
 
         [TestMethod]
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //null should return Undefined
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { pk = (object)null }));
-            Assert.AreEqual(CosmosContainerSettings.NonePartitionKeyValue, pkValue);
+            Assert.AreEqual(Cosmos.PartitionKey.NonePartitionKeyValue, pkValue);
         }
 
         [TestMethod]
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (dynamic poco in invalidNestedItems)
             {
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
-                Assert.IsTrue(object.ReferenceEquals(CosmosContainerSettings.NonePartitionKeyValue, pk));
+                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.NonePartitionKeyValue, pk));
             }
         }
 
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private async Task VerifyItemOperations(
-            object partitionKey,
+            Cosmos.PartitionKey partitionKey,
             string partitionKeySerialized,
             dynamic testItem,
             ItemRequestOptions requestOptions = null)

@@ -6598,7 +6598,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
-            if (options != null && options.PartitionKey != null && options.PartitionKey.Equals(PartitionKey.None))
+            if (options != null && options.PartitionKey != null && options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
             }
@@ -6634,7 +6634,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException(RMResources.MissingPartitionKeyValue);
                 }
             }
-            else if (options.PartitionKey.Equals(PartitionKey.None))
+            else if (options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
             }
