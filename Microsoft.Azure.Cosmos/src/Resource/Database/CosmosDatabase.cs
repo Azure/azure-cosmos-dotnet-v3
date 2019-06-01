@@ -122,16 +122,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="requestUints">The cosmos database throughput.</param>
+        /// <param name="requestUnits">The cosmos database throughput.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
-        /// <remarks>
-        /// <para>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
-        /// </para>
-        /// </remarks>
         /// <example>
         /// The following example shows how to get the throughput.
         /// <code language="c#">
@@ -141,8 +136,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>A Task representing the asynchronoous operation.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task ReplaceProvisionedThroughputAsync(
-            int requestUints,
+            int requestUnits,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

@@ -68,6 +68,11 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
+    /// <remarks>
+    /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/distribute-data-globally" />
+    /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/partitioning-overview" />
+    /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/request-units" />
+    /// </remarks>
     public partial class CosmosClient : IDisposable
     {
         private Lazy<CosmosOffers> offerSet;

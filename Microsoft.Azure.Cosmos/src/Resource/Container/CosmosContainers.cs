@@ -67,6 +67,9 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso cref="DefineContainer(string, string)"/>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
                     int? requestUnits = null,
