@@ -43,6 +43,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void WithCosmosPartitionKey()
+        {
+            const string somePK = "somePK";
+            PartitionKey v3PK = new PartitionKey(somePK);
+            PartitionKey pk = new PartitionKey(v3PK);
+            Assert.AreEqual(v3PK.ToString(), pk.ToString());
+        }
+
+        [TestMethod]
         public void TestPartitionKeyValues()
         {
             Tuple<object, string>[] testcases =

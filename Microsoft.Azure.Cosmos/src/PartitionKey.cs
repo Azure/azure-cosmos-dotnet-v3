@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public sealed class PartitionKey
     {
-        private Lazy<string> partitionKeyValueAsString;
-
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents
         /// without a value for partition key.
@@ -46,20 +44,22 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Value = partitionKeyValue;
-            this.partitionKeyValueAsString = new Lazy<string>(this.GetPartitionKeyValueAsString);
         }
 
         /// <summary>
         /// Gets the string representation of the partition key value.
         /// </summary>
         /// <returns>The string representation of the partition key value</returns>
-        public new string ToString() => this.partitionKeyValueAsString.Value;
-
-        private string GetPartitionKeyValueAsString()
+        public new string ToString()
         {
             if (this.Value is Documents.PartitionKey)
             {
                 return ((Documents.PartitionKey)this.Value).InternalKey.ToJsonString();
+            }
+
+            if (this.Value is Cosmos.PartitionKey)
+            {
+                return ((Cosmos.PartitionKey)this.Value).ToString();
             }
 
             return new Documents.PartitionKey(this.Value).InternalKey.ToJsonString();
