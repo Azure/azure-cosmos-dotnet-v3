@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
         /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
-        /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/request-units"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/>
         public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? requestUnits = null,
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
-        /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/request-units"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/>
         public virtual Task<CosmosResponseMessage> CreateDatabaseAsStreamAsync(
                 CosmosDatabaseSettings databaseSettings,
                 int? requestUnits = null,

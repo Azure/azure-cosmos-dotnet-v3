@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>A Task representing the asynchronoous operation.</returns>
         /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/en-us/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public abstract Task ReplaceProvisionedThroughputAsync(
             int requestUnits,
