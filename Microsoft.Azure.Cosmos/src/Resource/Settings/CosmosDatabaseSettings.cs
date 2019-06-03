@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
     /// <![CDATA[
     /// DocumentCollection coll = await client.CreateDocumentCollectionAsync(db.SelfLink,
     ///     new DocumentCollection { Id = "MyCollection" }, 
-    ///     new RequestOptions { OfferThroughput = 10000} );
+    ///     10000);
     /// ]]>
     /// </code>
     /// </example>
