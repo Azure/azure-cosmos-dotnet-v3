@@ -425,6 +425,41 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
+        public override ChangeFeedProcessor CreateChangeFeedProcessor<T>(
+            string workflowName,
+            CosmosContainer leaseCosmosContainer,
+            Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate,
+            ChangeFeedProcessorOptions changeFeedProcessorOptions = null,
+            ChangeFeedLeaseOptions changeFeedLeaseOptions = null)
+        {
+            if (workflowName == null)
+            {
+                throw new ArgumentNullException(nameof(workflowName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
+
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+            ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder(
+                workflowName: workflowName,
+                cosmosContainer: this,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+
+            return builder
+                .WithCosmosLeaseContainer(leaseCosmosContainer)
+                .WithChangeFeedProcessorOptions(changeFeedProcessorOptions)
+                .WithLeaseConfiguration(
+                    changeFeedLeaseOptions.LeaseAcquireInterval,
+                    changeFeedLeaseOptions.LeaseExpirationInterval,
+                    changeFeedLeaseOptions.LeaseRenewInterval)
+                .Build();
+        }
+
         public override ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName,
             Func<long, CancellationToken, Task> estimationDelegate,

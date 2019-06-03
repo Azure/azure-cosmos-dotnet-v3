@@ -2,14 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
+namespace Microsoft.Azure.Cosmos
 {
     using System;
 
     /// <summary>
-    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
+    /// Options to control various aspects of lease management happening within <see cref="ChangeFeedProcessor"/> instance.
     /// </summary>
-    internal class ChangeFeedLeaseOptions
+    public class ChangeFeedLeaseOptions
     {
         internal static readonly TimeSpan DefaultRenewInterval = TimeSpan.FromSeconds(17);
         internal static readonly TimeSpan DefaultAcquireInterval = TimeSpan.FromSeconds(13);
@@ -24,25 +24,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         }
 
         /// <summary>
-        /// Gets or sets renew interval for all leases currently held by <see cref="ChangeFeedProcessorCore{T}"/> instance.
+        /// Gets or sets renew interval for all leases currently held by <see cref="ChangeFeedProcessor"/> instance.
         /// </summary>
-        public TimeSpan LeaseRenewInterval { get; set; }
+        public virtual TimeSpan LeaseRenewInterval { get; set; }
 
         /// <summary>
         /// Gets or sets the interval to kick off a task to compute if leases are distributed evenly among known host instances.
         /// </summary>
-        public TimeSpan LeaseAcquireInterval { get; set; }
+        public virtual TimeSpan LeaseAcquireInterval { get; set; }
 
         /// <summary>
         /// Gets or sets the interval for which the lease is taken. If the lease is not renewed within this
-        /// interval, it will cause it to expire and ownership of the lease will move to another <see cref="ChangeFeedProcessorCore{T}"/> instance.
+        /// interval, it will cause it to expire and ownership of the lease will move to another <see cref="ChangeFeedProcessor"/> instance.
         /// </summary>
-        public TimeSpan LeaseExpirationInterval { get; set; }
+        public virtual TimeSpan LeaseExpirationInterval { get; set; }
 
         /// <summary>
-        /// Gets or sets a prefix to be used as part of the lease id. This can be used to support multiple instances of <see cref="ChangeFeedProcessorCore{T}"/>
+        /// Gets or sets a prefix to be used as part of the lease id. This can be used to support multiple instances of <see cref="ChangeFeedProcessor"/>
         /// instances pointing at the same feed while using the same auxiliary collection.
         /// </summary>
-        public string LeasePrefix { get; set; }
+        internal string LeasePrefix { get; set; }
     }
 }

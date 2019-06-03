@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         /// (3) StartTime is not specified.
         /// </remarks>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        internal virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
+        public virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartFromBeginning = true;
@@ -196,6 +196,12 @@ namespace Microsoft.Azure.Cosmos
         {
             this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartContinuation = startContinuation;
+            return this;
+        }
+
+        internal ChangeFeedProcessorBuilder WithChangeFeedProcessorOptions(ChangeFeedProcessorOptions changeFeedProcessorOptions)
+        {
+            this.changeFeedProcessorOptions = changeFeedProcessorOptions;
             return this;
         }
 

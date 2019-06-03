@@ -5,11 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
 
     /// <summary>
-    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
+    /// Options to control various aspects of Change Feed consumption happening within <see cref="ChangeFeedProcessor"/> instance.
     /// </summary>
     public class ChangeFeedProcessorOptions
     {

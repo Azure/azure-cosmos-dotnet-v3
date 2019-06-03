@@ -891,6 +891,22 @@ namespace Microsoft.Azure.Cosmos
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
+        /// Creates a <see cref="ChangeFeedProcessor"/> to react on changes .
+        /// </summary>
+        /// <param name="workflowName">A name that identifies the work that the Processor will do.</param>
+        /// <param name="leaseCosmosContainer">The Cosmos Container to hold the leases state</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <param name="changeFeedProcessorOptions">Options to control various aspects of Change Feed consumption.</param>
+        /// <param name="changeFeedLeaseOptions">Options to control various aspects of lease management.</param>
+        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessor CreateChangeFeedProcessor<T>(
+            string workflowName,
+            CosmosContainer leaseCosmosContainer,
+            Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate,
+            ChangeFeedProcessorOptions changeFeedProcessorOptions = null,
+            ChangeFeedLeaseOptions changeFeedLeaseOptions = null);
+
+        /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
         /// </summary>
         /// <param name="workflowName">A name that identifies the work associated with the Processor the Estimator is going to measure.</param>
