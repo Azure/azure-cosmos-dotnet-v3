@@ -52,6 +52,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
     <!--Direct Dependencies-->
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
