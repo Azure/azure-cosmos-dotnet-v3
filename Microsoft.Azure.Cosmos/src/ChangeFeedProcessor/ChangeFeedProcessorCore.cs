@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -22,10 +21,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private string instanceName;
         private CosmosContainerCore monitoredContainer;
         private PartitionManager partitionManager;
-        private ChangeFeedLeaseOptions changeFeedLeaseOptions;
-        private ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private bool initialized = false;
+        internal ChangeFeedLeaseOptions changeFeedLeaseOptions;
+        internal ChangeFeedProcessorOptions changeFeedProcessorOptions;
 
         public ChangeFeedProcessorCore(ChangeFeedObserverFactory<T> observerFactory)
         {
@@ -119,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return documentServiceLeaseStoreManager;
         }
 
-        internal PartitionManager BuildPartitionManager()
+        private PartitionManager BuildPartitionManager()
         {
             CheckpointerObserverFactory<T> factory = new CheckpointerObserverFactory<T>(this.observerFactory, this.changeFeedProcessorOptions.CheckpointFrequency);
             PartitionSynchronizerCore synchronizer = new PartitionSynchronizerCore(
