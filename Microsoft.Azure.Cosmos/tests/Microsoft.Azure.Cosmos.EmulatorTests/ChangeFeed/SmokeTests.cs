@@ -61,6 +61,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        public async Task WritesTriggerDelegate_WithLeaseContainer_NoBuilder()
+        {
+            IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
+            List<int> receivedIds = new List<int>();
+            ChangeFeedProcessor processor = this.Container
+                .CreateChangeFeedProcessor("test", 
+                "instanceName",
+                this.LeaseContainer,
+                (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    foreach (TestClass doc in docs)
+                    {
+                        receivedIds.Add(int.Parse(doc.id));
+                    }
+
+                    return Task.CompletedTask;
+                });
+
+            await processor.StartAsync();
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            // Inserting documents
+            foreach (int id in expectedIds)
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            // Waiting on all notifications to finish
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await processor.StopAsync();
+            // Verify that we maintain order
+            CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
+        }
+
+        [TestMethod]
         public async Task WritesTriggerDelegate_WithLeaseContainerWithDynamic()
         {
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);

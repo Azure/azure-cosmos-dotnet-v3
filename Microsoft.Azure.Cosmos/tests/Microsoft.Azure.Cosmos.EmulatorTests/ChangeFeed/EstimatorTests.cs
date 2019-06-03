@@ -46,6 +46,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.AreEqual(1, receivedEstimation);
         }
 
+        [TestMethod]
+        public async Task WhenNoLeasesExistReturn1_NoBuilder()
+        {
+            long? receivedEstimation = 0;
+            ChangeFeedProcessor estimator = this.Container
+                .CreateChangeFeedEstimator("test",
+                this.LeaseContainer,
+                (long estimation, CancellationToken token) =>
+                {
+                    receivedEstimation = estimation;
+                    return Task.CompletedTask;
+                }, 
+                TimeSpan.FromSeconds(1));
+
+            await estimator.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await estimator.StopAsync();
+            Assert.IsTrue(receivedEstimation.HasValue);
+            Assert.AreEqual(1, receivedEstimation);
+        }
+
         /// <summary>
         /// This test checks that when the ContinuationToken is null, we send the StartFromBeginning flag, but since there is no documents, it returns 0
         /// </summary>
@@ -73,6 +94,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+
+            await estimator.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await estimator.StopAsync();
+            Assert.IsTrue(receivedEstimation.HasValue);
+            Assert.AreEqual(0, receivedEstimation);
+        }
+
+        /// <summary>
+        /// This test checks that when the ContinuationToken is null, we send the StartFromBeginning flag, but since there is no documents, it returns 0
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task WhenLeasesHaveContinuationTokenNullReturn0_NoBuilder()
+        {
+            ChangeFeedProcessor processor = this.Container
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await processor.StopAsync();
+
+            long? receivedEstimation = null;
+            ChangeFeedProcessor estimator = this.Container
+                .CreateChangeFeedEstimator("test",
+                this.LeaseContainer,
+                (long estimation, CancellationToken token) =>
+                {
+                    receivedEstimation = estimation;
+                    return Task.CompletedTask;
+                }, TimeSpan.FromSeconds(1));
 
             await estimator.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
@@ -119,6 +176,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
 
             
+            // Inserting more documents
+            foreach (int id in Enumerable.Range(11, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            await estimator.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await estimator.StopAsync();
+            Assert.IsTrue(receivedEstimation.HasValue);
+            Assert.AreEqual(10, receivedEstimation);
+        }
+
+        /// <summary>
+        /// This test checks that when the ContinuationToken is null, we send the StartFromBeginning flag, but since there is no documents, it returns 0
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task CountPendingDocuments_NoBuilder()
+        {
+            ChangeFeedProcessor processor = this.Container
+                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            // Inserting documents
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            // Waiting on all notifications to finish
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await processor.StopAsync();
+
+            long? receivedEstimation = null;
+            ChangeFeedProcessor estimator = this.Container
+                .CreateChangeFeedEstimator("test",
+                this.LeaseContainer,
+                (long estimation, CancellationToken token) =>
+                {
+                    receivedEstimation = estimation;
+                    return Task.CompletedTask;
+                }, TimeSpan.FromSeconds(1));
+
+
             // Inserting more documents
             foreach (int id in Enumerable.Range(11, 10))
             {

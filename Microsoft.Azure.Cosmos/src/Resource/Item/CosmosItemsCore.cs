@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
             string workflowName,
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate)
         {
-            if (workflowName == null)
+            if (string.IsNullOrEmpty(workflowName))
             {
                 throw new ArgumentNullException(nameof(workflowName));
             }
@@ -427,14 +427,20 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessor CreateChangeFeedProcessor<T>(
             string workflowName,
+            string instanceName,
             CosmosContainer leaseCosmosContainer,
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate,
             ChangeFeedProcessorOptions changeFeedProcessorOptions = null,
             ChangeFeedLeaseOptions changeFeedLeaseOptions = null)
         {
-            if (workflowName == null)
+            if (string.IsNullOrEmpty(workflowName))
             {
                 throw new ArgumentNullException(nameof(workflowName));
+            }
+
+            if (string.IsNullOrEmpty(instanceName))
+            {
+                throw new ArgumentNullException(nameof(instanceName));
             }
 
             if (leaseCosmosContainer == null)
@@ -455,14 +461,24 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
 
-            return builder
-                .WithCosmosLeaseContainer(leaseCosmosContainer)
-                .WithChangeFeedProcessorOptions(changeFeedProcessorOptions)
-                .WithLeaseConfiguration(
+            builder
+                .WithInstanceName(instanceName)
+                .WithCosmosLeaseContainer(leaseCosmosContainer);
+
+            if (changeFeedProcessorOptions != null)
+            {
+                builder.WithChangeFeedProcessorOptions(changeFeedProcessorOptions);
+            }
+
+            if (changeFeedLeaseOptions != null)
+            {
+                builder.WithLeaseConfiguration(
                     changeFeedLeaseOptions.LeaseAcquireInterval,
                     changeFeedLeaseOptions.LeaseExpirationInterval,
-                    changeFeedLeaseOptions.LeaseRenewInterval)
-                .Build();
+                    changeFeedLeaseOptions.LeaseRenewInterval);
+            }
+
+            return builder.Build();
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
@@ -470,7 +486,7 @@ namespace Microsoft.Azure.Cosmos
             Func<long, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            if (workflowName == null)
+            if (string.IsNullOrEmpty(workflowName))
             {
                 throw new ArgumentNullException(nameof(workflowName));
             }
@@ -494,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
             Func<long, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            if (workflowName == null)
+            if (string.IsNullOrEmpty(workflowName))
             {
                 throw new ArgumentNullException(nameof(workflowName));
             }

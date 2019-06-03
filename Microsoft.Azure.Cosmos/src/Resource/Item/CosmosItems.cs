@@ -894,6 +894,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a <see cref="ChangeFeedProcessor"/> to react on changes.
         /// </summary>
         /// <param name="workflowName">A name that identifies the work that the Processor will do.</param>
+        /// <param name="instanceName">Name to be used for the processor instance. When using multiple processor hosts, each host must have a unique name.</param>
         /// <param name="leaseCosmosContainer">The Cosmos Container to hold the leases state.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <param name="changeFeedProcessorOptions">Options to control various aspects of Change Feed consumption.</param>
@@ -901,6 +902,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/> to process the Change Feed.</returns>
         public abstract ChangeFeedProcessor CreateChangeFeedProcessor<T>(
             string workflowName,
+            string instanceName,
             CosmosContainer leaseCosmosContainer,
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate,
             ChangeFeedProcessorOptions changeFeedProcessorOptions = null,

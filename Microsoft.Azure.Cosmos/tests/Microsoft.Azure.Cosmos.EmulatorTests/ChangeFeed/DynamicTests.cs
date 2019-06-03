@@ -72,6 +72,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        public async Task TestWithRunningProcessor_NoBuilder()
+        {
+            int partitionKey = 0;
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+            ChangeFeedProcessor processor = this.Container
+                .CreateChangeFeedProcessor("test",
+                "random",
+                this.LeaseContainer,
+                (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    processedDocCount += docs.Count();
+                    foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
+                    if (processedDocCount == 10) allDocsProcessed.Set();
+
+                    return Task.CompletedTask;
+                });
+
+            // Start the processor, insert 1 document to generate a checkpoint
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
+            }
+
+            var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
+        [TestMethod]
         [Ignore("Emulator is failing due to socket issues")]
         public async Task TestReducePageSizeScenario()
         {
