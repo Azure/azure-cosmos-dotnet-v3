@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly Guid correlatedActivityId;
 
         private readonly CosmosContainerCore container;
-        private readonly CosmosQueryClient queryClient;
+        private readonly CosmosQueryClientCore queryClient;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public CosmosLinqQuery(
            CosmosContainerCore container,
            CosmosJsonSerializer cosmosJsonSerializer,
-           CosmosQueryClient queryClient,
+           CosmosQueryClientCore queryClient,
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution)
@@ -50,14 +51,15 @@ namespace Microsoft.Azure.Cosmos.Linq
               cosmosJsonSerializer,
               queryClient,
               cosmosQueryRequestOptions,
-              this.allowSynchronousQueryExecution);
+              this.allowSynchronousQueryExecution,
+              this.queryClient.DocumentQueryClient.OnExecuteScalarQueryCallback);
             this.correlatedActivityId = Guid.NewGuid();
         }
 
         public CosmosLinqQuery(
           CosmosContainerCore container,
           CosmosJsonSerializer cosmosJsonSerializer,
-          CosmosQueryClient queryClient,
+          CosmosQueryClientCore queryClient,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution)
             : this(
@@ -178,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 sqlQuerySpec: DocumentQueryEvaluator.Evaluate(expression),
                 queryRequestOptions: this.cosmosQueryRequestOptions,
                 resourceLink: this.container.LinkUri,
-                isContinuationExpected: true,
+                isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
             return cosmosQueryExecution;

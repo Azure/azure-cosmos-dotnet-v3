@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
-    using Microsoft.Azure.Cosmos.Linq;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper

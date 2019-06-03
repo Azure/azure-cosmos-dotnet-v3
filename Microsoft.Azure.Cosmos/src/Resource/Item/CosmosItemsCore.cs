@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.EnableCrossPartitionQuery = true;
             }
 
-            return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, this.queryClient, requestOptions, allowSynchronousQueryExecution);
+            return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, (CosmosQueryClientCore)this.queryClient, requestOptions, allowSynchronousQueryExecution);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(

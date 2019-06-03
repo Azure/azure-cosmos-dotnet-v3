@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public int Int;
         public int? NullableInt;
         public Logs Records;
+        public string id;
+        public string pk;
     }
 
     public class Parent : LinqTestObject
@@ -88,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public int Number { get; set; }
 
+        public string pk { get; set; }
         public bool Flag { get; set; }
 
         public int[] Multiples { get; set; }

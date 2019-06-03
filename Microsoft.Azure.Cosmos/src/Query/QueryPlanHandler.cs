@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKeyDefinition: partitionKeyDefinition,
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
+                    allowNonValueAggregateQuery: false,
                     cancellationToken: cancellationToken);
 
             if (partitionedQueryExecutionInfo == null ||

@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     [TestClass]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
-        private static DocumentClient client;
-        private static Uri databaseUri;
+        private static CosmosClient client;
+        private static CosmosDatabase cosmosDatabase;
         private static Func<bool, IQueryable<Data>> getQuery;
         private static Func<bool, IQueryable<Family>> getQueryFamily;
         private static IQueryable lastExecutedScalarQuery;
@@ -50,22 +50,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         private static void Initialize()
         {
-            client = TestCommon.CreateClient(false, defaultConsistencyLevel: ConsistencyLevel.Session);
-
+            client = TestCommon.CreateCosmosClient(true);
             CleanUp();
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
             // to verify the translated LINQ directly as other queries type.
-            client.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
+            client.DocumentClient.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
 
             string databaseName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
-            databaseUri = UriFactory.CreateDatabaseUri(databaseName);
-            Database testDb = client.CreateDatabaseAsync(new Database() { Id = databaseName }).Result;
 
-            DocumentCollection collection;
-            getQuery = LinqTestsCommon.GenerateSimpleData(client, testDb, out collection);
-            getQueryFamily = LinqTestsCommon.GenerateFamilyData(client, testDb, out collection);
+            CosmosContainer container;
+            cosmosDatabase = client.CreateDatabaseAsync(databaseName).Result;
+            getQuery = LinqTestsCommon.GenerateSimpleCosmosData(cosmosDatabase);
+            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(cosmosDatabase, out container);
         }
 
         [ClassCleanup]
@@ -73,10 +71,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             try
             {
-                List<Database> dbs = client.CreateDatabaseQuery().ToList();
+                List<Database> dbs = client.DocumentClient.CreateDatabaseQuery().ToList();
                 foreach (Database db in dbs)
                 {
-                    client.DeleteDatabaseAsync(db.SelfLink).Wait();
+                    client.DocumentClient.DeleteDatabaseAsync(db.SelfLink).Wait();
                 }
             }
             catch (DocumentClientException e)

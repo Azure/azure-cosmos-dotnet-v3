@@ -24,22 +24,22 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     public class LinqAttributeContractBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static Func<bool, IQueryable<Datum>> getQuery;
-        private static DocumentClient client;
-        private static Database testDb;
-        private static DocumentCollection testCollection;
+        private static CosmosClient client;
+        private static CosmosDatabase testDb;
+        private static CosmosContainer testCollection;
 
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
         {
-            client = TestCommon.CreateClient(true);
+            client = TestCommon.CreateCosmosClient(true);
 
             var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
             try
             {
-                var response = client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id)).Result;
+                var response = client.DocumentClient.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id)).Result;
             }
             catch { }
-            testDb = client.CreateDatabaseAsync(db).Result;
+            testDb = client.CreateDatabaseAsync(nameof(LinqTranslationBaselineTests)).Result;
         }
 
         [ClassCleanup]
@@ -47,55 +47,58 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             if (testDb != null)
             {
-                client.DeleteDatabaseAsync(testDb);
+                testDb.DeleteAsync().Wait();
             }
         }
 
         [TestInitialize]
         public void TestInitialize()
         {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             // The test collection should have range index on string properties
             // for the orderby tests
-            var newCol = new DocumentCollection()
+            var newCol = new CosmosContainerSettings()
             {
                 Id = Guid.NewGuid().ToString(),
-                PartitionKey = defaultPartitionKeyDefinition,
-                IndexingPolicy = new IndexingPolicy()
+                PartitionKey = partitionKeyDefinition,
+                IndexingPolicy = new Microsoft.Azure.Cosmos.IndexingPolicy()
                 {
-                    IncludedPaths = new System.Collections.ObjectModel.Collection<IncludedPath>()
+                    IncludedPaths = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.IncludedPath>()
                     {
-                        new IncludedPath()
+                        new Microsoft.Azure.Cosmos.IncludedPath()
                         {
                             Path = "/*",
-                            Indexes = new System.Collections.ObjectModel.Collection<Index>()
+                            Indexes = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Index>()
                             {
-                                Index.Range(DataType.Number, -1),
-                                Index.Range(DataType.String, -1)
+                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.Number, -1),
+                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.String, -1)
                             }
                         }
                     }
                 }
             };
-            testCollection = client.CreateDocumentCollectionAsync(testDb, newCol).Result;
+            testCollection = testDb.CreateContainerAsync(newCol).Result;
 
             const int Records = 100;
             const int MaxStringLength = 100;
             Func<Random, Datum> createDataFunc = random =>
             {
                 var obj = new Datum();
+                obj.id = Guid.NewGuid().ToString();
+                obj.pk = "Test";
                 obj.JsonProperty = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.JsonPropertyAndDataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.DataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.Default = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 return obj;
             };
-            getQuery = LinqTestsCommon.GenerateTestData(createDataFunc, Records, client, testCollection);
+            getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataFunc, Records, testCollection);
         }
 
         [TestCleanup]
         public void TestCleanUp()
         {
-            client.DeleteDocumentCollectionAsync(testCollection);
+            testCollection.DeleteAsync().Wait();
         }
 
         /// <summary>
@@ -121,6 +124,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             /// </summary>
             [JsonProperty]
             public string Default;
+
+            [JsonProperty]
+            public string pk;
+
+            [JsonProperty]
+            public string id;
 
             /// <summary>
             /// Member of the Datum class that has both a JsonProperty and DataMember attribute.

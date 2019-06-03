@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     using System.Xml;
     using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using System.Text;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Base class for all baseline tests.
@@ -38,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// </summary>
         private const string XmlFileExtension = "xml";
 
-        internal PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
+        internal PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
 
         /// <summary>
         /// Executes a whole suite of baselines, which corresponds to a visual studio test method.
@@ -111,35 +113,36 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             }
 
             // Compare the output to the baseline and fail if they differ.
-            string outputText = Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
-            string baselineText = Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
-            int commonPrefixLength = 0;
-            foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
-            {
-                if(characters.Item1 == characters.Item2)
-                {
-                    commonPrefixLength++;
-                }
-                else
-                {
-                    break;
-                }
-            }
+            string outputText = File.ReadAllText(outputPath);// Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
+            string baselineText = File.ReadAllText(baselinePath); // Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
+            Assert.AreEqual(baselineText, outputText);
+            //int commonPrefixLength = 0;
+            //foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
+            //{
+            //    if(characters.Item1 == characters.Item2)
+            //    {
+            //        commonPrefixLength++;
+            //    }
+            //    else
+            //    {
+            //        break;
+            //    }
+            //}
 
-            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
-            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            //string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            //string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
 
-            bool matched = baselineText.Equals(outputText);
-            if (!matched)
-            {
-                Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
-            }
+            //bool matched = baselineText.Equals(outputText);
+            //if (!matched)
+            //{
+            //    Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
+            //}
 
-            Assert.IsTrue(
-                matched,
-                $@"
-                    Expected: {baselineTextSuffix},
-                    Actual:   {outputTextSuffix}");
+            //Assert.IsTrue(
+            //    matched,
+            //    $@"
+            //        Expected: {baselineTextSuffix},
+            //        Actual:   {outputTextSuffix}");
         }
 
         /// <summary>
@@ -205,6 +208,51 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 this.Output.SerializeAsXml(xmlWriter);
                 xmlWriter.WriteEndElement();
                 xmlWriter.WriteEndElement();
+            }
+        }
+        public class CustomJsonSerializer : CosmosJsonSerializer
+        {
+            private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+            private JsonSerializer serializer;
+            public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
+            {
+                serializer = JsonSerializer.Create(jsonSerializerSettings);
+            }
+            public override T FromStream<T>(Stream stream)
+            {
+                using (stream)
+                {
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)(stream);
+                    }
+
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                        {
+                            return serializer.Deserialize<T>(jsonTextReader);
+                        }
+                    }
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream streamPayload = new MemoryStream();
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CustomJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+                {
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    {
+                        writer.Formatting = Newtonsoft.Json.Formatting.None;
+                        serializer.Serialize(writer, input);
+                        writer.Flush();
+                        streamWriter.Flush();
+                    }
+                }
+
+                streamPayload.Position = 0;
+                return streamPayload;
             }
         }
     }

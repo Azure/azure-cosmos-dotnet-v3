@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="ConflictResolutionMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.Mode)]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.Mode, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
         public ConflictResolutionMode Mode { get; set; }
 
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionPath = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath)]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath, NullValueHandling = NullValueHandling.Ignore)]
         public string ConflictResolutionPath { get; set; }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionProcedure = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure)]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
         public string ConflictResolutionProcedure { get; set; }
     }
 }
