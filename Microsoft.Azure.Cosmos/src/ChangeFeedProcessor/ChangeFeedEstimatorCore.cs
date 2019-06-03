@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
         private CancellationTokenSource shutdownCts;
         private CosmosContainerCore leaseContainer;
-        private string monitoredContainerRid;
         private TimeSpan? estimatorPeriod = null;
         private CosmosContainerCore monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
@@ -55,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
             CosmosContainerCore leaseContainer,
-            string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
@@ -66,7 +64,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
-            this.monitoredContainerRid = monitoredContainerRid;
             this.monitoredContainer = monitoredContainer;
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
         }
@@ -99,9 +96,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task InitializeAsync()
         {
-            string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync(this.monitoredContainerRid);
-            this.monitoredContainerRid = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
-            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, this.monitoredContainerRid, ChangeFeedEstimatorCore.EstimatorDefaultHostName).ConfigureAwait(false);
+            string monitoredContainerRid = await this.monitoredContainer.GetMonitoredContainerRidAsync();
+            string leaseContainerPrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions, monitoredContainerRid);
+            this.documentServiceLeaseStoreManager = await ChangeFeedProcessorCore<dynamic>.InitializeLeaseStoreManagerAsync(this.documentServiceLeaseStoreManager, this.leaseContainer, leaseContainerPrefix, ChangeFeedEstimatorCore.EstimatorDefaultHostName).ConfigureAwait(false);
             this.feedEstimator = this.BuildFeedEstimator();
             this.initialized = true;
         }

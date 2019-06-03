@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             estimator.ApplyBuildConfiguration(
                 Mock.Of<DocumentServiceLeaseStoreManager>(),
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -56,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             estimator.ApplyBuildConfiguration(
                 null,
                 ChangeFeedEstimatorCoreTests.GetMockedContainer("leases"),
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -76,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             estimator.ApplyBuildConfiguration(
                 null,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -96,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             estimator.ApplyBuildConfiguration(
                 null,
                 ChangeFeedEstimatorCoreTests.GetMockedContainer("leases"),
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),
@@ -126,7 +122,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             estimator.ApplyBuildConfiguration(
                 leaseStoreManager.Object,
                 null,
-                "something",
                 "instanceName",
                 new ChangeFeedLeaseOptions(),
                 new ChangeFeedProcessorOptions(),

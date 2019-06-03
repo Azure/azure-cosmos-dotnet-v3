@@ -75,14 +75,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 
         public static async Task<string> GetMonitoredContainerRidAsync(
             this CosmosContainer monitoredContainer,
-            string suggestedMonitoredRid,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!string.IsNullOrEmpty(suggestedMonitoredRid))
-            {
-                return suggestedMonitoredRid;
-            }
-
             string containerRid = await ((CosmosContainerCore)monitoredContainer).GetRIDAsync(cancellationToken);
             string databaseRid = await ((CosmosDatabaseCore)((CosmosContainerCore)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
