@@ -40,8 +40,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// </summary>
         private const string XmlFileExtension = "xml";
 
-        internal PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-
         /// <summary>
         /// Executes a whole suite of baselines, which corresponds to a visual studio test method.
         /// </summary>
