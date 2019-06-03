@@ -885,20 +885,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="workflowName">A name that identifies the work that the Processor will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
-        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string workflowName, 
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate);
 
         /// <summary>
-        /// Creates a <see cref="ChangeFeedProcessor"/> to react on changes .
+        /// Creates a <see cref="ChangeFeedProcessor"/> to react on changes.
         /// </summary>
         /// <param name="workflowName">A name that identifies the work that the Processor will do.</param>
-        /// <param name="leaseCosmosContainer">The Cosmos Container to hold the leases state</param>
+        /// <param name="leaseCosmosContainer">The Cosmos Container to hold the leases state.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <param name="changeFeedProcessorOptions">Options to control various aspects of Change Feed consumption.</param>
         /// <param name="changeFeedLeaseOptions">Options to control various aspects of lease management.</param>
-        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        /// <returns>An instance of <see cref="ChangeFeedProcessor"/> to process the Change Feed.</returns>
         public abstract ChangeFeedProcessor CreateChangeFeedProcessor<T>(
             string workflowName,
             CosmosContainer leaseCosmosContainer,
@@ -907,7 +907,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedLeaseOptions changeFeedLeaseOptions = null);
 
         /// <summary>
-        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed progress monitoring.
         /// </summary>
         /// <param name="workflowName">A name that identifies the work associated with the Processor the Estimator is going to measure.</param>
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
@@ -915,10 +915,27 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="workflowName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
         /// </remarks>
-        /// <returns>An instace of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string workflowName, 
             Func<long, CancellationToken, Task> estimationDelegate, 
+            TimeSpan? estimationPeriod = null);
+
+        /// <summary>
+        /// Creates a <see cref="ChangeFeedProcessor"/> for change feed progress monitoring.
+        /// </summary>
+        /// <param name="workflowName">A name that identifies the work associated with the Processor the Estimator is going to measure.</param>
+        /// <param name="leaseCosmosContainer">The Cosmos Container that hold the leases state.</param>
+        /// <param name="estimationDelegate">Delegate to receive estimation.</param>
+        /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
+        /// <remarks>
+        /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="workflowName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
+        /// </remarks>
+        /// <returns>An instance of <see cref="ChangeFeedProcessor"/> to estimate pending work.</returns>
+        public abstract ChangeFeedProcessor CreateChangeFeedEstimator(
+            string workflowName,
+            CosmosContainer leaseCosmosContainer,
+            Func<long, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null);
     }
 }

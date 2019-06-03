@@ -437,6 +437,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(workflowName));
             }
 
+            if (leaseCosmosContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseCosmosContainer));
+            }
+
             if (onChangesDelegate == null)
             {
                 throw new ArgumentNullException(nameof(onChangesDelegate));
@@ -481,6 +486,39 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainer: this,
                 changeFeedProcessor: changeFeedEstimatorCore,
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
+        }
+
+        public override ChangeFeedProcessor CreateChangeFeedEstimator(
+            string workflowName,
+            CosmosContainer leaseCosmosContainer,
+            Func<long, CancellationToken, Task> estimationDelegate,
+            TimeSpan? estimationPeriod = null)
+        {
+            if (workflowName == null)
+            {
+                throw new ArgumentNullException(nameof(workflowName));
+            }
+
+            if (leaseCosmosContainer == null)
+            {
+                throw new ArgumentNullException(nameof(leaseCosmosContainer));
+            }
+
+            if (estimationDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(estimationDelegate));
+            }
+
+            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder(
+                workflowName: workflowName,
+                cosmosContainer: this,
+                changeFeedProcessor: changeFeedEstimatorCore,
+                applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
+
+            return builder
+                .WithCosmosLeaseContainer(leaseCosmosContainer)
+                .Build();
         }
 
         internal FeedIterator GetStandByFeedIterator(
