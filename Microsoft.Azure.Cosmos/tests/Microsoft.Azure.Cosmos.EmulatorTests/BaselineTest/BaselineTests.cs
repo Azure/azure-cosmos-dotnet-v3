@@ -113,36 +113,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             }
 
             // Compare the output to the baseline and fail if they differ.
-            string outputText = File.ReadAllText(outputPath);// Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
-            string baselineText = File.ReadAllText(baselinePath); // Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
-            Assert.AreEqual(baselineText, outputText);
-            //int commonPrefixLength = 0;
-            //foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
-            //{
-            //    if(characters.Item1 == characters.Item2)
-            //    {
-            //        commonPrefixLength++;
-            //    }
-            //    else
-            //    {
-            //        break;
-            //    }
-            //}
+            string outputText = Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
+            string baselineText = Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
+            int commonPrefixLength = 0;
+            foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
+            {
+                if(characters.Item1 == characters.Item2)
+                {
+                    commonPrefixLength++;
+                }
+                else
+                {
+                    break;
+                }
+            }
 
-            //string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
-            //string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
 
-            //bool matched = baselineText.Equals(outputText);
-            //if (!matched)
-            //{
-            //    Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
-            //}
+            bool matched = baselineText.Equals(outputText);
+            if (!matched)
+            {
+                Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
+            }
 
-            //Assert.IsTrue(
-            //    matched,
-            //    $@"
-            //        Expected: {baselineTextSuffix},
-            //        Actual:   {outputTextSuffix}");
+            Assert.IsTrue(
+                matched,
+                $@"
+                    Expected: {baselineTextSuffix},
+                    Actual:   {outputTextSuffix}");
         }
 
         /// <summary>
