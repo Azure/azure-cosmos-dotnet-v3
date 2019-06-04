@@ -143,6 +143,14 @@ namespace Microsoft.Azure.Cosmos.Query
             string requestContinuation,
             CancellationToken cancellationToken)
         {
+
+            int actualPageSize = initialPageSize;
+            if (partitionedQueryExecutionInfo.QueryInfo.HasGroupBy)
+            {
+                initialPageSize = int.MaxValue;
+                constructorParams.FeedOptions.MaxItemCount = int.MaxValue;
+            }
+
             DefaultTrace.TraceInformation(
                 string.Format(
                     CultureInfo.InvariantCulture,
@@ -211,6 +219,23 @@ namespace Microsoft.Azure.Cosmos.Query
                 };
             }
 
+            if (queryInfo.HasGroupBy)
+            {
+                if (!constructorParams.FeedOptions.EnableCrossPartitionGroupBy)
+                {
+                    throw new ArgumentException("Cross Partition GROUP BY is not supported.");
+                }
+
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                createComponentFunc = async (continuationToken) =>
+                {
+                    return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        continuationToken,
+                        createSourceCallback,
+                        queryInfo.GroupByAliasToAggregateType);
+                };
+            }
+
             if (queryInfo.HasOffset)
             {
                 if (!constructorParams.FeedOptions.EnableCrossPartitionSkipTake)
@@ -258,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             return new PipelinedDocumentQueryExecutionContext(
-                await createComponentFunc(requestContinuation), initialPageSize);
+                await createComponentFunc(requestContinuation), actualPageSize);
         }
 
         /// <summary>
