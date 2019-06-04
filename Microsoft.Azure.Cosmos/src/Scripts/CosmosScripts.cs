@@ -266,8 +266,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
-        /// Console.WriteLine("sprocResponse.Resource");
+        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(testPartitionId, "Item as a string: ");
+        /// Console.WriteLine(sprocResponse.Resource);
         /// /// ]]>
         /// </code>
         /// </example>
