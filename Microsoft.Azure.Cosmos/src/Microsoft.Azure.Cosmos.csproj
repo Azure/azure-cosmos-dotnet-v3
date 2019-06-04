@@ -53,7 +53,7 @@
 
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">    
     <Reference Include="Microsoft.Azure.Cosmos.Direct">
-      <HintPath>$(MSBuildThisFileDirectory)\Unsigned\Microsoft.Azure.Cosmos.Direct.dll</HintPath>
+      <HintPath>$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Direct.dll</HintPath>
     </Reference>
     <!--Direct Dependencies-->
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
