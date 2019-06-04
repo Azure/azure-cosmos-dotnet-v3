@@ -104,34 +104,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream parametersStream;
-            if (input != null && !input.GetType().IsArray)
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
-            }
-            else
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
-            }
-
-            Uri linkUri = this.clientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: OperationType.ExecuteJavaScript,
+            Task<CosmosResponseMessage> response = this.ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
                 partitionKey: partitionKey,
-                streamPayload: parametersStream,
+                id: id,
+                input: input,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -145,34 +121,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream parametersStream;
-            if (input != null && !input.GetType().IsArray)
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
-            }
-            else
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
-            }
-
-            Uri linkUri = this.clientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: OperationType.ExecuteJavaScript,
+            Task<CosmosResponseMessage> response = this.ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
                 partitionKey: partitionKey,
-                streamPayload: parametersStream,
+                id: id,
+                input: input,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -595,6 +547,45 @@ namespace Microsoft.Azure.Cosmos.Scripts
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<CosmosResponseMessage> ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
+            Cosmos.PartitionKey partitionKey,
+            string id,
+            TInput input,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+
+            Stream parametersStream;
+            if (input != null && !input.GetType().IsArray)
+            {
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
+            }
+            else
+            {
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
+            }
+
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: OperationType.ExecuteJavaScript,
+                partitionKey: partitionKey,
+                streamPayload: parametersStream,
+                requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
     }
