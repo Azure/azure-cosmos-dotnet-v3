@@ -114,21 +114,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
 
-        public override Task<StoredProcedureExecuteResponse<Stream>> ExecuteStoredProcedureAsStreamAsync<TInput>(
+        public override Task<CosmosResponseMessage> ExecuteStoredProcedureAsStreamAsync<TInput>(
             Cosmos.PartitionKey partitionKey,
             string id,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
+            return this.ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
                 partitionKey: partitionKey,
                 id: id,
                 input: input,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
-
-            return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsStreamAsync(response);
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(

@@ -319,8 +319,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// StoredProcedureExecuteResponse<Stream> sprocResponse = await scripts.ExecuteStoredProcedureAsStreamAsync<string>(testPartitionId, "Item as a string: ");
-        /// using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Resource))
+        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureAsStreamAsync<string>(testPartitionId, "Item as a string: ");
+        /// using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
         /// {
         ///     string stringResponse = sr.ReadToEnd();
         ///     Console.WriteLine(stringResponse);
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<StoredProcedureExecuteResponse<Stream>> ExecuteStoredProcedureAsStreamAsync<TInput>(
+        public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureAsStreamAsync<TInput>(
             PartitionKey partitionKey,
             string id,
             TInput input,

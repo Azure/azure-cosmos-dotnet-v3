@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
             CosmosStoredProcedureSettings storedProcedure = storedProcedureResponse;
-            StoredProcedureExecuteResponse<Stream> sprocResponse = await this.scripts.ExecuteStoredProcedureAsStreamAsync<string>(
+            CosmosResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureAsStreamAsync<string>(
                 new Cosmos.PartitionKey(testPartitionId),
                 sprocId,
                 Guid.NewGuid().ToString(),
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
-            Assert.AreEqual(testLogsText, sprocResponse.ScriptLog);
+            Assert.AreEqual(testLogsText, Uri.UnescapeDataString(sprocResponse.Headers["x-ms-documentdb-script-log-results"]));
         }
 
         [TestMethod]
@@ -260,10 +260,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
             CosmosStoredProcedureSettings storedProcedure = storedProcedureResponse;
-            StoredProcedureExecuteResponse<Stream> sprocResponse = await this.scripts.ExecuteStoredProcedureAsStreamAsync<object>(new Cosmos.PartitionKey(testPartitionId), sprocId, null);
+            CosmosResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureAsStreamAsync<object>(new Cosmos.PartitionKey(testPartitionId), sprocId, null);
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
-            using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Resource))
+            using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
             {
                 string stringResponse = sr.ReadToEnd();
                 JArray jArray = JArray.Parse(stringResponse);
@@ -362,10 +362,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            StoredProcedureExecuteResponse<Stream> sprocResponse = await this.scripts.ExecuteStoredProcedureAsStreamAsync<string[]>(new Cosmos.PartitionKey(testPartitionId), sprocId, new string[] { "one" });
+            CosmosResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureAsStreamAsync<string[]>(new Cosmos.PartitionKey(testPartitionId), sprocId, new string[] { "one" });
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
-            using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Resource))
+            using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
             {
                 string stringResponse = sr.ReadToEnd();
                 Assert.IsNotNull(stringResponse);
@@ -373,10 +373,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual("\"one\"", stringResponse);
             }
 
-            StoredProcedureExecuteResponse<Stream> sprocResponse2 = await this.scripts.ExecuteStoredProcedureAsStreamAsync<string>(new Cosmos.PartitionKey(testPartitionId), sprocId, "one");
+            CosmosResponseMessage sprocResponse2 = await this.scripts.ExecuteStoredProcedureAsStreamAsync<string>(new Cosmos.PartitionKey(testPartitionId), sprocId, "one");
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse2.StatusCode);
 
-            using (StreamReader sr = new System.IO.StreamReader(sprocResponse2.Resource))
+            using (StreamReader sr = new System.IO.StreamReader(sprocResponse2.Content))
             {
                 string stringResponse2 = sr.ReadToEnd();
                 Assert.IsNotNull(stringResponse2);
