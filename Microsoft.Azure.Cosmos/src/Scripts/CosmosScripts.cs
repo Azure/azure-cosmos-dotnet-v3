@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -265,12 +266,70 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
+        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteAsync<string, string>(testPartitionId, "Item as a string: ");
         /// Console.WriteLine("sprocResponse.Resource");
         /// /// ]]>
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
+            PartitionKey partitionKey,
+            string id,
+            TInput input,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
+        /// </summary>
+        /// <typeparam name="TInput">The input type that is JSON serializable.</typeparam>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
+        /// <param name="id">The identifier of the Stored Procedure to execute.</param>
+        /// <param name="input">The JSON serializable input parameters.</param>
+        /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="id"/> or <paramref name="partitionKey"/>  are not set.</exception>
+        /// <example>
+        ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string sprocBody = @"function simple(prefix)
+        ///    {
+        ///        var collection = getContext().getCollection();
+        ///
+        ///        // Query documents and take 1st item.
+        ///        var isAccepted = collection.queryDocuments(
+        ///        collection.getSelfLink(),
+        ///        'SELECT * FROM root r',
+        ///        function(err, feed, options) {
+        ///            if (err)throw err;
+        ///
+        ///            // Check the feed and if it's empty, set the body to 'no docs found',
+        ///            // Otherwise just take 1st element from the feed.
+        ///            if (!feed || !feed.length) getContext().getResponse().setBody(""no docs found"");
+        ///            else getContext().getResponse().setBody(prefix + JSON.stringify(feed[0]));
+        ///        });
+        ///
+        ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
+        ///    }";
+        ///    
+        /// CosmosScripts scripts = this.container.GetScripts();
+        /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
+        ///         id: "appendString",
+        ///         body: sprocBody);
+        /// 
+        /// // Execute the stored procedure
+        /// StoredProcedureExecuteResponse<Stream> sprocResponse = await scripts.ExecuteStoredProcedureAsStreamAsync<string>(testPartitionId, "Item as a string: ");
+        /// using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Resource))
+        /// {
+        ///     string stringResponse = sr.ReadToEnd();
+        ///     Console.WriteLine(stringResponse);
+        ///  }
+        /// 
+        /// /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<StoredProcedureExecuteResponse<Stream>> ExecuteStoredProcedureAsStreamAsync<TInput>(
             PartitionKey partitionKey,
             string id,
             TInput input,

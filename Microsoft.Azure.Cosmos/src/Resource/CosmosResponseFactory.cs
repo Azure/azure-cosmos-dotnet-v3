@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -92,6 +93,19 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<StoredProcedureExecuteResponse<Stream>> CreateStoredProcedureExecuteResponseAsStreamAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                Stream item = this.ToStreamTnternal(cosmosResponseMessage);
+
+                return new StoredProcedureExecuteResponse<Stream>(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    item);
+            });
+        }
+
         internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
@@ -154,6 +168,29 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
+        }
+
+        internal Stream ToStreamTnternal(CosmosResponseMessage cosmosResponseMessage)
+        {
+            // Not finding something is part of a normal work-flow and should not be an exception.
+            // This prevents the unnecessary overhead of an exception
+            if (cosmosResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            {
+                return default(Stream);
+            }
+
+            //Throw the exception
+            cosmosResponseMessage.EnsureSuccessStatusCode();
+
+            if (cosmosResponseMessage.Content == null)
+            {
+                return default(Stream);
+            }
+
+            MemoryStream clonedStream = new MemoryStream();
+            cosmosResponseMessage.Content.CopyTo(clonedStream);
+            clonedStream.Position = 0;
+            return clonedStream;
         }
     }
 }
