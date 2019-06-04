@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
             string text = reader.ReadToEnd();
 
-            Assert.AreEqual(-1, text.IndexOf("description"), "Stored document contains a null attribute");
+            Assert.AreEqual(-1, text.IndexOf(nameof(document.description)), "Stored document contains a null attribute");
         }
         
         private ToDoActivity CreateRandomToDoActivity(string pk = null)
