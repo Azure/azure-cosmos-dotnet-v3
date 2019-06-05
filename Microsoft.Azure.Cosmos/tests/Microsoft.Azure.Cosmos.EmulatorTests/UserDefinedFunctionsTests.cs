@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 1
             };
 
-            await this.container.CreateItemAsync<ToDoActivity>(item.status, item);
+            await this.container.CreateItemAsync<ToDoActivity>(item);
 
             CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await this.scripts.CreateUserDefinedFunctionAsync(
                 new CosmosUserDefinedFunctionSettings
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
              FeedIterator<dynamic> feedIterator = this.container.CreateItemQuery<dynamic>(
                  sqlQueryDefinition: sqlQuery,
-                 partitionKey: "Done");
+                 partitionKey: new Cosmos.PartitionKey("Done"));
 
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)

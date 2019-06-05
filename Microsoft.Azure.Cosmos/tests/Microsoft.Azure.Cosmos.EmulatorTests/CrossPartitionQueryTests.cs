@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task Initialize()
         {
-            this.database = await this.Client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
+            this.database = await this.Client.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
         [TestCleanup]
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 containerName,
                 indexingPolicy == null ? null : JsonConvert.SerializeObject(indexingPolicy));
 
-            return this.database.Containers[containerName];
+            return this.database.GetContainer(containerName);
         }
 
         private async Task<ContainerResponse> CreatePartitionedContainer(
@@ -166,10 +166,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             // Assert that database exists (race deletes are possible when used concurrently)
-            CosmosResponseMessage responseMessage = await this.database.ReadAsStreamAsync();
+            CosmosResponseMessage responseMessage = await this.database.ReadStreamAsync();
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
 
-            ContainerResponse containerResponse = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings
                 {
                     Id = Guid.NewGuid().ToString() + "container",
@@ -288,11 +288,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 else
                 {
-                    pkValue = CosmosContainerSettings.NonePartitionKeyValue;
+                    pkValue = Cosmos.PartitionKey.NonePartitionKeyValue;
                 }
 
-                insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(pkValue, documentObject)).Resource.ToObject<Document>());
-
+                insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(documentObject)).Resource.ToObject<Document>());
             }
 
             return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
@@ -300,13 +299,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = client.Databases.GetDatabasesIterator();
+            FeedIterator<CosmosDatabaseSettings> allDatabases = client.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
                 foreach (CosmosDatabaseSettings db in await allDatabases.FetchNextSetAsync())
                 {
-                    await client.Databases[db.Id].DeleteAsync();
+                    await client.GetDatabase(db.Id).DeleteAsync();
                 }
             }
         }
@@ -325,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     this.Client = TestCommon.CreateCosmosClient(false);
                     this.GatewayClient = TestCommon.CreateCosmosClient(true);
-                    this.database = this.Client.Databases[this.database.Id];
+                    this.database = this.Client.GetDatabase(this.database.Id);
                 }
 
                 await function();
@@ -491,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            CosmosContainer container = cosmosClient.Databases[containerAndDocuments.Item1.Database.Id].Containers[containerAndDocuments.Item1.Id];
+                            CosmosContainer container = cosmosClient.GetContainer(containerAndDocuments.Item1.Database.Id, containerAndDocuments.Item1.Id);
                             Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
                             queryTasks.Add(queryTask);
                         }
@@ -815,7 +814,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     FeedIterator<Document> resultSetIterator = container.CreateItemQuery<Document>(
                         sqlQueryText: queryAndExpectedResult.Item1,
-                        partitionKey: keys[i],
+                        partitionKey: new Cosmos.PartitionKey(keys[i]),
                         maxItemCount: 1);
 
                     List<Document> result = new List<Document>();
@@ -858,7 +857,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Query with partition key should be done in one round trip.
             FeedIterator<dynamic> resultSetIterator = container.CreateItemQuery<dynamic>(
                 "SELECT * FROM c WHERE c.pk = 'doc5'",
-                partitionKey: "doc5");
+                partitionKey: new Cosmos.PartitionKey("doc5"));
 
             FeedResponse<dynamic> response = await resultSetIterator.FetchNextSetAsync();
             Assert.AreEqual(1, response.Count());
@@ -866,7 +865,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             resultSetIterator = container.CreateItemQuery<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'",
-               partitionKey: "doc10");
+               partitionKey: new Cosmos.PartitionKey("doc10"));
 
             response = await resultSetIterator.FetchNextSetAsync();
             Assert.AreEqual(0, response.Count());
@@ -985,12 +984,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
             Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
 
-            ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(testArgs.Value, specialPropertyDocument);
+            ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument);
             dynamic returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
             PartitionKey key = new PartitionKey(args.ValueToPartitionKey(args.Value));
-            response = await container.ReadItemAsync<SpecialPropertyDocument>(key, response.Resource.id);
+            response = await container.ReadItemAsync<SpecialPropertyDocument>(new Cosmos.PartitionKey(key), response.Resource.id);
             returnedDoc = response.Resource;
             Assert.AreEqual(args.Value, getPropertyValueFunction((SpecialPropertyDocument)returnedDoc));
 
@@ -1029,7 +1028,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             returnedDoc = (await container.CreateItemQuery<SpecialPropertyDocument>(
                 query,
-                partitionKey: args.ValueToPartitionKey,
+                partitionKey: new Cosmos.PartitionKey(args.ValueToPartitionKey),
                 maxItemCount: 1).FetchNextSetAsync()).First();
 
             Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));
@@ -3893,7 +3892,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             FeedIterator<T> resultSetIterator = container.CreateItemQuery<T>(
                 query,
-                partitionKey: partitionKey,
+                partitionKey: new Cosmos.PartitionKey(partitionKey),
                 maxItemCount: maxItemCount,
                 requestOptions: requestOptions);
 

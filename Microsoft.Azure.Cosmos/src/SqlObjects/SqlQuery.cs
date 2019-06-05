@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlSelectClause selectClause,
             SqlFromClause fromClause,
             SqlWhereClause whereClause,
+            SqlGroupByClause groupByClause,
             SqlOrderbyClause orderbyClause,
             SqlOffsetLimitClause offsetLimitClause)
             : base(SqlObjectKind.Query)
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.SelectClause = selectClause;
             this.FromClause = fromClause;
             this.WhereClause = whereClause;
+            this.GroupByClause = groupByClause;
             this.OrderbyClause = orderbyClause;
             this.OffsetLimitClause = offsetLimitClause;
         }
@@ -42,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
+        public SqlGroupByClause GroupByClause
+        {
+            get;
+        }
+
         public SqlOrderbyClause OrderbyClause
         {
             get;
@@ -56,10 +63,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             SqlSelectClause selectClause,
             SqlFromClause fromClause,
             SqlWhereClause whereClause,
-            SqlOrderbyClause orderbyClause,
+            SqlGroupByClause groupByClause,
+            SqlOrderbyClause orderByClause,
             SqlOffsetLimitClause offsetLimitClause)
         {
-            return new SqlQuery(selectClause, fromClause, whereClause, orderbyClause, offsetLimitClause);
+            return new SqlQuery(selectClause, fromClause, whereClause, groupByClause, orderByClause, offsetLimitClause);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
-    ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
+    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     CosmosContainer container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
@@ -47,8 +47,8 @@ namespace Microsoft.Azure.Cosmos
     ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey"))
     /// {
-    ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
+    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
@@ -62,13 +62,18 @@ namespace Microsoft.Azure.Cosmos
     /// using (CosmosClient cosmosClient = new CosmosClient(
     ///     connectionString: "AccountEndpoint=https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
     /// {
-    ///     CosmosDatabase db = await client.Databases.CreateAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateAsync(Guid.NewGuid().ToString());
+    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
     /// </example>
-    public class CosmosClient : IDisposable
+    /// <remarks>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally" />
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview" />
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units" />
+    /// </remarks>
+    public partial class CosmosClient : IDisposable
     {
         private Lazy<CosmosOffers> offerSet;
 
@@ -80,6 +85,13 @@ namespace Microsoft.Azure.Cosmos
             // V3 always assumes assemblies exists
             // Shall revisit on feedback
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => true);
+        }
+
+        /// <summary>
+        /// Create a new CosmosClient used for mock testing
+        /// </summary>
+        protected CosmosClient()
+        {
         }
 
         /// <summary>
@@ -169,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientOptions clientOptionsClone = clientOptions.Clone();
 
             DocumentClient documentClient = new DocumentClient(
-                clientOptionsClone.AccountEndPoint,
+                clientOptionsClone.EndPoint,
                 clientOptionsClone.AccountKey,
                 apitype: clientOptionsClone.ApiType,
                 sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
@@ -204,20 +216,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Used for creating new databases, or querying/reading all databases.
-        /// </summary>
-        /// <example>
-        /// This example creates a cosmos database and container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosDatabase database = this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-        /// ContainerResponse container = database.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
-        /// ]]>
-        /// </code>
-        /// </example>
-        public virtual CosmosDatabases Databases { get; private set; }
-
-        /// <summary>
         /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient
         /// </summary>
         public virtual CosmosClientOptions ClientOptions { get; private set; }
@@ -236,7 +234,29 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<CosmosAccountSettings> GetAccountSettingsAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.AccountEndPoint);
+            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.EndPoint);
+        }
+
+        /// <summary>
+        /// Get cosmos container proxy. 
+        /// </summary>
+        /// <remarks>Proxy existence doesn't guarantee either database or container existence.</remarks>
+        /// <param name="databaseId">cosmos database name</param>
+        /// <param name="containerId">comsos container name</param>
+        /// <returns>Cosmos container proxy</returns>
+        public virtual CosmosContainer GetContainer(string databaseId, string containerId)
+        {
+            if (string.IsNullOrEmpty(databaseId))
+            {
+                throw new ArgumentNullException(nameof(databaseId));
+            }
+
+            if (string.IsNullOrEmpty(containerId))
+            {
+                throw new ArgumentNullException(nameof(containerId));
+            }
+
+            return this.GetDatabase(databaseId).GetContainer(containerId);
         }
 
         internal void Init(
@@ -261,7 +281,7 @@ namespace Microsoft.Azure.Cosmos
                 defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
-            CosmosClientContext clientContext = new CosmosClientContextCore(
+            this.ClientContext = new CosmosClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
@@ -271,7 +291,6 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: this.DocumentClient,
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
 
-            this.Databases = new CosmosDatabasesCore(clientContext);
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 

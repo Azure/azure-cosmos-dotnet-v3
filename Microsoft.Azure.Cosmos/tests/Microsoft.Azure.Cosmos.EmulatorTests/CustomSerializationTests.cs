@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 }
             });
-            CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
+            CosmosContainer container = cosmosClient.GetContainer(databaseName, partitionedCollectionName);
 
             var rnd = new Random();
             var bytes = new byte[100];
@@ -282,26 +282,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testDocument = new TestDocument(new KerberosTicketHashKey(bytes));
 
             //create and read
-            ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument.Name, testDocument);
-            ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument);
+            ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
-            ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument.Name, testDocument);
-            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument);
+            readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument.Name, testDocument.Id, testDocument);
-            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Name, testDocument.Id);
+            ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument.Id, testDocument);
+            readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
 
             CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
-               container.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: testDocument.Name,maxItemCount: 1);
+               container.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: new Cosmos.PartitionKey(testDocument.Name), maxItemCount: 1);
             FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
             AssertEqual(testDocument, queryResponse.First());
 
@@ -448,7 +448,7 @@ function bulkImport(docs) {
             };
 
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(jsonSerializerSettings)));
-            CosmosContainer container = cosmosClient.Databases[databaseName].Containers[partitionedCollectionName];
+            CosmosContainer container = cosmosClient.GetContainer(databaseName, partitionedCollectionName);
 
             // Create a few test documents
             int documentCount = 3;
@@ -456,7 +456,7 @@ function bulkImport(docs) {
             for (int i = 0; i < documentCount; ++i)
             {
                 var newDocument = new MyObject(i);
-                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument.pk, newDocument);
+                var createdDocument = await container.CreateItemAsync<MyObject>(newDocument);
             }
 
             CosmosSqlQueryDefinition cosmosSqlQueryDefinition1 = new CosmosSqlQueryDefinition("SELECT * FROM root");

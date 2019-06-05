@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal sealed class PartitionedByIdCollectionRequestOptionsFactory : RequestOptionsFactory
     {
-        public override string GetPartitionKey(string itemId) => itemId;
+        public override PartitionKey GetPartitionKey(string itemId) => new PartitionKey(itemId);
 
         public override FeedOptions CreateFeedOptions() => new FeedOptions { EnableCrossPartitionQuery = true };
     }

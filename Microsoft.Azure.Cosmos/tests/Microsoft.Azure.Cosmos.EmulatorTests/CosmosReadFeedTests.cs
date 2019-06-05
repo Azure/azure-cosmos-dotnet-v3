@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                throughput: 50000,
+                requestUnits: 50000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -61,17 +61,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ""id"": ""{i}""
                     }}";
 
-                using (CosmosResponseMessage createResponse = await this.Container.CreateItemAsStreamAsync(
-                        i.ToString(),
-                        CosmosReadFeedTests.GenerateStreamFromString(item),
-                        requestOptions: new ItemRequestOptions()))
+                using (CosmosResponseMessage createResponse = await this.Container.CreateItemStreamAsync(
+                        new Cosmos.PartitionKey(i.ToString()),
+                        CosmosReadFeedTests.GenerateStreamFromString(item)))
                 {
                     Assert.IsTrue(createResponse.IsSuccessStatusCode);
                 }
             }
 
             string lastKnownContinuationToken = null;
-            FeedIterator iter = this.Container.Database.Containers[this.Container.Id]
+            FeedIterator iter = this.Container.Database.GetContainer(this.Container.Id)
                                 .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
             int count = 0;
             List<string> forwardOrder = new List<string>();
@@ -79,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (useStatelessIteration)
                 {
-                    iter = this.Container.Database.Containers[this.Container.Id]
+                    iter = this.Container.Database.GetContainer(this.Container.Id)
                                         .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
                 }
 
@@ -113,13 +112,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> reverseOrder = new List<string>();
 
             lastKnownContinuationToken = null;
-            iter = this.Container.Database.Containers[this.Container.Id]
+            iter = this.Container.Database.GetContainer(this.Container.Id)
                     .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
             while (iter.HasMoreResults)
             {
                 if (useStatelessIteration)
                 {
-                    iter = this.Container.Database.Containers[this.Container.Id]
+                    iter = this.Container.Database.GetContainer(this.Container.Id)
                             .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                 }
 

@@ -11,8 +11,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.Text.RegularExpressions;
     using System.Xml;
     using VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Base class for all baseline tests.
@@ -35,6 +37,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// The file extension for xml.
         /// </summary>
         private const string XmlFileExtension = "xml";
+
+        internal PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
 
         /// <summary>
         /// Executes a whole suite of baselines, which corresponds to a visual studio test method.
@@ -99,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 writer.WriteStartElement("Results");
                 foreach (BaselineTestResult baselineTestResult in baselineTestResults)
                 {
-                    baselineTestResult.SerializeAsXML(writer);
+                    baselineTestResult.SerializeAsXml(writer);
                 }
 
                 writer.WriteEndElement();
@@ -107,9 +111,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             }
 
             // Compare the output to the baseline and fail if they differ.
-            string outputText = File.ReadAllText(outputPath);
-            string baselineText = File.ReadAllText(baselinePath);
-            Assert.AreEqual(baselineText, outputText);
+            string outputText = Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
+            string baselineText = Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
+            int commonPrefixLength = 0;
+            foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
+            {
+                if(characters.Item1 == characters.Item2)
+                {
+                    commonPrefixLength++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+
+            bool matched = baselineText.Equals(outputText);
+            if (!matched)
+            {
+                Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
+            }
+
+            Assert.IsTrue(
+                matched,
+                $@"
+                    Expected: {baselineTextSuffix},
+                    Actual:   {outputTextSuffix}");
         }
 
         /// <summary>
@@ -160,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             /// Serializes the result to the provided xml writer.
             /// </summary>
             /// <param name="xmlWriter">The xml writer to write with.</param>
-            public void SerializeAsXML(XmlWriter xmlWriter)
+            public void SerializeAsXml(XmlWriter xmlWriter)
             {
                 if (xmlWriter == null)
                 {
@@ -169,10 +199,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
 
                 xmlWriter.WriteStartElement("Result");
                 xmlWriter.WriteStartElement("Input");
-                this.Input.SerializeAsXML(xmlWriter);
+                this.Input.SerializeAsXml(xmlWriter);
                 xmlWriter.WriteEndElement();
                 xmlWriter.WriteStartElement("Output");
-                this.Output.SerializeAsXML(xmlWriter);
+                this.Output.SerializeAsXml(xmlWriter);
                 xmlWriter.WriteEndElement();
                 xmlWriter.WriteEndElement();
             }

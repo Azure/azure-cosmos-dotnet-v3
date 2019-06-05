@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///
-    /// <see cref="CosmosDatabases"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
+    /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
     /// <remarks>
     /// Note: all these operations make calls against a fixed budget.
@@ -19,20 +19,12 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
-    public abstract class CosmosDatabase
+    public abstract partial class CosmosDatabase
     {
         /// <summary>
         /// The Id of the Cosmos database
         /// </summary>
         public abstract string Id { get;  }
-
-        /// <summary>
-        /// An object to create a Cosmos Container or to iterate over all containers
-        /// </summary>
-        /// <remarks>
-        /// Use Containers to access a <see cref="CosmosContainer"/>
-        /// </remarks>
-        public abstract CosmosContainers Containers { get; }
 
         /// <summary>
         /// Reads a <see cref="CosmosDatabaseSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -60,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// //Reads a Database resource where
         /// // - database_id is the ID property of the Database resource you wish to read.
-        /// CosmosDatabase database = this.cosmosClient.Databases[database_id];
+        /// CosmosDatabase database = this.cosmosClient.GetDatabase(database_id);
         /// DatabaseResponse response = await database.ReadAsync();
         /// ]]>
         /// </code>
@@ -94,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Delete a cosmos database
-        /// CosmosDatabase database = cosmosContainer["myDbId"];
+        /// CosmosDatabase database = cosmosClient.GetDatabase("myDbId");
         /// DatabaseResponse response = await database.DeleteAsync();
         /// ]]>
         /// </code>
@@ -104,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Gets provisioned database throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
@@ -130,27 +122,25 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="throughput">The cosmos database throughput.</param>
+        /// <param name="requestUnits">The cosmos database throughput.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
-        /// <remarks>
-        /// <para>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
-        /// </para>
-        /// </remarks>
         /// <example>
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(400);
+        /// int? throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(10000);
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>A Task representing the asynchronoous operation.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task ReplaceProvisionedThroughputAsync(
-            int throughput,
+            int requestUnits,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -161,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
         /// </returns>
-        public abstract Task<CosmosResponseMessage> ReadAsStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReadStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -171,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<CosmosResponseMessage> DeleteAsStreamAsync(
+        public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
     }

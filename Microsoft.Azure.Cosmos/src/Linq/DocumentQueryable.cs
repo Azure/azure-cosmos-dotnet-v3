@@ -61,6 +61,28 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// This method generate query text from LINQ query.
+        /// </summary>
+        /// <typeparam name="T">the type of object to query.</typeparam>
+        /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <returns>An IDocumentQuery{T} that can evaluate the query.</returns>
+        /// <example>
+        /// This example shows how to generate query text from LINQ.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IQueryable<T> queryable = container.Items.CreateItemQuery<T>(allowSynchronousQueryExecution = true)
+        ///                      .Where(t => b.id.contains("test"));
+        /// String sqlQueryText = queryable.ToSqlQueryText();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static string ToSqlQueryText<T>(this IQueryable<T> query)
+        {
+            return ((CosmosLinqQuery<T>)query).ToSqlQueryText();
+        }
+
+        /// <summary>
         /// Returns the maximum value in a generic <see cref="IQueryable{TSource}" />.
         /// </summary>
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>

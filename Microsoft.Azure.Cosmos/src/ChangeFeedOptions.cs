@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         /// };
         /// ]]>
         /// </example>
-        public PartitionKey PartitionKey { get; set; }
+        public Documents.PartitionKey PartitionKey { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether change feed in the Azure Cosmos DB service 

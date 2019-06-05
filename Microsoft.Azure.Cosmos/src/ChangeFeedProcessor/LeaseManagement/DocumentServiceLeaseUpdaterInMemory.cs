@@ -23,7 +23,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.container = container;
         }
 
-        public override Task<DocumentServiceLease> UpdateLeaseAsync(DocumentServiceLease cachedLease, string itemId, object partitionKey, Func<DocumentServiceLease, DocumentServiceLease> updateLease)
+        public override Task<DocumentServiceLease> UpdateLeaseAsync(
+            DocumentServiceLease cachedLease, 
+            string itemId, 
+            Cosmos.PartitionKey partitionKey, 
+            Func<DocumentServiceLease, DocumentServiceLease> updateLease)
         {
             DocumentServiceLease lease = cachedLease;
             for (int retryCount = RetryCountOnConflict; retryCount >= 0; retryCount--)

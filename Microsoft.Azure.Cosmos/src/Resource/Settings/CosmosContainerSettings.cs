@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
     ///     CosmosContainerSettings containerSettings = container.Resource;
     /// ]]>
     /// </code>
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
     ///     collectionsettings.IndexingPolicy.Automatic = true;
     ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
-    ///     CosmosContainer container = await client.Databases["dbName"].Containers.CreateAsync(collectionsettings);
+    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync(collectionsettings);
     /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
     /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
     /// ]]>
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
     /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = client.Databases["dbName"].Containers["MyCollection"];
+    ///     CosmosContainer container = client.GetDatabase("dbName"].Containers["MyCollection"];
     ///     await container.DeleteAsync();
     /// ]]>
     /// </code>
@@ -56,6 +57,8 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class CosmosContainerSettings
     {
+        private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
+
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
         private IndexingPolicy indexingPolicyInternal;
 
@@ -64,6 +67,8 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
         private ConflictResolutionPolicy conflictResolutionInternal;
+
+        private string[] partitionKeyPathTokens;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
@@ -307,24 +312,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual int? DefaultTimeToLive { get; set; }
 
         /// <summary>
-        /// The returned object represents a partition key value that allows creating and accessing documents
-        /// without a value for partition key
-        /// </summary>
-        public static readonly object NonePartitionKeyValue = Microsoft.Azure.Documents.PartitionKey.None;
-
-        /// <summary>
-        /// The tag name to use in the documents for specifying a partition key value
-        /// when inserting such documents into a migrated collection
-        /// </summary>
-        public static readonly string SystemKeyName = Microsoft.Azure.Documents.PartitionKey.SystemKeyName;
-
-        /// <summary>
-        /// The partition key path in the collection definition for migrated collections
-        /// </summary>
-        public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
-
-        /// <summary>
-        /// The function selects the right partition key constant mapping for <see cref="NonePartitionKeyValue"/>
+        /// The function selects the right partition key constant mapping for <see cref="PartitionKey.NonePartitionKeyValue"/>
         /// </summary>
         internal PartitionKeyInternal GetNoneValue()
         {
@@ -399,6 +387,30 @@ namespace Microsoft.Azure.Cosmos
         internal virtual string ResourceId { get; private set; }
 
         internal bool HasPartitionKey => this.PartitionKey != null;
+
+        internal string[] PartitionKeyPathTokens
+        {
+            get
+            {
+                if (this.partitionKeyPathTokens != null)
+                {
+                    return this.partitionKeyPathTokens;
+                }
+
+                if (this.PartitionKey.Paths.Count > 1)
+                {
+                    throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
+                }
+
+                if (this.PartitionKeyPath == null)
+                {
+                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
+                }
+
+                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(CosmosContainerSettings.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+                return this.partitionKeyPathTokens;
+            }
+        }
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.
