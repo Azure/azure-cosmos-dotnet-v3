@@ -72,10 +72,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
-        public async Task UpsertItemAsStream()
+        public async Task UpsertItemStream()
         {
             this.baseStream.Position = 0;
-            var response = await this.container.UpsertItemAsStreamAsync(
+            var response = await this.container.UpsertItemStreamAsync(
                     new Cosmos.PartitionKey(Constants.ValidOperationId),
                     this.baseStream);
             if ((int)response.StatusCode > 300 || response.Content.Length == 0)
@@ -121,9 +121,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         /// </summary>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         [Benchmark]
-        public async Task ReadItemAsStream()
+        public async Task ReadItemStream()
         {
-            var response = await this.container.ReadItemAsStreamAsync(
+            var response = await this.container.ReadItemStreamAsync(
                 new Cosmos.PartitionKey(Constants.ValidOperationId), 
                 Constants.ValidOperationId);
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)

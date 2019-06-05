@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/>
-        public virtual Task<CosmosResponseMessage> CreateDatabaseAsStreamAsync(
+        public virtual Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                 CosmosDatabaseSettings databaseSettings,
                 int? requestUnits = null,
                 RequestOptions requestOptions = null,
@@ -191,17 +191,17 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(databaseSettings.Id);
             Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseSettings>(databaseSettings);
 
-            return this.CreateDatabaseAsStreamInternalAsync(streamPayload, requestUnits, requestOptions, cancellationToken);
+            return this.CreateDatabaseStreamInternalAsync(streamPayload, requestUnits, requestOptions, cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> CreateDatabaseAsStreamInternalAsync(
+        private Task<CosmosResponseMessage> CreateDatabaseStreamInternalAsync(
                 Stream streamPayload,
                 int? requestUnits = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.CreateDatabaseAsStreamInternalAsync(
+            Task<CosmosResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseSettings>(databaseSettings),
                 requestUnits: requestUnits,
                 requestOptions: requestOptions,

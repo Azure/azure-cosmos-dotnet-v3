@@ -37,13 +37,13 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosQueryClient queryClient;
 
-        public override Task<CosmosResponseMessage> CreateItemAsStreamAsync(
+        public override Task<CosmosResponseMessage> CreateItemStreamAsync(
                     PartitionKey partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemAsStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<CosmosResponseMessage> response = this.ExtractPartitionKeyAndProcessItemAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
                 streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
@@ -75,13 +75,13 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
-        public override Task<CosmosResponseMessage> ReadItemAsStreamAsync(
+        public override Task<CosmosResponseMessage> ReadItemStreamAsync(
                     PartitionKey partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemAsStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.ReadItemAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.ReadItemStreamAsync(
                 partitionKey: partitionKey,
                 id: id,
                 requestOptions: requestOptions,
@@ -106,13 +106,13 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
-        public override Task<CosmosResponseMessage> UpsertItemAsStreamAsync(
+        public override Task<CosmosResponseMessage> UpsertItemStreamAsync(
                     PartitionKey partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemAsStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<CosmosResponseMessage> response = this.ExtractPartitionKeyAndProcessItemAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
                 streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
@@ -144,14 +144,14 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
-        public override Task<CosmosResponseMessage> ReplaceItemAsStreamAsync(
+        public override Task<CosmosResponseMessage> ReplaceItemStreamAsync(
                     PartitionKey partitionKey,
                     string id,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemAsStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 streamPayload,
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
-            Task<CosmosResponseMessage> response = this.ExtractPartitionKeyAndProcessItemAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                partitionKey: partitionKey,
                itemId: id,
                streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
@@ -189,13 +189,13 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
-        public override Task<CosmosResponseMessage> DeleteItemAsStreamAsync(
+        public override Task<CosmosResponseMessage> DeleteItemStreamAsync(
                     PartitionKey partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemAsStreamAsync(
+            return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.DeleteItemAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.DeleteItemStreamAsync(
                partitionKey: partitionKey,
                id: id,
                requestOptions: requestOptions,
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutorAsync);
         }
 
-        public override FeedIterator CreateItemQueryAsStream(
+        public override FeedIterator CreateItemQueryStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             PartitionKey partitionKey = null,
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosQueryExecution);
         }
 
-        public override FeedIterator CreateItemQueryAsStream(
+        public override FeedIterator CreateItemQueryStream(
             string sqlQueryText,
             int maxConcurrency,
             PartitionKey partitionKey = null,
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.CreateItemQueryAsStream(
+            return this.CreateItemQueryStream(
                 new CosmosSqlQueryDefinition(sqlQueryText),
                 maxConcurrency,
                 partitionKey,
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos
         // Extracted partiotn key might be invaild as CollectionCache might be stale.
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
         // and partition-key is extracted again. 
-        internal async Task<CosmosResponseMessage> ExtractPartitionKeyAndProcessItemAsStreamAsync(
+        internal async Task<CosmosResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync(
             PartitionKey partitionKey,
             string itemId,
             Stream streamPayload,
@@ -589,7 +589,7 @@ namespace Microsoft.Azure.Cosmos
 
             while (true)
             {
-                CosmosResponseMessage responseMessage = await this.ProcessItemAsStreamAsync(
+                CosmosResponseMessage responseMessage = await this.ProcessItemStreamAsync(
                     partitionKey,
                     itemId,
                     streamPayload,
@@ -612,7 +612,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task<CosmosResponseMessage> ProcessItemAsStreamAsync(
+        internal async Task<CosmosResponseMessage> ProcessItemStreamAsync(
             PartitionKey partitionKey,
             string itemId,
             Stream streamPayload,
@@ -629,7 +629,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
-            return await this.ClientContext.ProcessResourceOperationAsStreamAsync(
+            return await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri,
                 ResourceType.Document,
                 operationType,
