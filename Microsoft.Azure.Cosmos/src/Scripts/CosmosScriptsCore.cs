@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
 
-        public override Task<CosmosResponseMessage> ExecuteStoredProcedureAsStreamAsync<TInput>(
+        public override Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync<TInput>(
             Cosmos.PartitionKey partitionKey,
             string id,
             TInput input,

@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureAsStreamAsync<TInput>(
+        public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync<TInput>(
             PartitionKey partitionKey,
             string id,
             TInput input,
