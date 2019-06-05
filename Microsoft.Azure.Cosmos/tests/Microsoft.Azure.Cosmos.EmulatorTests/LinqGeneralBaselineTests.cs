@@ -224,7 +224,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Ignore] //TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/330
         public void TestSubquery()
         {
             var inputs = new List<LinqTestInput>();
@@ -498,13 +497,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .OrderBy(f => f.ChildrenCount)
                 .Take(10), 
                 ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
-                
-            inputs.Add(new LinqTestInput(
-                "Select(new w/ Where) -> Where -> OrderBy -> Take", b => getQuery(b)
-                .Select(f => new { f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => c.Grade > 90) })
-                .Where(f => f.ChildrenCount > 2 && f.SmartChildren.Count() > 1)
-                .OrderBy(f => f.FamilyId)
-                .Take(10)));
+            // TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/375
+            //inputs.Add(new LinqTestInput(
+            //    "Select(new w/ Where) -> Where -> OrderBy -> Take", b => getQuery(b)
+            //    .Select(f => new { f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => c.Grade > 90) })
+            //    .Where(f => f.ChildrenCount > 2 && f.SmartChildren.Count() > 1)
+            //    .OrderBy(f => f.FamilyId)
+            //    .Take(10)));
 
             inputs.Add(new LinqTestInput(
                 "Select(new { Select(Select), conditional Count Take }) -> Where -> Select(Select(Any))", b => getQuery(b)
