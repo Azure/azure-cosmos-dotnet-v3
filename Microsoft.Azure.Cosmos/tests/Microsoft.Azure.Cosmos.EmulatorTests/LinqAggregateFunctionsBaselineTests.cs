@@ -406,53 +406,43 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Any", b => getQuery(b)
-                .Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter true flag -> Any", b => getQuery(b)
-                .Where(doc => doc.Flag).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Where(doc => doc.Flag).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter false flag -> Any", b => getQuery(b)
-                .Where(doc => !doc.Flag).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Where(doc => !doc.Flag).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any", b => getQuery(b)
-                .Select(doc => doc.Number).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Number).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select many -> Filter -> Select -> Any", b => getQuery(b)
-                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ boolean filter", b => getQuery(b)
-                .Any(doc => doc.Flag), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any(doc => doc.Flag)));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ operator filter", b => getQuery(b)
-                .Any(doc => doc.Number < -7), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any(doc => doc.Number < -7)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any w/ operator filter", b => getQuery(b)
-                .Select(doc => doc.Number).Any(num => num < -13), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Number).Any(num => num < -13)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Select) -> Any(Sum)", b => getQuery(b)
-                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Where) -> Any(Sum(map))", b => getQueryFamily(b)
-                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150)));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Any", b => getQueryFamily(b)
