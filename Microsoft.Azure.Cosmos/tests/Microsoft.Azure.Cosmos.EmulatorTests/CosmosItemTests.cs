@@ -1170,8 +1170,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Func<CosmosContainer, HttpStatusCode, Task>> operations = new List<Func<CosmosContainer, HttpStatusCode, Task>>();
             operations.Add(ExecuteQueryAsync);
             operations.Add(ExecuteReadFeedAsync);
+            operations.Add(ExecuteChangeFeedAsync);
 
-            foreach(var operation in operations)
+            foreach (var operation in operations)
             {
                 CosmosClient cc1 = TestCommon.CreateCosmosClient();
                 CosmosClient cc2 = TestCommon.CreateCosmosClient();
@@ -1234,6 +1235,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosResponseMessage response = await iterator.FetchNextSetAsync();
                 Assert.AreEqual(expected, response.StatusCode, $"substatuscode: {response.Headers.SubStatusCode} ");
             }
+        }
+
+        private static async Task ExecuteChangeFeedAsync(CosmosContainer container, HttpStatusCode expected)
+        {
+            try
+            {
+                CosmosContainer leaseContainer = await container.Database.CreateContainerAsync(id: Guid.NewGuid().ToString(), "/id");
+                int processedDocCount = 0;
+                string accumulator = string.Empty;
+                ChangeFeedProcessor processor = container
+                    .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                    {
+                        processedDocCount += docs.Count();
+                        return Task.CompletedTask;
+                    })
+                    .WithInstanceName("random")
+                    .WithCosmosLeaseContainer(leaseContainer).Build();
+
+                // Start the processor, insert 1 document to generate a checkpoint
+                await processor.StartAsync();
+                await processor.StopAsync();
+                await leaseContainer.DeleteAsync();
+            }
+            catch(DocumentClientException dce)
+            {
+                Assert.AreEqual(expected, dce.StatusCode.Value);
+            }
+            
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
