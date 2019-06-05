@@ -65,5 +65,7 @@ namespace Microsoft.Azure.Cosmos
             List<Range<string>> providedRanges);
 
         internal abstract bool ByPassQueryParsing();
+
+        internal abstract InvalidPartitionExceptionRetryPolicy CreateInvalidPartitionExceptionRetryPolicy(IDocumentClientRetryPolicy nextRetryPolicy);
     }
 }

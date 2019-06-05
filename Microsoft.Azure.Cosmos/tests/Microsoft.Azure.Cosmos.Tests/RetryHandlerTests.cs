@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
+            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
+            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
+            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockRetryPolicy.Setup(m => m.GetRequestPolicy())
                 .Returns(() => mockClientRetryPolicy.Object);
 
-            RetryHandler retryHandler = new RetryHandler(mockRetryPolicy.Object);
+            RetryHandler retryHandler = new RetryHandler(dc);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, response) => {
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient.ResetSessionTokenRetryPolicy);
+            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
             retryHandler.InnerHandler = testHandler;
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
@@ -195,54 +195,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             await invoker.SendAsync(requestMessage, new CancellationToken());
 
             int expectedHandlerCalls = 1;
-            Assert.AreEqual(expectedHandlerCalls, handlerCalls);
-        }
-
-        [TestMethod]
-        public async Task InvalidPartitionExceptionRetryHandlerDoesNotRetryOnSuccess()
-        {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-
-            NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
-            int handlerCalls = 0;
-            int expectedHandlerCalls = 1;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
-                handlerCalls++;
-                return TestHandler.ReturnSuccess();
-            });
-
-            retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
-            invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
-            await invoker.SendAsync(requestMessage, new CancellationToken());
-            Assert.AreEqual(expectedHandlerCalls, handlerCalls);
-        }
-
-        [TestMethod]
-        public async Task InvalidPartitionExceptionRetryHandlerDoesNotRetryOn410()
-        {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-
-            NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
-            int handlerCalls = 0;
-            int expectedHandlerCalls = 2;
-            TestHandler testHandler = new TestHandler((request, cancellationToken) => {
-                if (handlerCalls == 0)
-                {
-                    handlerCalls++;
-                    return TestHandler.ReturnStatusCode((HttpStatusCode)StatusCodes.Gone, SubStatusCodes.NameCacheIsStale);
-                }
-
-                handlerCalls++;
-                return TestHandler.ReturnSuccess();
-            });
-
-            retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client);
-            invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
-            await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
 

@@ -1099,6 +1099,78 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(sessionToken, readResponse.Headers.Session);
         }
 
+        /// <summary>
+        /// Stateless container re-create test. 
+        /// Create two client instances and do meta data operations through a single client
+        /// but do all validation using both clients.
+        /// </summary>
+        [TestMethod]
+        public async Task ContainterReCreateStatelessTest()
+        {
+            CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+
+            try
+            {
+                string dbName = Guid.NewGuid().ToString();
+                string containerName = Guid.NewGuid().ToString();
+
+                CosmosDatabase db1 = await cc1.CreateDatabaseAsync(dbName);
+                CosmosContainerCore container1 = (CosmosContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+
+                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.Accepted);
+
+                // Read through client2 -> return 404
+                CosmosContainer container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
+                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.Accepted);
+
+                // Delete container 
+                await container1.DeleteAsync();
+
+                // Read on deleted container through client1
+                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.NotFound);
+
+                // Read on deleted container through client2
+                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.NotFound);
+
+                // Re-create again 
+                container1 = (CosmosContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+
+                //var response = container1.ClientContext.DocumentClient.CreateDocumentQuery<dynamic>(container1.LinkUri, "select * from T where T.id != \"\" ", new FeedOptions() { EnableCrossPartitionQuery = true }).ToList();
+                // await CosmosItemTests.ExecuteReadFeedAsync(container1, HttpStatusCode.Accepted);
+                // Read through client1
+                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.Accepted);
+
+                // Read through client2
+                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.Accepted);
+            }
+            finally
+            {
+                cc1.Dispose();
+                cc2.Dispose();
+            }
+        }
+
+        private static async Task ExecuteQueryAsync(CosmosContainer container, HttpStatusCode expected)
+        {
+            FeedIterator iterator = container.CreateItemQueryAsStream("select * from r", 1);
+            while (iterator.HasMoreResults)
+            {
+                CosmosResponseMessage response = await iterator.FetchNextSetAsync();
+                Assert.AreEqual(expected, response.StatusCode, $"substatuscode: {response.Headers.SubStatusCode} ");
+            }
+        }
+
+        private static async Task ExecuteReadFeedAsync(CosmosContainer container, HttpStatusCode expected)
+        {
+            FeedIterator iterator = container.GetItemsStreamIterator();
+            while (iterator.HasMoreResults)
+            {
+                CosmosResponseMessage response = await iterator.FetchNextSetAsync();
+                Assert.AreEqual(expected, response.StatusCode);
+            }
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && pkCount > 1);

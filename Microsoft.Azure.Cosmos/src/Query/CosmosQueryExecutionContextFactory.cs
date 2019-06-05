@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -105,15 +106,47 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
         {
-            if (this.innerExecutionContext == null)
+            bool isFirstExecute = false;
+            QueryResponse response = null;
+            InvalidPartitionExceptionRetryPolicy retryPolicy = null;
+            while (true)
             {
-                this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
-            }
+                // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
+                // execute context has incorrect values and should be recreated. This should only be done for the first 
+                // execution. If results have already been pulled an error should be returned to the user since it's 
+                // not possible to combine query results from multiple containers.
+                if (this.innerExecutionContext == null || isFirstExecute)
+                {
+                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                    isFirstExecute = true;
+                }
 
-            QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
-            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+                response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
+                response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    break;
+                }
+
+                if (retryPolicy == null)
+                {
+                    retryPolicy = this.cosmosQueryContext.QueryClient.CreateInvalidPartitionExceptionRetryPolicy(null);
+                }
+
+                ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(response, cancellationToken);
+                if (!shouldRetry.ShouldRetry)
+                {
+                    break;
+                }
+
+                if (shouldRetry.BackoffTime != TimeSpan.Zero)
+                {
+                    await Task.Delay(shouldRetry.BackoffTime, cancellationToken);
+                }
+            }
 
             return response;
         }

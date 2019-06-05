@@ -21,10 +21,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using static Microsoft.Azure.Documents.RntbdConstants;
 
     /// <summary>
-    /// Handler which manages the continution token and partion-key-range-id selection depending on a provided start and end epk and direction. 
+    /// Handler which manages the continuation token and partition-key-range-id selection depending on a provided start and end epk and direction. 
     /// By default start is 00, end is FF and direction is forward. 
-    /// It doesn't participates in split logic direclty but on split retry, will select the new 
-    /// appropriate partiton-key-range id after a forced refresh of the CollectionRoutingMap.
+    /// It doesn't participates in split logic directly but on split retry, will select the new 
+    /// appropriate partition-key-range id after a forced refresh of the CollectionRoutingMap.
     /// </summary>
     internal class PartitionKeyRangeHandler : CosmosRequestHandler
     {
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             ).ToCosmosResponseMessage(request);
                 }
 
-                serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
+                request.PartitionKeyRangeId = resolvedRangeInfo.ResolvedRange.Id;
 
                 response = await base.SendAsync(request, cancellationToken);
 

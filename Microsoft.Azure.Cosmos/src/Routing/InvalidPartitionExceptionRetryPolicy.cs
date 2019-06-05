@@ -14,61 +14,60 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal class InvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
     {
-        private readonly CollectionCache clientCollectionCache;
-
+        private readonly DocumentClient documentClient;
         private readonly IDocumentClientRetryPolicy nextPolicy;
 
         private bool retried;
 
         public InvalidPartitionExceptionRetryPolicy(
-            CollectionCache clientCollectionCache,
+            DocumentClient documentClient,
             IDocumentClientRetryPolicy nextPolicy)
         {
-            if (clientCollectionCache == null)
+            if (documentClient == null)
             {
-                throw new ArgumentNullException("clientCollectionCache");
+                throw new ArgumentNullException(nameof(documentClient));
             }
 
-            this.clientCollectionCache = clientCollectionCache;
+            this.documentClient = documentClient;
             this.nextPolicy = nextPolicy;
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
             Exception exception,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             DocumentClientException clientException = exception as DocumentClientException;
-            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
+            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                 clientException?.StatusCode,
                 clientException?.GetSubStatus(),
                 clientException?.ResourceAddress);
             if (shouldRetryResult != null)
             {
-                return Task.FromResult(shouldRetryResult);
+                return shouldRetryResult;
             }
 
-            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(exception, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
+            return this.nextPolicy != null ? await this.nextPolicy.ShouldRetryAsync(exception, cancellationToken) : ShouldRetryResult.NoRetry();
         }
 
-        public Task<ShouldRetryResult> ShouldRetryAsync(
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
             CosmosResponseMessage httpResponseMessage,
             CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
+            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                 httpResponseMessage.StatusCode,
                 httpResponseMessage.Headers.SubStatusCode,
                 httpResponseMessage.GetResourceAddress());
 
             if (shouldRetryResult != null)
             {
-                return Task.FromResult(shouldRetryResult);
+                return shouldRetryResult;
             }
 
-            return this.nextPolicy != null ? this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellationToken) : Task.FromResult(ShouldRetryResult.NoRetry());
+            return this.nextPolicy != null ? await this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellationToken) : ShouldRetryResult.NoRetry();
         }
 
-        private ShouldRetryResult ShouldRetryInternal(
+        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
             string resourceIdOrFullName)
@@ -87,7 +86,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (!string.IsNullOrEmpty(resourceIdOrFullName))
                     {
-                        this.clientCollectionCache.Refresh(resourceIdOrFullName);
+                        CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+                        collectionCache.Refresh(resourceIdOrFullName);
+
+                        ISessionContainer sessionContainer = this.documentClient.sessionContainer;
+                        sessionContainer.ClearTokenByCollectionFullname(resourceIdOrFullName);
                     }
 
                     this.retried = true;

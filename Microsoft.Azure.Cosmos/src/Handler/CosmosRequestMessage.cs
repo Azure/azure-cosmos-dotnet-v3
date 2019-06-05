@@ -181,16 +181,16 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
-                // Routing to a particular PartitionKeyRangeId
-                if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
-                {
-                    serviceRequest.RouteTo(new PartitionKeyRangeIdentity(this.PartitionKeyRangeId));
-                }
-
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;
                 this.DocumentServiceRequest = serviceRequest;
+            }
+
+            // Routing to a particular PartitionKeyRangeId
+            if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
+            {
+                this.DocumentServiceRequest.RouteTo(new PartitionKeyRangeIdentity(this.PartitionKeyRangeId));
             }
 
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);

@@ -85,6 +85,11 @@ namespace Microsoft.Azure.Cosmos.Query
             return await this.innerClient.GetCollectionCacheAsync();
         }
 
+        InvalidPartitionExceptionRetryPolicy IDocumentQueryClient.CreateInvalidPartitionExceptionRetryPolicy(IDocumentClientRetryPolicy nextRetryPolicy)
+        {
+            return new InvalidPartitionExceptionRetryPolicy(this.innerClient, nextRetryPolicy);
+        }
+
         async Task<IRoutingMapProvider> IDocumentQueryClient.GetRoutingMapProviderAsync()
         {
             return await this.innerClient.GetPartitionKeyRangeCacheAsync();

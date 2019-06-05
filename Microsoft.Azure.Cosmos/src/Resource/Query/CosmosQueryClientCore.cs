@@ -191,6 +191,11 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
+        internal override InvalidPartitionExceptionRetryPolicy CreateInvalidPartitionExceptionRetryPolicy(IDocumentClientRetryPolicy nextRetryPolicy)
+        {
+            return new InvalidPartitionExceptionRetryPolicy(this.clientContext.DocumentClient, nextRetryPolicy);
+        }
+
         private QueryResponse GetCosmosElementResponse(
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
