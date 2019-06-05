@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await container.UpsertItemAsync(document);
 
-            CosmosResponseMessage cosmosResponseMessage = await container.ReadItemAsStreamAsync(new PartitionKey(document.status), document.id);
+            CosmosResponseMessage cosmosResponseMessage = await container.ReadItemStreamAsync(new PartitionKey(document.status), document.id);
             StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
             string text = reader.ReadToEnd();
 
