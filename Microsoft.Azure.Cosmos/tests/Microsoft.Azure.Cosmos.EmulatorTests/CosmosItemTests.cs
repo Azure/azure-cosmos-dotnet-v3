@@ -1213,7 +1213,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task ExecuteQueryAsync(CosmosContainer container, HttpStatusCode expected)
         {
-            FeedIterator iterator = container.CreateItemQueryAsStream("select * from r", 1);
+            FeedIterator iterator = container.CreateItemQueryStream("select * from r", 1);
             while (iterator.HasMoreResults)
             {
                 CosmosResponseMessage response = await iterator.FetchNextSetAsync();
