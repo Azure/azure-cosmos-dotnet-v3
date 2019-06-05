@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal OperationType OperationType { get; set; }
 
-        internal string PartitionKeyRangeId { get; set; }
+        internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
 
         /// <summary>
         /// Used to override the client default. This is used for scenarios
@@ -91,7 +91,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
-        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && string.IsNullOrEmpty(this.PartitionKeyRangeId);
+        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && 
+            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && 
+            this.PartitionKeyRangeId == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -188,9 +190,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Routing to a particular PartitionKeyRangeId
-            if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
+            if (this.PartitionKeyRangeId != null)
             {
-                this.DocumentServiceRequest.RouteTo(new PartitionKeyRangeIdentity(this.PartitionKeyRangeId));
+                this.DocumentServiceRequest.RouteTo(this.PartitionKeyRangeId);
             }
 
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);

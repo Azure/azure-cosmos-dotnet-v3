@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrEmpty(partitionKeyRangeId))
             {
-                request.PartitionKeyRangeId = partitionKeyRangeId;
+                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(partitionKeyRangeId);
             }
         }
 

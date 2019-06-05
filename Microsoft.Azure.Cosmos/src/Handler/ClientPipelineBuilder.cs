@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
+        private readonly CosmosRequestHandler invalidPartitionExceptionRetryHandler;
         private readonly CosmosRequestHandler transportHandler;
         private readonly CosmosRequestHandler partitionKeyRangeGoneRetryHandler;
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
@@ -28,6 +29,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(this.client);
             Debug.Assert(this.partitionKeyRangeGoneRetryHandler.InnerHandler == null, "The partitionKeyRangeGoneRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
+
+            this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler(this.client);
+            Debug.Assert(this.invalidPartitionExceptionRetryHandler.InnerHandler == null, "The invalidPartitionExceptionRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
@@ -134,8 +138,8 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(feedHandler != null, nameof(feedHandler));
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
             CosmosRequestHandler routerHandler = new RouterHandler(
-                documentFeedHandler: feedHandler,
-                pointOperationHandler: this.transportHandler);
+               documentFeedHandler: feedHandler,
+               pointOperationHandler: this.transportHandler);
 
             current.InnerHandler = routerHandler;
             current = (CosmosRequestHandler)current.InnerHandler;
@@ -182,6 +186,7 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosRequestHandler[] feedPipeline = new CosmosRequestHandler[]
                 {
+                    this.invalidPartitionExceptionRetryHandler,
                     this.partitionKeyRangeGoneRetryHandler,
                     this.PartitionKeyRangeHandler,
                     this.transportHandler,
