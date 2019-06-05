@@ -1695,7 +1695,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateLinqQueries()
         {
-            CosmosContainer container = testDb.CreateContainerAsync(new CosmosContainerSettings { Id = Guid.NewGuid().ToString("N"), PartitionKey = defaultPartitionKeyDefinition }).Result;
+            CosmosContainer container = testDb.CreateContainerAsync(new CosmosContainerSettings (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/pk" )).Result;
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };

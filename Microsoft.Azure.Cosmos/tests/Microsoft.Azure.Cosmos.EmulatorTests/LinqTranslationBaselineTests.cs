@@ -102,6 +102,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         internal class DataObject : LinqTestObject
         {
             public double NumericField;
+            public decimal DecimalField;
+            public double IntField;
             public string StringField;
             public string StringField2;
             public int[] ArrayField;
@@ -394,14 +396,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Ignore] //TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/330
         public void TestMathFunctions()
         {
-            //TODO
-            // Test Case failing for Abs decimal and Abs int
-            // Abs decimal is working when we are using Epsilon as 5 instead of 6 in LinqTestsCommon.ValidateResults(), it's a bug , need to get fix
-            // Abs int is not getting auto converted from decimal values in V3 code FeedResponseBinder.ConvertCosmosElementFeed, hence throwing error, need to discuss
-
             const int Records = 20;
             // when doing verification between data and query results for integer type (int, long, short, sbyte, etc.)
             // the backend returns double values which got casted to the integer type
@@ -410,9 +406,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             DataObject createDataObj(Random random) => new DataObject()
             {
                 NumericField = 1.0 * random.Next() + random.NextDouble() / 2,
+                DecimalField = (decimal)(1.0 * random.Next() + random.NextDouble()) / 2,
+                IntField = 1.0 * random.Next(),
                 id = Guid.NewGuid().ToString(),
                 pk = "Test"
-        };
+            };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             // some scenarios below requires input to be within data type range in order to be correct
@@ -420,7 +418,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // e.g. float has a precision up to 7 digits so the inputs needs to be within that range before being casted to float.
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Abs
-            inputs.Add(new LinqTestInput("Abs decimal", b => getQuery(b).Select(doc => Math.Abs((decimal)doc.NumericField))));
+            inputs.Add(new LinqTestInput("Abs decimal", b => getQuery(b).Select(doc => Math.Abs(doc.DecimalField))));
+
             inputs.Add(new LinqTestInput("Abs double", b => getQuery(b).Select(doc => Math.Abs((double)doc.NumericField))));
             inputs.Add(new LinqTestInput("Abs float", b => getQuery(b)
                 .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
@@ -428,8 +427,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             //inputs.Add(new LinqTestInput("Select", b => getQuery(b)
             //    .Select(doc => (int)doc.NumericField)));
             inputs.Add(new LinqTestInput("Abs int", b => getQuery(b)
-                .Where(doc => doc.NumericField >= int.MinValue && doc.NumericField <= int.MaxValue)
-                .Select(doc => Math.Abs((int)doc.NumericField))));
+                .Where(doc => doc.IntField >= int.MinValue && doc.IntField <= int.MaxValue)
+                .Select(doc => Math.Abs((int)doc.IntField))));
             inputs.Add(new LinqTestInput("Abs long", b => getQuery(b)
                 .Where(doc => doc.NumericField >= long.MinValue && doc.NumericField <= long.MaxValue)
                 .Select(doc => Math.Abs((long)doc.NumericField))));
