@@ -162,12 +162,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             CosmosContainerSettings settings = new CosmosContainerSettings(containerName, partitionKeyDefinition);
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.CreateContainerAsStreamAsync(settings))
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.CreateContainerStreamAsync(settings))
             {
                 Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             }
 
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteAsStreamAsync())
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
             }
