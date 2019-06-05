@@ -162,12 +162,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             CosmosContainerSettings settings = new CosmosContainerSettings(containerName, partitionKeyDefinition);
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.CreateContainerAsStreamAsync(settings))
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.CreateContainerStreamAsync(settings))
             {
                 Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             }
 
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteAsStreamAsync())
+            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
             }
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await cosmosContainer.CreateItemAsync<dynamic>(payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await cosmosContainer.ReadItemAsync<dynamic>(payload.user, payload.id);
+            ItemResponse<dynamic> readItemResponse = await cosmosContainer.ReadItemAsync<dynamic>(new Cosmos.PartitionKey(payload.user), payload.id);
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
 

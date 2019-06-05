@@ -25,7 +25,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             this.container = container;
         }
 
-        public override async Task<DocumentServiceLease> UpdateLeaseAsync(DocumentServiceLease cachedLease, string itemId, object partitionKey, Func<DocumentServiceLease, DocumentServiceLease> updateLease)
+        public override async Task<DocumentServiceLease> UpdateLeaseAsync(
+            DocumentServiceLease cachedLease, 
+            string itemId, 
+            Cosmos.PartitionKey partitionKey, 
+            Func<DocumentServiceLease, DocumentServiceLease> updateLease)
         {
             DocumentServiceLease lease = cachedLease;
             for (int retryCount = RetryCountOnConflict; retryCount >= 0; retryCount--)
@@ -69,7 +73,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             throw new LeaseLostException(lease);
         }
 
-        private async Task<DocumentServiceLeaseCore> TryReplaceLeaseAsync(DocumentServiceLeaseCore lease, object partitionKey, string itemId)
+        private async Task<DocumentServiceLeaseCore> TryReplaceLeaseAsync(
+            DocumentServiceLeaseCore lease, 
+            Cosmos.PartitionKey partitionKey, 
+            string itemId)
         {
             try
             {

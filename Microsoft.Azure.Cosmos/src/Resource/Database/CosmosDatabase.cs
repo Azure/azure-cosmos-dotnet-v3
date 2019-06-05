@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Gets provisioned database throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
@@ -122,27 +122,25 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="throughput">The cosmos database throughput.</param>
+        /// <param name="requestUnits">The cosmos database throughput.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
-        /// <remarks>
-        /// <para>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
-        /// </para>
-        /// </remarks>
         /// <example>
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(400);
+        /// int? throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(10000);
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>A Task representing the asynchronoous operation.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task ReplaceProvisionedThroughputAsync(
-            int throughput,
+            int requestUnits,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -153,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
         /// </returns>
-        public abstract Task<CosmosResponseMessage> ReadAsStreamAsync(
+        public abstract Task<CosmosResponseMessage> ReadStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -163,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<CosmosResponseMessage> DeleteAsStreamAsync(
+        public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
     }

@@ -62,7 +62,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, toStreamCount);
             Assert.AreEqual(1, fromStreamCount);
 
-            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.status, testItem.id);
+            await mockContainer.DeleteItemAsync<ToDoActivity>(new Cosmos.PartitionKey(testItem.status), testItem.id);
+        }
+
+        /// <summary>
+        /// Verify that null attributes do not get serialized by default.
+        /// </summary>
+        [TestMethod]
+        public async Task DefaultNullValueHandling()
+        {
+            ToDoActivity document = new ToDoActivity()
+            {
+                id = Guid.NewGuid().ToString(),
+                description = default(string),
+                status = "TBD",
+                taskNum = 42,
+                cost = double.MaxValue
+            };
+
+            await container.UpsertItemAsync(document);
+
+            CosmosResponseMessage cosmosResponseMessage = await container.ReadItemStreamAsync(new PartitionKey(document.status), document.id);
+            StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
+            string text = reader.ReadToEnd();
+
+            Assert.AreEqual(-1, text.IndexOf(nameof(document.description)), "Stored document contains a null attribute");
         }
         
         private ToDoActivity CreateRandomToDoActivity(string pk = null)

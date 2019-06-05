@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.ReadAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.ReadStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.DeleteAsStreamAsync(
+            Task<CosmosResponseMessage> response = this.DeleteStreamAsync(
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
@@ -72,24 +72,24 @@ namespace Microsoft.Azure.Cosmos
             CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
             if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
             {
-                return offerResult.Throughput;
+                return offerResult.RequestUnits;
             }
 
             throw offerResult.CosmosException;
         }
 
         public override async Task ReplaceProvisionedThroughputAsync(
-            int throughput,
+            int requestUnits,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(throughput, cancellationToken);
+            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(requestUnits, cancellationToken);
             if (offerResult.StatusCode != HttpStatusCode.OK)
             {
                 throw offerResult.CosmosException;
             }
         }
 
-        public override Task<CosmosResponseMessage> ReadAsStreamAsync(
+        public override Task<CosmosResponseMessage> ReadStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<CosmosResponseMessage> DeleteAsStreamAsync(
+        public override Task<CosmosResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -118,11 +118,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
-            int targetThroughput,
+            int targetRequestUnits,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<string> rid = this.GetRIDAsync(cancellationToken);
-            return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetThroughput, cancellationToken), cancellationToken)
+            return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetRequestUnits, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
                 resourceType: ResourceType.Database,
                 operationType: operationType,

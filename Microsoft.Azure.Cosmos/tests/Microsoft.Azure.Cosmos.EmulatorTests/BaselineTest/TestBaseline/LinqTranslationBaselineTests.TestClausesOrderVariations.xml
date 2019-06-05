@@ -26,7 +26,7 @@ WHERE (root["NumericField"] = 0) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Select -> Multiple Where]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.Point).Where(point => (point.Position.Latitude == 100)).Where(point => (point.Position.Longitude == 50)).Where(point => (point.Position.Altitude == Convert(Convert(20)))).Where(point => (point.Position.Coordinates.get_Item(0) == 100)).Where(point => (point.Position.Coordinates.get_Item(1) == 50))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.Point).Where(point => (point.Position.Latitude == 100)).Where(point => (point.Position.Longitude == 50)).Where(point => (point.Position.Altitude == Convert(Convert(20, Double), Nullable`1))).Where(point => (point.Position.Coordinates.get_Item(0) == 100)).Where(point => (point.Position.Coordinates.get_Item(1) == 50))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -38,7 +38,7 @@ WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["c
   <Result>
     <Input>
       <Description><![CDATA[Multiple Where -> Select]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.Point.Position.Latitude == 100)).Where(doc => (doc.Point.Position.Longitude == 50)).Where(doc => (doc.Point.Position.Altitude == Convert(Convert(20)))).Where(doc => (doc.Point.Position.Coordinates.get_Item(0) == 100)).Where(doc => (doc.Point.Position.Coordinates.get_Item(1) == 50)).Select(doc => doc.Point)]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.Point.Position.Latitude == 100)).Where(doc => (doc.Point.Position.Longitude == 50)).Where(doc => (doc.Point.Position.Altitude == Convert(Convert(20, Double), Nullable`1))).Where(doc => (doc.Point.Position.Coordinates.get_Item(0) == 100)).Where(doc => (doc.Point.Position.Coordinates.get_Item(1) == 50)).Select(doc => doc.Point)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

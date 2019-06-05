@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Create the object in Cosmos
-        /// using (CosmosResponseMessage response = await this.Container.CreateItemAsStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
+        /// using (CosmosResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: "streamPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -53,8 +54,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> CreateItemAsStreamAsync(
-                    object partitionKey,
+        public abstract Task<CosmosResponseMessage> CreateItemStreamAsync(
+                    PartitionKey partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -131,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// Read a response as a stream.
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.ReadItemAsStreamAsync("partitionKey", "id"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.ReadItemStreamAsync("partitionKey", "id"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -152,8 +153,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ReadItemAsStreamAsync(
-                    object partitionKey,
+        public abstract Task<CosmosResponseMessage> ReadItemStreamAsync(
+                    PartitionKey partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -168,6 +169,12 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ItemResponse{T}"/> which wraps the read resource record.
         /// </returns>
+        /// <remarks>
+        /// Items contain metadata that can be obtained by mapping these metadata attributes to properties in <typeparamref name="T"/>.
+        /// * "_ts": Gets the last modified timestamp associated with the item from the Azure Cosmos DB service.
+        /// * "_etag": Gets the entity tag associated with the item from the Azure Cosmos DB service.
+        /// * "ttl": Gets the time to live in seconds of the item in the Azure Cosmos DB service.
+        /// </remarks>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
         ///     <listheader>
@@ -192,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> ReadItemAsync<T>(
-            object partitionKey,
+            PartitionKey partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -214,7 +221,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.UpsertItemAsStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.UpsertItemStreamAsync(partitionKey: "itemPartitionKey", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -234,8 +241,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> UpsertItemAsStreamAsync(
-                    object partitionKey,
+        public abstract Task<CosmosResponseMessage> UpsertItemStreamAsync(
+                    PartitionKey partitionKey,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -288,7 +295,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -310,7 +317,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace an item in Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.ReplaceItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.ReplaceItemStreamAsync(partitionKey: "itemPartitionKey", id: "itemId", streamPayload: stream))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -330,8 +337,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ReplaceItemAsStreamAsync(
-                    object partitionKey,
+        public abstract Task<CosmosResponseMessage> ReplaceItemStreamAsync(
+                    PartitionKey partitionKey,
                     string id,
                     Stream streamPayload,
                     ItemRequestOptions requestOptions = null,
@@ -390,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(
             string id,
             T item,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -411,7 +418,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete an item from Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.cosmosContainer.DeleteItemAsStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
+        /// using(CosmosResponseMessage response = this.cosmosContainer.DeleteItemStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -422,8 +429,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> DeleteItemAsStreamAsync(
-                    object partitionKey,
+        public abstract Task<CosmosResponseMessage> DeleteItemStreamAsync(
+                    PartitionKey partitionKey,
                     string id,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -460,7 +467,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(
-            object partitionKey,
+            PartitionKey partitionKey,
             string id,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -554,7 +561,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// FeedIterator feedIterator = this.Container.CreateItemQueryAsStream(
+        /// FeedIterator feedIterator = this.Container.CreateItemQueryStream(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
@@ -573,10 +580,10 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator CreateItemQueryAsStream(
+        public abstract FeedIterator CreateItemQueryStream(
             CosmosSqlQueryDefinition sqlQueryDefinition,
             int maxConcurrency,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
@@ -604,7 +611,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.CreateItemQueryAsStream(
+        /// FeedIterator feedIterator = this.Container.CreateItemQueryStream(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
@@ -623,10 +630,10 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator CreateItemQueryAsStream(
+        public abstract FeedIterator CreateItemQueryStream(
             string sqlQueryText,
             int maxConcurrency,
-            object partitionKey = null,
+            PartitionKey partitionKey = null,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
@@ -668,7 +675,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             CosmosSqlQueryDefinition sqlQueryDefinition,
-            object partitionKey,
+            PartitionKey partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
@@ -709,7 +716,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> CreateItemQuery<T>(
             string sqlQueryText,
-            object partitionKey,
+            PartitionKey partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
@@ -796,6 +803,82 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
+        /// </summary>
+        /// <typeparam name="T">The type of object to query.</typeparam>
+        /// <param name="partitionKey">(Optional) The partition key to execute the query in a particular partition.</param>
+        /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
+        /// <param name="requestOptions">(Optional)The options for the item query request.<see cref="QueryRequestOptions"/></param>
+        /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
+        /// <example>
+        /// 1. This example below shows LINQ query generation and blocked execution.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class Book 
+        /// {
+        ///     public string Title {get; set;}
+        ///     
+        ///     public Author Author {get; set;}
+        ///     
+        ///     public int Price {get; set;}
+        /// }
+        /// 
+        /// public class Author
+        /// {
+        ///     public string FirstName {get; set;}
+        ///     public string LastName {get; set;}
+        /// }
+        ///  
+        /// // Query by the Title property
+        /// Book book = container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true)
+        ///                      .Where(b => b.Title == "War and Peace")
+        ///                      .AsEnumerable()
+        ///                      .FirstOrDefault();
+        /// 
+        /// // Query a nested property
+        /// Book otherBook = container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true)
+        ///                           .Where(b => b.Author.FirstName == "Leo")
+        ///                           .AsEnumerable()
+        ///                           .FirstOrDefault();
+        /// 
+        /// // Perform iteration on books
+        /// foreach (Book matchingBook in container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true).Where(b => b.Price > 100))
+        /// {
+        ///     // Iterate through books
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// 2. This example below shows LINQ query generation and asynchronous execution with FeedIterator.
+        /// <code language="c#">
+        /// <![CDATA[
+        ///
+        /// // LINQ query generation
+        /// IQueryable<Book> queryable = container.Items.CreateItemQuery<Book>()
+        ///                      .Where(b => b.Title == "War and Peace");
+        /// //Asynchronous query execution
+        /// FeedIterator<Book> setIterator = this.Container
+        ///           .CreateItemQuery<Book>(queriable.ToSqlQueryText(), maxConcurrency: 1);
+        ///           while (setIterator.HasMoreResults)
+        ///           {
+        ///           FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
+        ///            var iter = queryResponse.GetEnumerator();
+        ///            while (iter.MoveNext())
+        ///            {
+        ///             Book book = iter.Current;
+        ///            }
+        ///            }
+        ///
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
+        /// </remarks>
+        public abstract IOrderedQueryable<T> CreateItemQuery<T>(object partitionKey = null, bool allowSynchronousQueryExecution = false, QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.

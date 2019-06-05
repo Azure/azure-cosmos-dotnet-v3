@@ -68,6 +68,11 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
+    /// <remarks>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally" />
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview" />
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units" />
+    /// </remarks>
     public partial class CosmosClient : IDisposable
     {
         private Lazy<CosmosOffers> offerSet;
@@ -176,7 +181,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientOptions clientOptionsClone = clientOptions.Clone();
 
             DocumentClient documentClient = new DocumentClient(
-                clientOptionsClone.AccountEndPoint,
+                clientOptionsClone.EndPoint,
                 clientOptionsClone.AccountKey,
                 apitype: clientOptionsClone.ApiType,
                 sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
@@ -229,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<CosmosAccountSettings> GetAccountSettingsAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.AccountEndPoint);
+            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.EndPoint);
         }
 
         /// <summary>

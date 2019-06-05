@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                throughput: 10000,
+                requestUnits: 10000,
                 cancellationToken: this.cancellationToken);
             this.Container = response;
         }
@@ -72,7 +72,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
-        [Ignore("Emulator is failing due to socket issues")]
         public async Task TestReducePageSizeScenario()
         {
             int partitionKey = 0;
@@ -109,12 +108,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithCosmosLeaseContainer(this.LeaseContainer).Build();
 
             // Generate the payload
-            await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 0);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 0);
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
             var content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
-            await this.Container.CreateItemAsync(partitionKey, JsonConvert.DeserializeObject<dynamic>(content));
+            await this.Container.CreateItemAsync(JsonConvert.DeserializeObject<dynamic>(content), new PartitionKey(partitionKey));
 
-            await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 3);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 3);
 
             await processor.StartAsync();
             // Letting processor initialize and pickup changes
