@@ -91,11 +91,19 @@ namespace Microsoft.Azure.Cosmos
         ///                                    |                             |
         ///                                    |                             |
         ///                                    |                             |
-        ///                  +-----------------------------+         +------------------------------------+
-        ///                  | !IsPartitionedFeedOperation |         |    IsPartitionedFeedOperation      |
-        ///                  |      TransportHandler       |         | partitionKeyRangeGoneRetryHandler  |
-        ///                  |                             |         |                                    |
-        ///                  +-----------------------------+         +------------------------------------+
+        ///                  +-----------------------------+         +---------------------------------------+
+        ///                  | !IsPartitionedFeedOperation |         |    IsPartitionedFeedOperation         |
+        ///                  |      TransportHandler       |         | invalidPartitionExceptionRetryHandler |
+        ///                  |                             |         |                                       |
+        ///                  +-----------------------------+         +---------------------------------------+
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                          +---------------------------------------+
+        ///                                                          |                                       |
+        ///                                                          |   partitionKeyRangeGoneRetryHandler   |
+        ///                                                          |                                       |
+        ///                                                          +---------------------------------------+
         ///                                                                          |
         ///                                                                          |
         ///                                                                          |
