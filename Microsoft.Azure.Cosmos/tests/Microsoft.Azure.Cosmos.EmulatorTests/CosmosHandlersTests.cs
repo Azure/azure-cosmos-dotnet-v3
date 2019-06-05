@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             ToDoActivity testItem = CreateRandomToDoActivity();
-            using (CosmosResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemAsStreamAsync(
+            using (CosmosResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
                 streamPayload: this.jsonSerializer.ToStream(testItem)))
             {

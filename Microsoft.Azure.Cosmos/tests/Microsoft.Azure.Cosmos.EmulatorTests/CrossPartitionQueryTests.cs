@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             // Assert that database exists (race deletes are possible when used concurrently)
-            CosmosResponseMessage responseMessage = await this.database.ReadAsStreamAsync();
+            CosmosResponseMessage responseMessage = await this.database.ReadStreamAsync();
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(
