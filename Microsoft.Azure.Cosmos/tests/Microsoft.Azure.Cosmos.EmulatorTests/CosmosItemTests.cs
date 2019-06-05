@@ -1165,7 +1165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// but do all validation using both clients.
         /// </summary>
         [TestMethod]
-        public async Task ContainterReCreateStatelessTest()
+        public async Task ContainterReCreateStatelessQueryTest()
         {
             CosmosClient cc1 = TestCommon.CreateCosmosClient();
             CosmosClient cc2 = TestCommon.CreateCosmosClient();
@@ -1196,8 +1196,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Re-create again 
                 container1 = (CosmosContainerCore)await db1.CreateContainerAsync(containerName, "/id");
 
-                //var response = container1.ClientContext.DocumentClient.CreateDocumentQuery<dynamic>(container1.LinkUri, "select * from T where T.id != \"\" ", new FeedOptions() { EnableCrossPartitionQuery = true }).ToList();
-                // await CosmosItemTests.ExecuteReadFeedAsync(container1, HttpStatusCode.Accepted);
                 // Read through client1
                 await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.Accepted);
 
