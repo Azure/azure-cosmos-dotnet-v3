@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return this.clientContext.ProcessResourceOperationAsStreamAsync(
+            return this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,

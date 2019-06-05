@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            Task<CosmosResponseMessage> response = this.CreateContainerAsStreamInternalAsync(
+            Task<CosmosResponseMessage> response = this.CreateContainerStreamInternalAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
                 requestUnits: requestUnits,
                 requestOptions: requestOptions,
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
                     id);
         }
 
-        public override Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
+        public override Task<CosmosResponseMessage> CreateContainerStreamAsync(
             CosmosContainerSettings containerSettings, 
             int? requestUnits = null, 
             RequestOptions requestOptions = null, 
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerSettings(containerSettings);
 
             Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream(containerSettings);
-            return this.CreateContainerAsStreamInternalAsync(streamPayload,
+            return this.CreateContainerStreamInternalAsync(streamPayload,
                 requestUnits,
                 requestOptions,
                 cancellationToken);
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> CreateContainerAsStreamInternalAsync(
+        private Task<CosmosResponseMessage> CreateContainerStreamInternalAsync(
                     Stream streamPayload,
                     int? requestUnits = null,
                     RequestOptions requestOptions = null,
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.ReadFeed,
