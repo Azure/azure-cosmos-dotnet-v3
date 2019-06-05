@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Task<CosmosResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 partitionKey: partitionKey,
                 id: id,
-                input: parametersStream,
+                streamPayload: parametersStream,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
             Cosmos.PartitionKey partitionKey,
             string id,
-            Stream input,
+            Stream streamPayload,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ExecuteJavaScript,
                 partitionKey: partitionKey,
-                streamPayload: input,
+                streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The identifier of the Stored Procedure to execute.</param>
-        /// <param name="input">The stream representing the input for the stored procedure.</param>
+        /// <param name="streamPayload">The stream representing the input for the stored procedure.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(testPartitionId, input: stream);
+        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(testPartitionId, streamPayload: stream);
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
         ///     string stringResponse = await sr.ReadToEndAsync();
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
             PartitionKey partitionKey,
             string id,
-            Stream input,
+            Stream streamPayload,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
