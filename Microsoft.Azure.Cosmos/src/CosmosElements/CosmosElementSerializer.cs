@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="resourceType">The resource type</param>
         /// <param name="jsonSerializer">The JSON </param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
-        /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
+        /// <returns>Returns a list of deserialized objects</returns>
         internal static IEnumerable<T> Deserialize<T>(
             string containerRid,
             IEnumerable<CosmosElement> cosmosElements,
