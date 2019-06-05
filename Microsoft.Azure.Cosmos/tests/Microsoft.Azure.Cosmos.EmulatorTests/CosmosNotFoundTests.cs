@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var crossPartitionQueryIterator = container.CreateItemQueryStream("select * from t where true", maxConcurrency: 2);
             var queryResponse = await crossPartitionQueryIterator.FetchNextSetAsync();
             Assert.IsNotNull(queryResponse);
-            Assert.AreEqual(HttpStatusCode.Gone, queryResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
 
             var queryIterator = container.CreateItemQueryStream("select * from t where true", maxConcurrency: 1, partitionKey: new Cosmos.PartitionKey("testpk"));
             this.VerifyQueryNotFoundResponse(await queryIterator.FetchNextSetAsync());
