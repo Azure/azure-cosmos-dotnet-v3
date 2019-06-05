@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;

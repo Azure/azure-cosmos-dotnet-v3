@@ -104,27 +104,51 @@ namespace Microsoft.Azure.Cosmos.Scripts
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
+            Stream parametersStream;
+            if (input != null && !input.GetType().IsArray)
+            {
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
+            }
+            else
+            {
+                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
+            }
+
+            Task<CosmosResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 partitionKey: partitionKey,
                 id: id,
-                input: input,
+                input: parametersStream,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
 
-        public override Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync<TInput>(
+        public override Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
             Cosmos.PartitionKey partitionKey,
             string id,
-            TInput input,
+            Stream input,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: OperationType.ExecuteJavaScript,
                 partitionKey: partitionKey,
-                id: id,
-                input: input,
+                streamPayload: input,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -545,45 +569,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
                 responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<CosmosResponseMessage> ValidateAndProcessExecuteStoredProcedureAsync<TInput>(
-            Cosmos.PartitionKey partitionKey,
-            string id,
-            TInput input,
-            StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
-            Stream parametersStream;
-            if (input != null && !input.GetType().IsArray)
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
-            }
-            else
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
-            }
-
-            Uri linkUri = this.clientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            return this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: OperationType.ExecuteJavaScript,
-                partitionKey: partitionKey,
-                streamPayload: parametersStream,
-                requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
     }

@@ -281,10 +281,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
         /// </summary>
-        /// <typeparam name="TInput">The input type that is JSON serializable.</typeparam>
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="id">The identifier of the Stored Procedure to execute.</param>
-        /// <param name="input">The JSON serializable input parameters.</param>
+        /// <param name="input">The stream representing the input for the stored procedure.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -319,8 +318,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureAsStreamAsync<string>(testPartitionId, "Item as a string: ");
-        /// using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
+        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureAsStreamAsync<string>(testPartitionId, input: stream);
+        /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
         ///     string stringResponse = await sr.ReadToEndAsync();
         ///     Console.WriteLine(stringResponse);
@@ -329,10 +328,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync<TInput>(
+        public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
             PartitionKey partitionKey,
             string id,
-            TInput input,
+            Stream input,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
