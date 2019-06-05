@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureAsStreamAsync<string>(testPartitionId, "Item as a string: ");
         /// using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
         /// {
-        ///     string stringResponse = sr.ReadToEnd();
+        ///     string stringResponse = await sr.ReadToEndAsync();
         ///     Console.WriteLine(stringResponse);
         ///  }
         /// 
