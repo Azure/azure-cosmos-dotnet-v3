@@ -230,12 +230,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <typeparam name="TInput">The input type that is JSON serializable.</typeparam>
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
-        /// <param name="id">The identifier of the Stored Procedure to execute.</param>
+        /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="input">The JSON serializable input parameters.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="id"/> or <paramref name="partitionKey"/>  are not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
             PartitionKey partitionKey,
-            string id,
+            string storedProcedureId,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -282,12 +282,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
-        /// <param name="id">The identifier of the Stored Procedure to execute.</param>
+        /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="streamPayload">The stream representing the input for the stored procedure.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="id"/> or <paramref name="partitionKey"/>  are not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
             PartitionKey partitionKey,
-            string id,
+            string storedProcedureId,
             Stream streamPayload,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));

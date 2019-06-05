@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
             Cosmos.PartitionKey partitionKey,
-            string id,
+            string storedProcedureId,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
             Task<CosmosResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 partitionKey: partitionKey,
-                id: id,
+                storedProcedureId: storedProcedureId,
                 streamPayload: parametersStream,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -126,14 +126,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
             Cosmos.PartitionKey partitionKey,
-            string id,
+            string storedProcedureId,
             Stream streamPayload,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (string.IsNullOrEmpty(id))
+            if (string.IsNullOrEmpty(storedProcedureId))
             {
-                throw new ArgumentNullException(nameof(id));
+                throw new ArgumentNullException(nameof(storedProcedureId));
             }
 
             CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Uri linkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
                 uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
+                id: storedProcedureId);
 
             return this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
