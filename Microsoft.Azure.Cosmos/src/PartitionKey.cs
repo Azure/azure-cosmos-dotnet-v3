@@ -36,6 +36,47 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new partition key value.
         /// </summary>
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
+        public PartitionKey(string partitionKeyValue)
+        {
+            if (partitionKeyValue == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyValue));
+            }
+
+            this.Value = partitionKeyValue;
+        }
+
+        /// <summary>
+        /// Creates a new partition key value.
+        /// </summary>
+        /// <param name="partitionKeyValue">The value to use as partition key.</param>
+        public PartitionKey(bool partitionKeyValue)
+        {
+            this.Value = partitionKeyValue;
+        }
+
+        /// <summary>
+        /// Creates a new partition key value.
+        /// </summary>
+        /// <param name="partitionKeyValue">The value to use as partition key.</param>
+        public PartitionKey(double partitionKeyValue)
+        {
+            this.Value = partitionKeyValue;
+        }
+
+        /// <summary>
+        /// Creates a new partition key value.
+        /// </summary>
+        /// <param name="partitionKeyValue">The value to use as partition key.</param>
+        public PartitionKey(Guid partitionKeyValue)
+        {
+            this.Value = partitionKeyValue.ToString();
+        }
+
+        /// <summary>
+        /// Creates a new partition key value.
+        /// </summary>
+        /// <param name="partitionKeyValue">The value to use as partition key.</param>
         public PartitionKey(object partitionKeyValue)
         {
             if (partitionKeyValue == null)
