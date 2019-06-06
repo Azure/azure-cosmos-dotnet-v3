@@ -309,7 +309,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,
-                        isContinuationExpected,
+                        this.isContinuationExpected,
+                        false, //haslogicalpartitionkey
                         partitionKeyDefinition,
                         queryPartitionProvider,
                         version,
