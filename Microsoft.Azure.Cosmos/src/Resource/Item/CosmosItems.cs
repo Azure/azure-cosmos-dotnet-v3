@@ -878,7 +878,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
-        public abstract IOrderedQueryable<T> CreateItemQuery<T>(object partitionKey = null, bool allowSynchronousQueryExecution = false, QueryRequestOptions requestOptions = null);
+        public abstract IOrderedQueryable<T> CreateItemQuery<T>(PartitionKey partitionKey = null, bool allowSynchronousQueryExecution = false, QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.

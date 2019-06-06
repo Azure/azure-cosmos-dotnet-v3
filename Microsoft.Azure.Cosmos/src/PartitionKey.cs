@@ -38,12 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
         public PartitionKey(string partitionKeyValue)
         {
-            if (partitionKeyValue == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyValue));
-            }
-
-            this.Value = partitionKeyValue;
+            this.Value = partitionKeyValue ?? throw new ArgumentNullException(nameof(partitionKeyValue));
         }
 
         /// <summary>
@@ -77,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new partition key value.
         /// </summary>
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
-        public PartitionKey(object partitionKeyValue)
+        internal PartitionKey(object partitionKeyValue)
         {
             if (partitionKeyValue == null)
             {
