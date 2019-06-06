@@ -1241,7 +1241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                CosmosContainer leaseContainer = await container.Database.CreateContainerAsync(id: Guid.NewGuid().ToString(), "/id");
+                CosmosContainer leaseContainer = await container.Database.CreateContainerAsync(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id");
                 int processedDocCount = 0;
                 string accumulator = string.Empty;
                 ChangeFeedProcessor processor = container
