@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using BaselineTest;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
+    using System.Threading.Tasks;
 
     [TestClass]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
@@ -29,11 +30,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static IQueryable lastExecutedScalarQuery;
 
         [ClassInitialize]
-        public static void Initialize(TestContext textContext)
+        public async static Task Initialize(TestContext textContext)
         {
             try
             {
-                Initialize();
+                await Initialize();
             }
             catch (ServiceUnavailableException serviceUnavailableException)
             {
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
-        private static void Initialize()
+        private async static Task Initialize()
         {
             client = TestCommon.CreateCosmosClient(true);
             CleanUp();
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             string databaseName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
 
             CosmosContainer container;
-            cosmosDatabase = client.CreateDatabaseAsync(databaseName).Result;
+            cosmosDatabase = await client.CreateDatabaseAsync(databaseName);
             getQuery = LinqTestsCommon.GenerateSimpleCosmosData(cosmosDatabase);
             getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(cosmosDatabase, out container);
         }

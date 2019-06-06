@@ -1692,9 +1692,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void ValidateLinqQueries()
+        public async Task ValidateLinqQueries()
         {
-            CosmosContainer container = testDb.CreateContainerAsync(new CosmosContainerSettings (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/pk" )).Result;
+            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerSettings (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/pk" ));
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -1989,7 +1989,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void ValidateTransformQuery()
+        public async Task ValidateTransformQuery()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             DocumentCollection collection = new DocumentCollection
@@ -1998,7 +1998,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 PartitionKey = partitionKeyDefinition
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-            Database database = cosmosClient.DocumentClient.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id)).Result;
+            Database database = await cosmosClient.DocumentClient.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id));
             collection = cosmosClient.DocumentClient.Create<DocumentCollection>(database.ResourceId, collection);
             int documentsToCreate = 100;
             for (int i = 0; i < documentsToCreate; i++)
@@ -2009,14 +2009,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 myDocument.Languages = new Language[] { new Language { Name = "English", Copyright = "London Publication" }, new Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
                 myDocument.Author = new Author { Name = "Don", Location = "France" }; //Complex Property
                 myDocument.Price = 9.99;
-                myDocument = cosmosClient.DocumentClient.CreateDocumentAsync(collection.DocumentsLink, myDocument).Result;
+                myDocument = await cosmosClient.DocumentClient.CreateDocumentAsync(collection.DocumentsLink, myDocument);
             }
 
             //Read response as dynamic.
             IQueryable<dynamic> docQuery = cosmosClient.DocumentClient.CreateDocumentQuery(collection.DocumentsLink, @"select * from root r where r.Title=""MyBook""", new FeedOptions { EnableCrossPartitionQuery = true });
 
             IDocumentQuery<dynamic> DocumentQuery = docQuery.AsDocumentQuery();
-            DocumentFeedResponse<dynamic> queryResponse = DocumentQuery.ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> queryResponse = await DocumentQuery.ExecuteNextAsync();
 
             Assert.IsNotNull(queryResponse.ResponseHeaders, "ResponseHeaders is null");
             Assert.IsNotNull(queryResponse.ActivityId, "ActivityId is null");
@@ -2174,9 +2174,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void ValidateLinqOnDataDocumentType()
+        public async Task ValidateLinqOnDataDocumentType()
         {
-            CosmosContainer container = testDb.CreateContainerAsync(new CosmosContainerSettings(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id")).Result;
+            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerSettings(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id"));
 
             DataDocument doc = new DataDocument() { Id = Guid.NewGuid().ToString("N"), Number = 0, TypeName = "Hello" };
             container.CreateItemAsync(doc).Wait();

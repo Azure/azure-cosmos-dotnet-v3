@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
@@ -29,17 +30,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static CosmosContainer testCollection;
 
         [ClassInitialize]
-        public static void Initialize(TestContext textContext)
+        public async static Task Initialize(TestContext textContext)
         {
             client = TestCommon.CreateCosmosClient(true);
 
             var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
             try
             {
-                var response = client.DocumentClient.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id)).Result;
+                var response = await client.DocumentClient.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id));
             }
             catch { }
-            testDb = client.CreateDatabaseAsync(nameof(LinqTranslationBaselineTests)).Result;
+            testDb = await client.CreateDatabaseAsync(nameof(LinqTranslationBaselineTests));
         }
 
         [ClassCleanup]
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             // The test collection should have range index on string properties
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     }
                 }
             };
-            testCollection = testDb.CreateContainerAsync(newCol).Result;
+            testCollection = await testDb.CreateContainerAsync(newCol);
 
             const int Records = 100;
             const int MaxStringLength = 100;

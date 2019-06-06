@@ -276,39 +276,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <typeparam name="T">the object type</typeparam>
         /// <param name="func">the lamda to create an instance of test data</param>
         /// <param name="count">number of test data to be created</param>
-        /// <param name="client">the DocumentClient that is used to create the data</param>
-        /// <param name="collection">the target collection</param>
+        /// <param name="cosmosContainer">the target container</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
-        public static Func<bool, IQueryable<T>> GenerateTestData<T>(Func<Random, T> func, int count, DocumentClient client, DocumentCollection collection)
-        {
-            List<T> data = new List<T>();
-            int seed = DateTime.Now.Millisecond;
-            Random random = new Random(seed);
-            Debug.WriteLine("Random seed: {0}", seed);
-            LinqTestInput.RandomSeed = seed;
-            for (int i = 0; i < count; ++i)
-            {
-                data.Add(func(random));
-            }
-
-            foreach (T obj in data)
-            {
-                client.CreateDocumentAsync(collection, obj).Wait();
-            }
-
-            var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true};
-            var query = client.CreateDocumentQuery<T>(collection, feedOptions);
-
-            // To cover both query against backend and queries on the original data using LINQ nicely, 
-            // the LINQ expression should be written once and they should be compiled and executed against the two sources.
-            // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
-            // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
-            // to this getQuery method.
-            IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
-
-            return getQuery;
-        }
-
         public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, CosmosContainer cosmosContainer)
         {
             List<T> data = new List<T>();
@@ -339,124 +308,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static Func<bool, IQueryable<Family>> GenerateFamilyData(
-            DocumentClient client,
-            Database testDb,
-            out DocumentCollection testCollection)
-        {
-            // The test collection should have range index on string properties
-            // for the orderby tests
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
-            var newCol = new DocumentCollection()
-            {
-                Id = Guid.NewGuid().ToString(),
-                PartitionKey = partitionKeyDefinition,
-                IndexingPolicy = new IndexingPolicy()
-                {
-                    IncludedPaths = new System.Collections.ObjectModel.Collection<IncludedPath>()
-                    {
-                        new IncludedPath()
-                        {
-                            Path = "/*",
-                            Indexes = new System.Collections.ObjectModel.Collection<Index>()
-                            {
-                                Index.Range(DataType.Number, -1),
-                                Index.Range(DataType.String, -1)
-                            }
-                        }
-                    }
-                }
-            };
-
-            testCollection = client.CreateDocumentCollectionAsync(testDb, newCol).Result;
-            const int Records = 100;
-            const int MaxNameLength = 100;
-            const int MaxThingStringLength = 50;
-            const int MaxChild = 5;
-            const int MaxPets = MaxChild;
-            const int MaxThings = MaxChild;
-            const int MaxGrade = 101;
-            const int MaxTransaction = 20;
-            const int MaxTransactionMinuteRange = 200;
-            int MaxTransactionType = Enum.GetValues(typeof(TransactionType)).Length;
-            Family createDataObj(Random random)
-            {
-                var obj = new Family
-                {
-                    FamilyId = random.NextDouble() < 0.05 ? "some id" : Guid.NewGuid().ToString(),
-                    IsRegistered = random.NextDouble() < 0.5,
-                    NullableInt = random.NextDouble() < 0.5 ? (int?)random.Next() : null,
-                    Int = random.NextDouble() < 0.5 ? 5 : random.Next(),
-                    Parents = new Parent[random.Next(2) + 1]
-                };
-                for (int i = 0; i < obj.Parents.Length; ++i)
-                {
-                    obj.Parents[i] = new Parent()
-                    {
-                        FamilyName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
-                        GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength))
-                    };
-                }
-
-                obj.Tags = new string[random.Next(MaxChild)];
-                for (int i = 0; i < obj.Tags.Length; ++i)
-                {
-                    obj.Tags[i] = (i + random.Next(30, 36)).ToString();
-                }
-
-                obj.Children = new Child[random.Next(MaxChild)];
-                for (int i = 0; i < obj.Children.Length; ++i)
-                {
-                    obj.Children[i] = new Child()
-                    {
-                        Gender = random.NextDouble() < 0.5 ? "male" : "female",
-                        FamilyName = obj.Parents[random.Next(obj.Parents.Length)].FamilyName,
-                        GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
-                        Grade = random.Next(MaxGrade)
-                    };
-
-                    obj.Children[i].Pets = new List<Pet>();
-                    for (int j = 0; j < random.Next(MaxPets); ++j)
-                    {
-                        obj.Children[i].Pets.Add(new Pet()
-                        {
-                            GivenName = random.NextDouble() < 0.5 ?
-                                LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)) :
-                                "Fluffy"
-                        });
-                    }
-
-                    obj.Children[i].Things = new Dictionary<string, string>();
-                    for (int j = 0; j < random.Next(MaxThings) + 1; ++j)
-                    {
-                        obj.Children[i].Things.Add(
-                            j == 0 ? "A" : $"{j}-{random.Next().ToString()}",
-                            LinqTestsCommon.RandomString(random, random.Next(MaxThingStringLength)));
-                    }
-                }
-
-                obj.Records = new Logs
-                {
-                    LogId = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
-                    Transactions = new Transaction[random.Next(MaxTransaction)]
-                };
-                for (int i = 0; i < obj.Records.Transactions.Length; ++i)
-                {
-                    var transaction = new Transaction()
-                    {
-                        Amount = random.Next(),
-                        Date = DateTime.Now.AddMinutes(random.Next(MaxTransactionMinuteRange)),
-                        Type = (TransactionType)(random.Next(MaxTransactionType))
-                    };
-                    obj.Records.Transactions[i] = transaction;
-                }
-
-                return obj;
-            }
-
-            Func<bool, IQueryable<Family>> getQuery = LinqTestsCommon.GenerateTestData(createDataObj, Records, client, testCollection);
-            return getQuery;
-        }
         public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(
             CosmosDatabase cosmosDatabase, out CosmosContainer cosmosContainer)
         {
@@ -572,46 +423,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             Func<bool, IQueryable<Family>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, cosmosContainer);
-            return getQuery;
-        }
-
-        public static Func<bool, IQueryable<Data>> GenerateSimpleData(
-            DocumentClient client,
-            Database testDb,
-            out DocumentCollection testCollection)
-        {
-            const int DocumentCount = 10;
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
-            testCollection = client.CreateDocumentCollectionAsync(
-                testDb.GetLink(),
-                new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
-
-            int seed = DateTime.Now.Millisecond;
-            Random random = new Random(seed);
-            Debug.WriteLine("Random seed: {0}", seed);
-            List<Data> testData = new List<Data>();
-            for (int index = 0; index < DocumentCount; index++)
-            {
-                Data dataEntry = new Data()
-                {
-                    Number = random.Next(-10000, 10000),
-                    Flag = index % 2 == 0 ? true : false,
-                    Multiples = new int[] { index, index * 2, index * 3, index * 4 }
-                };
-
-                client.CreateDocumentAsync(testCollection.GetLink(), dataEntry).Wait();
-                testData.Add(dataEntry);
-            }
-
-            FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = client.CreateDocumentQuery<Data>(testCollection.GetLink(), feedOptions).AsQueryable();
-
-            // To cover both query against backend and queries on the original data using LINQ nicely, 
-            // the LINQ expression should be written once and they should be compiled and executed against the two sources.
-            // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
-            // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
-            // to this getQuery method.
-            IQueryable<Data> getQuery(bool useQuery) => useQuery ? query : testData.AsQueryable();
             return getQuery;
         }
 
