@@ -1694,7 +1694,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task ValidateLinqQueries()
         {
-            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerSettings (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/pk" ));
+            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerSettings (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -1706,7 +1706,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 Gender = "female",
                 Grade = 1,
                 Pets = new List<Pet>() { pet, new Pet() { GivenName = "koko" } },
-                Things = new Dictionary<string, string>() { { "A", "B" }, { "C", "D" } }
+                Things = new Dictionary<string, string>() { { "A", "B" }, { "C", "D" } },
             };
 
             Address address = new Address { State = "NY", County = "Manhattan", City = "NY" };
