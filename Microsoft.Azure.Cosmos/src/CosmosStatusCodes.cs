@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Client hit an unknown error
         /// </summary>
-        ClientError = 900,
+        ClientError = 9000000,
 
         /// <summary>
         /// Client side hit a socket error
