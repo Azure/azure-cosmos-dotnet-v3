@@ -84,13 +84,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (!this.retried)
                 {
-                    if (!string.IsNullOrEmpty(resourceIdOrFullName))
+                    if (!string.IsNullOrEmpty(resourceIdOrFullName) && PathsHelper.IsNameBased(resourceIdOrFullName))
                     {
                         CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
                         collectionCache.Refresh(resourceIdOrFullName);
 
                         ISessionContainer sessionContainer = this.documentClient.sessionContainer;
                         sessionContainer.ClearTokenByCollectionFullname(resourceIdOrFullName);
+                    }
+                    else
+                    {
+                        Debug.Fail($"{nameof(InvalidPartitionExceptionRetryPolicy)} can only handle name based requests. The cache will not be refreshed.");
                     }
 
                     this.retried = true;
