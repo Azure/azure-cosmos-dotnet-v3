@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// </remarks>
     public class CosmosStoredProcedureSettings
     {
+        private string id;
+        private string body;
+
         /// <summary>
         /// Initializes a new instance of the Stored Procedure class for the Azure Cosmos DB service.
         /// </summary>
@@ -24,20 +27,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
         }
 
-        internal CosmosStoredProcedureSettings(
+        /// <summary>
+        /// Initializes a new instance of the Stored Procedure class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        /// <param name="body">The body of the Azure Cosmos DB stored procedure.</param>
+        public CosmosStoredProcedureSettings(
             string id,
             string body)
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (string.IsNullOrEmpty(body))
-            {
-                throw new ArgumentNullException(nameof(body));
-            }
-
             this.Id = id;
             this.Body = body;
         }
@@ -48,7 +46,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <value>The body of the stored procedure.</value>
         /// <remarks>Must be a valid JavaScript function. For e.g. "function () { getContext().getResponse().setBody('Hello World!'); }"</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public virtual string Body { get; set; }
+        public string Body
+        {
+            get => this.body;
+            set => this.body = value ?? throw new ArgumentNullException(nameof(this.Body));
+        }
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
@@ -64,7 +66,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; set; }
+        public string Id
+        {
+            get => this.id;
+            set => this.id = value ?? throw new ArgumentNullException(nameof(this.Id));
+        }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -76,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; private set; }
+        public string ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified timestamp associated with <see cref="CosmosStoredProcedureSettings" /> from the Azure Cosmos DB service.
@@ -84,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified)]
-        public virtual DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -98,6 +104,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
-        internal virtual string ResourceId { get; private set; }
+        internal string ResourceId { get; private set; }
     }
 }

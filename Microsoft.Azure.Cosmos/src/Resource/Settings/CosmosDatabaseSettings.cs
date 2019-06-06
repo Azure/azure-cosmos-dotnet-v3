@@ -60,11 +60,22 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="CosmosContainerSettings"/>
     public class CosmosDatabaseSettings
     {
+        private string id;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosDatabaseSettings"/> class for the Azure Cosmos DB service.
         /// </summary>
         public CosmosDatabaseSettings()
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosDatabaseSettings"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        public CosmosDatabaseSettings(string id)
+        {
+            this.Id = id;
         }
 
         /// <summary>
@@ -88,7 +99,11 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; set; }
+        public string Id
+        {
+            get => this.id;
+            set => this.id = value ?? throw new ArgumentNullException(nameof(this.Id));
+        }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -100,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; private set; }
+        public string ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified timestamp associated with <see cref="CosmosDatabaseSettings" /> from the Azure Cosmos DB service.
@@ -108,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified)]
-        public virtual DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -122,6 +137,6 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
-        internal virtual string ResourceId { get; private set; }
+        internal string ResourceId { get; private set; }
     }
 }
