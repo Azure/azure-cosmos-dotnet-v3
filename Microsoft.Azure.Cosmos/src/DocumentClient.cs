@@ -812,6 +812,7 @@ namespace Microsoft.Azure.Cosmos
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
+            // GetEntryAssembly returns null when loaded from native netstandard2.0
             if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
 #endif
