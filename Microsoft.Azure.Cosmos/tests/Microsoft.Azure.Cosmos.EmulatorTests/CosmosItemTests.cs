@@ -929,51 +929,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         /// <summary>
         /// Stateless container re-create test. 
-        /// Create two client instnaces and do metata operations theough a single client
-        /// but do all valdiation using both clients.
+        /// Create two client instances and do meta operations through a single client
+        /// but do all validation using both clients.
         /// </summary>
         [TestMethod]
         public async Task ContainterReCreateStatelessTest()
         {
-            CosmosClient cc1 = TestCommon.CreateCosmosClient();
-            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+            List<Func<CosmosContainer, HttpStatusCode, Task>> operations = new List<Func<CosmosContainer, HttpStatusCode, Task>>();
+            operations.Add(ExecuteQueryAsync);
+            operations.Add(ExecuteReadFeedAsync);
 
-            try
+            foreach (var operation in operations)
             {
-                string dbName = Guid.NewGuid().ToString();
-                string containerName = Guid.NewGuid().ToString();
+                CosmosClient cc1 = TestCommon.CreateCosmosClient();
+                CosmosClient cc2 = TestCommon.CreateCosmosClient();
 
-                CosmosDatabase db1 = await cc1.Databases.CreateDatabaseAsync(dbName);
-                CosmosContainer container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+                try
+                {
+                    string dbName = Guid.NewGuid().ToString();
+                    string containerName = Guid.NewGuid().ToString();
 
-                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.OK);
+                    CosmosDatabase db1 = await cc1.Databases.CreateDatabaseAsync(dbName);
+                    CosmosContainer container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
 
-                // Read through client2 -> return 404
-                CosmosContainer container2 = cc2.Databases[dbName].Containers[containerName];
-                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.OK);
+                    await operation(container1, HttpStatusCode.OK);
 
-                // Delete container 
-                await container1.DeleteAsync();
+                    // Read through client2 -> return 404
+                    CosmosContainer container2 = cc2.Databases[dbName].Containers[containerName];
+                    await operation(container2, HttpStatusCode.OK);
 
-                // Read on deleted container through client1
-                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.NotFound);
+                    // Delete container 
+                    await container1.DeleteAsync();
 
-                // Read on deleted container through client2
-                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.NotFound);
+                    // Read on deleted container through client1
+                    await operation(container1, HttpStatusCode.NotFound);
 
-                // Re-create again 
-                container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+                    // Read on deleted container through client2
+                    await operation(container2, HttpStatusCode.NotFound);
 
-                // Read through client1
-                await CosmosItemTests.ExecuteQueryAsync(container1, HttpStatusCode.OK);
+                    // Re-create again 
+                    container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
 
-                // Read through client2
-                await CosmosItemTests.ExecuteQueryAsync(container2, HttpStatusCode.OK);
-            }
-            finally
-            {
-                cc1.Dispose();
-                cc2.Dispose();
+                    // Read through client1
+                    await operation(container1, HttpStatusCode.OK);
+
+                    // Read through client2
+                    await operation(container2, HttpStatusCode.OK);
+                }
+                finally
+                {
+                    cc1.Dispose();
+                    cc2.Dispose();
+                }
             }
         }
 
