@@ -4,11 +4,39 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class PartitionKeyTests
     {
+        [TestMethod]
+        public void ValidatePartitionKeySupportedTypes()
+        {
+            Dictionary<dynamic, string> pkValuesToJsonStrings = new Dictionary<dynamic, string>()
+            {
+                {"testString", "[\"testString\"]" },
+                {1234, "[1234.0]" },
+                {42.42, "[42.42]" },
+                {true, "[true]" },
+                {false, "[false]" },
+            };
+
+            foreach(var pkValueToJsonString in pkValuesToJsonStrings)
+            {
+                Documents.PartitionKey v2PK = new Documents.PartitionKey(pkValueToJsonString.Key);
+                PartitionKey pk = new PartitionKey(pkValueToJsonString.Key);
+                Assert.AreEqual(pkValueToJsonString.Value, v2PK.InternalKey.ToJsonString());
+                Assert.AreEqual(pkValueToJsonString.Value, pk.ToString());
+            }
+
+            Guid testGuid = new Guid("228326CF-6B43-46B1-BC86-11701FB06E51");
+            Documents.PartitionKey v2PKGuid = new Documents.PartitionKey(testGuid.ToString());
+            PartitionKey pkGuid = new PartitionKey(testGuid);
+            Assert.AreEqual(v2PKGuid.InternalKey.ToJsonString(), pkGuid.ToString());
+            Assert.AreEqual("[\"228326cf-6b43-46b1-bc86-11701fb06e51\"]", pkGuid.ToString());
+        }
+
         [ExpectedException(typeof(ArgumentNullException))]
         [TestMethod]
         public void NullValue()
