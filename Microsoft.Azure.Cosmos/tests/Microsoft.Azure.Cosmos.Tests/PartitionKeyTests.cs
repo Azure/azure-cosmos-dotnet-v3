@@ -60,13 +60,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (Documents.Undefined.Value, "[{}]"),
                 (false, "[false]"),
                 (true, "[true]"),
-                (123, "[123]"),
+                (123, "[123.0]"),
                 (123.456, "[123.456]"),
                 ("PartitionKeyValue", "[\"PartitionKeyValue\"]"),
             };
 
             foreach ((dynamic PkValue, string JsonString) testcase in testcases)
             {
+                Assert.AreEqual(testcase.JsonString, new Documents.PartitionKey(testcase.PkValue).InternalKey.ToJsonString());
                 Assert.AreEqual(testcase.JsonString, new PartitionKey(testcase.PkValue).ToString());
             }
         }
