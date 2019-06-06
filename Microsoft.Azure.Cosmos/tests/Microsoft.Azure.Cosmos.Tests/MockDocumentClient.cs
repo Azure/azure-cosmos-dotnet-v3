@@ -32,60 +32,60 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, permissionFeed, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, SecureString authKey, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKey, serializerSettings, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        public MockDocumentClient(Uri serviceEndpoint, string authKeyOrResourceToken, JsonSerializerSettings serializerSettings, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, authKeyOrResourceToken, serializerSettings, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
-        internal MockDocumentClient(Uri serviceEndpoint, IList<ResourceToken> resourceTokens, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null) 
+        internal MockDocumentClient(Uri serviceEndpoint, IList<ResourceToken> resourceTokens, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, resourceTokens, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
         }
 
         internal MockDocumentClient(
-            Uri serviceEndpoint, 
-            string authKeyOrResourceToken, 
-            EventHandler<SendingRequestEventArgs> sendingRequestEventArgs, 
-            ConnectionPolicy connectionPolicy = null, 
+            Uri serviceEndpoint,
+            string authKeyOrResourceToken,
+            EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
+            ConnectionPolicy connectionPolicy = null,
             Documents.ConsistencyLevel? desiredConsistencyLevel = null,
             JsonSerializerSettings serializerSettings = null,
             ApiType apitype = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
-            Func<TransportClient, TransportClient> transportClientHandlerFactory = null) 
-            : base(serviceEndpoint, 
-                  authKeyOrResourceToken, 
-                  sendingRequestEventArgs, 
-                  connectionPolicy, 
-                  desiredConsistencyLevel, 
-                  serializerSettings, 
-                  apitype, 
-                  receivedResponseEventArgs, 
+            Func<TransportClient, TransportClient> transportClientHandlerFactory = null)
+            : base(serviceEndpoint,
+                  authKeyOrResourceToken,
+                  sendingRequestEventArgs,
+                  connectionPolicy,
+                  desiredConsistencyLevel,
+                  serializerSettings,
+                  apitype,
+                  receivedResponseEventArgs,
                   null,
                   null,
                   true,
@@ -130,6 +130,15 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     (m =>
                         m.ResolveCollectionAsync(
                         It.IsAny<DocumentServiceRequest>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test")));
+
+            this.collectionCache.Setup
+                    (m =>
+                        m.ResolveByNameAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
                         It.IsAny<CancellationToken>()
                     )
                 ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test")));
