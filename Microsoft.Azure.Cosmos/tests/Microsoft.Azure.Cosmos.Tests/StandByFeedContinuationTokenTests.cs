@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
 
             ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, "randomPK");
 
-            Assert.AreEqual("randomPK", request.PartitionKeyRangeId);
+            Assert.AreEqual("randomPK", request.PartitionKeyRangeId.PartitionKeyRangeId);
         }
 
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
