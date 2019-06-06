@@ -19,25 +19,11 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosContainer"/> for reading, replacing, or deleting an existing container.
     /// </summary>
-    internal class CosmosContainersCore : CosmosContainers
+    internal partial class CosmosDatabaseCore
     {
-        private readonly CosmosDatabaseCore database;
-        private readonly ConcurrentDictionary<string, CosmosContainer> containerCache;
-
-        internal CosmosContainersCore(
-            CosmosClientContext clientContext,
-            CosmosDatabaseCore database)
-        {
-            this.database = database;
-            this.ClientContext = clientContext;
-            this.containerCache = new ConcurrentDictionary<string, CosmosContainer>();
-        }
-
-        internal CosmosClientContext ClientContext { get; }
-
         public override Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
-                    int? throughput = null,
+                    int? requestUnits = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -48,19 +34,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            Task<CosmosResponseMessage> response = this.CreateContainerAsStreamInternalAsync(
+            Task<CosmosResponseMessage> response = this.CreateContainerStreamInternalAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
-                throughput: throughput,
+                requestUnits: requestUnits,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this[containerSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerSettings.Id), response);
         }
         
         public override Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -78,14 +64,14 @@ namespace Microsoft.Azure.Cosmos
 
             return this.CreateContainerAsync(
                 settings,
-                throughput,
+                requestUnits,
                 requestOptions,
                 cancellationToken);
         }
         
         public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerSettings containerSettings,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -96,14 +82,14 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerSettings(containerSettings);
 
-            CosmosContainer cosmosContainer = this[containerSettings.Id];
+            CosmosContainer cosmosContainer = this.GetContainer(containerSettings.Id);
             ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosContainerResponse;
             }
 
-            cosmosContainerResponse = await this.CreateContainerAsync(containerSettings, throughput, requestOptions, cancellationToken: cancellationToken);
+            cosmosContainerResponse = await this.CreateContainerAsync(containerSettings, requestUnits, requestOptions, cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosContainerResponse;
@@ -117,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -132,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             CosmosContainerSettings settings = new CosmosContainerSettings(id, partitionKeyPath);
-            return this.CreateContainerIfNotExistsAsync(settings, throughput, requestOptions, cancellationToken);
+            return this.CreateContainerIfNotExistsAsync(settings, requestUnits, requestOptions, cancellationToken);
         }
 
         public override FeedIterator<CosmosContainerSettings> GetContainersIterator(
@@ -145,18 +131,23 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 this.ContainerFeedRequestExecutorAsync);
         }
-        
-        public override CosmosContainer this[string id] =>
-                this.containerCache.GetOrAdd(
-                    id,
-                    keyName => new CosmosContainerCore(
-                        this.ClientContext, 
-                        this.database, 
-                        keyName));
 
-        public override Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
+        public override CosmosContainer GetContainer(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new CosmosContainerCore(
+                    this.ClientContext,
+                    this,
+                    id);
+        }
+
+        public override Task<CosmosResponseMessage> CreateContainerStreamAsync(
             CosmosContainerSettings containerSettings, 
-            int? throughput = null, 
+            int? requestUnits = null, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -168,8 +159,8 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerSettings(containerSettings);
 
             Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream(containerSettings);
-            return this.CreateContainerAsStreamInternalAsync(streamPayload,
-                throughput,
+            return this.CreateContainerStreamInternalAsync(streamPayload,
+                requestUnits,
                 requestOptions,
                 cancellationToken);
         }
@@ -211,31 +202,31 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<CosmosResponseMessage> ProcessCollectionCreateAsync(
             Stream streamPayload,
-            int? throughput,
+            int? requestUnits,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
-               resourceUri: this.database.LinkUri,
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
                partitionKey: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
-               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+               requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(requestUnits),
                cancellationToken: cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> CreateContainerAsStreamInternalAsync(
+        private Task<CosmosResponseMessage> CreateContainerStreamInternalAsync(
                     Stream streamPayload,
-                    int? throughput = null,
+                    int? requestUnits = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessCollectionCreateAsync(
                 streamPayload: streamPayload,
-                throughput: throughput,
+                requestUnits: requestUnits,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -247,8 +238,8 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
-               resourceUri: this.database.LinkUri,
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
                resourceType: ResourceType.Collection,
                operationType: OperationType.ReadFeed,
                cosmosContainerCore: null,
@@ -273,7 +264,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(state == null);
 
             return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<CosmosContainerSettings>>(
-                resourceUri: this.database.LinkUri,
+                resourceUri: this.LinkUri,
                 resourceType: ResourceType.Collection,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,

@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `containers.GetContainersIterator()` before every single `item.read()` call, to ensure the container exists;
     /// do this once on application start up.
     /// </summary>
-    public abstract class CosmosContainers
+    public abstract partial class CosmosDatabase
     {
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -62,14 +62,17 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
         /// <seealso cref="DefineContainer(string, string)"/>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
-                    int? throughput = null,
+                    int? requestUnits = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -78,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -104,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
@@ -112,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -121,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         /// This will make a read operation, and if the container is not found it will do a create operation.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -157,13 +160,13 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(settings);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerSettings containerSettings,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -173,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -199,14 +202,14 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.Containers.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -219,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.Containers.GetContainersIterator();
+        /// FeedIterator<CosmosContainerSettings> feedIterator = this.cosmosDatabase.GetContainersIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(CosmosContainerSettings setting in await feedIterator.FetchNextSetAsync())
@@ -246,25 +249,26 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosDatabase db = this.cosmosClient.Databases["myDatabaseId"];
-        /// DatabaseResponse response = await db.ReadAsync();
+        /// CosmosDatabase db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// DatabaseResponse response = await db.GetContainer("testcontainer");
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosContainer this[string id] { get; }
+        /// <returns>Cosmos container proxy</returns>
+        public abstract CosmosContainer GetContainer(string id);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="throughput">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
         /// <seealso cref="DefineContainer(string, string)"/>
-        public abstract Task<CosmosResponseMessage> CreateContainerAsStreamAsync(
+        public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
             CosmosContainerSettings containerSettings,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -290,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerResponse container = await this.cosmosDatabase.Containers.DefineContainer("TestContainer", "/partitionKey")
+        /// CosmosContainerResponse container = await this.cosmosDatabase.DefineContainer("TestContainer", "/partitionKey")
         ///     .UniqueKey()
         ///         .Path("/path1")
         ///         .Path("/path2")

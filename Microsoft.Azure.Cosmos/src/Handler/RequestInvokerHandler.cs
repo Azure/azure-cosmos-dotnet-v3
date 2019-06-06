@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
-            object partitionKey,
+            Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             Func<CosmosResponseMessage, T> responseCreator,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             RequestOptions requestOptions,
             CosmosContainerCore cosmosContainerCore,
-            object partitionKey,
+            Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -144,11 +144,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (partitionKey != null)
             {
-                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.NonePartitionKeyValue))
                 {
                     throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                 }
-                else if (Object.ReferenceEquals(partitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                else if (Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.NonePartitionKeyValue))
                 {
                     try
                     {
@@ -162,8 +162,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 else
                 {
-                    PartitionKey pk = new PartitionKey(partitionKey);
-                    request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
+                    request.Headers.PartitionKey = partitionKey.ToString();
                 }
             }
 

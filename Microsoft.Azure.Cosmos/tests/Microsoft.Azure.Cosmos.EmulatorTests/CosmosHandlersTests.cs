@@ -4,11 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosHandlersTests : BaseCosmosClientHelper
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -51,8 +51,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             ToDoActivity testItem = CreateRandomToDoActivity();
-            using (CosmosResponseMessage response = await customClient.Databases[this.database.Id].Containers[this.Container.Id].CreateItemAsStreamAsync(
-                partitionKey: testItem.status, 
+            using (CosmosResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(testItem.status),
                 streamPayload: this.jsonSerializer.ToStream(testItem)))
             {
                 Assert.IsNotNull(response);
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     createdList.Add(temp);
 
-                    await this.Container.CreateItemAsync<ToDoActivity>(partitionKey: temp.status, item: temp);
+                    await this.Container.CreateItemAsync<ToDoActivity>(item: temp);
                 }
             }
 

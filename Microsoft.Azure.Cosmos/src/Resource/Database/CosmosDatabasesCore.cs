@@ -5,13 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -19,21 +17,32 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosDatabase"/>for reading, replacing, or deleting an existing container;
     /// </summary>
-    internal class CosmosDatabasesCore : CosmosDatabases
+    public partial class CosmosClient
     {
-        private readonly ConcurrentDictionary<string, CosmosDatabase> databasesCache;
+        internal CosmosClientContext ClientContext { get; private set; }
 
-        protected internal CosmosDatabasesCore(CosmosClientContext clientContext)
-        {
-            this.ClientContext = clientContext;
-            this.databasesCache = new ConcurrentDictionary<string, CosmosDatabase>();
-        }
-
-        internal CosmosClientContext ClientContext { get; }
-
-        public override Task<DatabaseResponse> CreateDatabaseAsync(
+        /// <summary>
+        /// Send a request for creating a database.
+        ///
+        /// A database manages users, permissions and a set of containers.
+        /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
+        /// with the database being the logical container for data.
+        ///
+        /// Each Database consists of one or more containers, each of which in turn contain one or more
+        /// documents. Since databases are an administrative resource, the Service Master Key will be
+        /// required in order to access and successfully complete any action using the User APIs.
+        /// </summary>
+        /// <param name="id">The database id.</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
+        public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
-                int? throughput = null,
+                int? requestUnits = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -45,14 +54,32 @@ namespace Microsoft.Azure.Cosmos
             CosmosDatabaseSettings databaseSettings = this.PrepareCosmosDatabaseSettings(id);
             return this.CreateDatabaseAsync(
                 databaseSettings: databaseSettings,
-                throughput: throughput,
+                requestUnits: requestUnits,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
+        /// <summary>
+        /// Check if a database exists, and if it doesn't, create it.
+        /// This will make a read operation, and if the database is not found it will do a create operation.
+        ///
+        /// A database manages users, permissions and a set of containers.
+        /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
+        /// with the database being the logical container for data.
+        ///
+        /// Each Database consists of one or more containers, each of which in turn contain one or more
+        /// documents. Since databases are an administrative resource, the Service Master Key will be
+        /// required in order to access and successfully complete any action using the User APIs.
+        /// </summary>
+        /// <param name="id">The database id.</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/>
+        public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
-            int? throughput = null,
+            int? requestUnits = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -62,14 +89,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Doing a Read before Create will give us better latency for existing databases
-            CosmosDatabase database = this[id];
+            CosmosDatabase database = this.GetDatabase(id);
             DatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosDatabaseResponse;
             }
 
-            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellationToken: cancellationToken);
+            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, requestUnits, requestOptions, cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosDatabaseResponse;
@@ -80,7 +107,27 @@ namespace Microsoft.Azure.Cosmos
             return await database.ReadAsync(cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosDatabaseSettings> GetDatabasesIterator(
+        /// <summary>
+        /// Gets an iterator to go through all the databases for the account
+        /// </summary>
+        /// <param name="maxItemCount">The max item count to return as part of the query</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <example>
+        /// Get an iterator for all the database under the cosmos account
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<CosmosDatabaseSettings> feedIterator = this.cosmosClient.GetDatabasesIterator();
+        /// {
+        ///     foreach (CosmosDatabaseSettings databaseSettings in  await feedIterator.FetchNextSetAsync())
+        ///     {
+        ///         Console.WriteLine(setting.Id); 
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the databases.</returns>
+        public virtual FeedIterator<CosmosDatabaseSettings> GetDatabasesIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -91,15 +138,48 @@ namespace Microsoft.Azure.Cosmos
                 nextDelegate: this.DatabaseFeedRequestExecutorAsync);
         }
 
-        public override CosmosDatabase this[string id] =>
-                // TODO: Argument check and singleton database
-                this.databasesCache.GetOrAdd(
-                    id,
-                    keyName => new CosmosDatabaseCore(this.ClientContext, keyName));
+        /// <summary>
+        /// Returns a reference to a database object. 
+        /// </summary>
+        /// <param name="id">The cosmos database id</param>
+        /// <remarks>
+        /// Note that the database must be explicitly created, if it does not already exist, before
+        /// you can read from it or write to it.
+        /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosDatabase db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// DatabaseResponse response = await db.ReadAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>Cosmos database proxy</returns>
+        public virtual CosmosDatabase GetDatabase(string id)
+        {
+            return new CosmosDatabaseCore(this.ClientContext, id);
+        }
 
-        public override Task<CosmosResponseMessage> CreateDatabaseAsStreamAsync(
+        /// <summary>
+        /// Send a request for creating a database.
+        ///
+        /// A database manages users, permissions and a set of containers.
+        /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
+        /// with the database being the logical container for data.
+        ///
+        /// Each Database consists of one or more containers, each of which in turn contain one or more
+        /// documents. Since databases are an administrative resource, the Service Master Key will be
+        /// required in order to access and successfully complete any action using the User APIs.
+        /// </summary>
+        /// <param name="databaseSettings">The database settings</param>
+        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseSettings"/> containing the resource record.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/>
+        public virtual Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                 CosmosDatabaseSettings databaseSettings,
-                int? throughput = null,
+                int? requestUnits = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -111,17 +191,17 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(databaseSettings.Id);
             Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseSettings>(databaseSettings);
 
-            return this.CreateDatabaseAsStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
+            return this.CreateDatabaseStreamInternalAsync(streamPayload, requestUnits, requestOptions, cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> CreateDatabaseAsStreamInternalAsync(
+        private Task<CosmosResponseMessage> CreateDatabaseStreamInternalAsync(
                 Stream streamPayload,
-                int? throughput = null,
+                int? requestUnits = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.ClientContext.ProcessResourceOperationAsStreamAsync(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
@@ -129,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
-                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(requestUnits),
                 cancellationToken: cancellationToken);
         }
 
@@ -151,17 +231,17 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<DatabaseResponse> CreateDatabaseAsync(
                     CosmosDatabaseSettings databaseSettings,
-                    int? throughput = null,
+                    int? requestUnits = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.CreateDatabaseAsStreamInternalAsync(
+            Task<CosmosResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseSettings>(databaseSettings),
-                throughput: throughput,
+                requestUnits: requestUnits,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this[databaseSettings.Id], response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseSettings.Id), response);
         }
 
         private Task<FeedResponse<CosmosDatabaseSettings>> DatabaseFeedRequestExecutorAsync(

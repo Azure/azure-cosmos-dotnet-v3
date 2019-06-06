@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
-            object partitionKey,
+            PartitionKey partitionKey,
             string id,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,

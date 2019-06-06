@@ -52,25 +52,25 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initialize a new CosmosClientOptions class that holds all the properties the CosmosClient requires.
         /// </summary>
-        /// <param name="accountEndPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
+        /// <param name="endPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
         /// <param name="accountKey">The key to the account.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientOptions"/>
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions(
-        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+        ///     endPoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
         /// ]]>
         /// </code>
         /// </example>
         public CosmosClientOptions(
-            string accountEndPoint,
+            string endPoint,
             string accountKey)
         {
-            if (string.IsNullOrWhiteSpace(accountEndPoint))
+            if (string.IsNullOrWhiteSpace(endPoint))
             {
-                throw new ArgumentNullException(nameof(accountEndPoint));
+                throw new ArgumentNullException(nameof(endPoint));
             }
 
             if (string.IsNullOrWhiteSpace(accountKey))
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountKey));
             }
 
-            this.AccountEndPoint = new Uri(accountEndPoint);
+            this.EndPoint = new Uri(endPoint);
             this.AccountKey = accountKey;
 
             this.Initialize();
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
-            this.AccountEndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
+            this.EndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
                 CosmosClientOptions.ConnectionStringAccountEndpoint));
             this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// The Uri for the account endpoint.
         /// </value>
         /// <seealso cref="System.Uri"/>
-        public virtual Uri AccountEndPoint { get; }
+        public virtual Uri EndPoint { get; }
 
         /// <summary>
         /// Gets the AuthKey used by the client from the Azure Cosmos DB service.
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is <see cref="Cosmos.ConnectionMode.Direct"/>
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="Cosmos.ConnectionMode.Gateway"/>.
         /// Gateway mode only supports HTTPS.
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
+        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
         /// </remarks>
         internal Protocol ConnectionProtocol { get; set; }
 

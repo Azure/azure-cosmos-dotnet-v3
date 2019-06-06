@@ -50,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     collection = await collectionCache.ResolveCollectionAsync(request, token);
                 }
 
-                if (feedOptions != null && feedOptions.PartitionKey != null && feedOptions.PartitionKey.Equals(PartitionKey.None))
+                if (feedOptions != null && feedOptions.PartitionKey != null && feedOptions.PartitionKey.Equals(Documents.PartitionKey.None))
                 {
-                    feedOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
+                    feedOptions.PartitionKey = Documents.PartitionKey.FromInternalKey(collection.GetNoneValue());
                 }
             }
 

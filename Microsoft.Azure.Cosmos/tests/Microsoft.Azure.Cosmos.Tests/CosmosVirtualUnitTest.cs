@@ -5,10 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     [TestClass]
     public class CosmosVirtualUnitTest
@@ -43,6 +46,25 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(0, nonVirtualPublic.Count,
                 "The following methods and properties should be virtual to allow unit testing:" +
                 string.Join(";", nonVirtualPublic.Select(x => $"Class:{x.Item1}; Member:{x.Item2}")));
+        }
+
+
+        [TestMethod]
+        public async Task VerifyClientMock()
+        {
+            Mock<DatabaseResponse> mockDbResponse = new Mock<DatabaseResponse>();
+
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.CreateDatabaseAsync(
+                    It.IsAny<string>(), 
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockDbResponse.Object));
+
+            CosmosClient client = mockClient.Object;
+            DatabaseResponse response = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Assert.IsTrue(object.ReferenceEquals(mockDbResponse.Object, response));
         }
     }
 }

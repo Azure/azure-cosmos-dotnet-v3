@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
+            ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PreTriggers = new List<string>() { cosmosTrigger.Id },
             };
 
-            ItemResponse<dynamic> createdItem = await this.container.CreateItemAsync<dynamic>(item.status, item, options);
+            ItemResponse<dynamic> createdItem = await this.container.CreateItemAsync<dynamic>(item, requestOptions: options);
 
             double itemTax = createdItem.Resource.tax;
             Assert.AreEqual(item.cost * .20, itemTax);

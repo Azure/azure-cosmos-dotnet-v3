@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition<CosmosContainerFluentDefinitionForCreate>
     {
-        private readonly CosmosContainers cosmosContainers;
+        private readonly CosmosDatabase cosmosContainers;
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         internal CosmosContainerFluentDefinitionForCreate(
-            CosmosContainers cosmosContainers,
+            CosmosDatabase cosmosContainers,
             string name,
             string partitionKeyPath = null)
             : base(name, partitionKeyPath)
@@ -56,13 +56,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates a container with the current fluent definition.
         /// </summary>
-        /// <param name="throughput">Desired throughput for the container</param>
+        /// <param name="requestUnits">Desired throughput for the container</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="CosmosContainer"/> based on the Fluent definition.</returns>
-        public virtual async Task<ContainerResponse> CreateAsync(int? throughput = null)
+        public virtual async Task<ContainerResponse> CreateAsync(int? requestUnits = null)
         {
             CosmosContainerSettings settings = this.Build();
 
-            return await this.cosmosContainers.CreateContainerAsync(settings, throughput);
+            return await this.cosmosContainers.CreateContainerAsync(settings, requestUnits);
         }
 
         /// <summary>

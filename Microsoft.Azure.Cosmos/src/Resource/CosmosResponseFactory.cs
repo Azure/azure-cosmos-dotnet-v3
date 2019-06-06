@@ -128,15 +128,12 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<T> ProcessMessageAsync<T>(Task<CosmosResponseMessage> cosmosResponseTask, Func<CosmosResponseMessage, T> createResponse)
+        internal async Task<T> ProcessMessageAsync<T>(Task<CosmosResponseMessage> cosmosResponseTask, Func<CosmosResponseMessage, T> createResponse)
         {
-            return cosmosResponseTask.ContinueWith((action) =>
+            using (CosmosResponseMessage message = await cosmosResponseTask)
             {
-                using (CosmosResponseMessage message = action.Result)
-                {
-                    return createResponse(message);
-                }
-            });
+                return createResponse(message);
+            }
         }
 
         internal T ToObjectInternal<T>(CosmosResponseMessage cosmosResponseMessage, CosmosJsonSerializer jsonSerializer)

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A Task representing the asynchronous operation.</returns>
         /// <seealso cref="CosmosConflictSettings"/>
         public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
-            object partitionKey,
+            PartitionKey partitionKey,
             CosmosConflictSettings conflict,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
-            object partitionKey,
+            PartitionKey partitionKey,
             CosmosConflictSettings cosmosConflict,
             CancellationToken cancellationToken = default(CancellationToken));
 
