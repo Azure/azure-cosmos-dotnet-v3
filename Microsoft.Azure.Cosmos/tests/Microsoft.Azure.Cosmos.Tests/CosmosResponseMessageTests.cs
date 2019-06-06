@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosRequestMessage request = new CosmosRequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            request.PartitionKeyRangeId = "something";
+            request.PartitionKeyRangeId = new PartitionKeyRangeIdentity("something");
             Assert.IsFalse(request.IsPartitionedFeedOperation);
         }
 
