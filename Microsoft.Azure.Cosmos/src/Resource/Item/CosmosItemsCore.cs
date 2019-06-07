@@ -403,12 +403,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
-            string workflowName,
+            string processorName,
             Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate)
         {
-            if (workflowName == null)
+            if (processorName == null)
             {
-                throw new ArgumentNullException(nameof(workflowName));
+                throw new ArgumentNullException(nameof(processorName));
             }
 
             if (onChangesDelegate == null)
@@ -419,20 +419,20 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
             ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
             return new ChangeFeedProcessorBuilder(
-                workflowName: workflowName,
+                processorName: processorName,
                 cosmosContainer: this,
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
-            string workflowName,
+            string processorName,
             Func<long, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
-            if (workflowName == null)
+            if (processorName == null)
             {
-                throw new ArgumentNullException(nameof(workflowName));
+                throw new ArgumentNullException(nameof(processorName));
             }
 
             if (estimationDelegate == null)
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos
 
             ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
-                workflowName: workflowName,
+                processorName: processorName,
                 cosmosContainer: this,
                 changeFeedProcessor: changeFeedEstimatorCore,
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);

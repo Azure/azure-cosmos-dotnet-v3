@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 true,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
+                false, // has logical partition key
                 cancellationtoken)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
 
             CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(

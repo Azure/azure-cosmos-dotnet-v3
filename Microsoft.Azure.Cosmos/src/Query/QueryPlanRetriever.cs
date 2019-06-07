@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     sqlQuerySpec,
                     partitionKeyDefinition,
                     SupportedQueryFeatures,
+                    hasLogicalPartitionKey,
                     cancellationToken);
         }
 
