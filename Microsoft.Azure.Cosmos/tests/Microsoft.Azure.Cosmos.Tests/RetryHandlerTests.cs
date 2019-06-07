@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
+            NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler();
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler(client);
+            NamedCacheRetryHandler retryHandler = new NamedCacheRetryHandler();
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {

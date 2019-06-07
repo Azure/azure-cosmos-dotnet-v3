@@ -14,21 +14,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class NamedCacheRetryHandler : AbstractRetryHandler
     {
-        private readonly CosmosClient client;
-
-        public NamedCacheRetryHandler(CosmosClient client)
+        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicy(CosmosRequestMessage request)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
-
-            this.client = client;
-        }
-
-        internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicy(CosmosRequestMessage request)
-        {
-            return new InvalidPartitionExceptionRetryPolicy(await client.DocumentClient.GetCollectionCacheAsync(), null);
+            IDocumentClientRetryPolicy retryPolicyInstance = new InvalidPartitionExceptionRetryPolicy(null);
+            request.OnBeforeRequestHandler += retryPolicyInstance.OnBeforeSendRequest;
+            return Task.FromResult<IDocumentClientRetryPolicy>(retryPolicyInstance);
         }
     }
 }
