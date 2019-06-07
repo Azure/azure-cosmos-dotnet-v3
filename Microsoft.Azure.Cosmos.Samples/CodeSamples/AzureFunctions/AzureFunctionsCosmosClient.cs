@@ -52,7 +52,7 @@ namespace Cosmos.Samples.AzureFunctions
                 data.Id = Guid.NewGuid().ToString();
             }
 
-            var container = this.cosmosClient.GetDatabase("mydb").GetContainer("mycoll");
+            var container = this.cosmosClient.GetContainer("mydb", "mycoll");
 
             try
             {
