@@ -108,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,
                     allowNonValueAggregateQuery: false,
+                    hasLogicalPartitionKey: feedOptions.PartitionKey != null,
                     cancellationToken: token);
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(

@@ -283,6 +283,64 @@ namespace Microsoft.Azure.Cosmos
         internal IStoreClientFactory StoreClientFactory { get; set; }
 
         /// <summary>
+        /// Gets or sets the initial delay retry time in milliseconds for the Azure Cosmos DB service
+        /// for requests that hit RetryWithExceptions. This covers errors that occur due to concurrency errors in the store.
+        /// </summary>
+        /// <value>
+        /// The default value is 1 second. For an example on how to set this value, please refer to <see cref="ConnectionPolicy.RetryOptions"/>.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the client
+        /// to delay the time specified before retrying the request.
+        /// </para>
+        /// </remarks>
+        internal int? InitialRetryForRetryWithMilliseconds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum delay retry time in milliseconds for the Azure Cosmos DB service
+        /// for requests that hit RetryWithExceptions. This covers errors that occur due to concurrency errors in the store.
+        /// </summary>
+        /// <value>
+        /// The default value is 30 seconds. For an example on how to set this value, please refer to <see cref="ConnectionPolicy.RetryOptions"/>.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the maximum time
+        /// the client should delay before failing the request.
+        /// </para>
+        /// </remarks>
+        internal int? MaximumRetryForRetryWithMilliseconds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the interval to salt retrywith retries with. This will spread the retry values from 1..n from the exponential backoff
+        /// subscribed.
+        /// </summary>
+        /// <value>
+        /// The default value is to not salt.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the jitter on the retry attempted.
+        /// </para>
+        /// </remarks>
+        internal int? RandomSaltForRetryWithMilliseconds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the total time to wait before failing the request for retrywith failures.
+        /// subscribed.
+        /// </summary>
+        /// <value>
+        /// The default value 30 seconds.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures total time spent waiting on the request.
+        /// </para>
+        /// </remarks>
+        internal int? TotalWaitTimeForRetryWithMilliseconds { get; set; }
+
+        /// <summary>
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
@@ -310,14 +368,38 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.SetCurrentLocation(this.CurrentRegion);
             }
 
-            if (this.MaxRetryAttemptsOnThrottledRequests != null && this.MaxRetryAttemptsOnThrottledRequests.HasValue)
+            if (this.MaxRetryAttemptsOnThrottledRequests != null)
             {
                 connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests = this.MaxRetryAttemptsOnThrottledRequests.Value;
             }
 
-            if (this.MaxRetryWaitTimeOnThrottledRequests != null && this.MaxRetryWaitTimeOnThrottledRequests.HasValue)
+            if (this.MaxRetryWaitTimeOnThrottledRequests != null)
             {
                 connectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds = (int)this.MaxRetryWaitTimeOnThrottledRequests.Value.TotalSeconds;
+            }
+
+            if (this.InitialRetryForRetryWithMilliseconds != null)
+            {
+                connectionPolicy.RetryOptions.InitialRetryForRetryWithMilliseconds =
+                    this.InitialRetryForRetryWithMilliseconds;
+            }
+
+            if (this.MaximumRetryForRetryWithMilliseconds != null)
+            {
+                connectionPolicy.RetryOptions.MaximumRetryForRetryWithMilliseconds =
+                    this.MaximumRetryForRetryWithMilliseconds;
+            }
+
+            if (this.RandomSaltForRetryWithMilliseconds != null)
+            {
+                connectionPolicy.RetryOptions.RandomSaltForRetryWithMilliseconds
+                    = this.RandomSaltForRetryWithMilliseconds;
+            }
+
+            if (this.TotalWaitTimeForRetryWithMilliseconds != null)
+            {
+                connectionPolicy.RetryOptions.TotalWaitTimeForRetryWithMilliseconds
+                    = this.TotalWaitTimeForRetryWithMilliseconds;
             }
 
             return connectionPolicy;
