@@ -810,138 +810,146 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.InitEventListener();
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
-            // For tests we want to allow stronger consistency during construction or per call
-            string allowOverrideStrongerConsistencyConfig = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.AllowOverrideStrongerConsistency];
-            if (!string.IsNullOrEmpty(allowOverrideStrongerConsistencyConfig))
+#if !(NETSTANDARD15 || NETSTANDARD16) 
+#if NETSTANDARD20
+            // GetEntryAssembly returns null when loaded from native netstandard2.0
+            if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
-                if (!bool.TryParse(allowOverrideStrongerConsistencyConfig, out this.allowOverrideStrongerConsistency))
+#endif
+                // For tests we want to allow stronger consistency during construction or per call
+                string allowOverrideStrongerConsistencyConfig = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.AllowOverrideStrongerConsistency];
+                if (!string.IsNullOrEmpty(allowOverrideStrongerConsistencyConfig))
                 {
-                    this.allowOverrideStrongerConsistency = false;
-                }
-            }
-
-            // We might want to override the defaults sometime
-            string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
-            if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
-            {
-                int maxConcurrentConnectionOpenRequestOverrideInt = 0;
-                if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
-                {
-                    this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
-                }
-            }
-
-            string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
-            if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
-            {
-                int openConnectionTimeoutInSecondsOverrideInt = 0;
-                if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
-                {
-                    this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
-                }
-            }
-
-            string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
-            if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
-            {
-                int idleConnectionTimeoutInSecondsOverrideInt = 0;
-                if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
-                {
-                    this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
-                }
-            }
-
-            string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
-            if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
-            {
-                int timerPoolGranularityInSecondsOverrideInt = 0;
-                if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
-                {
-                    // timeoutgranularity specified should be greater than min(5 seconds)
-                    if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
+                    if (!bool.TryParse(allowOverrideStrongerConsistencyConfig, out this.allowOverrideStrongerConsistency))
                     {
-                        this.timerPoolGranularityInSeconds = timerPoolGranularityInSecondsOverrideInt;
+                        this.allowOverrideStrongerConsistency = false;
                     }
                 }
-            }
 
-            string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
-            if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
-            {
-                bool enableRntbdChannel = false;
-                if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                // We might want to override the defaults sometime
+                string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
+                if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
                 {
-                    this.enableRntbdChannel = enableRntbdChannel;
-                }
-            }
-
-            string maxRequestsPerRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxRequestsPerChannelConfig];
-            if (!string.IsNullOrEmpty(maxRequestsPerRntbdChannelOverrideString))
-            {
-                int maxRequestsPerChannel = DocumentClient.DefaultMaxRequestsPerRntbdChannel;
-                if (int.TryParse(maxRequestsPerRntbdChannelOverrideString, out maxRequestsPerChannel))
-                {
-                    this.maxRequestsPerRntbdChannel = maxRequestsPerChannel;
-                }
-            }
-
-            string rntbdPartitionCountOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TcpPartitionCount];
-            if (!string.IsNullOrEmpty(rntbdPartitionCountOverrideString))
-            {
-                int rntbdPartitionCount = DocumentClient.DefaultRntbdPartitionCount;
-                if (int.TryParse(rntbdPartitionCountOverrideString, out rntbdPartitionCount))
-                {
-                    this.rntbdPartitionCount = rntbdPartitionCount;
-                }
-            }
-
-            string maxRntbdChannelsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxChannelsPerHostConfig];
-            if (!string.IsNullOrEmpty(maxRntbdChannelsOverrideString))
-            {
-                int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
-                if (int.TryParse(maxRntbdChannelsOverrideString, out maxRntbdChannels))
-                {
-                    this.maxRntbdChannels = maxRntbdChannels;
-                }
-            }
-
-            string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
-            if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
-            {
-                int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
-                if (int.TryParse(rntbdReceiveHangDetectionTimeSecondsString, out rntbdReceiveHangDetectionTimeSeconds))
-                {
-                    this.rntbdReceiveHangDetectionTimeSeconds = rntbdReceiveHangDetectionTimeSeconds;
-                }
-            }
-
-            string rntbdSendHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdSendHangDetectionTimeConfig];
-            if (!string.IsNullOrEmpty(rntbdSendHangDetectionTimeSecondsString))
-            {
-                int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
-                if (int.TryParse(rntbdSendHangDetectionTimeSecondsString, out rntbdSendHangDetectionTimeSeconds))
-                {
-                    this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
-                }
-            }
-
-            if (enableCpuMonitor.HasValue)
-            {
-                this.enableCpuMonitor = enableCpuMonitor.Value;
-            }
-            else
-            {
-                string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
-                if (!string.IsNullOrEmpty(enableCpuMonitorString))
-                {
-                    bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
-                    if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                    int maxConcurrentConnectionOpenRequestOverrideInt = 0;
+                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
                     {
-                        this.enableCpuMonitor = enableCpuMonitorFlag;
+                        this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
                     }
                 }
+
+                string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
+                if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
+                {
+                    int openConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
+                    {
+                        this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
+                    }
+                }
+
+                string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
+                if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
+                {
+                    int idleConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
+                    {
+                        this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
+                    }
+                }
+
+                string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
+                if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
+                {
+                    int timerPoolGranularityInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
+                    {
+                        // timeoutgranularity specified should be greater than min(5 seconds)
+                        if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
+                        {
+                            this.timerPoolGranularityInSeconds = timerPoolGranularityInSecondsOverrideInt;
+                        }
+                    }
+                }
+
+                string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
+                if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
+                {
+                    bool enableRntbdChannel = false;
+                    if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                    {
+                        this.enableRntbdChannel = enableRntbdChannel;
+                    }
+                }
+
+                string maxRequestsPerRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxRequestsPerChannelConfig];
+                if (!string.IsNullOrEmpty(maxRequestsPerRntbdChannelOverrideString))
+                {
+                    int maxRequestsPerChannel = DocumentClient.DefaultMaxRequestsPerRntbdChannel;
+                    if (int.TryParse(maxRequestsPerRntbdChannelOverrideString, out maxRequestsPerChannel))
+                    {
+                        this.maxRequestsPerRntbdChannel = maxRequestsPerChannel;
+                    }
+                }
+
+                string rntbdPartitionCountOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TcpPartitionCount];
+                if (!string.IsNullOrEmpty(rntbdPartitionCountOverrideString))
+                {
+                    int rntbdPartitionCount = DocumentClient.DefaultRntbdPartitionCount;
+                    if (int.TryParse(rntbdPartitionCountOverrideString, out rntbdPartitionCount))
+                    {
+                        this.rntbdPartitionCount = rntbdPartitionCount;
+                    }
+                }
+
+                string maxRntbdChannelsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxChannelsPerHostConfig];
+                if (!string.IsNullOrEmpty(maxRntbdChannelsOverrideString))
+                {
+                    int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
+                    if (int.TryParse(maxRntbdChannelsOverrideString, out maxRntbdChannels))
+                    {
+                        this.maxRntbdChannels = maxRntbdChannels;
+                    }
+                }
+
+                string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
+                if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
+                {
+                    int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
+                    if (int.TryParse(rntbdReceiveHangDetectionTimeSecondsString, out rntbdReceiveHangDetectionTimeSeconds))
+                    {
+                        this.rntbdReceiveHangDetectionTimeSeconds = rntbdReceiveHangDetectionTimeSeconds;
+                    }
+                }
+
+                string rntbdSendHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdSendHangDetectionTimeConfig];
+                if (!string.IsNullOrEmpty(rntbdSendHangDetectionTimeSecondsString))
+                {
+                    int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
+                    if (int.TryParse(rntbdSendHangDetectionTimeSecondsString, out rntbdSendHangDetectionTimeSeconds))
+                    {
+                        this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
+                    }
+                }
+
+                if (enableCpuMonitor.HasValue)
+                {
+                    this.enableCpuMonitor = enableCpuMonitor.Value;
+                }
+                else
+                {
+                    string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
+                    if (!string.IsNullOrEmpty(enableCpuMonitorString))
+                    {
+                        bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
+                        if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                        {
+                            this.enableCpuMonitor = enableCpuMonitorFlag;
+                        }
+                    }
+                }
+#if NETSTANDARD20
             }
+#endif            
 #endif
 
             // ConnectionPolicy always overrides appconfig
@@ -6461,9 +6469,10 @@ namespace Microsoft.Azure.Cosmos
                     this.maxRntbdChannels,
                     this.rntbdPartitionCount,
                     this.maxRequestsPerRntbdChannel,
-                    this.rntbdReceiveHangDetectionTimeSeconds,
-                    this.rntbdSendHangDetectionTimeSeconds,
-                    this.enableCpuMonitor);
+                    receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
+                    sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
+                    enableCpuMonitor: this.enableCpuMonitor,
+                    retryWithConfiguration: this.connectionPolicy.RetryOptions?.GetRetryWithConfiguration());
 
                 if (this.transportClientHandlerFactory != null)
                 {

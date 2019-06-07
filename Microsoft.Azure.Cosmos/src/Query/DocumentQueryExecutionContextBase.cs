@@ -161,6 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
@@ -171,7 +172,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
-                allowNonValueAggregateQuery);
+                allowNonValueAggregateQuery,
+                hasLogicalPartitionKey);
         }
 
         public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextAsync(CancellationToken cancellationToken)

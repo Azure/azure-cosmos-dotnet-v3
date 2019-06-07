@@ -276,5 +276,18 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosClientConfiguration.EnableCpuMonitor = false;
             return this;
         }
+
+        internal CosmosClientBuilder WithRetryWithOptions(
+            int? initialRetryForRetryWithMilliseconds,
+            int? maximumRetryForRetryWithMilliseconds,
+            int? randomSaltForRetryWithMilliseconds,
+            int? totalWaitTimeForRetryWithMilliseconds)
+        {
+            this.cosmosClientConfiguration.InitialRetryForRetryWithMilliseconds = initialRetryForRetryWithMilliseconds;
+            this.cosmosClientConfiguration.MaximumRetryForRetryWithMilliseconds = maximumRetryForRetryWithMilliseconds;
+            this.cosmosClientConfiguration.RandomSaltForRetryWithMilliseconds = randomSaltForRetryWithMilliseconds;
+            this.cosmosClientConfiguration.TotalWaitTimeForRetryWithMilliseconds = totalWaitTimeForRetryWithMilliseconds;
+            return this;
+        }
     }
 }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -167,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: this.cosmosQueryContext.AllowNonValueAggregateQuery,
+                hasLogicalPartitionKey: this.cosmosQueryContext.QueryRequestOptions?.PartitionKey != null,
                 cancellationToken: cancellationToken);
 
             List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
@@ -323,6 +325,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
@@ -333,6 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
+                hasLogicalPartitionKey,
                 cancellationToken);
         }
 
