@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal partial class CosmosContainerCore : CosmosContainer
     {
+        private readonly CosmosConflictsCore conflicts;
+
         /// <summary>
         /// Only used for unit testing
         /// </summary>
@@ -40,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
-            this.Conflicts = new CosmosConflictsCore(this.ClientContext, this);
+            this.conflicts = new CosmosConflictsCore(this.ClientContext, this);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
         }
@@ -49,11 +51,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosDatabase Database { get; }
 
-        public override CosmosConflicts Conflicts { get; }
-
         internal virtual Uri LinkUri { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
+
+        public override CosmosConflicts GetConflicts()
+        {
+            return this.conflicts;
+        }
 
         public override Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
