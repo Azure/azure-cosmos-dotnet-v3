@@ -990,7 +990,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Version = PartitionKeyDefinitionVersion.V1
                         }
                     },
-                    requestUnits: 10000);
+                    requestUnitsPerSecond: 10000);
 
                 string uniqSinglePartitionCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
                 string resourceId = string.Format("dbs/{0}/colls/{1}", database.Id, container.Id);
