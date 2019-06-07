@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
+            string containerResourceId,
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,
