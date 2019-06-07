@@ -25,23 +25,28 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly JsonBinaryBufferBase jsonBinaryBuffer;
 
             /// <summary>
+            /// Dictionary used for user string encoding.
+            /// </summary>
+            private readonly JsonStringDictionary jsonStringDictionary;
+
+            /// <summary>
             /// For binary there is no end of token marker in the actual binary, but the JsonReader interface still needs to surface ObjectEndToken and ArrayEndToken.
             /// To accommodate for this we have a progress stack to let us know how many bytes there are left to read for all levels of nesting. 
             /// With this information we know that we are at the end of a context and can now surface an end object / array token.
             /// </summary>
             private readonly ProgressStack progressStack;
 
-            public JsonBinaryReader(byte[] buffer, bool skipValidation = false)
+            public JsonBinaryReader(byte[] buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
                 : this(new JsonBinaryArrayBuffer(buffer))
             {
             }
 
-            public JsonBinaryReader(Stream stream, bool skipValidation = false)
+            public JsonBinaryReader(Stream stream, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
                 : this(new JsonBinaryStreamBuffer(stream))
             {
             }
 
-            private JsonBinaryReader(JsonBinaryBufferBase jsonBinaryBuffer, bool skipValidation = false)
+            private JsonBinaryReader(JsonBinaryBufferBase jsonBinaryBuffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
                 : base(skipValidation)
             {
                 this.jsonBinaryBuffer = jsonBinaryBuffer;
@@ -49,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // First byte is the serialization format so we are skipping over it
                 this.jsonBinaryBuffer.ReadByte();
                 this.progressStack = new ProgressStack();
+                this.jsonStringDictionary = jsonStringDictionary;
             }
 
             /// <summary>
