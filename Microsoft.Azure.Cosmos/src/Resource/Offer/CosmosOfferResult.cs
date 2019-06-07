@@ -3,19 +3,14 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
     using System.Net;
-    using System.Text;
-    using System.Threading.Tasks;
-    
+
     internal class CosmosOfferResult
     {
-        public CosmosOfferResult(int? requestUnits)
+        public CosmosOfferResult(int? requestUnitsPerSecond)
         {
-            this.RequestUnits = requestUnits;
-            this.StatusCode = requestUnits.HasValue ? HttpStatusCode.OK : HttpStatusCode.NotFound;
+            this.RequestUnitsPerSecond = requestUnitsPerSecond;
+            this.StatusCode = requestUnitsPerSecond.HasValue ? HttpStatusCode.OK : HttpStatusCode.NotFound;
         }
 
         public CosmosOfferResult(
@@ -30,6 +25,6 @@ namespace Microsoft.Azure.Cosmos
 
         public HttpStatusCode StatusCode { get; }
 
-        public int? RequestUnits { get; }
+        public int? RequestUnitsPerSecond { get; }
     }
 }

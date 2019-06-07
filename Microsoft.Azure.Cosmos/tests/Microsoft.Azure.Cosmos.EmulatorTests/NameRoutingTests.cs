@@ -1526,7 +1526,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 database = await client.CreateDatabaseAsync("db1");
                 PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-                CosmosContainer cosmosContainer = await database.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, requestUnits: partitionCount * federationDefaultRUsPerPartition);
+                CosmosContainer cosmosContainer = await database.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, requestUnitsPerSecond: partitionCount * federationDefaultRUsPerPartition);
 
                 CosmosContainerCore containerCore = (CosmosContainerCore)cosmosContainer;
                 CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
@@ -1599,7 +1599,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 database = await client.CreateDatabaseAsync("db1");
                 PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-                CosmosContainer cosmosContainer = await database.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, requestUnits: partitionCount * federationDefaultRUsPerPartition);
+                CosmosContainer cosmosContainer = await database.CreateContainerAsync(containerSettings: new CosmosContainerSettings { Id = "coll1", PartitionKey = pKDefinition }, requestUnitsPerSecond: partitionCount * federationDefaultRUsPerPartition);
 
                 CosmosContainerCore containerCore = (CosmosContainerCore)cosmosContainer;
                 CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
