@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
             // Letting processor initialize
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             
             // Inserting more documents
