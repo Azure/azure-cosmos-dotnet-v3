@@ -106,14 +106,16 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
-            bool allowNonValueAggregateQuery)
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey)
         {
             PartitionedQueryExecutionInfoInternal queryInfoInternal = this.GetPartitionedQueryExecutionInfoInternal(
                 querySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
-                allowNonValueAggregateQuery);
+                allowNonValueAggregateQuery,
+                hasLogicalPartitionKey);
 
             return this.ConvertPartitionedQueryExecutionInfo(queryInfoInternal, partitionKeyDefinition);
         }
@@ -146,7 +148,8 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
-            bool allowNonValueAggregateQuery)
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey)
         {
             if (querySpec == null || partitionKeyDefinition == null)
             {
@@ -184,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         requireFormattableOrderByQuery,
                         isContinuationExpected,
                         allowNonValueAggregateQuery,
+                        hasLogicalPartitionKey,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
@@ -203,6 +207,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 requireFormattableOrderByQuery,
                                 isContinuationExpected,
                                 allowNonValueAggregateQuery,
+                                hasLogicalPartitionKey, // has logical partition key
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
