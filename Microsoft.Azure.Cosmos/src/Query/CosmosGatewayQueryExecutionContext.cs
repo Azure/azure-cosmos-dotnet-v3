@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CollectionCache collectionCache = await this.queryContext.QueryClient.GetCollectionCacheAsync();
             PartitionKeyRangeCache partitionKeyRangeCache = await this.queryContext.QueryClient.GetPartitionKeyRangeCache();
             IDocumentClientRetryPolicy retryPolicyInstance = this.queryContext.QueryClient.GetRetryPolicy();
-            retryPolicyInstance = new InvalidPartitionExceptionRetryPolicy(collectionCache, retryPolicyInstance);
+            retryPolicyInstance = new InvalidPartitionExceptionRetryPolicy(retryPolicyInstance);
             if (this.queryContext.ResourceTypeEnum.IsPartitioned())
             {
                 retryPolicyInstance = new PartitionKeyRangeGoneRetryPolicy(

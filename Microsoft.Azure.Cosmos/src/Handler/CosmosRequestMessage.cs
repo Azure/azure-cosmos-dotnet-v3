@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal DocumentServiceRequest DocumentServiceRequest { get; set; }
 
-        internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
+        internal Action<DocumentServiceRequest> OnBeforeRequestHandler { get; set; }
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
@@ -191,16 +191,13 @@ namespace Microsoft.Azure.Cosmos
                 this.DocumentServiceRequest = serviceRequest;
             }
 
-            this.OnBeforeRequestHandler(this.DocumentServiceRequest);
+            this.OnBeforeRequestHandlerHelper(this.DocumentServiceRequest);
             return this.DocumentServiceRequest;
         }
 
-        private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
+        private void OnBeforeRequestHandlerHelper(DocumentServiceRequest serviceRequest)
         {
-            if (this.DocumentClientRetryPolicy != null)
-            {
-                this.DocumentClientRetryPolicy.OnBeforeSendRequest(serviceRequest);
-            }
+            this.OnBeforeRequestHandler?.Invoke(serviceRequest);
         }
 
         private bool AssertPartitioningPropertiesAndHeaders()

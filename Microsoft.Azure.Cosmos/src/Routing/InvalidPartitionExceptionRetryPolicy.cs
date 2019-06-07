@@ -14,22 +14,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal class InvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
     {
-        private readonly CollectionCache clientCollectionCache;
+        private DocumentServiceRequest request;
 
         private readonly IDocumentClientRetryPolicy nextPolicy;
 
         private bool retried;
 
         public InvalidPartitionExceptionRetryPolicy(
-            CollectionCache clientCollectionCache,
             IDocumentClientRetryPolicy nextPolicy)
         {
-            if (clientCollectionCache == null)
-            {
-                throw new ArgumentNullException("clientCollectionCache");
-            }
-
-            this.clientCollectionCache = clientCollectionCache;
             this.nextPolicy = nextPolicy;
         }
 
@@ -87,7 +80,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (!string.IsNullOrEmpty(resourceIdOrFullName))
                     {
-                        this.clientCollectionCache.Refresh(resourceIdOrFullName);
+                        if(this.request == null)
+                        {
+                            throw new InvalidOperationException("OnBeforeSendRequest was not called before retry.");
+                        }
+
+                        this.request.ForceNameCacheRefresh = true;
                     }
 
                     this.retried = true;
@@ -104,7 +102,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.nextPolicy.OnBeforeSendRequest(request);
+            this.request = request;
+            this.nextPolicy?.OnBeforeSendRequest(request);
         }
     }
 }
