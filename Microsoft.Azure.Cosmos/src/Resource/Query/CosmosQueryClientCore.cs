@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionkey,
             CancellationToken cancellationToken)
         {
             QueryPartitionProvider queryPartitionProvider = await this.DocumentQueryClient.GetQueryPartitionProviderAsync(cancellationToken);
@@ -63,7 +64,8 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
-                allowNonValueAggregateQuery);
+                allowNonValueAggregateQuery,
+                hasLogicalPartitionkey);
         }
 
         internal override async Task<FeedResponse<CosmosElement>> ExecuteItemQueryAsync(

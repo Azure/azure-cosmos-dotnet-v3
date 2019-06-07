@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool enableCrossPartitionQuery,
             bool parallelizeCrossPartitionQuery,
             bool isContinuationExpected,
+            bool hasLogicalPartitionKey,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryPartitionProvider queryPartitionProvider,
             string clientApiVersion,
@@ -51,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
-                allowNonValueAggregateQuery: false);
+                allowNonValueAggregateQuery: false,
+                hasLogicalPartitionKey: hasLogicalPartitionKey);
 
             if (queryExecutionInfo == null ||
                 queryExecutionInfo.QueryRanges == null ||

@@ -6461,9 +6461,10 @@ namespace Microsoft.Azure.Cosmos
                     this.maxRntbdChannels,
                     this.rntbdPartitionCount,
                     this.maxRequestsPerRntbdChannel,
-                    this.rntbdReceiveHangDetectionTimeSeconds,
-                    this.rntbdSendHangDetectionTimeSeconds,
-                    this.enableCpuMonitor);
+                    receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
+                    sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
+                    enableCpuMonitor: this.enableCpuMonitor,
+                    retryWithConfiguration: this.connectionPolicy.RetryOptions?.GetRetryWithConfiguration());
 
                 if (this.transportClientHandlerFactory != null)
                 {
