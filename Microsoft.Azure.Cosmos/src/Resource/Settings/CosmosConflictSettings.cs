@@ -43,36 +43,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Documents.Constants.Properties.OperationType)]
         public OperationKind OperationKind { get; internal set; }
 
-        /// <summary>
-        /// Gets the content of the Conflict resource in the Azure Cosmos DB service.
-        /// </summary>
-        /// <typeparam name="T">The type to use to deserialize the content.</typeparam>
-        /// <param name="cosmosJsonSerializer">(Optional) <see cref="CosmosJsonSerializer"/> to use while parsing the content.</param>
-        /// <returns>An instance of T</returns>
-        public T GetResource<T>(CosmosJsonSerializer cosmosJsonSerializer = null)
-        {
-            if (!string.IsNullOrEmpty(this.Content))
-            {
-                if (cosmosJsonSerializer == null)
-                {
-                    cosmosJsonSerializer = new CosmosJsonSerializerCore();
-                }
-
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    using (StreamWriter writer = new StreamWriter(stream))
-                    {
-                        writer.Write(this.Content);
-                        writer.Flush();
-                        stream.Position = 0;
-                        return cosmosJsonSerializer.FromStream<T>(stream);
-                    }
-                }
-            }
-
-            return default(T);
-        }
-
         [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]
         internal Type ResourceType { get; set; }
