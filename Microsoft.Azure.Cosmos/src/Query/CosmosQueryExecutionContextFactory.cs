@@ -168,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: this.cosmosQueryContext.AllowNonValueAggregateQuery,
+                hasLogicalPartitionKey: this.cosmosQueryContext.QueryRequestOptions?.PartitionKey != null,
                 cancellationToken: cancellationToken);
 
             List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
