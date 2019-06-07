@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
             }
 
-            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey.GetValueOrDefault(false)))
+            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey == true))
             {
                 return PartitionKeyInternal.Empty;
             }
