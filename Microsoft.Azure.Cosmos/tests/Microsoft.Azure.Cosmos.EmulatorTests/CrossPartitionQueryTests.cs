@@ -3493,7 +3493,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 @" { ""id"": ""64"", ""name"": ""Gary"", ""age"": 14, ""gender"": ""M"", ""team"": ""C"", ""address"": { ""city"": ""Atlanta"", ""state"": ""GA"", ""zip"": 30301 }, ""scores"": [88, 47, 90, 76] } ",
             };
 
-            await CrossPartitionQueryTests.CreateIngestQueryDelete(
+            await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct,
                 documents,
                 this.TestGroupByQueryHelper);
