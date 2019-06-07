@@ -2748,6 +2748,100 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task TestQueryCrossPartitionOffsetLimitPushdown()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+
+            Random rand = new Random(seed);
+            List<Person> people = new List<Person>();
+
+            for (int i = 0; i < numberOfDocuments; i++)
+            {
+                Person person = GetRandomPerson(rand);
+                for (int j = 0; j < rand.Next(0, 4); j++)
+                {
+                    people.Add(person);
+                }
+            }
+
+            List<string> documents = new List<string>();
+            people = people.OrderBy((person) => Guid.NewGuid()).ToList();
+            foreach (Person person in people)
+            {
+                documents.Add(JsonConvert.SerializeObject(person));
+            }
+
+            await CreateIngestQueryDelete(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                documents,
+                this.TestQueryCrossPartitionOffsetLimitPushdown,
+                "/city");
+        }
+
+        private async Task TestQueryCrossPartitionOffsetLimitPushdown(
+            CosmosContainer container,
+            IEnumerable<Document> documents)
+        {
+            // Test that having a logical partition key pushes down the OFFSET
+            {
+                // The key here is that the number of roundtrips should go down if we push down the OFFSET,
+                // since LIMIT = 0 in this case.
+                string query = $@"
+                            SELECT *
+                            FROM c
+                            ORDER BY c._ts
+                            OFFSET 10 LIMIT 10";
+
+                CosmosQueryRequestOptions optionsWithoutLogicalPartitionKey = new CosmosQueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    EnableCrossPartitionSkipTake = true,
+                };
+
+                CosmosQueryRequestOptions optionsWithLogicalPartitionKey = new CosmosQueryRequestOptions()
+                {
+                    EnableCrossPartitionSkipTake = true,
+                    PartitionKey = City.LosAngeles.ToString(),
+                };
+
+                int numIterationsWithoutLogicalPartitionKey = 0;
+                {
+                    // This one should take OFFSET + LIMIT roundtrips
+                    CosmosResultSetIterator<JToken> itemQuery = container.Items.CreateItemQuery<JToken>(
+                        sqlQueryText: query,
+                        maxConcurrency: 2,
+                        maxItemCount: 1,
+                        requestOptions: optionsWithoutLogicalPartitionKey);
+
+                    while (itemQuery.HasMoreResults)
+                    {
+                        await itemQuery.FetchNextSetAsync();
+                        numIterationsWithoutLogicalPartitionKey++;
+                    }
+                }
+
+                int numIterationsWithLogicalPartitionKey = 0;
+                {
+                    // This one should just take LIMIT roundtrips
+                    CosmosResultSetIterator<JToken> itemQuery = container.Items.CreateItemQuery<JToken>(
+                        sqlQueryText: query,
+                        maxConcurrency: 2,
+                        maxItemCount: 1,
+                        requestOptions: optionsWithLogicalPartitionKey);
+
+                    while (itemQuery.HasMoreResults)
+                    {
+                        await itemQuery.FetchNextSetAsync();
+                        numIterationsWithLogicalPartitionKey++;
+                    }
+                }
+
+                Assert.IsTrue(numIterationsWithLogicalPartitionKey < numIterationsWithoutLogicalPartitionKey);
+            }
+        }
+
         private async Task TestQueryCrossPartitionTopHelper(CosmosContainer container, IEnumerable<Document> documents)
         {
             List<string> queryFormats = new List<string>()
