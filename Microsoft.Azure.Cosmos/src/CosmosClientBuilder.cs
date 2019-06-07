@@ -283,10 +283,10 @@ namespace Microsoft.Azure.Cosmos
             int? randomSaltForRetryWithMilliseconds,
             int? totalWaitTimeForRetryWithMilliseconds)
         {
-            this.clientOptions.InitialRetryForRetryWithMilliseconds = initialRetryForRetryWithMilliseconds;
-            this.clientOptions.MaximumRetryForRetryWithMilliseconds = maximumRetryForRetryWithMilliseconds;
-            this.clientOptions.RandomSaltForRetryWithMilliseconds = randomSaltForRetryWithMilliseconds;
-            this.clientOptions.TotalWaitTimeForRetryWithMilliseconds = totalWaitTimeForRetryWithMilliseconds;
+            this.cosmosClientConfiguration.InitialRetryForRetryWithMilliseconds = initialRetryForRetryWithMilliseconds;
+            this.cosmosClientConfiguration.MaximumRetryForRetryWithMilliseconds = maximumRetryForRetryWithMilliseconds;
+            this.cosmosClientConfiguration.RandomSaltForRetryWithMilliseconds = randomSaltForRetryWithMilliseconds;
+            this.cosmosClientConfiguration.TotalWaitTimeForRetryWithMilliseconds = totalWaitTimeForRetryWithMilliseconds;
             return this;
         }
     }
