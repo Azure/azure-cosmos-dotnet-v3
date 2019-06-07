@@ -157,7 +157,7 @@
                     using (JsonTextReader jtr = new JsonTextReader(sr))
                     {
                         JsonSerializer jsonSerializer = new JsonSerializer();
-                        dynamic items = jsonSerializer.Deserialize<dynamic>(jtr);
+                        dynamic items = jsonSerializer.Deserialize<dynamic>(jtr).Documents;
                         Assert("Expected one family", items.Count == 1);
                         dynamic item = items[0];
                         Assert($"Expected LastName: Anderson Actual: {item.LastName}", string.Equals("Anderson", item.LastName.ToString(), StringComparison.InvariantCulture));

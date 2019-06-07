@@ -270,7 +270,7 @@
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         dynamic streamResponse = FromStream<dynamic>(responseMessage.Content);
-                        List<SalesOrder> salesOrders = streamResponse.ToObject<List<SalesOrder>>();
+                        List<SalesOrder> salesOrders = streamResponse.Documents.ToObject<List<SalesOrder>>();
                         Console.WriteLine($"\n1.4.3 - Item Query via stream {salesOrders.Count}");
                         allSalesForAccount1FromStream.AddRange(salesOrders);
                     }
@@ -663,6 +663,7 @@
         }
 
         private static async Task UseConsistencyLevels()
+
         {
             // Override the consistency level for a read request
             ItemResponse<SalesOrder> response = await container.ReadItemAsync<SalesOrder>(
