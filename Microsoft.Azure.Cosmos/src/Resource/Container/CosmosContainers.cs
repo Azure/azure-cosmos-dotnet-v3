@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for the container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// This will make a read operation, and if the container is not found it will do a create operation.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for the container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
