@@ -273,7 +273,8 @@ namespace Microsoft.Azure.Cosmos.Query
                   DocumentQueryExecutionContextFactory.IsAggregateQueryWithoutContinuation(
                       partitionedQueryExecutionInfo,
                       isContinuationExpected) ||
-                  DocumentQueryExecutionContextFactory.IsDistinctQuery(partitionedQueryExecutionInfo);
+                  DocumentQueryExecutionContextFactory.IsDistinctQuery(partitionedQueryExecutionInfo) ||
+                  DocumentQueryExecutionContextFactory.IsGroupByQuery(partitionedQueryExecutionInfo);
         }
 
         private static bool IsCrossPartitionQuery(
@@ -318,6 +319,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private static bool IsOffsetLimitQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
+        }
+
+        private static bool IsGroupByQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+        {
+            return partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
         }
 
         private static bool TryGetEpkProperty(

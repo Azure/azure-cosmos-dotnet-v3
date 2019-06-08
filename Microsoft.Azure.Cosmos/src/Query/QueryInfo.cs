@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
+    using System.Collections.Generic;
 
     [JsonObject(MemberSerialization.OptIn)]
     internal sealed class QueryInfo
@@ -53,8 +54,22 @@ namespace Microsoft.Azure.Cosmos.Query
             set;
         }
 
+        [JsonProperty("groupByExpressions")]
+        public string[] GroupByExpressions
+        {
+            get;
+            set;
+        }
+
         [JsonProperty("aggregates", ItemConverterType = typeof(StringEnumConverter))]
         public AggregateOperator[] Aggregates
+        {
+            get;
+            set;
+        }
+
+        [JsonProperty("groupByAliasToAggregateType", ItemConverterType = typeof(StringEnumConverter))]
+        public Dictionary<string, AggregateOperator?> GroupByAliasToAggregateType
         {
             get;
             set;
@@ -89,6 +104,30 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        public bool HasAggregates
+        {
+            get
+            {
+                return this.Aggregates != null && this.Aggregates.Length > 0;
+            }
+        }
+
+        public bool HasGroupBy
+        {
+            get
+            {
+                return this.GroupByExpressions != null && this.GroupByExpressions.Length > 0;
+            }
+        }
+
+        public bool HasOrderBy
+        {
+            get
+            {
+                return this.OrderBy != null && this.OrderBy.Length > 0;
+            }
+        }
+
         public bool HasOffset
         {
             get
@@ -102,22 +141,6 @@ namespace Microsoft.Azure.Cosmos.Query
             get
             {
                 return this.Limit != null;
-            }
-        }
-
-        public bool HasOrderBy
-        {
-            get
-            {
-                return this.OrderBy != null && this.OrderBy.Length > 0;
-            }
-        }
-
-        public bool HasAggregates
-        {
-            get
-            {
-                return this.Aggregates != null && this.Aggregates.Length > 0;
             }
         }
     }
