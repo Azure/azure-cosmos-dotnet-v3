@@ -425,7 +425,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
                 public override void AddValue(CosmosElement groupByValue)
                 {
-                    this.aggregator.Aggregate(groupByValue);
+                    AggregateItem aggregateItem = new AggregateItem(groupByValue);
+                    this.aggregator.Aggregate(aggregateItem.Item);
                 }
 
                 public static AggregateGroupByValue Create(AggregateOperator aggregateOperator)
