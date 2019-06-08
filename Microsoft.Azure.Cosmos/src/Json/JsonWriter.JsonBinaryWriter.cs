@@ -56,12 +56,20 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly int reservationSize;
 
             /// <summary>
+            /// The string dictionary used for user string encoding.
+            /// </summary>
+            private readonly JsonStringDictionary jsonStringDictionary;
+
+            /// <summary>
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
             /// <param name="skipValidation">Whether to skip validation on the JsonObjectState.</param>
             /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
-            public JsonBinaryWriter(bool skipValidation, JsonStringDictionary jsonStringDictionary = null, bool serializeCount = false)
+            public JsonBinaryWriter(
+                bool skipValidation, 
+                JsonStringDictionary jsonStringDictionary = null, 
+                bool serializeCount = false)
                 : base(skipValidation)
             {
                 this.binaryWriter = new BinaryWriter(new MemoryStream());
@@ -74,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // Push on the outermost context
                 this.bufferedContexts.Push(new BeginOffsetAndCount(this.CurrentLength));
+                this.jsonStringDictionary = jsonStringDictionary;
             }
 
             /// <summary>
@@ -477,12 +486,27 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void WriteFieldNameOrString(bool isFieldName, string value)
             {
+                // String dictionary encoding is currently performed only for field names. 
+                // This would be changed later, so that the writer can control which strings need to be encoded.
                 this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
-                if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(value, this.out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
+                if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(
+                    value, 
+                    this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName ? this.jsonStringDictionary : null, 
+                    out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
                 {
-                    foreach (byte byteValue in multiByteTypeMarker.Values)
+                    switch (multiByteTypeMarker.Length)
                     {
-                        this.binaryWriter.Write(byteValue);
+                        case 1:
+                            this.binaryWriter.Write(multiByteTypeMarker.One);
+                            break;
+
+                        case 2:
+                            this.binaryWriter.Write(multiByteTypeMarker.One);
+                            this.binaryWriter.Write(multiByteTypeMarker.Two);
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException($"Unable to serialize a {nameof(JsonBinaryEncoding.MultiByteTypeMarker)} of length: {multiByteTypeMarker.Length}");
                     }
                 }
                 else
