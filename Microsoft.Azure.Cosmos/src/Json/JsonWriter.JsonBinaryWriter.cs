@@ -59,8 +59,9 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
             /// <param name="skipValidation">Whether to skip validation on the JsonObjectState.</param>
+            /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
-            public JsonBinaryWriter(bool skipValidation, bool serializeCount = false)
+            public JsonBinaryWriter(bool skipValidation, JsonStringDictionary jsonStringDictionary = null, bool serializeCount = false)
                 : base(skipValidation)
             {
                 this.binaryWriter = new BinaryWriter(new MemoryStream());
@@ -474,67 +475,10 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.bufferedContexts.Peek().Count++;
             }
 
-            private bool TryGetEncodedStringTypeMarker(string value, out JsonBinaryEncoding.MultiByteTypeMarker typeMarker)
-            {
-                if (this.TryGetEncodedSystemStringTypeMarker(value, out typeMarker))
-                {
-                    return true;
-                }
-
-                if (this.TryGetEncodedUserStringTypeMarker(value, out typeMarker))
-                {
-                    return true;
-                }
-
-                return false;
-            }
-
-            private bool TryGetEncodedUserStringTypeMarker(string value, out JsonBinaryEncoding.MultiByteTypeMarker typeMarker)
-            {
-                typeMarker = new JsonBinaryEncoding.MultiByteTypeMarker();
-                return false;
-            }
-
-            private bool TryGetEncodedSystemStringTypeMarker(string value, out JsonBinaryEncoding.MultiByteTypeMarker typeMarker)
-            {
-                typeMarker = new JsonBinaryEncoding.MultiByteTypeMarker(null);
-                int systemStringId;
-                if (JsonBinaryEncoding.TryGetSystemStringId(value, out systemStringId))
-                {
-                    const byte OneByteCount = JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
-
-                    if (systemStringId < OneByteCount)
-                    {
-                        byte[] typeMarkerBytes = new byte[]
-                        {
-                            (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + (int)systemStringId)
-                        };
-
-                        typeMarker = new JsonBinaryEncoding.MultiByteTypeMarker(typeMarkerBytes);
-                    }
-                    else
-                    {
-                        int twoByteOffset = ((int)systemStringId) - OneByteCount;
-                        byte[] typeMarkerBytes = new byte[]
-                        {
-                            (byte)((twoByteOffset / 0xFF) + JsonBinaryEncoding.TypeMarker.SystemString2ByteLengthMin),
-                            (byte)(twoByteOffset % 0xFF),
-                        };
-
-                        typeMarker = new JsonBinaryEncoding.MultiByteTypeMarker(typeMarkerBytes);
-                    }
-
-                    return true;
-                }
-
-                return false;
-            }
-
             private void WriteFieldNameOrString(bool isFieldName, string value)
             {
                 this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
-                JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker;
-                if (this.TryGetEncodedStringTypeMarker(value, out multiByteTypeMarker))
+                if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(value, this.out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
                 {
                     foreach (byte byteValue in multiByteTypeMarker.Values)
                     {
