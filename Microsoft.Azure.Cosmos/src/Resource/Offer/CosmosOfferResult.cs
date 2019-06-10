@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosOfferResult
     {
-        public CosmosOfferResult(int? requestUnitsPerSecond)
+        public CosmosOfferResult(int? requestUnitsPerSecond, int? minimumRequestUnits = null)
         {
             this.RequestUnitsPerSecond = requestUnitsPerSecond;
             this.StatusCode = requestUnitsPerSecond.HasValue ? HttpStatusCode.OK : HttpStatusCode.NotFound;
