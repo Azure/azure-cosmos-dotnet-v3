@@ -246,6 +246,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task MinimumThroughputNonExistingTest()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            int throughput = 10000;
+            DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false, throughput: throughput);
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            CosmosDatabase cosmosDatabase = createResponse;
+            int? readMinThroughput = await cosmosDatabase.ReadMinimumThroughputAsync();
+            Assert.IsTrue(readMinThroughput > 0);
+            Assert.AreNotEqual(throughput, readMinThroughput);
+
+            await cosmosDatabase.DeleteAsync();
+        }
+
+        [TestMethod]
         public async Task DatabaseIterator()
         {
             List<CosmosDatabase> deleteList = new List<CosmosDatabase>();

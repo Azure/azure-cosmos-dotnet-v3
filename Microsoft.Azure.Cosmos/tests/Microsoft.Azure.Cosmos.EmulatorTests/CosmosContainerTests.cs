@@ -445,6 +445,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task MinimumThroughputNonExistingTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+            int throughput = 10000;
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath, requestUnits: throughput);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
+
+            int? readMinThroughput = await cosmosContainer.ReadMinimumThroughputAsync();
+            Assert.IsTrue(readMinThroughput > 0);
+            Assert.AreNotEqual(readMinThroughput, throughput);
+
+            containerResponse = await cosmosContainer.DeleteAsync();
+            Assert.AreNotEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        [TestMethod]
         public async Task ImplicitConversion()
         {
             string containerName = Guid.NewGuid().ToString();

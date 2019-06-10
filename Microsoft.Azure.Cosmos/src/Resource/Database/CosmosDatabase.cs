@@ -135,12 +135,36 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>A Task representing the asynchronoous operation.</returns>
+        /// <returns>A Task representing the asynchronous operation.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public abstract Task ReplaceProvisionedThroughputAsync(
             int requestUnitsPerSecond,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets minimum database throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <value>
+        /// The minimum throughput for this database.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on offer throughput.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// The following example shows how to get the minimum throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// int? throughput = await this.cosmosDatabase.ReadMinimumProvisionedThroughputAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The minimum throughput if any.</returns>
+        public abstract Task<int?> ReadMinimumThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

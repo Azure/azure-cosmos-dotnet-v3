@@ -89,6 +89,17 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public override async Task<int?> ReadMinimumThroughputAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosOfferResult offerResult = await this.ReadMinimumThroughputIfExistsAsync(cancellationToken);
+            if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
+            {
+                return offerResult.minimumRequestUnits;
+            }
+
+            throw offerResult.CosmosException;
+        }
+
         public override Task<CosmosResponseMessage> ReadStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
@@ -123,6 +134,14 @@ namespace Microsoft.Azure.Cosmos
         {
             Task<string> rid = this.GetRIDAsync(cancellationToken);
             return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetRequestUnitsPerSecond, cancellationToken), cancellationToken)
+                .Unwrap();
+        }
+
+        internal Task<CosmosOfferResult> ReadMinimumThroughputIfExistsAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.GetRIDAsync(cancellationToken)
+                .ContinueWith(task => this.ClientContext.Client.Offers.ReadMinimumThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
                 .Unwrap();
         }
 

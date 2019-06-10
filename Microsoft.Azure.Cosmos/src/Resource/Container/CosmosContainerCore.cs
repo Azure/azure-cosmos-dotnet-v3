@@ -124,6 +124,18 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public override async Task<int?> ReadMinimumThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosOfferResult offerResult = await this.ReadMinimumThroughputIfExistsAsync(cancellationToken);
+            if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
+            {
+                return offerResult.minimumRequestUnits;
+            }
+
+            throw offerResult.CosmosException;
+        }
+
         public override Task<CosmosResponseMessage> DeleteStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -188,6 +200,24 @@ namespace Microsoft.Azure.Cosmos
             return this.GetRIDAsync(cancellationToken)
                  .ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetRequestUnitsPerSecond, cancellationToken), cancellationToken)
                  .Unwrap();
+        }
+
+        internal Task<CosmosOfferResult> ReadMinimumThroughputIfExistsAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.GetRIDAsync(cancellationToken)
+                .ContinueWith(task => task.Result == null ?
+                    Task.FromResult(new CosmosOfferResult(
+                        statusCode: HttpStatusCode.Found,
+                        cosmosRequestException: new CosmosException(
+                            message: RMResources.NotFound,
+                            statusCode: HttpStatusCode.Found,
+                            subStatusCode: (int)SubStatusCodes.Unknown,
+                            activityId: null,
+                            requestCharge: 0))) :
+                    this.ClientContext.Client.Offers.ReadMinimumThroughputIfExistsAsync(task.Result, cancellationToken),
+                    cancellationToken)
+                .Unwrap();
         }
 
         /// <summary>

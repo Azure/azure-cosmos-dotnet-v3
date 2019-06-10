@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.RequestUnitsPerSecond = requestUnitsPerSecond;
             this.StatusCode = requestUnitsPerSecond.HasValue ? HttpStatusCode.OK : HttpStatusCode.NotFound;
+            this.minimumRequestUnits = minimumRequestUnits;
         }
 
         public CosmosOfferResult(
@@ -26,5 +27,7 @@ namespace Microsoft.Azure.Cosmos
         public HttpStatusCode StatusCode { get; }
 
         public int? RequestUnitsPerSecond { get; }
+
+        public int? minimumRequestUnits { get; }
     }
 }

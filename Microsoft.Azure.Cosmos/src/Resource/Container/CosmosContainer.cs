@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
-        /// The provisioned throughput for this database.
+        /// The provisioned throughput for this container.
         /// </value>
         /// <remarks>
         /// <para>
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestUnitsPerSecond">The cosmos container throughput, expressed in Request Units per second.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
-        /// The provisioned throughput for this database.
+        /// The provisioned throughput for this container.
         /// </value>
         /// <example>
         /// The following example shows how to get the throughput.
@@ -181,6 +181,30 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public abstract Task ReplaceProvisionedThroughputAsync(
             int requestUnitsPerSecond,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets minimum container throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <value>
+        /// The minimum throughput for this container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on offer throughput.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// The following example shows how to get the minimum throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// int? throughput = await this.cosmosContainer.ReadMinimumThroughputAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The value of the minimum throughput if any</returns>
+        public abstract Task<int?> ReadMinimumThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
