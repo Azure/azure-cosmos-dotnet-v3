@@ -1841,6 +1841,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string disallowContinuationErrorMessage = RMResources.UnorderedDistinctQueryContinuationToken;
                     Assert.AreEqual(disallowContinuationErrorMessage, ex.Message);
                 }
+
+                try
+                {
+                    string continuationToken = null;
+                    do
+                    {
+                        CosmosResultSetIterator documentQuery = container.Items.CreateItemQueryAsStream(
+                            queryWithDistinct,
+                            maxItemCount: 10,
+                            maxConcurrency: 100);
+
+                        CosmosQueryResponse cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
+
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
+
+                    }
+                    while (continuationToken != null);
+                    Assert.IsTrue(
+                        documentsFromWithDistinct.IsSubsetOf(documentsFromWithoutDistinct),
+                        $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
+
+                    Assert.Fail("Expected an exception when using continuation tokens on an unordered distinct query.");
+                }
+                catch (ArgumentException ex)
+                {
+                    string disallowContinuationErrorMessage = RMResources.UnorderedDistinctQueryContinuationToken;
+                    Assert.AreEqual(disallowContinuationErrorMessage, ex.Message);
+                }
             }
             #endregion
             #region Ordered Region
