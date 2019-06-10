@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Security;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -136,6 +137,31 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(
             string accountEndPoint,
             string accountKey)
+            : this(new CosmosClientOptions(accountEndPoint, accountKey))
+        {
+        }
+
+        /// <summary>
+        /// Create a new CosmosClient with the account endpoint URI string and account key
+        /// </summary>
+        /// <param name="accountEndPoint">The cosmos service endpoint to use to create the client.</param>
+        /// <param name="accountKey">The cosmos account key to use to create the client.</param>
+        /// <example>
+        /// This example creates a CosmosClient
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using (CosmosClient cosmosClient = new CosmosClient(
+        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+        ///     accountKey: "SuperSecretKey"))
+        /// {
+        ///     // Create a database and other CosmosClient operations
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClient(
+            string accountEndPoint,
+            SecureString accountKey)
             : this(new CosmosClientOptions(accountEndPoint, accountKey))
         {
         }
