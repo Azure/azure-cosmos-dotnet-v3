@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
         {
             string endpoint = AccountEndpoint;
-            string key = Guid.NewGuid().ToString();
             string region = CosmosRegions.WestCentralUS;
             ConnectionMode connectionMode = ConnectionMode.Gateway;
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
@@ -37,13 +36,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndPoint: endpoint,
-                accountKey: key);
+                accountKey: MockCosmosUtil.MockAccountKey);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
             Assert.AreEqual(endpoint, clientOptions.EndPoint.OriginalString, "AccountEndPoint did not save correctly");
-            Assert.AreEqual(key, clientOptions.AccountKey, "AccountKey did not save correctly");
+            Assert.AreEqual(MockCosmosUtil.MockAccountKey, clientOptions.AccountKey.Key, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values
             Assert.AreNotEqual(region, clientOptions.ApplicationRegion);
@@ -119,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Inner handler is required to be null to allow the client to connect it to other handlers
             handler.InnerHandler = innerHandler;
-            new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, "testKey")
+            new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.MockAccountKey)
                 .AddCustomHandlers(handler);
         }
 
