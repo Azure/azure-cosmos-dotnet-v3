@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
         private bool _isDisposed = false;
         private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
         private readonly string disallowContinuationTokenMessage;
-        private readonly string continuationToken;
 
         /// <summary>
         /// Empty constructor that can be used for unit testing
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             this.Count = count;
             this.StatusCode = HttpStatusCode.OK;
             this.disallowContinuationTokenMessage = disallowContinuationTokenMessage;
-            this.continuationToken = continuationToken;
+            this.InternalContinuationToken = continuationToken;
         }
 
         internal CosmosQueryResponse(
@@ -57,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan? retryAfter,
             INameValueCollection responseHeaders = null)
         {
-            this.continuationToken = null;
+            this.InternalContinuationToken = null;
             this.Content = null;
             this.ResponseHeaders = responseHeaders;
             this.StatusCode = httpStatusCode;
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException(this.disallowContinuationTokenMessage);
                 }
 
-                return this.continuationToken;
+                return this.InternalContinuationToken;
             }
         }
 
@@ -146,6 +145,8 @@ namespace Microsoft.Azure.Cosmos
         /// Returns true if the operation succeeded
         /// </summary>
         public virtual bool IsSuccess => this.StatusCode == HttpStatusCode.OK;
+
+        internal virtual string InternalContinuationToken { get; }
 
         internal TimeSpan? RetryAfter { get; }
 
