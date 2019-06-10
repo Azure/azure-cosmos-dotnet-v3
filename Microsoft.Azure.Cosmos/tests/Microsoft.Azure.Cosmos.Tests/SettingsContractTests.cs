@@ -354,6 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "DefaultTimeToLive", 
                 "IndexingPolicy", 
                 "TimeToLivePropertyPath",
+                "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
                 "ConflictResolutionPolicy");
 
@@ -537,13 +538,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                         // Set accessor 
                         bool publicSetAllowed = publicSettable.Where(e => m.Name.EndsWith("_" + e)).Any();
                         Assert.AreEqual(publicSetAllowed, m.IsPublic, m.ToString());
-                        Assert.AreEqual(publicSetAllowed, m.IsVirtual, m.ToString());
+                        Assert.IsFalse(m.IsVirtual, m.ToString());
                     }
                     else
                     {
                         // get accessor 
                         Assert.IsTrue(m.IsPublic, m.ToString());
-                        Assert.IsTrue(m.IsVirtual, m.ToString());
+                        Assert.IsFalse(m.IsVirtual, m.ToString());
                     }
                 }
             }

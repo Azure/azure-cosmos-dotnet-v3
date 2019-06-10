@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 verifier);
 
-            builder.WithCosmosLeaseContainer(leaseContainerForBuilder);
+            builder.WithLeaseContainer(leaseContainerForBuilder);
 
             builder.Build();
         }
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 verifier);
 
-            builder.WithCosmosLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+            builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
             builder.WithLeaseConfiguration(acquireInterval, expirationInterval, renewInterval);
 
             builder.Build();
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
-            builder.WithCosmosLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+            builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
 
             // This build should not throw
             builder.Build();
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
-            builder.WithCosmosLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+            builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
 
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
                 ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
 
-            builder.WithCosmosLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
+            builder.WithLeaseContainer(ChangeFeedProcessorBuilderTests.GetMockedContainer());
 
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }

@@ -7,6 +7,7 @@
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
 
@@ -70,17 +71,17 @@
             string databaseId,
             string containerId)
         {
-            CosmosDatabase database = await client.Databases.CreateDatabaseIfNotExistsAsync(DatabaseId);
+            CosmosDatabase database = await client.CreateDatabaseIfNotExistsAsync(DatabaseId);
 
             CosmosContainerSettings containerSettings = new CosmosContainerSettings(containerId, "/LastName");
 
             // Delete the existing container to prevent create item conflicts
-            await database.Containers[containerId].DeleteAsync();
+            await database.GetContainer(containerId).DeleteAsync();
 
             // Create with a throughput of 1000 RU/s
-            CosmosContainer container = await database.Containers.CreateContainerIfNotExistsAsync(
+            CosmosContainer container = await database.CreateContainerIfNotExistsAsync(
                 containerSettings,
-                throughput: 1000);
+                requestUnitsPerSecond: 1000);
 
             //Run a simple script
             await Program.RunSimpleScript(container);
@@ -105,8 +106,8 @@
             string scriptId = Path.GetFileNameWithoutExtension(scriptFileName);
 
             await TryDeleteStoredProcedure(container, scriptId);
-
-            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProcedureAsync(scriptId, File.ReadAllText(scriptFileName));
+            CosmosScripts cosmosScripts = container.GetScripts();
+            StoredProcedureResponse sproc = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(scriptId, File.ReadAllText(scriptFileName)));
 
             // 2. Create a document.
             SampleDocument doc = new SampleDocument
@@ -118,15 +119,15 @@
                 Income = 50000
             };
 
-            CosmosItemResponse<SampleDocument> created = await container.Items.CreateItemAsync(doc.LastName, doc);
+            ItemResponse<SampleDocument> created = await container.CreateItemAsync(doc, new PartitionKey(doc.LastName));
 
             // 3. Run the script. Pass "Hello, " as parameter. 
             // The script will take the 1st document and echo: Hello, <document as json>.
-            CosmosItemResponse<string> response = await container.StoredProcedures[scriptId].ExecuteAsync<string, string>(doc.LastName, "Hello");
+            StoredProcedureExecuteResponse<string> response = await container.GetScripts().ExecuteStoredProcedureAsync<string, string>(new PartitionKey(doc.LastName), scriptId, "Hello");
 
             Console.WriteLine("Result from script: {0}\r\n", response.Resource);
 
-            await container.Items.DeleteItemAsync<SampleDocument>(doc.LastName, doc.Id);
+            await container.DeleteItemAsync<SampleDocument>(new PartitionKey(doc.LastName), doc.Id);
         }
 
         /// <summary>
@@ -153,7 +154,8 @@
             string body = File.ReadAllText(@".\JS\BulkImport.js");
 
             await TryDeleteStoredProcedure(container, scriptId);
-            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProcedureAsync(scriptId, body);
+            CosmosScripts cosmosScripts = container.GetScripts();
+            StoredProcedureResponse sproc = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(scriptId, body));
 
             // 4. Create a batch of docs (MAX is limited by request size (2M) and to script for execution.
             // We send batches of documents to create to script.
@@ -172,7 +174,7 @@
                 dynamic[] args = new dynamic[] { JsonConvert.DeserializeObject<dynamic>(argsJson) };
 
                 // 6. execute the batch.
-                CosmosItemResponse<int> scriptResult = await container.StoredProcedures[scriptId].ExecuteAsync<dynamic, int>("Andersen", args);
+                StoredProcedureExecuteResponse<int> scriptResult = await cosmosScripts.ExecuteStoredProcedureAsync<dynamic, int>(new PartitionKey("Andersen"), scriptId, args);
 
                 // 7. Prepare for next batch.
                 int currentlyInserted = scriptResult.Resource;
@@ -182,10 +184,10 @@
             // 8. Validate
             int numDocs = 0;
 
-            CosmosResultSetIterator<dynamic> setIterator = container.Items.GetItemIterator<dynamic>();
+            FeedIterator<dynamic> setIterator = container.GetItemsIterator<dynamic>();
             while (setIterator.HasMoreResults)
             {
-                CosmosQueryResponse<dynamic> response = await setIterator.FetchNextSetAsync();
+                FeedResponse<dynamic> response = await setIterator.FetchNextSetAsync();
                 numDocs += response.Count();
             }
 
@@ -202,7 +204,8 @@
             string scriptId = "OrderBy";
 
             await TryDeleteStoredProcedure(container, scriptId);
-            CosmosStoredProcedure sproc = await container.StoredProcedures.CreateStoredProcedureAsync(scriptId, body);
+            CosmosScripts cosmosScripts = container.GetScripts();
+            StoredProcedureResponse sproc = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(scriptId, body));
 
             // 2. Prepare to run stored procedure. 
             string orderByFieldName = "FamilyId";
@@ -214,8 +217,9 @@
             do
             {
                 // 3. Run the stored procedure.
-                CosmosItemResponse<OrderByResult> response = await container.StoredProcedures[scriptId].ExecuteAsync<object, OrderByResult>(
-                    "Andersen",
+                StoredProcedureExecuteResponse<OrderByResult> response = await cosmosScripts.ExecuteStoredProcedureAsync<object, OrderByResult>(
+                    new PartitionKey("Andersen"),
+                    scriptId,
                     new { filterQuery, orderByFieldName, continuationToken });
 
                 // 4. Process stored procedure response.
@@ -321,10 +325,11 @@
         /// <returns></returns>
         private static async Task TryDeleteStoredProcedure(CosmosContainer container, string sprocId)
         {
-            CosmosStoredProcedure sproc = await container.StoredProcedures[sprocId].ReadAsync();
+            CosmosScripts cosmosScripts = container.GetScripts();
+            StoredProcedureResponse sproc = await cosmosScripts.ReadStoredProcedureAsync(sprocId);
             if (sproc != null)
             {
-                await container.StoredProcedures[sprocId].DeleteAsync();
+                await cosmosScripts.DeleteStoredProcedureAsync(sprocId);
             }
         }
     }

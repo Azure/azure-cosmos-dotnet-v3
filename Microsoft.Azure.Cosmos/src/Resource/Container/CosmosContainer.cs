@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Operations for reading/querying all conflicts
         /// </summary>
-        public abstract CosmosConflicts Conflicts { get; }
+        /// <returns>An instance of <see cref="CosmosConflicts"/> to do operations on Conflicts.</returns>
+        public abstract CosmosConflicts GetConflicts();
 
         /// <summary>
         /// Reads a <see cref="CosmosContainerSettings"/> from the Azure Cosmos service as an asynchronous operation.
@@ -161,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="requestUnits">The cosmos container throughput</param>
+        /// <param name="requestUnitsPerSecond">The cosmos container throughput, expressed in Request Units per second.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this database.
@@ -179,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public abstract Task ReplaceProvisionedThroughputAsync(
-            int requestUnits,
+            int requestUnitsPerSecond,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

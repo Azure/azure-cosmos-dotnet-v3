@@ -20,9 +20,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyAllPublicMembersAreVirtualUnitTesting()
         {
             // All of the public properties and methods should be virtual to allow users to 
-            // create unit tests by mocking the different types.
+            // create unit tests by mocking the different types. Data Contracts do not support mocking so exclude all types that end with Settings.
             IEnumerable<Type> allClasses = from t in Assembly.GetAssembly(typeof(CosmosClient)).GetTypes()
                                            where t.IsClass && t.Namespace == "Microsoft.Azure.Cosmos" && t.IsPublic && !t.IsAbstract && !t.IsSealed
+                                           where !t.Name.EndsWith("Settings")
                                            select t;
 
             // Get the entire list to prevent running the test for each method/property

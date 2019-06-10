@@ -27,12 +27,14 @@ namespace Microsoft.Azure.Cosmos
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken);
 
         internal abstract Task<QueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
+            string containerResourceId,
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             Action<CosmosRequestMessage> requestEnricher,

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                requestUnits: 10000,
+                requestUnitsPerSecond: 10000,
                 cancellationToken: this.cancellationToken);
             this.Container = response;
         }
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Start the processor, insert 1 document to generate a checkpoint
             await processor.StartAsync();
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithStartFromBeginning()
                 .WithInstanceName("random")
                 .WithMaxItems(6)
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Generate the payload
             await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 0);

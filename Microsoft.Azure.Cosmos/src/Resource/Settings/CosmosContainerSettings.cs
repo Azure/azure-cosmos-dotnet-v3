@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
         private ConflictResolutionPolicy conflictResolutionInternal;
 
         private string[] partitionKeyPathTokens;
+        private string id;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
@@ -85,13 +86,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosContainerSettings(string id, string partitionKeyPath)
         {
             this.Id = id;
-            if (!string.IsNullOrEmpty(partitionKeyPath))
-            {
-                this.PartitionKey = new PartitionKeyDefinition
-                {
-                    Paths = new Collection<string>() { partitionKeyPath }
-                };
-            }
+            this.PartitionKeyPath = partitionKeyPath;
 
             this.ValidateRequiredProperties();
         }
@@ -100,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the Partitioning scheme version used. <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
         /// </summary>
         [JsonIgnore]
-        public virtual PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
+        public PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
         {
             get => (Cosmos.PartitionKeyDefinitionVersion?)this.PartitionKey?.Version;
 
@@ -119,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the <see cref="ConflictResolutionPolicy" />
         /// </summary>
         [JsonIgnore]
-        public virtual ConflictResolutionPolicy ConflictResolutionPolicy
+        public ConflictResolutionPolicy ConflictResolutionPolicy
         {
             get
             {
@@ -156,13 +151,17 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; set; }
+        public string Id
+        {
+            get => this.id;
+            set => this.id = value ?? throw new ArgumentNullException(nameof(this.Id));
+        }
 
         /// <summary>
         /// Gets or sets the <see cref="UniqueKeyPolicy"/> that guarantees uniqueness of documents in container in the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public virtual UniqueKeyPolicy UniqueKeyPolicy
+        public UniqueKeyPolicy UniqueKeyPolicy
         {
             get
             {
@@ -195,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string ETag { get; private set; }
+        public string ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
@@ -203,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        public virtual DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; protected set; }
 
         /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service. 
@@ -212,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
         /// The indexing policy associated with the container.
         /// </value>
         [JsonIgnore]
-        public virtual IndexingPolicy IndexingPolicy
+        public IndexingPolicy IndexingPolicy
         {
             get
             {
@@ -239,7 +238,22 @@ namespace Microsoft.Azure.Cosmos
         /// JSON path used for containers partitioning
         /// </summary>
         [JsonIgnore]
-        public virtual string PartitionKeyPath => this.PartitionKey?.Paths[0];
+        public string PartitionKeyPath
+        {
+            get => this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    throw new ArgumentNullException(nameof(this.PartitionKeyPath));
+                }
+
+                this.PartitionKey = new PartitionKeyDefinition
+                {
+                    Paths = new Collection<string>() { value }
+                };
+            }
+        }
 
         /// <summary>
         /// Gets or sets the time to live base timestamp property path.
@@ -251,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
         /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.TimeToLivePropertyPath, NullValueHandling = NullValueHandling.Ignore)]
-        public virtual string TimeToLivePropertyPath { get; set; }
+        public string TimeToLivePropertyPath { get; set; }
 
         /// <summary>
         /// Gets the default time to live in seconds for item in a container from the Azure Cosmos service.
@@ -309,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
-        public virtual int? DefaultTimeToLive { get; set; }
+        public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
         /// The function selects the right partition key constant mapping for <see cref="PartitionKey.NonePartitionKeyValue"/>
@@ -321,7 +335,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException($"{nameof(this.PartitionKey)}");
             }
 
-            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey && this.PartitionKey.IsSystemKey))
+            if (this.PartitionKey.Paths.Count == 0 || (this.PartitionKey.IsSystemKey == true))
             {
                 return PartitionKeyInternal.Empty;
             }
@@ -384,7 +398,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
 
-        internal virtual string ResourceId { get; private set; }
+        internal string ResourceId { get; private set; }
 
         internal bool HasPartitionKey => this.PartitionKey != null;
 

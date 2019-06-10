@@ -86,16 +86,16 @@
 
         private static async Task Setup(CosmosClient client)
         {
-            database = await client.Databases.CreateDatabaseIfNotExistsAsync(databaseId);
+            database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
         }
 
         private static async Task<CosmosContainer> CreateContainer()
         {
             // Set throughput to the minimum value of 400 RU/s
-            CosmosContainerResponse simpleContainer = await database.Containers.CreateContainerIfNotExistsAsync(
+            ContainerResponse simpleContainer = await database.CreateContainerIfNotExistsAsync(
                 id: containerId,
                 partitionKeyPath: partitionKey,
-                throughput: 400);
+                requestUnitsPerSecond: 400);
 
             Console.WriteLine($"\n1.1. Created container :{simpleContainer.Container.Id}");
             return simpleContainer;
@@ -110,9 +110,9 @@
                 partitionKeyPath: partitionKey);
             containerSettings.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
-            CosmosContainer containerWithLazyIndexing = await database.Containers.CreateContainerIfNotExistsAsync(
+            CosmosContainer containerWithLazyIndexing = await database.CreateContainerIfNotExistsAsync(
                 containerSettings,
-                throughput: 400);
+                requestUnitsPerSecond: 400);
 
             Console.WriteLine($"1.2. Created Container {containerWithLazyIndexing.Id}, with custom index policy \n");
 
@@ -126,7 +126,7 @@
                 partitionKeyPath: partitionKey);
             settings.DefaultTimeToLive = (int)TimeSpan.FromDays(1).TotalSeconds; //expire in 1 day
 
-            CosmosContainerResponse ttlEnabledContainerResponse = await database.Containers.CreateContainerIfNotExistsAsync(
+            ContainerResponse ttlEnabledContainerResponse = await database.CreateContainerIfNotExistsAsync(
                 containerSettings: settings);
             CosmosContainerSettings returnedSettings = ttlEnabledContainerResponse;
 
@@ -165,7 +165,7 @@
             //*************************************************
             // Get a CosmosContainer by its Id property
             //*************************************************
-            CosmosContainer container = database.Containers[containerId];
+            CosmosContainer container = database.GetContainer(containerId);
             CosmosContainerSettings containerSettings = await container.ReadAsync();
 
             Console.WriteLine($"\n4. Found Container \n{containerSettings.Id}\n");
@@ -179,7 +179,7 @@
         {
             Console.WriteLine("\n5. Reading all CosmosContainer resources for a database");
 
-            CosmosResultSetIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator();
+            FeedIterator<CosmosContainerSettings> resultSetIterator = database.GetContainersIterator();
             while (resultSetIterator.HasMoreResults)
             {
                 foreach (CosmosContainerSettings container in await resultSetIterator.FetchNextSetAsync())
@@ -195,7 +195,7 @@
         /// <param name="simpleContainer"></param>
         private static async Task DeleteContainer()
         {
-            await database.Containers[containerId].DeleteAsync();
+            await database.GetContainer(containerId).DeleteAsync();
             Console.WriteLine("\n6. Deleted Container\n");
         }
     }

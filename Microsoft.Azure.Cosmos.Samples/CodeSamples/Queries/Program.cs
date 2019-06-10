@@ -72,7 +72,7 @@
 
         private static async Task RunDemoAsync(CosmosClient client)
         {
-            cosmosDatabase = await client.Databases.CreateDatabaseIfNotExistsAsync(CosmosDatabaseId);
+            cosmosDatabase = await client.CreateDatabaseIfNotExistsAsync(CosmosDatabaseId);
             CosmosContainer container = await Program.GetOrCreateContainerAsync(cosmosDatabase, containerId);
 
             await Program.CreateItems(container);
@@ -96,7 +96,7 @@
             List<Family> families = new List<Family>();
 
             // SQL
-            CosmosResultSetIterator<Family> setIterator = container.Items.GetItemIterator<Family>(maxItemCount: 1);
+            FeedIterator<Family> setIterator = container.GetItemsIterator<Family>(maxItemCount: 1);
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
@@ -115,7 +115,7 @@
             int totalCount = 0;
 
             // SQL
-            CosmosFeedResultSetIterator setIterator = container.Items.GetItemStreamIterator();
+            FeedIterator setIterator = container.GetItemsStreamIterator();
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
@@ -140,24 +140,24 @@
         private static async Task QueryItemsInPartitionAsStreams(CosmosContainer container)
         {
             // SQL
-            CosmosResultSetIterator setIterator = container.Items.CreateItemQueryAsStream(
+            FeedIterator setIterator = container.CreateItemQueryStream(
                 "SELECT F.id, F.LastName, F.IsRegistered FROM Families F",
-                partitionKey: "Anderson",
+                partitionKey: new PartitionKey("Anderson"),
                 maxConcurrency: 1,
                 maxItemCount: 1);
 
             int count = 0;
             while (setIterator.HasMoreResults)
             {
-                using (CosmosQueryResponse response = await setIterator.FetchNextSetAsync())
+                using (CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
                 {
-                    Assert("Response failed", response.IsSuccess);
+                    Assert("Response failed", response.IsSuccessStatusCode);
                     count++;
                     using (StreamReader sr = new StreamReader(response.Content))
                     using (JsonTextReader jtr = new JsonTextReader(sr))
                     {
                         JsonSerializer jsonSerializer = new JsonSerializer();
-                        dynamic items = jsonSerializer.Deserialize<dynamic>(jtr);
+                        dynamic items = jsonSerializer.Deserialize<dynamic>(jtr).Documents;
                         Assert("Expected one family", items.Count == 1);
                         dynamic item = items[0];
                         Assert($"Expected LastName: Anderson Actual: {item.LastName}", string.Equals("Anderson", item.LastName.ToString(), StringComparison.InvariantCulture));
@@ -178,7 +178,7 @@
                 .UseParameter("@city", "Seattle");
 
             List<Family> results = new List<Family>();
-            CosmosResultSetIterator<Family> resultSetIterator = container.Items.CreateItemQuery<Family>(query, partitionKey: "Anderson");
+            FeedIterator<Family> resultSetIterator = container.CreateItemQuery<Family>(query, partitionKey: new PartitionKey("Anderson"));
             while (resultSetIterator.HasMoreResults)
             {
                 results.AddRange((await resultSetIterator.FetchNextSetAsync()));
@@ -193,9 +193,9 @@
             string queryText = "SELECT * FROM Families";
 
             // 0 maximum parallel tasks, effectively serial execution
-            CosmosQueryRequestOptions options = new CosmosQueryRequestOptions() { MaxBufferedItemCount = 100 };
+            QueryRequestOptions options = new QueryRequestOptions() { MaxBufferedItemCount = 100 };
 
-            CosmosResultSetIterator<Family> query = container.Items.CreateItemQuery<Family>(
+            FeedIterator<Family> query = container.CreateItemQuery<Family>(
                 queryText,
                 maxConcurrency: 0,
                 requestOptions: options);
@@ -212,7 +212,7 @@
             // 1 maximum parallel tasks, 1 dedicated asynchronous task to continuously make REST calls
             List<Family> familiesParallel1 = new List<Family>();
 
-            query = container.Items.CreateItemQuery<Family>(
+            query = container.CreateItemQuery<Family>(
                 queryText,
                 maxConcurrency: 1,
                 requestOptions: options);
@@ -232,7 +232,7 @@
             // 10 maximum parallel tasks, a maximum of 10 dedicated asynchronous tasks to continuously make REST calls
             List<Family> familiesParallel10 = new List<Family>();
 
-            query = container.Items.CreateItemQuery<Family>(
+            query = container.CreateItemQuery<Family>(
                 queryText,
                 maxConcurrency: 10,
                 requestOptions: options);
@@ -283,7 +283,7 @@
                 RegistrationDate = DateTime.UtcNow.AddDays(-1)
             };
 
-            await container.Items.UpsertItemAsync<Family>(AndersonFamily.PartitionKey, AndersonFamily);
+            await container.UpsertItemAsync<Family>(AndersonFamily, new PartitionKey(AndersonFamily.PartitionKey));
 
             Family WakefieldFamily = new Family
             {
@@ -317,7 +317,7 @@
                 RegistrationDate = DateTime.UtcNow.AddDays(-30)
             };
 
-            await container.Items.UpsertItemAsync<Family>(WakefieldFamily.PartitionKey, WakefieldFamily);
+            await container.UpsertItemAsync<Family>(WakefieldFamily, new PartitionKey(WakefieldFamily.PartitionKey));
         }
 
         /// <summary>
@@ -329,9 +329,9 @@
         {
             CosmosContainerSettings containerDefinition = new CosmosContainerSettings(id: containerId, partitionKeyPath: "/LastName");
 
-            return await database.Containers.CreateContainerIfNotExistsAsync(
+            return await database.CreateContainerIfNotExistsAsync(
                 containerSettings: containerDefinition,
-                throughput: 400);
+                requestUnitsPerSecond: 400);
         }
 
         private static void Assert(string message, bool condition)

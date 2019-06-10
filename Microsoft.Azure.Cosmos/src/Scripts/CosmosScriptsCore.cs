@@ -99,18 +99,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
             Cosmos.PartitionKey partitionKey,
-            string id,
+            string storedProcedureId,
             TInput input,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
-
             Stream parametersStream;
             if (input != null && !input.GetType().IsArray)
             {
@@ -121,21 +114,43 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
             }
 
-            Uri linkUri = this.clientContext.CreateLink(
-                parentLink: this.container.LinkUri.OriginalString,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: OperationType.ExecuteJavaScript,
+            Task<CosmosResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 partitionKey: partitionKey,
+                storedProcedureId: storedProcedureId,
                 streamPayload: parametersStream,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
+        }
+
+        public override Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
+            Cosmos.PartitionKey partitionKey,
+            string storedProcedureId,
+            Stream streamPayload,
+            StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(storedProcedureId))
+            {
+                throw new ArgumentNullException(nameof(storedProcedureId));
+            }
+
+            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+
+            Uri linkUri = this.clientContext.CreateLink(
+                parentLink: this.container.LinkUri.OriginalString,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: storedProcedureId);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
+                operationType: OperationType.ExecuteJavaScript,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(

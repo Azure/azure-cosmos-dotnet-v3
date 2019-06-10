@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal partial class CosmosContainerCore : CosmosContainer
     {
+        private readonly CosmosConflictsCore conflicts;
+
         /// <summary>
         /// Only used for unit testing
         /// </summary>
@@ -40,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
-            this.Conflicts = new CosmosConflictsCore(this.ClientContext, this);
+            this.conflicts = new CosmosConflictsCore(this.ClientContext, this);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
         }
@@ -49,11 +51,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosDatabase Database { get; }
 
-        public override CosmosConflicts Conflicts { get; }
-
         internal virtual Uri LinkUri { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
+
+        public override CosmosConflicts GetConflicts()
+        {
+            return this.conflicts;
+        }
 
         public override Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
@@ -102,17 +107,17 @@ namespace Microsoft.Azure.Cosmos
             CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
             if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
             {
-                return offerResult.RequestUnits;
+                return offerResult.RequestUnitsPerSecond;
             }
 
             throw offerResult.CosmosException;
         }
 
         public override async Task ReplaceProvisionedThroughputAsync(
-            int requestUnits,
+            int requestUnitsPerSecond,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(requestUnits, cancellationToken);
+            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(requestUnitsPerSecond, cancellationToken);
             if (offerResult.StatusCode != HttpStatusCode.OK)
             {
                 throw offerResult.CosmosException;
@@ -177,11 +182,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
-            int targetRequestUnits,
+            int targetRequestUnitsPerSecond,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.GetRIDAsync(cancellationToken)
-                 .ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetRequestUnits, cancellationToken), cancellationToken)
+                 .ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, targetRequestUnitsPerSecond, cancellationToken), cancellationToken)
                  .Unwrap();
         }
 

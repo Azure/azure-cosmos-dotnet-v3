@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private bool isBuilt;
 
         internal ChangeFeedProcessorBuilder(
-            string workflowName, 
+            string processorName, 
             CosmosContainerCore cosmosContainer, 
             ChangeFeedProcessor changeFeedProcessor,
             Action<DocumentServiceLeaseStoreManager,
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosContainerCore> applyBuilderConfiguration)
         {
             this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
-            this.changeFeedLeaseOptions.LeasePrefix = workflowName;
+            this.changeFeedLeaseOptions.LeasePrefix = processorName;
             this.monitoredContainer = cosmosContainer;
             this.changeFeedProcessor = changeFeedProcessor;
             this.applyBuilderConfiguration = applyBuilderConfiguration;
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithCosmosLeaseContainer"/>.
+        /// Sets a custom configuration to be used by this instance of <see cref="ChangeFeedProcessor"/> to control how leases are maintained in a container when using <see cref="WithLeaseContainer"/>.
         /// </summary>
         /// <param name="acquireInterval">Interval to kick off a task to verify if leases are distributed evenly among known host instances.</param>
         /// <param name="expirationInterval">Interval for which the lease is taken. If the lease is not renewed within this interval, it will cause it to expire and ownership of the lease will move to another processor instance.</param>
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="leaseContainer">Instance of a Cosmos Container to hold the leases.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public virtual ChangeFeedProcessorBuilder WithCosmosLeaseContainer(CosmosContainer leaseContainer)
+        public virtual ChangeFeedProcessorBuilder WithLeaseContainer(CosmosContainer leaseContainer)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
@@ -228,12 +228,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.leaseContainer == null && this.LeaseStoreManager == null)
             {
-                throw new InvalidOperationException($"Defining the lease store by WithCosmosLeaseContainer or WithInMemoryLeaseContainer is required.");
+                throw new InvalidOperationException($"Defining the lease store by WithLeaseContainer or WithInMemoryLeaseContainer is required.");
             }
 
             if (this.changeFeedLeaseOptions.LeasePrefix == null)
             {
-                throw new InvalidOperationException("Workflow name was not specified using WithWorkflowName");
+                throw new InvalidOperationException("Processor name not specified during creation.");
             }
 
             this.InitializeDefaultOptions();

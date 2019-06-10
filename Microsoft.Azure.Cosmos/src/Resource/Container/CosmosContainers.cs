@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerAsync(
                     CosmosContainerSettings containerSettings,
-                    int? requestUnits = null,
+                    int? requestUnitsPerSecond = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -112,10 +112,13 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso cref="DefineContainer(string, string)"/>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
-            int? requestUnits = null,
+            int? requestUnitsPerSecond = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -124,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// This will make a read operation, and if the container is not found it will do a create operation.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -164,9 +167,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             CosmosContainerSettings containerSettings,
-            int? requestUnits = null,
+            int? requestUnitsPerSecond = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -176,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerSettings"/> containing the read resource record.</returns>
@@ -206,10 +212,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
-            int? requestUnits = null,
+            int? requestUnitsPerSecond = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -261,14 +270,17 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="containerSettings">The <see cref="CosmosContainerSettings"/> object.</param>
-        /// <param name="requestUnits">(Optional) The throughput provisioned for a collection in measurement of Requests-per-Unit in the Azure Cosmos DB service.</param>
+        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
         /// <seealso cref="DefineContainer(string, string)"/>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
         public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
             CosmosContainerSettings containerSettings,
-            int? requestUnits = null,
+            int? requestUnitsPerSecond = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

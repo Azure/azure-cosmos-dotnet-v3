@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            this.ResourceLink,
                            this.ResourceTypeEnum,
                            this.OperationTypeEnum,
+                           this.ContainerResourceId,
                            requestOptions,
                            querySpecForInit,
                            requestEnricher,

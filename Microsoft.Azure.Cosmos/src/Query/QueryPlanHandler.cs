@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryFeatures supportedQueryFeatures,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: false,
                     allowNonValueAggregateQuery: true,
+                    hasLogicalPartitionKey: hasLogicalPartitionKey,
                     cancellationToken: cancellationToken);
 
             if (partitionedQueryExecutionInfo == null ||
