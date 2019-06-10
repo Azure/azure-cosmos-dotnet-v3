@@ -5,13 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Collections.Generic;
 
     internal sealed class JsonStringDictionary
     {
         private readonly string[] stringDictionary;
         private int size;
 
-        private JsonStringDictionary(int capacity)
+        public JsonStringDictionary(int capacity)
         {
             if (capacity < 0)
             {
