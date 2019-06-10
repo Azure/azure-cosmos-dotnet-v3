@@ -62,7 +62,7 @@
         private static async Task RunDatabaseDemo(CosmosClient client)
         {
             // An object containing relevant information about the response
-            CosmosDatabaseResponse databaseResponse = await client.Databases.CreateDatabaseIfNotExistsAsync(databaseId, 10000);
+            DatabaseResponse databaseResponse = await client.CreateDatabaseIfNotExistsAsync(databaseId, 10000);
 
             // A client side reference object that allows additional operations like ReadAsync
             CosmosDatabase database = databaseResponse;
@@ -74,10 +74,10 @@
             Console.WriteLine($"\n2. Create a database resource request charge: {databaseResponse.RequestCharge} and Activity Id: {databaseResponse.ActivityId}");
 
             // Read the database from Azure Cosmos
-            CosmosDatabaseResponse readResponse = await database.ReadAsync();
+            DatabaseResponse readResponse = await database.ReadAsync();
             Console.WriteLine($"\n3. Read a database: {readResponse.Resource.Id}");
 
-            await readResponse.Database.Containers.CreateContainerAsync("testContainer", "/pk");
+            await readResponse.Database.CreateContainerAsync("testContainer", "/pk");
 
             // Get the current throughput for the database
             int? throughput = await database.ReadProvisionedThroughputAsync();
@@ -90,7 +90,7 @@
             }
 
             Console.WriteLine("\n5. Reading all databases resources for an account");
-            CosmosResultSetIterator<CosmosDatabaseSettings> iterator = client.Databases.GetDatabaseIterator();
+            FeedIterator<CosmosDatabaseSettings> iterator = client.GetDatabasesIterator();
             do
             {
                 foreach (CosmosDatabaseSettings db in await iterator.FetchNextSetAsync())
