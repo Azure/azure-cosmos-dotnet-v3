@@ -3675,6 +3675,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
+            // Test with Stream API
+            foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
+            {
+                foreach (int maxItemCount in new int[] { 1, 5, 10 })
+                {
+                    CosmosResultSetIterator documentQuery = container.Items.CreateItemQueryAsStream(
+                        query,
+                        maxConcurrency: 5,
+                        requestOptions: new CosmosQueryRequestOptions()
+                        {
+                            EnableCrossPartitionGroupBy = true,
+                            EnableCrossPartitionQuery = true,
+                            MaxItemCount = maxItemCount,
+                            MaxBufferedItemCount = 100,
+                        });
+
+                    int count = 0;
+                    while (documentQuery.HasMoreResults)
+                    {
+                        CosmosQueryResponse cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
+                        count += cosmosQueryResponse.Count;
+                    }
+
+                    Assert.AreEqual(expectedResults.Count(), count);
+                }
+            }
+
             // Test that continuation token is blocked
             {
                 try
