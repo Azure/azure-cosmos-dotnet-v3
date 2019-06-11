@@ -57,7 +57,7 @@
                 JsonStringDictionaryTests.AddAndValidate(
                     jsonStringDictionary,
                     expectedString: new string('a', replicationCount),
-                    expectedIndex: replicationCount + 1);
+                    expectedIndex: replicationCount);
             }
         }
 

@@ -625,13 +625,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Note that this reader is able to read from a little endian stream even if the client is on a big endian machine.
                 /// </summary>
                 protected readonly LittleEndianBinaryReader BinaryReader;
+                protected readonly JsonStringDictionary jsonStringDictionary;
                 private JsonTokenType currentTokenType;
 
                 /// <summary>
                 /// Initializes a new instance of the JsonBinaryBufferBase class from an array of bytes.
                 /// </summary>
                 /// <param name="stream">A stream to read from.</param>
-                protected JsonBinaryBufferBase(Stream stream)
+                /// <param name="jsonStringDictionary">The JSON string dictionary to use for user string encoding.</param>
+                protected JsonBinaryBufferBase(Stream stream, JsonStringDictionary jsonStringDictionary = null)
                 {
                     if (stream == null)
                     {
@@ -639,6 +641,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     this.BinaryReader = new LittleEndianBinaryReader(stream, Encoding.UTF8);
+                    this.jsonStringDictionary = jsonStringDictionary;
                 }
 
                 /// <summary>
@@ -876,7 +879,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 private string GetStringValue(ArraySegment<byte> jsonToken)
                 {
                     BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetStringValue(binaryReader);
+                    return JsonBinaryEncoding.GetStringValue(binaryReader, this.jsonStringDictionary);
                 }
             }
             #endregion
@@ -895,8 +898,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Initializes a new instance of the JsonBinaryArrayBuffer class.
                 /// </summary>
                 /// <param name="buffer">The source buffer to read from.</param>
-                public JsonBinaryArrayBuffer(byte[] buffer)
-                    : base(new MemoryStream(buffer, 0, buffer.Length, false, true))
+                /// <param name="jsonStringDictionary">The string dictionary to use for dictionary encoding.</param>
+                public JsonBinaryArrayBuffer(byte[] buffer, JsonStringDictionary jsonStringDictionary = null)
+                    : base(new MemoryStream(buffer, 0, buffer.Length, false, true), jsonStringDictionary)
                 {
                     if (buffer == null)
                     {
