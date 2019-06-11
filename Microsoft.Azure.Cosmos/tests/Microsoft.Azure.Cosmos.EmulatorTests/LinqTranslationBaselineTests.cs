@@ -586,13 +586,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // ToLower
             inputs.Add(new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())));
             // TrimStart
-            //inputs.Add(new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())));
+            inputs.Add(new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())));
             // Replace
             inputs.Add(new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))));
             inputs.Add(new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))));
-            //TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/330 TrimEnd and TrimStart not working for LINQ on .NET core however working on .NET Framework, need to discuss
             // TrimEnd
-            //inputs.Add(new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())));
+            inputs.Add(new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())));
             //StartsWith
             inputs.Add(new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))));
             inputs.Add(new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))));

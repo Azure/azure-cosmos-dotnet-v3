@@ -120,6 +120,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                         return SqlFunctionCallScalarExpression.CreateBuiltin("LTRIM", str);
                     }
                 }
+                else if (methodCallExpression.Arguments.Count == 0)
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("LTRIM", str);
+                }
 
                 return null;
             }
@@ -167,6 +172,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                         SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
                         return SqlFunctionCallScalarExpression.CreateBuiltin("RTRIM", str);
                     }
+                }
+                else if (methodCallExpression.Arguments.Count == 0)
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("RTRIM", str);
                 }
 
                 return null;
