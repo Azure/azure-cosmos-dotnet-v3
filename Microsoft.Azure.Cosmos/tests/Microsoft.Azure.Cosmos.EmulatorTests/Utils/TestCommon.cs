@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Security;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -57,19 +56,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
             return new CosmosClientBuilder(accountEndPoint: endpoint, accountKey: authKey);
-        }
-
-        internal static CosmosClientBuilder GetDefaultSecureStringConfiguration()
-        {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            SecureString secureString = new SecureString();
-            foreach (char c in authKey)
-            {
-                secureString.AppendChar(c);
-            }
-
-            return new CosmosClientBuilder(accountEndPoint: endpoint, accountKey: secureString);
         }
 
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
