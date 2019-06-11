@@ -24,23 +24,60 @@
         [Owner("brchon")]
         public void TestBasicCase()
         {
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(100);
-            JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, value: "str1", expectedIndex: 0);
-            JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, value: "str2", expectedIndex: 1);
-            JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, value: "str3", expectedIndex: 2);
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
 
-            // Verify the Dictionary
+            // First new string -> index 0
+            JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, expectedString: "str1", expectedIndex: 0);
 
+            // Second new string -> index 1
+            JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, expectedString: "str2", expectedIndex: 1);
+
+            // Re adding second string -> also index 1
+            JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, expectedString: "str2", expectedIndex: 1);
+
+            // Adding third new string -> index 2
+            JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, expectedString: "str3", expectedIndex: 2);
         }
 
-        private static void AddAndValidate(JsonStringDictionary jsonStringDictionary, string value, int expectedIndex)
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestDictionarySizeLimit()
         {
-            if (!jsonStringDictionary.TryAddString(value, out int actualIndex))
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 0);
+            Assert.IsFalse(jsonStringDictionary.TryAddString("hello", out int index));
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void TestDifferentLengthStrings()
+        {
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 256);
+            for (int replicationCount = 0; replicationCount < 128; replicationCount++)
             {
-                throw new AssertFailedException($"Failed to insert {value} into {nameof(JsonStringDictionary)}.");
+                JsonStringDictionaryTests.AddAndValidate(
+                    jsonStringDictionary,
+                    expectedString: new string('a', replicationCount),
+                    expectedIndex: replicationCount + 1);
+            }
+        }
+
+        private static void AddAndValidate(JsonStringDictionary jsonStringDictionary, string expectedString, int expectedIndex)
+        {
+            // Try to add the string.
+            if (!jsonStringDictionary.TryAddString(expectedString, out int actualIndex))
+            {
+                throw new AssertFailedException($"{nameof(JsonStringDictionary.TryAddString)}({expectedString}, out int {actualIndex}) failed.");
             }
 
             Assert.AreEqual(expectedIndex, actualIndex);
+
+            // Try to read the string back by index
+            if (!jsonStringDictionary.TryGetStringAtIndex(expectedIndex, out string actualString))
+            {
+                throw new AssertFailedException($"{nameof(JsonStringDictionary.TryGetStringAtIndex)}({expectedIndex}, out string {actualString}) failed.");
+            }
+
+            Assert.AreEqual(expectedString, actualString);
         }
     }
 }

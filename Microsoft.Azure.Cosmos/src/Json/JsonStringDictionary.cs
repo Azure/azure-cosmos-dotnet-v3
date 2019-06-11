@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Json
     internal sealed class JsonStringDictionary
     {
         private readonly string[] stringDictionary;
+        private readonly Dictionary<string, int> stringToIndex;
         private int size;
 
         public JsonStringDictionary(int capacity)
@@ -20,11 +21,17 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             this.stringDictionary = new string[capacity];
+            this.stringToIndex = new Dictionary<string, int>();
         }
 
         public bool TryAddString(string value, out int index)
         {
             index = default(int);
+            if (this.stringToIndex.TryGetValue(value, out index))
+            {
+                // If the string already exists just leave.
+                return true;
+            }
 
             if (size == this.stringDictionary.Length)
             {
@@ -33,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             index = this.size;
             this.stringDictionary[size++] = value;
+            this.stringToIndex[value] = index;
 
             return true;
         }
