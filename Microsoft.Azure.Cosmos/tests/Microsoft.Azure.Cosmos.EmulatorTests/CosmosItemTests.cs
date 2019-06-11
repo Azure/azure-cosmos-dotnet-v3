@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task NonPartitionKeyLookupCacheTest()
         {
             int count = 0;
-            CosmosClient client = TestCommon.CreateCosmosClient(builder => 
+            CosmosClient client = TestCommon.CreateCosmosClient(builder =>
                 {
                     builder.UseConnectionModeDirect();
                     builder.UseSendingRequestEventArgs((sender, e) =>
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 Trace.TraceInformation($"{e.HttpRequest.ToString()}");
                             }
 
-                            if (e.IsHttpRequest() 
+                            if (e.IsHttpRequest()
                                 && e.HttpRequest.RequestUri.AbsolutePath.Contains("/colls/"))
                             {
                                 count++;
@@ -859,7 +859,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Quering items on fixed container with cross partition enabled.
                 CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
                 CosmosResultSetIterator<dynamic> setIterator = fixedContainer.Items
-                    .CreateItemQuery<dynamic>(sql, maxConcurrency: 1,maxItemCount:10, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true});
+                    .CreateItemQuery<dynamic>(sql, maxConcurrency: 1, maxItemCount: 10, requestOptions: new CosmosQueryRequestOptions { EnableCrossPartitionQuery = true });
                 while (setIterator.HasMoreResults)
                 {
                     CosmosQueryResponse<dynamic> queryResponse = await setIterator.FetchNextSetAsync();
@@ -961,10 +961,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Delete container 
                     await container1.DeleteAsync();
 
-                    // Read on deleted container through client1
                     await operation(container1, HttpStatusCode.NotFound);
-
-                    // Read on deleted container through client2
                     await operation(container2, HttpStatusCode.NotFound);
 
                     // Re-create again 
@@ -984,13 +981,110 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        /// <summary>
+        /// Stateless container re-create test. 
+        /// Create two client instances and do meta operations through a single client
+        /// but do all validation using both clients.
+        /// </summary>
+        [TestMethod]
+        public async Task ContainterReCreateStatelessNoBetweenReedFeedTest()
+        {
+            CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+
+            try
+            {
+                string dbName = Guid.NewGuid().ToString();
+                string containerName = Guid.NewGuid().ToString();
+
+                CosmosDatabase db1 = await cc1.Databases.CreateDatabaseAsync(dbName);
+                CosmosContainer container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+
+                await ExecuteReadFeedAsync(container1, HttpStatusCode.OK);
+
+                // Read through client2 -> return 404
+                CosmosContainer container2 = cc2.Databases[dbName].Containers[containerName];
+                await ExecuteReadFeedAsync(container2, HttpStatusCode.OK);
+
+                // Delete container 
+                await container1.DeleteAsync();
+
+                // Re-create again 
+                container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+
+                // Read through client1
+                await ExecuteReadFeedAsync(container1, HttpStatusCode.OK);
+
+                // Read through client2
+                await ExecuteReadFeedAsync(container2, HttpStatusCode.OK);
+            }
+            finally
+            {
+                cc1.Dispose();
+                cc2.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Stateless container re-create test. 
+        /// Create two client instances and do meta operations through a single client
+        /// but do all validation using both clients.
+        /// </summary>
+        [TestMethod]
+        public async Task ContainterReCreateStatelessNoBetweenQueryTest()
+        {
+            CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+
+            try
+            {
+                string dbName = Guid.NewGuid().ToString();
+                string containerName = Guid.NewGuid().ToString();
+
+                CosmosDatabase db1 = await cc1.Databases.CreateDatabaseAsync(dbName);
+                CosmosContainer container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+
+                await ExecuteQueryAsync(container1, HttpStatusCode.OK);
+
+                // Read through client2 -> return 404
+                CosmosContainer container2 = cc2.Databases[dbName].Containers[containerName];
+                await ExecuteQueryAsync(container2, HttpStatusCode.OK);
+
+                // Delete container 
+                await container1.DeleteAsync();
+
+                // Re-create again 
+                container1 = await db1.Containers.CreateContainerAsync(containerName, "/id");
+
+                // Read through client1
+                await ExecuteQueryAsync(container1, HttpStatusCode.NotFound, SubStatusCodes.NameCacheIsStale);
+
+                // Read through client2
+                await ExecuteQueryAsync(container2, HttpStatusCode.NotFound, SubStatusCodes.NameCacheIsStale);
+            }
+            finally
+            {
+                cc1.Dispose();
+                cc2.Dispose();
+            }
+        }
+
         private static async Task ExecuteQueryAsync(CosmosContainer container, HttpStatusCode expected)
+        {
+            await ExecuteQueryAsync(container, expected, null);
+        }
+
+        private static async Task ExecuteQueryAsync(CosmosContainer container, HttpStatusCode expected, SubStatusCodes? subStatusCode)
         {
             var iterator = container.Items.CreateItemQueryAsStream("select * from r", 1);
             while (iterator.HasMoreResults)
             {
-                var response = await iterator.FetchNextSetAsync();
-                Assert.AreEqual(expected, response.StatusCode);
+                CosmosQueryResponse response = await iterator.FetchNextSetAsync();
+                Assert.AreEqual(expected, response.StatusCode, response.ErrorMessage);
+                if (subStatusCode.HasValue)
+                {
+                    Assert.AreEqual(((int)subStatusCode.Value).ToString(), response.ResponseHeaders[WFConstants.BackendHeaders.SubStatus]);
+                }
             }
         }
 
@@ -1000,7 +1094,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (iterator.HasMoreResults)
             {
                 var response = await iterator.FetchNextSetAsync();
-                Assert.AreEqual(expected, response.StatusCode);
+                Assert.AreEqual(expected, response.StatusCode, response.Headers.SubStatusCode.ToString());
             }
         }
 
@@ -1033,13 +1127,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Task CreateNonPartitionContainerItem()
         {
             string itemDefinition = JsonConvert.SerializeObject(this.CreateRandomToDoActivity(id: nonPartitionItemId));
-            return CosmosItemTests.CreateNonPartitionContainerItem(this.database.Id, 
+            return CosmosItemTests.CreateNonPartitionContainerItem(this.database.Id,
                 CosmosItemTests.nonPartitionContainerId,
                 itemDefinition);
         }
 
         internal static async Task CreateNonPartitionContainerItem(
-            string dbName, 
+            string dbName,
             string containerName,
             string itemDefinition = null)
         {
