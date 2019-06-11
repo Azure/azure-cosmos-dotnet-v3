@@ -1061,6 +1061,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Read through client2
                 await ExecuteQueryAsync(container2, HttpStatusCode.NotFound, SubStatusCodes.NameCacheIsStale);
+
+                // Read through client1
+                await ExecuteQueryAsync(container1, HttpStatusCode.OK);
+
+                // Read through client2
+                await ExecuteQueryAsync(container2, HttpStatusCode.OK);
             }
             finally
             {
