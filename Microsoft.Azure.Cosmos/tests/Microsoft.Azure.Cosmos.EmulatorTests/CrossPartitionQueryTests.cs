@@ -1841,6 +1841,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string disallowContinuationErrorMessage = RMResources.UnorderedDistinctQueryContinuationToken;
                     Assert.AreEqual(disallowContinuationErrorMessage, ex.Message);
                 }
+
+                try
+                {
+                    string continuationToken = null;
+                    do
+                    {
+                        CosmosResultSetIterator documentQuery = container.Items.CreateItemQueryAsStream(
+                            queryWithDistinct,
+                            maxItemCount: 10,
+                            maxConcurrency: 100);
+
+                        CosmosQueryResponse cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
+
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
+
+                    }
+                    while (continuationToken != null);
+                    Assert.IsTrue(
+                        documentsFromWithDistinct.IsSubsetOf(documentsFromWithoutDistinct),
+                        $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
+
+                    Assert.Fail("Expected an exception when using continuation tokens on an unordered distinct query.");
+                }
+                catch (ArgumentException ex)
+                {
+                    string disallowContinuationErrorMessage = RMResources.UnorderedDistinctQueryContinuationToken;
+                    Assert.AreEqual(disallowContinuationErrorMessage, ex.Message);
+                }
             }
             #endregion
             #region Ordered Region
@@ -3644,6 +3672,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
                        $"Actual {JsonConvert.SerializeObject(actual)}" +
                        $"Expected: {JsonConvert.SerializeObject(expected)}");
+                }
+            }
+
+            // Test with Stream API
+            foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
+            {
+                foreach (int maxItemCount in new int[] { 1, 5, 10 })
+                {
+                    CosmosResultSetIterator documentQuery = container.Items.CreateItemQueryAsStream(
+                        query,
+                        maxConcurrency: 5,
+                        requestOptions: new CosmosQueryRequestOptions()
+                        {
+                            EnableCrossPartitionGroupBy = true,
+                            EnableCrossPartitionQuery = true,
+                            MaxItemCount = maxItemCount,
+                            MaxBufferedItemCount = 100,
+                        });
+
+                    int count = 0;
+                    while (documentQuery.HasMoreResults)
+                    {
+                        CosmosQueryResponse cosmosQueryResponse = await documentQuery.FetchNextSetAsync();
+                        count += cosmosQueryResponse.Count;
+                    }
+
+                    Assert.AreEqual(expectedResults.Count(), count);
                 }
             }
 
