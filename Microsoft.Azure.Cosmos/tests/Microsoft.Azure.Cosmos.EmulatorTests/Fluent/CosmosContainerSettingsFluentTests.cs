@@ -214,27 +214,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
 
-        [TestMethod]
-        public async Task ThroughputTest()
-        {
-            int expectedThroughput = 2400;
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
+        //[TestMethod]
+        //public async Task ThroughputTest()
+        //{
+        //    int expectedThroughput = 2400;
+        //    string containerName = Guid.NewGuid().ToString();
+        //    string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse
-                = await this.database.DefineContainer(containerName, partitionKeyPath)
-                        .CreateAsync(expectedThroughput);
+        //    ContainerResponse containerResponse
+        //        = await this.database.DefineContainer(containerName, partitionKeyPath)
+        //                .CreateAsync(expectedThroughput);
 
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            CosmosContainer cosmosContainer = this.database.GetContainer(containerName);
+        //    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+        //    CosmosContainer cosmosContainer = this.database.GetContainer(containerName);
 
-            int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
-            Assert.IsNotNull(readThroughput);
-            Assert.AreEqual(expectedThroughput, readThroughput);
+        //    int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
+        //    Assert.IsNotNull(readThroughput);
+        //    Assert.AreEqual(expectedThroughput, readThroughput);
 
-            containerResponse = await cosmosContainer.DeleteAsync();
-            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-        }
+        //    containerResponse = await cosmosContainer.DeleteAsync();
+        //    Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        //}
 
         [TestMethod]
         public async Task TimeToLiveTest()

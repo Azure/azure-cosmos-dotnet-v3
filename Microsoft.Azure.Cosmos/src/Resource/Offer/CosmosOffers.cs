@@ -10,9 +10,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
 
     internal class CosmosOffers
     {
@@ -36,42 +37,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
                 return this.GetThroughputIfExists(offer);
-            }
-            catch (DocumentClientException dce)
-            {
-                return new CosmosOfferResult(
-                    dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                    new CosmosException(
-                        dce.Message?.Replace(Environment.NewLine, string.Empty),
-                        dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                        (int)dce.GetSubStatus(),
-                        dce.ActivityId,
-                        dce.RequestCharge));
-            }
-            catch (AggregateException ex)
-            {
-                CosmosOfferResult offerResult = CosmosOffers.TryToOfferResult(ex);
-                if (offerResult != null)
-                {
-                    return offerResult;
-                }
-
-                throw;
-            }
-        }
-
-        internal async Task<CosmosOfferResult> ReadMinimumThroughputIfExistsAsync(
-            string targetRID,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (string.IsNullOrWhiteSpace(targetRID))
-            {
-                throw new ArgumentNullException(targetRID);
-            }
-
-            try
-            {
-                return await this.ReadOfferAsync(targetRID, cancellationToken).ContinueWith(offer => this.GetMinimumThroughputIfExistsAsync(offer.Result), cancellationToken).Unwrap();
             }
             catch (DocumentClientException dce)
             {
@@ -178,25 +143,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new CosmosOfferResult(offerV2.Content.OfferThroughput);
-        }
-
-        private async Task<CosmosOfferResult> GetMinimumThroughputIfExistsAsync(Offer offer)
-        {
-            if (offer == null)
-            {
-                return new CosmosOfferResult(null);
-            }
-
-            OfferV2 offerV2 = offer as OfferV2;
-            if (offerV2 == null)
-            {
-                throw new NotImplementedException();
-            }
-
-            ResourceResponse<Offer> readresponse = await this.documentClient.ReadOfferAsync(offer.SelfLink);
-            int minimumThroughput = Int32.Parse(readresponse.ResponseHeaders["x-ms-cosmos-min-throughput"]);
-
-            return new CosmosOfferResult(offerV2.Content.OfferThroughput, minimumThroughput);
         }
 
         private Task<Offer> ReadOfferAsync(string targetRID,
