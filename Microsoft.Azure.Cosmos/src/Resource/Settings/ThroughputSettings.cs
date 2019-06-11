@@ -37,13 +37,18 @@ namespace Microsoft.Azure.Cosmos
         public DateTime Timestamp { get; }
 
         /// <summary>
+        /// Gets the provisioned throughput for a resource in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// </summary>
+        public int? RequestUnitsPerSec { get; }
+
+        /// <summary>
         /// Gets the offer rid.
         /// </summary>
-        public string OfferRID { get; }
+        internal string OfferRID { get; }
 
         /// <summary>
         /// Gets the resource rid.
         /// </summary>
-        public string ResoruceRID { get; }
+        internal string ResourceRID { get; }
     }
 }

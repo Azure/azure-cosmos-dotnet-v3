@@ -47,6 +47,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the error message from backened service if any.
         /// </summary>
-        public string errorMessage;
+        internal string errorMessage;
     }
 }
