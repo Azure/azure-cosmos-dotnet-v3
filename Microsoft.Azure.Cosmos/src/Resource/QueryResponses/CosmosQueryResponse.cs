@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         private bool _isDisposed = false;
         private readonly IReadOnlyDictionary<string, QueryMetrics> _queryMetrics;
         private readonly string disallowContinuationTokenMessage;
+        private bool hasMoreResults;
 
         /// <summary>
         /// Empty constructor that can be used for unit testing
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection responseHeaders,
             Stream content,
             int count,
+            bool hasMoreResults,
             string continuationToken,
             string disallowContinuationTokenMessage,
             IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
             this._queryMetrics = queryMetrics;
             this.Content = content;
             this.Count = count;
+            this.hasMoreResults = hasMoreResults;
             this.StatusCode = HttpStatusCode.OK;
             this.disallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.InternalContinuationToken = continuationToken;
@@ -154,9 +157,10 @@ namespace Microsoft.Azure.Cosmos
 
         internal static CosmosQueryResponse CreateResponse(
             FeedResponse<CosmosElement> feedResponse,
-            CosmosSerializationOptions cosmosSerializationOptions)
+            CosmosSerializationOptions cosmosSerializationOptions,
+            bool hasMoreResults)
         {
-            return FeedResponseBinder.ConvertToCosmosQueryResponse(feedResponse, cosmosSerializationOptions);
+            return FeedResponseBinder.ConvertToCosmosQueryResponse(feedResponse, cosmosSerializationOptions, hasMoreResults);
         }
 
         /// <summary>
@@ -173,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool GetHasMoreResults()
         {
-            return !string.IsNullOrEmpty(this.ContinuationToken);
+            return this.hasMoreResults;
         }
     }
 

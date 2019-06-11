@@ -376,7 +376,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
             CosmosQueryResponse typedFeedResponse = FeedResponseBinder.ConvertToCosmosQueryResponse(
                        response,
-                       this.feedOptions.CosmosSerializationOptions);
+                       this.feedOptions.CosmosSerializationOptions,
+                       !this.queryExecutionContext.IsDone);
 
             if (!this.HasMoreResults && !tracedLastExecution)
             {
