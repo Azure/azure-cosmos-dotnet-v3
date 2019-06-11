@@ -545,7 +545,8 @@ namespace Microsoft.Azure.Cosmos
                 FeedResponse<CosmosElement> feedResponse = await documentQueryExecution.ExecuteNextAsync(cancellationToken);
                 return CosmosQueryResponse.CreateResponse(
                     feedResponse: feedResponse,
-                    cosmosSerializationOptions: queryRequestOptions.CosmosSerializationOptions);
+                    cosmosSerializationOptions: queryRequestOptions.CosmosSerializationOptions,
+                    hasMoreResults: !documentQueryExecution.IsDone);
             }
             catch (DocumentClientException exception)
             {
