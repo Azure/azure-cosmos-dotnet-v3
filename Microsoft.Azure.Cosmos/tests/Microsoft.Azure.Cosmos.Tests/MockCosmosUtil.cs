@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -20,11 +21,30 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
     internal class MockCosmosUtil
     {
+        private static SecureString mockAccountKey;
+
+        public static SecureString MockAccountKey
+        {
+            get
+            {
+                if(mockAccountKey == null)
+                {
+                    mockAccountKey = new SecureString();
+                    foreach(char c in "5BF89B4F04E44AC6B566484F8DBBFB37")
+                    {
+                        mockAccountKey.AppendChar(c);
+                    }
+                }
+
+                return mockAccountKey;
+            }
+        }
+
         public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
             
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockAccountKey);
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
@@ -54,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         public static CosmosClientOptions GetDefaultConfiguration()
         {
-            return new CosmosClientOptions(endPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
+            return new CosmosClientOptions(endPoint: "http://localhost", accountKey: MockAccountKey);
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)
