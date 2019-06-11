@@ -431,18 +431,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //    Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         //}
 
-        [TestMethod]
-        [ExpectedException(typeof(AggregateException))]
-        public async Task ThroughputNonExistingTest()
-        {
-            string containerName = Guid.NewGuid().ToString();
-            CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
+        //[TestMethod]
+        //[ExpectedException(typeof(AggregateException))]
+        //public async Task ThroughputNonExistingTest()
+        //{
+        //    string containerName = Guid.NewGuid().ToString();
+        //    CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
 
-            await cosmosContainer.ReadProvisionedThroughputAsync();
+        //    await cosmosContainer.ReadProvisionedThroughputAsync();
 
-            ContainerResponse containerResponse = await cosmosContainer.DeleteAsync();
-            Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
-        }
+        //    ContainerResponse containerResponse = await cosmosContainer.DeleteAsync();
+        //    Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
+        //}
 
         [TestMethod]
         public async Task ImplicitConversion()

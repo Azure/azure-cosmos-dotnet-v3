@@ -43,5 +43,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets minimum throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
         public int? AllowedMinThroughput;
+
+        /// <summary>
+        /// Gets the error message from backened service if any.
+        /// </summary>
+        public string errorMessage;
     }
 }
