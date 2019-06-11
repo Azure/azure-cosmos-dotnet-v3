@@ -161,7 +161,8 @@ namespace Microsoft.Azure.Cosmos
 
         public static CosmosQueryResponse ConvertToCosmosQueryResponse(
             FeedResponse<CosmosElement> dynamicFeed,
-            CosmosSerializationOptions cosmosSerializationOptions)
+            CosmosSerializationOptions cosmosSerializationOptions,
+            bool hasMoreResults)
         {
             IJsonWriter jsonWriter;
             if (cosmosSerializationOptions != null)
@@ -187,6 +188,7 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.Headers,
                 memoryStream,
                 dynamicFeed.Count,
+                hasMoreResults,
                 dynamicFeed.InternalResponseContinuation,
                 dynamicFeed.DisallowContinuationTokenMessage,
                 dynamicFeed.QueryMetrics);

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             cancellationToken.ThrowIfCancellationRequested();
 
             CosmosQueryResponse response = await this.nextResultSetDelegate(this.continuationToken, this.queryOptions, this.state, cancellationToken);
-            this.continuationToken = response.ContinuationToken;
+            this.continuationToken = response.InternalContinuationToken;
             this.HasMoreResults = response.GetHasMoreResults();
             return response;
         }
