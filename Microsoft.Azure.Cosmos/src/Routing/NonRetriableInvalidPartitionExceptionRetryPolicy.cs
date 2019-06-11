@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Net;
+    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -100,7 +101,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.clientCollectionCache.Refresh(resourceIdOrFullName);
                 }
 
-                return ShouldRetryResult.NoRetry(new NotFoundException());
+                NotFoundException notFoundException = new NotFoundException();
+                notFoundException.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.NameCacheIsStale).ToString());
+                return ShouldRetryResult.NoRetry(notFoundException);
             }
 
             return null;

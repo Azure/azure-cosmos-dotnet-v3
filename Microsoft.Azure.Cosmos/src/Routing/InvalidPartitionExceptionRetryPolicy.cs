@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
 
                         this.request.ForceNameCacheRefresh = true;
+                        this.request.ClearRoutingHints();
                     }
 
                     this.retried = true;
