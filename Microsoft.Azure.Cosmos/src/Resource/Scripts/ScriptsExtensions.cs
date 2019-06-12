@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// </summary>
     /// <seealso cref="StoredProcedureProperties"/>
     /// <seealso cref="CosmosTriggerProperties"/>
-    /// <seealso cref="CosmosUserDefinedFunctionProperties"/>
+    /// <seealso cref="UserDefinedFunctionProperties"/>
     public static class ScriptsExtensions
     {
         /// <summary>

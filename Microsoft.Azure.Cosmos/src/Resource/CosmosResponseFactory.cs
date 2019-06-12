@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosUserDefinedFunctionProperties settings = this.ToObjectInternal<CosmosUserDefinedFunctionProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                UserDefinedFunctionProperties settings = this.ToObjectInternal<UserDefinedFunctionProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,

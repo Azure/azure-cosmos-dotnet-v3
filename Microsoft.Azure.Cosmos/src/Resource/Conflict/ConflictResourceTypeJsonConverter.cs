@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeTrigger;
             }
-            else if (valueAsType == typeof(CosmosUserDefinedFunctionProperties))
+            else if (valueAsType == typeof(UserDefinedFunctionProperties))
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeUserDefinedFunction;
             }
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (string.Equals(Documents.Constants.Properties.ResourceTypeUserDefinedFunction, resourceType, StringComparison.OrdinalIgnoreCase))
             {
-                return typeof(CosmosUserDefinedFunctionProperties);
+                return typeof(UserDefinedFunctionProperties);
             }
             else
             {

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// </summary>
     /// <seealso cref="StoredProcedureProperties"/>
     /// <seealso cref="CosmosTriggerProperties"/>
-    /// <seealso cref="CosmosUserDefinedFunctionProperties"/>
+    /// <seealso cref="UserDefinedFunctionProperties"/>
     public abstract class CosmosScripts
     {
         /// <summary>
@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="userDefinedFunctionProperties">The <see cref="CosmosUserDefinedFunctionProperties"/> object.</param>
+        /// <param name="userDefinedFunctionProperties">The <see cref="UserDefinedFunctionProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
@@ -543,10 +543,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         <term>403</term><description>Forbidden - You have reached your quota of user defined functions for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosUserDefinedFunctionProperties"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="UserDefinedFunctionProperties"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosUserDefinedFunctionProperties"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="UserDefinedFunctionProperties"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -556,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
         /// await scripts.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
-        ///     new CosmosUserDefinedFunctionProperties 
+        ///     new UserDefinedFunctionProperties 
         ///     { 
         ///         Id = "calculateTax", 
         ///         Body = @"function(amt) { return amt * 0.05; }" 
@@ -582,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties,
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -597,10 +597,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosResultSetIterator<CosmosUserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
+        /// CosmosResultSetIterator<UserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosUserDefinedFunctionProperties usdfProperties in await setIterator.FetchNextSetAsync())
+        ///     foreach(UserDefinedFunctionProperties usdfProperties in await setIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(udfProperties.Id); 
         ///     }
@@ -608,18 +608,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<CosmosUserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
+        public abstract FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosUserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The id of the user defined function to read</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionProperties"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -640,7 +640,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
         /// UserDefinedFunctionResponse response = await scripts.ReadUserDefinedFunctionAsync("ExistingId");
-        /// CosmosUserDefinedFunctionProperties udfProperties = response;
+        /// UserDefinedFunctionProperties udfProperties = response;
         /// ]]>
         /// </code>
         /// </example>
@@ -650,42 +650,42 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Replaces a <see cref="CosmosUserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// Replaces a <see cref="UserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="userDefinedFunctionProperties">The <see cref="CosmosUserDefinedFunctionProperties"/> object.</param>
+        /// <param name="userDefinedFunctionProperties">The <see cref="UserDefinedFunctionProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionProperties"/> containing the updated resource record.
+        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the updated resource record.
         /// </returns>
         /// <example>
         /// This examples replaces an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosUserDefinedFunctionProperties udfProperties = new CosmosUserDefinedFunctionProperties
+        /// UserDefinedFunctionProperties udfProperties = new UserDefinedFunctionProperties
         /// {
         ///     Id = "testUserDefinedFunId",
         ///     Body = "function(amt) { return amt * 0.15; }",
         /// };
         /// 
         /// UserDefinedFunctionResponse response = await scripts.ReplaceUserDefinedFunctionAsync(udfProperties);
-        /// CosmosUserDefinedFunctionProperties udfProperties = response;
+        /// UserDefinedFunctionProperties udfProperties = response;
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties,
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="CosmosUserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The id of the user defined function to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="CosmosUserDefinedFunctionProperties"/> which will contain information about the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> which will contain information about the request issued.</returns>
         /// <example>
         /// This examples gets a reference to an existing user defined function and deletes it.
         /// <code language="c#">

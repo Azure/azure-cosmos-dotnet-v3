@@ -1532,7 +1532,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Trigger;
             }
-            else if (type == typeof(UserDefinedFunction) || type == typeof(CosmosUserDefinedFunctionProperties))
+            else if (type == typeof(UserDefinedFunction) || type == typeof(UserDefinedFunctionProperties))
             {
                 return ResourceType.UserDefinedFunction;
             }

@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -284,11 +284,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosUserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
+        public override FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosUserDefinedFunctionProperties>(
+            return new FeedIteratorCore<UserDefinedFunctionProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties, 
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -391,14 +391,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosUserDefinedFunctionProperties>> UserDefinedFunctionFeedRequestExecutorAsync(
+        private Task<FeedResponse<UserDefinedFunctionProperties>> UserDefinedFunctionFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosUserDefinedFunctionProperties>(
+            return this.GetIteratorAsync<UserDefinedFunctionProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
