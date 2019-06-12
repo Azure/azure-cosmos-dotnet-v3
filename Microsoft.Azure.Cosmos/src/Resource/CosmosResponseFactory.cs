@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosContainerProperties settings = this.ToObjectInternal<CosmosContainerProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                CosmosContainerProperties containerProperties = this.ToObjectInternal<CosmosContainerProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
+                    containerProperties,
                     container);
             });
         }
@@ -71,11 +71,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosDatabaseProperties settings = this.ToObjectInternal<CosmosDatabaseProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                CosmosDatabaseProperties databaseProperties = this.ToObjectInternal<CosmosDatabaseProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
+                    databaseProperties,
                     database);
             });
         }
@@ -108,11 +108,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosTriggerProperties settings = this.ToObjectInternal<CosmosTriggerProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                CosmosTriggerProperties triggerProperties = this.ToObjectInternal<CosmosTriggerProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings);
+                    triggerProperties);
             });
         }
 

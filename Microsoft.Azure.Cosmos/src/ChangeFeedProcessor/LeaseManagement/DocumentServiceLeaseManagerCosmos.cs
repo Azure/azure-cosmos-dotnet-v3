@@ -17,18 +17,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private readonly CosmosContainer leaseContainer;
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
-        private readonly DocumentServiceLeaseStoreManagerOptions settings;
+        private readonly DocumentServiceLeaseStoreManagerOptions options;
         private readonly RequestOptionsFactory requestOptionsFactory;
 
         public DocumentServiceLeaseManagerCosmos(
             CosmosContainer leaseContainer,
             DocumentServiceLeaseUpdater leaseUpdater,
-            DocumentServiceLeaseStoreManagerOptions settings,
+            DocumentServiceLeaseStoreManagerOptions options,
             RequestOptionsFactory requestOptionsFactory)
         {
             this.leaseContainer = leaseContainer;
             this.leaseUpdater = leaseUpdater;
-            this.settings = settings;
+            this.options = options;
             this.requestOptionsFactory = requestOptionsFactory;
         }
 
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                         DefaultTrace.TraceInformation("{0} lease token was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
                         throw new LeaseLostException(lease);
                     }
-                    serverLease.Owner = this.settings.HostName;
+                    serverLease.Owner = this.options.HostName;
                     serverLease.Properties = lease.Properties;
                     return serverLease;
                 }).ConfigureAwait(false);
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             if (lease == null) throw new ArgumentNullException(nameof(lease));
 
-            if (lease.Owner != this.settings.HostName)
+            if (lease.Owner != this.options.HostName)
             {
                 DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}' before lease properties update", lease.CurrentLeaseToken, lease.Owner);
                 throw new LeaseLostException(lease);
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private string GetDocumentId(string partitionId)
         {
-            return this.settings.GetPartitionLeasePrefix() + partitionId;
+            return this.options.GetPartitionLeasePrefix() + partitionId;
         }
     }
 }

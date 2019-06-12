@@ -475,7 +475,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples replaces an existing trigger.
         /// <code language="c#">
         /// <![CDATA[
-        /// //Updated settings
         /// CosmosTriggerProperties triggerProperties = new CosmosTriggerProperties
         /// {
         ///     Id = "testTriggerId",
@@ -664,7 +663,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// //Updated settings
         /// CosmosUserDefinedFunctionProperties udfProperties = new CosmosUserDefinedFunctionProperties
         /// {
         ///     Id = "testUserDefinedFunId",

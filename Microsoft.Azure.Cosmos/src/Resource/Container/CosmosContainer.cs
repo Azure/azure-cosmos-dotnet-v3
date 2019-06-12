@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosContainer cosmosContainer = this.database.GetContainer("containerId");
-        /// CosmosContainerProperties settings = cosmosContainer.ReadAsync();
+        /// CosmosContainerProperties containerProperties = cosmosContainer.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>

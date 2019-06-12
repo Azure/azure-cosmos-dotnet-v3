@@ -149,10 +149,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            CosmosContainerProperties settings = new CosmosContainerProperties(id, partitionKeyPath);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
 
             return this.CreateContainerAsync(
-                settings,
+                containerProperties,
                 requestUnitsPerSecond,
                 requestOptions,
                 cancellationToken);
@@ -206,8 +206,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            CosmosContainerProperties settings = new CosmosContainerProperties(id, partitionKeyPath);
-            return this.CreateContainerIfNotExistsAsync(settings, requestUnitsPerSecond, requestOptions, cancellationToken);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
+            return this.CreateContainerIfNotExistsAsync(containerProperties, requestUnitsPerSecond, requestOptions, cancellationToken);
         }
 
         public override FeedIterator<CosmosContainerProperties> GetContainersIterator(

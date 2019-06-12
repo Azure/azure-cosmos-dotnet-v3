@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             if (observer == null) throw new ArgumentNullException(nameof(observer));
             if (lease == null) throw new ArgumentNullException(nameof(lease));
 
-            ProcessorOptions settings = new ProcessorOptions
+            ProcessorOptions options = new ProcessorOptions
             {
                 StartContinuation = !string.IsNullOrEmpty(lease.ContinuationToken) ?
                     lease.ContinuationToken :
@@ -58,13 +58,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ResultSetIteratorUtils.BuildResultSetIterator(
                 partitionKeyRangeId: partitionKeyRangeId,
-                continuationToken: settings.StartContinuation,
-                maxItemCount: settings.MaxItemCount,
+                continuationToken: options.StartContinuation,
+                maxItemCount: options.MaxItemCount,
                 cosmosContainer: this.container,
-                startTime: settings.StartTime,
-                startFromBeginning: settings.StartFromBeginning);
+                startTime: options.StartTime,
+                startFromBeginning: options.StartFromBeginning);
 
-            return new FeedProcessorCore<T>(observer, iterator, settings, checkpointer, this.cosmosJsonSerializer);
+            return new FeedProcessorCore<T>(observer, iterator, options, checkpointer, this.cosmosJsonSerializer);
         }
     }
 }

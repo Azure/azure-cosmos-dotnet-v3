@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
         internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
-        /// Gets the SystemReplicationPolicy settings
+        /// Gets the SystemReplicationPolicy 
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SystemReplicationPolicy)]
         internal ReplicationPolicy SystemReplicationPolicy { get; set; }
