@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 .Returns(() => Task.FromResult<ShouldRetryResult>(ShouldRetryResult.RetryAfter(TimeSpan.FromDays(1))))
                 .Verifiable();
 
-            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy(client.DocumentClient, nextRetryPolicyMock.Object);
+            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy(nextRetryPolicyMock.Object);
 
             ShouldRetryResult exceptionResult = await retryPolicyMock.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
             Assert.IsNotNull(exceptionResult);
@@ -594,7 +594,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy(client.DocumentClient, null);
+            InvalidPartitionExceptionRetryPolicy retryPolicyMock = new InvalidPartitionExceptionRetryPolicy( null);
 
             ShouldRetryResult exceptionResult = await retryPolicyMock.ShouldRetryAsync(new Exception("", null), CancellationToken.None);
             Assert.IsNotNull(exceptionResult);

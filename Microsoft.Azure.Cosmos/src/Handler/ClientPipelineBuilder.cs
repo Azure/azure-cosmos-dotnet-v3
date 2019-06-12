@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(this.client);
             Debug.Assert(this.partitionKeyRangeGoneRetryHandler.InnerHandler == null, "The partitionKeyRangeGoneRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
-            this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler(this.client);
+            this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler();
             Debug.Assert(this.invalidPartitionExceptionRetryHandler.InnerHandler == null, "The invalidPartitionExceptionRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);

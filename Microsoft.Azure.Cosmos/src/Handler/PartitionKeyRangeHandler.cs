@@ -80,14 +80,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         isMaxInclusive: false)
                 };
 
+                // Reset the partition key range id to null in case this is retry and the values have changed.
+                request.PartitionKeyRangeId = null;
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                 PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
-                CosmosContainerSettings collectionFromCache = await collectionCache.ResolveByNameAsync(
-                        apiVersion: null, 
-                        resourceAddress: serviceRequest.ResourceAddress, 
-                        cancellationToken: cancellationToken);
+                CosmosContainerSettings collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
 
                 List<CompositeContinuationToken> suppliedTokens;
                 //direction is not expected to change  between continuations.

@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync();
 
+        internal abstract void ClearSessionTokenCache(string collectionFullName);
+
         internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
@@ -67,7 +69,5 @@ namespace Microsoft.Azure.Cosmos
             List<Range<string>> providedRanges);
 
         internal abstract bool ByPassQueryParsing();
-
-        internal abstract InvalidPartitionExceptionRetryPolicy CreateInvalidPartitionExceptionRetryPolicy(IDocumentClientRetryPolicy nextRetryPolicy);
     }
 }

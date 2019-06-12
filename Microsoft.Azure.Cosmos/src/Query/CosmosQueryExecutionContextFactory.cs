@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Net;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -111,14 +112,13 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             bool isFirstExecute = false;
             QueryResponse response = null;
-            InvalidPartitionExceptionRetryPolicy retryPolicy = null;
             while (true)
             {
                 // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
                 // execute context has incorrect values and should be recreated. This should only be done for the first 
                 // execution. If results have already been pulled an error should be returned to the user since it's 
                 // not possible to combine query results from multiple containers.
-                if (this.innerExecutionContext == null || isFirstExecute)
+                if (this.innerExecutionContext == null)
                 {
                     this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
                     isFirstExecute = true;
@@ -132,20 +132,15 @@ namespace Microsoft.Azure.Cosmos.Query
                     break;
                 }
 
-                if (retryPolicy == null)
+                if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.Headers.SubStatusCode == SubStatusCodes.NameCacheIsStale)
                 {
-                    retryPolicy = this.cosmosQueryContext.QueryClient.CreateInvalidPartitionExceptionRetryPolicy(null);
+                    await this.ForceRefreshCollectionCacheAsync(cancellationToken);
+                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                    isFirstExecute = false;
                 }
-
-                ShouldRetryResult shouldRetry = await retryPolicy.ShouldRetryAsync(response, cancellationToken);
-                if (!shouldRetry.ShouldRetry)
+                else
                 {
                     break;
-                }
-
-                if (shouldRetry.BackoffTime != TimeSpan.Zero)
-                {
-                    await Task.Delay(shouldRetry.BackoffTime, cancellationToken);
                 }
             }
 
@@ -158,6 +153,22 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 this.innerExecutionContext.Dispose();
             }
+        }
+
+        private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
+        {
+            CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+               OperationType.Query,
+               this.cosmosQueryContext.ResourceTypeEnum,
+               this.cosmosQueryContext.ResourceLink.OriginalString,
+               AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
+            {
+                request.ForceNameCacheRefresh = true;
+                await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            }
+
+            this.cosmosQueryContext.QueryClient.ClearSessionTokenCache(this.cosmosQueryContext.ResourceLink.OriginalString);
         }
 
         private async Task<CosmosContainerSettings> GetContainerSettingsAsync(CancellationToken cancellationToken)

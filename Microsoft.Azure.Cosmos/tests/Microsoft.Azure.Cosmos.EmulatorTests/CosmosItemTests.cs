@@ -1266,8 +1266,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Create two client instances and do meta data operations through a single client
         /// but do all validation using both clients.
         /// </summary>
-        [TestMethod]
-        public async Task ContainterReCreateStatelessTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate)
         {
             List<Func<CosmosContainer, HttpStatusCode, Task>> operations = new List<Func<CosmosContainer, HttpStatusCode, Task>>();
             operations.Add(ExecuteQueryAsync);
@@ -1278,13 +1280,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 CosmosClient cc1 = TestCommon.CreateCosmosClient();
                 CosmosClient cc2 = TestCommon.CreateCosmosClient();
-
+                CosmosDatabase db1 = null;
                 try
                 {
                     string dbName = Guid.NewGuid().ToString();
                     string containerName = Guid.NewGuid().ToString();
 
-                    CosmosDatabase db1 = await cc1.CreateDatabaseAsync(dbName);
+                    db1 = await cc1.CreateDatabaseAsync(dbName);
                     CosmosContainerCore container1 = (CosmosContainerCore)await db1.CreateContainerAsync(containerName, "/id");
 
                     await operation(container1, HttpStatusCode.OK);
@@ -1296,11 +1298,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Delete container 
                     await container1.DeleteAsync();
 
-                    // Read on deleted container through client1
-                    await operation(container1, HttpStatusCode.NotFound);
+                    if (operationBetweenRecreate)
+                    {
+                        // Read on deleted container through client1
+                        await operation(container1, HttpStatusCode.NotFound);
 
-                    // Read on deleted container through client2
-                    await operation(container2, HttpStatusCode.NotFound);
+                        // Read on deleted container through client2
+                        await operation(container2, HttpStatusCode.NotFound);
+                    }
 
                     // Re-create again 
                     container1 = (CosmosContainerCore)await db1.CreateContainerAsync(containerName, "/id");
@@ -1309,10 +1314,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await operation(container1, HttpStatusCode.OK);
 
                     // Read through client2
-                    await operation(container2, HttpStatusCode.OK);
+                    await operation(container2, HttpStatusCode.OK);  
                 }
                 finally
                 {
+                    await db1.DeleteAsync();
                     cc1.Dispose();
                     cc2.Dispose();
                 }
@@ -1325,7 +1331,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (iterator.HasMoreResults)
             {
                 CosmosResponseMessage response = await iterator.FetchNextSetAsync();
-                Assert.AreEqual(expected, response.StatusCode, $"substatuscode: {response.Headers.SubStatusCode} ");
+                Assert.AreEqual(expected, response.StatusCode, $"ExecuteQueryAsync substatuscode: {response.Headers.SubStatusCode} ");
             }
         }
 
@@ -1335,7 +1341,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (iterator.HasMoreResults)
             {
                 CosmosResponseMessage response = await iterator.FetchNextSetAsync();
-                Assert.AreEqual(expected, response.StatusCode, $"substatuscode: {response.Headers.SubStatusCode} ");
+                Assert.AreEqual(expected, response.StatusCode, $"ExecuteReadFeedAsync substatuscode: {response.Headers.SubStatusCode} ");
             }
         }
 
@@ -1353,7 +1359,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         return Task.CompletedTask;
                     })
                     .WithInstanceName("random")
-                    .WithCosmosLeaseContainer(leaseContainer).Build();
+                    .WithLeaseContainer(leaseContainer).Build();
 
                 // Start the processor, insert 1 document to generate a checkpoint
                 await processor.StartAsync();

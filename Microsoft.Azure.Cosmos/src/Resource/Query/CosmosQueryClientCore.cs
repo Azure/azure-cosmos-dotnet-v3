@@ -198,9 +198,10 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
-        internal override InvalidPartitionExceptionRetryPolicy CreateInvalidPartitionExceptionRetryPolicy(IDocumentClientRetryPolicy nextRetryPolicy)
+        internal override void ClearSessionTokenCache(string collectionFullName)
         {
-            return new InvalidPartitionExceptionRetryPolicy(this.clientContext.DocumentClient, nextRetryPolicy);
+            ISessionContainer sessionContainer = this.clientContext.DocumentClient.sessionContainer;
+            sessionContainer.ClearTokenByCollectionFullname(collectionFullName);
         }
 
         private QueryResponse GetCosmosElementResponse(

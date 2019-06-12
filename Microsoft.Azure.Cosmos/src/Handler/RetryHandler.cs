@@ -30,8 +30,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             Debug.Assert(request.DocumentClientRetryPolicy == null, "Cosmos Request message only supports a single retry policy");
-            request.DocumentClientRetryPolicy = retryPolicyInstance;
-
             return Task.FromResult(retryPolicyInstance);
         }
     }

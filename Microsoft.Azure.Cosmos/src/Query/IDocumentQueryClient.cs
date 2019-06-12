@@ -26,8 +26,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         Task<CollectionCache> GetCollectionCacheAsync();
 
-        InvalidPartitionExceptionRetryPolicy CreateInvalidPartitionExceptionRetryPolicy(IDocumentClientRetryPolicy nextRetryPolicy);
-
         Task<IRoutingMapProvider> GetRoutingMapProviderAsync();
 
         Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken);

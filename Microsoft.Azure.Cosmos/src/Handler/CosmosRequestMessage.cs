@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal DocumentServiceRequest DocumentServiceRequest { get; set; }
 
-        internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
+        internal Action<DocumentServiceRequest> DocumentClientRetryPolicy { get; set; }
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.DocumentClientRetryPolicy != null)
             {
-                this.DocumentClientRetryPolicy.OnBeforeSendRequest(serviceRequest);
+                this.DocumentClientRetryPolicy(serviceRequest);
             }
         }
 

@@ -14,21 +14,14 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal class InvalidPartitionExceptionRetryPolicy : IDocumentClientRetryPolicy
     {
-        private readonly DocumentClient documentClient;
         private readonly IDocumentClientRetryPolicy nextPolicy;
+        private DocumentServiceRequest documentServiceRequest;
 
         private bool retried;
 
         public InvalidPartitionExceptionRetryPolicy(
-            DocumentClient documentClient,
             IDocumentClientRetryPolicy nextPolicy)
         {
-            if (documentClient == null)
-            {
-                throw new ArgumentNullException(nameof(documentClient));
-            }
-
-            this.documentClient = documentClient;
             this.nextPolicy = nextPolicy;
         }
 
@@ -38,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             cancellationToken.ThrowIfCancellationRequested();
             DocumentClientException clientException = exception as DocumentClientException;
-            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 clientException?.StatusCode,
                 clientException?.GetSubStatus(),
                 clientException?.ResourceAddress);
@@ -54,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosResponseMessage httpResponseMessage,
             CancellationToken cancellationToken)
         {
-            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+            ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 httpResponseMessage.StatusCode,
                 httpResponseMessage.Headers.SubStatusCode,
                 httpResponseMessage.GetResourceAddress());
@@ -67,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.nextPolicy != null ? await this.nextPolicy.ShouldRetryAsync(httpResponseMessage, cancellationToken) : ShouldRetryResult.NoRetry();
         }
 
-        private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
+        private ShouldRetryResult ShouldRetryInternal(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
             string resourceIdOrFullName)
@@ -84,18 +77,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (!this.retried)
                 {
-                    if (!string.IsNullOrEmpty(resourceIdOrFullName) && PathsHelper.IsNameBased(resourceIdOrFullName))
+                    if (this.documentServiceRequest == null)
                     {
-                        CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
-                        collectionCache.Refresh(resourceIdOrFullName);
+                        throw new InvalidOperationException("OnBeforeSendRequest was never called");
+                    }
 
-                        ISessionContainer sessionContainer = this.documentClient.sessionContainer;
-                        sessionContainer.ClearTokenByCollectionFullname(resourceIdOrFullName);
-                    }
-                    else
-                    {
-                        Debug.Fail($"{nameof(InvalidPartitionExceptionRetryPolicy)} can only handle name based requests. The cache will not be refreshed.");
-                    }
+                    this.documentServiceRequest.ForceNameCacheRefresh = true;
+                    this.documentServiceRequest.ClearRoutingHints();
 
                     this.retried = true;
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -111,7 +99,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.nextPolicy.OnBeforeSendRequest(request);
+            this.documentServiceRequest = request;
+            this.nextPolicy?.OnBeforeSendRequest(request);
         }
     }
 }

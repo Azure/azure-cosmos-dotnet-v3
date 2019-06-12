@@ -481,7 +481,7 @@ namespace Microsoft.Azure.Cosmos
                 hasMoreResults: !cosmosQueryExecution.IsDone);
         }
 
-        // Extracted partiotn key might be invaild as CollectionCache might be stale.
+        // Extracted partition key might be invalid as CollectionCache might be stale.
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
         // and partition-key is extracted again. 
         internal async Task<CosmosResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync(
