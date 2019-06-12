@@ -131,11 +131,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Body = transientProcedure
             };
             StoredProcedureResponse retrievedStoredProcedure = collection.GetScripts().CreateStoredProcedureAsync(storedProcedure).Result;
+            Assert.IsNotNull(retrievedStoredProcedure);
+            Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
 
             response = collection.GetScripts().ExecuteStoredProcedureAsync<object, TValue>(new Cosmos.PartitionKey(partitionKey), storedProcedure.Id, null).Result;
+            Assert.IsNotNull(response);
 
             // delete
-            collection.GetScripts().DeleteStoredProcedureAsync(storedProcedure.Id).Wait();
+            StoredProcedureResponse deleteResponse = collection.GetScripts().DeleteStoredProcedureAsync(storedProcedure.Id).Result;
+            Assert.IsNotNull(deleteResponse);
 
             return response;
         }

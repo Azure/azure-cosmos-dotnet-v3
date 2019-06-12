@@ -41,8 +41,8 @@ namespace Microsoft.Azure.Cosmos
            bool allowSynchronousQueryExecution)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
-            this.cosmosJsonSerializer = cosmosJsonSerializer;
-            this.queryClient = queryClient;
+            this.cosmosJsonSerializer = cosmosJsonSerializer ?? throw new ArgumentNullException(nameof(cosmosJsonSerializer));
+            this.queryClient = queryClient ?? throw new ArgumentNullException(nameof(queryClient));
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.expression = expression ?? Expression.Constant(this);
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;

@@ -1068,8 +1068,9 @@ namespace Microsoft.Azure.Cosmos
         /// IQueryable<Book> queryable = container.Items.CreateItemQuery<Book>()
         ///                      .Where(b => b.Title == "War and Peace");
         /// //Asynchronous query execution
+        /// string sqlQueryText = queriable.ToSqlQueryText();
         /// FeedIterator<Book> setIterator = this.Container
-        ///           .CreateItemQuery<Book>(queriable.ToSqlQueryText(), maxConcurrency: 1);
+        ///           .CreateItemQuery<Book>(sqlQueryText, maxConcurrency: 1);
         ///           while (setIterator.HasMoreResults)
         ///           {
         ///           FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
