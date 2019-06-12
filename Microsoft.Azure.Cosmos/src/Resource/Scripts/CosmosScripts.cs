@@ -95,10 +95,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosResultSetIterator<CosmosStoredProcedure> setIterator = scripts.GetStoredProcedureIterator();
+        /// FeedIterator<StoredProcedureProperties> setIterator = scripts.GetStoredProcedureIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosStoredProcedure storedProcedure in await setIterator.FetchNextSetAsync())
+        ///     foreach(StoredProcedureProperties storedProcedure in await setIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(storedProcedure.Id); 
         ///     }
@@ -412,10 +412,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosResultSetIterator<CosmosTriggerProperties> setIterator = scripts.Triggers.GetTriggerIterator();
+        /// FeedIterator<CosmosTriggerProperties> setIterator = scripts.Triggers.GetTriggerIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosTriggerProperties triggerProperties in await setIterator.FetchNextSetAsync())
+        ///     foreach(TriggerProperties triggerProperties in await setIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(triggerProperties.Id); 
         ///     }
@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///     .UseParameter("@expensive", 9000)
         ///     .UseParameter("@status", "Done");
         ///
-        /// CosmosResultSetIterator<double> setIterator = this.container.Items.CreateItemQuery<double>(
+        /// FeedIterator<double> setIterator = this.container.Items.CreateItemQuery<double>(
         ///     sqlQueryDefinition: sqlQuery,
         ///     partitionKey: "Done");
         ///
@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosResultSetIterator<UserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
+        /// FeedIterator<UserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
         /// while (setIterator.HasMoreResults)
         /// {
         ///     foreach(UserDefinedFunctionProperties usdfProperties in await setIterator.FetchNextSetAsync())
