@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ContainerContractTest()
         {
-            ContainerResponse response =
+            ContainerResponse response = 
                 await this.database.DefineContainer(new Guid().ToString(), "/id")
                     .CreateAsync();
             Assert.IsNotNull(response);

@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
-        /// The provisioned throughput for this database.
+        /// The provisioned throughput for this container.
         /// </value>
         /// <remarks>
         /// <para>
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The value of the provisioned throughput if any</returns>
         internal abstract Task<int?> ReadProvisionedThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken));
-            
+
         /// <summary>
         /// Sets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
