@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <code language="c#">
     /// <![CDATA[
     /// await this.container.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
-    ///     new CosmosUserDefinedFunctionProperties 
+    ///     new UserDefinedFunctionProperties 
     ///     { 
     ///         Id = "calculateTax", 
     ///         Body = @"function(amt) { return amt * 0.05; }" 
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// ]]>
     /// </code>
     /// </example>
-    public class CosmosUserDefinedFunctionProperties
+    public class UserDefinedFunctionProperties
     {
         /// <summary>
         /// Gets or sets the body of the user defined function for the Azure Cosmos DB service.

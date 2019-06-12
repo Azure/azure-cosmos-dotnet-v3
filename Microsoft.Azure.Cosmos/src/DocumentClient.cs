@@ -1120,7 +1120,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                CosmosContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 resolvedCollection.ResourceId,
                 new Range<string>(
@@ -6254,31 +6254,31 @@ namespace Microsoft.Azure.Cosmos
         #endregion
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public Task<CosmosAccountProperties> GetDatabaseAccountAsync()
+        public Task<AccountProperties> GetDatabaseAccountAsync()
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountProperties"/> as an asynchronous operation
+        /// Read the <see cref="AccountProperties"/> as an asynchronous operation
         /// given a specific reginal endpoint url.
         /// </summary>
         /// <param name="serviceEndpoint">The reginal url of the serice endpoint.</param>
         /// <param name="cancellationToken">The CancellationToken</param>
         /// <returns>
-        /// A <see cref="CosmosAccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        Task<CosmosAccountProperties> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
+        Task<AccountProperties> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
         {
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private async Task<CosmosAccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
         {
             await this.EnsureValidClientAsync();
             GatewayStoreModel gatewayModel = this.gatewayStoreModel as GatewayStoreModel;
@@ -6312,7 +6312,7 @@ namespace Microsoft.Azure.Cosmos
                     request.Method = HttpMethod.Get;
                     request.RequestUri = serviceEndpoint;
 
-                    CosmosAccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
+                    AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
 
                     this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
 
@@ -6538,7 +6538,7 @@ namespace Microsoft.Azure.Cosmos
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
-            CosmosAccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
+            AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
             await this.globalEndpointManager.RefreshLocationAsync(accountProperties);
@@ -6603,7 +6603,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
@@ -6626,7 +6626,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents

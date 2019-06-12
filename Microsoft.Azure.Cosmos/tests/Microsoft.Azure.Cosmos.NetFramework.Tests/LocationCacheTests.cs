@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         };
 
         private ReadOnlyCollection<string> preferredLocations;
-        private CosmosAccountProperties databaseAccount;
+        private AccountProperties databaseAccount;
         private LocationCache cache;
         private GlobalEndpointManager endpointManager;
         private Mock<IDocumentClientInternal> mockedClient;
@@ -513,9 +513,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
-        private static CosmosAccountProperties CreateDatabaseAccount(bool useMultipleWriteLocations)
+        private static AccountProperties CreateDatabaseAccount(bool useMultipleWriteLocations)
         {
-            CosmosAccountProperties databaseAccount = new CosmosAccountProperties()
+            AccountProperties databaseAccount = new AccountProperties()
             {
                 EnableMultipleWriteLocations = useMultipleWriteLocations,
                 ReadLocationsInternal = new Collection<CosmosAccountLocation>()

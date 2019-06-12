@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         public virtual async Task<ContainerResponse> CreateAsync(int? requestUnitsPerSecond = null)
         {
-            CosmosContainerProperties containerProperties = this.Build();
+            ContainerProperties containerProperties = this.Build();
 
             return await this.cosmosContainers.CreateContainerAsync(containerProperties, requestUnitsPerSecond);
         }
@@ -71,10 +71,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
-        /// <returns>Builds the current Fluent configuration into an instance of <see cref="CosmosContainerProperties"/>.</returns>
-        public virtual new CosmosContainerProperties Build()
+        /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
+        public virtual new ContainerProperties Build()
         {
-            CosmosContainerProperties containerProperties = base.Build();
+            ContainerProperties containerProperties = base.Build();
 
             if (this.uniqueKeyPolicy != null)
             {

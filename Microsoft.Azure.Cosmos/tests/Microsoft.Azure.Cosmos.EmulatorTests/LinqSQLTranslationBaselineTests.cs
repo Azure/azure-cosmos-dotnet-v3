@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            testContainer = await testDb.CreateContainerAsync(new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
+            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
         }
 
         [TestCleanup]

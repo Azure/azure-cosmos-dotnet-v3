@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<CosmosResponseMessage> DeleteConflictAsync(
             PartitionKey partitionKey,
-            CosmosConflictProperties conflict, 
+            ConflictProperties conflict, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (partitionKey == null)
@@ -65,11 +65,11 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosConflictProperties> GetConflictsIterator(
+        public override FeedIterator<ConflictProperties> GetConflictsIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosConflictProperties>(
+            return new FeedIteratorCore<ConflictProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
             PartitionKey partitionKey, 
-            CosmosConflictProperties cosmosConflict, 
+            ConflictProperties cosmosConflict, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (partitionKey == null)
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
             return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
-        public override T ReadConflictContent<T>(CosmosConflictProperties cosmosConflict)
+        public override T ReadConflictContent<T>(ConflictProperties cosmosConflict)
         {
             if (cosmosConflict == null)
             {
@@ -185,14 +185,14 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosConflictProperties>> ConflictsFeedRequestExecutorAsync(
+        private Task<FeedResponse<ConflictProperties>> ConflictsFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<CosmosConflictProperties>>(
+            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<ConflictProperties>>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Conflict,
                 operationType: OperationType.ReadFeed,
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(request, continuationToken);
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosConflictProperties>(response),
+                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<ConflictProperties>(response),
                 cancellationToken: cancellationToken);
         }
     }

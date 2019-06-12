@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosContainer Container = null;
         private CosmosJsonSerializerCore jsonSerializer = null;
-        private CosmosContainerProperties containerSettings = null;
+        private ContainerProperties containerSettings = null;
 
         private static CosmosContainer fixedContainer = null;
         private static readonly string utc_date = DateTime.UtcNow.ToString("r");
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            this.containerSettings = new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
                 cancellationToken: this.cancellationToken);

@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             // The test collection should have range index on string properties
             // for the orderby tests
-            var newCol = new CosmosContainerProperties()
+            var newCol = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
