@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal partial class CosmosContainerCore : CosmosContainer
+    internal partial class CosmosContainerCore : Container
     {
         private readonly CosmosConflictsCore conflicts;
 

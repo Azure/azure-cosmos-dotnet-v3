@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="count">number of test data to be created</param>
         /// <param name="cosmosContainer">the target container</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
-        public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, CosmosContainer cosmosContainer)
+        public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container cosmosContainer)
         {
             List<T> data = new List<T>();
             int seed = DateTime.Now.Millisecond;
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(
-            CosmosDatabase cosmosDatabase, out CosmosContainer cosmosContainer)
+            CosmosDatabase cosmosDatabase, out Container cosmosContainer)
         {
             // The test collection should have range index on string properties
             // for the orderby tests
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
-            CosmosContainer cosmosContainer = cosmosDatabase.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
+            Container container = cosmosDatabase.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             int seed = DateTime.Now.Millisecond;
             Random random = new Random(seed);
@@ -449,12 +449,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     Pk = "Test"
                 };
 
-                Data response = cosmosContainer.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
+                Data response = container.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
                 testData.Add(dataEntry);
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = cosmosContainer.CreateItemQuery<Data>(allowSynchronousQueryExecution : true);
+            var query = container.CreateItemQuery<Data>(allowSynchronousQueryExecution : true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.

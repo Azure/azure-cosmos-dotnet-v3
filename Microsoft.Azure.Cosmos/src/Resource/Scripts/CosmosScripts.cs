@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// UserDefinedFunctionResponse response = await this.cosmosContainer.DeleteUserDefinedFunctionAsync("existingId");
+        /// UserDefinedFunctionResponse response = await this.container.DeleteUserDefinedFunctionAsync("existingId");
         /// ]]>
         /// </code>
         /// </example>

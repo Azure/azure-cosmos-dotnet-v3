@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
     internal static class CosmosContainerExtensions
     {
         public static async Task<T> TryGetItemAsync<T>(
-            this CosmosContainer container,
+            this Container container,
             PartitionKey partitionKey,
             string itemId)
         {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(
-            this CosmosContainer container, 
+            this Container container, 
             object partitionKey, 
             T item)
         {
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<T> TryDeleteItemAsync<T>(
-            this CosmosContainer container,
+            this Container container,
             PartitionKey partitionKey,
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<bool> ItemExistsAsync(
-            this CosmosContainer container,
+            this Container container,
             PartitionKey partitionKey,
             string itemId)
         {
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<string> GetMonitoredContainerRidAsync(
-            this CosmosContainer monitoredContainer,
+            this Container monitoredContainer,
             string suggestedMonitoredRid,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static string GetLeasePrefix(
-            this CosmosContainer monitoredContainer,
+            this Container monitoredContainer,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             string monitoredContainerRid)
         {

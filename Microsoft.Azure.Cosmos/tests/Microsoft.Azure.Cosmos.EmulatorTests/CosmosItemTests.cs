@@ -29,11 +29,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
     {
-        private CosmosContainer Container = null;
+        private Container Container = null;
         private CosmosJsonSerializerCore jsonSerializer = null;
         private ContainerProperties containerSettings = null;
 
-        private static CosmosContainer fixedContainer = null;
+        private static Container fixedContainer = null;
         private static readonly string utc_date = DateTime.UtcNow.ToString("r");
 
         private static readonly string PreNonPartitionedMigrationApiVersion = "2018-09-17";
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateDropItemMultiPartPartitionKeyTest()
         {
-            CosmosContainer multiPartPkContainer = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/a/b/c");
+            Container multiPartPkContainer = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/a/b/c");
 
             dynamic testItem = new
             {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ReadCollectionNotExists()
         {
             string collectionName = Guid.NewGuid().ToString();
-            CosmosContainer testContainer = this.database.GetContainer(collectionName);
+            Container testContainer = this.database.GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
 
             // Item -> Container -> Database contract 
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Create real container and address 
             CosmosDatabase db = await client.CreateDatabaseAsync(dbName);
-            CosmosContainer container = await db.CreateContainerAsync(containerName, "/id");
+            Container container = await db.CreateContainerAsync(containerName, "/id");
 
             // reset counter
             count = 0;
@@ -1466,16 +1466,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private static async Task TestNonePKForNonExistingContainer(CosmosContainer cosmosContainer)
+        private static async Task TestNonePKForNonExistingContainer(Container container)
         {
             // Stream implementation should not throw
-            CosmosResponseMessage response = await cosmosContainer.ReadItemStreamAsync(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
+            CosmosResponseMessage response = await container.ReadItemStreamAsync(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
             Assert.IsNotNull(response.Headers.ActivityId);
             Assert.IsNotNull(response.ErrorMessage);
 
             // FOr typed also its not error
-            var typedResponse = await cosmosContainer.ReadItemAsync<string>(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
+            var typedResponse = await container.ReadItemAsync<string>(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
             Assert.AreEqual(HttpStatusCode.NotFound, typedResponse.StatusCode);
             Assert.IsNotNull(typedResponse.Headers.ActivityId);
         }

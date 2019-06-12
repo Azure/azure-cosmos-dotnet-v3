@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.Resource)
                 .Returns(new ContainerProperties() { PartitionKey = new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { partitionKey } } });
 
-            Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
+            Mock<Container> mockContainer = new Mock<Container>();
             mockContainer
                 .Setup(c => c.ReadAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);

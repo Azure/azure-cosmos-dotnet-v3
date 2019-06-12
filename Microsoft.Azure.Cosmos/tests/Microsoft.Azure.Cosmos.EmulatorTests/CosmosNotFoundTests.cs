@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateQueryNotFoundResponse()
         {
             CosmosDatabase db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
-            CosmosContainer container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+            Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
             dynamic randomItem = new { id = "test", pk = "testpk" };
             await container.CreateItemAsync(randomItem);
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.VerifyNotFoundResponse(await database.CreateContainerStreamAsync(newcontainerSettings, requestUnitsPerSecond: 500));
             }
 
-            CosmosContainer doesNotExistContainer = database.GetContainer(DoesNotExist);
+            Container doesNotExistContainer = database.GetContainer(DoesNotExist);
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReadStreamAsync());
 
             ContainerProperties containerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // The database exists create a container and validate it's children
             if (!dbNotExist)
             {
-                CosmosContainer containerExists = await database.CreateContainerAsync(
+                Container containerExists = await database.CreateContainerAsync(
                     id: "NotFoundTest" + Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk");
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task ItemOperations(CosmosContainer container, bool containerNotExist)
+        private async Task ItemOperations(Container container, bool containerNotExist)
         {
             if (containerNotExist)
             {

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
     {
         private readonly CosmosClientContext clientContext;
-        private readonly CosmosContainerCore cosmosContainer;
+        private readonly CosmosContainerCore container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
         private string partitionKeyRangeId;
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientContext = clientContext;
-            this.cosmosContainer = cosmosContainer;
+            this.container = cosmosContainer;
             this.changeFeedOptions = options;
             this.MaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.cosmosContainer.LinkUri;
+            Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
-                cosmosContainerCore: this.cosmosContainer,
+                cosmosContainerCore: this.container,
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,

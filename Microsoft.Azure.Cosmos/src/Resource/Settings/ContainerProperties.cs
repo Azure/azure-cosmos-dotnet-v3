@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     Container container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
     ///     ContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
     /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = client.GetDatabase("dbName"].Containers["MyCollection"];
+    ///     Container container = client.GetDatabase("dbName"].Containers["MyCollection"];
     ///     await container.DeleteAsync();
     /// ]]>
     /// </code>

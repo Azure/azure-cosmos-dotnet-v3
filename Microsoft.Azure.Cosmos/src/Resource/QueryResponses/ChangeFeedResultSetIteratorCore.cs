@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
-        private readonly CosmosContainerCore cosmosContainer;
+        private readonly CosmosContainerCore container;
         private readonly int? originalMaxItemCount;
         private string containerRid;
         private string continuationToken;
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
 
             this.clientContext = clientContext;
-            this.cosmosContainer = cosmosContainer;
+            this.container = cosmosContainer;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
             this.originalMaxItemCount = maxItemCount;
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.compositeContinuationToken == null)
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                this.containerRid = await this.cosmosContainer.GetRIDAsync(cancellationToken);
+                this.containerRid = await this.container.GetRIDAsync(cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
@@ -154,13 +154,13 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.cosmosContainer.LinkUri;
+            Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                cosmosContainerCore: this.cosmosContainer,
+                cosmosContainerCore: this.container,
                 requestEnricher: request => 
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);

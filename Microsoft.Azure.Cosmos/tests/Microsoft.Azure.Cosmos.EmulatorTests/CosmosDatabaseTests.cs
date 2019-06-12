@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
 
-            CosmosContainer container = containerResponse;
+            Container container = containerResponse;
             readThroughput = await container.ReadProvisionedThroughputAsync();
             Assert.IsNull(readThroughput);
 

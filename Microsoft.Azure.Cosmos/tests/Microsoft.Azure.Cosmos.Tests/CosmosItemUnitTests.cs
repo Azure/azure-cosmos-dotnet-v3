@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
-            CosmosContainer container = client.GetDatabase("testdb")
+            Container container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
 
             await container.CreateItemAsync<dynamic>(
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
-            CosmosContainer container = client.GetDatabase("testdb")
+            Container container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
 
             ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(

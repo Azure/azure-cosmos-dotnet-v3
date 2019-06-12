@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            CosmosContainer cosmosContainer = this.GetContainer(containerProperties.Id);
+            Container cosmosContainer = this.GetContainer(containerProperties.Id);
             ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ContainerFeedRequestExecutorAsync);
         }
 
-        public override CosmosContainer GetContainer(string id)
+        public override Container GetContainer(string id)
         {
             if (string.IsNullOrEmpty(id))
             {

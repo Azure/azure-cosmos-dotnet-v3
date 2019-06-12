@@ -54,21 +54,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void WithLeaseContainerPassesCorrectValues()
         {
-            CosmosContainer leaseContainerForBuilder = ChangeFeedProcessorBuilderTests.GetMockedContainer("leases");
+            Container leaseContainerForBuilder = ChangeFeedProcessorBuilderTests.GetMockedContainer("leases");
 
             Action<DocumentServiceLeaseStoreManager,
-                CosmosContainer,
+                Container,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainer> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
-                CosmosContainer leaseContainer,
+                Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
                 string leaseContainerPrefix,
                 string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                CosmosContainer monitoredContainer) =>
+                Container monitoredContainer) =>
                 {
                     Assert.AreEqual(leaseContainerForBuilder, leaseContainer);
                 };
@@ -87,18 +87,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void WithInMemoryLeaseContainerInitializesStoreCorrectly()
         {
             Action<DocumentServiceLeaseStoreManager,
-                CosmosContainer,
+                Container,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainer> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
-                CosmosContainer leaseContainer,
+                Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
                 string leaseContainerPrefix,
                 string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                CosmosContainer monitoredContainer) =>
+                Container monitoredContainer) =>
                 {
                     Assert.IsInstanceOfType(leaseStoreManager, typeof(DocumentServiceLeaseStoreManagerInMemory));
                 };
@@ -118,18 +118,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string myInstance = "myInstance";
             Action<DocumentServiceLeaseStoreManager,
-                CosmosContainer,
+                Container,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainer> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
-                CosmosContainer leaseContainer,
+                Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
                 string leaseContainerPrefix,
                 string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                CosmosContainer monitoredContainer) =>
+                Container monitoredContainer) =>
                 {
                     Assert.AreEqual(myInstance, instanceName);
                 };
@@ -155,18 +155,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
 
             Action<DocumentServiceLeaseStoreManager,
-                CosmosContainer,
+                Container,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainer> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
-                CosmosContainer leaseContainer,
+                Container> verifier = (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
                 string leaseContainerPrefix,
                 string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                CosmosContainer monitoredContainer) =>
+                Container monitoredContainer) =>
                 {
                     Assert.AreEqual(workflowName, changeFeedLeaseOptions.LeasePrefix);
                     Assert.AreEqual(acquireInterval, changeFeedLeaseOptions.LeaseAcquireInterval);
@@ -240,15 +240,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             return mockedChangeFeedProcessor.Object;
         }
 
-        private static Action<DocumentServiceLeaseStoreManager, CosmosContainer, string, string, ChangeFeedLeaseOptions, ChangeFeedProcessorOptions, CosmosContainer> GetEmptyInitialization()
+        private static Action<DocumentServiceLeaseStoreManager, Container, string, string, ChangeFeedLeaseOptions, ChangeFeedProcessorOptions, Container> GetEmptyInitialization()
         {
             return (DocumentServiceLeaseStoreManager leaseStoreManager, 
-                CosmosContainer leaseContainer, 
+                Container leaseContainer, 
                 string leaseContainerPrefix, 
                 string instanceName, 
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                CosmosContainer monitoredContainer) => { };
+                Container monitoredContainer) => { };
         }
     }
 }

@@ -308,12 +308,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public bool HasCalledForceRefresh = false;
 
             internal CosmosChangeFeedResultSetIteratorCoreMock(
-                CosmosContainerCore cosmosContainer,
+                CosmosContainerCore container,
                 string continuationToken,
                 int? maxItemCount,
                 ChangeFeedRequestOptions options) : base(
-                    clientContext: cosmosContainer.ClientContext,
-                    cosmosContainer: cosmosContainer,
+                    clientContext: container.ClientContext,
+                    cosmosContainer: container,
                     continuationToken: continuationToken,
                     maxItemCount: maxItemCount,
                     options: options)

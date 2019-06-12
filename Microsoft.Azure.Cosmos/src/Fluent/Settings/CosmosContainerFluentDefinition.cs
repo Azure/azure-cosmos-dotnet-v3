@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// Azure Cosmos container fluent definition.
     /// </summary>
-    /// <seealso cref="CosmosContainer"/>
+    /// <seealso cref="Container"/>
     public abstract class CosmosContainerFluentDefinition<T>
         where T : CosmosContainerFluentDefinition<T>
     {
