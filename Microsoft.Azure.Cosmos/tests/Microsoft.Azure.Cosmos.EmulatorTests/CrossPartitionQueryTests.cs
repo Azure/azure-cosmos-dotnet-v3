@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string[] NoDocuments = new string[] { };
         private CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
         private CosmosClient Client = TestCommon.CreateCosmosClient(false);
-        private Cosmos.Database database;
+        private CosmosDatabase database;
         // private readonly AsyncLocal<LocalCounter> responseLengthBytes = new AsyncLocal<LocalCounter>();
         private readonly AsyncLocal<Guid> outerCosmosQueryResponseActivityId = new AsyncLocal<Guid>();
 
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string originalApiVersion = GetApiVersion();
             CosmosClient originalCosmosClient = this.Client;
             CosmosClient originalGatewayClient = this.GatewayClient;
-            Cosmos.Database originalDatabase = this.database;
+            CosmosDatabase originalDatabase = this.database;
 
             try
             {

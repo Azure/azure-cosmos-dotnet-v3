@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
             DatabaseProperties databaseProperties,
-            Database database)
+            CosmosDatabase database)
             : base(
                 httpStatusCode, 
                 headers, 
@@ -41,13 +41,13 @@ namespace Microsoft.Azure.Cosmos
         /// The reference to the cosmos database. 
         /// This allows additional operations for the database and easier access to the container operations
         /// </summary>
-        public virtual Database Database { get; private set; }
+        public virtual CosmosDatabase Database { get; private set; }
 
         /// <summary>
-        /// Get <see cref="Cosmos.Database"/> implicitly from <see cref="DatabaseResponse"/>
+        /// Get <see cref="CosmosDatabase"/> implicitly from <see cref="DatabaseResponse"/>
         /// </summary>
         /// <param name="response">DatabaseResponse</param>
-        public static implicit operator Database(DatabaseResponse response)
+        public static implicit operator CosmosDatabase(DatabaseResponse response)
         {
             return response.Database;
         }

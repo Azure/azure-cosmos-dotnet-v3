@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
     /// 
-    /// <see cref="Cosmos.Database"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     internal partial class CosmosContainerCore : CosmosContainer
     {
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        public override Database Database { get; }
+        public override CosmosDatabase Database { get; }
 
         internal virtual Uri LinkUri { get; }
 

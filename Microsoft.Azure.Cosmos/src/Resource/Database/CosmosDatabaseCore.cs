@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     ///
     /// <see cref="CosmosClient"/> for or creating new databases, and reading/querying all databases; use `client.Databases`.
     /// </summary>
-    internal class CosmosDatabaseCore : Database
+    internal class CosmosDatabaseCore : CosmosDatabase
     {
         /// <summary>
         /// Only used for unit testing

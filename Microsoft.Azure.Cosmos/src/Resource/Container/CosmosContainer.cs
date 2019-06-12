@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// There are two different types of operations.
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
-    /// <see cref="Cosmos.Database"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     /// <remarks>
     ///  Note: all these operations make calls against a fixed budget.
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns the parent database reference
         /// </summary>
-        public abstract Database Database { get; }
+        public abstract CosmosDatabase Database { get; }
 
         /// <summary>
         /// Operations for reading/querying all conflicts

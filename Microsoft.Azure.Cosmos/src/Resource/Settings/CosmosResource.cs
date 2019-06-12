@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary> 
     ///  Represents an abstract resource type in the Azure Cosmos DB service.
-    ///  All Azure Cosmos DB resources, such as <see cref="Database"/>, <see cref="DocumentCollection"/>, and <see cref="Document"/> extend this abstract type.
+    ///  All Azure Cosmos DB resources, such as <see cref="CosmosDatabase"/>, <see cref="DocumentCollection"/>, and <see cref="Document"/> extend this abstract type.
     /// </summary>
     internal static class CosmosResource
     {

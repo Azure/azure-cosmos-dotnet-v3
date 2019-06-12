@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// For instance, do not call `database.ReadAsync()` before every single `item.ReadAsync()` call, to ensure the database exists;
     /// do this once on application start up.
     /// </remarks>
-    public abstract class Database
+    public abstract class CosmosDatabase
     {
         /// <summary>
         /// The Id of the Cosmos database
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// //Reads a Database resource where
         /// // - database_id is the ID property of the Database resource you wish to read.
-        /// Database database = this.cosmosClient.GetDatabase(database_id);
+        /// CosmosDatabase database = this.cosmosClient.GetDatabase(database_id);
         /// DatabaseResponse response = await database.ReadAsync();
         /// ]]>
         /// </code>
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// //Delete a cosmos database
-        /// Database database = cosmosClient.GetDatabase("myDbId");
+        /// CosmosDatabase database = cosmosClient.GetDatabase("myDbId");
         /// DatabaseResponse response = await database.DeleteAsync();
         /// ]]>
         /// </code>
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.database.ReadProvisionedThroughputAsync();
+        /// int? throughput = await this.cosmosDatabase.ReadProvisionedThroughputAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.database.ReplaceProvisionedThroughputAsync(10000);
+        /// int? throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(10000);
         /// ]]>
         /// </code>
         /// </example>
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// CosmosDatabase db = this.cosmosClient.GetDatabase("myDatabaseId"];
         /// DatabaseResponse response = await db.GetContainer("testcontainer");
         /// ]]>
         /// </code>
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.database.CreateContainerAsync(containerProperties);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(containerProperties);
         /// ]]>
         /// </code>
         /// </example>
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.database.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos
         ///    };
         /// };
         /// 
-        /// ContainerResponse response = this.database.CreateContainerIfNotExistsAsync(containerProperties);
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
         /// ]]>
         /// </code>
         /// </example>
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>
@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ContainerProperties> feedIterator = this.database.GetContainersIterator();
+        /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainersIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
         ///     foreach(ContainerProperties containerProperties in await feedIterator.FetchNextSetAsync())
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerResponse container = await this.database.DefineContainer("TestContainer", "/partitionKey")
+        /// CosmosContainerResponse container = await this.cosmosDatabase.DefineContainer("TestContainer", "/partitionKey")
         ///     .UniqueKey()
         ///         .Path("/path1")
         ///         .Path("/path2")

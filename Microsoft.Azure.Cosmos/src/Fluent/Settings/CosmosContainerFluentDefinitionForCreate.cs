@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition<CosmosContainerFluentDefinitionForCreate>
     {
-        private readonly Database cosmosContainers;
+        private readonly CosmosDatabase cosmosContainers;
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         internal CosmosContainerFluentDefinitionForCreate(
-            Database cosmosContainers,
+            CosmosDatabase cosmosContainers,
             string name,
             string partitionKeyPath = null)
             : base(name, partitionKeyPath)

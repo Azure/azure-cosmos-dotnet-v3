@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
-            Database database,
+            CosmosDatabase database,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>

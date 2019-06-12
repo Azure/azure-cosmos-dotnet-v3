@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateCurrentWriteQuorumAndReplicaSetHeader()
         {
             CosmosClient client = TestCommon.CreateCosmosClient(false);
-            Cosmos.Database db = null;
+            CosmosDatabase db = null;
             try
             {
                 db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -538,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task ValidateCollectionIndexProgressHeaders(CosmosClient client)
         {
-            Cosmos.Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
             try
             {

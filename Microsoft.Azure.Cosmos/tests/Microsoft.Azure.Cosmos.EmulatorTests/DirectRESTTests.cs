@@ -973,7 +973,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(true);
 
-            Cosmos.Database database = null;
+            CosmosDatabase database = null;
             try
             {
                 string uniqDatabaseName = "DB_" + Guid.NewGuid().ToString("N");
