@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.idleTcpConnectionTimeout;
             set
             {
-                if (this.ConnectionMode == ConnectionMode.Gateway)
+                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
                     throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
                 }
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.openTcpConnectionTimeout;
             set
             {
-                if (this.ConnectionMode == ConnectionMode.Gateway)
+                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
                     throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
                 }
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxRequestsPerTcpConnection;
             set
             {
-                if (this.ConnectionMode == ConnectionMode.Gateway)
+                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
                     throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
                 }
@@ -353,7 +353,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxTcpConnectionsPerEndpoint;
             set
             {
-                if (this.ConnectionMode == ConnectionMode.Gateway)
+                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
                     throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
                 }
