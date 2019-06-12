@@ -615,7 +615,66 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         [Owner("brchon")]
         public void UserStringTest()
         {
-            // Need to implement this when start implementing user strings.
+            // Object with 33 field names. This creates a user string with 2 byte type marker.
+
+            List<JsonTokenInfo> tokensToWrite = new List<JsonTokenInfo>() { JsonTokenInfo.ObjectStart() };
+            StringBuilder textInput = new StringBuilder("{");
+            List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength, };
+            List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength };
+
+            const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
+            for (int i = 0; i < OneByteCount + 1; i++)
+            {
+                string userEncodedString = "a" + i.ToString();
+
+                tokensToWrite.Add(JsonTokenInfo.FieldName(userEncodedString));
+                tokensToWrite.Add(JsonTokenInfo.String(userEncodedString));
+
+                if (i > 0)
+                {
+                    textInput.Append(",");
+                }
+
+                textInput.Append($@"""{userEncodedString}"":""{userEncodedString}""");
+
+                for (int j = 0; j < 2; j++)
+                {
+                    binaryInput.Add((byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + userEncodedString.Length));
+                    binaryInput.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
+                }
+
+                if (i < OneByteCount)
+                {
+                    binaryInputWithEncoding.Add((byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + i));
+                }
+                else
+                {
+                    int twoByteOffset = i - OneByteCount;
+                    binaryInputWithEncoding.Add((byte)((twoByteOffset / 0xFF) + JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin));
+                    binaryInputWithEncoding.Add((byte)(twoByteOffset % 0xFF));
+                }
+
+                binaryInputWithEncoding.Add((byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + userEncodedString.Length));
+                binaryInputWithEncoding.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
+            }
+
+            tokensToWrite.Add(JsonTokenInfo.ObjectEnd());
+            textInput.Append("}");
+            binaryInput.Insert(2, (byte)(binaryInput.Count() - 2));
+            binaryInputWithEncoding.Insert(2, (byte)(binaryInputWithEncoding.Count() - 2));
+
+            this.VerifyReader(textInput.ToString(), tokensToWrite.ToArray());
+            this.VerifyReader(binaryInput.ToArray(), tokensToWrite.ToArray());
+
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            for (int i = 0; i < OneByteCount + 1; i++)
+            {
+                string userEncodedString = "a" + i.ToString();
+                Assert.IsTrue(jsonStringDictionary.TryAddString(userEncodedString, out int index));
+                Assert.AreEqual(i, index);
+            }
+
+            this.VerifyReader(binaryInputWithEncoding.ToArray(), tokensToWrite.ToArray(), jsonStringDictionary);
         }
 
         [TestMethod]
@@ -1342,19 +1401,40 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public void SimpleObjectTest()
         {
             string input = "{\"GlossDiv\":10,\"title\": \"example glossary\" }";
-            List<byte[]> binaryInputBuilder = new List<byte[]>();
-            binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength });
 
-            List<byte[]> elements = new List<byte[]>();
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"GlossDiv".Length, 71, 108, 111, 115, 115, 68, 105, 118 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 10 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"title".Length, 116, 105, 116, 108, 101 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"example glossary".Length, 101, 120, 97, 109, 112, 108, 101, 32, 103, 108, 111, 115, 115, 97, 114, 121 });
-            byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
+            byte[] binaryInput;
+            {
+                List<byte[]> binaryInputBuilder = new List<byte[]>();
+                binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength });
 
-            binaryInputBuilder.Add(new byte[] { (byte)elementsBytes.Length });
-            binaryInputBuilder.Add(elementsBytes);
-            byte[] binaryInput = binaryInputBuilder.SelectMany(x => x).ToArray();
+                List<byte[]> elements = new List<byte[]>();
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "GlossDiv".Length), 71, 108, 111, 115, 115, 68, 105, 118 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 10 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "title".Length), 116, 105, 116, 108, 101 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "example glossary".Length), 101, 120, 97, 109, 112, 108, 101, 32, 103, 108, 111, 115, 115, 97, 114, 121 });
+                byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
+
+                binaryInputBuilder.Add(new byte[] { (byte)elementsBytes.Length });
+                binaryInputBuilder.Add(elementsBytes);
+                binaryInput = binaryInputBuilder.SelectMany(x => x).ToArray();
+            }
+
+            byte[] binaryInputWithEncoding;
+            {
+                List<byte[]> binaryInputBuilder = new List<byte[]>();
+                binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength });
+
+                List<byte[]> elements = new List<byte[]>();
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin) });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 10 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "example glossary".Length), 101, 120, 97, 109, 112, 108, 101, 32, 103, 108, 111, 115, 115, 97, 114, 121 });
+                byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
+
+                binaryInputBuilder.Add(new byte[] { (byte)elementsBytes.Length });
+                binaryInputBuilder.Add(elementsBytes);
+                binaryInputWithEncoding = binaryInputBuilder.SelectMany(x => x).ToArray();
+            }
 
             JsonTokenInfo[] expectedTokens =
             {
@@ -1368,6 +1448,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            Assert.IsTrue(jsonStringDictionary.TryAddString("GlossDiv", out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("title", out int index2));
+            this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
         [TestMethod]
@@ -1391,58 +1475,118 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 },
                 ""text"": ""tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby""
             }";
-            List<byte[]> binaryInputBuilder = new List<byte[]>();
-            binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object4ByteLength });
 
-            List<byte[]> elements = new List<byte[]>();
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"id".Length, 105, 100 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"7029d079-4016-4436-b7da-36c0bae54ff6".Length, 55, 48, 50, 57, 100, 48, 55, 57, 45, 52, 48, 49, 54, 45, 52, 52, 51, 54, 45, 98, 55, 100, 97, 45, 51, 54, 99, 48, 98, 97, 101, 53, 52, 102, 102, 54 });
+            byte[] binaryInput;
+            {
+                List<byte[]> binaryInputBuilder = new List<byte[]>();
+                binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object2ByteLength });
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"double".Length, 100, 111, 117, 98, 108, 101 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
+                List<byte[]> elements = new List<byte[]>();
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 12) });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "7029d079-4016-4436-b7da-36c0bae54ff6".Length), 55, 48, 50, 57, 100, 48, 55, 57, 45, 52, 48, 49, 54, 45, 52, 52, 51, 54, 45, 98, 55, 100, 97, 45, 51, 54, 99, 48, 98, 97, 101, 53, 52, 102, 102, 54 });
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"int".Length, 105, 110, 116 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int32, 0x19, 0xDF, 0xB6, 0xB0 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "double".Length), 100, 111, 117, 98, 108, 101 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"string".Length, 115, 116, 114, 105, 110, 103 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"XCPCFXPHHF".Length, 88, 67, 80, 67, 70, 88, 80, 72, 72, 70 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "int".Length), 105, 110, 116 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int32, 0x19, 0xDF, 0xB6, 0xB0 });
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"boolean".Length, 98, 111, 111, 108, 101, 97, 110 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.True });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "string".Length), 115, 116, 114, 105, 110, 103 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "XCPCFXPHHF".Length), 88, 67, 80, 67, 70, 88, 80, 72, 72, 70 });
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"null".Length, 110, 117, 108, 108 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Null });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "boolean".Length), 98, 111, 111, 108, 101, 97, 110 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.True });
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"datetime".Length, 100, 97, 116, 101, 116, 105, 109, 101 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"2526-07-11T18:18:16.4520716".Length, 50, 53, 50, 54, 45, 48, 55, 45, 49, 49, 84, 49, 56, 58, 49, 56, 58, 49, 54, 46, 52, 53, 50, 48, 55, 49, 54 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "null".Length), 110, 117, 108, 108 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Null });
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"spatialPoint".Length, 115, 112, 97, 116, 105, 97, 108, 80, 111, 105, 110, 116 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "datetime".Length), 100, 97, 116, 101, 116, 105, 109, 101 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "2526-07-11T18:18:16.4520716".Length), 50, 53, 50, 54, 45, 48, 55, 45, 49, 49, 84, 49, 56, 58, 49, 56, 58, 49, 54, 46, 52, 53, 50, 48, 55, 49, 54 });
 
-            List<byte[]> innerObjectElements = new List<byte[]>();
-            innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"type".Length, 116, 121, 112, 101 });
-            innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"Point".Length, 80, 111, 105, 110, 116 });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "spatialPoint".Length), 115, 112, 97, 116, 105, 97, 108, 80, 111, 105, 110, 116 });
 
-            innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"coordinates".Length, 99, 111, 111, 114, 100, 105, 110, 97, 116, 101, 115 });
-            List<byte[]> innerArrayElements = new List<byte[]>();
-            innerArrayElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x7A, 0x36, 0xAB, 0x3E, 0x57, 0xBF, 0x5D, 0x40 });
-            innerArrayElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x74, 0xB5, 0x15, 0xFB, 0xCB, 0x56, 0x47, 0xC0 });
-            byte[] innerArrayElementsBytes = innerArrayElements.SelectMany(x => x).ToArray();
+                List<byte[]> innerObjectElements = new List<byte[]>();
+                innerObjectElements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 27) });
+                innerObjectElements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 24) });
 
-            innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Array1ByteLength, (byte)innerArrayElementsBytes.Length });
-            innerObjectElements.Add(innerArrayElementsBytes);
+                innerObjectElements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 09) });
+                List<byte[]> innerArrayElements = new List<byte[]>();
+                innerArrayElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x7A, 0x36, 0xAB, 0x3E, 0x57, 0xBF, 0x5D, 0x40 });
+                innerArrayElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x74, 0xB5, 0x15, 0xFB, 0xCB, 0x56, 0x47, 0xC0 });
+                byte[] innerArrayElementsBytes = innerArrayElements.SelectMany(x => x).ToArray();
 
-            byte[] innerObjectElementsBytes = innerObjectElements.SelectMany(x => x).ToArray();
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Object1ByteLength, (byte)innerObjectElementsBytes.Length });
-            elements.Add(innerObjectElementsBytes);
+                innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Array1ByteLength, (byte)innerArrayElementsBytes.Length });
+                innerObjectElements.Add(innerArrayElementsBytes);
 
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"text".Length, 116, 101, 120, 116 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby".Length, 116, 105, 103, 101, 114, 32, 100, 105, 97, 109, 111, 110, 100, 32, 110, 101, 119, 98, 114, 117, 110, 115, 119, 105, 99, 107, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 100, 111, 103, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 116, 117, 114, 116, 108, 101, 32, 99, 97, 116, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 112, 101, 97, 99, 104, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 118, 97, 110, 99, 111, 117, 118, 101, 114, 32, 119, 104, 105, 116, 101, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 104, 111, 114, 115, 101, 32, 100, 105, 97, 109, 111, 110, 100, 32, 108, 105, 111, 110, 32, 115, 117, 112, 101, 114, 108, 111, 110, 103, 99, 111, 108, 111, 117, 114, 110, 97, 109, 101, 32, 114, 117, 98, 121 });
+                byte[] innerObjectElementsBytes = innerObjectElements.SelectMany(x => x).ToArray();
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Object1ByteLength, (byte)innerObjectElementsBytes.Length });
+                elements.Add(innerObjectElementsBytes);
 
-            byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "text".Length), 116, 101, 120, 116 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby".Length, 116, 105, 103, 101, 114, 32, 100, 105, 97, 109, 111, 110, 100, 32, 110, 101, 119, 98, 114, 117, 110, 115, 119, 105, 99, 107, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 100, 111, 103, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 116, 117, 114, 116, 108, 101, 32, 99, 97, 116, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 112, 101, 97, 99, 104, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 118, 97, 110, 99, 111, 117, 118, 101, 114, 32, 119, 104, 105, 116, 101, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 104, 111, 114, 115, 101, 32, 100, 105, 97, 109, 111, 110, 100, 32, 108, 105, 111, 110, 32, 115, 117, 112, 101, 114, 108, 111, 110, 103, 99, 111, 108, 111, 117, 114, 110, 97, 109, 101, 32, 114, 117, 98, 121 });
 
-            binaryInputBuilder.Add(BitConverter.GetBytes(elementsBytes.Length));
-            binaryInputBuilder.Add(elementsBytes);
-            byte[] binaryInput = binaryInputBuilder.SelectMany(x => x).ToArray();
+                byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
+
+                binaryInputBuilder.Add(BitConverter.GetBytes((short)elementsBytes.Length));
+                binaryInputBuilder.Add(elementsBytes);
+                binaryInput = binaryInputBuilder.SelectMany(x => x).ToArray();
+            }
+
+            byte[] binaryInputWithEncoding;
+            {
+                List<byte[]> binaryInputBuilder = new List<byte[]>();
+                binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object2ByteLength });
+
+                List<byte[]> elements = new List<byte[]>();
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 12) });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "7029d079-4016-4436-b7da-36c0bae54ff6".Length), 55, 48, 50, 57, 100, 48, 55, 57, 45, 52, 48, 49, 54, 45, 52, 52, 51, 54, 45, 98, 55, 100, 97, 45, 51, 54, 99, 48, 98, 97, 101, 53, 52, 102, 102, 54 });
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin) });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int32, 0x19, 0xDF, 0xB6, 0xB0 });
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 2) });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "XCPCFXPHHF".Length), 88, 67, 80, 67, 70, 88, 80, 72, 72, 70 });
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 3) });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.True });
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 4) });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Null });
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 5) });
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "2526-07-11T18:18:16.4520716".Length), 50, 53, 50, 54, 45, 48, 55, 45, 49, 49, 84, 49, 56, 58, 49, 56, 58, 49, 54, 46, 52, 53, 50, 48, 55, 49, 54 });
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 6) });
+
+                List<byte[]> innerObjectElements = new List<byte[]>();
+                innerObjectElements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 27) });
+                innerObjectElements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 24) });
+
+                innerObjectElements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 09) });
+                List<byte[]> innerArrayElements = new List<byte[]>();
+                innerArrayElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x7A, 0x36, 0xAB, 0x3E, 0x57, 0xBF, 0x5D, 0x40 });
+                innerArrayElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x74, 0xB5, 0x15, 0xFB, 0xCB, 0x56, 0x47, 0xC0 });
+                byte[] innerArrayElementsBytes = innerArrayElements.SelectMany(x => x).ToArray();
+
+                innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Array1ByteLength, (byte)innerArrayElementsBytes.Length });
+                innerObjectElements.Add(innerArrayElementsBytes);
+
+                byte[] innerObjectElementsBytes = innerObjectElements.SelectMany(x => x).ToArray();
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Object1ByteLength, (byte)innerObjectElementsBytes.Length });
+                elements.Add(innerObjectElementsBytes);
+
+                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 7) });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby".Length, 116, 105, 103, 101, 114, 32, 100, 105, 97, 109, 111, 110, 100, 32, 110, 101, 119, 98, 114, 117, 110, 115, 119, 105, 99, 107, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 100, 111, 103, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 116, 117, 114, 116, 108, 101, 32, 99, 97, 116, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 112, 101, 97, 99, 104, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 118, 97, 110, 99, 111, 117, 118, 101, 114, 32, 119, 104, 105, 116, 101, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 104, 111, 114, 115, 101, 32, 100, 105, 97, 109, 111, 110, 100, 32, 108, 105, 111, 110, 32, 115, 117, 112, 101, 114, 108, 111, 110, 103, 99, 111, 108, 111, 117, 114, 110, 97, 109, 101, 32, 114, 117, 98, 121 });
+
+                byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
+
+                binaryInputBuilder.Add(BitConverter.GetBytes((short)elementsBytes.Length));
+                binaryInputBuilder.Add(elementsBytes);
+                binaryInputWithEncoding = binaryInputBuilder.SelectMany(x => x).ToArray();
+            }
 
             JsonTokenInfo[] expectedTokens =
             {
@@ -1488,6 +1632,17 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
+
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            Assert.IsTrue(jsonStringDictionary.TryAddString("double", out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("int", out int index2));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("string", out int index3));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("boolean", out int index4));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("null", out int index5));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("datetime", out int index6));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("spatialPoint", out int index7));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("text", out int index8));
+            this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
         [TestMethod]
@@ -1528,7 +1683,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             };
 
             this.VerifyReader(input, expectedTokens, new JsonUnexpectedTokenException());
-            this.VerifyReader(binaryInput, expectedTokens, new JsonUnexpectedTokenException());
+            this.VerifyReader(binaryInput, expectedTokens, null, new JsonUnexpectedTokenException());
         }
 
         [TestMethod]
@@ -1860,13 +2015,13 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             }
         }
 
-        private void VerifyReader(byte[] input, JsonTokenInfo[] expectedTokens, Exception expectedException = null)
+        private void VerifyReader(byte[] input, JsonTokenInfo[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
-            this.VerifyReader(JsonReader.Create(input), expectedTokens, expectedException, Encoding.UTF8);
+            this.VerifyReader(JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
 
             // Test binary reader created with the stream API
-            this.VerifyReader(JsonReader.Create(new MemoryStream(input)), expectedTokens, expectedException, Encoding.UTF8);
+            this.VerifyReader(JsonReader.Create(new MemoryStream(input), jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
 
             //// TODO: have a test where you are reading from a file and over the network.
         }
