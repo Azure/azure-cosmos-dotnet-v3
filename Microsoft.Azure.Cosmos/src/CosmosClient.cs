@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
-            this.ClientContext = new CosmosClientContextCore(
+            this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,

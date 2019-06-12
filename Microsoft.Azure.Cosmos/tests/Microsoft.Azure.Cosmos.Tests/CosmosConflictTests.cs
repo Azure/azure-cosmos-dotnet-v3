@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosResponseFactory responseFactory = new CosmosResponseFactory(cosmosJsonSerializer, cosmosJsonSerializer);
 
-            return new CosmosClientContextCore(
+            return new ClientContextCore(
                 client: client,
                 clientOptions: null,
                 userJsonSerializer: cosmosJsonSerializer,

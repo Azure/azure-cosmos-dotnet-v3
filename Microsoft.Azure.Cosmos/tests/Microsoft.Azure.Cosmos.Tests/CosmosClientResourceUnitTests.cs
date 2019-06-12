@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
-            CosmosClientContext context = new CosmosClientContextCore(
+            CosmosClientContext context = new ClientContextCore(
                 client: null,
                 clientOptions: null,
                 userJsonSerializer: null,
