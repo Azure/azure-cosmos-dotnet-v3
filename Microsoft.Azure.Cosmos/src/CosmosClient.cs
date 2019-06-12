@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     /// of the application which enables efficient connection management and performance.
     /// </summary>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient uses the <see cref="CosmosClientOptions"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
-    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient is created with the AccountEndpoint and AccountKey.
     /// <code language="c#">
     /// <![CDATA[
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
     ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey"))
     /// {
-    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
@@ -58,14 +58,14 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="CosmosContainer"/>.
     /// The CosmosClient is created with the connection string.
     /// <code language="c#">
     /// <![CDATA[
     /// using (CosmosClient cosmosClient = new CosmosClient(
     ///     connectionString: "AccountEndpoint=https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
     /// {
-    ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+    ///     Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
     ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
@@ -252,13 +252,13 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosDatabase db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId"];
         /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>Cosmos database proxy</returns>
-        public virtual CosmosDatabase GetDatabase(string id)
+        public virtual Database GetDatabase(string id)
         {
             return new CosmosDatabaseCore(this.ClientContext, id);
         }
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Doing a Read before Create will give us better latency for existing databases
-            CosmosDatabase database = this.GetDatabase(id);
+            Database database = this.GetDatabase(id);
             DatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.NotFound)
             {

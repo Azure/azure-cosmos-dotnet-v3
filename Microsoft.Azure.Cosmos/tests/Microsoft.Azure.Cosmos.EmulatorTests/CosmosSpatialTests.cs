@@ -20,7 +20,7 @@
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
         protected CosmosClient cosmosClient = null;
-        protected CosmosDatabase database = null;
+        protected Database database = null;
 
         [TestInitialize]
         public async Task TestInitialize()
