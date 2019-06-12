@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ContainerStreamFeedRequestExecutorAsync);
         }
 
-        public override CosmosContainerFluentDefinitionForCreate DefineContainer(
+        public override ContainerFluentDefinitionForCreate DefineContainer(
             string name,
             string partitionKeyPath)
         {
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            return new CosmosContainerFluentDefinitionForCreate(this, name, partitionKeyPath);
+            return new ContainerFluentDefinitionForCreate(this, name, partitionKeyPath);
         }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)

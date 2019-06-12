@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using Moq;
 
     [TestClass]
-    public class CosmosContainerFluentDefinitionForCreateTests
+    public class ContainerFluentDefinitionForCreateTests
     {
         private const string containerName = "someName";
         private const string partitionKey = "pk";
@@ -29,12 +29,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         {
             Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 null);
 
-            await CosmosContainerFluentDefinitionForCreate.CreateAsync();
+            await containerFluentDefinitionForCreate.CreateAsync();
         }
 
         [TestMethod]
@@ -62,12 +62,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             mockContainers.Setup(c => c.GetContainer(containerName)).Returns(mockContainer.Object);
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 null);
 
-            ContainerResponse response = await CosmosContainerFluentDefinitionForCreate.CreateAsync();
+            ContainerResponse response = await containerFluentDefinitionForCreate.CreateAsync();
 
             mockContainer.Verify(c => c.ReadAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -85,12 +85,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 partitionKey);
 
-            await CosmosContainerFluentDefinitionForCreate
+            await containerFluentDefinitionForCreate
                 .CreateAsync(2400);
 
             mockContainers.Verify(c => c.CreateContainerAsync(
@@ -113,12 +113,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 partitionKey);
 
-            await CosmosContainerFluentDefinitionForCreate
+            await containerFluentDefinitionForCreate
                 .WithTimeToLivePropertyPath(path)
                 .CreateAsync();
 
@@ -142,12 +142,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 partitionKey);
 
-            await CosmosContainerFluentDefinitionForCreate
+            await containerFluentDefinitionForCreate
                 .WithDefaultTimeToLive(timeToLive)
                 .CreateAsync();
 
@@ -171,12 +171,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 partitionKey);
 
-            await CosmosContainerFluentDefinitionForCreate
+            await containerFluentDefinitionForCreate
                 .WithDefaultTimeToLive((int)timeToLive.TotalSeconds)
                 .CreateAsync();
 
@@ -200,12 +200,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 partitionKey);
 
-            await CosmosContainerFluentDefinitionForCreate
+            await containerFluentDefinitionForCreate
                 .WithIndexingPolicy()
                     .WithIndexingMode(IndexingMode.None)
                     .WithAutomaticIndexing(false)
@@ -232,12 +232,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            CosmosContainerFluentDefinitionForCreate CosmosContainerFluentDefinitionForCreate = new CosmosContainerFluentDefinitionForCreate(
+            ContainerFluentDefinitionForCreate containerFluentDefinitionForCreate = new ContainerFluentDefinitionForCreate(
                 mockContainers.Object,
                 containerName,
                 partitionKey);
 
-            await CosmosContainerFluentDefinitionForCreate
+            await containerFluentDefinitionForCreate
                 .WithUniqueKey()
                     .Path(path)
                     .Attach()

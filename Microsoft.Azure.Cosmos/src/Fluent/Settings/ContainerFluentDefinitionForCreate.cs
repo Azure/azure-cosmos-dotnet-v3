@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="Container"/> fluent definition for creation flows.
     /// </summary>
-    public class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition<CosmosContainerFluentDefinitionForCreate>
+    public class ContainerFluentDefinitionForCreate : ContainerFluentDefinition<ContainerFluentDefinitionForCreate>
     {
         private readonly CosmosDatabase cosmosContainers;
         private UniqueKeyPolicy uniqueKeyPolicy;
@@ -18,11 +18,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public CosmosContainerFluentDefinitionForCreate()
+        public ContainerFluentDefinitionForCreate()
         {
         }
 
-        internal CosmosContainerFluentDefinitionForCreate(
+        internal ContainerFluentDefinitionForCreate(
             CosmosDatabase cosmosContainers,
             string name,
             string partitionKeyPath = null)
