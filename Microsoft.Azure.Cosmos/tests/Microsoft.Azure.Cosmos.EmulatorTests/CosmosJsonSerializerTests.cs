@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         /// <summary>
-        /// Verify that null attributes do not get serialized by default.
+        /// Verify that null attributes get serialized by default.
         /// </summary>
         [TestMethod]
         public async Task DefaultNullValueHandling()
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
             string text = reader.ReadToEnd();
 
-            Assert.AreEqual(-1, text.IndexOf(nameof(document.description)), "Stored document contains a null attribute");
+            Assert.IsTrue(text.IndexOf(nameof(document.description)) > -1, "Stored item doesn't contains null attributes");
         }
         
         private ToDoActivity CreateRandomToDoActivity(string pk = null)
