@@ -103,21 +103,20 @@
 
         private static async Task CreateContainerWithCustomIndexingPolicy()
         {
-            // Create a container with custom index policy (lazy indexing)
+            // Create a container with custom index policy (consistent indexing)
             // We cover index policies in detail in IndexManagement sample project
             CosmosContainerSettings containerSettings = new CosmosContainerSettings(
                 id: "SampleContainerWithCustomIndexPolicy",
                 partitionKeyPath: partitionKey);
-            // DO NOT USE LAZY INDEXING IN PRODUCTION
-            containerSettings.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
+            containerSettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-            CosmosContainer containerWithLazyIndexing = await database.CreateContainerIfNotExistsAsync(
+            CosmosContainer containerWithConsistentIndexing = await database.CreateContainerIfNotExistsAsync(
                 containerSettings,
                 requestUnitsPerSecond: 400);
 
-            Console.WriteLine($"1.2. Created Container {containerWithLazyIndexing.Id}, with custom index policy \n");
+            Console.WriteLine($"1.2. Created Container {containerWithConsistentIndexing.Id}, with custom index policy \n");
 
-            await containerWithLazyIndexing.DeleteAsync();
+            await containerWithConsistentIndexing.DeleteAsync();
         }
 
         private static async Task CreateContainerWithTtlExpiration()
