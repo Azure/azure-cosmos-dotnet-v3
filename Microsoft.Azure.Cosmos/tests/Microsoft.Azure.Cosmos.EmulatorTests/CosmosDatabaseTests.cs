@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers);
             Assert.IsNotNull(response.Headers.ActivityId);
 
-            CosmosDatabaseSettings databaseSettings = response.Resource;
+            CosmosDatabaseProperties databaseSettings = response.Resource;
             Assert.IsNotNull(databaseSettings.Id);
             Assert.IsNotNull(databaseSettings.ResourceId);
             Assert.IsNotNull(databaseSettings.ETag);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StreamCreateConflictTestAsync()
         {
-            CosmosDatabaseSettings databaseSettings = new CosmosDatabaseSettings()
+            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties()
             {
                 Id = Guid.NewGuid().ToString()
             };
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.GetDatabase(databaseName).ReadAsync(cancellationToken: this.cancellationToken);
             CosmosDatabase cosmosDatabase = cosmosDatabaseResponse;
-            CosmosDatabaseSettings cosmosDatabaseSettings = cosmosDatabaseResponse;
+            CosmosDatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
             Assert.IsNotNull(cosmosDatabase);
             Assert.IsNull(cosmosDatabaseSettings);
 
@@ -259,13 +259,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     databaseIds.Add(createResponse.Resource.Id);
                 }
 
-                FeedIterator<CosmosDatabaseSettings> feedIterator =
+                FeedIterator<CosmosDatabaseProperties> feedIterator =
                     this.cosmosClient.GetDatabasesIterator();
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<CosmosDatabaseSettings> iterator =
+                    FeedResponse<CosmosDatabaseProperties> iterator =
                         await feedIterator.FetchNextSetAsync(this.cancellationToken);
-                    foreach (CosmosDatabaseSettings databaseSettings in iterator)
+                    foreach (CosmosDatabaseProperties databaseSettings in iterator)
                     {
                         if (databaseIds.Contains(databaseSettings.Id))
                         {
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 databaseId = Guid.NewGuid().ToString();
             }
 
-            CosmosDatabaseSettings databaseSettings = new CosmosDatabaseSettings() { Id = databaseId };
+            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties() { Id = databaseId };
             CosmosResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(
                 databaseSettings,
                 requestUnitsPerSecond: 400);

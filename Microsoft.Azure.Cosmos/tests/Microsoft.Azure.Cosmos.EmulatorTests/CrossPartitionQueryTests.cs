@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(apiVersion);
         }
 
-        private async Task<IReadOnlyList<PartitionKeyRange>> GetPartitionKeyRanges(CosmosContainerSettings container)
+        private async Task<IReadOnlyList<PartitionKeyRange>> GetPartitionKeyRanges(CosmosContainerProperties container)
         {
             Range<string> fullRange = new Range<string>(
                 PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings
+                new CosmosContainerProperties
                 {
                     Id = Guid.NewGuid().ToString() + "container",
                     IndexingPolicy = indexingPolicy == null ? new Cosmos.IndexingPolicy
@@ -299,11 +299,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<CosmosDatabaseSettings> allDatabases = client.GetDatabasesIterator();
+            FeedIterator<CosmosDatabaseProperties> allDatabases = client.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
-                foreach (CosmosDatabaseSettings db in await allDatabases.FetchNextSetAsync())
+                foreach (CosmosDatabaseProperties db in await allDatabases.FetchNextSetAsync())
                 {
                     await client.GetDatabase(db.Id).DeleteAsync();
                 }
@@ -2729,7 +2729,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
 
-            CosmosContainerSettings containerSettings = await container.ReadAsync();
+            CosmosContainerProperties containerSettings = await container.ReadAsync();
             foreach (Document document in documents)
             {
                 IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
@@ -3504,7 +3504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer container,
             IEnumerable<Document> documents)
         {
-            CosmosContainerSettings containerSettings = await container.ReadAsync();
+            CosmosContainerProperties containerSettings = await container.ReadAsync();
             // For every composite index
             foreach (Collection<Cosmos.CompositePath> compositeIndex in containerSettings.IndexingPolicy.CompositeIndexes)
             {

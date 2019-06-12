@@ -364,7 +364,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             this.VerifyNavigator(json, performExtraChecks);
         }
-#endregion
+        #endregion
 
         private void VerifyNavigator(string input, bool performExtraChecks = true)
         {
@@ -390,6 +390,19 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             JsonTokenInfo[] tokensFromBinaryNavigator = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);
 
             Assert.IsTrue(tokensFromBinaryNavigator.SequenceEqual(tokensFromReader));
+
+            // Test binary + user string encoding
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
+            byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
+            if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out string temp))
+            {
+                Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding");
+            }
+            IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
+            IJsonNavigatorNode binaryRootNodeWithUserStringEncoding = binaryNavigatorWithUserStringEncoding.GetRootNode();
+            JsonTokenInfo[] tokensFromBinaryNavigatorWithUserStringEncoding = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);
+
+            Assert.IsTrue(tokensFromBinaryNavigatorWithUserStringEncoding.SequenceEqual(tokensFromReader));
         }
 
         internal static JsonTokenInfo[] GetTokensWithReader(IJsonReader jsonReader)
@@ -543,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    Assert.AreEqual(navigator.SerializationFormat, JsonSerializationFormat.Binary);   
+                    Assert.AreEqual(navigator.SerializationFormat, JsonSerializationFormat.Binary);
                 }
                 catch (ArgumentOutOfRangeException)
                 {

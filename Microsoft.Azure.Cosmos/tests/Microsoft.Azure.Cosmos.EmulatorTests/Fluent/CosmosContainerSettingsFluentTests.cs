@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers);
             Assert.IsNotNull(response.Headers.ActivityId);
 
-            CosmosContainerSettings containerSettings = response.Resource;
+            CosmosContainerProperties containerSettings = response.Resource;
             Assert.IsNotNull(containerSettings.Id);
             Assert.IsNotNull(containerSettings.ResourceId);
             Assert.IsNotNull(containerSettings.ETag);
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-            CosmosContainerSettings cosmosContainerSettings = containerResponse.Resource;
+            CosmosContainerProperties cosmosContainerSettings = containerResponse.Resource;
             Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
             Assert.AreEqual(ConflictResolutionMode.LastWriterWins, cosmosContainerSettings.ConflictResolutionPolicy.Mode);
             Assert.AreEqual("/lww", cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath);
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             CosmosContainer cosmosContainer = containerResponse;
-            CosmosContainerSettings responseSettings = containerResponse;
+            CosmosContainerProperties responseSettings = containerResponse;
 
             Assert.AreEqual(timeToLiveInSeconds, responseSettings.DefaultTimeToLive);
 

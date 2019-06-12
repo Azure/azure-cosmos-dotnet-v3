@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ContainerResponse> ReplaceAsync(
-            CosmosContainerSettings containerSettings,
+            CosmosContainerProperties containerSettings,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> ReplaceStreamAsync(
-            CosmosContainerSettings containerSettings,
+            CosmosContainerProperties containerSettings,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -195,8 +195,8 @@ namespace Microsoft.Azure.Cosmos
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
         /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerSettings"/> for this container.</returns>
-        internal async Task<CosmosContainerSettings> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
+        /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerProperties"/> for this container.</returns>
+        internal async Task<CosmosContainerProperties> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns the partition key path</returns>
         internal virtual async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
+            CosmosContainerProperties containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
             if (containerSettings == null)
             {
                 throw new ArgumentOutOfRangeException($"Container {this.LinkUri.ToString()} not found");
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosContainerSettings containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
+            CosmosContainerProperties containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
             return containerSettings.GetNoneValue();
         }
 

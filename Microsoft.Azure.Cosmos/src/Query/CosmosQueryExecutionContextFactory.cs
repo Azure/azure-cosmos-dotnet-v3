@@ -127,11 +127,11 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private async Task<CosmosContainerSettings> GetContainerSettingsAsync(CancellationToken cancellationToken)
+        private async Task<CosmosContainerProperties> GetContainerSettingsAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            CosmosContainerSettings containerSettings = null;
+            CosmosContainerProperties containerSettings = null;
             if (this.cosmosQueryContext.ResourceTypeEnum.IsCollectionChild())
             {
                 CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            CosmosContainerSettings containerSettings = await this.GetContainerSettingsAsync(cancellationToken);
+            CosmosContainerProperties containerSettings = await this.GetContainerSettingsAsync(cancellationToken);
             this.cosmosQueryContext.ContainerResourceId = containerSettings.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            CosmosContainerSettings collection,
+            CosmosContainerProperties collection,
             QueryRequestOptions queryRequestOptions)
         {
             List<PartitionKeyRange> targetRanges;
