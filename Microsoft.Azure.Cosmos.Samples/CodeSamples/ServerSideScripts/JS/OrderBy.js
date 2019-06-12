@@ -23,7 +23,11 @@
 * @param {String} filterQuery - Optional filter for query.
 * @param {String} orderByFieldName - The name of the field to order by resulting set.
 */
-function orderBy(filterQuery, orderByFieldName, continuationToken) {
+function orderBy(parameters) {
+    var filterQuery = parameters.filterQuery;
+    var orderByFieldName = parameters.orderByFieldName;
+    var continuationToken = parameters.continuationToken;
+    
     // HTTP error codes sent to our callback funciton by DocDB server.
     var ErrorCode = {
         REQUEST_ENTITY_TOO_LARGE: 413,
@@ -103,11 +107,17 @@ function orderBy(filterQuery, orderByFieldName, continuationToken) {
                 break;
             }
         }
-        
+
         // Now next batch to return to client has i elements.
         // Slice the continuationResult if needed and discard the end.
         var partialResult = continuationResult;
         var newContinuation = continuationToken + i;
+        if (continuationToken && i == 0)
+        {
+            // No more results
+            newContinuation = null;
+        }
+
         if (i < continuationResult.length) {
             partialResult = continuationResult.slice(0, i);
         }

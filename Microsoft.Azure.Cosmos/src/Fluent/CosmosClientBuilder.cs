@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
     using System.Linq;
+    using System.Security;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -48,6 +49,42 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder(
             string accountEndPoint,
             string accountKey)
+        {
+            this.clientOptions = new CosmosClientOptions(accountEndPoint, accountKey);
+        }
+
+        /// <summary>
+        /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
+        /// </summary>
+        /// <param name="accountEndPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
+        /// <param name="accountKey">The key to the account.</param>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+        ///     accountKey: "SuperSecretKey");
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> with a ConsistencyLevel and a list of preferred locations.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+        ///     accountKey: "SuperSecretKey")
+        /// .UseConsistencyLevel(ConsistencyLevel.Strong)
+        /// .WithApplicationRegion("East US 2");
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClientBuilder(
+            string accountEndPoint,
+            SecureString accountKey)
         {
             this.clientOptions = new CosmosClientOptions(accountEndPoint, accountKey);
         }

@@ -34,44 +34,14 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Documents.Constants.Properties.Id)]
-        public virtual string Id { get; internal set; }
+        public string Id { get; internal set; }
 
         /// <summary>
         /// Gets the operation that resulted in the conflict in the Azure Cosmos DB service.
         /// </summary>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.OperationType)]
-        public virtual OperationKind OperationKind { get; internal set; }
-
-        /// <summary>
-        /// Gets the content of the Conflict resource in the Azure Cosmos DB service.
-        /// </summary>
-        /// <typeparam name="T">The type to use to deserialize the content.</typeparam>
-        /// <param name="cosmosJsonSerializer">(Optional) <see cref="CosmosJsonSerializer"/> to use while parsing the content.</param>
-        /// <returns>An instance of T</returns>
-        public virtual T GetResource<T>(CosmosJsonSerializer cosmosJsonSerializer = null)
-        {
-            if (!string.IsNullOrEmpty(this.Content))
-            {
-                if (cosmosJsonSerializer == null)
-                {
-                    cosmosJsonSerializer = new CosmosJsonSerializerCore();
-                }
-
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    using (StreamWriter writer = new StreamWriter(stream))
-                    {
-                        writer.Write(this.Content);
-                        writer.Flush();
-                        stream.Position = 0;
-                        return cosmosJsonSerializer.FromStream<T>(stream);
-                    }
-                }
-            }
-
-            return default(T);
-        }
+        public OperationKind OperationKind { get; internal set; }
 
         [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
         [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]

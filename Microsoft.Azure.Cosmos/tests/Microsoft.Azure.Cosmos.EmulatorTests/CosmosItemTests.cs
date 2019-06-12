@@ -22,9 +22,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportWrapperTests;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
     using Microsoft.Azure.Cosmos.Linq;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -173,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task NonPartitionKeyLookupCacheTest()
         {
             int count = 0;
-            CosmosClient client = TestCommon.CreateCosmosClient(builder => 
+            CosmosClient client = TestCommon.CreateCosmosClient(builder =>
                 {
                     builder.WithConnectionModeDirect();
                     builder.WithSendingRequestEventArgs((sender, e) =>
@@ -188,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 Trace.TraceInformation($"{e.HttpRequest.ToString()}");
                             }
 
-                            if (e.IsHttpRequest() 
+                            if (e.IsHttpRequest()
                                 && e.HttpRequest.RequestUri.AbsolutePath.Contains("/colls/"))
                             {
                                 count++;
@@ -429,6 +431,104 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemIds.Count, 0);
         }
 
+
+        [TestMethod]
+        public async Task ItemStreamContractVerifier()
+        {
+            int totalCount = 4;
+            Dictionary<string, ToDoActivity> toDoActivities = new Dictionary<string, ToDoActivity>();
+            // Create 3 constant items;
+            for (int i = 0; i < totalCount; i++)
+            {
+                ToDoActivity toDoActivity = new ToDoActivity()
+                {
+                    id = "toDoActivity" + i,
+                    status = "InProgress",
+                    cost = 9000 + i,
+                    description = "Constant to do activity",
+                    taskNum = i
+                };
+
+                toDoActivities.Add(toDoActivity.id, toDoActivity);
+
+                await this.Container.CreateItemAsync<ToDoActivity>(toDoActivity);
+            }
+
+            List<FeedIterator> FeedIterators = new List<FeedIterator>();
+
+            // The stream contract should return the same contract as read feed.
+            // {
+            //    "_rid": "containerRid",
+            //    "Documents": [{
+            //        "id": "03230",
+            //        "_rid": "qHVdAImeKAQBAAAAAAAAAA==",
+            //        "_self": "dbs\/qHVdAA==\/colls\/qHVdAImeKAQ=\/docs\/qHVdAImeKAQBAAAAAAAAAA==\/",
+            //        "_etag": "\"410000b0-0000-0000-0000-597916b00000\"",
+            //        "_attachments": "attachments\/",
+            //        "_ts": 1501107886
+            //    }],
+            //    "_count": 1
+            // }
+
+            FeedIterator setIterator =
+                this.Container.GetItemsStreamIterator();
+            FeedIterators.Add(setIterator);
+
+            FeedIterator queryIterator =
+                this.Container.CreateItemQueryStream(@"select * from t where t.id != """" ", maxConcurrency: 1, maxItemCount: 4);
+            FeedIterators.Add(queryIterator);
+            string previousResult = null;
+
+            foreach (FeedIterator iterator in FeedIterators)
+            {
+                int count = 0;
+                while (iterator.HasMoreResults)
+                {
+                    CosmosResponseMessage response = await iterator.FetchNextSetAsync(this.cancellationToken);
+                    response.EnsureSuccessStatusCode();
+
+                    using (StreamReader sr = new StreamReader(response.Content))
+                    {
+                        string jsonString = await sr.ReadToEndAsync();
+                        Assert.IsNotNull(jsonString);
+                        JObject jObject = JsonConvert.DeserializeObject<JObject>(jsonString);
+                        Assert.IsNotNull(jObject["Documents"]);
+                        Assert.IsNotNull(jObject["_rid"]);
+                        Assert.IsNotNull(jObject["_count"]);
+                        Assert.IsTrue(jObject["_count"].ToObject<int>() >= 0);
+                        foreach (JObject item in jObject["Documents"])
+                        {
+                            count++;
+                            Assert.IsNotNull(item["id"]);
+                            ToDoActivity createdItem = toDoActivities[item["id"].ToString()];
+
+                            Assert.AreEqual(createdItem.taskNum, item["taskNum"].ToObject<int>());
+                            Assert.AreEqual(createdItem.cost, item["cost"].ToObject<double>());
+                            Assert.AreEqual(createdItem.description, item["description"].ToString());
+                            Assert.AreEqual(createdItem.status, item["status"].ToString());
+                            Assert.IsNotNull(item["_rid"]);
+                            Assert.IsNotNull(item["_self"]);
+                            Assert.IsNotNull(item["_etag"]);
+                            Assert.IsNotNull(item["_attachments"]);
+                            Assert.IsNotNull(item["_ts"]);
+                        }
+
+                        if(previousResult != null)
+                        {
+                            Assert.AreEqual(previousResult, jsonString);
+                        }
+                        else
+                        {
+                            previousResult = jsonString;
+                        }
+                    }
+                }
+
+                Assert.AreEqual(totalCount, count);
+            }
+        }
+
+
         [DataRow(1, 1)]
         [DataRow(5, 5)]
         [DataRow(6, 2)]
@@ -462,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
                 {
-                    ToDoActivity[] results = serializer.Deserialize<ToDoActivity[]>(jtr);
+                    ToDoActivity[] results = serializer.Deserialize<CosmosFeedResponseUtil<ToDoActivity>>(jtr).Data.ToArray();
                     ToDoActivity[] readTodoActivities = results.OrderBy(e => e.id)
                         .ToArray();
 
@@ -547,7 +647,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
 
-                ToDoActivity[] activities = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                ToDoActivity[] activities = this.jsonSerializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
                 Assert.AreEqual(1, activities.Length);
                 ToDoActivity response = activities.First();
                 resultList.Add(response);
@@ -583,7 +683,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
-                ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                ToDoActivity[] response = this.jsonSerializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
                 Assert.IsTrue(response.Length <= 5);
                 resultList.AddRange(response);
             }
@@ -626,7 +726,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
-                ToDoActivity[] response = this.jsonSerializer.FromStream<ToDoActivity[]>(iter.Content);
+                Collection<ToDoActivity> response = this.jsonSerializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data;
                 foundItems.AddRange(response);
             }
 
@@ -643,8 +743,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .InternalKey
                             .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
 
-            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
-            itemRequestOptions.Properties = new Dictionary<string, object>();
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions
+            {
+                Properties = new Dictionary<string, object>()
+            };
             itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             CosmosResponseMessage response = await this.Container.ReadItemStreamAsync(
@@ -755,7 +857,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 textWriter.WriteAll(reader);
                 string json = Encoding.UTF8.GetString(textWriter.GetResult());
                 Assert.IsNotNull(json);
-                ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<ToDoActivity[]>(json);
+                ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
                 Assert.IsTrue(responseActivities.Length <= 5);
                 resultList.AddRange(responseActivities);
             }
@@ -1293,7 +1395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateNonPartitionedContainer()
         {
-            await CosmosItemTests.CreateNonPartitionedContainer(this.database.Id, 
+            await CosmosItemTests.CreateNonPartitionedContainer(this.database.Id,
                 CosmosItemTests.nonPartitionContainerId);
         }
 
