@@ -4,57 +4,43 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
-    /// Represents a user defined function in the Azure Cosmos service.
-    /// </summary> 
-    /// <remarks>
-    /// Azure Cosmos supports JavaScript user defined functions (UDFs) which are stored in the database and can be used inside queries. 
-    /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-api-sql-query#javascript-integration for how to use UDFs within queries.
-    /// Refer to https://docs.microsoft.com/azure/cosmos-db/programming#udf for more details about implementing UDFs in JavaScript.
+    /// Represents a trigger in the Azure Cosmos DB service.
+    /// </summary>
+    /// <remarks> 
+    /// Azure Cosmos DB supports pre and post triggers written in JavaScript to be executed on creates, updates and deletes. 
+    /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
-    /// <example>
-    /// The following examples show how to register and use UDFs.
-    /// <code language="c#">
-    /// <![CDATA[
-    /// await this.container.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
-    ///     new CosmosUserDefinedFunctionSettings 
-    ///     { 
-    ///         Id = "calculateTax", 
-    ///         Body = @"function(amt) { return amt * 0.05; }" 
-    ///     });
-    ///
-    /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition(
-    ///     "SELECT VALUE udf.calculateTax(t.cost) FROM toDoActivity t where t.cost > @expensive and t.status = @status")
-    ///     .UseParameter("@expensive", 9000)
-    ///     .UseParameter("@status", "Done");
-    ///
-    /// FeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
-    ///     sqlQueryDefinition: sqlQuery,
-    ///     partitionKey: "Done");
-    ///
-    /// while (feedIterator.HasMoreResults)
-    /// {
-    ///     foreach (var tax in await feedIterator.FetchNextSetAsync())
-    ///     {
-    ///         Console.WriteLine(tax);
-    ///     }
-    /// }
-    /// ]]>
-    /// </code>
-    /// </example>
-    public class CosmosUserDefinedFunctionSettings
+    public class CosmosTriggerProperties
     {
         /// <summary>
-        /// Gets or sets the body of the user defined function for the Azure Cosmos DB service.
+        /// Gets or sets the body of the trigger for the Azure Cosmos DB service.
         /// </summary>
-        /// <value>The body of the user defined function.</value>
-        /// <remarks>This must be a valid JavaScript function e.g. "function (input) { return input.toLowerCase(); }".</remarks>
+        /// <value>The body of the trigger.</value>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
         public virtual string Body { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the trigger for the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The body of the trigger.</value>
+        /// <seealso cref="TriggerType"/>
+        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.TriggerType)]
+        public virtual TriggerType TriggerType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the operation the trigger is associated with for the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The operation the trigger is associated with.</value>
+        /// <seealso cref="TriggerOperation"/>
+        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.TriggerOperation)]
+        public virtual TriggerOperation TriggerOperation { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.

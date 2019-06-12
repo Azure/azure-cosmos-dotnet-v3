@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             CosmosContainer container = mockClient.GetContainer("database", "container");
-            FeedIterator<CosmosConflictSettings> feedIterator = container.GetConflicts().GetConflictsIterator();
+            FeedIterator<CosmosConflictProperties> feedIterator = container.GetConflicts().GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -111,16 +111,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            FeedResponse<CosmosConflictSettings> response = await feedIterator.FetchNextSetAsync();
+            FeedResponse<CosmosConflictProperties> response = await feedIterator.FetchNextSetAsync();
 
             Assert.AreEqual(1, response.Count());
 
-            CosmosConflictSettings responseSettings = response.FirstOrDefault();
+            CosmosConflictProperties responseSettings = response.FirstOrDefault();
             Assert.IsNotNull(responseSettings);
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
             Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTriggerSettings), responseSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosTriggerProperties), responseSettings.ResourceType);
         }
 
         [TestMethod]
@@ -156,16 +156,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockClient.RequestHandler.InnerHandler = testHandler;
             CosmosResponseMessage streamResponse = await feedIterator.FetchNextSetAsync();
 
-            Collection<CosmosConflictSettings> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<CosmosConflictSettings>>(streamResponse.Content).Data;
+            Collection<CosmosConflictProperties> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<CosmosConflictProperties>>(streamResponse.Content).Data;
 
             Assert.AreEqual(1, response.Count());
 
-            CosmosConflictSettings responseSettings = response.FirstOrDefault();
+            CosmosConflictProperties responseSettings = response.FirstOrDefault();
             Assert.IsNotNull(responseSettings);
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
             Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTriggerSettings), responseSettings.ResourceType);
+            Assert.AreEqual(typeof(CosmosTriggerProperties), responseSettings.ResourceType);
         }
 
         private Task<CosmosResponseMessage> NextResultSetDelegate(

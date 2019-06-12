@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // The test collection should have range index on string properties
             // for the orderby tests
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-            var newCol = new CosmosContainerSettings()
+            var newCol = new CosmosContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-            CosmosContainer cosmosContainer = cosmosDatabase.CreateContainerAsync(new CosmosContainerSettings { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
+            CosmosContainer cosmosContainer = cosmosDatabase.CreateContainerAsync(new CosmosContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             int seed = DateTime.Now.Millisecond;
             Random random = new Random(seed);

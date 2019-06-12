@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public async Task OpenAsync(
             string databaseName,
-            CosmosContainerSettings collection,
+            CosmosContainerProperties collection,
             CancellationToken cancellationToken)
         {
             CollectionRoutingMap routingMap =

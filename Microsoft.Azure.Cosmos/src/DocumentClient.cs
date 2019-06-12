@@ -454,80 +454,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
-        /// specified service endpoint, an authorization key (or resource token) and a connection policy
-        /// for the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
-        /// <param name="authKeyOrResourceTokenHash">The authorization key or resource token to use to create the client.</param>
-        /// <param name="sendingRequestEventArgs"> The event handler to be invoked before the request is sent.</param>
-        /// <param name="receivedResponseEventArgs"> The event handler to be invoked after a response has been received.</param>
-        /// <param name="connectionPolicy">(Optional) The connection policy for the client.</param>
-        /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
-        /// <param name="serializerSettings">The custom JsonSerializer settings to be used for serialization/derialization.</param>
-        /// <param name="apitype">Api type for the account</param>
-        /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler).</param>
-        /// <param name="sessionContainer">The default session container with which DocumentClient is created.</param>
-        /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
-        /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
-        /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
-        /// <remarks>
-        /// The service endpoint can be obtained from the Azure Management Portal.
-        /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
-        /// If however you are connecting as a specific Azure Cosmos DB User, the value passed to <paramref name="authKeyOrResourceTokenHash"/> is the ResourceToken obtained from the permission feed for the user.
-        /// <para>
-        /// Using Direct connectivity, wherever possible, is recommended.
-        /// </para>
-        /// </remarks>
-        /// <seealso cref="Uri"/>
-        /// <seealso cref="ConnectionPolicy"/>
-        /// <seealso cref="ConsistencyLevel"/>
-        internal DocumentClient(Uri serviceEndpoint,
-                              IComputeHash authKeyOrResourceTokenHash,
-                              EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
-                              ConnectionPolicy connectionPolicy = null,
-                              Documents.ConsistencyLevel? desiredConsistencyLevel = null,
-                              JsonSerializerSettings serializerSettings = null,
-                              ApiType apitype = ApiType.None,
-                              EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
-                              HttpMessageHandler handler = null,
-                              ISessionContainer sessionContainer = null,
-                              bool? enableCpuMonitor = null,
-                              Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
-        {
-            if (sendingRequestEventArgs != null)
-            {
-                this.sendingRequest += sendingRequestEventArgs;
-            }
-
-            if (serializerSettings != null)
-            {
-                this.serializerSettings = serializerSettings;
-            }
-
-            this.ApiType = apitype;
-
-            if (receivedResponseEventArgs != null)
-            {
-                this.receivedResponse += receivedResponseEventArgs;
-            }
-
-            this.authKeyHashFunction = authKeyOrResourceTokenHash ?? throw new ArgumentNullException("authKeyOrResourceTokenHash");
-
-            this.transportClientHandlerFactory = transportClientHandlerFactory;
-
-            this.Initialize(
-                serviceEndpoint: serviceEndpoint,
-                connectionPolicy: connectionPolicy,
-                desiredConsistencyLevel: desiredConsistencyLevel,
-                handler: handler,
-                sessionContainer: sessionContainer,
-                enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified service endpoint, an authorization key (or resource token), a connection policy
         /// and a custom JsonSerializerSettings for the Azure Cosmos DB service.
         /// </summary>
@@ -1194,7 +1120,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                CosmosContainerSettings resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                CosmosContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 resolvedCollection.ResourceId,
                 new Range<string>(
@@ -6677,7 +6603,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            CosmosContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
@@ -6700,7 +6626,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            CosmosContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents

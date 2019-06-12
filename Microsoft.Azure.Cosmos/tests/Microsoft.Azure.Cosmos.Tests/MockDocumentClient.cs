@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     )
                 ).Returns(() =>
                 {
-                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    CosmosContainerProperties cosmosContainerSetting = CosmosContainerProperties.CreateWithResourceId("test");
                     cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
                     {
                         Kind = PartitionKind.Hash,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         It.IsAny<CancellationToken>()
                     )
                 ).Returns(() => {
-                    CosmosContainerSettings containerSettings = CosmosContainerSettings.CreateWithResourceId("test");
+                    CosmosContainerProperties containerSettings = CosmosContainerProperties.CreateWithResourceId("test");
                     containerSettings.PartitionKey.Paths = new Collection<string>() { pkPath };
                     return Task.FromResult(containerSettings);
                 });
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     )
                 ).Returns(() =>
                 {
-                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    CosmosContainerProperties cosmosContainerSetting = CosmosContainerProperties.CreateWithResourceId("test");
                     cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
                     {
                         Kind = PartitionKind.Hash,
