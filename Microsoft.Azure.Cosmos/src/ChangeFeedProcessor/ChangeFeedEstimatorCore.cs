@@ -20,10 +20,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
         private CancellationTokenSource shutdownCts;
-        private CosmosContainerCore leaseContainer;
+        private ContainerCore leaseContainer;
         private string monitoredContainerRid;
         private TimeSpan? estimatorPeriod = null;
-        private CosmosContainerCore monitoredContainer;
+        private ContainerCore monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimator feedEstimator;
         private RemainingWorkEstimator remainingWorkEstimator;
@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            CosmosContainerCore leaseContainer,
+            ContainerCore leaseContainer,
             string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            CosmosContainerCore monitoredContainer)
+            ContainerCore monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));

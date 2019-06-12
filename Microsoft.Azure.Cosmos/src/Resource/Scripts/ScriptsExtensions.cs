@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <returns>An instance of of <see cref="Scripts"/>.</returns>
         public static Scripts GetScripts(this Container container)
         {
-            CosmosContainerCore cosmosContainerCore = (CosmosContainerCore)container;
+            ContainerCore cosmosContainerCore = (ContainerCore)container;
             return new CosmosScriptsCore(cosmosContainerCore, cosmosContainerCore.ClientContext);
         }
     }

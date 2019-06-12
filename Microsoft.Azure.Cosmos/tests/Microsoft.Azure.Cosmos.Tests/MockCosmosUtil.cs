@@ -33,12 +33,12 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return cosmosClientBuilder.Build(documentClient);
         }
 
-        public static Mock<CosmosContainerCore> CreateMockContainer(
+        public static Mock<ContainerCore> CreateMockContainer(
             string dbName = "myDb",
             string containerName = "myContainer")
         {
             Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}" , UriKind.Relative);
-            Mock<CosmosContainerCore> mockContainer = new Mock<CosmosContainerCore>();
+            Mock<ContainerCore> mockContainer = new Mock<ContainerCore>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             return mockContainer;
         }

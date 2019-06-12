@@ -15,20 +15,20 @@ namespace Microsoft.Azure.Cosmos
     {
         private const string InMemoryDefaultHostName = "InMemory";
 
-        private readonly CosmosContainerCore monitoredContainer;
+        private readonly ContainerCore monitoredContainer;
         private readonly ChangeFeedProcessor changeFeedProcessor;
         private readonly ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private readonly Action<DocumentServiceLeaseStoreManager,
-                CosmosContainerCore,
+                ContainerCore,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainerCore> applyBuilderConfiguration;
+                ContainerCore> applyBuilderConfiguration;
 
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
 
-        private CosmosContainerCore leaseContainer;
+        private ContainerCore leaseContainer;
         private string InstanceName;
         private DocumentServiceLeaseStoreManager LeaseStoreManager;
         private string monitoredContainerRid;
@@ -36,15 +36,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal ChangeFeedProcessorBuilder(
             string processorName, 
-            CosmosContainerCore container, 
+            ContainerCore container, 
             ChangeFeedProcessor changeFeedProcessor,
             Action<DocumentServiceLeaseStoreManager,
-                CosmosContainerCore,
+                ContainerCore,
                 string,
                 string,
                 ChangeFeedLeaseOptions,
                 ChangeFeedProcessorOptions,
-                CosmosContainerCore> applyBuilderConfiguration)
+                ContainerCore> applyBuilderConfiguration)
         {
             this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
             this.changeFeedLeaseOptions.LeasePrefix = processorName;
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.leaseContainer != null) throw new InvalidOperationException("The builder already defined a lease container.");
             if (this.LeaseStoreManager != null) throw new InvalidOperationException("The builder already defined an in-memory lease container instance.");
 
-            this.leaseContainer = (CosmosContainerCore)leaseContainer;
+            this.leaseContainer = (ContainerCore)leaseContainer;
             return this;
         }
 

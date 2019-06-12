@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class UserDefinedFunctionsTests : BaseCosmosClientHelper
     {
-        private CosmosContainerCore container = null;
+        private ContainerCore container = null;
         private Scripts scripts = null;
         private const string function = @"function(amt) { return amt * 0.05; }";
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.container = (CosmosContainerCore)response;
+            this.container = (ContainerCore)response;
             this.scripts = this.container.GetScripts();
         }
 

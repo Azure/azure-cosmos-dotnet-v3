@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
-            CosmosContainerCore testContainer = (CosmosContainerCore)client.GetContainer(dbName, containerName);
+            ContainerCore testContainer = (ContainerCore)client.GetContainer(dbName, containerName);
 
             int loopCount = 2;
             for (int i = 0; i < loopCount; i++)
@@ -764,7 +764,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemEpkQuerySingleKeyRangeValidation()
         {
             IList<ToDoActivity> deleteList = new List<ToDoActivity>();
-            CosmosContainerCore container = null;
+            ContainerCore container = null;
             try
             {
                 // Create a container large enough to have at least 2 partitions
@@ -772,7 +772,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk",
                     requestUnitsPerSecond: 15000);
-                container = (CosmosContainerCore)containerResponse;
+                container = (ContainerCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition
                 IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync();

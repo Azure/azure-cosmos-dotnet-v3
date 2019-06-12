@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new CosmosContainerCore(
+            return new ContainerCore(
                     this.ClientContext,
                     this,
                     id);

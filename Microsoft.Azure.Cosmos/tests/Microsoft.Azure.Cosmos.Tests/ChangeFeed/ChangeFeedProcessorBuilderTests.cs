@@ -228,9 +228,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
 
-        private static CosmosContainerCore GetMockedContainer(string containerName = null)
+        private static ContainerCore GetMockedContainer(string containerName = null)
         {
-            Mock<CosmosContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
+            Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             return mockedContainer.Object;
         }
 

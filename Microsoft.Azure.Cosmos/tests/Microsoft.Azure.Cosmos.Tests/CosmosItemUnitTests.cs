@@ -79,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestGetPartitionKeyValueFromStreamAsync()
         {
-            Mock<CosmosContainerCore> containerMock = new Mock<CosmosContainerCore>();
-            CosmosContainerCore container = containerMock.Object;
+            Mock<ContainerCore> containerMock = new Mock<ContainerCore>();
+            ContainerCore container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new string[] { "pk" }));
@@ -166,8 +166,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
-            Mock<CosmosContainerCore> containerMock = new Mock<CosmosContainerCore>();
-            CosmosContainerCore container = containerMock.Object;
+            Mock<ContainerCore> containerMock = new Mock<ContainerCore>();
+            ContainerCore container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new string[] { "a", "b", "c" }));

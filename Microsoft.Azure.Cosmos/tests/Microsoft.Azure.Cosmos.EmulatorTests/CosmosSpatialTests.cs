@@ -13,7 +13,7 @@
     [TestClass]
     public class CosmosSpatialTests
     {
-        private CosmosContainerCore Container = null;
+        private ContainerCore Container = null;
         private DocumentClient documentClient;
         private CosmosJsonSerializerCore jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
@@ -41,7 +41,7 @@
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (CosmosContainerCore)response;
+            this.Container = (ContainerCore)response;
             this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 

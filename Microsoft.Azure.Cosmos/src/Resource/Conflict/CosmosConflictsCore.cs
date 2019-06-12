@@ -12,12 +12,12 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosConflictsCore : Conflicts
     {
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
         private readonly CosmosClientContext clientContext;
 
         public CosmosConflictsCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore container)
+            ContainerCore container)
         {
             if (clientContext == null)
             {

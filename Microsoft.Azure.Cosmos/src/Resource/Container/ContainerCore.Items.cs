@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
     /// </summary>
-    internal partial class CosmosContainerCore : Container
+    internal partial class ContainerCore : Container
     {
         /// <summary>
         /// Cache the full URI segment without the last resource id.
@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
             }
 
-            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             return await this.ClientContext.ProcessResourceOperationStreamAsync(

@@ -1015,7 +1015,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
                     QueryRanges = new List<Range<string>>()
                     {
-                        Range<string>.GetPointRange(PartitionKeyInternal.FromObjectArray(new object[] { 1 }, true).GetEffectivePartitionKeyString(await ((CosmosContainerCore)container).GetPartitionKeyDefinitionAsync())),
+                        Range<string>.GetPointRange(PartitionKeyInternal.FromObjectArray(new object[] { 1 }, true).GetEffectivePartitionKeyString(await ((ContainerCore)container).GetPartitionKeyDefinitionAsync())),
                     },
                 };
 
