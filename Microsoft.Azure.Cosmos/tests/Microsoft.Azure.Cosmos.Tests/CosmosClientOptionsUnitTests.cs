@@ -224,20 +224,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions(endpoint, key)
             {
-                ConnectionMode = ConnectionMode.Gateway,
-                IdleTcpConnectionTimeout = idleTcpConnectionTimeout
+                ConnectionMode = ConnectionMode.Gateway
             };
 
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
-
-            cosmosClientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout;
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
-
-            cosmosClientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection;
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
-
-            cosmosClientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint;
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout; });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout; });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection; });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint; });
         }
     }
 }

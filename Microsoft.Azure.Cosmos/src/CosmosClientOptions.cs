@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         private const string ConnectionStringAccountEndpoint = "AccountEndpoint";
         private const string ConnectionStringAccountKey = "AccountKey";
+        private const string RequiresDiretMode = "requires Direct Mode";
 
         private const ApiType DefaultApiType = ApiType.None;
 
@@ -49,6 +50,11 @@ namespace Microsoft.Azure.Cosmos
 
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
         private int gatewayModeMaxConnectionLimit;
+
+        private TimeSpan? idleTcpConnectionTimeout;
+        private TimeSpan? openTcpConnectionTimeout;
+        private int? maxRequestsPerTcpConnection;
+        private int? maxTcpConnectionsPerEndpoint;
 
         /// <summary>
         /// Initialize a new CosmosClientOptions class that holds all the properties the CosmosClient requires.
@@ -265,18 +271,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public virtual TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; set; }
-
-        /// <summary>
-        /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
-        /// </summary>
-        [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public virtual CosmosJsonSerializer CosmosSerializer
-        {
-            get => this.userJsonSerializer;
-            set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
-        }
-
+          
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
@@ -286,7 +281,18 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Mainly useful for sparse infrequent access to a large database account.
         /// </remarks>
-        public virtual TimeSpan? IdleTcpConnectionTimeout { get; set; }      
+        public virtual TimeSpan? IdleTcpConnectionTimeout
+        {
+            get => this.idleTcpConnectionTimeout;
+            set
+            {
+                if (this.ConnectionMode == ConnectionMode.Gateway)
+                {
+                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                }
+                this.idleTcpConnectionTimeout = value;
+            }
+        }      
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
@@ -297,7 +303,18 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
         /// </remarks>
-        public virtual TimeSpan? OpenTcpConnectionTimeout { get; set; }
+        public virtual TimeSpan? OpenTcpConnectionTimeout
+        {
+            get => this.openTcpConnectionTimeout;
+            set
+            {
+                if (this.ConnectionMode == ConnectionMode.Gateway)
+                {
+                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                }
+                this.openTcpConnectionTimeout = value;
+            }
+        }
 
         /// <summary>
         /// (Direct/TCP) Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
@@ -311,7 +328,18 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Applications with a very high degree of parallelism per connection, with large requests or responses, or with very tight latency requirements might get better performance with 8-16 requests per connection.
         /// </remarks>
-        public virtual int? MaxRequestsPerTcpConnection { get; set; }
+        public virtual int? MaxRequestsPerTcpConnection
+        {
+            get => this.maxRequestsPerTcpConnection;
+            set
+            {
+                if (this.ConnectionMode == ConnectionMode.Gateway)
+                {
+                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                }
+                this.maxRequestsPerTcpConnection = value;
+            }
+        }
 
         /// <summary>
         /// (Direct/TCP) Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
@@ -320,7 +348,29 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The default value is 65,535. Value must be greater than or equal to 16.
         /// </value>
-        public virtual int? MaxTcpConnectionsPerEndpoint { get; set; }
+        public virtual int? MaxTcpConnectionsPerEndpoint
+        {           
+            get => this.maxTcpConnectionsPerEndpoint;
+            set
+            {
+                if (this.ConnectionMode == ConnectionMode.Gateway)
+                {
+                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                }
+                this.maxTcpConnectionsPerEndpoint = value;
+            }
+        }
+
+        /// <summary>
+        /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
+        /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
+        /// </summary>
+        [JsonConverter(typeof(ClientOptionJsonConverter))]
+        public virtual CosmosJsonSerializer CosmosSerializer
+        {
+            get => this.userJsonSerializer;
+            set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.CosmosSerializer));
+        }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
@@ -441,15 +491,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal ConnectionPolicy GetConnectionPolicy()
-        {
-            if (this.ConnectionMode == ConnectionMode.Gateway && (this.IdleTcpConnectionTimeout.HasValue 
-                || this.OpenTcpConnectionTimeout.HasValue 
-                || this.MaxRequestsPerTcpConnection.HasValue 
-                || MaxTcpConnectionsPerEndpoint.HasValue))
-            {
-                throw new ArgumentException($"{nameof(this.IdleTcpConnectionTimeout)}, {nameof(this.OpenTcpConnectionTimeout)}, {nameof(MaxRequestsPerTcpConnection)} and {nameof(this.MaxTcpConnectionsPerEndpoint)} require direct mode.");
-            }
-
+        {            
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
